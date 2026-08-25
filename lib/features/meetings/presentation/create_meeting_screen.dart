@@ -17,50 +17,52 @@ import '../domain/meeting_identity.dart';
 import '../../../core/identity/person_identity_model.dart';
 import 'widgets/meeting_surfaces.dart';
 
-final _institutionDetailProvider =
-    FutureProvider.family<Institution, String>((ref, institutionId) {
+final _institutionDetailProvider = FutureProvider.family<Institution, String>((
+  ref,
+  institutionId,
+) {
   final repo = ref.watch(institutionsRepositoryProvider);
   return repo.getById(institutionId);
 });
 
-final _institutionMembersProvider = FutureProvider.family<_InstitutionMembersData,
-    String>((ref, institutionId) async {
-  final repo = ref.watch(institutionsRepositoryProvider);
-  final data = await repo.listMembers(institutionId);
-  final callerRole = (data['callerRole'] ?? '').toString().trim();
-  final rawMembers = data['members'];
-  final members = <_InstitutionMember>[];
-  if (rawMembers is List) {
-    for (final entry in rawMembers.whereType<Map>()) {
-      final member = Map<String, dynamic>.from(entry);
-      final user = member['user'] is Map
-          ? Map<String, dynamic>.from(member['user'] as Map)
-          : const <String, dynamic>{};
-      final userId = (member['userId'] ?? '').toString().trim();
-      if (userId.isEmpty) continue;
-      // F053/F116 (narrow Meetings authorization, founder 2026-08-19) — the
-      // PERSON half of an institution member row is read canonically. `title`,
-      // `role` and `canSpeakOfficially` are membership state, not identity,
-      // and stay exactly where they are. No Meetings behaviour changes: this
-      // replaces a duplicate interpretation, nothing else.
-      final person = AuraPersonIdentity.fromJson(user);
-      members.add(
-        _InstitutionMember(
-          userId: userId,
-          displayName: person.displayName,
-          handle: person.handle,
-          title: (member['title'] ?? '').toString().trim(),
-          role: (member['role'] ?? 'MEMBER').toString().trim(),
-          canSpeakOfficially: member['canSpeakOfficially'] == true,
-        ),
-      );
-    }
-  }
-  return _InstitutionMembersData(
-    callerRole: callerRole,
-    members: members,
-  );
-});
+final _institutionMembersProvider =
+    FutureProvider.family<_InstitutionMembersData, String>((
+      ref,
+      institutionId,
+    ) async {
+      final repo = ref.watch(institutionsRepositoryProvider);
+      final data = await repo.listMembers(institutionId);
+      final callerRole = (data['callerRole'] ?? '').toString().trim();
+      final rawMembers = data['members'];
+      final members = <_InstitutionMember>[];
+      if (rawMembers is List) {
+        for (final entry in rawMembers.whereType<Map>()) {
+          final member = Map<String, dynamic>.from(entry);
+          final user = member['user'] is Map
+              ? Map<String, dynamic>.from(member['user'] as Map)
+              : const <String, dynamic>{};
+          final userId = (member['userId'] ?? '').toString().trim();
+          if (userId.isEmpty) continue;
+          // F053/F116 (narrow Meetings authorization, founder 2026-08-19) — the
+          // PERSON half of an institution member row is read canonically. `title`,
+          // `role` and `canSpeakOfficially` are membership state, not identity,
+          // and stay exactly where they are. No Meetings behaviour changes: this
+          // replaces a duplicate interpretation, nothing else.
+          final person = AuraPersonIdentity.fromJson(user);
+          members.add(
+            _InstitutionMember(
+              userId: userId,
+              displayName: person.displayName,
+              handle: person.handle,
+              title: (member['title'] ?? '').toString().trim(),
+              role: (member['role'] ?? 'MEMBER').toString().trim(),
+              canSpeakOfficially: member['canSpeakOfficially'] == true,
+            ),
+          );
+        }
+      }
+      return _InstitutionMembersData(callerRole: callerRole, members: members);
+    });
 
 class CreateMeetingScreen extends ConsumerStatefulWidget {
   final String? institutionId;
@@ -312,8 +314,9 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
         organizationId: widget.institutionId,
         hostOnly: _hostOnly,
         includeAllMembers: _includeAllMembers,
-        participantUserIds:
-            _includeAllMembers ? const [] : _selectedMemberIds.toList(),
+        participantUserIds: _includeAllMembers
+            ? const []
+            : _selectedMemberIds.toList(),
         externalInvitees: _invitees
             .map(
               (invitee) => <String, dynamic>{
@@ -351,7 +354,9 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
       : '/institution/${widget.institutionId}/meetings/$meetingId';
 
   void _snack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _copyCurrentInviteeLine() async {
@@ -385,15 +390,15 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
                   Text(
                     'Meetings are created inside an institution workspace.',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: AuraSpace.s8),
                   Text(
                     'Open an institution to create or start a meeting.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: const Color(0xFF9CA3AF),
-                        ),
+                      color: const Color(0xFF9CA3AF),
+                    ),
                   ),
                   const SizedBox(height: AuraSpace.s12),
                   FilledButton.icon(
@@ -421,7 +426,8 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
     final dateLabel = _scheduledAt == null
         ? 'Pick date and time'
         : DateFormat('EEE, MMM d, yyyy - h:mm a').format(_scheduledAt!);
-    final selectedMembers = membersAsync?.maybeWhen(
+    final selectedMembers =
+        membersAsync?.maybeWhen(
           data: (data) {
             final map = <String, _InstitutionMember>{
               for (final member in data.members) member.userId: member,
@@ -441,197 +447,221 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
     final selectedSummary = _includeAllMembers || _hostOnly
         ? ''
         : selectedMembers.isEmpty
-            ? 'No internal members selected'
-            : selectedMembers.map((member) => member.displayLabel).join(', ');
+        ? 'No internal members selected'
+        : selectedMembers.map((member) => member.displayLabel).join(', ');
 
     // R-4: the way out is the shared one. Creating a meeting is a FLOW, so
     // the governed affordance says Cancel rather than Back — a distinction
     // this screen's own arrow could not make.
     return AuraScaffold(
       title: 'Create meeting',
-      body: ListView(
+      body: _CreateMeetingLayout(
+        isWide: isWide,
+        subtitle:
+            'Give the meeting a purpose, decide who is in it, and choose when.',
+        form: _CreationForm(
+          titleCtrl: _titleCtrl,
+          agendaCtrl: _agendaCtrl,
+          durationMinutes: _durationMinutes,
+          startNow: _startNow,
+          hostOnly: _hostOnly,
+          includeAllMembers: _includeAllMembers,
+          scheduledLabel: dateLabel,
+          onPickDateTime: _pickDateTime,
+          onDurationChanged: (value) =>
+              setState(() => _durationMinutes = value),
+          onStartNowChanged: (value) => setState(() => _startNow = value),
+          onHostOnlyChanged: (value) => setState(() => _hostOnly = value),
+          onAllMembersChanged: (value) =>
+              setState(() => _includeAllMembers = value),
+          institutionMode: _isInstitutionMode,
+          bookingIdentity: bookingIdentity.maybeWhen(
+            data: (value) => value,
+            orElse: () => null,
+          ),
+          bookingProfiles: bookingProfiles.maybeWhen(
+            data: (value) => value,
+            orElse: () => const [],
+          ),
+          membersAsync: membersAsync,
+          memberSearchCtrl: _memberSearchCtrl,
+          inviteCtrl: _inviteCtrl,
+          inviteNameCtrl: _inviteNameCtrl,
+          inviteEmailCtrl: _inviteEmailCtrl,
+          invitees: _invitees,
+          selectedSummary: selectedSummary,
+          selectedMemberIds: _selectedMemberIds,
+          onToggleMember: _toggleMember,
+          onAddInvitees: _addInviteesFromText,
+          onAddInlineInvitee: _addInviteeFromInline,
+          onEditInvitee: _editInviteeName,
+          onRemoveInvitee: (invitee) {
+            setState(() => _invitees.remove(invitee));
+          },
+          onCopyInlineInvitee: _copyCurrentInviteeLine,
+        ),
+        review: _ReviewPane(
+          startNow: _startNow,
+          hostOnly: _hostOnly,
+          includeAllMembers: _includeAllMembers,
+          selectedMembers: selectedMembers,
+          invitees: _invitees,
+          scheduledAt: _scheduledAt,
+          durationMinutes: _durationMinutes,
+          meetingTitle: _titleCtrl.text.trim(),
+          institutionName:
+              institutionAsync?.maybeWhen(
+                data: (institution) => institution.name,
+                orElse: () => '',
+              ) ??
+              '',
+        ),
+        submit: SizedBox(
+          height: 48,
+          child: FilledButton.icon(
+            icon: _saving
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Icon(
+                    _startNow ? Icons.video_call_rounded : Icons.add_rounded,
+                  ),
+            label: Text(_startNow ? 'Start instant meeting' : 'Create meeting'),
+            onPressed: _saving ? null : _submit,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// THE CREATE SURFACE'S SCROLL ARCHITECTURE.
+///
+/// Founder ruling (closeout correction): fix the actual scroll/layout
+/// architecture; do not fake stickiness with a wrapper that does not change
+/// scroll behaviour.
+///
+/// What was wrong: the whole screen was ONE `ListView`, and the review pane
+/// was a child of it. So the panel that answers "what am I creating, for whom,
+/// when" — and, more importantly, the panel that says what is still MISSING —
+/// left the top of the window exactly when you scrolled to Participants, which
+/// is the section that supplies the missing thing.
+///
+/// What this does instead: on wide layouts the form and the review rail are
+/// SIBLING scrollables inside a bounded Row. The form scrolls; the rail does
+/// not move with it. They are siblings, not nested, so there is no nested
+/// scroll trap and no unbounded-height ambiguity — the Row's height is tight,
+/// taken from the body constraints via LayoutBuilder.
+///
+/// The primary action lives in the rail on wide layouts, directly beneath the
+/// summary: what you are about to create, and the button that creates it, in
+/// one place that does not move. On narrow layouts nothing changes — one
+/// column, review directly above the button, which was already correct.
+class _CreateMeetingLayout extends StatelessWidget {
+  final bool isWide;
+  final String subtitle;
+  final Widget form;
+  final Widget review;
+  final Widget submit;
+
+  const _CreateMeetingLayout({
+    required this.isWide,
+    required this.subtitle,
+    required this.form,
+    required this.review,
+    required this.submit,
+  });
+
+  /// The form and the rail are held together as a pair and centred as a pair,
+  /// so a wide monitor does not leave a gutter between them.
+  static const double _contentMaxWidth = 1180;
+  static const double _railWidth = 360;
+
+  Widget _subtitle(BuildContext context) => Text(
+    subtitle,
+    style: Theme.of(
+      context,
+    ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF9CA3AF)),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isWide) {
+      return ListView(
         padding: const EdgeInsets.all(AuraSpace.s16),
         children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1120),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: AuraSpace.s6),
-                  Text(
-                    'Give the meeting a purpose, decide who is in it, and choose when.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: const Color(0xFF9CA3AF),
-                        ),
-                  ),
-                  const SizedBox(height: AuraSpace.s20),
-                  if (isWide)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 7,
-                          child: _CreationForm(
-                            titleCtrl: _titleCtrl,
-                            agendaCtrl: _agendaCtrl,
-                            durationMinutes: _durationMinutes,
-                            startNow: _startNow,
-                            hostOnly: _hostOnly,
-                            includeAllMembers: _includeAllMembers,
-                            scheduledLabel: dateLabel,
-                            onPickDateTime: _pickDateTime,
-                            onDurationChanged: (value) =>
-                                setState(() => _durationMinutes = value),
-                            onStartNowChanged: (value) =>
-                                setState(() => _startNow = value),
-                            onHostOnlyChanged: (value) =>
-                                setState(() => _hostOnly = value),
-                            onAllMembersChanged: (value) =>
-                                setState(() => _includeAllMembers = value),
-                            institutionMode: _isInstitutionMode,
-                            bookingIdentity: bookingIdentity.maybeWhen(
-                              data: (value) => value,
-                              orElse: () => null,
-                            ),
-                            bookingProfiles: bookingProfiles.maybeWhen(
-                              data: (value) => value,
-                              orElse: () => const [],
-                            ),
-                            membersAsync: membersAsync,
-                            memberSearchCtrl: _memberSearchCtrl,
-                            inviteCtrl: _inviteCtrl,
-                            inviteNameCtrl: _inviteNameCtrl,
-                            inviteEmailCtrl: _inviteEmailCtrl,
-                            invitees: _invitees,
-                            selectedSummary: selectedSummary,
-                            selectedMemberIds: _selectedMemberIds,
-                            onToggleMember: _toggleMember,
-                            onAddInvitees: _addInviteesFromText,
-                            onAddInlineInvitee: _addInviteeFromInline,
-                            onEditInvitee: _editInviteeName,
-                            onRemoveInvitee: (invitee) {
-                              setState(() => _invitees.remove(invitee));
-                            },
-                            onCopyInlineInvitee: _copyCurrentInviteeLine,
-                          ),
-                        ),
-                        const SizedBox(width: AuraSpace.s20),
-                        SizedBox(
-                          width: 360,
-                          child: _ReviewPane(
-                            startNow: _startNow,
-                            hostOnly: _hostOnly,
-                            includeAllMembers: _includeAllMembers,
-                            selectedMembers: selectedMembers,
-                            invitees: _invitees,
-                            scheduledAt: _scheduledAt,
-                            durationMinutes: _durationMinutes,
-                            meetingTitle: _titleCtrl.text.trim(),
-                            institutionName: institutionAsync?.maybeWhen(
-                                  data: (institution) => institution.name,
-                                  orElse: () => '',
-                                ) ??
-                                '',
-                          ),
-                        ),
-                      ],
-                    )
-                  else
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _CreationForm(
-                          titleCtrl: _titleCtrl,
-                          agendaCtrl: _agendaCtrl,
-                          durationMinutes: _durationMinutes,
-                          startNow: _startNow,
-                          hostOnly: _hostOnly,
-                          includeAllMembers: _includeAllMembers,
-                          scheduledLabel: dateLabel,
-                          onPickDateTime: _pickDateTime,
-                          onDurationChanged: (value) =>
-                              setState(() => _durationMinutes = value),
-                          onStartNowChanged: (value) =>
-                              setState(() => _startNow = value),
-                          onHostOnlyChanged: (value) =>
-                              setState(() => _hostOnly = value),
-                          onAllMembersChanged: (value) =>
-                              setState(() => _includeAllMembers = value),
-                          institutionMode: _isInstitutionMode,
-                          bookingIdentity: bookingIdentity.maybeWhen(
-                            data: (value) => value,
-                            orElse: () => null,
-                          ),
-                          bookingProfiles: bookingProfiles.maybeWhen(
-                            data: (value) => value,
-                            orElse: () => const [],
-                          ),
-                          membersAsync: membersAsync,
-                          memberSearchCtrl: _memberSearchCtrl,
-                          inviteCtrl: _inviteCtrl,
-                          inviteNameCtrl: _inviteNameCtrl,
-                          inviteEmailCtrl: _inviteEmailCtrl,
-                          invitees: _invitees,
-                          selectedSummary: selectedSummary,
-                          selectedMemberIds: _selectedMemberIds,
-                          onToggleMember: _toggleMember,
-                          onAddInvitees: _addInviteesFromText,
-                          onAddInlineInvitee: _addInviteeFromInline,
-                          onEditInvitee: _editInviteeName,
-                          onRemoveInvitee: (invitee) {
-                            setState(() => _invitees.remove(invitee));
-                          },
-                          onCopyInlineInvitee: _copyCurrentInviteeLine,
-                        ),
-                        const SizedBox(height: AuraSpace.s20),
-                        _ReviewPane(
-                          startNow: _startNow,
-                          hostOnly: _hostOnly,
-                          includeAllMembers: _includeAllMembers,
-                          selectedMembers: selectedMembers,
-                          invitees: _invitees,
-                          scheduledAt: _scheduledAt,
-                          durationMinutes: _durationMinutes,
-                          meetingTitle: _titleCtrl.text.trim(),
-                          institutionName: institutionAsync?.maybeWhen(
-                                data: (institution) => institution.name,
-                                orElse: () => '',
-                              ) ??
-                              '',
-                        ),
-                      ],
+          const SizedBox(height: AuraSpace.s6),
+          _subtitle(context),
+          const SizedBox(height: AuraSpace.s20),
+          form,
+          const SizedBox(height: AuraSpace.s20),
+          review,
+          const SizedBox(height: AuraSpace.s20),
+          submit,
+        ],
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth < _contentMaxWidth
+            ? constraints.maxWidth
+            : _contentMaxWidth;
+        return Center(
+          child: SizedBox(
+            // Tight on both axes. A Row of scrollables needs a bounded
+            // height, and Center alone would not give it one.
+            width: width,
+            height: constraints.maxHeight,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(
+                      AuraSpace.s16,
+                      AuraSpace.s16,
+                      AuraSpace.s16,
+                      AuraSpace.s24,
                     ),
-                  const SizedBox(height: AuraSpace.s20),
-                  SizedBox(
-                    height: 48,
-                    child: FilledButton.icon(
-                      icon: _saving
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Icon(
-                              _startNow
-                                  ? Icons.video_call_rounded
-                                  : Icons.add_rounded,
-                            ),
-                      label: Text(
-                        _startNow ? 'Start instant meeting' : 'Create meeting',
-                      ),
-                      onPressed: _saving ? null : _submit,
-                    ),
+                    children: [
+                      const SizedBox(height: AuraSpace.s6),
+                      _subtitle(context),
+                      const SizedBox(height: AuraSpace.s20),
+                      form,
+                    ],
                   ),
-                ],
-              ),
+                ),
+                SizedBox(
+                  width: _railWidth,
+                  // Its own scrollable, so a tall summary on a short window is
+                  // still reachable — but it is a SIBLING of the form's list,
+                  // so it does not travel with it.
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(
+                      0,
+                      AuraSpace.s16,
+                      AuraSpace.s16,
+                      AuraSpace.s24,
+                    ),
+                    children: [
+                      const SizedBox(height: AuraSpace.s6),
+                      review,
+                      const SizedBox(height: AuraSpace.s16),
+                      submit,
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -702,24 +732,31 @@ class _CreationForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final canSelectAll = membersAsync?.maybeWhen(
-          data: (data) => {'OWNER', 'ADMIN', 'PLATFORM_ADMIN'}
-              .contains(data.callerRole.toUpperCase()),
+    final canSelectAll =
+        membersAsync?.maybeWhen(
+          data: (data) => {
+            'OWNER',
+            'ADMIN',
+            'PLATFORM_ADMIN',
+          }.contains(data.callerRole.toUpperCase()),
           orElse: () => false,
         ) ??
         false;
-    final members = membersAsync?.maybeWhen(
+    final members =
+        membersAsync?.maybeWhen(
           data: (data) => data.members,
           orElse: () => const <_InstitutionMember>[],
         ) ??
         const <_InstitutionMember>[];
     final query = memberSearchCtrl.text.trim().toLowerCase();
-    final filteredMembers = members.where((member) {
-      if (query.isEmpty) return true;
-      return member.displayLabel.toLowerCase().contains(query) ||
-          member.title.toLowerCase().contains(query) ||
-          member.role.toLowerCase().contains(query);
-    }).toList(growable: false);
+    final filteredMembers = members
+        .where((member) {
+          if (query.isEmpty) return true;
+          return member.displayLabel.toLowerCase().contains(query) ||
+              member.title.toLowerCase().contains(query) ||
+              member.role.toLowerCase().contains(query);
+        })
+        .toList(growable: false);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -851,37 +888,78 @@ class _CreationForm extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: AuraSpace.s10),
-                    SizedBox(
-                      height: 220,
-                      child: membersAsync!.when(
-                        loading: () => const MeetingSkeletonList(count: 2),
-                        error: (e, _) => const MeetingError(
-                          what: 'the member list',
-                          technical: null,
-                        ),
-                        data: (_) => ListView.separated(
-                          itemCount: filteredMembers.length,
-                          separatorBuilder: (_, __) =>
-                              const Divider(height: 1),
-                          itemBuilder: (context, index) {
-                            final member = filteredMembers[index];
-                            final selected =
-                                selectedMemberIds.contains(member.userId);
-                            return CheckboxListTile(
-                              contentPadding: EdgeInsets.zero,
-                              value: selected,
-                              onChanged: (_) => onToggleMember(member.userId),
-                              title: Text(member.displayLabel),
-                              subtitle: Text(
-                                [
-                                  if (member.title.isNotEmpty) member.title,
-                                  if (member.role.isNotEmpty) member.role,
-                                ].join(' · '),
-                              ),
-                            );
-                          },
-                        ),
+                    // NO SCROLLABLE INSIDE THE PAGE'S SCROLLABLE.
+                    //
+                    // This was a fixed 220px well containing its own ListView.
+                    // On a narrow window it sat across the middle of the form
+                    // and swallowed the page's scroll gestures, so dragging
+                    // anywhere over the member area moved nothing — the form
+                    // below it, and the button that creates the meeting, were
+                    // unreachable by touch. It was also a keyhole onto the
+                    // list.
+                    //
+                    // The members now lay out inline and the page scrolls as
+                    // one surface. The search field above is what narrows a
+                    // long list; the count says when there is more to narrow.
+                    membersAsync!.when(
+                      loading: () => const MeetingSkeletonList(count: 2),
+                      error: (e, _) => const MeetingError(
+                        what: 'the member list',
+                        technical: null,
                       ),
+                      data: (_) {
+                        if (filteredMembers.isEmpty) {
+                          return Text(
+                            memberSearchCtrl.text.trim().isEmpty
+                                ? 'No members to choose from yet.'
+                                : 'No members match that search.',
+                            style: const TextStyle(color: AuraSurface.muted),
+                          );
+                        }
+                        const limit = 8;
+                        final shown = filteredMembers
+                            .take(limit)
+                            .toList(growable: false);
+                        final hidden = filteredMembers.length - shown.length;
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            for (
+                              var index = 0;
+                              index < shown.length;
+                              index++
+                            ) ...[
+                              if (index > 0) const Divider(height: 1),
+                              CheckboxListTile(
+                                contentPadding: EdgeInsets.zero,
+                                value: selectedMemberIds.contains(
+                                  shown[index].userId,
+                                ),
+                                onChanged: (_) =>
+                                    onToggleMember(shown[index].userId),
+                                title: Text(shown[index].displayLabel),
+                                subtitle: Text(
+                                  [
+                                    if (shown[index].title.isNotEmpty)
+                                      shown[index].title,
+                                    if (shown[index].role.isNotEmpty)
+                                      shown[index].role,
+                                  ].join(' · '),
+                                ),
+                              ),
+                            ],
+                            if (hidden > 0) ...[
+                              const SizedBox(height: AuraSpace.s8),
+                              Text(
+                                '$hidden more. Search to narrow the list.',
+                                style: const TextStyle(
+                                  color: AuraSurface.muted,
+                                ),
+                              ),
+                            ],
+                          ],
+                        );
+                      },
                     ),
                   ],
                 ] else ...[
@@ -924,9 +1002,11 @@ class _CreationForm extends StatelessWidget {
                   controller: inviteCtrl,
                   maxLines: 2,
                   decoration: const InputDecoration(
-                    labelText: 'Name <email@example.com>, Another <email@example.com>',
+                    labelText:
+                        'Name <email@example.com>, Another <email@example.com>',
                     border: OutlineInputBorder(),
-                    helperText: 'Press Add invitees after pasting one or more entries.',
+                    helperText:
+                        'Press Add invitees after pasting one or more entries.',
                   ),
                 ),
                 const SizedBox(height: AuraSpace.s10),
@@ -1053,20 +1133,26 @@ class _ReviewPane extends StatelessWidget {
     if (includeAllMembers) {
       parts.add('Everyone at $institutionName');
     } else if (selectedMembers.isNotEmpty) {
-      parts.add(selectedMembers.length == 1
-          ? selectedMembers.single.displayLabel
-          : '${selectedMembers.length} members');
+      parts.add(
+        selectedMembers.length == 1
+            ? selectedMembers.single.displayLabel
+            : '${selectedMembers.length} members',
+      );
     }
     if (invitees.isNotEmpty) {
-      parts.add(invitees.length == 1
-          ? invitees.single.displayLabel
-          : '${invitees.length} guests');
+      parts.add(
+        invitees.length == 1
+            ? invitees.single.displayLabel
+            : '${invitees.length} guests',
+      );
     }
     return parts.join(' · ');
   }
 
   bool get _hasPeople =>
-      hostOnly || includeAllMembers || selectedMembers.isNotEmpty ||
+      hostOnly ||
+      includeAllMembers ||
+      selectedMembers.isNotEmpty ||
       invitees.isNotEmpty;
 
   @override
@@ -1093,8 +1179,9 @@ class _ReviewPane extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: theme.textTheme.labelSmall
-                        ?.copyWith(color: AuraSurface.muted),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: AuraSurface.muted,
+                    ),
                   ),
                   const SizedBox(height: 1),
                   Text(
@@ -1134,8 +1221,8 @@ class _ReviewPane extends StatelessWidget {
             startNow
                 ? 'Starts as soon as you create it'
                 : scheduledAt != null
-                    ? DateFormat('EEEE d MMMM, h:mm a').format(scheduledAt!)
-                    : 'Pick a date and time',
+                ? DateFormat('EEEE d MMMM, h:mm a').format(scheduledAt!)
+                : 'Pick a date and time',
             met: timed,
           ),
           row(
@@ -1144,8 +1231,8 @@ class _ReviewPane extends StatelessWidget {
             durationMinutes < 60
                 ? '$durationMinutes minutes'
                 : durationMinutes == 60
-                    ? '1 hour'
-                    : '${durationMinutes ~/ 60}h ${durationMinutes % 60}m',
+                ? '1 hour'
+                : '${durationMinutes ~/ 60}h ${durationMinutes % 60}m',
           ),
           row(
             Icons.people_alt_rounded,
@@ -1213,9 +1300,9 @@ class _Section extends StatelessWidget {
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: AuraSpace.s10),
         child,
@@ -1251,8 +1338,11 @@ class _InstitutionMember {
     required this.canSpeakOfficially,
   });
 
-  String get displayLabel =>
-      displayName.isNotEmpty ? displayName : handle.isNotEmpty ? '@$handle' : userId;
+  String get displayLabel => displayName.isNotEmpty
+      ? displayName
+      : handle.isNotEmpty
+      ? '@$handle'
+      : userId;
 }
 
 class _DraftInvitee {
@@ -1261,8 +1351,7 @@ class _DraftInvitee {
 
   _DraftInvitee({required this.name, required this.email});
 
-  String get displayLabel =>
-      name.trim().isEmpty ? email : '$name <$email>';
+  String get displayLabel => name.trim().isEmpty ? email : '$name <$email>';
 }
 
 class _ParsedInvitee {

@@ -274,6 +274,74 @@ class AuraLoadingState extends StatelessWidget {
   }
 }
 
+/// A FULL-SURFACE WAIT.
+///
+/// [AuraLoadingState] is a 16px spinner beside a word. Inline — beside a
+/// control, inside a card — that is right. Centred in an empty page it is not:
+/// it reads as a stalled screen rather than a screen that is arriving, which
+/// is what entering Create looked like before this existed.
+///
+/// This is the surface-scope counterpart, and it is deliberately the same
+/// shape as the content that replaces it — a heading and lines — so the page
+/// does not jump when the real thing lands. It is static: a repeating
+/// animation here would make `pumpAndSettle` hang in every test that waits on
+/// a loading screen.
+class AuraLoadingSurface extends StatelessWidget {
+  const AuraLoadingSurface({super.key, required this.title, this.detail});
+
+  final String title;
+  final String? detail;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget bar(double widthFactor, double opacity) => FractionallySizedBox(
+      alignment: Alignment.centerLeft,
+      widthFactor: widthFactor,
+      child: Container(
+        height: 10,
+        decoration: BoxDecoration(
+          color: AuraSurface.elevated.withValues(alpha: opacity),
+          borderRadius: BorderRadius.circular(5),
+        ),
+      ),
+    );
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 320),
+        child: Padding(
+          padding: const EdgeInsets.all(AuraSpace.s24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              bar(0.55, 0.9),
+              const SizedBox(height: AuraSpace.s12),
+              bar(1.0, 0.55),
+              const SizedBox(height: AuraSpace.s8),
+              bar(0.8, 0.35),
+              const SizedBox(height: AuraSpace.s20),
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  title,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              if (detail != null && detail!.trim().isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(detail!, style: AuraText.small),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // EMPTY / ERROR STATES
 // ─────────────────────────────────────────────────────────────────────────────

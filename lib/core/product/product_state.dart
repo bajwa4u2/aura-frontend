@@ -186,9 +186,17 @@ class ProductStateCopy {
         // ignored the subject its callers were already passing. From outside,
         // three distinct waits — and a stall in any one of them — were the
         // same screen.
+        //
+        // 2026-08-25, founder closeout: entering Create showed the bare word
+        // "Loading", then "Loading institutions", each centred alone in a dark
+        // page. "Loading" is what the code is doing, not what the person is
+        // waiting for. The headline is now calm and constant, and the SUBJECT
+        // moves into the detail — which keeps the distinction above (three
+        // stacked waits still read differently) without putting an
+        // implementation word in the largest text on screen.
         return ProductStateCopy(
-          subject == null ? 'Loading' : 'Loading $it',
-          'One moment.',
+          'Just a moment',
+          subject == null ? 'Getting this ready.' : 'Getting $it ready.',
         );
       case ProductState.empty:
         return ProductStateCopy(

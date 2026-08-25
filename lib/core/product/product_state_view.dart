@@ -78,7 +78,10 @@ class AuraProductState extends StatelessWidget {
       case ProductState.sending:
       case ProductState.uploading:
       case ProductState.reconnecting:
-        return Center(child: AuraLoadingState(message: title));
+        // A whole surface waiting is not the same thing as a control waiting.
+        // A 16px spinner and one word, centred in an empty page, reads as a
+        // stalled screen — which is what entering Create looked like.
+        return AuraLoadingSurface(title: title, detail: body);
 
       case ProductState.error:
       case ProductState.retryableError:
