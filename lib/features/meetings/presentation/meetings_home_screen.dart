@@ -370,8 +370,6 @@ class _MeetingsBody extends StatelessWidget {
     }
 
     final upcoming = upcomingAsync.valueOrNull ?? const <Meeting>[];
-    final attention =
-        upcoming.where((m) => _isAttentionItem(m, meId)).toList(growable: false);
     final invited = upcoming
         .where((m) =>
             _relationshipLabel(m, meId: meId, institutionId: institutionId) ==
@@ -385,6 +383,20 @@ class _MeetingsBody extends StatelessWidget {
     // reading a list.
     final next = _pickUpNext(upcoming);
     final rest = upcoming.where((m) => m.id != next?.id).toList(growable: false);
+
+    // ONE MEETING, ONE PLACE ON THE PAGE.
+    //
+    // Seen in production 2026-08-25 immediately after creating a meeting: the
+    // new meeting rendered TWICE on the landing, once under "Up next" and
+    // again under "Needs attention". Both were right on their own terms - a
+    // meeting starting within three hours does need attention, and it was
+    // also the most imminent one - but the same card appearing twice on one
+    // screen reads as two meetings.
+    //
+    // `rest` already excluded the up-next meeting; `attention` was computed
+    // from the whole list and did not. Up next IS the strongest placement the
+    // page has, so it wins.
+    final attention = meetingsNeedingAttention(upcoming, next, meId);
 
     final nothingAtAll = upcoming.isEmpty && outcomes.isEmpty && past.isEmpty;
     if (nothingAtAll) {
@@ -1084,6 +1096,20 @@ String _relationshipLabel(
 
   return 'Attending';
 }
+
+/// The meetings the landing should list under "Needs attention".
+///
+/// Exposed so the one rule that matters here can be tested directly: a meeting
+/// already shown as [upNext] is NOT repeated. See the comment at the call
+/// site for the production evidence.
+List<Meeting> meetingsNeedingAttention(
+  List<Meeting> upcoming,
+  Meeting? upNext,
+  String meId,
+) =>
+    upcoming
+        .where((m) => m.id != upNext?.id && _isAttentionItem(m, meId))
+        .toList(growable: false);
 
 bool _isAttentionItem(Meeting meeting, String meId) {
   if (meeting.isEnded) return false;
