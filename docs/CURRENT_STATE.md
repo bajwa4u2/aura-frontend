@@ -520,3 +520,19 @@ unsupported, reported not hidden). Suite 1523 green, analyzer clean, Android APK
 builds, Windows A/V certification 8/8 on real hardware. Android physical
 NOT_EXECUTED (Pixel disconnected); iOS NOT_EXECUTED; no two-party call executed.
 Live Broadcast untouched.
+
+**A/V ANDROID PHYSICAL CERTIFICATION (2026-08-25):** Final current A/V code
+certified on Pixel 9a (Android 17, API 37) — 18/18 on the new
+`av_android_certification_test.dart`, 8/8 on the baseline harness, suite 1529
+green. Found and fixed a defect only the handset could expose: `CallReadiness`
+called `notifyListeners()` after disposal, because Android's check (permission
+request + real device open) is slow enough to be dismissed mid-flight, whereas
+Windows returns almost instantly. The fix also releases whatever the in-flight
+check opened, so an abandoned preflight cannot leave the camera running.
+Ordering invariant (intent → preflight → readiness → proceed → session → ring)
+proved structurally AND negative-controlled: reintroducing the pre-chapter
+defect made the test fail, restoring it made it pass. Permission agreement
+measured in TWO OS states driven from outside via adb — denied on fresh install,
+granted after `pm grant` — with BLUETOOTH_CONNECT confirmed grantable, proving
+the new manifest entry is real. iOS still NOT_EXECUTED; real two-party call
+still pending a second identity; TURNS/TLS 443 remains BLOCKED_EXTERNAL.
