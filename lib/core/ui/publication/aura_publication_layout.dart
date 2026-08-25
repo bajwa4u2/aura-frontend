@@ -117,6 +117,14 @@ class _AuraPublicationLayoutState extends State<AuraPublicationLayout> {
     return AuraScaffold(
       title: widget.title,
       actions: widget.actions,
+      // A publication presents its OWN title, in its hero. When AuraScaffold
+      // grew the header it had always accepted (2026-08-25), that title would
+      // have appeared twice — once as chrome, once as the document. `title` is
+      // kept because it is also the accessible document name.
+      //
+      // The way OUT of a publication is unaffected: that is resolved by
+      // ReturnPathAuthority and presented by the shell, above this layout.
+      showHeader: false,
       homePath: widget.homePath,
       maxWidth: widget.heroMaxWidth,
       body: Stack(

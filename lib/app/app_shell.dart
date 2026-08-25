@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../core/auth/auth_providers.dart';
 import '../core/auth/session_providers.dart';
 import '../core/diagnostics/runtime_trace.dart';
+import '../core/navigation/return_path_frame.dart';
 import 'shell/admin_shell.dart';
 import 'shell/member_shell.dart';
 import 'shell/public_shell.dart';
@@ -77,23 +78,30 @@ class AppShell extends ConsumerWidget {
     // It confers no acting identity and no authority — C1 froze acting
     // context as per-act, and the retired path-derived actor mechanism
     // must never return through shell selection.
+    // RETURN-PATH FRAME (founder ruling 2026-08-25 §2/§10).
+    //
+    // Every routed surface is framed here, at the ONE widget that sees them
+    // all, rather than in 83 screens. The frame itself declines Meetings/Live
+    // and the auth gates, so a shared change cannot alter protected behaviour.
+    final framed = ReturnPathFrame(path: path, child: child);
+
     final Widget shell;
     final String chose;
     final ctx = NavigationAuthority.contextOf(path, isAuthed: isAuthed);
     if (isGuest) {
-      shell = PublicShell(child: child);
+      shell = PublicShell(child: framed);
       chose = 'PublicShell(guest)';
     } else if (ctx == ShellContext.admin) {
-      shell = AdminShell(child: child);
+      shell = AdminShell(child: framed);
       chose = 'AdminShell';
     } else if (ctx == ShellContext.institution) {
-      shell = InstitutionShell(child: child);
+      shell = InstitutionShell(child: framed);
       chose = 'InstitutionShell';
     } else if (ctx == ShellContext.member) {
-      shell = MemberShell(child: child);
+      shell = MemberShell(child: framed);
       chose = 'MemberShell';
     } else {
-      shell = PublicShell(child: child);
+      shell = PublicShell(child: framed);
       chose = 'PublicShell';
     }
     RuntimeTrace.emit(

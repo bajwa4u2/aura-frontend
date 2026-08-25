@@ -30,14 +30,23 @@ void main() {
       }
     });
 
-    test('CURRENT DEFECT: it renders none of them', () {
-      // If this ever fails, AuraScaffold has grown a header. That is the
-      // intended fix — update this test rather than reverting the change.
-      final build = src.substring(src.indexOf('Widget build('));
-      expect(build.contains('leading'), isFalse,
-          reason: 'AuraScaffold now uses leading — the audit finding is stale');
-      expect(build.contains('AppBar('), isFalse,
-          reason: 'AuraScaffold now builds an AppBar — finding is stale');
+    test('REPAIRED: it renders them', () {
+      // Was: "CURRENT DEFECT: it renders none of them". Founder ruling §1 —
+      // grow the header rather than delete the intent. This is now the
+      // regression test for that repair.
+      expect(src, contains('_Header('),
+          reason: 'AuraScaffold stopped rendering its header');
+      expect(src, contains('leading!'),
+          reason: 'AuraScaffold stopped rendering leading');
+      expect(src, contains('showHomeAction'));
+    });
+
+    test('but it does NOT decide return semantics', () {
+      // Also founder ruling §1. A back control here would put a second,
+      // ungoverned answer on the same screen as the governed one.
+      expect(src.contains('arrow_back'), isFalse,
+          reason: 'AuraScaffold grew its own back control — return semantics '
+              'belong to ReturnPathAuthority, presented once by the shell');
     });
   });
 
