@@ -59,8 +59,13 @@ void main() {
         (tester) async {
       // The same invariant certified on Web, re-proved on the native build:
       // the platform differs, the promise does not.
+      // Deliberately NOT disposed. Reading the router starts its own network
+      // work through the dio interceptor, and tearing the container down while
+      // that is in flight throws "read a provider from a disposed container" —
+      // after the test has already passed, and attributed to whichever test
+      // runs next. A latent harness flaw; it surfaced once a neighbouring test
+      // started driving real navigation.
       final container = ProviderContainer();
-      addTearDown(container.dispose);
       final router = container.read(routerProvider);
 
       await tester.pumpWidget(

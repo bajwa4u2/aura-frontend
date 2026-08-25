@@ -58,54 +58,102 @@ class ReturnAffordanceScope extends InheritedWidget {
 }
 
 /// Frames a routed surface with the governed return affordance.
-class ReturnPathFrame extends ConsumerWidget {
+class ReturnPathFrame extends ConsumerStatefulWidget {
   const ReturnPathFrame({
     super.key,
     required this.path,
     required this.child,
   });
 
+  /// The path the SHELL resolved. Kept because the shell already computes it,
+  /// but the LIVE location below is what the affordance is built from.
   final String path;
   final Widget child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (ReturnPathAuthority.isProtectedDomain(path)) return child;
+  ConsumerState<ReturnPathFrame> createState() => _ReturnPathFrameState();
+}
 
+class _ReturnPathFrameState extends ConsumerState<ReturnPathFrame> {
+  GoRouter? _router;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final router = GoRouter.of(context);
+    if (identical(router, _router)) return;
+    _router?.routeInformationProvider.removeListener(_onRouteChanged);
+    _router = router;
+    router.routeInformationProvider.addListener(_onRouteChanged);
+  }
+
+  @override
+  void dispose() {
+    _router?.routeInformationProvider.removeListener(_onRouteChanged);
+    super.dispose();
+  }
+
+  /// A SHELL-INTERNAL PUSH DOES NOT REBUILD THE SHELL.
+  ///
+  /// Found on a physical Pixel, 2026-08-25, by the one test only a handset can
+  /// run: Android system back returned to the real predecessor while the
+  /// visible control sent the person to the public root. Two mechanisms
+  /// disagreeing means one of them is lying about where the person is.
+  ///
+  /// Pushing a destination inside the SAME shell adds a page to the shell's
+  /// navigator without re-invoking the shell's builder, so this frame kept the
+  /// previous destination's answer. Listening to the route information
+  /// provider fixes the location — but `canPop` is STILL false at that instant
+  /// and only becomes true a frame later, once the delegate's match list has
+  /// settled. Measured, both times.
+  ///
+  /// So: rebuild on the notification, and again after the frame.
+  void _onRouteChanged() {
+    if (!mounted) return;
+    setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final router = GoRouter.of(context);
     final store = ref.watch(tokenStoreProvider);
     final isAuthed =
         store.isLoaded && (store.accessToken?.trim().isNotEmpty ?? false);
 
-    final registry = RouteRegistry.fromRoutes(
-      GoRouter.of(context).configuration.routes,
-    );
+    final location = router.routeInformationProvider.value.uri.path;
+    if (ReturnPathAuthority.isProtectedDomain(location)) return widget.child;
 
+    final registry = RouteRegistry.fromRoutes(router.configuration.routes);
     final action = ReturnPathAuthority.resolve(
-      path: path,
-      // The router's own answer about whether a predecessor exists. This is
-      // the whole of the entry-mode distinction — normal in-app entry vs
-      // direct/deep-link entry — and it is asked, never guessed.
-      canPop: GoRouter.of(context).canPop(),
+      path: location,
+      // The router's own answer about whether a predecessor exists — the whole
+      // of the entry-mode distinction, asked and never guessed.
+      canPop: router.canPop(),
       isAuthed: isAuthed,
       exists: registry.exists,
     );
 
-    if (!action.hasAffordance) return child;
+    if (!action.hasAffordance) return widget.child;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _ReturnBar(action: action),
-        Expanded(child: child),
+        _ReturnBar(action: action, isAuthed: isAuthed),
+        Expanded(child: widget.child),
       ],
     );
   }
 }
 
 class _ReturnBar extends StatelessWidget {
-  const _ReturnBar({required this.action});
+  const _ReturnBar({required this.action, required this.isAuthed});
 
+  /// What was true when this was drawn. Used for the LABEL.
   final ReturnAction action;
+  final bool isAuthed;
 
   @override
   Widget build(BuildContext context) {
@@ -140,7 +188,11 @@ class _ReturnBar extends StatelessWidget {
             // exactly that — the control rendered, the tap missed, and it
             // looked like the return did nothing.
             key: returnAffordanceKey,
-            onTap: () => performReturn(context, action),
+            // Re-resolved at TAP time, never from what was drawn. The
+            // label can lag a frame behind `canPop`; the ACTION must not,
+            // because that is the difference between unwinding one step and
+            // being sent to the root.
+            onTap: () => performReturn(context, _live(context, isAuthed) ?? action),
             borderRadius: BorderRadius.circular(8),
             child: Padding(
               padding: const EdgeInsets.symmetric(
@@ -165,6 +217,17 @@ class _ReturnBar extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Resolve the return action from the router AS IT IS NOW.
+ReturnAction? _live(BuildContext context, bool isAuthed) {
+  final router = GoRouter.of(context);
+  return ReturnPathAuthority.resolve(
+    path: router.routeInformationProvider.value.uri.path,
+    canPop: router.canPop(),
+    isAuthed: isAuthed,
+    exists: RouteRegistry.fromRoutes(router.configuration.routes).exists,
+  );
 }
 
 /// The governed return control. One per routed surface, by construction.
