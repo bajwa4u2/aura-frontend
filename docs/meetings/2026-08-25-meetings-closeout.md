@@ -234,3 +234,27 @@ defect, and asserts both directions so it stays evidence.
 
 The dialog also said "cancelled for the host and guest" for a meeting that had
 neither; corrected.
+
+### And a cancelled meeting was still offering an aftermath
+
+Once the certification meeting was cancelled, the record still offered
+"Shared in meeting" — *"No files were shared during this meeting."* — plus
+"Recording", a workroom, and Add link / Upload file affordances, for something
+that never took place.
+
+The aftermath was gated on `meeting.isEnded`, which is true for `CANCELLED`
+too. The lifecycle authority already answers this question and its own doctrine
+says offering a summary for a cancelled meeting is offering a blank page. The
+gate now asks it, and `hasAftermath` is mirrored onto `MeetingPhase` so a
+surface holding only a phase can ask the same authority rather than restating
+the rule.
+
+## Cleanup
+
+`TEMPORARY_MEETING_CLEANUP = DONE`, through the product's own canonical
+mechanism — once that mechanism worked. No direct database deletion was
+performed at any point.
+
+The cancelled record reads correctly: **Cancelled**, *"This meeting was
+cancelled"*, attendance *"Did not join"*, start/join controls withdrawn, and
+the landing returned to **Nothing scheduled**.
