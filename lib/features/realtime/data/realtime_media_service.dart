@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+import '../../../core/media/device_permission.dart';
+
 class RealtimeMediaSnapshot {
   const RealtimeMediaSnapshot({
     required this.ready,
@@ -19,6 +21,7 @@ class RealtimeMediaSnapshot {
     this.remoteVideoRendererAttached = false,
     this.cameraUnavailable = false,
     this.speakerphoneEnabled = false,
+    this.readiness = MediaReadiness.unchecked,
   });
 
   final bool ready;
@@ -29,7 +32,22 @@ class RealtimeMediaSnapshot {
   final bool speakerphoneEnabled;
   final RTCVideoRenderer? localRenderer;
   final Map<String, RTCVideoRenderer> remoteRenderers;
+  /// A sentence, for surfaces that only need to say something went wrong.
+  ///
+  /// Derived from [readiness] rather than hand-written at the failure site —
+  /// the engine used to compose its own copy here and told Windows, Android
+  /// and iOS people to check "this browser".
   final String? error;
+
+  /// WHAT ACTUALLY HAPPENED, classified.
+  ///
+  /// The canonical authority (`core/media/device_permission.dart`) existed
+  /// before this chapter but was consumed by exactly one Meetings widget; the
+  /// engine itself collapsed permission denial, a busy camera, a missing
+  /// camera and an insecure origin into a single string. Surfaces can now ask
+  /// what the actual state is and offer the recovery that matches it.
+  final MediaReadiness readiness;
+
   final bool isScreenSharing;
   // Video capture failed but audio succeeded — camera busy in another
   // app/browser. Audio still publishes; UI shows an explicit message.
@@ -123,6 +141,10 @@ class RealtimeMediaService {
   bool _speakerphoneEnabled = false;
   bool _isScreenSharing = false;
   String? _error;
+
+  /// Classified device readiness — the engine's answer to "why not", kept
+  /// beside the sentence rather than baked into it.
+  MediaReadiness _readiness = MediaReadiness.unchecked;
   bool _disposed = false;
   // Preferred input/output devices (chosen in pre-join or the in-meeting device
   // menu). Honoured by acquisition constraints and by the live-switch methods.
@@ -167,6 +189,7 @@ class RealtimeMediaService {
         localRenderer: _localRenderer,
         remoteRenderers: Map<String, RTCVideoRenderer>.from(_remoteRenderers),
         error: _error,
+        readiness: _readiness,
         isScreenSharing: _isScreenSharing,
         sentTrackKinds: List<String>.from(_lastSentTrackKinds),
         onTrackAudioSeen: _onTrackAudioSeen,
@@ -247,6 +270,14 @@ class RealtimeMediaService {
 
     MediaStream? stream;
     var gotVideo = video;
+    // What the platform actually said, per device. Starts as "not asked" so a
+    // device we never requested is never reported as refused.
+    var micState = audio
+        ? DevicePermissionState.granted
+        : DevicePermissionState.notRequested;
+    var cameraState = video
+        ? DevicePermissionState.granted
+        : DevicePermissionState.notRequested;
     try {
       stream = await navigator.mediaDevices.getUserMedia(constraints(video));
     } catch (error) {
@@ -259,27 +290,53 @@ class RealtimeMediaService {
       debugPrint(
         '[rtc-media] getUserMedia FAILED audio=$audio video=$video err=$error',
       );
+      // CLASSIFY, do not narrate. `NotAllowedError` is a refusal;
+      // `NotReadableError` is a device someone else already has;
+      // `NotFoundError` is no device at all; `SecurityError` is policy. They
+      // need three different things from the person and one of them needs
+      // nothing at all.
+      final combined = classifyMediaError(error, kind: MediaDeviceKind.camera);
+      if (video) cameraState = combined;
+      if (audio) micState = combined;
       if (video && audio) {
         try {
           stream = await navigator.mediaDevices.getUserMedia(constraints(false));
           gotVideo = false;
           _cameraUnavailable = true;
+          // Audio came back, so whatever went wrong was the camera's alone.
+          micState = DevicePermissionState.granted;
+          cameraState = classifyMediaError(error, kind: MediaDeviceKind.camera);
           debugPrint(
-            '[rtc-media] degraded to AUDIO-ONLY (camera busy)'
+            '[rtc-media] degraded to AUDIO-ONLY camera=$cameraState'
             ' aTracks=${stream.getAudioTracks().length}',
           );
         } catch (audioError) {
-          debugPrint('[rtc-media] audio-only ALSO failed err=$audioError');
+          micState =
+              classifyMediaError(audioError, kind: MediaDeviceKind.microphone);
+          debugPrint('[rtc-media] audio-only ALSO failed mic=$micState');
         }
       }
     }
+
+    _readiness = MediaReadiness(
+      microphone: DeviceReadiness(
+        kind: MediaDeviceKind.microphone,
+        state: micState,
+      ),
+      camera: DeviceReadiness(kind: MediaDeviceKind.camera, state: cameraState),
+    );
 
     if (stream == null) {
       // Nothing acquired at all — surface the error but do NOT rethrow, so the
       // caller stays joined (they can retry via the camera/mic toggle).
       await renderer.dispose();
-      _error = 'Camera and microphone are unavailable. '
-          'Another app or browser may be using them.';
+      // The sentence now comes from the classification, so it is
+      // platform-correct by construction rather than by remembering to write
+      // it correctly at each failure site.
+      final concern = _readiness.primaryConcern;
+      _error = concern == null
+          ? 'Your camera and microphone could not be started.'
+          : concern.summary;
       _ready = false;
       _publish();
       return;
@@ -291,10 +348,9 @@ class RealtimeMediaService {
     _ready = true;
     _micEnabled = audio && stream.getAudioTracks().isNotEmpty;
     _cameraEnabled = gotVideo && stream.getVideoTracks().isNotEmpty;
-    _error = _cameraUnavailable
-        ? 'Camera unavailable in this browser. '
-            'Another browser or app may be using it — joined with audio only.'
-        : null;
+    // Joined, but possibly without the camera. Say which, in the words that
+    // match what actually happened on THIS platform.
+    _error = _cameraUnavailable ? _readiness.camera.summary : null;
     _publish();
   }
 

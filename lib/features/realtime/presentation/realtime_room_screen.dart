@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+import '../../../core/media/media_control_labels.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
@@ -2792,7 +2793,9 @@ class _CallControlDock extends StatelessWidget {
             if (showPublishControls) ...[
               _DockButton(
                 icon: micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
-                label: micOn ? 'Mute' : 'Unmute',
+                label: MediaControlLabels.microphoneAction(on: micOn),
+                semanticLabel:
+                    MediaControlLabels.microphoneSemantics(on: micOn),
                 active: micOn,
                 warning: !micOn,
                 onPressed: onToggleMic,
@@ -2806,7 +2809,12 @@ class _CallControlDock extends StatelessWidget {
                 icon: cameraOn
                     ? Icons.videocam_rounded
                     : Icons.videocam_off_rounded,
-                label: cameraOn ? 'Camera' : 'Camera off',
+                // WAS: cameraOn ? 'Camera' : 'Camera off' — the ON state
+                // named the thing, not the state or the effect, while the
+                // microphone beside it named the action.
+                label: MediaControlLabels.cameraAction(on: cameraOn),
+                semanticLabel:
+                    MediaControlLabels.cameraSemantics(on: cameraOn),
                 active: cameraOn,
                 warning: !cameraOn,
                 onPressed: onToggleCamera,
@@ -2931,7 +2939,8 @@ class _MeetingControlDock extends StatelessWidget {
         children: [
           _DockButton(
             icon: micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
-            label: micOn ? 'Mute' : 'Unmute',
+            label: MediaControlLabels.microphoneAction(on: micOn),
+            semanticLabel: MediaControlLabels.microphoneSemantics(on: micOn),
             active: micOn,
             warning: !micOn,
             onPressed: onToggleMic,
@@ -2942,7 +2951,9 @@ class _MeetingControlDock extends StatelessWidget {
               icon: cameraOn
                   ? Icons.videocam_rounded
                   : Icons.videocam_off_rounded,
-              label: cameraOn ? 'Camera' : 'Camera off',
+              label: MediaControlLabels.cameraAction(on: cameraOn),
+              semanticLabel:
+                  MediaControlLabels.cameraSemantics(on: cameraOn),
               active: cameraOn,
               warning: !cameraOn,
               onPressed: onToggleCamera,
@@ -2968,6 +2979,7 @@ class _DockButton extends StatelessWidget {
     this.active = false,
     this.warning = false,
     this.badge,
+    this.semanticLabel,
   });
 
   final IconData icon;
@@ -2976,6 +2988,11 @@ class _DockButton extends StatelessWidget {
   final bool active;
   final bool warning;
   final int? badge;
+
+  /// What a screen reader hears. These controls carried NO semantics at all,
+  /// so the visible word was the whole announcement: "Camera" — no state, no
+  /// effect. Colour and icon carried the rest, which section 34 forbids.
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -2990,7 +3007,15 @@ class _DockButton extends StatelessWidget {
         ? AuraSurface.coRose
         : AuraSurface.muted;
 
-    return Column(
+    // ONE announcement carrying the thing, its state and its effect.
+    // ExcludeSemantics stops the visible word being read a second time
+    // as a bare noun with no state.
+    return Semantics(
+      button: true,
+      toggled: active,
+      label: semanticLabel ?? label,
+      child: ExcludeSemantics(
+        child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Stack(
@@ -3053,6 +3078,8 @@ class _DockButton extends StatelessWidget {
           ),
         ),
       ],
+        ),
+      ),
     );
   }
 }

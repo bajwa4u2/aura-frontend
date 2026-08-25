@@ -55,6 +55,12 @@ dependencies:
   cached_network_image: ^3.3.1
   video_player: ^2.11.1
   flutter_webrtc: ^1.4.1
+  # Native permission STATUS and settings recovery. flutter_webrtc can only
+  # trigger the OS prompt as a side effect of getUserMedia; it cannot ask what
+  # the current state is, distinguish a permanent denial, or send someone to
+  # the place that fixes it. Android/iOS only — web and desktop infer state
+  # from getUserMedia, see core/media/media_permission_service.dart.
+  permission_handler: ^11.3.1
   # Keep the device screen awake while in a live meeting/call room.
   wakelock_plus: ^1.2.8
 

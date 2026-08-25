@@ -12,6 +12,29 @@
 
     <!-- Camera (image_picker, WebRTC video calls) -->
     <uses-permission android:name="android.permission.CAMERA" />
+
+    <!--
+      Bluetooth audio routing for calls. Without BLUETOOTH_CONNECT on
+      Android 12+ (API 31) the app cannot route call audio to a paired headset
+      or read its name, so a person wearing earbuds hears the call on the
+      speaker with no explanation. `neverForLocation` because Aura does not
+      derive location from Bluetooth and must not appear to.
+    -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"
+        android:usesPermissionFlags="neverForLocation" />
+
+    <!--
+      A call that keeps running when the app is backgrounded needs a
+      foreground service, and from Android 14 (API 34) it must declare the
+      SPECIFIC type it uses. Without these the OS may kill capture the moment
+      the person switches apps mid-call.
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+
+    <!-- Keeps the connection alive while the screen is off during a call. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Camera is optional: app works on camera-less devices -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />

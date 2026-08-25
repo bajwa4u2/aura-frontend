@@ -101,6 +101,16 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
+		<!--
+		  A/V reconstruction, iOS platform analysis (section 4). Without
+		  `audio` an iOS call goes silent the moment the app leaves the
+		  foreground — the person locks their screen mid-call and the other
+		  side simply stops hearing them, with nothing said. This is declared
+		  now because it is a build-time capability the implementation
+		  requires; it remains UNCERTIFIED until a real device or TestFlight
+		  run exercises it. See docs/av/AV_PRODUCT_CONTRACT.md.
+		-->
+		<string>audio</string>
 	</array>
 
 	<!--

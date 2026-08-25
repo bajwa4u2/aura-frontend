@@ -8,6 +8,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   firebase_core
   flutter_webrtc
   pasteboard
+  permission_handler_windows
   record_windows
   syncfusion_pdfviewer_windows
   url_launcher_windows

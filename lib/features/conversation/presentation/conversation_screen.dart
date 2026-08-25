@@ -16,6 +16,7 @@ import 'package:record/record.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../../core/media/call_preflight_sheet.dart';
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/media/aura_attachment_card.dart';
 import '../../../core/media/aura_voice_player.dart';
@@ -905,6 +906,36 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   /// experience through the certified call-notification pipeline.
   Future<void> _startCall(String kind) async {
     if (_startingCall) return;
+
+    // READINESS BEFORE THE RING — A/V reconstruction section 6.
+    //
+    // This used to create the session and push straight into the room, so the
+    // OS permission prompt arrived mid-join with nothing explaining it, and
+    // the other person was rung before the caller knew whether they even had
+    // a working microphone. The ask now happens first, in front of the call,
+    // and the session is not created unless the person proceeds.
+    final video = kind == 'VIDEO';
+    final conversation =
+        ref.read(conversationProvider(widget.conversationId)).valueOrNull;
+    final myUserId = ref.read(myUserIdProvider);
+    final who = conversation == null
+        ? null
+        : conversationDisplayName(conversation, myUserId);
+
+    final proceed = await CallPreflightSheet.show(
+      context,
+      // Governed identity, never "User" or "Someone" — section 13.
+      title: who == null || who.trim().isEmpty
+          ? (video ? 'Start a video call' : 'Start a call')
+          : (video ? 'Video call $who' : 'Call $who'),
+      subtitle: video
+          ? 'They will be able to see and hear you.'
+          : 'They will be able to hear you.',
+      wantsCamera: video,
+      confirmLabel: video ? 'Start video call' : 'Start call',
+    );
+    if (proceed != true || !mounted) return;
+
     setState(() => _startingCall = true);
     try {
       final sessionId = await ref

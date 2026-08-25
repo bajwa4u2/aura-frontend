@@ -85,7 +85,14 @@ void main() {
         if (window.any((l) => l.contains('isScrollControlled: true'))) full++;
       }
     }
-    expect(full, 15,
+    // 16th member added 2026-08-25 by the A/V chapter:
+    // `core/media/call_preflight_sheet.dart`. Reclassified against §6 rather
+    // than having the number bumped: it BEHAVES as a sheet — transient,
+    // dismissible via "Not now", returns a value to its caller, and traps
+    // nothing. It is deliberately not a route, because a permission preflight
+    // has no addressable identity: a URL that reopened it would be asking for
+    // devices with no call behind the request.
+    expect(full, 16,
         reason: 'the full-height sheet population changed — reclassify it '
             'against §6 (behaviour, not dimensions) rather than adjusting '
             'this number');

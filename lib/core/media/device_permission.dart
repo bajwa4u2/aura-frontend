@@ -49,6 +49,19 @@ enum DevicePermissionState {
 
   /// The hardware is there and something else has it.
   inUse,
+
+  /// Refused, and the platform will not ask again. Distinct from [denied]
+  /// because the recovery differs: a plain denial may still re-prompt, a
+  /// permanent one never will, and the ONLY thing that fixes it is a trip to
+  /// settings. Collapsing the two produces an affordance that silently does
+  /// nothing. Only Android and iOS can report this; see
+  /// `MediaPermissionService.hasQueryablePermissions`.
+  permanentlyDenied,
+
+  /// We asked and could not tell. Never presented as a denial — accusing
+  /// somebody of refusing access they never refused is worse than admitting
+  /// the check did not work.
+  unknown,
 }
 
 /// Which device we are talking about.
@@ -75,7 +88,15 @@ class DeviceReadiness {
   /// the generic-retry defect §XXXI names.
   bool get canRetryInApp =>
       state == DevicePermissionState.notRequested ||
-      state == DevicePermissionState.inUse;
+      state == DevicePermissionState.inUse ||
+      state == DevicePermissionState.unknown;
+
+  /// Whether the only remaining fix is outside Aura, in platform settings.
+  /// Surfaces use this to decide whether to offer an "Open settings" action —
+  /// and must not offer one where the platform has no such place.
+  bool get needsSettingsTrip =>
+      state == DevicePermissionState.permanentlyDenied ||
+      state == DevicePermissionState.denied;
 
   String get deviceLabel =>
       kind == MediaDeviceKind.camera ? 'Camera' : 'Microphone';
@@ -94,6 +115,10 @@ class DeviceReadiness {
         DevicePermissionState.unavailable => 'No $_lowerLabel found',
         DevicePermissionState.inUse =>
           'Your $_lowerLabel is being used by another app',
+        DevicePermissionState.permanentlyDenied =>
+          '$deviceLabel access is turned off for Aura',
+        DevicePermissionState.unknown =>
+          '$deviceLabel could not be checked',
       };
 
   /// What to do about it — platform-correct, and specific enough to act on.
@@ -113,6 +138,11 @@ class DeviceReadiness {
               'your other devices are working.',
         DevicePermissionState.inUse =>
           'Close the other app using your $_lowerLabel, then try again.',
+        // The one case where a settings trip is the ONLY thing that works,
+        // so it is stated as the action rather than as advice.
+        DevicePermissionState.permanentlyDenied => _deniedRecovery,
+        DevicePermissionState.unknown =>
+          'You can try again, or join with your $_lowerLabel off.',
       };
 
   /// The denial instruction is the one that was most wrong before: it named

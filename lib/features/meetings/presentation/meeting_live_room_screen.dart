@@ -1627,20 +1627,41 @@ class _CameraUnavailableBanner extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: const Color(0xFFF59E0B), width: 1),
           ),
-          child: const Row(
+          // WHAT ACTUALLY HAPPENED, not a guess. This banner asserted the
+          // camera was busy "in this browser" — on Windows, Android and iOS,
+          // where there is no browser, and regardless of whether the real
+          // cause was a refusal, a missing camera, or device policy.
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.videocam_off, color: Color(0xFFFDE68A), size: 18),
-              SizedBox(width: 10),
+              const Icon(Icons.videocam_off,
+                  color: Color(0xFFFDE68A), size: 18),
+              const SizedBox(width: 10),
               Flexible(
-                child: Text(
-                  'Camera unavailable in this browser. Another browser or app '
-                  'may be using it — you joined with audio only.',
-                  style: TextStyle(
-                    color: Color(0xFFFDE68A),
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${s.readiness.camera.summary} — you joined with audio '
+                      'only.',
+                      style: const TextStyle(
+                        color: Color(0xFFFDE68A),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (s.readiness.camera.recovery != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        s.readiness.camera.recovery!,
+                        style: const TextStyle(
+                          color: Color(0xFFFDE68A),
+                          fontSize: 11.5,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ],
