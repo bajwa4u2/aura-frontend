@@ -94,11 +94,13 @@ void main() {
       }
       expect(
         owner(tester, find.text('When')),
-        isNot(same(owner(tester, find.text('Agenda or description')))),
+        isNot(same(owner(tester, find.text('Details')))),
       );
       final before = tester.getTopLeft(find.text('When'));
-      await tester.drag(
-          find.text('Agenda or description'), const Offset(0, -400));
+      // Drag a heading, not the agenda placeholder: that placeholder's centre
+      // is covered by the field's RenderEditable, so the gesture reported a
+      // hit-test miss on both platforms even though it landed.
+      await tester.drag(find.text('Details'), const Offset(0, -400));
       await tester.pumpAndSettle();
       expect(tester.getTopLeft(find.text('When')), before);
       expect(find.text('External invitees'), findsOneWidget);

@@ -446,21 +446,39 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
   }
 
   Future<void> _cancelMeeting() async {
+    // "the host and guest" was said even for a meeting with neither.
+    final hasOtherParticipants = meeting.participants.length > 1;
+    // POP THE DIALOG, NOT THE SCREEN.
+    //
+    // This builder discarded its own context - `(_) =>` - so both buttons
+    // called Navigator.pop with the SCREEN's context. showDialog pushes onto
+    // the root navigator, while this screen lives inside go_router's shell
+    // navigator, so those two contexts resolve to different Navigators: the
+    // buttons popped the meeting route out from under the dialog instead of
+    // closing it.
+    //
+    // Measured in production 2026-08-25, three attempts: the dialog stayed
+    // open, the future never completed, POST /meetings/:id/cancel was never
+    // issued (confirmed against a working network control), and the meeting
+    // stayed SCHEDULED. Cancelling a meeting was not possible from the
+    // released client.
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Cancel meeting?'),
-        content: const Text(
-          'The meeting will be cancelled for the host and guest.',
+        content: Text(
+          hasOtherParticipants
+              ? 'Everyone invited is told it will not happen.'
+              : 'This meeting will be cancelled.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Keep meeting'),
           ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text('Cancel meeting'),
           ),
         ],
