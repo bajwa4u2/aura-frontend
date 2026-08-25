@@ -82,14 +82,24 @@ class _ReturnPathFrameState extends ConsumerState<ReturnPathFrame> {
     super.didChangeDependencies();
     final router = GoRouter.of(context);
     if (identical(router, _router)) return;
-    _router?.routeInformationProvider.removeListener(_onRouteChanged);
+    _detach();
     _router = router;
+    // BOTH. The information provider reports a location change; the delegate
+    // reports a stack change. A `pop` back to a root moved the delegate
+    // without the provider, so Create kept rendering the composer's Cancel
+    // after the composer had been left — seen live on 2026-08-25.
     router.routeInformationProvider.addListener(_onRouteChanged);
+    router.routerDelegate.addListener(_onRouteChanged);
+  }
+
+  void _detach() {
+    _router?.routeInformationProvider.removeListener(_onRouteChanged);
+    _router?.routerDelegate.removeListener(_onRouteChanged);
   }
 
   @override
   void dispose() {
-    _router?.routeInformationProvider.removeListener(_onRouteChanged);
+    _detach();
     super.dispose();
   }
 

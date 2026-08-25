@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:aura/core/auth/session_bootstrap.dart';
 import 'package:aura/core/auth/session_providers.dart';
 import 'package:aura/core/navigation/return_path_authority.dart';
+import 'package:aura/core/navigation/return_path_frame.dart';
 import 'package:aura/core/navigation/route_registry.dart';
 import 'package:aura/router.dart';
 
@@ -226,6 +227,76 @@ void main() {
       ]) {
         expect(ReturnPathAuthority.isProtectedDomain(p), isFalse, reason: p);
       }
+    });
+  });
+
+  group('the affordance never outlives the destination it was drawn for', () {
+    testWidgets('returning to a ROOT clears the control', (tester) async {
+      // Seen live on 2026-08-25: cancelling the composer returned to Create
+      // correctly, and Create kept rendering the composer's "Cancel". A root
+      // must show nothing, and a control that outlives its destination is
+      // pointing somewhere the person is no longer standing.
+      //
+      // The cause was the mirror of the Android finding: a `pop` moves the
+      // DELEGATE without the route information provider, so a frame listening
+      // to only one of them never hears about it.
+      tester.view.physicalSize = const Size(1600, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final c = settled();
+      final router = c.read(routerProvider);
+      router.go('/mission');
+      await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp.router(routerConfig: router),
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+
+      router.push('/terms');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(find.byKey(returnAffordanceKey), findsOneWidget);
+
+      router.pop();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+
+      // /mission is not a root, so it still offers one — but it must be
+      // /mission's, resolved now, not the one drawn for /terms.
+      final onMission = tester.widgetList(find.byKey(returnAffordanceKey));
+      expect(onMission.length, 1,
+          reason: 'the control did not survive the pop as exactly one');
+    });
+
+    testWidgets('a root shows none even after returning to it', (tester) async {
+      tester.view.physicalSize = const Size(1600, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final c = settled();
+      final router = c.read(routerProvider);
+      router.go('/');
+      await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp.router(routerConfig: router),
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(find.byKey(returnAffordanceKey), findsNothing);
+
+      router.push('/terms');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(find.byKey(returnAffordanceKey), findsOneWidget);
+
+      router.pop();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(find.byKey(returnAffordanceKey), findsNothing,
+          reason: 'a root kept the control drawn for the destination that was '
+              'just left');
     });
   });
 
