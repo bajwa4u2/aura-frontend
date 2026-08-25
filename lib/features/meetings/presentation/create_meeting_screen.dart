@@ -434,9 +434,15 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
           orElse: () => const <_InstitutionMember>[],
         ) ??
         const <_InstitutionMember>[];
-    final selectedSummary = selectedMembers.isEmpty
-        ? 'No internal members selected'
-        : selectedMembers.map((member) => member.displayLabel).join(', ');
+    // "No internal members selected" was shown even while All active members
+    // was ON, so the form contradicted itself: the meeting had everyone, and
+    // the line underneath said nobody. Picking members individually is not
+    // what is happening in that mode, so the line has nothing to report.
+    final selectedSummary = _includeAllMembers || _hostOnly
+        ? ''
+        : selectedMembers.isEmpty
+            ? 'No internal members selected'
+            : selectedMembers.map((member) => member.displayLabel).join(', ');
 
     // R-4: the way out is the shared one. Creating a meeting is a FLOW, so
     // the governed affordance says Cancel rather than Back — a distinction

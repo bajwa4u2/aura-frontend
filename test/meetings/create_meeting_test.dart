@@ -142,6 +142,20 @@ void main() {
     });
   });
 
+  group('the form does not contradict itself', () {
+    testWidgets('it does not say "no members selected" while ALL are included',
+        (tester) async {
+      // Seen live: "All active members" ON, and the line directly beneath it
+      // read "No internal members selected" — the meeting had everyone and
+      // the form said nobody.
+      await open(tester);
+      expect(find.text('No internal members selected'), findsOneWidget);
+      await tester.tap(find.text('All active members'));
+      await tester.pump();
+      expect(find.text('No internal members selected'), findsNothing);
+    });
+  });
+
   group('the screen is about creating a meeting', () {
     testWidgets('no booking-page card sits between the form and the button',
         (tester) async {
