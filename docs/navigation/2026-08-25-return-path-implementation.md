@@ -138,8 +138,33 @@ institution, which is §11's requirement.
 |---|---|---|
 | **Windows desktop (native)** | **PASS** | `flutter test integration_test -d windows`, 6/6. `/terms` entered directly presents the control, the control is tapped, the client moves. No browser Back exists here — that control IS the only way out |
 | **Web (live production)** | **PASS** | `/privacy` → "← Back to Home", clicked, landed on Home. `/institution/aura-platform-llc/members` → "← Back to Institution". `/messages/c/:id` → "← Back to Messages". `/home` → no control |
-| **Android (physical)** | **NOT CERTIFIED** | no device connected during this work. Shared code is certified by the widget suite at 1080×2400 |
+| **Android (physical Pixel 9a)** | **PASS** | `flutter test integration_test -d 53061JEBF08485`, **15/15**. Visible control present and effective; a root offers none; exactly one control per surface; **system Back unwinds the real journey and agrees with the visible control** |
+| **Signed-in native (Windows, real session)** | **PASS** | cold `/institution/aura-platform-llc/spaces` → returned to `/institution/aura-platform-llc/explore`; an in-app step into a Space unwound to `/institution/aura-platform-llc/spaces`. Both printed EXERCISED rather than passing by early return |
 | **iOS** | **NOT CERTIFIED** | structurally unverifiable on this host |
+
+### The defect only a handset could find
+
+Android system back returned to the real predecessor while the visible control
+sent the person to the public root. Two mechanisms disagreeing means one of
+them is lying about where the person is — and no browser or desktop harness can
+test this, because neither has a system back gesture.
+
+Root cause, measured in two steps:
+
+1. **A shell-internal push does not rebuild the shell.** Pushing a destination
+   inside the SAME shell adds a page to the shell's navigator without
+   re-invoking its builder, so the frame kept the previous destination's
+   answer — the control read "Back to Aura" for `/mission` while the person
+   stood on `/terms`.
+2. **`canPop` lags the location by one frame.** Listening to the route
+   information provider fixed the location, and a probe still printed
+   `FRAMEBUILD loc=/terms canPop=false` against a router that answered `true`
+   two pumps later.
+
+The frame now rebuilds on the notification **and** again after the frame, and
+the **action is re-resolved at tap time** rather than taken from what was drawn.
+The label may lag a frame; the action may not, because that is the difference
+between unwinding one step and being sent to the root.
 
 ### Regression protection (§4, §17)
 
@@ -210,3 +235,13 @@ finding**, returned for separate authorization.
 A pre-existing layout overflow in the public home hero pill (76px at 800 wide,
 1px at 1600) blocked every test that renders a real destination. Fixed with a
 `Flexible`, and recorded here because it was not part of the authorized scope.
+
+Two further pre-existing conditions were worked around rather than fixed, and
+are reported rather than left silent:
+
+* the **institution rail** overflows by 15px at the default test window
+  (`rail_modules.dart:1791`). The signed-in journey runs at a workspace-sized
+  surface instead. Not a navigation defect; not in scope.
+* the Windows harness disposed its provider container while its own dio work
+  was in flight, throwing late and against whichever test ran next. Latent
+  until a neighbouring test began driving real navigation; fixed.
