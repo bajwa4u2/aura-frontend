@@ -60,7 +60,7 @@ would traverse it, and the Android-specific permission recovery string.
 
 ## Why web is `NOT_EXECUTED`
 
-Two honest reasons, and neither is "it probably works":
+One reason, and it is not "it probably works":
 
 1. **The client harness could not load the suite.** `flutter test --platform
    chrome` eventually failed with:
@@ -73,17 +73,19 @@ Two honest reasons, and neither is "it probably works":
    exercised, passed or failed. This is an environment failure in the browser
    test runner on this host, not a result — and it is recorded as one rather
    than as a hang, which is what it looked like while it was still running.
-2. **The backend half is not deployed.** R-2's migration and R-3's endpoint
-   live in the working tree, uncommitted. Exercising the reconstructed
-   lifecycle against production would certify the *previous* build, which would
-   be worse than certifying nothing.
+A second reason applied when this was first written and **no longer does**: the
+backend half was uncommitted, so exercising the lifecycle against production
+would have certified the previous build. Both repos shipped on 2026-08-25 and
+the migration is verified in production, so that obstacle is gone. Web
+behavioural certification is now blocked only by the harness above.
 
 What web evidence there IS: `flutter build web` **succeeds** on the
 reconstruction. That proves it compiles and links for the web target — no
 platform-conditional code broke, no import is native-only — and it is worth
 recording. It is not behavioural certification and is not offered as such.
 
-Web behavioural certification is therefore **owed after deployment**, and is
+Web behavioural certification is therefore **owed now**, on a host where the
+browser test runner works or by driving the deployed site directly. It is
 listed in `docs/NEXT_WORK.md` rather than quietly assumed.
 
 ## iOS implementation thesis
