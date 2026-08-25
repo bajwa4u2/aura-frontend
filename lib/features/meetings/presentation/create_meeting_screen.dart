@@ -3,12 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import '../../../config.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/utils/local_timezone.dart';
 import '../../institutions/data/institutions_repository.dart';
 import '../../institutions/domain/institution.dart';
@@ -16,6 +15,7 @@ import '../application/meetings_provider.dart';
 import '../domain/availability_profile.dart';
 import '../domain/meeting_identity.dart';
 import '../../../core/identity/person_identity_model.dart';
+import 'widgets/meeting_surfaces.dart';
 
 final _institutionDetailProvider =
     FutureProvider.family<Institution, String>((ref, institutionId) {
@@ -106,12 +106,25 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
     _scheduledAt = _startNow
         ? null
         : DateTime.now().add(const Duration(hours: 1));
-    _titleCtrl.text = 'Meeting';
+    // NO DEFAULT TITLE. This field was pre-filled with the literal word
+    // "Meeting", so anyone who did not overwrite it created a meeting called
+    // Meeting - and the production database has several. A placeholder asks
+    // the question instead of answering it badly.
+    _titleCtrl.text = '';
     _agendaCtrl.text = '';
+    // The summary names the meeting as you name it. Without this the panel
+    // read "Untitled meeting" until some unrelated control forced a rebuild -
+    // which was survivable only while the title arrived pre-filled.
+    _titleCtrl.addListener(_onTitleChanged);
+  }
+
+  void _onTitleChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _titleCtrl.removeListener(_onTitleChanged);
     _titleCtrl.dispose();
     _agendaCtrl.dispose();
     _memberSearchCtrl.dispose();
@@ -441,7 +454,7 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
                 children: [
                   const SizedBox(height: AuraSpace.s6),
                   Text(
-                    'Set the title, participants, agenda, and timing. Internal participants are bound at creation.',
+                    'Give the meeting a purpose, decide who is in it, and choose when.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: const Color(0xFF9CA3AF),
                         ),
@@ -701,11 +714,6 @@ class _CreationForm extends StatelessWidget {
           member.title.toLowerCase().contains(query) ||
           member.role.toLowerCase().contains(query);
     }).toList(growable: false);
-    final currentBookingProfile = _pickBookingProfile(
-      bookingProfiles,
-      bookingIdentity?.auraUserId,
-    );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -718,8 +726,14 @@ class _CreationForm extends StatelessWidget {
               children: [
                 TextField(
                   controller: titleCtrl,
+                  textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(
                     labelText: 'Meeting title',
+                    // This field used to arrive pre-filled with the word
+                    // "Meeting". A placeholder asks; a default answers, and it
+                    // answered wrong for everyone who did not notice.
+                    hintText: 'What is this meeting for?',
+                    helperText: 'Everyone invited sees this first.',
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -829,11 +843,10 @@ class _CreationForm extends StatelessWidget {
                     SizedBox(
                       height: 220,
                       child: membersAsync!.when(
-                        loading: () => const Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                        error: (e, _) => const Center(
-                          child: Text('Could not load members'),
+                        loading: () => const MeetingSkeletonList(count: 2),
+                        error: (e, _) => const MeetingError(
+                          what: 'the member list',
+                          technical: null,
                         ),
                         data: (_) => ListView.separated(
                           itemCount: filteredMembers.length,
@@ -906,14 +919,16 @@ class _CreationForm extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: AuraSpace.s10),
-                Row(
+                // Wrap, not Row: side by side these two overflow the card on
+                // a narrow window, which is how the form is most often used.
+                Wrap(
+                  spacing: AuraSpace.s8,
                   children: [
                     TextButton.icon(
                       icon: const Icon(Icons.playlist_add_rounded),
                       label: const Text('Add invitees'),
                       onPressed: onAddInvitees,
                     ),
-                    const SizedBox(width: AuraSpace.s8),
                     TextButton.icon(
                       icon: const Icon(Icons.content_copy_rounded),
                       label: const Text('Copy name/email'),
@@ -973,23 +988,31 @@ class _CreationForm extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: AuraSpace.s18),
-        _Section(
-          title: 'Booking page',
-          child: AuraCard(
-            padding: const EdgeInsets.all(AuraSpace.s16),
-            child: currentBookingProfile == null
-                ? const Text(
-                    'Your booking page is not enabled yet.',
-                  )
-                : _BookingSummary(profile: currentBookingProfile),
-          ),
-        ),
+        // NO BOOKING PAGE CARD HERE.
+        //
+        // It answered none of the questions this screen exists to answer -
+        // what am I creating, for whom, when - and it sat between the last
+        // field and the button that creates the meeting, so the primary
+        // action of the screen was below a card about a different feature.
+        // The booking page has its own place on the Meetings landing.
       ],
     );
   }
 }
 
+/// WHAT YOU ARE ABOUT TO CREATE.
+///
+/// Founder ruling (Create Meeting) - the panel should answer, naturally:
+/// what am I creating, for whom, when, who can participate.
+///
+/// What this replaces: a flat list of strings, each with a green tick,
+/// whether or not it represented anything being satisfied. The meeting's own
+/// title was the LAST line, presented as a checklist item - so the panel
+/// ticked "Meeting" at somebody who had not named their meeting yet.
+///
+/// It is now a summary with a shape, and - the part that matters - it shows
+/// what is still MISSING as missing. Validation used to arrive only as a
+/// snackbar on submit, referring to a control far below the fold.
 class _ReviewPane extends StatelessWidget {
   final bool startNow;
   final bool hostOnly;
@@ -1013,118 +1036,116 @@ class _ReviewPane extends StatelessWidget {
     required this.institutionName,
   });
 
+  String get _who {
+    if (hostOnly) return 'Just you';
+    final parts = <String>[];
+    if (includeAllMembers) {
+      parts.add('Everyone at $institutionName');
+    } else if (selectedMembers.isNotEmpty) {
+      parts.add(selectedMembers.length == 1
+          ? selectedMembers.single.displayLabel
+          : '${selectedMembers.length} members');
+    }
+    if (invitees.isNotEmpty) {
+      parts.add(invitees.length == 1
+          ? invitees.single.displayLabel
+          : '${invitees.length} guests');
+    }
+    return parts.join(' · ');
+  }
+
+  bool get _hasPeople =>
+      hostOnly || includeAllMembers || selectedMembers.isNotEmpty ||
+      invitees.isNotEmpty;
+
   @override
   Widget build(BuildContext context) {
-    final lines = <String>[
-      institutionName,
-      if (hostOnly) 'Host only',
-      if (includeAllMembers) 'All active members',
-      if (selectedMembers.isNotEmpty)
-        selectedMembers.map((m) => m.displayLabel).join(', '),
-      if (invitees.isNotEmpty)
-        invitees.map((i) => i.displayLabel).join(', '),
-      if (startNow)
-        'Starts now'
-      else if (scheduledAt != null)
-        'Starts ${DateFormat('MMM d, yyyy h:mm a').format(scheduledAt!)}',
-      'Duration $durationMinutes min',
-      if (meetingTitle.isNotEmpty) meetingTitle,
-    ];
+    final theme = Theme.of(context);
+    final titled = meetingTitle.trim().isNotEmpty;
+    final timed = startNow || scheduledAt != null;
 
-    return AuraCard(
-      padding: const EdgeInsets.all(AuraSpace.s16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Review',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-          ),
-          const SizedBox(height: AuraSpace.s10),
-          for (final line in lines)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AuraSpace.s8),
-              child: Row(
+    Widget row(IconData icon, String label, String value, {bool met = true}) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: AuraSpace.s12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              met ? icon : Icons.radio_button_unchecked_rounded,
+              size: 16,
+              color: met ? AuraSurface.accentText : AuraSurface.faint,
+            ),
+            const SizedBox(width: AuraSpace.s10),
+            Expanded(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.check_circle_rounded,
-                    size: 16,
-                    color: Color(0xFF10B981),
+                  Text(
+                    label,
+                    style: theme.textTheme.labelSmall
+                        ?.copyWith(color: AuraSurface.muted),
                   ),
-                  const SizedBox(width: AuraSpace.s8),
-                  Expanded(child: Text(line)),
+                  const SizedBox(height: 1),
+                  Text(
+                    value,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: met ? FontWeight.w600 : FontWeight.w400,
+                      color: met ? null : AuraSurface.faint,
+                    ),
+                  ),
                 ],
               ),
             ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BookingSummary extends StatelessWidget {
-  final AvailabilityProfile profile;
-
-  const _BookingSummary({required this.profile});
-
-  @override
-  Widget build(BuildContext context) {
-    final publicUrl = '${AppConfig.publicWebUrl}${profile.publicUrl}';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Your booking page',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-        ),
-        const SizedBox(height: AuraSpace.s8),
-        Text(
-          publicUrl,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        const SizedBox(height: AuraSpace.s12),
-        Wrap(
-          spacing: AuraSpace.s10,
-          runSpacing: AuraSpace.s10,
-          children: [
-            OutlinedButton.icon(
-              icon: const Icon(Icons.copy_rounded),
-              label: const Text('Copy link'),
-              onPressed: () async {
-                final messenger = ScaffoldMessenger.of(context);
-                await Clipboard.setData(ClipboardData(text: publicUrl));
-                messenger.showSnackBar(
-                  const SnackBar(content: Text('Booking link copied')),
-                );
-              },
-            ),
-            OutlinedButton.icon(
-              icon: const Icon(Icons.open_in_new_rounded),
-              label: const Text('Open page'),
-              onPressed: () => launchUrl(
-                Uri.parse(publicUrl),
-                mode: LaunchMode.externalApplication,
-              ),
-            ),
-            OutlinedButton.icon(
-              icon: const Icon(Icons.share_rounded),
-              label: const Text('Share'),
-              onPressed: () async {
-                final messenger = ScaffoldMessenger.of(context);
-                await Clipboard.setData(ClipboardData(text: publicUrl));
-                messenger.showSnackBar(
-                  const SnackBar(content: Text('Booking link copied for sharing')),
-                );
-              },
-            ),
           ],
         ),
-      ],
+      );
+    }
+
+    return AuraCard(
+      padding: const EdgeInsets.all(AuraSpace.s18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Semantics(
+            header: true,
+            child: Text(
+              titled ? meetingTitle.trim() : 'Untitled meeting',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: titled ? null : AuraSurface.faint,
+              ),
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s16),
+          row(
+            Icons.schedule_rounded,
+            'When',
+            startNow
+                ? 'Starts as soon as you create it'
+                : scheduledAt != null
+                    ? DateFormat('EEEE d MMMM, h:mm a').format(scheduledAt!)
+                    : 'Pick a date and time',
+            met: timed,
+          ),
+          row(
+            Icons.timelapse_rounded,
+            'How long',
+            durationMinutes < 60
+                ? '$durationMinutes minutes'
+                : durationMinutes == 60
+                    ? '1 hour'
+                    : '${durationMinutes ~/ 60}h ${durationMinutes % 60}m',
+          ),
+          row(
+            Icons.people_alt_rounded,
+            'Who',
+            _hasPeople ? _who : 'Choose who is in this meeting',
+            met: _hasPeople,
+          ),
+          if (institutionName.trim().isNotEmpty)
+            row(Icons.apartment_rounded, 'Convened by', institutionName),
+        ],
+      ),
     );
   }
 }
@@ -1238,25 +1259,6 @@ class _ParsedInvitee {
   final String email;
 
   const _ParsedInvitee({required this.name, required this.email});
-}
-
-AvailabilityProfile? _pickBookingProfile(
-  List<AvailabilityProfile> profiles,
-  String? currentUserId,
-) {
-  if (profiles.isEmpty) return null;
-  final normalized = (currentUserId ?? '').trim();
-  if (normalized.isNotEmpty) {
-    for (final profile in profiles) {
-      if (profile.assignedHost?.id == normalized || profile.owner?.id == normalized) {
-        return profile;
-      }
-    }
-  }
-  for (final profile in profiles) {
-    if (profile.isActive) return profile;
-  }
-  return profiles.first;
 }
 
 String _durationLabel(int minutes) {
