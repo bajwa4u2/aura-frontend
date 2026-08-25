@@ -1,5 +1,11 @@
 # Global Navigation / Return-Path Authority — audit
 
+> **STATUS: SUPERSEDED BY IMPLEMENTATION.** Founder authorized this audit on
+> 2026-08-25 and the work is done. The counts below are the BEFORE state and
+> are kept as the baseline; the after-state and the architecture as actually
+> built are in `2026-08-25-return-path-implementation.md`. 83 defective
+> surfaces → 0.
+
 Founder ruling 2026-08-25. Audit, measure, classify, architect, plan. **No
 implementation.** Evidence is committed beside this document:
 `return_path_census.csv` (175 routes), `return_path_surfaces.csv` (86 non-route
