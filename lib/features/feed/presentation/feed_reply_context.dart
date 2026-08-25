@@ -89,24 +89,30 @@ class FeedReplyContext extends ConsumerWidget {
 
     final parentAsync = ref.watch(feedItemDetailProvider(args));
 
+    // "View original" is a CHILD ENTRY: the reader is standing on the reply
+    // and expects to come back to it. These used `go`, which replaces the
+    // stack, so the reply they came from was gone. Same class as the Create
+    // cards, found by the same audit — and missed by the navigation chapter's
+    // migration because that pass classified LITERAL call sites and these
+    // navigate through a variable.
     return parentAsync.when(
       // While loading (or on error) still show the linked banner so the reply
       // is never visually detached — the original is always one tap away.
       loading: () => _frame(
         context,
-        onTap: () => context.go(route),
+        onTap: () => context.push(route),
         child: _eyebrow(trailing: 'View original →'),
       ),
       error: (_, __) => _frame(
         context,
-        onTap: () => context.go(route),
+        onTap: () => context.push(route),
         child: _eyebrow(trailing: 'View original →'),
       ),
       data: (parent) {
         if (parent == null) {
           return _frame(
             context,
-            onTap: () => context.go(route),
+            onTap: () => context.push(route),
             child: _eyebrow(trailing: 'View original →'),
           );
         }
@@ -120,7 +126,7 @@ class FeedReplyContext extends ConsumerWidget {
             snippet.length > 160 ? '${snippet.substring(0, 160)}…' : snippet;
         return _frame(
           context,
-          onTap: () => context.go(route),
+          onTap: () => context.push(route),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
