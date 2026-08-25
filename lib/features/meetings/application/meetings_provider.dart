@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/auth/auth_providers.dart';
@@ -73,18 +72,8 @@ final institutionPastMeetingsProvider =
 
 // Single meeting by id
 final meetingProvider = FutureProvider.family<Meeting, String>((ref, id) async {
-  // TEMPORARY DIAGNOSTIC (bootstrap hang investigation 2026-08-25).
-  debugPrint('[meet-diag] meetingProvider BODY RUNS id=$id');
   final repo = ref.watch(meetingsRepositoryProvider);
-  debugPrint('[meet-diag] repo resolved, calling getMeeting');
-  try {
-    final m = await repo.getMeeting(id);
-    debugPrint('[meet-diag] getMeeting RESOLVED');
-    return m;
-  } catch (e) {
-    debugPrint('[meet-diag] getMeeting THREW ${e.runtimeType}: $e');
-    rethrow;
-  }
+  return repo.getMeeting(id);
 });
 
 final meetingSummaryProvider = FutureProvider.family<MeetingSummary?, String>((
