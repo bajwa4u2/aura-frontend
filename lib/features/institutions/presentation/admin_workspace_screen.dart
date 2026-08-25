@@ -202,8 +202,6 @@ class _IdentityCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Admin workspace', style: AuraText.title),
-                        const SizedBox(height: AuraSpace.s4),
                         Text(
                           'Backend-authorised access — identity and grants verified by /v1/admin/me.',
                           style: AuraText.small.copyWith(

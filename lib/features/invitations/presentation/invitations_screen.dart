@@ -97,8 +97,6 @@ class _InvitationsScreenState extends ConsumerState<InvitationsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Invitations', style: AuraText.title),
-                  const SizedBox(height: AuraSpace.s8),
                   const AuraTextBlock(
                     'See what is waiting on you, what you have already sent, and anything that still needs a decision.',
                     style: AuraText.body,

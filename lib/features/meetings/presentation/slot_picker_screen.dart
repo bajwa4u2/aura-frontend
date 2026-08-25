@@ -75,15 +75,11 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                      label: const Text('Back'),
-                      onPressed: () => context.pop(),
-                    ),
-                  ),
-                  const SizedBox(height: AuraSpace.s8),
+                  // R-4: this screen drew its own "Back" directly beneath the
+                  // governed affordance, so the booking flow offered a person
+                  // TWO ways out, stacked, saying different words for the same
+                  // act. Booking is a flow, so the governed control correctly
+                  // reads Cancel; this one is retired.
                   if (isWide)
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,

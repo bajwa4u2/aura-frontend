@@ -110,11 +110,6 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
                   icon: Icons.auto_awesome_outlined,
                 ),
                 const SizedBox(height: AuraSpace.s10),
-                Text(
-                  'Aura Editor',
-                  style: AuraText.title.copyWith(fontSize: 26),
-                ),
-                const SizedBox(height: AuraSpace.s10),
                 const Text(
                   'A calm editorial review for clarity, responsibility, and civic impact.',
                   style: AuraText.body,

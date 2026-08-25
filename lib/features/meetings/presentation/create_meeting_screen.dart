@@ -439,12 +439,6 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'Create meeting',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                  ),
                   const SizedBox(height: AuraSpace.s6),
                   Text(
                     'Set the title, participants, agenda, and timing. Internal participants are bound at creation.',

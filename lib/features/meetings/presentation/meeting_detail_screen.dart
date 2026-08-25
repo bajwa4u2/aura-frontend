@@ -20,6 +20,7 @@ import '../domain/meeting_institution_routing.dart' as routing;
 import 'meeting_lifecycle_presenter.dart';
 import 'meeting_status_chip.dart';
 import 'widgets/meeting_assets_section.dart';
+import 'meeting_semantics.dart';
 import 'widgets/meeting_continuity_section.dart';
 import 'widgets/meeting_section.dart';
 import 'widgets/meeting_workroom.dart';
@@ -516,171 +517,206 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
     // reason someone opening a meeting link from an email landed at the top of
     // the product instead of somewhere related to the meeting. The shared
     // authority resolves a real parent from the route tree instead.
-    return AuraScaffold(
-      title: 'Meeting',
-      body: ListView(
-        padding: const EdgeInsets.all(AuraSpace.s16),
-        children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 880),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _RecordHeader(
-                    meeting: meeting,
-                    lifecycle: lifecycle,
-                    isHost: isHost,
-                    actioning: _actioning,
-                    onStart: _startMeeting,
-                    onEnter: () => _enterRoom(),
-                    onEdit: _editMeeting,
-                    onCopy: _copyLink,
-                    onCalendar: _addToCalendar,
-                    onCancel: _cancelMeeting,
-                  ),
-                  const SizedBox(height: AuraSpace.s16),
-
-                  // Live doorway — when the room is open, the record's first
-                  // job is getting you into it.
-                  if (live && !ended) ...[
-                    _LiveBanner(
-                      participantCount:
-                          meeting.room?.activeParticipantCount ?? 0,
-                      onEnter:
-                          meeting.sessionId == null ? null : () => _enterRoom(),
-                    ),
-                    const SizedBox(height: AuraSpace.s16),
-                  ],
-
-                  // Agenda travels the whole lifecycle: editable before and
-                  // during (host), part of the record after.
-                  if (!ended && isHost) ...[
-                    MeetingSection(
-                      title: 'Agenda',
-                      child: _PreparationNotesSection(meeting: meeting),
-                    ),
-                    const SizedBox(height: AuraSpace.s16),
-                  ] else if (hasAgenda) ...[
-                    MeetingSection(
-                      title: 'Agenda',
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          for (final line in meeting.preparationNotes!
-                              .trim()
-                              .split('\n')
-                              .map((l) => l.trim())
-                              .where((l) => l.isNotEmpty))
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 6),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    '·  ',
-                                    style: TextStyle(
-                                      color: AuraSurface.accent,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Text(
-                                      line,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: AuraSpace.s16),
-                  ],
-
-                  // Materials — the briefing pack. Part of the record for
-                  // the whole lifecycle; guests see guest-visible items on
-                  // pre-join and in the room.
-                  MeetingAssetsSection(
-                    meetingId: meeting.id,
-                    title: 'Materials',
-                    emptyText: ended
-                        ? 'No materials were attached to this meeting.'
-                        : 'Attach links or briefing documents participants should read before joining.',
-                    filter: (a) =>
-                        a.stage == 'PREPARATION' &&
-                        a.kind != MeetingAssetKind.recording,
-                    canManage: isHost && !ended,
-                    addStage: 'PREPARATION',
-                    hideWhenEmpty: ended,
-                  ),
-                  const SizedBox(height: AuraSpace.s16),
-
-                  // People — one roster model for members, guests, bookers.
-                  _ParticipantsSection(meeting: meeting, ended: ended),
-                  const SizedBox(height: AuraSpace.s16),
-
-                  // R-3 — the meeting's one durable Conversation. Offered
-                  // whether or not the meeting has happened yet: the question
-                  // people want to ask beforehand is as real as the one they
-                  // ask after, and both deserve somewhere that survives.
-                  if (!meeting.isDraft) ...[
-                    MeetingContinuitySection(meeting: meeting),
-                    const SizedBox(height: AuraSpace.s16),
-                  ],
-
-                  // The record itself — summary, outcomes, conversation.
-                  if (ended) ...[
-                    MeetingAssetsSection(
-                      meetingId: meeting.id,
-                      title: 'Shared in meeting',
-                      emptyText: 'No files were shared during this meeting.',
-                      filter: (a) =>
-                          a.stage == 'MEETING' &&
-                          a.kind != MeetingAssetKind.recording,
-                      canManage: isHost,
-                      addStage: 'MEETING',
-                      hideWhenEmpty: true,
-                    ),
-                    const SizedBox(height: AuraSpace.s16),
-                    MeetingAssetsSection(
-                      meetingId: meeting.id,
-                      title: 'Recording',
-                      emptyText: 'This meeting was not recorded.',
-                      filter: (a) => a.kind == MeetingAssetKind.recording,
-                      canManage: isHost,
-                      allowAdd: false,
-                      hideWhenEmpty: true,
-                    ),
-                    const SizedBox(height: AuraSpace.s16),
-                    MeetingWorkroom(meeting: meeting, editable: isHost),
-                    const SizedBox(height: AuraSpace.s16),
-                  ],
-
-                  if (!ended && (isHost || widget.canGovern))
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton.icon(
-                        icon: const Icon(Icons.cancel_outlined, size: 18),
-                        label: const Text('Cancel meeting'),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.red.shade400,
+    // No page title: the record's own card opens with the meeting's status,
+    // its name and who convened it. A header reading the generic word
+    // "Meeting" above that said nothing the next line did not say better.
+    // Section 9/15: the record was one 880px column on a 1500px window, so
+    // two thirds of a desktop screen were empty while participants and the
+    // meeting's conversation sat a scroll below the fold. It is a workspace
+    // now: what the meeting IS on the left, who and what surrounds it on the
+    // right, and one column on anything narrower.
+    final agenda = <Widget>[
+      if (!ended && isHost) ...[
+        MeetingSection(
+          title: 'Agenda',
+          child: _PreparationNotesSection(meeting: meeting),
+        ),
+        const SizedBox(height: AuraSpace.s18),
+      ] else if (hasAgenda) ...[
+        MeetingSection(
+          title: 'Agenda',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final line in meeting.preparationNotes!
+                  .trim()
+                  .split('\n')
+                  .map((l) => l.trim())
+                  .where((l) => l.isNotEmpty))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '·  ',
+                        style: TextStyle(
+                          color: AuraSurface.accent,
+                          fontWeight: FontWeight.w700,
                         ),
-                        onPressed: _actioning ? null : _cancelMeeting,
                       ),
-                    ),
-                  const SizedBox(height: AuraSpace.s32),
-                ],
+                      Expanded(
+                        child: Text(
+                          line,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AuraSpace.s18),
+      ],
+    ];
+
+    final aftermath = <Widget>[
+      if (ended) ...[
+        MeetingAssetsSection(
+          meetingId: meeting.id,
+          title: 'Shared in meeting',
+          emptyText: 'No files were shared during this meeting.',
+          filter: (a) =>
+              a.stage == 'MEETING' && a.kind != MeetingAssetKind.recording,
+          canManage: isHost,
+          addStage: 'MEETING',
+          hideWhenEmpty: true,
+        ),
+        const SizedBox(height: AuraSpace.s18),
+        MeetingAssetsSection(
+          meetingId: meeting.id,
+          title: 'Recording',
+          emptyText: 'This meeting was not recorded.',
+          filter: (a) => a.kind == MeetingAssetKind.recording,
+          canManage: isHost,
+          allowAdd: false,
+          hideWhenEmpty: true,
+        ),
+        const SizedBox(height: AuraSpace.s18),
+        MeetingWorkroom(meeting: meeting, editable: isHost),
+        const SizedBox(height: AuraSpace.s18),
+      ],
+    ];
+
+    Widget header() => _RecordHeader(
+          meeting: meeting,
+          lifecycle: lifecycle,
+          isHost: isHost,
+          actioning: _actioning,
+          onStart: _startMeeting,
+          onEnter: () => _enterRoom(),
+          onEdit: _editMeeting,
+          onCopy: _copyLink,
+          onCalendar: _addToCalendar,
+          onCancel: _cancelMeeting,
+        );
+
+    Widget liveBanner() => (live && !ended)
+        ? Padding(
+            padding: const EdgeInsets.only(bottom: AuraSpace.s18),
+            child: _LiveBanner(
+              participantCount: meeting.room?.activeParticipantCount ?? 0,
+              onEnter: meeting.sessionId == null ? null : () => _enterRoom(),
+            ),
+          )
+        : const SizedBox.shrink();
+
+    Widget materials() => MeetingAssetsSection(
+          meetingId: meeting.id,
+          title: 'Materials',
+          emptyText: ended
+              ? 'No materials were attached to this meeting.'
+              : 'Attach links or briefing documents participants should read '
+                  'before joining.',
+          filter: (a) =>
+              a.stage == 'PREPARATION' && a.kind != MeetingAssetKind.recording,
+          canManage: isHost && !ended,
+          addStage: 'PREPARATION',
+          hideWhenEmpty: ended,
+        );
+
+    Widget danger() => (!ended && (isHost || widget.canGovern))
+        ? Align(
+            alignment: Alignment.centerLeft,
+            child: MeetingAction(
+              label: 'Cancel this meeting',
+              hint: 'Everyone invited is told it will not happen',
+              child: TextButton.icon(
+                icon: const Icon(Icons.cancel_outlined, size: 18),
+                label: const Text('Cancel meeting'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.red.shade400,
+                ),
+                onPressed: _actioning ? null : _cancelMeeting,
               ),
             ),
-          ),
-        ],
+          )
+        : const SizedBox.shrink();
+
+    return AuraScaffold(
+      maxWidth: 1180,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final wide = constraints.maxWidth >= 940;
+
+          final mainColumn = <Widget>[
+            header(),
+            const SizedBox(height: AuraSpace.s18),
+            liveBanner(),
+            ...agenda,
+            materials(),
+            const SizedBox(height: AuraSpace.s18),
+            ...aftermath,
+          ];
+
+          final sideColumn = <Widget>[
+            _ParticipantsSection(meeting: meeting, ended: ended),
+            const SizedBox(height: AuraSpace.s18),
+            if (!meeting.isDraft) ...[
+              MeetingContinuitySection(meeting: meeting),
+              const SizedBox(height: AuraSpace.s18),
+            ],
+            danger(),
+          ];
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(
+                AuraSpace.s16, AuraSpace.s8, AuraSpace.s16, AuraSpace.s32),
+            children: [
+              if (!wide)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [...mainColumn, ...sideColumn],
+                )
+              else
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 7,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: mainColumn,
+                      ),
+                    ),
+                    const SizedBox(width: AuraSpace.s24),
+                    Expanded(
+                      flex: 4,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: sideColumn,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          );
+        },
       ),
     );
   }
+
 }
 
 // ---------------------------------------------------------------------------

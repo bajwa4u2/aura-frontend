@@ -106,8 +106,6 @@ class InviteHubScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Invite', style: AuraText.title),
-                const SizedBox(height: AuraSpace.s8),
                 AuraTextBlock(_introText, style: AuraText.body),
               ],
             ),

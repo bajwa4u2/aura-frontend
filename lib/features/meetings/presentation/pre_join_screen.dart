@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/guest_shell.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
@@ -234,8 +235,36 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
     final theme = Theme.of(context);
 
     return resolutionAsync.when(
+      // Section 19: a person arriving from an emailed link met a spinner in an
+      // empty page while the meeting resolved. They are told what is happening
+      // and to what, which is all that is honestly known at this point.
       loading: () => const GuestShell(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(
+          child: Padding(
+            padding: EdgeInsets.all(AuraSpace.s24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(height: AuraSpace.s14),
+                Text(
+                  'Finding your meeting',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                SizedBox(height: AuraSpace.s6),
+                Text(
+                  'Checking the link and whether you can join.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AuraSurface.muted, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
       error: (e, _) => GuestShell(
         showBackButton: true,
