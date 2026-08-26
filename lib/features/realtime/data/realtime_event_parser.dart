@@ -55,9 +55,12 @@ class RealtimeEventParser {
         : (_looksLikePolicyPayload(payload) ? RealtimePolicy.fromJson(payload) : state.policy);
 
     final nextParticipants = participantsJson != null
-        ? participantsJson
-            .map((json) => RealtimeParticipant.fromJson(_normalizeParticipantJson(json)))
-            .toList()
+        ? _oneEntryPerIdentity(
+            participantsJson
+                .map((json) =>
+                    RealtimeParticipant.fromJson(_normalizeParticipantJson(json)))
+                .toList(),
+          )
         : (_looksLikeParticipantPayload(payload)
             ? _mergeSingleParticipant(
                 state.participants,
@@ -150,6 +153,74 @@ class RealtimeEventParser {
     return map;
   }
 
+  /// ONE CANONICAL PARTICIPANT IDENTITY RENDERS ONCE.
+  ///
+  /// Founder-observed live, 2026-08-25: re-joining a call while already in it
+  /// produced a THIRD participant — one human rendered twice.
+  ///
+  /// The single-participant merge below already collapsed by identity. The
+  /// full-roster path did not: it mapped the array straight to a list, so any
+  /// roster carrying a user more than once — a second transport binding, a
+  /// re-join racing the previous teardown — rendered as another person in the
+  /// call.
+  ///
+  /// Aura's design is unambiguous that this is wrong, and this only enforces
+  /// what the rest of the system already asserts:
+  ///
+  ///   * the database holds `@@unique([sessionId, userId])`;
+  ///   * `PresenceService` keys presence by `(sessionId, userId)` and holds
+  ///     `runtimeDeviceIds` as a Set INSIDE that one record;
+  ///   * the gateway disconnects replaced sockets;
+  ///   * mid-call device handoff is a TRANSFER authority, not a second seat.
+  ///
+  /// So a new transport for the same person rebinds an existing seat. It is
+  /// never a new human in the room.
+  ///
+  /// Deliberately NOT collapsed: entries with no canonical `userId` — a guest
+  /// has none, and two guests are two people. Those fall back to the
+  /// participant row id, and only to the runtime device as a last resort, so
+  /// distinct anonymous participants stay distinct.
+  static List<RealtimeParticipant> _oneEntryPerIdentity(
+    List<RealtimeParticipant> participants,
+  ) {
+    final byIdentity = <String, int>{};
+    final out = <RealtimeParticipant>[];
+
+    for (final participant in participants) {
+      final userId = participant.userId.trim();
+      final rowId = participant.id.trim();
+      final runtime = (participant.runtimeDeviceId ?? '').trim();
+
+      final key = userId.isNotEmpty
+          ? 'user:$userId'
+          : rowId.isNotEmpty
+              ? 'row:$rowId'
+              : runtime.isNotEmpty
+                  ? 'device:$runtime'
+                  : '';
+
+      // Nothing identifies this entry at all — keep it rather than silently
+      // merging strangers together.
+      if (key.isEmpty) {
+        out.add(participant);
+        continue;
+      }
+
+      final seen = byIdentity[key];
+      if (seen == null) {
+        byIdentity[key] = out.length;
+        out.add(participant);
+      } else {
+        // Later wins: the newest binding carries the current transport and
+        // media state. The seat keeps its original position so the roster
+        // does not reshuffle under the people reading it.
+        out[seen] = participant;
+      }
+    }
+
+    return out;
+  }
+
   static List<RealtimeParticipant> _mergeSingleParticipant(
     List<RealtimeParticipant> current,
     RealtimeParticipant incoming,
@@ -175,7 +246,13 @@ class RealtimeEventParser {
     }
 
     if (!replaced) {
-      out.add(incoming);
+      // An event with no canonical identity cannot be shown to be a new
+      // person, and appending it invented one. Ignore it rather than seat a
+      // participant nobody can name.
+      final hasIdentity = incoming.userId.trim().isNotEmpty ||
+          incoming.id.trim().isNotEmpty ||
+          (incoming.runtimeDeviceId ?? '').trim().isNotEmpty;
+      if (hasIdentity) out.add(incoming);
     }
 
     return out;
