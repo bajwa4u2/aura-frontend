@@ -358,8 +358,39 @@ class RealtimeMediaService {
     RTCPeerConnection connection,
     String peerKey,
   ) async {
+    // WAIT FOR MEDIA IN FLIGHT BEFORE CONCLUDING THERE IS NONE.
+    //
+    // THE DEFECT THIS FIXES — founder-observed live on 2026-08-25, Pixel ↔
+    // browser: the callee saw nothing while the caller saw them perfectly.
+    //
+    // This is the answerer path. `handleRemoteOffer` attaches local tracks
+    // after `setRemoteDescription`, exactly once, guarded by `isNewPeer`. If
+    // the offer lands while `getUserMedia` is STILL RESOLVING, `_localStream`
+    // is null, this method used to log "NO local stream" and return, and
+    // `createAnswer` then produced **recvonly** m-lines. The peer reaches
+    // Connected and is permanently dark and silent to the far side.
+    //
+    // It is unrecoverable afterwards: `setCameraEnabled` only flips
+    // `track.enabled` on tracks that already exist, and `replaceTrack` needs a
+    // sender to replace — which is why toggling the camera did nothing and
+    // only leaving and rejoining helped.
+    //
+    // Answering the offer is not urgent enough to justify answering it wrong.
+    // Acquisition is already coalesced into a single future, so waiting here
+    // costs one in-flight getUserMedia and removes the whole race.
+    final inflight = _mediaAcquisition;
+    if (_localStream == null && inflight != null) {
+      debugPrint('[rtc] attach: media in flight, waiting peerKey=$peerKey');
+      try {
+        await inflight;
+      } catch (_) {/* acquisition reports its own failure via _readiness */}
+    }
+
     final local = _localStream;
     if (local == null) {
+      // Genuinely nothing to send — a refused or absent device. The peer is
+      // receive-only by circumstance, not by accident, and the readiness model
+      // has already said why.
       debugPrint('[rtc] attach: NO local stream peerKey=$peerKey');
       return;
     }
