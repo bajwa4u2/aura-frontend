@@ -45,8 +45,42 @@ class SfuRealtimeTransport implements RealtimeTransport {
   Map<String, RemoteParticipantMedia> _remote =
       const <String, RemoteParticipantMedia>{};
 
+  /// ONE NEGOTIATION AT A TIME.
+  ///
+  /// There is a single peer connection per session, and negotiation is
+  /// stateful: an offer must be applied, answered and acknowledged before the
+  /// next one begins. The product drives this from several triggers —
+  /// participant joined, media ready, join, hydrate — which can fire within
+  /// the same second, and each one wants to resolve remote media.
+  ///
+  /// Measured against production: overlapping refreshes produced repeated
+  /// failures inside one second on both sides, while a strictly sequential
+  /// script performing the identical calls against the identical backend
+  /// succeeded every time. The protocol was never the problem; the
+  /// concurrency was.
+  Future<void> _lock = Future<void>.value();
+
+  /// Run [action] after whatever is already queued, whether it succeeded.
+  Future<T> _serialized<T>(Future<T> Function() action) {
+    final completer = Completer<T>();
+    _lock = _lock.then((_) async {
+      try {
+        completer.complete(await action());
+      } catch (e, st) {
+        completer.completeError(e, st);
+      }
+    });
+    return completer.future;
+  }
+
   @override
   Future<void> open({
+    required String sessionId,
+    MediaStream? local,
+  }) =>
+      _serialized(() => _open(sessionId: sessionId, local: local));
+
+  Future<void> _open({
     required String sessionId,
     MediaStream? local,
   }) async {
@@ -105,7 +139,9 @@ class SfuRealtimeTransport implements RealtimeTransport {
   }
 
   @override
-  Future<void> publishLocal() async {
+  Future<void> publishLocal() => _serialized(_publishLocal);
+
+  Future<void> _publishLocal() async {
     final pc = _pc;
     final sessionId = _sessionId;
     if (pc == null || sessionId == null) {
@@ -163,7 +199,10 @@ class SfuRealtimeTransport implements RealtimeTransport {
   }
 
   @override
-  Future<Map<String, RemoteParticipantMedia>> refreshRemoteMedia() async {
+  Future<Map<String, RemoteParticipantMedia>> refreshRemoteMedia() =>
+      _serialized(_refreshRemoteMedia);
+
+  Future<Map<String, RemoteParticipantMedia>> _refreshRemoteMedia() async {
     final pc = _pc;
     final sessionId = _sessionId;
     if (pc == null || sessionId == null) return const {};
