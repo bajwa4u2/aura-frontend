@@ -32,6 +32,19 @@ class SfuRealtimeTransport implements RealtimeTransport {
   String? _sessionId;
   final List<Map<String, dynamic>> _publishedTracks = <Map<String, dynamic>>[];
 
+  /// Aura track ids already subscribed on this transport.
+  ///
+  /// Remote publication is not a single event: a participant can publish after
+  /// we attached, or add video to an existing audio call. Refresh is therefore
+  /// called repeatedly, and without this it would re-subscribe to the same
+  /// tracks every time and pile up duplicate receivers.
+  final Set<String> _subscribed = <String>{};
+
+  /// What is currently bound, so a refresh that finds nothing new is free and
+  /// still returns the media already being received.
+  Map<String, RemoteParticipantMedia> _remote =
+      const <String, RemoteParticipantMedia>{};
+
   @override
   Future<void> open({
     required String sessionId,
@@ -143,10 +156,23 @@ class SfuRealtimeTransport implements RealtimeTransport {
         .map((t) => '${t['id']}')
         .where((id) => id.isNotEmpty && id != 'null')
         .toList(growable: false);
-    if (trackIds.isEmpty) return const {};
+    if (trackIds.isEmpty) return _remote;
+
+    // Only subscribe to what is NEW.
+    //
+    // THE DEFECT THIS FIXES (found on the real product path, 2026-08-26): the
+    // receiver subscribed exactly once, at attach. If it attached before the
+    // caller had published — which is the normal order for the party that
+    // ACCEPTS a call — it found nothing and never tried again, so the callee
+    // sat in a connected call with no remote media at all. Mesh never showed
+    // this because offer/answer re-drove discovery on every change; binding
+    // here is deterministic but had no reason to re-run.
+    final fresh =
+        trackIds.where((id) => !_subscribed.contains(id)).toList(growable: false);
+    if (fresh.isEmpty) return _remote;
 
     final subscribed =
-        await _repository.subscribeStageTracks(sessionId, trackIds: trackIds);
+        await _repository.subscribeStageTracks(sessionId, trackIds: fresh);
     final negotiation =
         (subscribed['negotiation'] as Map?)?.cast<String, dynamic>();
 
@@ -166,6 +192,11 @@ class SfuRealtimeTransport implements RealtimeTransport {
     // Android, it does not fire for receivers created by this renegotiation
     // while inbound RTP is already arriving, so a client waiting for it would
     // paint a blank tile over live media.
+    _subscribed.addAll(fresh);
+
+    // Bind across ALL receiving m-lines, not just this batch: earlier
+    // subscriptions are still carried on the same peer connection, and a
+    // partial map would blank tiles that were working a moment ago.
     final bindings = await bindRemoteMedia(
       pc: pc,
       serverBindings: ((subscribed['bindings'] as List?) ?? const [])
@@ -173,7 +204,15 @@ class SfuRealtimeTransport implements RealtimeTransport {
           .map((e) => e.cast<String, dynamic>())
           .toList(growable: false),
     );
-    return sfuRemoteMedia(bindings: bindings);
+    final merged = Map<String, RemoteParticipantMedia>.from(_remote);
+    sfuRemoteMedia(bindings: bindings).forEach((participantId, media) {
+      final existing = merged[participantId];
+      merged[participantId] = existing == null
+          ? media
+          : existing.copyWith(audio: media.audio, video: media.video);
+    });
+    _remote = merged;
+    return _remote;
   }
 
   @override
@@ -226,6 +265,8 @@ class SfuRealtimeTransport implements RealtimeTransport {
     _local = null;
     _sessionId = null;
     _publishedTracks.clear();
+    _subscribed.clear();
+    _remote = const <String, RemoteParticipantMedia>{};
   }
 
   @override

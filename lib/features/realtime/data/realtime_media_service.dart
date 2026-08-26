@@ -1006,7 +1006,32 @@ class RealtimeMediaService {
     _stage = transport;
     await transport.open(sessionId: sessionId, local: local);
     await transport.publishLocal();
-    await refreshStageRemoteMedia();
+    await ensureStageRemoteMedia();
+  }
+
+  /// Resolve remote media, retrying until it appears.
+  ///
+  /// THE DEFECT THIS FIXES, found on the real product path (2026-08-26): the
+  /// party that ACCEPTS a call normally attaches before the caller has
+  /// finished publishing. Resolving once at attach found nothing, and nothing
+  /// made it look again — so in both directions the receiver sat in a
+  /// connected call with no remote media at all. Mesh never showed this
+  /// because offer/answer re-drove discovery on every change.
+  ///
+  /// Subscribing is incremental, so re-checking is cheap and cannot duplicate
+  /// receivers. It stops as soon as media is bound and gives up rather than
+  /// looping forever — a call where nobody else is publishing yet is a
+  /// legitimate answer, not a failure.
+  Future<void> ensureStageRemoteMedia({
+    int attempts = 6,
+    Duration interval = const Duration(seconds: 2),
+  }) async {
+    for (var attempt = 0; attempt < attempts; attempt++) {
+      if (_disposed || _stage == null) return;
+      await refreshStageRemoteMedia();
+      if (_remoteByParticipant.isNotEmpty) return;
+      if (attempt < attempts - 1) await Future<void>.delayed(interval);
+    }
   }
 
   /// Resolve everyone else's media and publish it into the snapshot.

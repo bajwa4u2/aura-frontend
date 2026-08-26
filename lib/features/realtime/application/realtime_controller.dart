@@ -2854,6 +2854,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
       } else {
         await _mediaService.refreshStageRemoteMedia();
       }
+
     } catch (e) {
       // Never let a transport failure take the call down silently — the
       // product should show honest state rather than a frozen screen.

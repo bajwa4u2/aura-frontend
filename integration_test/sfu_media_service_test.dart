@@ -164,6 +164,80 @@ void main() {
         } catch (_) {}
       }
     }, timeout: const Timeout(Duration(minutes: 6)));
+
+    test('the receiver converges when the other side publishes AFTER it attaches',
+        () async {
+      if (!configured) {
+        markTestSkipped('certification identities not provided');
+        return;
+      }
+
+      // THE REAL PRODUCT DEFECT, reproduced (2026-08-26).
+      //
+      // The party that ACCEPTS a call normally attaches before the caller has
+      // finished publishing. Resolving remote media once at that moment found
+      // nothing, and nothing made it look again — so in BOTH directions the
+      // receiver sat in a connected call with no remote media. Two real calls
+      // between two browsers showed it: caller had media, receiver never did.
+      final host = await _login(_hostEmail, _hostPassword);
+      final guest = await _login(certEmails.first, _certPassword);
+
+      final sessionId = await _createSession(host.token);
+      await _post(host.token, '/realtime/sessions/$sessionId/invites',
+          {'invitedUserId': guest.userId});
+      await _post(guest.token, '/realtime/sessions/$sessionId/join', {});
+
+      final service = RealtimeMediaService();
+      final guestTransport =
+          SfuRealtimeTransport(RealtimeRepository(_dio(guest.token)));
+      MediaStream? guestMedia;
+
+      try {
+        await service.ensureLocalMedia(audio: true, video: false);
+
+        // The other side publishes only AFTER the receiver has already
+        // attached — the normal order for the party that accepts a call.
+        //
+        // This is deliberately NOT awaited before attachStage: the product
+        // gets no second chance either, so neither does the test. Nothing
+        // below calls refresh by hand. If convergence inside attachStage does
+        // not find the late publication, nothing will, and the receiver ends
+        // up exactly where the two real browser calls left it.
+        guestMedia = await navigator.mediaDevices
+            .getUserMedia(<String, dynamic>{'audio': true, 'video': false});
+        final publishLate = Future<void>.delayed(
+          const Duration(seconds: 3),
+          () async {
+            await guestTransport.open(sessionId: sessionId, local: guestMedia!);
+            await guestTransport.publishLocal();
+          },
+        );
+
+        await service.attachStage(
+          SfuRealtimeTransport(RealtimeRepository(_dio(host.token))),
+          sessionId: sessionId,
+        );
+        await publishLate;
+
+        final remote = service.currentSnapshot.remoteByParticipant;
+        debugPrint('[converge] remoteParticipants=${remote.length}');
+        expect(remote, isNotEmpty,
+            reason: 'the receiver never bound media published after it attached');
+        expect(remote.values.first.hasAudio, isTrue);
+      } finally {
+        await guestTransport.close();
+        for (final t in guestMedia?.getTracks() ?? const <MediaStreamTrack>[]) {
+          await t.stop();
+        }
+        await guestMedia?.dispose();
+        try {
+          await service.resetSessionMedia();
+        } catch (_) {}
+        try {
+          await _post(host.token, '/realtime/sessions/$sessionId/end', {});
+        } catch (_) {}
+      }
+    }, timeout: const Timeout(Duration(minutes: 6)));
   });
 }
 
