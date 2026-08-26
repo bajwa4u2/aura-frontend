@@ -227,6 +227,28 @@ class RealtimeSession {
   final String liveState;
 
   bool get isLive => liveState == 'LIVE';
+
+  /// TERMINAL — this session is over.
+  ///
+  /// The server defines exactly one rule for this, in
+  /// `RealtimeSessionService.decorateSession`:
+  ///
+  ///     isActive = status not in {ENDED, CANCELLED, FAILED}
+  ///
+  /// so "ended" is a statement about the lifecycle STATUS, never about whether
+  /// anyone happens to be connected right now. This getter names that question
+  /// instead of leaving every call site to spell out `isActive == false` and
+  /// silently mean something slightly different — which is how "has not
+  /// started yet" and "is over" come to be read as the same thing.
+  ///
+  /// Deliberately identical to `!isActive`, not stricter: the client must not
+  /// invent a second definition of ended that the server does not share.
+  bool get hasEnded =>
+      status == 'ENDED' || status == 'CANCELLED' || status == 'FAILED';
+
+  /// The server's own answer to [hasEnded], inverted. Kept because it is what
+  /// the payload carries; prefer [hasEnded] when the question being asked is
+  /// "is this call over".
   final bool isActive;
   final bool isLocked;
   final bool waitingRoomEnabled;

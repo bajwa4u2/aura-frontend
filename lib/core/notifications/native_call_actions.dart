@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
@@ -76,6 +77,12 @@ class NativeCallActions {
       final event = _parse(call.arguments);
       if (event != null) {
         debugPrint('[native-call] warm action: $event');
+        // The warm path has the act, so retire the native fallback slot.
+        // Without this BOTH paths deliver: measured 2026-08-25, one answer
+        // arrived warm at t+1ms and again from the pending drain at t+225ms.
+        // The overlay's once-only guard absorbed it, but a duplicate delivery
+        // that only a downstream guard makes harmless is still a duplicate.
+        unawaited(_channel.invokeMethod<dynamic>('consumePendingCallAction'));
         onAction?.call(event);
       }
       return null;

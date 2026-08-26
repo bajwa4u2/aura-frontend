@@ -68,20 +68,26 @@ class MainActivity : FlutterActivity() {
     }
 
     /**
-     * Takes over from the ring.
+     * Hands the call over to the app — WITHOUT ending the ring, unless the
+     * person actually decided something.
      *
-     * Reaching this activity means the person acted on the call — answered,
-     * declined, or opened it. The ring has done its job, so it stops HERE, at
-     * the moment presentation transfers to the app, rather than being left to
-     * whatever Dart does next.
+     * This distinction is the founder finding of 2026-08-25: *"after tapping
+     * notification goes to accept/decline overlay and ring dropped"*. Opening
+     * a call is not answering it. Someone who taps to see who is calling is
+     * still deciding, and silencing the ring at that moment is exactly the
+     * behaviour that let a live call go quiet and get buried.
      *
-     * Note what is deliberately NOT decided here: whether to join. Founder
-     * ruling 2026-08-14 — tapping a call must offer the same Accept/Decline
-     * choice a foreground call gets, never join on the recipient's behalf. So
-     * the action is carried to Dart intact and the call layer decides:
-     * `answer`/`decline` are explicit acts on a call control and are honoured;
-     * `open` (the notification body, and the full-screen intent) lands on the
-     * Accept/Decline overlay.
+     * So only ANSWER and DECLINE stop the ring here — they are decisions, and
+     * they must take effect instantly rather than after the app has booted.
+     * For `open` the ring continues, and it ends where every other outcome
+     * ends: the bridge-removal choke point in AuraIncomingLiveLayer, which
+     * sees accept, decline, remote cancel, another device answering, and
+     * expiry alike.
+     *
+     * What is deliberately NOT decided here is whether to join. Founder ruling
+     * 2026-08-14 — tapping a call must offer the same Accept/Decline choice a
+     * foreground call gets, never join on the recipient's behalf. The action
+     * is carried to Dart intact and the call layer decides.
      */
     private fun captureCallIntent(intent: Intent?) {
         val action = intent?.getStringExtra(IncomingCallPresenter.EXTRA_CALL_ACTION)
@@ -96,7 +102,11 @@ class MainActivity : FlutterActivity() {
             as? HashMap<String, String>) ?: HashMap()
 
         showOverLockScreen()
-        IncomingCallPresenter.dismiss(this, sessionId)
+        if (action == IncomingCallPresenter.ACTION_ANSWER ||
+            action == IncomingCallPresenter.ACTION_DECLINE
+        ) {
+            IncomingCallPresenter.dismiss(this, sessionId)
+        }
 
         val payload = mapOf(
             "action" to action,

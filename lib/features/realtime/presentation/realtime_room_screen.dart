@@ -1231,8 +1231,11 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       roomIsClosed: roomIsClosed,
     );
 
-    // Auto-navigate away from an ended session so the screen never stays blank.
-    if (state.session?.isActive == false &&
+    // Auto-navigate away from an ENDED session so the screen never stays
+    // blank. Terminal only: this asked `isActive == false`, which is also
+    // true of a call that has been accepted and has not connected yet — so
+    // it scheduled a navigation OUT of a call that was still arriving.
+    if (state.session?.hasEnded == true &&
         state.session?.surfaceType != RealtimeSurfaceType.meeting) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _navigateAfterCall(state.session);
@@ -1459,7 +1462,10 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           false,
         );
       default:
-        if (state.session?.isActive == false) {
+        // Terminal, not merely "not started yet" — see RealtimeSession.hasEnded.
+        // Asking `isActive == false` here painted "Call has ended" over a call
+        // that had just been accepted and was still connecting.
+        if (state.session?.hasEnded == true) {
           return (
             Icons.call_end_rounded,
             state.session?.surfaceType == RealtimeSurfaceType.meeting

@@ -334,3 +334,95 @@ mid-broadcast must still be able to close the public door.
 This changes the ORIGINATION door only. Live Broadcast itself remains out of
 scope and untouched, per the standing ruling; `GO_LIVE_CONTROL` behaviour inside
 the Live chapter is unchanged.
+
+## AV-15 — answering is instant; connecting is not (measured 2026-08-25)
+
+> "there is bit delay too before connecting too, did you noticed?" — founder
+
+Yes, and it is **6.51 s** from the Answer tap to media connected, measured on the
+Pixel 9a from one real answered call (session `cmt9kjdkv007cob0c7o71wlzz`).
+About **3.8 s of that is the client's own sequencing**, not network physics.
+
+| Phase | Time |
+|---|---|
+| Answer tap → Dart receives the act | **1 ms** |
+| Session bundle hydrate | **2.62 s** |
+| REST join | 0.39 s |
+| Gap before the socket is created | **1.15 s** |
+| Socket connect | 0.08 s |
+| Join ack | 0.20 s |
+| `getUserMedia` | 0.32 s |
+| Peer created + remote track attached | 0.41 s |
+| ICE checking → connected | **1.23 s** |
+
+### The 2.62 s: a serial errand list before the call may begin
+
+`RealtimeRepository._fetchSessionBundle` issues **six HTTP requests, each
+awaited before the next**:
+
+```
+/realtime/sessions/{id}
+/realtime/sessions/{id}/policy
+/realtime/sessions/{id}/consent
+/realtime/sessions/{id}/recordings     <- the call's RECORD
+/realtime/sessions/{id}/transcripts    <- the call's RECORD
+/realtime/sessions/{id}/artifacts      <- the call's RECORD
+```
+
+Nothing here is individually slow — the same six, unauthenticated from a
+desktop, measured 106/85/159/132/84/81 ms, 647 ms sequential. They are simply
+serialized, and **three of them are the aftermath of a call, fetched before the
+call is allowed to start.** Recordings, transcripts and artifacts belong to the
+Meeting Record; answering does not depend on any of them.
+
+Two structural observations, both inside Call Presentation Authority's
+"engine state → product adapter" boundary rather than in the media engine:
+
+* the six are independent and could resolve concurrently;
+* the join path should require only what joining needs — session, policy,
+  consent — and let the record load after the person is in the call.
+
+### The other two costs
+
+* **1.15 s dead gap** between the REST join returning and the socket being
+  created. The connect itself takes 81 ms, so this is scheduling, not transport.
+* **1.23 s ICE.** Real network work, and worth reading alongside the earlier
+  finding that this pair relays over TURN TCP *even on the same LAN*.
+
+### A defect this trace found in the new code
+
+The answer was delivered to Dart **twice** — warm via `onCallAction` at t+1 ms,
+then again from the native pending slot at t+225 ms. The overlay's once-only
+guard absorbed it and the second `join()` early-returned "already joined this
+session", so no harm reached the call. A duplicate delivery that is only
+harmless because something downstream catches it is still a duplicate: the warm
+path now retires the pending slot on arrival, leaving it as what it was meant to
+be — a cold-start fallback.
+
+### The 1.15 s gap was the SAME bundle, fetched a second time
+
+The dead gap between the REST join returning and the socket being created is
+not scheduling after all. `RealtimeRepository.joinSession` ends with
+`loadSessionBundle(id, forceRefresh: true)` — a second complete six-request
+bundle. The accept path therefore paid for the bundle **twice**: once to
+hydrate before joining, once to refresh after.
+
+The second fetch is legitimate — joining genuinely changes participant state,
+and the client must see it — so it stays. Making the six concurrent repairs
+both gaps at once rather than either in isolation.
+
+### Remediated (founder-authorised into this chapter)
+
+| Item | Before | After |
+|---|---|---|
+| Bundle requests | 6 sequential | 6 concurrent |
+| Bundle cost, per fetch | ~2.6 s / ~1.15 s | ≈ slowest single request |
+| Bundle fetches per accept | 2 | 2 (unchanged, now cheap) |
+| Duplicate native answer delivery | warm **and** pending drain | warm retires the pending slot |
+
+Failure semantics are deliberately unchanged: the session GET still throws,
+and the other five still tolerate 401/403/404 — the tolerance a meeting GUEST
+depends on, and which a past narrowing to 404-only once broke entirely.
+
+ICE establishment (1.23 s) is untouched: it is real network work, and belongs
+to the media transport this chapter may not reconstruct.

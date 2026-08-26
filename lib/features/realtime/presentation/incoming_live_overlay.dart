@@ -253,9 +253,19 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
   /// a single cue here is consistent rather than inventing new behavior.
   void _triggerIncomingCallAlert(String sessionId) {
     if (sessionId.isEmpty) return;
+    // ONE CALL, ONE ALERT. Since 2026-08-25 an Android call that arrives while
+    // the app is backgrounded is already ringing natively, for the invite's
+    // whole window. Sounding this in-app alert on top of it would make one
+    // call alert twice — the same duplication this chapter has been removing
+    // everywhere else. This alert exists for the case the native ring does
+    // not cover: a call that arrives with the app already in front of you.
+    if (_nativeRingingSessionIds.contains(sessionId)) return;
     unawaited(SystemSound.play(SystemSoundType.alert));
     unawaited(HapticFeedback.heavyImpact());
   }
+
+  /// Sessions whose ring is being sounded by the native call surface.
+  final Set<String> _nativeRingingSessionIds = <String>{};
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
@@ -573,6 +583,11 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       // seen session; ends implicitly (nothing loops) the moment the
       // session leaves the bridge via accept/decline/cancel/expiry/terminal,
       // all of which already remove it from `next` above.
+      for (final item in next) {
+        if (_stringOf(item['_auraLifecycleSource']) != 'nativeCall') continue;
+        final sid = _resolveSessionId(item);
+        if (sid.isNotEmpty) _nativeRingingSessionIds.add(sid);
+      }
       for (final added in nextSet.difference(prevSet)) {
         _triggerIncomingCallAlert(added);
       }

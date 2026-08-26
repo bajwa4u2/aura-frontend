@@ -507,6 +507,10 @@ class RealtimeController extends StateNotifier<RealtimeState>
                 trimmed;
             final stillTerminal = current.session?.isActive == false;
             if (stillSame && stillTerminal && !current.isJoined) {
+              debugPrint(
+                '[ended-diag] hydrate found terminal session sessionId=$trimmed '
+                'status=${current.session?.status}',
+              );
               state = current.copyWith(
                 clearSession: true,
                 clearSessionId: true,
@@ -1085,6 +1089,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
     final sessionId = _managedSessionId;
     final session = state.session;
     if (sessionId.isEmpty && session == null) {
+      debugPrint('[ended-diag] endCall: no session context');
       state = _copyWithDetachedMediaState(
         joinState: RealtimeJoinState.idle,
         clearSessionContext: true,
@@ -1111,6 +1116,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
       // If a concurrent teardown is already in-flight, skip the second
       // local teardown — but the server end above has already fired.
       if (!_terminating) {
+        debugPrint('[ended-diag] endCall: local teardown after host end');
         await _terminateSession(
           keepSocketConnected: true,
           infoMessage: 'Call ended.',
@@ -1973,6 +1979,10 @@ class RealtimeController extends StateNotifier<RealtimeState>
           clearErrorMessage: true,
         );
       } else {
+        debugPrint(
+          '[ended-diag] peer grace expired: participants=${updatedParticipants.length} '
+          'isJoined=${state.isJoined} leftUserId=$userId',
+        );
         unawaited(
           _terminateSession(
             keepSocketConnected: true,
@@ -2297,7 +2307,14 @@ class RealtimeController extends StateNotifier<RealtimeState>
           leftReason: leftReason,
         );
 
-        if (appliesReconnectGrace && leavingUserId.isNotEmpty) {
+        // The SAME rule applies to the grace path, at its source. A grace
+        // started for somebody this client never had would expire into
+        // `_expirePeerGrace`, whose own emptiness test would then end a call
+        // for a departure that was never ours — the founder's defect again,
+        // merely delayed by the length of the grace window.
+        if (appliesReconnectGrace &&
+            leavingUserId.isNotEmpty &&
+            state.participants.any((p) => p.userId == leavingUserId)) {
           // RECONNECT GRACE: an involuntary drop does not empty the seat. The
           // participant stays on the roster ("Reconnecting…"), their peer
           // connection stays alive — media often continues flowing while only
@@ -2310,6 +2327,23 @@ class RealtimeController extends StateNotifier<RealtimeState>
           );
           return;
         }
+
+        // WAS THIS SOMEBODY WE ACTUALLY HAD? Read BEFORE the roster changes.
+        //
+        // Founder-observed 2026-08-25: *"before connecting, immediately after
+        // accept, there was a call ended banner"*. A departure event that
+        // arrives while joining found a roster containing only ME — the other
+        // party's row had not landed yet — and the emptiness test below read
+        // that as everyone having left.
+        //
+        // A roster of one during a join means "I have not learned who else is
+        // here", not "they have all gone". So a departure may only empty a
+        // room if the person departing was someone this client actually had on
+        // the roster; a leaver we never knew tells us nothing about emptiness.
+        // This is the same rule the shared roster already applies to identity:
+        // an entry that identifies nobody is never authoritative.
+        final knewLeaver = leavingUserId.isNotEmpty &&
+            state.participants.any((p) => p.userId == leavingUserId);
 
         final updatedParticipants = state.participants
             .where((participant) => participant.userId != leavingUserId)
@@ -2332,7 +2366,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
           unawaited(_mediaService.removePeer(leavingUserId));
         }
 
-        if (updatedParticipants.length <= 1 && state.isJoined) {
+        if (knewLeaver && updatedParticipants.length <= 1 && state.isJoined) {
           if (MeetingRealtimeSemantics.waitsForParticipantReturnWhenAlone(
             state.session?.surfaceType,
           )) {
@@ -2341,6 +2375,10 @@ class RealtimeController extends StateNotifier<RealtimeState>
               clearErrorMessage: true,
             );
           } else {
+            debugPrint(
+              '[ended-diag] participant-left event: participants='
+              '${updatedParticipants.length} isJoined=${state.isJoined}',
+            );
             unawaited(
               _terminateSession(
                 keepSocketConnected: true,
