@@ -144,16 +144,30 @@ void main() {
   });
 
   group('Android — the protected boundary', () {
-    testWidgets('Meetings and Live are not framed here either', (tester) async {
+    testWidgets('a live call is not framed here either', (tester) async {
       // §13: a shared change must not alter protected behaviour, including by
       // decorating it.
       for (final p in [
         '/realtime/s1',
-        '/meet/some-slug',
         '/institution/x/meetings/m1/live',
       ]) {
         expect(ReturnPathAuthority.isProtectedDomain(p), isTrue, reason: p);
       }
+    });
+
+    testWidgets('public booking IS framed, because it is not a call',
+        (tester) async {
+      // R-4 (founder ruling 2026-08-25) ended the blanket
+      // `meetings|meet|realtime` protection and restated the exemption in
+      // terms of what a surface IS. Public booking is not a synchronous
+      // session — nobody is connected to anything — so it keeps the ordinary
+      // return affordance.
+      //
+      // This assertion previously demanded the opposite and had been failing
+      // on the handset ever since R-4 narrowed the authority: the test lagged
+      // the ruling rather than the authority disobeying it.
+      expect(ReturnPathAuthority.isProtectedDomain('/meet/some-slug'), isFalse);
+      expect(ReturnPathAuthority.isLiveCallSurface('/meet/some-slug'), isFalse);
     });
   });
 
