@@ -22,7 +22,7 @@ import 'package:aura/core/identity/person_identity_model.dart';
 /// (`toCanonicalCallCommunicationData`, aura-backend), so when the actor block
 /// arrived empty the identity was already in the message and simply unread.
 void main() {
-  group('the fallback order is canonical-first', () {
+  group('the surface reads ONE authority', () {
     late String src;
 
     setUpAll(() {
@@ -31,30 +31,29 @@ void main() {
       ).readAsStringSync();
     });
 
-    test('the canonical actor is still consulted FIRST', () {
-      // This must stay a fallback, not a second source of truth.
-      final display = src.indexOf('person.displayName');
-      final fallback = src.indexOf("_stringOf(data['callerDisplayName'])");
-      expect(display, greaterThan(-1));
-      expect(fallback, greaterThan(-1),
-          reason: 'the payload caller name is no longer read, so an empty '
-              'actor block shows "Someone" again');
-      expect(display, lessThan(fallback),
-          reason: 'the payload fallback now outranks the canonical actor');
+    test('the ring card resolves identity from the canonical actor alone', () {
+      // The first repair added a per-surface fallback here. Measurement then
+      // showed the real problem was upstream: a push-delivered ring carries no
+      // actor block at all, with the caller flat at the top level. That is
+      // reconciled once, in the bridge both transports funnel through, so this
+      // surface asks one question of one authority.
+      expect(src, contains('AuraPersonIdentity.fromJson(actor)'));
+      expect(src, contains('final actorName = person.label;'),
+          reason: 'the ring card is deriving identity some other way again');
     });
 
-    test('the handle is preferred over the placeholder', () {
-      final handle = src.indexOf("_stringOf(data['callerHandle'])");
-      final placeholder = src.indexOf("'Someone',");
-      expect(handle, greaterThan(-1));
-      expect(placeholder, greaterThan(handle),
-          reason: '"Someone" is reachable before the handle is tried');
-    });
-
-    test('the avatar follows the same rule', () {
-      expect(src, contains("_stringOf(data['callerAvatarUrl'])"),
-          reason: 'the caller photo falls back to an initial letter even when '
-              'the payload carries a real avatar');
+    test('no per-surface caller fallback has crept back in', () {
+      // A second place that knows how to find a caller is a second place that
+      // can disagree with the first.
+      for (final key in const [
+        "data['callerDisplayName']",
+        "data['callerHandle']",
+        "data['callerAvatarUrl']",
+      ]) {
+        expect(src, isNot(contains(key)),
+            reason: 'the surface reads $key directly instead of relying on '
+                'the reconciled canonical actor');
+      }
     });
   });
 
