@@ -1042,11 +1042,35 @@ class RealtimeMediaService {
     int attempts = 6,
     Duration interval = const Duration(seconds: 2),
   }) async {
+    Object? lastError;
     for (var attempt = 0; attempt < attempts; attempt++) {
       if (_disposed || _stage == null) return;
-      await refreshStageRemoteMedia();
-      if (_remoteByParticipant.isNotEmpty) return;
+      try {
+        await refreshStageRemoteMedia();
+        if (_remoteByParticipant.isNotEmpty) return;
+      } catch (e) {
+        // A FAILED ATTEMPT MUST NOT END CONVERGENCE.
+        //
+        // Measured against production: subscribing races the publisher.
+        // Aura records a track the moment its publisher reports it, but the
+        // provider cannot forward that track until the publisher's transport
+        // is actually carrying media — and asking too early is refused
+        // (`cloudflare_empty_track_error`). It is intermittent: the same code
+        // failed one run and passed the next.
+        //
+        // Without this catch a single early refusal propagated out of the
+        // loop, so the receiver never tried again and sat in a connected call
+        // with no remote media. Retrying is exactly the right response to
+        // "not ready yet", and the attempt budget still bounds it.
+        lastError = e;
+        debugPrint('[rtc] stage remote media attempt ${attempt + 1} failed: $e');
+      }
       if (attempt < attempts - 1) await Future<void>.delayed(interval);
+    }
+    if (_remoteByParticipant.isEmpty && lastError != null) {
+      // Every attempt failed. Surface it rather than returning quietly — an
+      // empty room and an unreachable one must not look the same.
+      throw StateError('stage remote media never resolved: $lastError');
     }
   }
 

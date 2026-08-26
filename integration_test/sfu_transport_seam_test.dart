@@ -200,7 +200,18 @@ Dio _dio(String token) => Dio(BaseOptions(
       // Surface the server's own error body rather than a bare DioException,
       // which is what made the first 406 opaque.
       validateStatus: (s) => s != null && s < 400,
-    ));
+    ))
+      // Dio's exception text omits the response body, so a 502 arrives as
+      // "the server failed to fulfil an apparently valid request" and the
+      // server's actual reason — which is the whole diagnosis — is discarded.
+      ..interceptors.add(InterceptorsWrapper(
+        onError: (e, handler) {
+          debugPrint('[http] ${e.requestOptions.method} '
+              '${e.requestOptions.path} -> ${e.response?.statusCode} '
+              '${e.response?.data}');
+          handler.next(e);
+        },
+      ));
 
 class _Session {
   _Session(this.token, this.userId);
