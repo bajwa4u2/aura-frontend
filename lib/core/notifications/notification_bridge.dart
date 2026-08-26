@@ -13,7 +13,7 @@ import '../../features/realtime/application/incoming_call_projection.dart'
 import '../../features/updates/incoming_call_bridge.dart';
 import '../../features/updates/providers.dart';
 import '../../router.dart';
-import 'native_call_notification_channel.dart';
+import 'native_call_actions.dart';
 import 'notification_open_reconcile.dart';
 import 'notification_arrival_gate.dart';
 import 'notification_presentation.dart';
@@ -114,6 +114,14 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
   }
 
   void _initFcm() {
+    // NATIVE CALL ACTS (Android, 2026-08-25). An incoming call is now drawn
+    // by the app itself so it can present AS A CALL, which means
+    // `onMessageOpenedApp` below no longer reports taps on it — that stream
+    // only covers SDK-drawn notifications. This channel carries them across.
+    NativeCallActions.instance
+      ..onAction = _onNativeCallAction
+      ..listen();
+
     // Foreground FCM messages — show snackbar / call overlay fallback.
     _fcmForegroundSub = FirebaseMessaging.onMessage.listen(_onFcmForeground);
 
@@ -130,7 +138,41 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
       } catch (e) {
         debugPrint('NotificationBridge.getInitialMessage failed: $e');
       }
+      // Cold start FROM a call notification: the act happened before Dart
+      // existed, so it was held natively. Without this drain, answering a
+      // call from a killed app opens an app that has forgotten the call.
+      unawaited(NativeCallActions.instance.drainPending());
     });
+  }
+
+  /// A person acted on a natively-presented incoming call.
+  ///
+  /// All three acts land the call on the SAME surface the socket path uses —
+  /// the incoming-call bridge — so there is one accept/decline implementation
+  /// rather than a second one hiding behind a notification button. What the
+  /// act decides is only whether the overlay should act immediately or ask:
+  ///
+  ///  * `answer` / `decline` — explicit acts on a call control, carried
+  ///    through as `_auraNativeAction` and honoured by the overlay;
+  ///  * `open` — the notification body or the full-screen call surface, which
+  ///    offers the choice rather than making it (founder ruling 2026-08-14:
+  ///    never join on the recipient's behalf).
+  void _onNativeCallAction(NativeCallActionEvent event) {
+    if (!mounted) return;
+    final payload = Map<String, dynamic>.from(event.data)
+      ..['_auraLifecycleSource'] = 'nativeCall'
+      ..['_auraNativeAction'] = event.action.name;
+    if (event.sessionId.isNotEmpty) {
+      payload['sessionId'] ??= event.sessionId;
+    }
+    ref.read(incomingCallBridgeProvider.notifier).addIncoming(payload);
+
+    final route = _routeFromPayload(payload);
+    if (route.isNotEmpty) {
+      unawaited(
+        ref.read(notificationsControllerProvider.notifier).refresh(force: true),
+      );
+    }
   }
 
   // ── FCM message handlers ──────────────────────────────────────────────────
@@ -185,10 +227,18 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
         Map<String, dynamic>.from(payload)
           ..['_auraLifecycleSource'] = 'notificationTap',
       );
-      // The tap itself is proof the user has seen/acted on this call —
-      // stop the native ringtone-style alert now rather than leaving it
-      // to Android's own (unreliable, for this channel) tap-cancel behavior.
-      unawaited(cancelNativeCallNotifications());
+      // A TAP IS NOT AN ANSWER, so it does not end the ring.
+      //
+      // This used to cancel the native notification here, on the reasoning
+      // that a tap proves the person has seen the call. Founder-observed
+      // 2026-08-25: "after tapping notification goes to accept/decline
+      // overlay and ring dropped" — the call fell silent while they were
+      // still deciding, which is precisely when a ring is doing its job.
+      //
+      // Ringing now ends only where the CALL ends. That single choke point
+      // is the bridge-removal listener in AuraIncomingLiveLayer, which sees
+      // every real outcome: accept, decline, the ring timeout, a remote
+      // cancel or expiry, and another device answering first.
     }
 
     final route = _routeFromPayload(payload);

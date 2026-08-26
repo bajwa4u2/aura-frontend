@@ -35,6 +35,19 @@
 
     <!-- Keeps the connection alive while the screen is off during a call. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!--
+      An incoming call must be able to present itself AS A CALL — full screen,
+      over the lock screen — instead of as a notification that a person can
+      miss and thereby bury a live call (founder ruling 2026-08-25).
+
+      Android 14 (API 34) stopped granting this at install to every app that
+      asks. Aura declares it as a calling app; where it is not granted, the
+      call degrades to a heads-up notification and the RING is unaffected,
+      because the ring is no longer a property of the notification. See
+      IncomingCallPresenter and MainActivity.canUseFullScreenIntent.
+    -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <!-- Camera is optional: app works on camera-less devices -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
@@ -102,6 +115,29 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!--
+          INCOMING CALL PRESENTATION (2026-08-25).
+
+          Sits ALONGSIDE the firebase_messaging plugin's own receiver on the
+          same broadcast — a broadcast reaches every registered receiver — so
+          Dart continues to receive every message it received before. It is
+          deliberately NOT a FirebaseMessagingService: FCM binds only one, and
+          the plugin already owns it. See AuraCallPushReceiver.
+        -->
+        <receiver
+            android:name=".AuraCallPushReceiver"
+            android:exported="true"
+            android:permission="com.google.android.c2dm.permission.SEND">
+            <!--
+              Ordered broadcast: an explicit priority so call presentation is
+              never left to undefined ordering against the other receivers
+              registered for this action.
+            -->
+            <intent-filter android:priority="999">
+                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+            </intent-filter>
+        </receiver>
 
         <!-- Default FCM channel for incoming-call ringing. Channel itself is
              created at process start in AuraApplication.onCreate(). -->

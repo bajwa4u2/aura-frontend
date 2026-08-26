@@ -100,3 +100,51 @@ participant, media, control or accessibility semantics.
 
 There must not be a thread room engine, a meeting room engine, an institution
 room engine and a Live room engine.
+
+## 6. Added to the scope, 2026-08-25: the call BEFORE it is answered
+
+Two founder findings landed after this chapter opened, and both are the same
+category of fault as the ones in §3 — a question about how a call is presented,
+answered by whichever mechanism happened to be nearby.
+
+### 6.1 Incoming-call presentation (AV-13)
+
+An incoming call had no presentation surface on Android. It was an FCM
+notification whose channel sound happened to be a ringtone, so the RING was a
+property of the NOTIFICATION. Founder: *"notification naturally a short tenure
+so if miss tap call burried immediately."*
+
+The frozen rule this adds:
+
+> **A call is presented as a call. Its ring belongs to the call's ring window,
+> and ends only when the call reaches an outcome — answered, declined,
+> cancelled, superseded by another device, or expired.**
+>
+> Never: notification swiped, notification tapped, notification aged out.
+
+This belongs here rather than to any product because a thread call, a Meeting
+and a future Live invitation must all ring the same way. Full record and
+measurement: `docs/av/AV_CERTIFICATION.md`, AV-13.
+
+### 6.2 A capability offered where it cannot work (AV-14)
+
+Go Live was offered inside an AUDIO call. Escalating produced a public broadcast
+with nothing for an audience to receive, and the watcher got an error. Founder:
+*"it should be deterministic for video."*
+
+The frozen rule:
+
+> **A presentation surface must not offer a capability the current media
+> session cannot satisfy, and the test must be derived from published media
+> state — identical on every client — never from local guesswork.**
+
+The origination gate now asks whether any stage participant is actually
+publishing video. Ending a Live is deliberately not gated: closing a public door
+must never depend on the camera that opened it.
+
+### What these two add to §4
+
+**Call Presentation Authority also owns** — incoming-call presentation
+(ring surface, ring lifetime, accept/decline affordances, and the native
+platform surfaces that carry them), and capability gating of in-call controls
+against the session's actual media.

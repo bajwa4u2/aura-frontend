@@ -54,6 +54,13 @@ android {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
+    // Pinned explicitly, not inherited: NotificationCompat.CallStyle — the
+    // API that lets an incoming call present as a call rather than as a
+    // notification — landed in androidx.core 1.9.0. Relying on whatever
+    // version the Flutter embedding happened to pull in transitively would
+    // make incoming-call presentation depend on an unrelated upgrade.
+    implementation("androidx.core:core-ktx:1.13.1")
 }
 
 flutter {

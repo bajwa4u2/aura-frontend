@@ -446,6 +446,31 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     await _joinCurrent(item);
   }
 
+  final Set<String> _consumedNativeActions = <String>{};
+
+  void _executePendingNativeAction(List<Map<String, dynamic>> items) {
+    for (final item in items) {
+      final action = _stringOf(item['_auraNativeAction']);
+      if (action != 'answer' && action != 'decline') continue;
+
+      final sessionId = _resolveSessionId(item);
+      final key = sessionId.isNotEmpty ? sessionId : _stringOf(item['id']);
+      if (key.isEmpty) continue;
+      // Once only: the bridge list is rebuilt on every change, and acting
+      // twice would either double-join or decline a call already accepted.
+      if (!_consumedNativeActions.add(key)) continue;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (action == 'decline') {
+          unawaited(_declineCurrent(item));
+        } else {
+          unawaited(_joinCurrent(item));
+        }
+      });
+    }
+  }
+
   Future<void> _declineCurrent(Map<String, dynamic> item) async {
     _cancelRingTimer();
     // See _joinCurrent — native notification cancellation is centralized in
@@ -551,6 +576,22 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       for (final added in nextSet.difference(prevSet)) {
         _triggerIncomingCallAlert(added);
       }
+
+      // AN EXPLICIT ACT ON THE CALL NOTIFICATION IS THE ACT ITSELF.
+      //
+      // Android's incoming-call notification carries real Answer and Decline
+      // controls (2026-08-25). Pressing one is unambiguous, so it must not be
+      // answered with a second Accept/Decline card asking the same question.
+      // The act arrives on the bridge item as `_auraNativeAction` and is
+      // executed HERE — through the same _joinCurrent / _declineCurrent this
+      // overlay already owns — so there is exactly one accept path and one
+      // decline path in the app, not a shadow pair behind a notification.
+      //
+      // Only `answer` and `decline` act. `open` — the notification body and
+      // the full-screen call surface — deliberately falls through to the card,
+      // preserving the founder ruling of 2026-08-14 that a tap must offer the
+      // choice rather than join on the recipient's behalf.
+      _executePendingNativeAction(next);
     });
 
     final notifications = ref.watch(notificationsControllerProvider);

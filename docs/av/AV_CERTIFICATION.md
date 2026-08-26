@@ -224,3 +224,113 @@ quality.
 `main` then carried neither repair nor test and the defect stayed live. This
 time the fix ships with a negative-controlled test, so a future revert has to
 delete the evidence deliberately.
+
+---
+
+# Two founder findings, 2026-08-25 (post two-party certification)
+
+Both were found by USING the product, not by reading it. Neither is a polish
+item: each is a case of a capability being expressed through the wrong
+mechanism, so the symptom could not have been fixed where it appeared.
+
+## AV-13 — an incoming call was presented as a notification
+
+> "ring is there with notification not as incoming call, if notification
+> disappear no ring, after tapping notification goes to accept/decline overlay
+> and ring dropped" — founder, Pixel 9a
+>
+> "ring tied with notification, notification missed or tapped its gone and call
+> burried"
+>
+> "notification naturally a short tenure so if miss tap call burried
+> immediately"
+
+### What was actually there — measured, not inferred
+
+There was **no incoming-call surface on Android at all**. What existed was an
+ordinary FCM `notification` message, drawn by the Firebase SDK itself, on a
+channel (`aura_calls`) whose CHANNEL SOUND happened to be the system ringtone:
+
+* `fcm-push.adapter.ts` set `message.notification` for `CALL_RINGING`;
+* nothing in the app subclassed `FirebaseMessagingService`, and nothing used
+  `flutter_local_notifications` — confirmed by reading every Kotlin source in
+  the app (`AuraApplication.kt`, `MainActivity.kt` — 140 lines between them);
+* so **the ring was a property of the notification**.
+
+Every symptom the founder listed follows from that single fact, and the
+founder's own summary — *a notification has a short tenure, and the call
+inherited it* — is the correct diagnosis:
+
+| Symptom | Cause |
+|---|---|
+| Notification dismissed → no ring | The sound belonged to the notification |
+| Tap → ring dropped | The SDK auto-cancels on tap, **and** `notification_bridge.dart:191` explicitly cancelled it too |
+| Call buried after a missed tap | A notification self-dismisses; a call does not |
+| Never presents as a call | An SDK-drawn notification cannot carry a full-screen intent |
+
+A codebase comment had also drifted from the code: the adapter described "the
+FCM service handler on the device" dismissing prior notifications. No such
+handler existed.
+
+### The repair — the ring's lifetime is now the CALL's ring window
+
+| Layer | Change |
+|---|---|
+| `fcm-push.adapter.ts` | Android `CALL_RINGING` is sent **data-only**. Not cosmetic: while a `notification` block is present the SDK draws its own banner, so the app could not own presentation without ringing the same call twice. Scoped to Android — iOS has no equivalent hook and keeps its APNs alert. |
+| `AuraCallPushReceiver.kt` | A `BroadcastReceiver` on `com.google.android.c2dm.intent.RECEIVE`, **alongside** the `firebase_messaging` plugin's own receiver. |
+| `IncomingCallPresenter.kt` | Builds the call: `CallStyle.forIncomingCall` (API 31+), full-screen intent, `ongoing`, `FLAG_NO_CLEAR`, and `FLAG_INSISTENT` — the flag that makes a ring a ring rather than one chime. `setTimeoutAfter` is bounded by the invite's own `expiresAt`. |
+| `MainActivity.kt` | Takes over from the ring, shows over the lock screen for call intents only, and carries the act to Dart (warm via `onCallAction`, cold via a drained pending slot). |
+| `notification_bridge.dart` | **Stopped cancelling the ring on tap.** A tap is not an answer. |
+| `incoming_live_overlay.dart` | Executes an explicit Answer/Decline from the notification through the accept/decline paths it already owns — one implementation, not a shadow pair. |
+
+**Why not a `FirebaseMessagingService`.** FCM binds exactly one service for
+`com.google.firebase.MESSAGING_EVENT`, and the Flutter plugin already holds it.
+Subclassing would have silently killed every Dart-side handler —
+`onMessage`, the background handler, token refresh. The plugin also registers a
+plain `BroadcastReceiver`, and a broadcast reaches every registered receiver, so
+call presentation was added *next to* Dart's message handling rather than in
+front of it.
+
+### The ring now ends for these reasons, and no others
+
+    answered · declined · cancelled by the caller · another device answered
+    · the invite's ring window expired
+
+Not: notification swiped, notification tapped, notification aged out.
+
+### Not claimed
+
+* `USE_FULL_SCREEN_INTENT` is declared, but Android 14+ does not grant it to
+  every app that asks. `MainActivity.canUseFullScreenIntent()` reports the real
+  state instead of assuming it. Where it is not granted the call degrades to a
+  heads-up notification — **and the ring is unaffected**, because the ring is
+  no longer a property of how the call is drawn.
+* Declining from the notification opens the app to perform the authoritative
+  decline. A decline that never foregrounds the app would need network and auth
+  from Kotlin; it is named here rather than faked.
+* iOS is untouched and remains `IOS_CERTIFICATION = NOT_EXECUTED`.
+
+## AV-14 — Live was offered inside an audio call
+
+> "call was audio, i went live in it, then tried to watch as other user — it was
+> giving error. audio should not go live / live enabled for audio. it should be
+> deterministic for video." — founder
+
+`_liveControlsEligible` gated Go Live on surface, join state and role. It never
+asked whether the call carried video. An audio call could therefore be escalated
+to a public broadcast that had nothing for an audience to receive — which is
+what the watcher's error was.
+
+The gate now asks the one question that decides whether there is anything to
+watch: **is any stage participant actually publishing video or a screen.** It is
+derived from published media state — the same values every client in the session
+receives — so two people in one call cannot get different answers, which is the
+determinism the founder asked for. Observers are excluded; a viewer's absent
+camera cannot be the reason a call qualifies as watchable.
+
+**Ending a Live is deliberately NOT gated.** A broadcaster whose camera closed
+mid-broadcast must still be able to close the public door.
+
+This changes the ORIGINATION door only. Live Broadcast itself remains out of
+scope and untouched, per the standing ruling; `GO_LIVE_CONTROL` behaviour inside
+the Live chapter is unchanged.

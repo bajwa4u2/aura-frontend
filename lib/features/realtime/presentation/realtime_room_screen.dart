@@ -501,6 +501,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   /// door in Aura: contextual, inside an active Conversation-owned call,
   /// for a real stage participant. "We are talking. Let's open this to the
   /// public."
+  ///
+  /// This answers STANDING eligibility only — surface, join, role. Whether
+  /// the door may be OPENED is a second question, [_callCarriesVideo].
   bool _liveControlsEligible(RealtimeState state, String myUserId) {
     if (state.session?.surfaceType != RealtimeSurfaceType.conversation) {
       return false;
@@ -515,6 +518,34 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       if (p.userId == myUserId) {
         return p.role != RealtimeParticipantRole.observer;
       }
+    }
+    return false;
+  }
+
+  /// LIVE IS A VIDEO CAPABILITY (founder ruling 2026-08-25).
+  ///
+  /// Measured defect: an AUDIO call was escalated to Live, and the person who
+  /// tried to watch it got an error — a public broadcast that carries no
+  /// video has nothing for an audience to receive. The founder's ruling was
+  /// that this must not be a judgement call made per call: "audio should not
+  /// go live ... it should be deterministic for video."
+  ///
+  /// So the gate is on the one fact that decides whether there is anything to
+  /// watch: is any STAGE participant actually publishing a video track. It is
+  /// deliberately derived from published media state — the same values every
+  /// client in the session receives — so two people in one call cannot see
+  /// different answers. The local publish flags are consulted first only so
+  /// the control appears the moment the camera opens, rather than one
+  /// server round-trip later.
+  ///
+  /// Observers are excluded: a viewer's (absent) camera cannot be the reason
+  /// a call qualifies as watchable.
+  bool _callCarriesVideo(RealtimeState state) {
+    if (state.cameraEnabled || state.isScreenSharing) return true;
+    for (final p in state.participants) {
+      if (p.role == RealtimeParticipantRole.observer) continue;
+      if (!p.isPresent) continue;
+      if (p.videoOn || p.screenOn) return true;
     }
     return false;
   }
@@ -844,6 +875,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         state.connectionStatus == RealtimeConnectionStatus.connecting ||
         state.connectionStatus == RealtimeConnectionStatus.reconnecting;
     final joinRequestCount = (policy?.joinRequests ?? const []).length;
+    final publiclyLive = state.session?.isLive == true;
+    final liveEligible = _liveControlsEligible(state, myUserId);
 
     return PopScope(
       canPop: !state.isJoined,
@@ -1008,15 +1041,18 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                             isTogglingScreenShare: _togglingScreenShare,
                             onToggleScreenShare: () =>
                                 unawaited(_toggleScreenShare()),
-                            isPubliclyLive: state.session?.isLive == true,
-                            onGoLive:
-                                _liveControlsEligible(state, myUserId)
-                                ? () => unawaited(
-                                    state.session?.isLive == true
-                                        ? _endLive(state)
-                                        : _goLive(state),
-                                  )
-                                : null,
+                            isPubliclyLive: publiclyLive,
+                            onGoLive: !liveEligible
+                                ? null
+                                : publiclyLive
+                                // ENDING a Live is never gated on video: a
+                                // broadcaster whose camera closed mid-
+                                // broadcast must still be able to close the
+                                // public door.
+                                ? () => unawaited(_endLive(state))
+                                : (_callCarriesVideo(state)
+                                      ? () => unawaited(_goLive(state))
+                                      : null),
                             showSpeakerToggle: _supportsSpeakerphoneToggle,
                             speakerOn: state.speakerphoneEnabled,
                             onToggleSpeaker: () =>

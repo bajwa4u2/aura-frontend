@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/auth/auth_broadcast.dart';
+import '../core/notifications/native_call_actions.dart';
 import '../core/auth/auth_providers.dart';
 import '../core/auth/session_bootstrap.dart';
 import '../core/auth/session_providers.dart';
@@ -251,6 +252,11 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       // call is bounded and idempotent; transport errors leave the card
       // alone so the TTL still wins.
       unawaited(_reconcileIncomingCallsOnResume());
+
+      // A call answered or declined from the native call notification while
+      // the engine was detached. Held natively until Dart could hear it; the
+      // slot clears on read, so draining on every resume cannot replay an act.
+      unawaited(NativeCallActions.instance.drainPending());
     }
   }
 
