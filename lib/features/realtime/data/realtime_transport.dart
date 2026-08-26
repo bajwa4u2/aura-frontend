@@ -1,0 +1,84 @@
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+
+import '../domain/remote_media_presentation.dart';
+
+/// HOW MEDIA MOVES — the one thing that differs between mesh and SFU.
+///
+/// Founder ruling, media-service transport seam §1 and §3. The released client
+/// currently owns mesh topology as an implicit permanent assumption: one
+/// remote device becomes one `RTCPeerConnection`, and remote media is
+/// discovered through `onTrack` and keyed by device. That is not a fact about
+/// realtime media; it is a fact about mesh.
+///
+/// This interface is the smallest seam that makes the assumption explicit.
+/// Everything above it — call initiation, ringing, Meeting lifecycle,
+/// participant identity, control meaning, return behaviour, preflight, cleanup
+/// semantics — is deliberately unchanged. This is a transport migration.
+///
+/// Both implementations answer the same question, *whose media is arriving*,
+/// in the same shape: [RemoteParticipantMedia] keyed by canonical participant
+/// id. No product surface needs to know which one answered.
+abstract class RealtimeTransport {
+  /// Stable identifier for logs and topology reporting.
+  String get id;
+
+  /// Open the transport for a session, offering the local media that will be
+  /// published.
+  ///
+  /// The local stream is required at open because the provider needs at least
+  /// one track to establish a peer connection at all — an empty offer produces
+  /// a session that never connects.
+  Future<void> open({required String sessionId, required MediaStream local});
+
+  /// Publish the local tracks attached at [open].
+  Future<void> publishLocal();
+
+  /// Resolve everyone else's media in this session.
+  ///
+  /// Returns the canonical presentation model. Implementations must never
+  /// report a participant's own outbound media as remote.
+  Future<Map<String, RemoteParticipantMedia>> refreshRemoteMedia();
+
+  /// Replace the published video source in place.
+  ///
+  /// This is camera switching, and it is a TRACK replacement: no new session,
+  /// no new participant, no re-admission, and never one replacement path per
+  /// subscriber.
+  Future<void> replaceVideoSource(MediaStreamTrack track);
+
+  Future<void> setMicrophoneEnabled(bool enabled);
+
+  Future<void> setCameraEnabled(bool enabled);
+
+  /// Tear down transport state. Must be idempotent and must not throw on a
+  /// leave — a failed cleanup must never strand the person in the call.
+  Future<void> close();
+
+  /// What is actually moving.
+  ///
+  /// The selector has to be observable (§6), and certification has to assert
+  /// DELIVERY rather than negotiation (§10) — a connected transport that
+  /// carries no media is a failure, and the suite that once passed while
+  /// delivering nothing is the reason this is on the interface rather than
+  /// reached for inside a test.
+  Future<RealtimeTransportStats> stats();
+}
+
+/// Delivery facts, transport-independent.
+class RealtimeTransportStats {
+  const RealtimeTransportStats({
+    required this.inboundBytes,
+    required this.outboundBytes,
+    required this.uploadPathCount,
+  });
+
+  final int inboundBytes;
+  final int outboundBytes;
+
+  /// Number of outbound RTP streams the local publisher is sending.
+  ///
+  /// The architectural invariant in one number: under SFU this is one per
+  /// TRACK and does not move as the audience grows; under mesh it is one per
+  /// track per remote peer.
+  final int uploadPathCount;
+}

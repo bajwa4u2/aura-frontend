@@ -387,6 +387,71 @@ class RealtimeRepository {
     return _unwrapMap(res.data);
   }
 
+  // ── STAGE MEDIA CONTROL PLANE ──────────────────────────────────────────
+  //
+  // Client -> Aura -> Cloudflare for control; client <-> Cloudflare for media.
+  // Nothing here sends or receives a provider identifier: a subscribe names
+  // AURA track ids, and the response says which m-line carries whose track.
+
+  Future<Map<String, dynamic>> openStageTransport(
+    String sessionId, {
+    required String offerSdp,
+  }) async {
+    final res = await _dio.post(
+      '/realtime/sessions/$sessionId/stage/transport',
+      data: <String, dynamic>{'offerSdp': offerSdp},
+    );
+    return _unwrapMap(res.data);
+  }
+
+  Future<Map<String, dynamic>> publishStageTracks(
+    String sessionId, {
+    required String offerSdp,
+    required List<Map<String, dynamic>> tracks,
+  }) async {
+    final res = await _dio.post(
+      '/realtime/sessions/$sessionId/stage/publish',
+      data: <String, dynamic>{'offerSdp': offerSdp, 'tracks': tracks},
+    );
+    return _unwrapMap(res.data);
+  }
+
+  Future<List<Map<String, dynamic>>> listStageTracks(String sessionId) async {
+    final res = await _dio.get('/realtime/sessions/$sessionId/stage/tracks');
+    final raw = res.data;
+    final data = (raw is Map && raw['data'] is List) ? raw['data'] : raw;
+    if (data is! List) return const <Map<String, dynamic>>[];
+    return data
+        .whereType<Map>()
+        .map((e) => e.cast<String, dynamic>())
+        .toList(growable: false);
+  }
+
+  Future<Map<String, dynamic>> subscribeStageTracks(
+    String sessionId, {
+    required List<String> trackIds,
+  }) async {
+    final res = await _dio.post(
+      '/realtime/sessions/$sessionId/stage/subscribe',
+      data: <String, dynamic>{'trackIds': trackIds},
+    );
+    return _unwrapMap(res.data);
+  }
+
+  Future<void> renegotiateStage(
+    String sessionId, {
+    required String answerSdp,
+  }) async {
+    await _dio.post(
+      '/realtime/sessions/$sessionId/stage/renegotiate',
+      data: <String, dynamic>{'answerSdp': answerSdp},
+    );
+  }
+
+  Future<void> closeStageTransport(String sessionId) async {
+    await _dio.post('/realtime/sessions/$sessionId/stage/transport/close', data: const {});
+  }
+
   Future<RealtimePolicy> getPolicy(String sessionId) async {
     final res = await _dio.get('/realtime/sessions/$sessionId/policy');
     return RealtimePolicy.fromJson(_unwrapMap(res.data));
