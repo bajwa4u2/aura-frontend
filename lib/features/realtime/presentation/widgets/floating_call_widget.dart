@@ -261,13 +261,52 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
     );
   }
 
+  /// Sessions whose full call surface this client has actually shown.
+  ///
+  /// See the rule in [_buildPip].
+  final Set<String> _surfaceShown = <String>{};
+
   Widget _buildPip(BuildContext context, RealtimeState liveState, Uri location) {
     if (callSurfaceOwnsTheScreen(location)) {
+      // Remember that the room for THIS session has been on screen. Recorded
+      // during build rather than in the room's initState because that is
+      // precisely the lifecycle window the 2026-08-22 repair had to escape.
+      //
+      // The identity recorded is the one `_resolve()` reports, NOT the id in
+      // the path: on `/meetings/:id/live` the path carries the MEETING id
+      // while the PiP compares realtime session ids, so matching on the path
+      // would silently suppress the meetings PiP forever.
+      final shown = _resolve();
+      if (shown != null) _surfaceShown.add(shown.sessionId);
       return const SizedBox.shrink();
     }
 
     final info = _resolve();
     if (info == null) return const SizedBox.shrink();
+
+    // A PiP MUST NOT PRECEDE THE ROOM IT REPRESENTS.
+    //
+    // Founder-observed on the receiving end, 2026-08-25, still present after
+    // the 2026-08-22 route-based repair: accepting a call flashed the PiP
+    // before the room appeared.
+    //
+    // That repair fixed *which* signal is used — the address, which changes
+    // synchronously with navigation — but not the ordering. Joining happens
+    // BEFORE navigation begins: the callee accepts, the session becomes
+    // joined, `_resolve()` starts returning info, and the PiP renders in the
+    // gap before the route changes. On the receiving end that gap is longest,
+    // because accepting does the join and the navigation back to back.
+    //
+    // The product rule this encodes: the PiP means "a call is running on some
+    // other screen". A call whose room has never been shown is not running
+    // somewhere else — it is arriving here. So the PiP stays silent until the
+    // room for that session has actually been on screen at least once.
+    //
+    // Leaving is unaffected: by then the surface has been shown, so minimising
+    // still produces a PiP immediately.
+    if (!_surfaceShown.contains(info.sessionId)) {
+      return const SizedBox.shrink();
+    }
 
     if (_offset == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
