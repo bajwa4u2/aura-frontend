@@ -85,6 +85,35 @@ String resolveNotificationKind(Map<String, dynamic> payload) {
 
 bool isCallKind(String kind) => _kCallKinds.contains(kind);
 
+/// How a call ENDS. Deliberately separate from [_kCallKinds]: that set also
+/// drives ringing behaviour, so a missed call joining it would make the
+/// incoming-call layer treat an outcome as an arrival.
+const Set<String> _kTerminalCallKinds = <String>{
+  'CALL_ENDED',
+  'CALL_MISSED',
+  'CALL_DECLINED',
+};
+
+/// EVERY kind that is ABOUT a call — arriving or over.
+///
+/// [isCallKind] answers "is this call ARRIVING", which is the right question
+/// for ringing and the wrong one for anything else. Asking it where the real
+/// question was "is this a call at all" is how terminal call notifications
+/// slipped past guards written for calls:
+///
+///   * the global ribbon suppression (founder 2026-08-22: a call must never be
+///     announced by a four-second toast, because it already has canonical
+///     presentation at every stage). Terminal kinds were not in the set, so
+///     accepting a call could still raise a "Call ended" ribbon over the call
+///     being answered — founder-observed again 2026-08-25;
+///   * Activity grouping, where CALL_ENDED and CALL_DECLINED fell through to
+///     System rather than Calls.
+///
+/// Use this for "does this belong to calls". Use [isCallKind] only where the
+/// answer must mean "a call is arriving right now".
+bool isCallLifecycleKind(String kind) =>
+    _kCallKinds.contains(kind) || _kTerminalCallKinds.contains(kind);
+
 String resolveCallSessionId(Map<String, dynamic> payload) {
   final data = mapOf(payload['data']);
   return firstNonEmptyString(<String>[

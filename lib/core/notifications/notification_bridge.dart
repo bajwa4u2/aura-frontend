@@ -205,6 +205,27 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
     unawaited(
       ref.read(notificationsControllerProvider.notifier).refresh(force: true),
     );
+
+    // A CALL IS NEVER ANNOUNCED BY THE RIBBON — INCLUDING A CALL THAT IS OVER.
+    //
+    // The branch above only claims a call that is ARRIVING, so every terminal
+    // call push — CALL_ENDED, CALL_MISSED, CALL_DECLINED — fell past it to the
+    // snackbar below. Founder-observed 2026-08-25, twice: accepting a call
+    // raised a "Call ended" toast, in the same seconds as the accept, because
+    // the accept itself foregrounds the app and the ENDED push for the
+    // previous call lands into a foreground handler with no call suppression.
+    //
+    // The polled path already refuses these (see `_isLiveInterrupt`). This is
+    // the same rule on the push path, which had been left without one.
+    // Calls are presented canonically at every stage — the ringing card, the
+    // room, the PiP, and the Activity list as history. A four-second ribbon is
+    // not history.
+    if (projection.isCallLifecycleKind(
+      _resolveNotificationKind(payload).toUpperCase(),
+    )) {
+      return;
+    }
+
     _showForegroundSnackbar(payload);
   }
 
@@ -483,7 +504,13 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
   /// A four-second ribbon is not history.
   bool _isLiveInterrupt(Map<String, dynamic> item) {
     final kind = _resolveNotificationKindFromItem(item).toUpperCase();
-    return projection.isCallKind(kind);
+    // Every call kind, INCLUDING the terminal ones. The 2026-08-22 repair
+    // asked `isCallKind`, which means "is a call arriving" — so CALL_ENDED
+    // was never a call as far as this guard was concerned and kept reaching
+    // the ribbon. Founder-observed 2026-08-25: accepting a call raised a
+    // "Call ended" toast over the call being answered, carried in by the
+    // notification refresh that the accept itself triggers.
+    return projection.isCallLifecycleKind(kind);
   }
 
   String _resolveNotificationKindFromItem(Map<String, dynamic> item) =>

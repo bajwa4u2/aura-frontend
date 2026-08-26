@@ -426,3 +426,91 @@ depends on, and which a past narrowing to 404-only once broke entirely.
 
 ICE establishment (1.23 s) is untouched: it is real network work, and belongs
 to the media transport this chapter may not reconstruct.
+
+## AV-16 — "Call ended" announced over the call being answered
+
+> "before connecting immediately after accept there was call ended banner, its
+> odd" — founder, 2026-08-25
+>
+> "call ended issue not resolved" — after the first repair
+>
+> "call ended gone" — after the second
+
+Founder-confirmed fixed on build `31145fa`.
+
+### Two wrong attributions before the right one
+
+Recorded because the wrong turns are the useful part.
+
+**First**, the roster-count emptiness test in the socket `participant:left`
+handler was suspected, on the reasoning that a join-window roster of one reads
+as an emptied room. That reasoning is sound and the guard shipped — but it was
+not this defect, and saying so was premature.
+
+**Second**, `isActive == false` was read as conflating "not started" with
+"ended". It does not: the server defines `isActive` as exactly
+`status ∉ {ENDED, CANCELLED, FAILED}` and the client falls back to the same
+rule. `hasEnded` is therefore a naming improvement, not a repair.
+
+What settled it was instrumenting **every** path that can end a call
+(`[ended-diag]`) and finding that **none of them fired** while the founder was
+still seeing the banner. That is the measurement that killed both theories:
+the message was never the call controller's.
+
+### What it actually was
+
+The notification ribbon, rendering a `CALL_ENDED` row:
+
+```dart
+// notification_presentation.dart
+if (callState == 'ENDED') return 'Call ended';
+```
+
+Accepting a call foregrounds the app and triggers a notification refresh; the
+previous call's ENDED row arrives into a foreground handler and is drawn as a
+four-second floating snackbar over the call being answered.
+
+### Why the existing guard did not catch it
+
+A suppression for precisely this already existed (2026-08-22, founder-observed
+on the attendee side). It asks `isCallKind`, and that set is deliberately only
+the RINGING vocabulary:
+
+```dart
+{'LIVE', 'CALL', 'REALTIME', 'CALL_RINGING', 'LIVE_RINGING'}
+```
+
+Terminal kinds are excluded on purpose — the code says why: adding them "would
+make the incoming-call layer treat a missed call as an arriving one". So the
+guard was asking *"is a call arriving?"* where the question was *"is this about
+a call at all?"*, and `CALL_ENDED` was not a call as far as it was concerned.
+
+### Two doors, not one
+
+The first repair added terminal kinds to the POLLED path only — and the founder
+saw the banner again on the very next build. The FCM **foreground** handler has
+its own `_showForegroundSnackbar` call with no call suppression whatsoever: a
+terminal call push is not a "call interrupt", so it fell past the incoming-call
+branch straight to the ribbon. That was the door actually in use.
+
+| Path | Before | After |
+|---|---|---|
+| Polled notification rows | `isCallKind` (ringing only) | `isCallLifecycleKind` |
+| FCM foreground push | **no call suppression at all** | `isCallLifecycleKind` |
+
+`isCallLifecycleKind` is new and deliberately separate from `isCallKind`, which
+is untouched so ringing semantics do not move.
+
+### A third defect fell out of the same question
+
+`CALL_ENDED` and `CALL_DECLINED` were absent from the Activity group map too,
+so an ended call filed under **System** rather than **Calls**. The same
+predicate fixes it.
+
+### The test that should have existed
+
+The 2026-08-22 test passed throughout this entire defect, because it only
+checked the ringing vocabulary — which was already correct. The replacement
+walks the bridge and asserts that EVERY snackbar path carries the refusal, so a
+third door cannot be added without one, and adds the inverse assertion that a
+terminal kind must never reach the incoming-call layer.

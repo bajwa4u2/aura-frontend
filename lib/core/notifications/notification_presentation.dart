@@ -416,8 +416,11 @@ const Map<String, NotificationGroup> kNotificationGroups = <String, Notification
 NotificationGroup notificationGroupForKind(String rawKind) {
   final kind = rawKind.trim().toUpperCase();
 
-  // Defer to the call authority rather than restating which kinds are calls.
-  if (call_kinds.isCallKind(kind)) return NotificationGroup.calls;
+  // Defer to the call authority rather than restating which kinds are calls —
+  // and ask whether this BELONGS to calls, not whether one is arriving.
+  // CALL_ENDED and CALL_DECLINED are unquestionably calls, and asking the
+  // arrival question filed them under System.
+  if (call_kinds.isCallLifecycleKind(kind)) return NotificationGroup.calls;
 
   // Never hidden. An unrecognised kind is reachable under System until it is
   // named, because a notification the product cannot classify is still a
