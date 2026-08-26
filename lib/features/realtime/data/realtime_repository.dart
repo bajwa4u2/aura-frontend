@@ -448,6 +448,32 @@ class RealtimeRepository {
     );
   }
 
+  /// Report why the stage failed for this client.
+  ///
+  /// Best-effort and never throws: diagnosis must not become a second way for
+  /// a call to break.
+  Future<void> reportStageDiagnostic(
+    String sessionId, {
+    required String phase,
+    required String code,
+    required String message,
+    required String platform,
+  }) async {
+    try {
+      await _dio.post(
+        '/realtime/sessions/$sessionId/stage/diagnostics',
+        data: <String, dynamic>{
+          'phase': phase,
+          'code': code,
+          'message': message,
+          'platform': platform,
+        },
+      );
+    } catch (e) {
+      debugPrint('[rtc] stage diagnostic report failed: $e');
+    }
+  }
+
   Future<void> closeStageTransport(String sessionId) async {
     await _dio.post('/realtime/sessions/$sessionId/stage/transport/close', data: const {});
   }

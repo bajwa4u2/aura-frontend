@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -2841,10 +2842,29 @@ class RealtimeController extends StateNotifier<RealtimeState>
   /// later pass re-resolves who else is publishing. Remote binding is
   /// deterministic, so a roster change is the only trigger needed — there is
   /// no callback to wait on.
+  /// Which client reported a diagnostic — web, android, windows, ios.
+  String get _clientPlatform =>
+      kIsWeb ? 'web' : defaultTargetPlatform.name;
+
   Future<void> _ensureStageConnected(String reason) async {
     final sessionId = _managedSessionId;
     if (sessionId.isEmpty) return;
-    if (!state.isMediaReady) return; // local capture must exist first
+    if (!state.isMediaReady) {
+      // THE SILENT CASE. This early return produced no signal at all, and it
+      // is the most likely reason a receiver ends up in a connected call with
+      // nothing published: no capture, so no attach, so no publish and no
+      // subscribe. It is reported rather than merely skipped.
+      unawaited(_repository.reportStageDiagnostic(
+        sessionId,
+        phase: 'attach-skipped',
+        code: 'no_local_media',
+        message: 'reason=$reason joinState=${state.joinState.name} '
+            'participants=${state.participants.length} '
+            'mediaError=${state.mediaError ?? 'none'}',
+        platform: _clientPlatform,
+      ));
+      return;
+    }
     try {
       if (!_mediaService.usesStageTransport) {
         await _mediaService.attachStage(
@@ -2857,8 +2877,16 @@ class RealtimeController extends StateNotifier<RealtimeState>
 
     } catch (e) {
       // Never let a transport failure take the call down silently — the
-      // product should show honest state rather than a frozen screen.
+      // product should show honest state rather than a frozen screen. But
+      // silent to the USER must not mean invisible to us.
       debugPrint('[rtc] stage connect failed reason=$reason err=$e');
+      unawaited(_repository.reportStageDiagnostic(
+        sessionId,
+        phase: _mediaService.usesStageTransport ? 'refresh' : 'attach',
+        code: 'stage_connect_failed',
+        message: 'reason=$reason err=$e',
+        platform: _clientPlatform,
+      ));
     }
   }
 
