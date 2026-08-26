@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:aura/core/media/device_permission.dart';
@@ -140,6 +142,44 @@ void main() {
         ),
       );
       expect(refused.canJoin, isTrue);
+    });
+  });
+
+  group('the preflight fits the screen it is shown on', () {
+    // FOUND BY USING IT — 2026-08-25, starting a real call from a 1512x812
+    // browser window: the self-preview plus header and device lines pushed
+    // "Start video call" and "Not now" off the bottom, and the sheet could not
+    // scroll to reach them. The call could not be started and the sheet could
+    // not be dismissed by any visible control.
+    //
+    // It fitted on the Pixel's tall screen, which is exactly why a phone-only
+    // check would have missed it.
+    test('the sheet is bounded and its content scrolls', () {
+      final src = File(
+        'lib/core/media/call_preflight_sheet.dart',
+      ).readAsStringSync();
+      expect(src, contains('maxHeight: maxSheet'),
+          reason: 'the sheet is unbounded again and can exceed the viewport');
+      expect(src, contains('SingleChildScrollView'),
+          reason: 'the content cannot scroll, so anything overflowing is lost');
+      expect(src, contains('maxHeight: maxPreview'),
+          reason: 'the preview is uncapped and can crowd out the actions');
+    });
+
+    test('the decision controls stay OUTSIDE the scrollable', () {
+      // A control that decides whether to start a call must not be able to
+      // scroll away — that is the same defect wearing a scrollbar.
+      final src = File(
+        'lib/core/media/call_preflight_sheet.dart',
+      ).readAsStringSync();
+      final scrollEnd = src.indexOf('const SizedBox(height: AuraSpace.s20),',
+          src.indexOf('SingleChildScrollView'));
+      final notNow = src.indexOf("'Not now'");
+      final confirm = src.indexOf('widget.confirmLabel');
+      expect(notNow, greaterThan(scrollEnd),
+          reason: 'the cancel control moved inside the scrollable');
+      expect(confirm, greaterThan(scrollEnd),
+          reason: 'the confirm control moved inside the scrollable');
     });
   });
 }

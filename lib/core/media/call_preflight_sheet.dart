@@ -79,8 +79,9 @@ class CallPreflightSheet extends StatefulWidget {
 }
 
 class _CallPreflightSheetState extends State<CallPreflightSheet> {
-  late final CallReadiness _readiness =
-      CallReadiness(wantsCamera: widget.wantsCamera);
+  late final CallReadiness _readiness = CallReadiness(
+    wantsCamera: widget.wantsCamera,
+  );
   RTCVideoRenderer? _renderer;
 
   @override
@@ -122,14 +123,30 @@ class _CallPreflightSheetState extends State<CallPreflightSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final concern = _readiness.concern;
-    final showPreview =
-        widget.wantsCamera && _renderer?.srcObject != null;
+    final showPreview = widget.wantsCamera && _renderer?.srcObject != null;
+
+    // FOUND BY USING IT — 2026-08-25, a real call from a 1512x812 browser
+    // window: the self-preview plus the header and device lines pushed
+    // "Start video call" and "Not now" off the bottom of the screen, and the
+    // sheet could not scroll to reach them. The call could not be started and
+    // the sheet could not be dismissed by any visible control. It fitted on the
+    // Pixel's tall screen, which is exactly why a phone-only check would have
+    // missed it.
+    //
+    // Two changes: the sheet is bounded to a fraction of the viewport and
+    // scrolls, and the preview is capped so it can never crowd out the
+    // actions. The actions themselves stay OUTSIDE the scrollable, so they are
+    // always on screen — a decision control that can scroll away is the same
+    // defect wearing a scrollbar.
+    final maxSheet = MediaQuery.sizeOf(context).height * 0.85;
+    final maxPreview = MediaQuery.sizeOf(context).height * 0.34;
 
     return SafeArea(
       top: false,
       child: Container(
         margin: const EdgeInsets.all(AuraSpace.s12),
         padding: const EdgeInsets.all(AuraSpace.s20),
+        constraints: BoxConstraints(maxHeight: maxSheet),
         decoration: BoxDecoration(
           color: AuraSurface.elevated,
           borderRadius: BorderRadius.circular(20),
@@ -142,51 +159,67 @@ class _CallPreflightSheetState extends State<CallPreflightSheet> {
               header: true,
               child: Text(
                 widget.title,
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
             const SizedBox(height: 2),
             Text(
               widget.subtitle,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: AuraSurface.muted),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AuraSurface.muted,
+              ),
             ),
             const SizedBox(height: AuraSpace.s16),
-            if (showPreview) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: AspectRatio(
-                  aspectRatio: 16 / 10,
-                  child: RTCVideoView(
-                    _renderer!,
-                    mirror: true,
-                    objectFit:
-                        RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                  ),
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (showPreview) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(maxHeight: maxPreview),
+                          child: AspectRatio(
+                            aspectRatio: 16 / 10,
+                            child: RTCVideoView(
+                              _renderer!,
+                              mirror: true,
+                              objectFit: RTCVideoViewObjectFit
+                                  .RTCVideoViewObjectFitCover,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AuraSpace.s16),
+                    ],
+                    _DeviceLine(
+                      readiness: _readiness.readiness.microphone,
+                      checking: _readiness.checking,
+                    ),
+                    if (widget.wantsCamera) ...[
+                      const SizedBox(height: AuraSpace.s8),
+                      _DeviceLine(
+                        readiness: _readiness.readiness.camera,
+                        checking: _readiness.checking,
+                      ),
+                    ],
+                    if (concern?.recovery != null) ...[
+                      const SizedBox(height: AuraSpace.s12),
+                      Text(
+                        concern!.recovery!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AuraSurface.muted,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              const SizedBox(height: AuraSpace.s16),
-            ],
-            _DeviceLine(
-              readiness: _readiness.readiness.microphone,
-              checking: _readiness.checking,
             ),
-            if (widget.wantsCamera) ...[
-              const SizedBox(height: AuraSpace.s8),
-              _DeviceLine(
-                readiness: _readiness.readiness.camera,
-                checking: _readiness.checking,
-              ),
-            ],
-            if (concern?.recovery != null) ...[
-              const SizedBox(height: AuraSpace.s12),
-              Text(
-                concern!.recovery!,
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: AuraSurface.muted),
-              ),
-            ],
             const SizedBox(height: AuraSpace.s20),
             // "Open settings" appears ONLY where such a place exists and is
             // the actual remaining fix. An affordance that does nothing is
@@ -266,8 +299,8 @@ class _DeviceLine extends StatelessWidget {
                     ? 'Checking your ${readiness.deviceLabel.toLowerCase()}…'
                     : readiness.summary,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: ok ? null : AuraSurface.muted,
-                    ),
+                  color: ok ? null : AuraSurface.muted,
+                ),
               ),
             ),
           ],
