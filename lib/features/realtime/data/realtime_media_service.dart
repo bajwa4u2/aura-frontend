@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../../../core/media/device_permission.dart';
+import '../domain/remote_media_presentation.dart';
+import 'realtime_transport.dart';
 
 class RealtimeMediaSnapshot {
   const RealtimeMediaSnapshot({
@@ -22,6 +24,7 @@ class RealtimeMediaSnapshot {
     this.cameraUnavailable = false,
     this.speakerphoneEnabled = false,
     this.readiness = MediaReadiness.unchecked,
+    this.remoteByParticipant = const <String, RemoteParticipantMedia>{},
   });
 
   final bool ready;
@@ -32,6 +35,15 @@ class RealtimeMediaSnapshot {
   final bool speakerphoneEnabled;
   final RTCVideoRenderer? localRenderer;
   final Map<String, RTCVideoRenderer> remoteRenderers;
+
+  /// CANONICAL remote media, keyed by Aura participant id.
+  ///
+  /// The transport-independent answer to "whose media is arriving". Mesh keys
+  /// its renderers by device because it builds one peer connection per remote
+  /// device; the stage transport has one peer connection in total and nothing
+  /// device-shaped to key on. Surfaces should read this and stop treating
+  /// `remoteRenderers[deviceId]` as identity authority.
+  final Map<String, RemoteParticipantMedia> remoteByParticipant;
   /// A sentence, for surfaces that only need to say something went wrong.
   ///
   /// Derived from [readiness] rather than hand-written at the failure site —
@@ -130,6 +142,16 @@ class RealtimeMediaService {
   Stream<RealtimePeerHealthEvent> get peerHealthEvents => _peerHealth.stream;
 
   MediaStream? _localStream;
+
+  /// The stage transport, when the SERVER has selected it. Null means mesh.
+  ///
+  /// Founder ruling §2: no screen, caller or local flag chooses this — it is
+  /// attached only in response to the session's server-authoritative
+  /// routingMode, and while it is null every mesh path below behaves exactly
+  /// as it did before this migration.
+  RealtimeTransport? _stage;
+  Map<String, RemoteParticipantMedia> _remoteByParticipant =
+      const <String, RemoteParticipantMedia>{};
   RTCVideoRenderer? _localRenderer;
   MediaStream? _screenStream;
   bool _ready = false;
@@ -188,6 +210,8 @@ class RealtimeMediaService {
         cameraEnabled: _cameraEnabled,
         localRenderer: _localRenderer,
         remoteRenderers: Map<String, RTCVideoRenderer>.from(_remoteRenderers),
+        remoteByParticipant:
+            Map<String, RemoteParticipantMedia>.from(_remoteByParticipant),
         error: _error,
         readiness: _readiness,
         isScreenSharing: _isScreenSharing,
@@ -603,6 +627,11 @@ class RealtimeMediaService {
     required Map<String, dynamic> sdp,
     required void Function(RTCIceCandidate candidate) onIceCandidate,
   }) async {
+    // A stage session has no peers to negotiate with. A late socket event
+    // must not build a mesh peer alongside the stage transport, which would
+    // duplicate this participant's media and their tile.
+    if (_stage != null) return null;
+
     final existing = _peers[peerKey];
 
     // Perfect-negotiation collision handling. A collision = an inbound offer
@@ -666,6 +695,11 @@ class RealtimeMediaService {
     required String peerKey,
     required Map<String, dynamic> sdp,
   }) async {
+    // A stage session has no peers to negotiate with. A late socket event
+    // must not build a mesh peer alongside the stage transport, which would
+    // duplicate this participant's media and their tile.
+    if (_stage != null) return;
+
     final connection = _peers[peerKey];
     if (connection == null) return;
 
@@ -692,6 +726,11 @@ class RealtimeMediaService {
     required String peerKey,
     required Map<String, dynamic> candidate,
   }) async {
+    // A stage session has no peers to negotiate with. A late socket event
+    // must not build a mesh peer alongside the stage transport, which would
+    // duplicate this participant's media and their tile.
+    if (_stage != null) return;
+
     final value = candidate['candidate'];
     if (value == null) return;
 
@@ -938,6 +977,68 @@ class RealtimeMediaService {
     _screenStream = null;
     _publish();
   }
+
+  // ── STAGE (SFU) TRANSPORT ────────────────────────────────────────────
+  //
+  // Attached only when the SERVER selected it. While no stage is attached the
+  // mesh paths below are untouched, which is why this migration cannot change
+  // the behaviour of a released call until the topology owner says so.
+
+  /// Whether this session's media moves through the stage transport.
+  bool get usesStageTransport => _stage != null;
+
+  /// Which transport is carrying media, for observability (§2).
+  String get transportId => _stage?.id ?? 'mesh';
+
+  /// Bring the stage up for this session and publish the local capture.
+  ///
+  /// Local media must already be acquired: the provider needs at least one
+  /// track to establish a peer connection at all.
+  Future<void> attachStage(
+    RealtimeTransport transport, {
+    required String sessionId,
+  }) async {
+    if (_disposed) return;
+    final local = _localStream;
+    if (local == null) {
+      throw StateError('attachStage before local media [stage:no_local]');
+    }
+    _stage = transport;
+    await transport.open(sessionId: sessionId, local: local);
+    await transport.publishLocal();
+    await refreshStageRemoteMedia();
+  }
+
+  /// Resolve everyone else's media and publish it into the snapshot.
+  ///
+  /// Called when the roster changes. Binding is deterministic — the server
+  /// says which m-line carries whose track — so there is no callback to wait
+  /// for and no blank tile over flowing media.
+  Future<void> refreshStageRemoteMedia() async {
+    final transport = _stage;
+    if (transport == null || _disposed) return;
+    _remoteByParticipant = await transport.refreshRemoteMedia();
+    _publish();
+  }
+
+  Future<void> detachStage() async {
+    final transport = _stage;
+    _stage = null;
+    _remoteByParticipant = const <String, RemoteParticipantMedia>{};
+    if (transport == null) return;
+    // Must never throw on a leave.
+    try {
+      await transport.close();
+    } catch (e) {
+      debugPrint('[rtc] stage detach failed: $e');
+    }
+  }
+
+  // Camera switching, mute and camera toggling are deliberately NOT
+  // transport-specific. `Helper.switchCamera` swaps the source on the SAME
+  // track and `enabled` gates the same track, so the sender keeps its
+  // publication either way — which is what makes a camera switch a track
+  // replacement rather than a renegotiation under both transports.
 
   Future<void> switchCamera() async {
     if (_disposed) return;
@@ -1340,6 +1441,10 @@ class RealtimeMediaService {
   }
 
   Future<void> resetSessionMedia() async {
+    // Stage teardown rides the SAME reset the product already calls on leave,
+    // so cleanup semantics are unchanged: one place ends a session's media,
+    // whichever transport carried it.
+    await detachStage();
     await disposeAllPeers();
     await _resetLocalMediaOnly();
     if (_screenStream != null) {

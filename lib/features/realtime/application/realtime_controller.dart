@@ -11,6 +11,7 @@ import '../../../core/realtime/meeting_realtime_semantics.dart';
 import '../data/realtime_event_parser.dart';
 import '../data/realtime_media_service.dart';
 import '../data/realtime_repository.dart';
+import '../data/sfu_realtime_transport.dart';
 import '../data/realtime_socket_service.dart';
 import '../domain/realtime_enums.dart';
 import '../domain/realtime_models.dart';
@@ -2833,12 +2834,51 @@ class RealtimeController extends StateNotifier<RealtimeState>
   /// offer". Reconnect races where both briefly hold each other's socket are
   /// resolved by perfect-negotiation in the media service's handleRemoteOffer,
   /// NOT by any arbitration here.
+  /// Bring up, or refresh, the stage transport for this session.
+  ///
+  /// Deliberately idempotent and reason-driven, mirroring how mesh
+  /// reconciliation is called: the first pass attaches and publishes, every
+  /// later pass re-resolves who else is publishing. Remote binding is
+  /// deterministic, so a roster change is the only trigger needed — there is
+  /// no callback to wait on.
+  Future<void> _ensureStageConnected(String reason) async {
+    final sessionId = _managedSessionId;
+    if (sessionId.isEmpty) return;
+    if (!state.isMediaReady) return; // local capture must exist first
+    try {
+      if (!_mediaService.usesStageTransport) {
+        await _mediaService.attachStage(
+          SfuRealtimeTransport(_repository),
+          sessionId: sessionId,
+        );
+      } else {
+        await _mediaService.refreshStageRemoteMedia();
+      }
+    } catch (e) {
+      // Never let a transport failure take the call down silently — the
+      // product should show honest state rather than a frozen screen.
+      debugPrint('[rtc] stage connect failed reason=$reason err=$e');
+    }
+  }
+
   Future<void> _reconcileRtcPeers(
     String reason, {
     bool refreshTurnCredentials = false,
   }) async {
     final sessionId = _managedSessionId;
     if (sessionId.isEmpty || !state.isJoined) return;
+
+    // TRANSPORT IS THE SERVER'S DECISION (§2).
+    //
+    // A stage session has no peers to reconcile: there is ONE peer connection
+    // for the whole call, so the mesh loop below — which builds an offer per
+    // remote device — has nothing to do and must not run. Falling through
+    // would create mesh peers alongside the stage transport and duplicate both
+    // this participant's media and their tile.
+    if (state.session?.usesStageTransport ?? false) {
+      await _ensureStageConnected(reason);
+      return;
+    }
 
     final meSocketId = _socketService.socketId;
     if (meSocketId == null || meSocketId.isEmpty) return;

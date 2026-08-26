@@ -193,6 +193,7 @@ class RealtimeSession {
     required this.status,
     required this.kind,
     this.accessMode = '',
+    this.routingMode = '',
     this.liveState = '',
     required this.isActive,
     required this.isLocked,
@@ -220,6 +221,20 @@ class RealtimeSession {
   /// Server RealtimeAccessMode, uppercased ('' when absent) —
   /// participation policy ("who may enter, what may they do").
   final String accessMode;
+
+  /// SERVER-AUTHORITATIVE TRANSPORT DECISION, uppercased ('' when absent).
+  ///
+  /// Founder ruling, client migration §2: no screen, caller, route or local
+  /// flag may choose mesh vs SFU. The topology owner decides, records it here,
+  /// and the client obeys — which is also what keeps the server's reported
+  /// topology and the transport actually in use from drifting apart.
+  ///
+  /// 'SFU' means the stage media path. Anything else, including absent, means
+  /// the legacy mesh: a migration is switched on deliberately, never by a
+  /// missing field.
+  final String routingMode;
+
+  bool get usesStageTransport => routingMode == 'SFU';
 
   /// FD-5 Live lifecycle truth, uppercased ('' when absent): NORMAL /
   /// LIVE_PREPARING / LIVE / ENDING. Deliberately distinct from
@@ -322,6 +337,7 @@ class RealtimeSession {
       status: (json['status'] ?? '').toString().trim().toUpperCase(),
       kind: (json['kind'] ?? '').toString().trim().toUpperCase(),
       accessMode: (json['accessMode'] ?? '').toString().trim().toUpperCase(),
+      routingMode: (json['routingMode'] ?? '').toString().trim().toUpperCase(),
       liveState: (json['liveState'] ?? '').toString().trim().toUpperCase(),
       isActive: _readBool(
         json['isActive'],
