@@ -1005,8 +1005,23 @@ class RealtimeMediaService {
     // between a degraded call and no call.
     final local = _localStream;
     _stage = transport;
-    await transport.open(sessionId: sessionId, local: local);
-    await transport.publishLocal();
+    try {
+      await transport.open(sessionId: sessionId, local: local);
+      await transport.publishLocal();
+    } catch (e) {
+      // A HALF-ATTACHED STAGE IS WORSE THAN NONE.
+      //
+      // Measured on a live call: open() succeeded and publishLocal() failed,
+      // which left a transport row on the server with nothing published — and
+      // because a second open is refused with stage:transport_exists, every
+      // later retry failed too. The call was then permanently stuck with a
+      // transport that carried no media.
+      //
+      // Unwinding makes the failure recoverable: the next attempt starts from
+      // no transport instead of an unusable one.
+      await detachStage();
+      rethrow;
+    }
     await ensureStageRemoteMedia();
   }
 
