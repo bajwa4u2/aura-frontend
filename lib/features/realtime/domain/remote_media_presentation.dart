@@ -131,3 +131,22 @@ Map<String, RemoteParticipantMedia> sfuRemoteMedia({
   }
   return out;
 }
+
+/// Should a renderer nobody in the roster claims still be shown?
+///
+/// Remote media is keyed by device, so an unclaimed renderer means one of two
+/// very different things:
+///
+///  * somebody is in the call but their device id has not been backfilled yet
+///    — show it, or their media is dropped;
+///  * somebody refreshed and rejoined with a NEW device id, leaving their
+///    previous renderer under the old key — do NOT show it, or the same human
+///    appears twice, once named and once as an anonymous "Participant".
+///
+/// The second was founder-observed on 2026-08-26 as "refreshing creates a new
+/// participant for the same person". The distinguishing fact is whether anyone
+/// is still awaiting attribution: if every other participant already has a
+/// device id, an unclaimed renderer belongs to a connection that has already
+/// been replaced.
+bool shouldShowUnattributedMedia(List<ParticipantRef> others) =>
+    others.any((p) => (p.runtimeDeviceId ?? '').trim().isEmpty);

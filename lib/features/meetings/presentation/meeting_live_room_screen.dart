@@ -1,3 +1,4 @@
+import '../../realtime/domain/remote_media_presentation.dart';
 import 'dart:async';
 
 import 'package:file_picker/file_picker.dart';
@@ -1865,11 +1866,33 @@ class _MeetingVideoGrid extends StatelessWidget {
       ));
     }
 
-    // Fallback: a live renderer whose peer isn't in the roster yet (socketId
-    // not backfilled) still gets a tile so media is never dropped. Deduped
-    // against the inventory above by renderer key.
+    // Fallback: a live renderer whose peer isn't in the roster YET (socketId
+    // not backfilled) still gets a tile so media is never dropped.
+    //
+    // "Yet" is load-bearing, and it used to be missing. Renderers are keyed by
+    // runtimeDeviceId. When somebody refreshes they rejoin with a NEW device
+    // id, so their previous renderer is still sitting under the OLD key — no
+    // longer claimed by anyone in the roster. This loop then painted it as a
+    // second, anonymous "Participant" tile beside their real one: the same
+    // human, apparently twice, after every refresh. Founder-observed
+    // 2026-08-26.
+    //
+    // A stale device is not a new person. An unattributed renderer is only
+    // shown while somebody in the roster is genuinely still awaiting a device
+    // id — otherwise every device is accounted for and this renderer belongs
+    // to a connection that has already been replaced.
+    final someoneAwaitingDevice = shouldShowUnattributedMedia([
+      for (final p in participants)
+        if (!isSelf(p))
+          ParticipantRef(
+            id: p.id,
+            userId: p.userId,
+            runtimeDeviceId: p.runtimeDeviceId,
+          ),
+    ]);
     for (final entry in remoteRenderers.entries) {
       if (claimed.contains(entry.key)) continue;
+      if (!someoneAwaitingDevice) continue;
       if (mySocket.isNotEmpty && _raw(entry.key) == mySocket) continue;
       tiles.add(_ParticipantTile(
         renderer: entry.value,
