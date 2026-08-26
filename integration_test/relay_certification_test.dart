@@ -197,6 +197,86 @@ void main() {
         await b.close();
       }
     }, timeout: const Timeout(Duration(minutes: 3)));
+
+    test('an ORDINARY call still connects on the production ICE set',
+        () async {
+      if (!configured) {
+        markTestSkipped('not configured');
+        return;
+      }
+
+      // The preservation half of the migration. The test above deliberately
+      // forbids every path except the relay, which is the opposite of how a
+      // real call behaves — most connect directly and never touch TURN. This
+      // one takes the ICE set exactly as the backend issued it, with no
+      // transport policy at all, and asks the only question that matters after
+      // a provider flip: does an ordinary call still work?
+      final config = <String, dynamic>{
+        'iceServers': iceServers,
+        'sdpSemantics': 'unified-plan',
+      };
+
+      final a = await createPeerConnection(config);
+      final b = await createPeerConnection(config);
+      MediaStream? local;
+
+      try {
+        try {
+          local = await navigator.mediaDevices
+              .getUserMedia(<String, dynamic>{'audio': true, 'video': false});
+          for (final t in local.getTracks()) {
+            await a.addTrack(t, local);
+          }
+        } catch (e) {
+          debugPrint('[cert] ordinary: no capture device: $e');
+        }
+
+        final connected = Completer<void>();
+        var inboundKind = '';
+        b.onTrack = (RTCTrackEvent e) => inboundKind = e.track.kind ?? '';
+        a.onIceCandidate = (c) => b.addCandidate(c);
+        b.onIceCandidate = (c) => a.addCandidate(c);
+        a.onConnectionState = (s) {
+          if (s == RTCPeerConnectionState.RTCPeerConnectionStateConnected &&
+              !connected.isCompleted) {
+            connected.complete();
+          }
+        };
+
+        final offer = await a.createOffer();
+        await a.setLocalDescription(offer);
+        await b.setRemoteDescription(offer);
+        final answer = await b.createAnswer();
+        await b.setLocalDescription(answer);
+        await a.setRemoteDescription(answer);
+
+        await connected.future.timeout(
+          const Duration(seconds: 45),
+          onTimeout: () => throw StateError(
+            'an ordinary call did NOT connect on $defaultTargetPlatform after '
+            'the relay provider changed — this is a regression',
+          ),
+        );
+
+        await Future<void>.delayed(const Duration(seconds: 3));
+        final pair = await _selectedPair(a);
+        expect(pair, isNotNull);
+        expect((pair!['bytesSent'] as num?) ?? 0, greaterThan(0));
+
+        debugPrint(
+          '[cert] platform=$defaultTargetPlatform ORDINARY CALL PASS '
+          'localType=${pair['localType']} remoteType=${pair['remoteType']} '
+          'bytesSent=${pair['bytesSent']} inbound=$inboundKind',
+        );
+      } finally {
+        for (final t in local?.getTracks() ?? const <MediaStreamTrack>[]) {
+          await t.stop();
+        }
+        await local?.dispose();
+        await a.close();
+        await b.close();
+      }
+    }, timeout: const Timeout(Duration(minutes: 3)));
   });
 }
 
