@@ -25,6 +25,7 @@ class RealtimeMediaSnapshot {
     this.speakerphoneEnabled = false,
     this.readiness = MediaReadiness.unchecked,
     this.remoteByParticipant = const <String, RemoteParticipantMedia>{},
+    this.remoteRenderersByParticipant = const <String, RTCVideoRenderer>{},
   });
 
   final bool ready;
@@ -44,6 +45,14 @@ class RealtimeMediaSnapshot {
   /// device-shaped to key on. Surfaces should read this and stop treating
   /// `remoteRenderers[deviceId]` as identity authority.
   final Map<String, RemoteParticipantMedia> remoteByParticipant;
+
+  /// Renderers keyed by PARTICIPANT — what surfaces should display.
+  ///
+  /// `remoteRenderers` above is device-keyed and belongs to mesh. Surfaces
+  /// must not rebuild participant identity from a device key: somebody who
+  /// reconnects is the same person, and that is exactly what produced a
+  /// duplicate anonymous tile after every refresh.
+  final Map<String, RTCVideoRenderer> remoteRenderersByParticipant;
   /// A sentence, for surfaces that only need to say something went wrong.
   ///
   /// Derived from [readiness] rather than hand-written at the failure site —
@@ -152,6 +161,17 @@ class RealtimeMediaService {
   RealtimeTransport? _stage;
   Map<String, RemoteParticipantMedia> _remoteByParticipant =
       const <String, RemoteParticipantMedia>{};
+
+  /// Renderers keyed by PARTICIPANT, for surfaces to display.
+  ///
+  /// The stage delivers tracks, not streams, and a renderer needs a stream —
+  /// so one is built per participant. Keyed by participant id because that is
+  /// presentation identity: somebody who reconnects is the same person, and a
+  /// device-keyed renderer map cannot express that.
+  final Map<String, RTCVideoRenderer> _remoteRenderersByParticipant =
+      <String, RTCVideoRenderer>{};
+  final Map<String, MediaStream> _remoteStreamsByParticipant =
+      <String, MediaStream>{};
   RTCVideoRenderer? _localRenderer;
   MediaStream? _screenStream;
   bool _ready = false;
@@ -212,6 +232,8 @@ class RealtimeMediaService {
         remoteRenderers: Map<String, RTCVideoRenderer>.from(_remoteRenderers),
         remoteByParticipant:
             Map<String, RemoteParticipantMedia>.from(_remoteByParticipant),
+        remoteRenderersByParticipant:
+            Map<String, RTCVideoRenderer>.from(_remoteRenderersByParticipant),
         error: _error,
         readiness: _readiness,
         isScreenSharing: _isScreenSharing,
@@ -1102,7 +1124,45 @@ class RealtimeMediaService {
     // inside.
     if (_sameRemoteMedia(_remoteByParticipant, next)) return;
     _remoteByParticipant = next;
+    await _syncParticipantRenderers(next);
     _publish();
+  }
+
+  /// Build or retire a renderer per participant.
+  ///
+  /// A participant who stops publishing video loses their renderer; one who
+  /// leaves entirely loses renderer and stream. Nothing is keyed by device, so
+  /// reconnecting does not manufacture a second tile.
+  Future<void> _syncParticipantRenderers(
+    Map<String, RemoteParticipantMedia> media,
+  ) async {
+    // Retire anyone no longer present.
+    for (final id in _remoteRenderersByParticipant.keys.toList()) {
+      if (media.containsKey(id) && media[id]!.hasVideo) continue;
+      final renderer = _remoteRenderersByParticipant.remove(id);
+      renderer?.srcObject = null;
+      await renderer?.dispose();
+      final stream = _remoteStreamsByParticipant.remove(id);
+      await stream?.dispose();
+    }
+
+    for (final entry in media.entries) {
+      final video = entry.value.video;
+      if (video == null) continue;
+      if (_remoteRenderersByParticipant.containsKey(entry.key)) continue;
+      try {
+        final stream = await createLocalMediaStream('remote-${entry.key}');
+        await stream.addTrack(video);
+        final audio = entry.value.audio;
+        if (audio != null) await stream.addTrack(audio);
+        final renderer = await _createRemoteRenderer();
+        renderer.srcObject = stream;
+        _remoteStreamsByParticipant[entry.key] = stream;
+        _remoteRenderersByParticipant[entry.key] = renderer;
+      } catch (e) {
+        debugPrint('[rtc] participant renderer failed for ${entry.key}: $e');
+      }
+    }
   }
 
   /// Whether two remote-media maps say the same thing.
@@ -1128,6 +1188,15 @@ class RealtimeMediaService {
     final transport = _stage;
     _stage = null;
     _remoteByParticipant = const <String, RemoteParticipantMedia>{};
+    for (final r in _remoteRenderersByParticipant.values) {
+      r.srcObject = null;
+      await r.dispose();
+    }
+    _remoteRenderersByParticipant.clear();
+    for (final st in _remoteStreamsByParticipant.values) {
+      await st.dispose();
+    }
+    _remoteStreamsByParticipant.clear();
     if (transport == null) return;
     // Must never throw on a leave.
     try {

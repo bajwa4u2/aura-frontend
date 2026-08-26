@@ -64,6 +64,11 @@ class _FlakyTransport implements RealtimeTransport {
 }
 
 void main() {
+  // Building a participant renderer touches platform channels. These tests
+  // assert on media STATE, not on renderers, so the binding is initialised and
+  // the plugin's absence is swallowed by the service's own guard.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   test('an early refusal is retried, not fatal', () async {
     final service = RealtimeMediaService();
     final transport = _FlakyTransport(failuresBeforeSuccess: 2);

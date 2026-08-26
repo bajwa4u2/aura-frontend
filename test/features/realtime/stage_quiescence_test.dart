@@ -78,6 +78,11 @@ class _Track implements MediaStreamTrack {
 }
 
 void main() {
+  // Building a participant renderer touches platform channels. These tests
+  // assert on media STATE, not on renderers, so the binding is initialised and
+  // the plugin's absence is swallowed by the service's own guard.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   test('unchanged remote media emits nothing, so nothing can re-trigger it',
       () async {
     final service = RealtimeMediaService();

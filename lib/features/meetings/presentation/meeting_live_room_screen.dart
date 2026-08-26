@@ -1194,6 +1194,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     );
 
     final remoteRenderers = state.remoteRenderers;
+    final renderersByParticipant = state.remoteRenderersByParticipant;
     final localRenderer = state.localRenderer;
 
     // I1: Find which peer is currently screen sharing, for video grid promotion.
@@ -1225,6 +1226,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
             child: _MeetingVideoGrid(
               localRenderer: localRenderer,
               remoteRenderers: remoteRenderers,
+              renderersByParticipant: renderersByParticipant,
               micOn: state.microphoneEnabled,
               isLocalScreenSharing: state.isScreenSharing,
               screenSharingPeerId: screenSharingPeerId,
@@ -1676,6 +1678,10 @@ class _CameraUnavailableBanner extends StatelessWidget {
 class _MeetingVideoGrid extends StatelessWidget {
   final RTCVideoRenderer? localRenderer;
   final Map<String, RTCVideoRenderer> remoteRenderers;
+
+  /// Presentation identity. Preferred over [remoteRenderers], which is
+  /// device-keyed and exists for the mesh transport.
+  final Map<String, RTCVideoRenderer> renderersByParticipant;
   final bool micOn;
   final bool isLocalScreenSharing;
   final String? screenSharingPeerId;
@@ -1686,6 +1692,7 @@ class _MeetingVideoGrid extends StatelessWidget {
   const _MeetingVideoGrid({
     required this.localRenderer,
     required this.remoteRenderers,
+    this.renderersByParticipant = const <String, RTCVideoRenderer>{},
     required this.micOn,
     required this.isLocalScreenSharing,
     required this.participants,
@@ -1850,7 +1857,12 @@ class _MeetingVideoGrid extends StatelessWidget {
       if (isSelf(p)) continue;
       final key = (p.runtimeDeviceId ?? '').trim();
       if (key.isNotEmpty) claimed.add(key);
-      final renderer = key.isNotEmpty ? remoteRenderers[key] : null;
+      // PARTICIPANT FIRST. Identity is the roster entry `p`; a device key is
+      // only ever used to LOCATE mesh media, never to decide who somebody is.
+      // The stage path has no device-keyed renderers at all, so without this
+      // its video would not display.
+      final renderer = renderersByParticipant[p.id] ??
+          (key.isNotEmpty ? remoteRenderers[key] : null);
       tiles.add(_ParticipantTile(
         // Video state is the LIVE track, not the roster's videoOn hint. The
         // roster flag can be stale-false (a peer's camera-on didn't propagate),

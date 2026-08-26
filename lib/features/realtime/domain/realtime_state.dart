@@ -23,6 +23,7 @@ class RealtimeState {
     required this.isMediaBusy,
     required this.localRenderer,
     required this.remoteRenderers,
+    this.remoteRenderersByParticipant = const <String, RTCVideoRenderer>{},
     required this.microphoneEnabled,
     required this.cameraEnabled,
     required this.mediaError,
@@ -54,6 +55,10 @@ class RealtimeState {
   final bool isMediaBusy;
   final RTCVideoRenderer? localRenderer;
   final Map<String, RTCVideoRenderer> remoteRenderers;
+
+  /// Renderers keyed by PARTICIPANT — presentation identity.
+  /// `remoteRenderers` is device-keyed and belongs to the mesh transport.
+  final Map<String, RTCVideoRenderer> remoteRenderersByParticipant;
   final bool microphoneEnabled;
   final bool cameraEnabled;
   final String? mediaError;
@@ -154,6 +159,7 @@ class RealtimeState {
     RTCVideoRenderer? localRenderer,
     bool clearLocalRenderer = false,
     Map<String, RTCVideoRenderer>? remoteRenderers,
+    Map<String, RTCVideoRenderer>? remoteRenderersByParticipant,
     bool clearRemoteRenderers = false,
     bool? microphoneEnabled,
     bool? cameraEnabled,

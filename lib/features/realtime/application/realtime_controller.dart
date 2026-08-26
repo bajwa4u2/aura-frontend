@@ -2068,6 +2068,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
       isMediaReady: snapshot.ready,
       localRenderer: snapshot.localRenderer,
       remoteRenderers: snapshot.remoteRenderers,
+      remoteRenderersByParticipant: snapshot.remoteRenderersByParticipant,
       microphoneEnabled: snapshot.micEnabled,
       cameraEnabled: snapshot.cameraEnabled,
       speakerphoneEnabled: snapshot.speakerphoneEnabled,
