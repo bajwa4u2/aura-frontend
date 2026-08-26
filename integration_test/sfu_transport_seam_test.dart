@@ -128,7 +128,10 @@ void main() {
         // device or a provider id.
         expect(hostMedia.participantId, isNotEmpty);
 
-        await Future<void>.delayed(const Duration(seconds: 6));
+        // §7: hold a STABLE call and count control-plane activity. After
+        // convergence the system must go quiet — a healthy-looking call that
+        // keeps subscribing several times a second is the defect, not health.
+        await Future<void>.delayed(const Duration(seconds: 25));
 
         // ── DELIVERY, not negotiation ─────────────────────────────────────
         final guestStats = await guestTransport.stats();
