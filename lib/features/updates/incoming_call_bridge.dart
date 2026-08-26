@@ -229,10 +229,56 @@ class IncomingCallBridgeNotifier
       'expiresAt',
       'deeplink',
       'route',
+      // CALLER IDENTITY — measured, 2026-08-25.
+      //
+      // Two payload shapes reach the incoming-call surface and they disagree
+      // about where the caller lives. Logged from a physical Pixel:
+      //
+      //   socket: topKeys=[id, notificationKind, actor, data]
+      //           actor.displayName="M S Bajwa"
+      //
+      //   push:   topKeys=[..., callerDisplayName, callerHandle,
+      //                    callerAvatarUrl, title, body, ..., data]
+      //           actorKeys=[]            <- no actor block at all
+      //           data.callerDisplayName=null
+      //
+      // The push payload DOES carry the caller — flat, at the top level,
+      // beside `title` and `body` — but it has no `actor` block and nothing
+      // under `data`. So a push-delivered ring reached a card that reads
+      // `item['actor']` with nothing to read, and announced "Someone".
+      'callerUserId',
+      'callerDisplayName',
+      'callerHandle',
+      'callerAvatarUrl',
     ]) {
       final value = next[key];
       if (_str(data[key]).isEmpty && _str(value).isNotEmpty) {
         data[key] = value;
+      }
+    }
+
+    // ONE CANONICAL ACTOR, WHICHEVER PIPE THE CALL CAME DOWN.
+    //
+    // Rather than teach every consumer to check two places, the flat caller
+    // fields are folded back into the canonical `actor` envelope that
+    // `AuraPersonIdentity.fromJson` already understands. Consumers keep asking
+    // one question and get one answer, and no surface needs a fallback.
+    //
+    // The existing actor always wins — this only fills an absence.
+    final existingActor = next['actor'];
+    final hasActor = existingActor is Map &&
+        (_str(existingActor['displayName']).isNotEmpty ||
+            _str(existingActor['handle']).isNotEmpty);
+    if (!hasActor) {
+      final displayName = _str(data['callerDisplayName']);
+      final handle = _str(data['callerHandle']);
+      if (displayName.isNotEmpty || handle.isNotEmpty) {
+        next['actor'] = <String, dynamic>{
+          'id': _str(data['callerUserId']),
+          'displayName': displayName,
+          'handle': handle,
+          'avatarUrl': _str(data['callerAvatarUrl']),
+        };
       }
     }
 
