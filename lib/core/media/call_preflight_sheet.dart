@@ -139,7 +139,12 @@ class _CallPreflightSheetState extends State<CallPreflightSheet> {
     // always on screen — a decision control that can scroll away is the same
     // defect wearing a scrollbar.
     final maxSheet = MediaQuery.sizeOf(context).height * 0.85;
-    final maxPreview = MediaQuery.sizeOf(context).height * 0.34;
+    // Deliberately modest: on a short laptop window the actions matter
+    // more than a large self-view.
+    final previewHeight = (MediaQuery.sizeOf(context).height * 0.26).clamp(
+      120.0,
+      240.0,
+    );
 
     return SafeArea(
       top: false,
@@ -179,18 +184,24 @@ class _CallPreflightSheetState extends State<CallPreflightSheet> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (showPreview) ...[
+                      // A FIXED HEIGHT, not an aspect ratio.
+                      //
+                      // ConstrainedBox around AspectRatio did not clamp in
+                      // practice: the sheet's stretch cross-axis gives the
+                      // preview the full width, and 16:10 of that is taller
+                      // than the cap. The preview is a reassurance, not the
+                      // point of the screen — the actions are — so its height
+                      // is stated outright and it crops to fill.
                       ClipRRect(
                         borderRadius: BorderRadius.circular(14),
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(maxHeight: maxPreview),
-                          child: AspectRatio(
-                            aspectRatio: 16 / 10,
-                            child: RTCVideoView(
-                              _renderer!,
-                              mirror: true,
-                              objectFit: RTCVideoViewObjectFit
-                                  .RTCVideoViewObjectFitCover,
-                            ),
+                        child: SizedBox(
+                          height: previewHeight,
+                          width: double.infinity,
+                          child: RTCVideoView(
+                            _renderer!,
+                            mirror: true,
+                            objectFit: RTCVideoViewObjectFit
+                                .RTCVideoViewObjectFitCover,
                           ),
                         ),
                       ),

@@ -162,8 +162,16 @@ void main() {
           reason: 'the sheet is unbounded again and can exceed the viewport');
       expect(src, contains('SingleChildScrollView'),
           reason: 'the content cannot scroll, so anything overflowing is lost');
-      expect(src, contains('maxHeight: maxPreview'),
+      expect(src, contains('height: previewHeight'),
           reason: 'the preview is uncapped and can crowd out the actions');
+      // Asserted on the values rather than the formatting: dart format wraps
+      // the clamp across lines.
+      expect(src, contains('previewHeight'));
+      expect(src, contains('120.0'),
+          reason: 'the preview lower bound is gone');
+      expect(src, contains('240.0'),
+          reason: 'the preview cap is gone; ConstrainedBox around AspectRatio '
+              'did NOT clamp in practice, which is why it is a fixed height');
     });
 
     test('the decision controls stay OUTSIDE the scrollable', () {
