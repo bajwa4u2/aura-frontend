@@ -28,16 +28,22 @@ abstract class RealtimeTransport {
   /// a participant whose camera and microphone were denied or are busy can
   /// still SEE and HEAR the room — and the stage path must not be stricter,
   /// or a permission denial would turn a degraded call into no call at all.
-  Future<void> open({required String sessionId, MediaStream? local});
+  Future<void> open({
+    required String sessionId,
+    MediaStream? local,
+    String trigger,
+  });
 
   /// Publish the local tracks attached at [open].
-  Future<void> publishLocal();
+  Future<void> publishLocal({String trigger});
 
   /// Resolve everyone else's media in this session.
   ///
   /// Returns the canonical presentation model. Implementations must never
   /// report a participant's own outbound media as remote.
-  Future<Map<String, RemoteParticipantMedia>> refreshRemoteMedia();
+  Future<Map<String, RemoteParticipantMedia>> refreshRemoteMedia({
+    String trigger,
+  });
 
   /// Replace the published video source in place.
   ///

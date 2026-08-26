@@ -65,12 +65,80 @@ class SfuRealtimeTransport implements RealtimeTransport {
   /// state-machine mistake rather than fix it.
   final SerialQueue _queue = SerialQueue();
 
+  /// BOUNDED SEQUENCE TRACE.
+  ///
+  /// Founder ruling §6: after a second failed product proof, stop patching and
+  /// record what actually happens. Every stage control operation reports its
+  /// order, trigger, signalling state either side, and how long it waited
+  /// behind other work — so the interleaving can be read rather than inferred.
+  ///
+  /// Never carries SDP, credentials, tokens or media. Best-effort: a trace
+  /// that failed to send must never fail a call.
+  int _seq = 0;
+
+  Future<T> _traced<T>(
+    String type,
+    String trigger,
+    Future<T> Function() action,
+  ) async {
+    final seq = ++_seq;
+    final queuedAt = DateTime.now();
+    return _queue.run(() async {
+      final startedAt = DateTime.now();
+      final before = _pc?.signalingState?.name ?? 'none';
+      String result = 'ok';
+      try {
+        return await action();
+      } catch (e) {
+        result = _shortError(e);
+        rethrow;
+      } finally {
+        final endedAt = DateTime.now();
+        final after = _pc?.signalingState?.name ?? 'none';
+        unawaited(_report(
+          'seq=$seq op=$type trig=$trigger '
+          'sigBefore=$before sigAfter=$after '
+          'waitMs=${startedAt.difference(queuedAt).inMilliseconds} '
+          'runMs=${endedAt.difference(startedAt).inMilliseconds} '
+          'result=$result',
+        ));
+      }
+    });
+  }
+
+  /// Compact, safe error label — never the provider's full body.
+  String _shortError(Object e) {
+    final text = e.toString();
+    final marker = RegExp(r'\[stage:[a-z0-9_]+\]').firstMatch(text);
+    if (marker != null) return marker.group(0)!;
+    return text.length > 60 ? '${text.substring(0, 60)}...' : text;
+  }
+
+  Future<void> _report(String message) async {
+    final sessionId = _sessionId;
+    if (sessionId == null) return;
+    try {
+      await _repository.reportStageDiagnostic(
+        sessionId,
+        phase: 'trace',
+        code: 'stage_op',
+        message: message,
+        platform: kIsWeb ? 'web' : defaultTargetPlatform.name,
+      );
+    } catch (_) {
+      // A trace that cannot be sent must never fail a call.
+    }
+  }
+
   @override
   Future<void> open({
     required String sessionId,
     MediaStream? local,
-  }) =>
-      _queue.run(() => _open(sessionId: sessionId, local: local));
+    String trigger = 'UNKNOWN',
+  }) {
+    _sessionId = sessionId; // so the trace can be attributed before open runs
+    return _traced('OPEN', trigger, () => _open(sessionId: sessionId, local: local));
+  }
 
   Future<void> _open({
     required String sessionId,
@@ -131,7 +199,8 @@ class SfuRealtimeTransport implements RealtimeTransport {
   }
 
   @override
-  Future<void> publishLocal() => _queue.run(_publishLocal);
+  Future<void> publishLocal({String trigger = 'UNKNOWN'}) =>
+      _traced('PUBLISH', trigger, _publishLocal);
 
   Future<void> _publishLocal() async {
     final pc = _pc;
@@ -191,8 +260,10 @@ class SfuRealtimeTransport implements RealtimeTransport {
   }
 
   @override
-  Future<Map<String, RemoteParticipantMedia>> refreshRemoteMedia() =>
-      _queue.run(_refreshRemoteMedia);
+  Future<Map<String, RemoteParticipantMedia>> refreshRemoteMedia({
+    String trigger = 'UNKNOWN',
+  }) =>
+      _traced('SUBSCRIBE', trigger, _refreshRemoteMedia);
 
   Future<Map<String, RemoteParticipantMedia>> _refreshRemoteMedia() async {
     final pc = _pc;

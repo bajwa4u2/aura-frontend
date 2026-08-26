@@ -997,6 +997,7 @@ class RealtimeMediaService {
   Future<void> attachStage(
     RealtimeTransport transport, {
     required String sessionId,
+    String trigger = 'UNKNOWN',
   }) async {
     if (_disposed) return;
     // A null local stream is allowed. Capture may have been denied or the
@@ -1006,8 +1007,9 @@ class RealtimeMediaService {
     final local = _localStream;
     _stage = transport;
     try {
-      await transport.open(sessionId: sessionId, local: local);
-      await transport.publishLocal();
+      await transport.open(
+          sessionId: sessionId, local: local, trigger: trigger);
+      await transport.publishLocal(trigger: trigger);
     } catch (e) {
       // A HALF-ATTACHED STAGE IS WORSE THAN NONE.
       //
@@ -1022,7 +1024,7 @@ class RealtimeMediaService {
       await detachStage();
       rethrow;
     }
-    await ensureStageRemoteMedia();
+    await ensureStageRemoteMedia(trigger: trigger);
   }
 
   /// Resolve remote media, retrying until it appears.
@@ -1041,12 +1043,13 @@ class RealtimeMediaService {
   Future<void> ensureStageRemoteMedia({
     int attempts = 6,
     Duration interval = const Duration(seconds: 2),
+    String trigger = 'UNKNOWN',
   }) async {
     Object? lastError;
     for (var attempt = 0; attempt < attempts; attempt++) {
       if (_disposed || _stage == null) return;
       try {
-        await refreshStageRemoteMedia();
+        await refreshStageRemoteMedia(trigger: trigger);
         if (_remoteByParticipant.isNotEmpty) return;
       } catch (e) {
         // A FAILED ATTEMPT MUST NOT END CONVERGENCE.
@@ -1079,10 +1082,10 @@ class RealtimeMediaService {
   /// Called when the roster changes. Binding is deterministic — the server
   /// says which m-line carries whose track — so there is no callback to wait
   /// for and no blank tile over flowing media.
-  Future<void> refreshStageRemoteMedia() async {
+  Future<void> refreshStageRemoteMedia({String trigger = 'UNKNOWN'}) async {
     final transport = _stage;
     if (transport == null || _disposed) return;
-    _remoteByParticipant = await transport.refreshRemoteMedia();
+    _remoteByParticipant = await transport.refreshRemoteMedia(trigger: trigger);
     _publish();
   }
 

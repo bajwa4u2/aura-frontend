@@ -2846,6 +2846,24 @@ class RealtimeController extends StateNotifier<RealtimeState>
   String get _clientPlatform =>
       kIsWeb ? 'web' : defaultTargetPlatform.name;
 
+  /// Canonical trigger label for the stage trace (§6).
+  static String _stageTrigger(String reason) {
+    switch (reason) {
+      case 'join':
+      case 'resume':
+        return 'JOIN';
+      case 'hydrate':
+      case 'hydrate-live':
+        return 'HYDRATE';
+      case 'media-ready':
+        return 'MEDIA_READY';
+      case 'participant.joined':
+        return 'PARTICIPANT_CHANGE';
+      default:
+        return reason.toUpperCase();
+    }
+  }
+
   Future<void> _ensureStageConnected(String reason) async {
     final sessionId = _managedSessionId;
     if (sessionId.isEmpty) return;
@@ -2866,13 +2884,15 @@ class RealtimeController extends StateNotifier<RealtimeState>
       return;
     }
     try {
+      final trigger = _stageTrigger(reason);
       if (!_mediaService.usesStageTransport) {
         await _mediaService.attachStage(
           SfuRealtimeTransport(_repository),
           sessionId: sessionId,
+          trigger: trigger,
         );
       } else {
-        await _mediaService.refreshStageRemoteMedia();
+        await _mediaService.refreshStageRemoteMedia(trigger: trigger);
       }
 
     } catch (e) {

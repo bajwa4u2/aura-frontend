@@ -27,13 +27,19 @@ class _FlakyTransport implements RealtimeTransport {
   String get id => 'fake';
 
   @override
-  Future<void> open({required String sessionId, MediaStream? local}) async {}
+  Future<void> open({
+    required String sessionId,
+    MediaStream? local,
+    String trigger = 'TEST',
+  }) async {}
 
   @override
-  Future<void> publishLocal() async {}
+  Future<void> publishLocal({String trigger = 'TEST'}) async {}
 
   @override
-  Future<Map<String, RemoteParticipantMedia>> refreshRemoteMedia() async {
+  Future<Map<String, RemoteParticipantMedia>> refreshRemoteMedia({
+    String trigger = 'TEST',
+  }) async {
     attempts++;
     if (attempts <= failuresBeforeSuccess) {
       throw StateError('stage subscribe failed: cloudflare_empty_track_error');
