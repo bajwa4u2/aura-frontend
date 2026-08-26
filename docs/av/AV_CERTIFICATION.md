@@ -185,3 +185,42 @@ again. A test that cannot fail is not evidence.
 | Android recovery language names Settings › Apps, never a browser | PASS |
 | Degraded participation: refusal never bars joining | PASS |
 | Audio call never reports the camera as refused | PASS |
+
+---
+
+# Real two-party certification — Pixel ↔ browser, 2026-08-25
+
+**Identities:** browser = **M S Bajwa** (Founder & Steward); Pixel 9a =
+**Muhammad Zakria**. Two genuine authenticated accounts; nothing mocked.
+**Build:** APK from the current A/V code, installed fresh, permissions granted.
+
+## What the first real call established
+
+| Observation | Evidence |
+|---|---|
+| Two-party **audio** call connects | session `cmt9ct2xk00ikli0ch7i8s6go`, timer running, 2 participants |
+| Two-party **video** call connects | session `cmt9ctuj400l9li0c92k7qci2`, browser showed local + remote video |
+| Governed identity in-call | tiles read "You" and "Muhammad Zakria" — never "User"/"Someone" |
+| Reconstructed control vocabulary, on device | the Pixel dock read **"Mute"** and **"Turn off"**, not the old bare "Camera" |
+| Preflight live in production | "Video call Muhammad Zakria" / "They will be able to see and hear you" / "Microphone ready" / "Camera ready" |
+| **TURN relay carrying a real call** | on the Pixel: `tcp ESTAB 10.0.0.44:46105 → 64.23.212.145:3478` |
+
+`ICE_SELECTED_PATH = RELAY (TCP 3478)`. No UDP association to the TURN host was
+present, so this call relayed over TCP. Both endpoints were on the same LAN,
+which makes the relay selection notable in itself and worth watching for media
+quality.
+
+## Four defects found by the real call, all fixed
+
+| # | Defect | Fix |
+|---|---|---|
+| AV-9 **P0** | **The callee received no remote video.** The answerer attaches local tracks after `setRemoteDescription`, once, guarded by `isNewPeer`. If the offer arrived while `getUserMedia` was still resolving, `_localStream` was null, nothing was attached, and `createAnswer` produced **recvonly**. Permanently dark to the far side; unrecoverable because `setCameraEnabled` only flips `enabled` on existing tracks. | The answerer waits on the in-flight acquisition before concluding it has nothing to send. Negative-controlled test. |
+| AV-10 | **Transient PiP on the receiving end.** The 2026-08-22 repair fixed *which signal* is used (route, not `initState`) but not the ORDERING: joining happens before navigation begins, so the PiP rendered in the gap. | A PiP may not precede the room it represents — it stays silent until that session's room has been on screen once. |
+| AV-11 **P0** | **The preflight was unreachable on a short viewport.** From a 1512×812 browser window the preview pushed "Start video call" and "Not now" off-screen with no way to scroll. The call could not be started and the sheet could not be dismissed. It fitted on the Pixel, which is why the Android pass missed it. | Sheet bounded to 85% of viewport, content scrolls, actions pinned OUTSIDE the scrollable. |
+| AV-12 | The preview cap did not apply — `ConstrainedBox` around `AspectRatio` loses to the stretch cross-axis. | Fixed height, crop to fill. |
+
+**AV-9 has history.** Repairs `381c452` and `9815742` were both reverted
+(`a77b62e`, `4420602`), and `a77b62e` also deleted the 237-line regression test.
+`main` then carried neither repair nor test and the defect stayed live. This
+time the fix ships with a negative-controlled test, so a future revert has to
+delete the evidence deliberately.
