@@ -6,6 +6,7 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import '../domain/remote_media_presentation.dart';
 import 'realtime_repository.dart';
 import 'realtime_transport.dart';
+import 'serial_queue.dart';
 import 'stage_remote_binding.dart';
 
 /// CLOUDFLARE SFU TRANSPORT.
@@ -49,36 +50,27 @@ class SfuRealtimeTransport implements RealtimeTransport {
   ///
   /// There is a single peer connection per session, and negotiation is
   /// stateful: an offer must be applied, answered and acknowledged before the
-  /// next one begins. The product drives this from several triggers —
-  /// participant joined, media ready, join, hydrate — which can fire within
-  /// the same second, and each one wants to resolve remote media.
+  /// next one begins. The product drives this from several legitimate triggers
+  /// — participant joined, media ready, join, hydrate — which can fire within
+  /// the same second, and each wants to resolve remote media.
   ///
   /// Measured against production: overlapping refreshes produced repeated
   /// failures inside one second on both sides, while a strictly sequential
   /// script performing the identical calls against the identical backend
-  /// succeeded every time. The protocol was never the problem; the
-  /// concurrency was.
-  Future<void> _lock = Future<void>.value();
-
-  /// Run [action] after whatever is already queued, whether it succeeded.
-  Future<T> _serialized<T>(Future<T> Function() action) {
-    final completer = Completer<T>();
-    _lock = _lock.then((_) async {
-      try {
-        completer.complete(await action());
-      } catch (e, st) {
-        completer.completeError(e, st);
-      }
-    });
-    return completer.future;
-  }
+  /// succeeded every time. The protocol was never the problem.
+  ///
+  /// The product may therefore ask as often as it likes. Ordering is enforced
+  /// here, at the transport that owns the state — never by asking the product
+  /// to co-ordinate, and never with delays or debounce, which would hide a
+  /// state-machine mistake rather than fix it.
+  final SerialQueue _queue = SerialQueue();
 
   @override
   Future<void> open({
     required String sessionId,
     MediaStream? local,
   }) =>
-      _serialized(() => _open(sessionId: sessionId, local: local));
+      _queue.run(() => _open(sessionId: sessionId, local: local));
 
   Future<void> _open({
     required String sessionId,
@@ -139,7 +131,7 @@ class SfuRealtimeTransport implements RealtimeTransport {
   }
 
   @override
-  Future<void> publishLocal() => _serialized(_publishLocal);
+  Future<void> publishLocal() => _queue.run(_publishLocal);
 
   Future<void> _publishLocal() async {
     final pc = _pc;
@@ -200,7 +192,7 @@ class SfuRealtimeTransport implements RealtimeTransport {
 
   @override
   Future<Map<String, RemoteParticipantMedia>> refreshRemoteMedia() =>
-      _serialized(_refreshRemoteMedia);
+      _queue.run(_refreshRemoteMedia);
 
   Future<Map<String, RemoteParticipantMedia>> _refreshRemoteMedia() async {
     final pc = _pc;
@@ -305,6 +297,9 @@ class SfuRealtimeTransport implements RealtimeTransport {
 
   @override
   Future<void> close() async {
+    // Stop accepting negotiation work first: anything still queued must not
+    // mutate a session that is being torn down.
+    _queue.close();
     final sessionId = _sessionId;
     if (sessionId != null) {
       try {
