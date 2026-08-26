@@ -1,0 +1,102 @@
+# Call Presentation Authority
+
+**Chapter opened:** 2026-08-25, founder ruling *A/V FINAL CLOSEOUT + CALL
+PRESENTATION AUTHORITY HANDOFF* (Option 2).
+**Boundary:** the certified A/V engine is an **input dependency**, not in scope.
+Meetings is closed. Live Broadcast is closed.
+
+---
+
+## 1. The question this authority answers
+
+> **How does Aura present a live human media session?**
+
+Independently of whether the enclosing product is a thread call, a Meeting, an
+institution-owned room, or a future Live surface.
+
+It is **not** transport authority. It never owns WebRTC, signaling, ICE,
+TURN/STUN, tracks, capture, routing or reconnect mechanics.
+
+## 2. Measured duplication (before)
+
+| | thread room | meeting live room |
+|---|---|---|
+| file | `realtime/presentation/realtime_room_screen.dart` | `meetings/presentation/meeting_live_room_screen.dart` |
+| lines | **3,783** | **3,685** |
+| widget classes | 23 | 20 |
+| shared call-presentation imports | 1 | **0** |
+
+Files touching call participants: **22**. Sites independently resolving a
+person's identity: **15**.
+
+### The same semantic question, answered twice
+
+| Semantic question | thread room | meeting live room | class |
+|---|---|---|---|
+| how do tiles lay out? | `_VideoGrid` | `_MeetingVideoGrid` | DUPLICATE |
+| how is one participant drawn? | `_VideoTile`, `_AvatarTile`, `_AvatarStage` | `_ParticipantTile`, `_ParticipantRow` | DUPLICATE |
+| what do controls mean? | `_CallControlDock`, `_MeetingControlDock`, `_DockButton`, `_LeaveButton` | own dock | DUPLICATE |
+| what does failure look like? | `_ConnectionBanner`, `_MediaWarningView`, `_MediaLoadingView` | `_ConnectingOverlay`, `_CameraUnavailableBanner` | DIVERGENT |
+| who is in the room? | participant list widget | `_MeetingParticipantPanel` | DUPLICATE |
+| how long have we been here? | inline in top bar | `_ElapsedTimer` | DUPLICATE |
+| what happened at the end? | — | `_MeetingEndedOverlay` | PRODUCT-SPECIFIC |
+| reactions / raised hands | — | `_FlyingReaction`, `_RaisedHandsStrip`, `_ReactionsOverlay` | PRODUCT-SPECIFIC (today) |
+| notes / files | `_ArtifactBlock` | `_MeetingNotesDrawer`, `_MeetingFilesDrawer` | PRODUCT-SPECIFIC |
+
+**The thread room already contains a `_MeetingControlDock`.** A previous attempt
+at convergence was made by copying, which is precisely the failure mode this
+chapter exists to end.
+
+## 3. Why this is the generator of the A/V defects
+
+Every defect found during A/V two-party certification was one product surface
+disagreeing with the other about a question neither owned:
+
+| Defect | The disagreement |
+|---|---|
+| frame mismatch (portrait vs landscape) | Meetings chose `Cover`, thread room chose `Contain` |
+| no preflight on thread calls | Meetings had a device check; thread calls had none |
+| "Someone" on the ring card | two transport encodings reconciled nowhere |
+| duplicate third participant | roster assembled ad hoc per event shape |
+| control labels | each surface wrote its own words |
+
+Each had to be fixed twice, and each fix could land in only one room. With
+institution rooms and Live, that becomes four.
+
+## 4. Ownership boundaries (frozen for this chapter)
+
+**A/V engine owns** — WebRTC/media transport, signaling, ICE, TURN/STUN, media
+tracks, connection/reconnect mechanics, device capture, audio routing,
+low-level media lifecycle.
+
+**Call Presentation Authority owns** — participant presentation model,
+canonical identity projection, roster convergence, tile/media composition,
+aspect/fill policy, local vs remote, mute/camera visual state, control grammar,
+accessibility semantics, call-status presentation, failure/recovery
+presentation, layout policy, PiP integration, and the adapter contract from
+engine state into product-facing state.
+
+**Meetings owns** — meeting lifecycle, purpose/context, attendance semantics,
+the meeting record, Conversation continuity, consequential leave/end rules.
+
+**Thread Conversation owns** — thread context, call initiation affordance,
+durable continuity, call-event history.
+
+**Live Broadcast owns** — publication/broadcast semantics, audience model,
+visibility/distribution, broadcast lifecycle, creator authority. **CLOSED.**
+
+## 5. Target shape
+
+```
+A/V ENGINE STATE
+  → CALL PRESENTATION AUTHORITY
+    → PRODUCT ADAPTER
+      → thread room / meeting room / institution room / future Live surface
+```
+
+Product adapters supply context header, purpose/title, Conversation link,
+meeting lifecycle actions, institution context. They do **not** reimplement
+participant, media, control or accessibility semantics.
+
+There must not be a thread room engine, a meeting room engine, an institution
+room engine and a Live room engine.
