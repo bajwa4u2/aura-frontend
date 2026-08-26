@@ -48,7 +48,7 @@ class SfuRealtimeTransport implements RealtimeTransport {
   @override
   Future<void> open({
     required String sessionId,
-    required MediaStream local,
+    MediaStream? local,
   }) async {
     _sessionId = sessionId;
     _local = local;
@@ -65,11 +65,27 @@ class SfuRealtimeTransport implements RealtimeTransport {
     });
     _pc = pc;
 
-    for (final track in local.getTracks()) {
+    final tracks = local?.getTracks() ?? const <MediaStreamTrack>[];
+    if (tracks.isEmpty) {
+      // RECEIVE-ONLY. Capture failed or was denied, and mesh would still let
+      // this person see and hear the room — so the stage must too. The
+      // provider needs m-lines to negotiate against, so they are offered as
+      // recvonly rather than not at all.
       await pc.addTransceiver(
-        track: track,
-        init: RTCRtpTransceiverInit(direction: TransceiverDirection.SendOnly),
+        kind: RTCRtpMediaType.RTCRtpMediaTypeAudio,
+        init: RTCRtpTransceiverInit(direction: TransceiverDirection.RecvOnly),
       );
+      await pc.addTransceiver(
+        kind: RTCRtpMediaType.RTCRtpMediaTypeVideo,
+        init: RTCRtpTransceiverInit(direction: TransceiverDirection.RecvOnly),
+      );
+    } else {
+      for (final track in tracks) {
+        await pc.addTransceiver(
+          track: track,
+          init: RTCRtpTransceiverInit(direction: TransceiverDirection.SendOnly),
+        );
+      }
     }
 
     final offer = await pc.createOffer();
@@ -106,6 +122,10 @@ class SfuRealtimeTransport implements RealtimeTransport {
     final transceivers = await pc.getTransceivers();
     final sending =
         transceivers.where((t) => t.sender.track != null).toList(growable: false);
+
+    // Nothing to publish is a legitimate state, not a failure: a receive-only
+    // participant still subscribes to everyone else.
+    if (sending.isEmpty) return;
 
     final payload = <Map<String, dynamic>>[];
     for (final t in sending) {

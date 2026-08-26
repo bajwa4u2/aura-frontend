@@ -22,13 +22,13 @@ abstract class RealtimeTransport {
   /// Stable identifier for logs and topology reporting.
   String get id;
 
-  /// Open the transport for a session, offering the local media that will be
-  /// published.
+  /// Open the transport for a session, offering whatever local media exists.
   ///
-  /// The local stream is required at open because the provider needs at least
-  /// one track to establish a peer connection at all — an empty offer produces
-  /// a session that never connects.
-  Future<void> open({required String sessionId, required MediaStream local});
+  /// [local] may be null. Mesh deliberately continues when capture fails —
+  /// a participant whose camera and microphone were denied or are busy can
+  /// still SEE and HEAR the room — and the stage path must not be stricter,
+  /// or a permission denial would turn a degraded call into no call at all.
+  Future<void> open({required String sessionId, MediaStream? local});
 
   /// Publish the local tracks attached at [open].
   Future<void> publishLocal();

@@ -999,10 +999,11 @@ class RealtimeMediaService {
     required String sessionId,
   }) async {
     if (_disposed) return;
+    // A null local stream is allowed. Capture may have been denied or the
+    // devices may be busy; mesh still lets that participant see and hear the
+    // room, and refusing here would make a permission denial the difference
+    // between a degraded call and no call.
     final local = _localStream;
-    if (local == null) {
-      throw StateError('attachStage before local media [stage:no_local]');
-    }
     _stage = transport;
     await transport.open(sessionId: sessionId, local: local);
     await transport.publishLocal();
