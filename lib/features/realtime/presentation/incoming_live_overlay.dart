@@ -610,13 +610,44 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     // model. This is the surface class F057 broke: it resolved identity by
     // hand and could disagree with the thread the call belongs to.
     final person = AuraPersonIdentity.fromJson(actor);
-    final actorName = person.label;
+
+    // WHO IS CALLING — never "Someone" when the payload knows.
+    //
+    // Founder-observed live on a physical Pixel, 2026-08-25: an incoming video
+    // call from M S Bajwa announced itself as "Someone" — "Someone started a
+    // video call" — with an "S" initial avatar. That is the placeholder
+    // identity section 13 forbids, on the one surface where knowing who is
+    // calling matters most, because you answer or decline before anything
+    // else is on screen.
+    //
+    // `AuraPersonIdentity.label` correctly falls back to "Someone" when it has
+    // neither a display name nor a handle. The fault is that it was only ever
+    // given `item['actor']`. The SAME canonical payload also carries
+    // `callerDisplayName` / `callerHandle` (see toCanonicalCallCommunicationData
+    // in aura-backend), so when the actor block arrives empty the identity is
+    // still right there in the message and was simply not read.
+    //
+    // The canonical actor stays FIRST — this is a fallback, not a second
+    // source of truth.
+    final actorName = _firstNonEmpty([
+      person.displayName,
+      _stringOf(data['callerDisplayName']),
+      person.handle.isNotEmpty ? '@${person.handle}' : '',
+      () {
+        final h = _stringOf(data['callerHandle']);
+        return h.isEmpty ? '' : '@$h';
+      }(),
+      'Someone',
+    ]);
     // Caller identity hydration: the canonical actor payload
     // (buildCanonicalIncomingCallNotification, aura-backend) already
     // carries a real avatarUrl end to end — it was resolved but never
     // rendered here, falling back to a generic initial-letter avatar even
     // when the caller's real photo was available.
-    final actorAvatarUrl = person.avatarUrl ?? '';
+    final actorAvatarUrl = _firstNonEmpty([
+      person.avatarUrl ?? '',
+      _stringOf(data['callerAvatarUrl']),
+    ]);
 
     final target = _resolver.resolveFromPayload({...item, ...data});
     final mode = _firstNonEmpty([

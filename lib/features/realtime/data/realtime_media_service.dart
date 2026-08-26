@@ -483,6 +483,17 @@ class RealtimeMediaService {
         renderer.srcObject = stream;
         _remoteRenderers[peerKey] = renderer;
         _error = null;
+        // Remote attach is logged on the SUCCESS path, not only on failure.
+        // During two-party certification a device log could show ICE connected
+        // and `setVideoTrack` with the local track id, but could not answer
+        // "did onTrack fire with a remote video track" — which is the first
+        // question anyone asks about one-way media. It can now.
+        debugPrint(
+          '[rtc] onTrack ATTACHED peerKey=$peerKey kind=$kind '
+          'streams=${event.streams.length} '
+          'v=${stream.getVideoTracks().length} a=${stream.getAudioTracks().length} '
+          'renderers=${_remoteRenderers.length}',
+        );
         _publish();
       } catch (error) {
         debugPrint('[rtc] onTrack ERROR peerKey=$peerKey err=$error');
