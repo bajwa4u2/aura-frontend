@@ -16,6 +16,7 @@ import '../data/sfu_realtime_transport.dart';
 import '../data/realtime_socket_service.dart';
 import '../domain/realtime_enums.dart';
 import '../domain/realtime_models.dart';
+import '../domain/call_mode.dart';
 import '../domain/realtime_state.dart';
 
 class RealtimeController extends StateNotifier<RealtimeState>
@@ -390,7 +391,10 @@ class RealtimeController extends StateNotifier<RealtimeState>
         isBusy: false,
         sessionId: bundle.session.id,
         joinState: RealtimeJoinState.idle,
-        callMode: normalizedKind == 'video' ? 'video' : 'audio',
+        // One authority for this question. This line used to read
+        // `normalizedKind == 'video' ? 'video' : 'audio'`, which sent MIXED —
+        // how meetings are created — to audio.
+        callMode: callModeForSessionKind(normalizedKind, fallback: 'audio'),
         infoMessage: 'Live started here.',
       );
       return bundle.session.id;
@@ -1585,14 +1589,8 @@ class RealtimeController extends StateNotifier<RealtimeState>
     // ever published and "Show camera" (setCameraEnabled) had no track to
     // enable. That is the "guest side is just audio" defect. MIXED is
     // video-capable; users can still turn their camera off.
-    final String? callMode;
-    if (sessionKind == 'VIDEO' || sessionKind == 'MIXED') {
-      callMode = 'video';
-    } else if (sessionKind == 'AUDIO') {
-      callMode = 'audio';
-    } else {
-      callMode = state.callMode;
-    }
+    final callMode =
+        callModeForSessionKind(sessionKind, fallback: state.callMode);
 
     state = state.copyWith(
       session: session,
