@@ -514,3 +514,87 @@ checked the ringing vocabulary — which was already correct. The replacement
 walks the bridge and asserts that EVERY snackbar path carries the refusal, so a
 third door cannot be added without one, and adds the inverse assertion that a
 terminal kind must never reach the incoming-call layer.
+
+## AV-17 — ending a call never closed its public boundary
+
+> "also after watching person leave, it back to error page and her live on
+> header become offline" — founder, 2026-08-26, live with an audience
+
+### Measured in production, not inferred
+
+```
+4 sessions: status=ENDED, liveState=LIVE
+  cmt9n0tnb…  ENDED 09:18   liveState=LIVE
+  cmt9m9khx…  ENDED 08:52   liveState=LIVE
+  cmt9icpio…  ENDED 07:03   liveState=LIVE
+  cmt9e79eb…  ENDED 05:07   liveState=LIVE
+```
+
+**One row for every call that had ever gone live.** `endSession` wrote only:
+
+```ts
+data: { status: targetStatus, endedAt: now }
+```
+
+So a finished call went on advertising itself as live. That is the founder's
+report exactly: a viewer leaving is sent to a session that is over but still
+claims LIVE, and lands on an error page.
+
+The fix returns `liveState` to `NORMAL` on end — the canonical closed value
+`endLiveBoundary` already walks (LIVE → ENDING → NORMAL). Written
+unconditionally because it is idempotent. Observers need no separate handling:
+the existing end finalises participant rows by `joinState`, not role, so
+OBSERVER rows were already being finalised LEFT by the same end.
+
+Backfill applied to the four historical rows under a terminal-status guard
+(a still-running session cannot match): 4 updated, 0 stale remaining, and
+0 sessions left falsely advertising as live.
+
+### A diagnosis that was WRONG, recorded as such
+
+The collapsed in-call dock — Mute, Turn off, Share **and** End Live all absent,
+leaving only Participants / More / Leave — was attributed to the broadcaster
+being demoted to OBSERVER, because that is the single client condition which
+hides both sets of controls (`showPublishControls: !_amObserver`, and
+`_liveControlsEligible` returning false for an observer).
+
+Querying production disproved it:
+
+```
+M S Bajwa        role=HOST
+Muhammad Zakria  role=PARTICIPANT
+Mrs Bajwa        role=OBSERVER
+```
+
+The founder was HOST throughout. **The missing-controls defect is therefore
+still unexplained and is NOT fixed.** It is booked to the Live chapter rather
+than patched on a theory the data contradicts.
+
+One confound to eliminate before re-measuring: that browser tab was running a
+stale web build — the "newer version available" banner had been dismissed
+rather than taken — so the code under observation was not necessarily current.
+
+### Booked to the Live Broadcast chapter (founder direction, 2026-08-26)
+
+* watchers have no chat surface;
+* the Participants panel does not list watchers (the header does show
+  `LIVE · N watching`);
+* viewer exit has no defined destination — currently an error page;
+* the missing in-call controls while live, per above.
+
+### Structural observation, not repaired here
+
+In `acceptSurfaceJoinWithPresenceOutcome` the PUBLIC_STAGE viewer-admission
+branch sits ABOVE the normal invited-party path:
+
+```
+if (startedByUserId === actor)  → HOST, return
+if (liveState === LIVE)         → viewer admission, return
+   … invited-party handling lives BELOW this
+```
+
+So while a session is live, every join by anyone who is not the session starter
+is routed through viewer admission. Existing rows keep their role on the
+`update` branch, so this did not cause the demotion that was suspected — but
+the ordering means the live path claims callers it was not written for, and it
+belongs on the Live chapter's list.
