@@ -169,10 +169,13 @@ class RealtimeParticipantList extends StatelessWidget {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             clipBehavior: Clip.antiAlias,
+                            // Same rule as the main grid: a 92x68 thumbnail
+                            // letterboxing a portrait phone stream renders a
+                            // sliver of video in a mostly black box.
                             child: RTCVideoView(
                               renderer,
-                              objectFit:
-                                  RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
+                              objectFit: RTCVideoViewObjectFit
+                                  .RTCVideoViewObjectFitCover,
                             ),
                           )
                         else

@@ -2402,10 +2402,25 @@ class _VideoTile extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         Container(color: const Color(0xFF080E18)),
+        // EVERY TILE FILLS ITS FRAME, WHATEVER THE SOURCE.
+        //
+        // Founder-observed in a real two-party call, 2026-08-25: "in call
+        // frame one vertical one landscape". A phone publishes portrait
+        // (9:16) and a laptop webcam publishes landscape (16:9). With
+        // `Contain` each stream is letterboxed to its OWN aspect inside a
+        // shared tile, so the two participants appeared as two differently
+        // shaped pictures — one tall and pillarboxed, one wide — in a grid
+        // that is meant to read as equal seats at the same table.
+        //
+        // `Cover` crops instead of letterboxing, so every tile is the same
+        // shape and the composition stays coherent no matter what anyone
+        // dialled in from. This is what the Meetings live room and the PiP
+        // already do; the thread-call room was the one surface still
+        // letterboxing.
         RTCVideoView(
           renderer,
           mirror: mirror,
-          objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
+          objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
         ),
         // Name + mic overlay at bottom-left
         Positioned(
