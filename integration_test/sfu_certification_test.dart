@@ -243,6 +243,101 @@ void main() {
           expect(inboundVideo, greaterThan(0),
               reason: 'no video came back through the SFU');
         }
+
+        // ── CAMERA SOURCE CONTROL (ruling §5) ─────────────────────────────
+        //
+        // Canonical track REPLACEMENT: the published video source changes
+        // while the Aura session, the participant and the transport all stay
+        // exactly as they were. Nothing is re-admitted, nothing is rebuilt,
+        // and no per-subscriber peer is created — there is still one peer
+        // connection, because there was only ever one.
+        //
+        // The platforms genuinely differ, and the ruling forbids forcing
+        // mobile front/rear semantics onto desktop:
+        //   * Android — flip between facing cameras on the SAME track.
+        //   * Desktop/web — select a different camera DEVICE and swap the
+        //     sender's track. No "flip" language, and no control at all when
+        //     only one camera exists.
+        if (wantedVideo) {
+          final videoTrack = local.getVideoTracks().first;
+          final before = await _inboundTotals(pc);
+          var switches = 0;
+          var mechanism = 'none';
+
+          if (defaultTargetPlatform == TargetPlatform.android) {
+            mechanism = 'facing-flip';
+            // front -> rear -> front -> rear, to catch a leak that only shows
+            // on repetition.
+            for (var i = 0; i < 4; i++) {
+              await Helper.switchCamera(videoTrack);
+              switches++;
+              await Future<void>.delayed(const Duration(seconds: 2));
+            }
+          } else {
+            final devices = await navigator.mediaDevices.enumerateDevices();
+            final cameras =
+                devices.where((d) => d.kind == 'videoinput').toList();
+            if (cameras.length > 1) {
+              mechanism = 'device-selection';
+              final sender = (await pc.getSenders())
+                  .firstWhere((s) => s.track?.kind == 'video');
+              for (final cam in cameras.take(2)) {
+                final swapped = await navigator.mediaDevices.getUserMedia({
+                  'audio': false,
+                  'video': {'deviceId': cam.deviceId},
+                });
+                await sender.replaceTrack(swapped.getVideoTracks().first);
+                switches++;
+                await Future<void>.delayed(const Duration(seconds: 2));
+              }
+            }
+          }
+
+          await Future<void>.delayed(const Duration(seconds: 3));
+          final after = await _inboundTotals(pc);
+
+          debugPrint(
+            '[cam] platform=$defaultTargetPlatform mechanism=$mechanism '
+            'switches=$switches videoBefore=${before.video} '
+            'videoAfter=${after.video} audioBefore=${before.audio} '
+            'audioAfter=${after.audio} '
+            'videoTracks=${local.getVideoTracks().length}',
+          );
+
+          if (switches > 0) {
+            // REMOTE_VIDEO_SURVIVES — video kept arriving THROUGH the SFU
+            // across every switch.
+            expect(after.video, greaterThan(before.video),
+                reason: 'remote video stalled across a camera switch');
+            // AUDIO_SURVIVES — the ruling is explicit that a video source
+            // change must not interrupt audio.
+            expect(after.audio, greaterThan(before.audio),
+                reason: 'audio was interrupted by a camera switch');
+            // REPEATED_SWITCH_NO_LEAK — still exactly one published video
+            // track after four source changes.
+            expect(local.getVideoTracks(), hasLength(1),
+                reason: 'a camera switch leaked a video track');
+
+            // SESSION_IDENTITY_PRESERVED — the participant was never
+            // re-admitted, so the original transport is still the open one and
+            // Aura refuses to open a second.
+            final res = await http.post(
+              Uri.parse('$_apiBase/realtime/sessions/$sessionId/stage/transport'),
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $token',
+              },
+              body: jsonEncode({'offerSdp': 'probe'}),
+            );
+            expect(res.body, contains('stage:transport_exists'),
+                reason: 'the switch replaced the transport instead of the track');
+          } else {
+            debugPrint(
+              '[cam] platform=$defaultTargetPlatform SKIPPED — only one camera; '
+              'a switch control must not be offered here',
+            );
+          }
+        }
       } finally {
         for (final t in local?.getTracks() ?? const <MediaStreamTrack>[]) {
           await t.stop();
@@ -250,8 +345,26 @@ void main() {
         await local?.dispose();
         await pc.close();
       }
-    }, timeout: const Timeout(Duration(minutes: 4)));
+    }, timeout: const Timeout(Duration(minutes: 6)));
   });
+}
+
+/// Inbound RTP totals, split by kind. The only trustworthy evidence that
+/// remote media is arriving — see the onTrack note in the test body.
+Future<({int audio, int video})> _inboundTotals(RTCPeerConnection pc) async {
+  var audio = 0;
+  var video = 0;
+  for (final report in await pc.getStats()) {
+    if (report.type != 'inbound-rtp') continue;
+    final v = report.values;
+    final bytes = ((v['bytesReceived'] as num?) ?? 0).toInt();
+    if ('${v['kind']}' == 'video') {
+      video += bytes;
+    } else {
+      audio += bytes;
+    }
+  }
+  return (audio: audio, video: video);
 }
 
 Future<void> _waitForIce(RTCPeerConnection pc) async {
