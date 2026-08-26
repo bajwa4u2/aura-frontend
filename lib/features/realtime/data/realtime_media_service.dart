@@ -1085,8 +1085,43 @@ class RealtimeMediaService {
   Future<void> refreshStageRemoteMedia({String trigger = 'UNKNOWN'}) async {
     final transport = _stage;
     if (transport == null || _disposed) return;
-    _remoteByParticipant = await transport.refreshRemoteMedia(trigger: trigger);
+    final next = await transport.refreshRemoteMedia(trigger: trigger);
+
+    // PUBLISH ONLY ON CHANGE — this closes a feedback loop I created.
+    //
+    // Measured from the operation trace: nineteen SUBSCRIBE operations in five
+    // seconds, every one succeeding, every one triggered by MEDIA_READY. The
+    // cause was this method publishing unconditionally: a snapshot makes the
+    // controller re-run its media-ready reconciliation, which calls back in
+    // here, which publishes again. Roughly three network round-trips a second,
+    // for as long as the call lasted.
+    //
+    // It starved the UI — which is why a retry control stopped responding and
+    // an error state followed the person into other surfaces — while every
+    // individual operation reported success, so nothing looked broken from the
+    // inside.
+    if (_sameRemoteMedia(_remoteByParticipant, next)) return;
+    _remoteByParticipant = next;
     _publish();
+  }
+
+  /// Whether two remote-media maps say the same thing.
+  ///
+  /// Compares participants and the identity of their tracks — a new object
+  /// carrying the same tracks is not a change, and treating it as one is
+  /// exactly what made the loop self-sustaining.
+  bool _sameRemoteMedia(
+    Map<String, RemoteParticipantMedia> a,
+    Map<String, RemoteParticipantMedia> b,
+  ) {
+    if (a.length != b.length) return false;
+    for (final entry in a.entries) {
+      final other = b[entry.key];
+      if (other == null) return false;
+      if (entry.value.audio?.id != other.audio?.id) return false;
+      if (entry.value.video?.id != other.video?.id) return false;
+    }
+    return true;
   }
 
   Future<void> detachStage() async {
