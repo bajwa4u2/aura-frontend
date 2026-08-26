@@ -7,6 +7,8 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:http/http.dart' as http;
 import 'package:integration_test/integration_test.dart';
 
+import 'package:aura/features/realtime/data/stage_remote_binding.dart';
+
 /// MULTI-PARTY SFU TOPOLOGY AND CAPACITY.
 ///
 /// Founder ruling, Phase 3 §5–§7. This is the architectural gate: the entire
@@ -134,14 +136,44 @@ void main() {
             '/realtime/sessions/$sessionId/stage/subscribe',
             {'trackIds': host.publishedTracks.map((t) => t['id']).toList()},
           );
-          if (sub['requiresImmediateRenegotiation'] == true) {
+          // subscribe returns {negotiation, bindings} — the negotiation is
+          // nested. Reading it off the top level silently skipped the
+          // renegotiation, so no media flowed while the test still passed.
+          final subNeg = (sub['negotiation'] as Map<String, dynamic>?) ?? sub;
+          if (subNeg['requiresImmediateRenegotiation'] == true) {
             await s.pc!.setRemoteDescription(
-                RTCSessionDescription(sub['sdp'] as String, 'offer'));
+                RTCSessionDescription(subNeg['sdp'] as String, 'offer'));
             final ans = await s.pc!.createAnswer();
             await s.pc!.setLocalDescription(ans);
             await _post(s.token,
                 '/realtime/sessions/$sessionId/stage/renegotiate', {'answerSdp': ans.sdp});
+          } else {
+            fail('the provider did not ask for renegotiation on subscribe');
           }
+
+          // ── REMOTE MEDIA BINDING (§2), on genuinely remote media ────────
+          //
+          // Deterministic: the transceivers exist because the remote
+          // description was applied, so there is nothing to wait for and no
+          // onTrack to miss.
+          final bindings = await bindRemoteMedia(
+            pc: s.pc!,
+            serverBindings:
+                ((sub['bindings'] as List?) ?? const []).cast<Map<String, dynamic>>(),
+          );
+          debugPrint(
+            '[bind] ${s.label} bound=${bindings.length} '
+            'participants=${bindings.map((b) => b.participantId).toSet().length} '
+            'kinds=${bindings.map((b) => b.track.kind).toList()} '
+            'mids=${bindings.map((b) => b.mid).toList()}',
+          );
+          expect(bindings, hasLength(host.publishedTracks.length),
+              reason: '${s.label} did not bind the publisher media it subscribed to');
+          // All of it belongs to ONE participant — the publisher — and never
+          // to the subscriber itself.
+          final owners = bindings.map((b) => b.participantId).toSet();
+          expect(owners, hasLength(1),
+              reason: 'remote media bound to more than one participant');
 
           await Future<void>.delayed(const Duration(seconds: 4));
           // Let the encoder reach its cap once, with the first subscriber
@@ -150,8 +182,14 @@ void main() {
           if (i == 0) await _awaitSteady(host.pc!);
           final sample =
               await _sample(host.pc!, label: 'subscribers=${i + 1}');
-          sample['subscriberInboundBytes'] = await _inboundBytes(s.pc!);
+          final subInbound = await _inboundBytes(s.pc!);
+          sample['subscriberInboundBytes'] = subInbound;
           results.add(sample);
+          // Without this the suite passes while nothing is delivered — which
+          // is exactly what happened when the response shape changed and the
+          // renegotiation was silently skipped.
+          expect(subInbound, greaterThan(0),
+              reason: '${s.label} bound tracks but received no media');
         }
 
         // ── roster (§7) ───────────────────────────────────────────────────

@@ -193,6 +193,33 @@ void main() {
         ]);
         await Future<void>.delayed(const Duration(seconds: 5));
 
+        // ── REMOTE MEDIA BINDING — measurement before implementation ──────
+        //
+        // onTrack does not fire for receivers created by the subscribe
+        // renegotiation, so the released client cannot keep driving remote
+        // tiles from that callback. The question this answers is whether the
+        // transceiver/receiver state gives a DETERMINISTIC alternative, or
+        // whether the only option would be a polling hack.
+        final bound = <String>[];
+        for (final t in await pc.getTransceivers()) {
+          final recv = t.receiver.track;
+          String dir;
+          try {
+            dir = '${await t.getCurrentDirection()}';
+          } catch (e) {
+            dir = 'unavailable';
+          }
+          bound.add(
+            'mid=${t.mid} dir=$dir '
+            'recvKind=${recv?.kind} recvEnabled=${recv?.enabled} '
+            'recvId=${recv?.id == null ? null : recv!.id!.substring(0, 8)}',
+          );
+        }
+        debugPrint('[binding] transceivers=${bound.length}');
+        for (final b in bound) {
+          debugPrint('[binding]   $b');
+        }
+
         // ── the measurement ───────────────────────────────────────────────
         var outboundBytes = 0;
         var inboundBytes = 0;
