@@ -59,16 +59,16 @@ Executed 2026-08-25 via `integration_test/av_certification_test.dart`
 
 | Capability | Web | Android (physical) | Windows native | iOS |
 |---|---|---|---|---|
-| Permission model / classification | PASS¹ | NOT_EXECUTED² | **PASS** (8/8) | NOT_EXECUTED |
-| Platform reports its own queryability honestly | PASS¹ | NOT_EXECUTED² | **PASS** | NOT_EXECUTED |
-| Recovery copy names no browser off the web | PASS¹ | NOT_EXECUTED² | **PASS** | NOT_EXECUTED |
-| Permanent denial distinguishable + actionable | PASS¹ | NOT_EXECUTED² | **PASS** | NOT_EXECUTED |
-| Control labels + announcements | PASS¹ | NOT_EXECUTED² | **PASS** | NOT_EXECUTED |
-| Preflight opens, checks, releases on dismiss | NOT_EXECUTED³ | NOT_EXECUTED² | **PASS** (real hardware) | NOT_EXECUTED |
-| Preview stream released (no orphaned capture) | NOT_EXECUTED³ | NOT_EXECUTED² | **PASS** | NOT_EXECUTED |
-| Joining never barred by a refusal | PASS¹ | NOT_EXECUTED² | **PASS** | NOT_EXECUTED |
+| Permission model / classification | PASS¹ | **PASS** (8/8) | **PASS** (8/8) | NOT_EXECUTED |
+| Platform reports its own queryability honestly | PASS¹ | **PASS** | **PASS** | NOT_EXECUTED |
+| Recovery copy names no browser off the web | PASS¹ | **PASS** | **PASS** | NOT_EXECUTED |
+| Permanent denial distinguishable + actionable | PASS¹ | **PASS** | **PASS** | NOT_EXECUTED |
+| Control labels + announcements | PASS¹ | **PASS** | **PASS** | NOT_EXECUTED |
+| Preflight opens, checks, releases on dismiss | NOT_EXECUTED³ | **PASS** (real camera) | **PASS** (real hardware) | NOT_EXECUTED |
+| Preview stream released (no orphaned capture) | NOT_EXECUTED³ | **PASS** (real camera) | **PASS** | NOT_EXECUTED |
+| Joining never barred by a refusal | PASS¹ | **PASS** | **PASS** | NOT_EXECUTED |
 | Build integrity with new manifest + plugin | — | **PASS** (APK built) | **PASS** | NOT_EXECUTED |
-| Meetings integration unregressed | PASS¹ | NOT_EXECUTED² | PASS¹ | NOT_EXECUTED |
+| Meetings integration unregressed | PASS¹ | PASS¹ | PASS¹ | NOT_EXECUTED |
 | Audio call end-to-end | NOT_EXECUTED⁴ | NOT_EXECUTED⁴ | NOT_EXECUTED⁴ | NOT_EXECUTED |
 | Video call end-to-end | NOT_EXECUTED⁴ | NOT_EXECUTED⁴ | NOT_EXECUTED⁴ | NOT_EXECUTED |
 | Incoming call delivery | NOT_EXECUTED⁴ | NOT_EXECUTED⁴ | NOT_EXECUTED⁴ | NOT_EXECUTED |
@@ -81,11 +81,17 @@ Executed 2026-08-25 via `integration_test/av_certification_test.dart`
 ¹ Covered by the widget suite (1523 green) on the shared, platform-independent
 logic. Not a substitute for device execution and not presented as one.
 
-² **The Pixel 9a disconnected between the Meetings chapter and this one.**
-`flutter devices` lists only Windows, Chrome and Edge. The Android A/V run was
-attempted and failed to find the device. The earlier Meetings Android result is
-**not** carried over — it certified a different chapter's code. No PIN was
-attempted. `ANDROID_PHYSICAL_CERTIFICATION = NOT_EXECUTED_DEVICE_DISCONNECTED`.
+² **EXECUTED 2026-08-27 — the handset was reconnected.** 8/8 on a physical
+Pixel 9a (Android 17, API 37) via
+`flutter test integration_test/av_certification_test.dart -d 53061JEBF08485`.
+Two of those are real-hardware assertions rather than widget logic: the
+preflight opens, checks and RELEASES the camera on dismiss, and readiness
+releases its preview stream — so a real capture device was acquired and handed
+back. `ANDROID_PHYSICAL_CERTIFICATION = EXECUTED`.
+
+The previous state is kept here deliberately: the run had been recorded as
+`NOT_EXECUTED_DEVICE_DISCONNECTED`, and the earlier Meetings Android result was
+correctly NOT carried over, because it certified a different chapter's code.
 
 ³ The preflight is a Flutter widget; its real-hardware behaviour was certified
 natively on Windows. A browser run was not executed.

@@ -21,10 +21,10 @@ Record: `docs/av/AV_PRODUCT_CONTRACT.md`, `docs/av/AV_CERTIFICATION.md`.
 
 ## A/V — open, and honestly bounded
 
-1. **`ANDROID_PHYSICAL_CERTIFICATION = NOT_EXECUTED_DEVICE_DISCONNECTED`.** The
-   Pixel 9a is no longer listed by `flutter devices`. The Meetings-chapter
-   Android result is NOT carried over. Reconnect the handset and run
-   `flutter test integration_test/av_certification_test.dart -d <id>`.
+1. ~~`ANDROID_PHYSICAL_CERTIFICATION`~~ — **CLOSED 2026-08-27.** The handset was
+   reconnected and the run executed: **8/8 on a physical Pixel 9a**, including
+   the two real-hardware assertions (the preflight acquires and RELEASES the
+   camera; readiness releases its preview stream).
 2. **No real two-party call was executed** — audio, video, incoming delivery,
    reconnect-under-loss and relay-path ICE all require a second authenticated
    account or device. Nothing about them is claimed.
@@ -33,8 +33,17 @@ Record: `docs/av/AV_PRODUCT_CONTRACT.md`, `docs/av/AV_CERTIFICATION.md`.
    Networks permitting egress only on 443 are unsupported until a listener is
    added on the coturn host. This is infrastructure access this environment
    does not have and is NOT hidden behind application retries.
-4. **`IOS_CERTIFICATION = NOT_EXECUTED`** — no macOS host. The implementation
-   thesis is documented; no iOS claim is made from Android or web.
+4. **`IOS_CERTIFICATION`** — the "no macOS host" reason is **retired**
+   (2026-08-27). Codemagic is a macOS host and now runs the certification
+   suites: `codemagic.yaml : ios-certification`, see
+   `docs/2026-08-27-ios-certification-lane.md`. `av_certification_test` is in
+   that run.
+
+   What remains is narrower and still true: the lane is an iOS **SIMULATOR**,
+   so it certifies what is a property of the app and nothing that is a property
+   of the hardware — no camera, microphone, Bluetooth route or real network
+   transition. Those need a physical iPhone.
+   `IOS_SIMULATOR_CERTIFICATION` is available; `IOS_PHYSICAL = PENDING_DEVICE`.
 
 **Live Broadcast remains closed.** Do not begin it.
 
