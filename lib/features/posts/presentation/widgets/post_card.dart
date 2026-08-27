@@ -739,6 +739,7 @@ class _PostCardState extends ConsumerState<PostCard> {
             caption: m.caption,
             intrinsicWidth: m.width,
             intrinsicHeight: m.height,
+            trace: m.trace,
             downloadContext: 'post-media',
           ),
       ],

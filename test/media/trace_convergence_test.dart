@@ -126,7 +126,7 @@ void main() {
             final src = f.readAsStringSync();
             return markers.any(src.contains);
           })
-          .map((f) => f.path.replaceAll(r'\', '/'))
+          .map((f) => f.path.split(Platform.pathSeparator).join('/'))
           .toList()
         ..sort();
     });
@@ -177,6 +177,83 @@ void main() {
           reason: '${entry.key} is excluded without a real reason.',
         );
       }
+    });
+  });
+
+  group('THE IMMERSIVE VIEWER carries the account, where one exists', () {
+    // The viewer is where a person looks closest, so a mark that is absent
+    // there is absent at the moment it matters most. `AuraViewerItem` accepts
+    // an account; this measures which call sites actually pass one, and
+    // requires every site that does NOT to be a path where no account exists
+    // to pass.
+    //
+    // Measured, not assumed: an earlier pass of this reported "15 sites, none
+    // passing an account" from a grep window too short to reach the argument.
+    // Five of them were already correct.
+
+    /// Sites with no media model to carry an account.
+    const noAccountAvailable = <String, String>{
+      'lib/features/profile/presentation/author_profile_screen.dart':
+          'Avatar and cover open from a URL string. Profile media is not a '
+              'canonical media row on this screen, so there is no account to '
+              'pass — not one being dropped.',
+      'lib/features/me/presentation/me_screen.dart':
+          'Same as the author profile: avatar and cover open from a URL.',
+      'lib/features/institutions/profile/institution_profile_screen.dart':
+          'Institution logo and cover open from a URL.',
+      'lib/features/feed/presentation/unified_feed_card.dart':
+          'Two of its sites are the LEGACY mediaUrl path, which predates '
+              'canonical media rows and has no per-item model. Its canonical '
+              'path does pass the account.',
+      'lib/features/articles/presentation/article_screen.dart':
+          'OPEN. The article cover is a canonical media row server-side, but '
+              'the Article payload carries only coverUrl — no media list, so no '
+              'account reaches the client. Closing it is a backend projection '
+              'plus a model field, recorded rather than hidden.',
+      'lib/core/media/aura_media_viewer.dart':
+          'The viewer constructing its own item internally.',
+    };
+
+    test('every viewer call site either passes an account or is explained', () {
+      final offenders = <String>[];
+      for (final file in Directory('lib')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))) {
+        final src = file.readAsStringSync();
+        if (!src.contains('AuraViewerItem(')) continue;
+        final path = file.path.split(Platform.pathSeparator).join('/');
+
+        // Read each constructor's real argument list rather than a fixed
+        // window — the window is what made the earlier count wrong.
+        var idx = src.indexOf('AuraViewerItem(');
+        while (idx != -1) {
+          var i = idx + 'AuraViewerItem('.length;
+          var depth = 1;
+          while (i < src.length && depth > 0) {
+            if (src[i] == '(') depth++;
+            if (src[i] == ')') depth--;
+            i++;
+          }
+          final body = src.substring(idx, i);
+          if (!body.contains('trace:') && !noAccountAvailable.containsKey(path)) {
+            offenders.add(path);
+          }
+          idx = src.indexOf('AuraViewerItem(', i);
+        }
+      }
+      expect(
+        offenders.toSet(),
+        isEmpty,
+        reason: 'These open the viewer without an account and without a '
+            'recorded reason: ${offenders.toSet().join(", ")}',
+      );
+    });
+
+    test('the viewer can render a mark at all', () {
+      final src = File('lib/core/media/aura_media_viewer.dart').readAsStringSync();
+      expect(src.contains('AuraTraceMark'), isTrue);
+      expect(src.contains('showAuraTrace'), isTrue);
     });
   });
 

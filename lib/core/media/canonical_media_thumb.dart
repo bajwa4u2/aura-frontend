@@ -168,6 +168,7 @@ class CanonicalMediaThumb extends StatelessWidget {
           caption: media.caption,
           intrinsicWidth: media.width,
           intrinsicHeight: media.height,
+          trace: media.trace,
           downloadContext: downloadContext,
         ),
       ],
