@@ -1192,3 +1192,55 @@ the server poster derivative is implemented in aura-backend. What remains:
   required by poster generation.
 * **Announcement composers** keep their attachment-manifest rows by founder
   ruling. Rich preview there is future product design, not defect repair.
+
+## Rich Content media — physical certification matrix (2026-08-27)
+
+`IMPLEMENTATION_COMPLETE = YES` · `RELEASE_CLIENT_CERTIFICATION_COMPLETE = NO`.
+Frontend `e60fae5`, backend `67267bf`. Do not reopen architecture to work on
+this list — every item below is an EXERCISE of shipped code.
+
+Automated harness: `integration_test/media_certification_test.dart`.
+
+```
+flutter test integration_test/media_certification_test.dart -d windows
+flutter test integration_test/media_certification_test.dart -d <pixel-id>
+```
+
+ANDROID: install with granted permissions FIRST or a permission dialog nobody
+can tap kills the run with no output —
+`adb install -r -g build/app/outputs/flutter-apk/app-debug.apk`.
+
+### Done
+
+* **Windows desktop — 23/23 PASS.** `canDecodeVideo=false`, source actions
+  primary. This is the platform the interaction contract exists for.
+* **Android, physical Pixel 9a — 23/23 PASS.** `pointer=touch`, no zoom
+  cluster, source actions secondary.
+* **Web** — widget layer green in Chrome. `flutter drive` + chromedriver is
+  needed for a true web integration run.
+
+### Owed — a live product pass, not more automation
+
+The harness exercises widgets and authorities. It does not exercise a person
+composing a post, so these need the deployed clients and real media:
+
+1. single image · single video · multi-image · multi-video · mixed
+2. reorder before send/publish, and the order surviving hydration
+3. per-item removal, and a failed upload recovered without re-uploading siblings
+4. collage presentation and immersive group navigation between mixed items
+5. IMAGE: pinch, pan, double-tap, fit/reset, orientation and resize
+6. VIDEO: play/pause, scrub, time, volume, portrait presentation, poster,
+   and initialization failure reaching the honest error rather than a spinner
+7. PROVENANCE: creator-declared AI on a real upload; no-evidence silence;
+   per-item labels in a mixed group; the viewer's provenance line
+8. DISTRIBUTION: owner original vs non-owner governed export; `Open original`
+   prominence differing between Windows and a phone; signed export verifying
+   through `POST /media/provenance/verify`
+
+### Genuinely blocked
+
+* **iOS** — no macOS host. Structurally unverified; nothing is inferred from
+  Android.
+* **Automated web video decode** — this environment's Chrome decodes no video
+  at all (proved with a VP9 control), so playback cannot be certified here by
+  automation. It needs a human with a browser.

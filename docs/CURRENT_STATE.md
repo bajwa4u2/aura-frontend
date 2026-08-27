@@ -1,10 +1,88 @@
 # Aura Release Client — Current State
 
-**Last updated: 2026-08-26**
+**Last updated: 2026-08-27**
 
 ---
 
 ## Status
+
+> **2026-08-27 — RICH CONTENT MEDIA: IMPLEMENTATION COMPLETE, RELEASE
+> CERTIFICATION PARTIAL.** These are different claims and are recorded
+> separately on purpose.
+>
+> `IMPLEMENTATION_COMPLETE = YES` · `RELEASE_CLIENT_CERTIFICATION_COMPLETE = NO`
+>
+> Frontend `e60fae5` · backend `67267bf`. Frontend 1738 green, backend 296
+> suites / 3649 green.
+>
+> **AUTHORITIES INTRODUCED**
+>
+> * `media_interaction_profile.dart` — layer 4, which did not exist. The viewer
+>   had ZERO references to `defaultTargetPlatform`/`kIsWeb`/`Platform.is`, so a
+>   desktop pointer model shipped byte-identically to phones. Touch is decided
+>   by INPUT MODEL, not OS: a browser on a phone is a touch client.
+> * `immersive_presenter.dart` — retires the closed `if (item.isVideo)` switch.
+>   Presenters DECLARE capability; chrome is assembled from capability ×
+>   platform. This is what makes `Open original` primary exactly where Aura
+>   cannot present the media, and secondary everywhere else.
+> * `aura_media_group.dart` — ordered collage. The feed rendered
+>   `item.media.first` while the backend had always shipped an ordered array.
+> * `aura_composition_strip.dart` — one composition preview for every composer.
+> * `media_acquisition.dart` — one selection, images and videos together.
+> * `media_origin_label.dart` / `media_origin_disclosure.dart` — item-scoped
+>   labels, and the first product path to `UPLOADER_DECLARATION`.
+> * backend `media-distribution.authority.ts` — `MAY_VIEW ≠ MAY_EXPORT ≠
+>   MAY_DOWNLOAD_ORIGINAL`; `provenance/origin-ingestion.ts` — the first
+>   production producers for a model that had zero callers.
+>
+> **AUTHORITIES CONVERGED**
+>
+> * `create-institution-post.dto.ts` gained `media[]`. `InstitutionPostMedia`
+>   had carried `position` all along; the CONTRACT was the single-media limit.
+> * The post composer's `_maxAttachments = 5` became the shared
+>   `kMaxComposableMedia`, so the ceiling stopped depending on which composer
+>   was open.
+> * Announcement composers moved onto the canonical strip for visual media.
+>
+> **TRANSITIONAL PATHS STILL PRESENT** (each isolated, mapped in, documented)
+>
+> * `InstitutionPost.mediaUrl` — mapped INTO `media[]`, ignored when the
+>   collection is supplied, never read beside it. New clients do not write it.
+> * `_mediaId` / `_mediaUrl` in the institution composer — DERIVED from the
+>   first item so draft persistence keeps working. Never the authority.
+> * `MessageAttachment` — legacy dual-write beside the canonical
+>   `MessageMedia`, which is the ordered authority.
+> * Legacy flat `mediaUrl` on feed items — behind an explicitly named bridge.
+>
+> **EXTERNAL BOUNDARIES — NOT DEFERRALS**
+>
+> * `AURA_GENERATED_PROVENANCE` — the ingestion contract exists and is callable
+>   (presign + `x-media-worker-token` + `auraGeneration`). No Aura generation
+>   engine ships media into Aura: `aura-studio-backend` has no presign path at
+>   all, and its own `PRODUCTION_ARCHITECTURE_BLOCKER.md` records that
+>   NestJS/Railway cannot reach ACE — no public route, enforced by a regression
+>   test. The producer does not exist to call the contract.
+> * `VERIFIED_CREDENTIAL_PATH` — no C2PA library is installed, and
+>   `ProvenanceTrustService` reads a `PlatformSetting` trust list that is empty,
+>   so `trustedSigner` is false by configuration as well as by dependency.
+>   Detection-only is correct and deliberate; presence is never recorded as
+>   evidence.
+>
+> **CERTIFICATION RUN** — `integration_test/media_certification_test.dart`
+>
+> | Client | Result |
+> |---|---|
+> | Windows desktop | **23/23 PASS** — `canDecodeVideo=false`, source actions primary |
+> | Android (physical Pixel 9a) | **23/23 PASS** — `pointer=touch`, no zoom cluster, source actions secondary |
+> | Web / browser | widget layer green in Chrome; automated video DECODE unavailable |
+> | iOS | **UNVERIFIED** — no macOS host. No claim inferred from Android. |
+>
+> The two native runs are the interaction contract's real proof: identical code
+> resolving opposite answers from one measured capability fact.
+>
+> **STILL OWED** — physical iOS, and a live product pass on real uploaded and
+> recorded media through the deployed clients. Automated certification exercises
+> the widgets and authorities, not a person actually composing a post.
 
 > **2026-08-26 — STORED VIDEO PRESENTATION IS NOW A PLATFORM AUTHORITY.** A
 > video shared into a post rendered as a broken-image glyph. The cause was not
