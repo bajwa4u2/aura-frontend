@@ -12,7 +12,9 @@ import 'aura_video_surface.dart' show storedVideoCanDecodeInline;
 import 'immersive_presenter.dart';
 import 'media_initialization.dart';
 import 'media_interaction_profile.dart';
-import 'media_origin_label.dart';
+import 'trace/aura_trace.dart';
+import 'trace/aura_trace_mark.dart';
+import 'trace/aura_trace_surface.dart';
 import 'media_save_button.dart';
 import 'media_url_resolver.dart';
 
@@ -44,6 +46,7 @@ class AuraViewerItem {
     this.downloadContext = 'media',
     this.originState,
     this.contentCredentials = false,
+    this.trace = AuraTrace.none,
   });
 
   /// The source/original file URL. For public media this is rendered and
@@ -78,6 +81,12 @@ class AuraViewerItem {
 
   /// Whether this item carries Content Credentials, verified or not.
   final bool contentCredentials;
+
+  /// The resolved Trace for THIS item.
+  ///
+  /// Per item, so paging the viewer changes Trace context to the object the
+  /// person is now looking at rather than the one they entered on.
+  final AuraTrace trace;
 }
 
 /// Open the fullscreen [AuraMediaViewer] over [items], starting on
@@ -844,23 +853,25 @@ class _ViewerBottomBar extends StatelessWidget {
           // renders nothing at all: media loses this information constantly,
           // so an "unverified" line would convert ordinary silence into an
           // accusation about the person who posted it.
-          if (mediaOriginLabel(mediaOriginStateFrom(item.originState)) != null) ...[
+          // TRACE, for the item currently on screen.
+          //
+          // Placed in the bottom bar rather than over the media: the content
+          // surface stays quiet and the doorway sits with the other controls,
+          // where it cannot be hit by a stray pinch or a scrub.
+          if (!item.trace.isEmpty) ...[
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  MediaOriginBadge(
-                    state: mediaOriginStateFrom(item.originState),
+                  AuraTraceMark(
+                    trace: item.trace,
+                    onOpen: () => showAuraTrace(context, trace: item.trace),
                   ),
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
-                      mediaOriginDetail(
-                            mediaOriginStateFrom(item.originState),
-                            credentials: item.contentCredentials,
-                          ) ??
-                          '',
+                      item.trace.headline ?? 'What Aura knows about this',
                       style: AuraText.small.copyWith(color: Colors.white70),
                     ),
                   ),

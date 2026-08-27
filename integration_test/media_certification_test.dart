@@ -32,8 +32,23 @@ import 'package:aura/core/media/aura_video_surface.dart';
 import 'package:aura/core/media/immersive_presenter.dart';
 import 'package:aura/core/media/media_interaction_profile.dart';
 import 'package:aura/core/media/media_origin_disclosure.dart';
-import 'package:aura/core/media/media_origin_label.dart';
+import 'package:aura/core/media/trace/aura_trace.dart';
 import 'package:aura/features/feed/domain/feed_media.dart';
+
+/// A resolved Trace, as the server would send it. Built here rather than
+/// derived from `originState`, because the client performs no reasoning: if a
+/// test could synthesise a Trace from a state string, so could the client.
+AuraTrace traceOf(String summary) => AuraTrace.fromJson({
+      'available': true,
+      'headline': summary,
+      'facts': [
+        {
+          'section': 'AI_INVOLVEMENT',
+          'evidence': 'DECLARED',
+          'summary': summary,
+        }
+      ],
+    });
 
 FeedMedia img(String id, {String? origin}) => FeedMedia(
       id: id,
@@ -45,6 +60,7 @@ FeedMedia img(String id, {String? origin}) => FeedMedia(
       width: 1600,
       height: 1200,
       originState: origin,
+      trace: origin == null ? AuraTrace.none : traceOf('Creator says AI was used'),
     );
 
 FeedMedia vid(String id, {String? origin}) => FeedMedia(
@@ -59,6 +75,7 @@ FeedMedia vid(String id, {String? origin}) => FeedMedia(
       height: 1920,
       duration: 6000,
       originState: origin,
+      trace: origin == null ? AuraTrace.none : traceOf('Creator says AI was used'),
     );
 
 Attachment att(String id, AttachmentKind kind, {bool failed = false}) =>
@@ -196,14 +213,15 @@ void main() {
         img('made', origin: 'AI_GENERATED'),
         vid('unknown'),
       ]));
-      // One badge, on one cell. A group is not AI because one item is.
-      expect(find.text('AI'), findsOneWidget);
+      // One TR, on one cell. A group is not AI because one item is, and the
+      // mark is a doorway to the basis rather than a verdict stamped on media.
+      expect(find.text('TR'), findsOneWidget);
     });
 
     testWidgets('NO_EVIDENCE renders no badge at all', (tester) async {
       await host(tester, AuraMediaGroup(items: [img('a'), img('b')]));
-      expect(find.text('AI'), findsNothing);
-      expect(find.text('?'), findsNothing);
+      // Existing in Aura's database is not something worth marking.
+      expect(find.text('TR'), findsNothing);
     });
 
     testWidgets('AURA_GENERATED and DECLARED_AI both surface', (tester) async {
@@ -211,7 +229,7 @@ void main() {
         img('aura', origin: 'AURA_GENERATED'),
         img('declared', origin: 'AI_GENERATED'),
       ]));
-      expect(find.text('AI'), findsNWidgets(2));
+      expect(find.text('TR'), findsNWidgets(2));
     });
 
     testWidgets('CONFLICTING does not render as an AI verdict', (tester) async {
@@ -219,8 +237,9 @@ void main() {
         img('x', origin: 'CONFLICTING'),
         img('y'),
       ]));
-      expect(find.text('AI'), findsNothing);
-      expect(mediaOriginLabel(mediaOriginStateFrom('CONFLICTING')), 'Origin disputed');
+      // A conflict opens TR — a reader most needs to know it exists — but the
+      // mark still states no verdict.
+      expect(find.text('TR'), findsOneWidget);
     });
   });
 

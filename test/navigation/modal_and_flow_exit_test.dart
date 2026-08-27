@@ -92,7 +92,15 @@ void main() {
     // nothing. It is deliberately not a route, because a permission preflight
     // has no addressable identity: a URL that reopened it would be asking for
     // devices with no call behind the request.
-    expect(full, 16,
+    // 17th member added 2026-08-27 by the Trace chapter:
+    // `core/media/trace/aura_trace_surface.dart`. Reclassified against §6
+    // rather than having the number bumped: it BEHAVES as a sheet — transient,
+    // dismissed by dragging down or tapping the barrier, returns no value, and
+    // traps nothing. It is deliberately not a route because Trace has no
+    // addressable identity of its own: it is an inspection OF an object the
+    // person is already looking at, so a URL that reopened it would be asking
+    // for a disclosure with no object behind the request.
+    expect(full, 17,
         reason: 'the full-height sheet population changed — reclassify it '
             'against §6 (behaviour, not dimensions) rather than adjusting '
             'this number');

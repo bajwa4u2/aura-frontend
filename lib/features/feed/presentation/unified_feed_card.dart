@@ -1053,6 +1053,8 @@ void _openGroupViewer(BuildContext context, dynamic item, int index) {
           // actually looking at rather than the composition it came from.
           originState: m.originState,
           contentCredentials: m.contentCredentials,
+          // Per item, so paging the viewer moves Trace context with it.
+          trace: m.trace,
         ),
     ],
   );

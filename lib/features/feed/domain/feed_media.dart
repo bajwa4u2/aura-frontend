@@ -1,3 +1,5 @@
+import '../../../core/media/trace/aura_trace.dart';
+
 /// Canonical media link surfaced through the unified feed and the
 /// institution-post API. Mirrors the backend `FeedMediaDto` (and the
 /// `media[]` array on `mapPost` in `institution-posts.service.ts`).
@@ -30,6 +32,7 @@ class FeedMedia {
     this.thumbUrl,
     this.originState,
     this.contentCredentials = false,
+    this.trace = AuraTrace.none,
   });
 
   /// Stable join id (`InstitutionPostMedia.id`). Different from
@@ -70,6 +73,12 @@ class FeedMedia {
   /// Whether this item carries Content Credentials, verified or not.
   final bool contentCredentials;
 
+  /// THE RESOLVED TRACE for this item, decided server-side.
+  ///
+  /// Per item, never per composition: a group holding one AI-generated image
+  /// and three photographs marks exactly one cell.
+  final AuraTrace trace;
+
   bool get isPublic => visibility.trim().toUpperCase() == 'PUBLIC';
   bool get isImage =>
       (mediaType ?? '').trim().toUpperCase() != 'VIDEO' &&
@@ -108,6 +117,7 @@ class FeedMedia {
       thumbUrl: (m['thumbUrl'] ?? m['thumbnailUrl'])?.toString(),
       originState: m['originState']?.toString(),
       contentCredentials: m['contentCredentials'] == true,
+      trace: AuraTrace.fromJson(m['trace']),
     );
   }
 
