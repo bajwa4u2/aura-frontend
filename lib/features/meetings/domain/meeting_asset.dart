@@ -1,3 +1,4 @@
+import '../../../core/media/trace/aura_trace.dart';
 /// Establishment Pass — one meeting-owned asset object for the whole
 /// lifecycle: preparation materials (links / briefing files), files shared
 /// during the meeting, and recordings. Assets are permanent parts of the
@@ -36,7 +37,14 @@ class MeetingAsset {
   final String addedByName;
   final DateTime createdAt;
 
+  /// AURA TRACE for this asset's media.
+  ///
+  /// A meeting asset is stored media like any other. It was the one surface
+  /// the convergence inventory found rendering media with no account at all.
+  final AuraTrace trace;
+
   const MeetingAsset({
+    this.trace = AuraTrace.none,
     required this.id,
     required this.meetingId,
     required this.kind,
@@ -55,6 +63,7 @@ class MeetingAsset {
   bool get isReady => status == 'READY';
 
   factory MeetingAsset.fromJson(Map<String, dynamic> j) => MeetingAsset(
+        trace: AuraTrace.fromJson(j['trace']),
         id: (j['id'] ?? '').toString(),
         meetingId: (j['meetingId'] ?? '').toString(),
         kind: MeetingAssetKind.parse(j['kind']?.toString()),

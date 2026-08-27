@@ -1886,6 +1886,36 @@ class _ConversationAttachment extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // TR MOUNTS ONCE, AROUND THE WHOLE ATTACHMENT.
+    //
+    // It was previously added inside the VIDEO branch only, so an image
+    // attachment — the kind that actually carries AI provenance on this
+    // platform — showed nothing. Wrapping the renderer instead of one branch
+    // means every kind gets it, including the ones added later.
+    return _withTrace(context, _buildAttachment(context, ref));
+  }
+
+  Widget _withTrace(BuildContext context, Widget child) {
+    if (media.trace.isEmpty) return child;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        child,
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: AuraTraceMark(
+            trace: media.trace,
+            compact: true,
+            onSurface: true,
+            onOpen: () => showAuraTrace(context, trace: media.trace),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAttachment(BuildContext context, WidgetRef ref) {
     final urlAsync = ref.watch(_deliveryUrlProvider(media.mediaId));
     return urlAsync.when(
       loading: () => Container(
@@ -2011,15 +2041,6 @@ class _ConversationAttachment extends ConsumerWidget {
                 ],
               ),
             ),
-                if (!media.trace.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: AuraTraceMark(
-                      trace: media.trace,
-                      onOpen: () =>
-                          showAuraTrace(context, trace: media.trace),
-                    ),
-                  ),
               ],
             ),
           );

@@ -20,6 +20,8 @@
 /// no semantic change.
 library;
 
+import '../../core/media/source_origin_scan.dart';
+
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -170,6 +172,14 @@ class ProfileMediaPipeline {
       cropped,
       config: config,
       fileName: _processedName(file.name, fileTag),
+      // READ BEFORE THE EDIT, because after it there is nothing left to read.
+      //
+      // The crop re-encodes, which destroys whatever Content Credentials the
+      // picked file carried. Losing the credential is correct — its hash
+      // describes the ORIGINAL bytes and would be a false claim about these.
+      // Forgetting what it SAID is not, and this is the only moment anything
+      // can still see it.
+      sourceOrigin: scanSourceOrigin(picked.bytes ?? bytes),
     );
   }
 
@@ -207,6 +217,7 @@ class ProfileMediaPipeline {
     Uint8List bytes, {
     required ProfileMediaEditorConfig config,
     required String fileName,
+    SourceOriginClaim? sourceOrigin,
   }) async {
     try {
       final result = await uploadAuraMedia(
@@ -222,6 +233,15 @@ class ProfileMediaPipeline {
           'width': config.outputWidth,
           'height': config.outputHeight,
           'editDisclosure': true,
+          // ANCESTRY, carried across the transformation that erased it.
+          //
+          // Sent as a CLIENT ASSERTION and recorded as one: Aura never saw
+          // these original bytes on its own server, and the file it describes
+          // no longer exists for anyone to check. That is weaker than a server
+          // reading and the model has a place for the distinction, which is
+          // better than pretending the two are the same.
+          if (sourceOrigin != null)
+            'sourceOrigin': sourceOriginWire(sourceOrigin),
         },
       );
       final url = result.url.trim();

@@ -1,3 +1,6 @@
+import '../../../../core/media/trace/aura_trace_surface.dart';
+import '../../../../core/media/trace/aura_trace_mark.dart';
+import '../../../../core/media/media_interaction_profile.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -396,7 +399,10 @@ class _AssetVideoPreview extends ConsumerWidget {
     return resolved.when(
       data: (url) {
         if (url == null || url.trim().isEmpty) return const SizedBox.shrink();
-        return AuraStoredMedia(
+        return _withTrace(
+          context,
+          asset,
+          AuraStoredMedia(
           media: StoredMedia.fromParts(
             mediaId: asset.id,
             mimeType: asset.mimeType,
@@ -413,6 +419,7 @@ class _AssetVideoPreview extends ConsumerWidget {
           context: StoredMediaContext.message,
           maxHeight: 260,
           borderRadius: BorderRadius.circular(12),
+          ),
         );
       },
       // The preview enhances the row, it never blocks it: while resolving or
@@ -421,4 +428,33 @@ class _AssetVideoPreview extends ConsumerWidget {
       error: (_, __) => const SizedBox.shrink(),
     );
   }
+}
+
+/// Mount TR beside a meeting asset preview.
+///
+/// Meeting assets are stored media, and this surface was the one the
+/// convergence inventory found rendering them with no account. It is added
+/// here rather than inside `AuraStoredMedia` because that widget is a
+/// presentation authority shared by callers that hold no media identity —
+/// mounting there would put the mark on embeds with nothing to disclose.
+Widget _withTrace(BuildContext context, MeetingAsset asset, Widget child) {
+  if (asset.trace.isEmpty) return child;
+  final touch =
+      MediaInteractionProfile.resolve(canDecodeVideo: true).pointer ==
+          PointerModel.touch;
+  return Stack(
+    children: [
+      child,
+      Positioned(
+        right: 6,
+        bottom: 6,
+        child: AuraTraceMark(
+          trace: asset.trace,
+          compact: true,
+          touch: touch,
+          onOpen: () => showAuraTrace(context, trace: asset.trace),
+        ),
+      ),
+    ],
+  );
 }

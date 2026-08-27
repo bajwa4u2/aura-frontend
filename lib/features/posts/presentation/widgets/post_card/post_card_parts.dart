@@ -1,3 +1,6 @@
+import '../../../../../core/media/trace/aura_trace_surface.dart';
+import '../../../../../core/media/trace/aura_trace_mark.dart';
+import '../../../../../core/media/media_interaction_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -263,6 +266,41 @@ class PostCardSingleMediaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // TR MOUNTS HERE for PostCard.
+    //
+    // Both branches of PostCardMediaBlock — the single-media card and every
+    // cell of the multi-media wrap — route through this widget, so this one
+    // place covers the whole card. PostCard renders its own frame rather than
+    // going through `CanonicalMediaThumb`, which is exactly why it did NOT
+    // inherit the mark: post detail, the author profile and saves all showed
+    // nothing on media that had something to disclose.
+    return _withTrace(context, _buildCard(context));
+  }
+
+  Widget _withTrace(BuildContext context, Widget child) {
+    if (item.trace.isEmpty) return child;
+    final touch =
+        MediaInteractionProfile.resolve(canDecodeVideo: true).pointer ==
+            PointerModel.touch;
+    return Stack(
+      children: [
+        child,
+        Positioned(
+          // Bottom-right, clear of the play affordance a video centres.
+          right: 6,
+          bottom: 6,
+          child: AuraTraceMark(
+            trace: item.trace,
+            compact: mode == AuraMediaFrameMode.feed,
+            touch: touch,
+            onOpen: () => showAuraTrace(context, trace: item.trace),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCard(BuildContext context) {
     final radius = BorderRadius.circular(16);
     final imageUrl = item.previewUrl;
 

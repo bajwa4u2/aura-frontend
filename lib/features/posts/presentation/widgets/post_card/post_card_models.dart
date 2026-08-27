@@ -1,3 +1,4 @@
+import '../../../../../core/media/trace/aura_trace.dart';
 class PostCardResolvedMediaItem {
   const PostCardResolvedMediaItem({
     required this.id,
@@ -9,6 +10,7 @@ class PostCardResolvedMediaItem {
     required this.height,
     required this.duration,
     required this.editDisclosure,
+    this.trace = AuraTrace.none,
   });
 
   final String id;
@@ -20,6 +22,15 @@ class PostCardResolvedMediaItem {
   final int? height;
   final int? duration;
   final bool editDisclosure;
+
+  /// AURA TRACE for this media.
+  ///
+  /// PostCard renders media through its own frame rather than through
+  /// `CanonicalMediaThumb`, so it does NOT inherit the mark the way the feed
+  /// and the announcement surfaces do. That was a real gap: post detail, the
+  /// author profile and saves all render this card, and none of them showed TR
+  /// on media that had something to disclose.
+  final AuraTrace trace;
 
   bool get isVideo => type.toUpperCase().contains('VIDEO');
   bool get isSvg =>

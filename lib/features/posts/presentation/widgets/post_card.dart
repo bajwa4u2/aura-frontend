@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../../../../core/media/trace/aura_trace.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -297,6 +298,10 @@ class _PostCardState extends ConsumerState<PostCard> {
           height: height,
           duration: duration,
           editDisclosure: editDisclosure,
+          // The curated account the server resolved for THIS media entry. The
+          // legacy branch below has none — it predates canonical media[] — and
+          // correctly passes nothing rather than borrowing the post's.
+          trace: AuraTrace.fromJson(m['trace']),
         ),
       );
     }
