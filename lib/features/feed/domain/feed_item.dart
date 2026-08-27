@@ -9,6 +9,7 @@
 library;
 
 import 'feed_media.dart';
+import '../../../core/media/trace/aura_trace.dart';
 import '../../../core/tagging/tag_entities.dart';
 import '../../../core/identity/person_identity_model.dart';
 export 'feed_media.dart';
@@ -879,6 +880,7 @@ class FeedItem {
     this.activity,
     this.secondaryAttribution,
     this.voice,
+    this.trace = AuraTrace.none,
     this.paidActionWire,
     this.publicSpaceId,
     this.publicSpaceSlug,
@@ -951,6 +953,15 @@ class FeedItem {
   /// Absent for personal posts and for institution posts with no human
   /// author available.
   final FeedSecondaryAttribution? secondaryAttribution;
+
+  /// AURA TRACE for this item's TEXT — separate from `media[i].trace`,
+  /// which is about a photograph or a video rather than the words.
+  ///
+  /// Never absent: the backend always projects it, and says `available:
+  /// false` when there is nothing to disclose, so "nothing to disclose" stays
+  /// distinguishable from "this build could not parse it". TR renders only on
+  /// `available`.
+  final AuraTrace trace;
 
   /// Phase 6.4 — calm voice indicator. Absent for personal posts; present
   /// only when the backend has data to back the label.
@@ -1141,6 +1152,7 @@ class FeedItem {
       activity: activity,
       secondaryAttribution: secondaryAttribution,
       voice: voice,
+      trace: AuraTrace.fromJson(m['trace']),
       paidActionWire: opt(['paidAction']),
       publicSpaceId: spaceId,
       publicSpaceSlug: spaceSlug,

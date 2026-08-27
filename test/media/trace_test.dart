@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:aura/core/media/aura_media_group.dart';
+import 'package:aura/features/feed/domain/feed_item.dart';
 import 'package:aura/features/feed/domain/feed_media.dart';
 import 'package:aura/core/media/trace/aura_trace.dart';
 import 'package:aura/core/media/trace/aura_trace_mark.dart';
@@ -276,6 +277,58 @@ void main() {
       ));
       await tester.pump(const Duration(milliseconds: 80));
       expect(find.text('TR'), findsNothing);
+    });
+  });
+
+  group('TEXT TRACE reaches the client model', () {
+    // The media mark failed by being mounted somewhere nothing rendered. The
+    // equivalent failure for text is quieter: the field is projected, the card
+    // asks for it, and the model drops it on the way through. So the parse is
+    // pinned here rather than assumed.
+
+    test('a post that discloses something carries it', () {
+      final item = FeedItem.fromJson({
+        'id': 'p1',
+        'type': 'USER_POST',
+        'authorType': 'INSTITUTION',
+        'author': {'id': 'i1', 'name': 'Aura Health'},
+        'body': 'statement',
+        'trace': {
+          'available': true,
+          'facts': [
+            {
+              'section': 'ORIGIN',
+              'evidence': 'KNOWN',
+              'summary': 'Published as Aura Health',
+            }
+          ],
+        },
+      });
+      expect(item.trace.isNotEmpty, isTrue);
+      expect(item.trace.facts.single.summary, 'Published as Aura Health');
+    });
+
+    test('a post with nothing to disclose is silent, not broken', () {
+      final item = FeedItem.fromJson({
+        'id': 'p2',
+        'type': 'USER_POST',
+        'authorType': 'USER',
+        'author': {'id': 'u1', 'name': 'A'},
+        'body': 'hello',
+        'trace': {'available': false, 'facts': []},
+      });
+      expect(item.trace.isEmpty, isTrue);
+    });
+
+    test('a server too old to send it is also silent, not broken', () {
+      final item = FeedItem.fromJson({
+        'id': 'p3',
+        'type': 'USER_POST',
+        'authorType': 'USER',
+        'author': {'id': 'u1', 'name': 'A'},
+        'body': 'hello',
+      });
+      expect(item.trace.isEmpty, isTrue);
     });
   });
 

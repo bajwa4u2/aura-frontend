@@ -207,6 +207,10 @@ class AuraTrace {
 
   bool get isEmpty => !available || facts.isEmpty;
 
+  /// There is something to disclose. Provided so call sites read as the
+  /// question they are actually asking, rather than as a negated one.
+  bool get isNotEmpty => !isEmpty;
+
   /// Facts grouped for display, in a stable, meaningful order.
   ///
   /// Uncertainty and integrity lead: they are what a reader most needs to know

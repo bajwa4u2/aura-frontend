@@ -32,6 +32,8 @@ import '../../../core/engagement/engagement_model.dart';
 import '../../posts/presentation/widgets/post_card/post_card_utils.dart';
 import '../../share/aura_share_sheet.dart';
 import '../../topics/topic.dart';
+import '../../../core/media/trace/aura_trace_mark.dart';
+import '../../../core/media/trace/aura_trace_surface.dart';
 import '../domain/feed_item.dart';
 import 'feed_interaction_bar.dart';
 
@@ -312,14 +314,40 @@ class UnifiedFeedCard extends ConsumerWidget {
                   ),
                 ),
               const SizedBox(height: AuraSpace.s8),
-              CommunicationTranslateAction(
-                objectType: _communicationObjectTypeFor(item.type),
-                objectId: item.id,
-                sourceText: item.body,
-                bodyStyle: AuraText.body.copyWith(
-                  color: AuraSurface.ink,
-                  height: 1.5,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: CommunicationTranslateAction(
+                      objectType: _communicationObjectTypeFor(item.type),
+                      objectId: item.id,
+                      sourceText: item.body,
+                      bodyStyle: AuraText.body.copyWith(
+                        color: AuraSurface.ink,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                  // AURA TRACE for the WORDS.
+                  //
+                  // Deliberately not on the media thumbnail: a photograph and
+                  // the text around it can have entirely different things to
+                  // disclose, and one mark standing for both would misattribute
+                  // whichever it did not come from. This one sits with the
+                  // text, and `media[i].trace` sits on each image.
+                  //
+                  // It renders nothing at all when there is nothing to
+                  // disclose, which is most posts — the mark is a disclosure,
+                  // not a badge every post earns for existing.
+                  if (item.trace.isNotEmpty) ...[
+                    const SizedBox(width: AuraSpace.s8),
+                    AuraTraceMark(
+                      trace: item.trace,
+                      compact: true,
+                      onSurface: true,
+                      onOpen: () => showAuraTrace(context, trace: item.trace),
+                    ),
+                  ],
+                ],
               ),
             ],
             // C4-followup — prefer canonical media[] when the backend

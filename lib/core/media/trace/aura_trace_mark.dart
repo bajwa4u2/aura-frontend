@@ -31,6 +31,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../ui/aura_surface.dart';
 import '../../ui/aura_text.dart';
 import 'aura_trace.dart';
 
@@ -44,6 +45,7 @@ class AuraTraceMark extends StatelessWidget {
     required this.onOpen,
     this.compact = false,
     this.touch = false,
+    this.onSurface = false,
   });
 
   final AuraTrace trace;
@@ -54,6 +56,16 @@ class AuraTraceMark extends StatelessWidget {
 
   /// Expand the tap target for fingers without growing the visible mark.
   final bool touch;
+
+  /// Render for a CARD, not for a photograph.
+  ///
+  /// Over media the mark carries its own dark scrim, because it has to stay
+  /// legible above a snow scene and a night shot alike. Inline on a light card
+  /// that same plate reads as a heavy black chip shouting next to quiet text —
+  /// loud in exactly the place the doctrine asks for calm. So the surface
+  /// variant drops the scrim and takes the card's own ink, and is otherwise
+  /// the same mark: same glyph, same target, same conflict hairline.
+  final bool onSurface;
 
   @override
   Widget build(BuildContext context) {
@@ -68,21 +80,27 @@ class AuraTraceMark extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: compact ? 5 : 6),
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        // Its own scrim, so the mark is legible over a snow scene and a night
-        // shot alike without knowing anything about the media beneath it.
-        color: Colors.black.withValues(alpha: 0.58),
+        // Over media: its own scrim, so the mark stays legible above a snow
+        // scene and a night shot alike without knowing anything about what is
+        // beneath it. On a card: nothing, because there is nothing to survive.
+        color: onSurface
+            ? Colors.transparent
+            : Colors.black.withValues(alpha: 0.58),
         borderRadius: BorderRadius.circular(6),
         border: trace.hasConflict
             // The ONE case that earns colour, and only as a hairline: something
             // is genuinely unresolved and a reader should know before deciding
             // what to make of the object.
             ? Border.all(color: const Color(0xFFE0A44A), width: 1)
-            : Border.all(color: Colors.white24, width: 1),
+            : Border.all(
+                color: onSurface ? AuraSurface.divider : Colors.white24,
+                width: 1,
+              ),
       ),
       child: Text(
         'TR',
         style: AuraText.small.copyWith(
-          color: Colors.white,
+          color: onSurface ? AuraSurface.faint : Colors.white,
           fontWeight: FontWeight.w700,
           fontSize: compact ? 10 : 11,
           letterSpacing: 0.5,
