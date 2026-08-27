@@ -454,6 +454,18 @@ class AuraVideoUnavailableTile extends StatelessWidget {
   final String? fileName;
   final BorderRadius? borderRadius;
 
+  /// Below this, only the icon fits and only the icon is drawn.
+  ///
+  /// The composition strip renders these at 66x66. The tile asked for a
+  /// `minHeight` of 120 inside that box and stacked a 32px icon, a gap and two
+  /// lines of text into the 42px left after its own padding — about 68px of
+  /// content in 42px of space.
+  ///
+  /// It overflowed on iOS and NOWHERE ELSE in certification, because the
+  /// Windows and Android suites never rendered this tile at strip size. That
+  /// is the whole reason the iOS lane exists.
+  static const double _compactBelow = 96;
+
   @override
   Widget build(BuildContext context) {
     final name = (fileName ?? '').trim();
@@ -461,27 +473,54 @@ class AuraVideoUnavailableTile extends StatelessWidget {
       label: name.isEmpty ? 'Video, $label' : 'Video, $name, $label',
       child: ClipRRect(
         borderRadius: borderRadius ?? BorderRadius.circular(16),
-        child: Container(
-          color: AuraSurface.subtle,
-          padding: const EdgeInsets.all(AuraSpace.s12),
-          constraints: const BoxConstraints(minHeight: 120),
-          alignment: Alignment.center,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.videocam_off_outlined,
-                  color: AuraSurface.faint, size: 32),
-              const SizedBox(height: AuraSpace.s8),
-              Text(
-                name.isEmpty ? label : name,
-                style: AuraText.small.copyWith(color: AuraSurface.muted),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // ANSWER TO THE ROOM GIVEN, rather than declaring a minimum the
+            // parent has already refused. A `minHeight` larger than the
+            // incoming `maxHeight` is not a floor — it is an overflow.
+            final compact = constraints.maxHeight < _compactBelow ||
+                constraints.maxWidth < _compactBelow;
+
+            if (compact) {
+              // In a strip cell the caption is redundant anyway: the row
+              // beneath already names the file. What a person needs at this
+              // size is only that this one is a video that will not play.
+              return Container(
+                color: AuraSurface.subtle,
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.videocam_off_outlined,
+                  color: AuraSurface.faint,
+                  size: 20,
+                ),
+              );
+            }
+
+            return Container(
+              color: AuraSurface.subtle,
+              padding: const EdgeInsets.all(AuraSpace.s12),
+              constraints: const BoxConstraints(minHeight: 120),
+              alignment: Alignment.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.videocam_off_outlined,
+                      color: AuraSurface.faint, size: 32),
+                  const SizedBox(height: AuraSpace.s8),
+                  Flexible(
+                    child: Text(
+                      name.isEmpty ? label : name,
+                      style: AuraText.small.copyWith(color: AuraSurface.muted),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
