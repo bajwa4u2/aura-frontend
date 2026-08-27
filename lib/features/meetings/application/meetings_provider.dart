@@ -92,6 +92,20 @@ final meetingOutcomesProvider =
 
 // Establishment Pass — meeting assets (materials, shared files, recordings).
 // Works for members AND guests (guest tokens see guest-visible READY assets).
+/// Signed playback URL for one meeting asset.
+///
+/// Meeting assets are NOT canonical `Media` rows, so they do not resolve
+/// through `MediaUrlResolver`; the meeting owns their access decision. This is
+/// the bridge that lets a meeting recording reach the shared stored-media
+/// presentation without either side adopting the other's authority.
+final meetingAssetUrlProvider =
+    FutureProvider.family<String?, ({String meetingId, String assetId})>(
+        (ref, key) async {
+  return ref
+      .read(meetingsRepositoryProvider)
+      .assetUrl(key.meetingId, key.assetId);
+});
+
 final meetingAssetsProvider = FutureProvider.family<List<MeetingAsset>, String>(
   (ref, meetingId) async {
     final repo = ref.watch(meetingsRepositoryProvider);

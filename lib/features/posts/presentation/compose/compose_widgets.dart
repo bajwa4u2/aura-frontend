@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/media/attachment.dart';
+import '../../../../core/media/aura_stored_media.dart';
+import '../../../../core/media/stored_media.dart';
 import '../../../../core/ui/aura_platform_components.dart';
 import '../../../../core/ui/aura_radius.dart';
 import '../../../../core/ui/aura_space.dart';
@@ -259,37 +261,23 @@ class ComposeAttachmentPreview extends StatelessWidget {
       return _fallbackPreview();
     }
 
-    final thumbUrl = (attachment.thumbUrl ?? '').trim();
-    if (thumbUrl.isNotEmpty) {
-      return Stack(
-        alignment: Alignment.center,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Image.network(
-                thumbUrl,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                errorBuilder: (_, __, ___) => _videoFallback(),
-              ),
-            ),
-          ),
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.45),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.play_arrow, color: Colors.white),
-          ),
-        ],
-      );
-    }
-
-    return _videoFallback();
+    // VIDEO GOES THROUGH THE CANONICAL AUTHORITY — §8.
+    //
+    // Compose used to show a videocam glyph and the file name, because the
+    // only preview it knew how to draw came from `thumbUrl`, and the backend
+    // sets a thumbnail for images only. So a chosen video was never visible
+    // before publishing it, and once published it rendered through an entirely
+    // different code path — two architectures for one object.
+    //
+    // Compose is a pre-send state, not a different kind of media. The same
+    // surface serves it, reading the LOCAL source before upload and the stored
+    // object afterwards, so the preview a person approves is the presentation
+    // they get.
+    return AuraStoredMedia(
+      media: _asStoredMedia(attachment),
+      context: StoredMediaContext.compose,
+      borderRadius: BorderRadius.circular(12),
+    );
   }
 
   double _aspectRatio() {
@@ -321,31 +309,34 @@ class ComposeAttachmentPreview extends StatelessWidget {
     );
   }
 
-  Widget _videoFallback() {
-    return Container(
-      height: 180,
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      padding: const EdgeInsets.all(AuraSpace.s12),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.videocam_outlined,
-            color: AuraSurface.muted,
-            size: 36,
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          Text(
-            attachment.file?.name ?? attachment.fileName ?? 'Video attachment',
-            style: AuraText.small.copyWith(color: AuraSurface.muted),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
+}
+
+/// Adapter from a compose [Attachment] onto the canonical stored-media model.
+///
+/// It carries BOTH representations: the local source that exists before upload
+/// and the stored identity that exists after it. That is what keeps the
+/// continuity §9 requires — local acquisition, upload, hydrated media — from
+/// needing a second presentation architecture at either end.
+StoredMedia _asStoredMedia(Attachment attachment) {
+  final url = (attachment.url ?? '').trim();
+  final hydrated = url.isNotEmpty;
+  return StoredMedia.fromParts(
+    mediaId: attachment.mediaId ?? '',
+    mimeType: attachment.mimeType,
+    declaredKind: attachment.kind.name.toUpperCase(),
+    isPublic: true,
+    sourceUrl: hydrated ? url : null,
+    posterUrl: attachment.thumbUrl,
+    localBytes: attachment.bytes,
+    localPath: attachment.file?.path,
+    fileName: attachment.fileName ?? attachment.file?.name,
+    width: attachment.width,
+    height: attachment.height,
+    durationMs: attachment.durationMs,
+    state: hydrated
+        ? StoredMediaState.ready
+        : (attachment.uploading
+            ? StoredMediaState.pending
+            : StoredMediaState.local),
+  );
 }

@@ -8,7 +8,10 @@ import '../../../core/link_preview/display_link_preview.dart';
 import '../../../core/media/aura_attachment_image.dart';
 import '../../../core/media/aura_media_frame.dart';
 import '../../../core/media/aura_media_viewer.dart';
+import '../../../core/media/aura_stored_media.dart';
 import '../../../core/media/canonical_media_thumb.dart';
+import '../../../core/media/media_mime.dart';
+import '../../../core/media/stored_media.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/substrate_chip.dart';
@@ -1045,6 +1048,42 @@ class _LegacyMediaUrlThumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final trimmed = url.trim();
+
+    // COMPATIBILITY BRIDGE — legacy `mediaUrl` carries no type.
+    //
+    // These payloads are a bare URL string with no mime, no media type and no
+    // dimensions, so this is the one place the product must infer what it is
+    // holding. A legacy video reaching the image frame produces exactly the
+    // broken tile this work exists to remove, and the file extension is the
+    // only signal available. Inference is confined to THIS bridge: every
+    // modern payload carries its type, and this path retires with them.
+    final inferredMime = inferMimeFromFileName(Uri.tryParse(trimmed)?.path);
+    if ((inferredMime ?? '').toLowerCase().startsWith('video/')) {
+      return AuraStoredMedia(
+        media: StoredMedia.fromParts(
+          mimeType: inferredMime,
+          isPublic: true,
+          sourceUrl: trimmed,
+        ),
+        context: mode == AuraMediaFrameMode.detail
+            ? StoredMediaContext.detail
+            : StoredMediaContext.feed,
+        onOpenViewer: trimmed.isEmpty
+            ? null
+            : () => showAuraMediaViewer(
+                  context,
+                  items: [
+                    AuraViewerItem(
+                      originalUrl: trimmed,
+                      isVideo: true,
+                      caption: null,
+                      downloadContext: downloadContext,
+                    ),
+                  ],
+                ),
+      );
+    }
+
     return AuraMediaFrame(
       url: url,
       attachmentId: attachmentId,

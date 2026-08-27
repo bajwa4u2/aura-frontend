@@ -14,12 +14,13 @@ import 'package:image_picker/image_picker.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:record/record.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:video_player/video_player.dart';
 
 import '../../../core/media/call_preflight_sheet.dart';
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/media/aura_attachment_card.dart';
+import '../../../core/media/aura_stored_media.dart';
 import '../../../core/media/aura_voice_player.dart';
+import '../../../core/media/stored_media.dart';
 import '../../../core/media/aura_media_viewer.dart';
 import '../../../core/media/aura_attachment_open.dart';
 import '../../../core/compliance/report_content_sheet.dart';
@@ -2008,8 +2009,46 @@ class _ConversationAttachment extends ConsumerWidget {
           );
         }
         if (kind == AttachmentPresentationKind.video) {
-          return _MediaPlayback(
-              url: url, isVideo: true, mediaId: media.mediaId);
+          // MIGRATED TO THE STORED-MEDIA AUTHORITY.
+          //
+          // Conversation had the product's only working inline video, in a
+          // PRIVATE widget no other surface could reach — which is precisely
+          // why a video shared here played while the same video in a post
+          // rendered as a broken image. Conversation is a proving surface for
+          // rich content, not its owner, so the capability moves to the shared
+          // authority and Conversation becomes a consumer of it.
+          //
+          // Behaviour is preserved: a message CONTAINS its media, so it still
+          // plays in place rather than pushing a fullscreen surface.
+          return ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 280),
+            child: AuraStoredMedia(
+              media: StoredMedia.fromParts(
+                mediaId: media.mediaId,
+                mimeType: media.mimeType,
+                declaredKind: media.kind,
+                sourceUrl: url,
+                fileName: media.fileName,
+                durationMs: media.durationMs,
+                sizeBytes: media.fileSizeBytes,
+              ),
+              context: StoredMediaContext.message,
+              borderRadius: BorderRadius.circular(12),
+              onOpenViewer: () => showAuraMediaViewer(
+                context,
+                items: [
+                  AuraViewerItem(
+                    originalUrl: url,
+                    mediaId: media.mediaId,
+                    isPublic: false,
+                    isVideo: true,
+                    caption: media.fileName,
+                    downloadContext: 'conversation-attachment',
+                  ),
+                ],
+              ),
+            ),
+          );
         }
 
         // Everything else — PDF, document, spreadsheet, presentation,
@@ -2044,110 +2083,10 @@ class _ConversationAttachment extends ConsumerWidget {
   }
 }
 
-/// Voice-note / video playback through the shared video_player engine
-/// (HTML media element on web). Lazy: nothing initializes until played.
-class _MediaPlayback extends StatefulWidget {
-  const _MediaPlayback(
-      {required this.url, required this.isVideo, required this.mediaId});
-  final String url;
-  final bool isVideo;
-  final String mediaId;
-
-  @override
-  State<_MediaPlayback> createState() => _MediaPlaybackState();
-}
-
-class _MediaPlaybackState extends State<_MediaPlayback> {
-  VideoPlayerController? _controller;
-  bool _initializing = false;
-
-  @override
-  void dispose() {
-    _controller?.dispose();
-    super.dispose();
-  }
-
-  Future<void> _togglePlay() async {
-    if (_controller == null) {
-      setState(() => _initializing = true);
-      try {
-        final controller =
-            VideoPlayerController.networkUrl(Uri.parse(widget.url));
-        await controller.initialize();
-        setState(() => _controller = controller);
-        await controller.play();
-      } catch (_) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Could not play this attachment.')));
-        }
-      } finally {
-        if (mounted) setState(() => _initializing = false);
-      }
-      return;
-    }
-    if (_controller!.value.isPlaying) {
-      await _controller!.pause();
-    } else {
-      await _controller!.play();
-    }
-    setState(() {});
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final playing = _controller?.value.isPlaying ?? false;
-    if (widget.isVideo && _controller != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: SizedBox(
-          width: 280,
-          child: AspectRatio(
-            aspectRatio: _controller!.value.aspectRatio == 0
-                ? 16 / 9
-                : _controller!.value.aspectRatio,
-            child: GestureDetector(
-              onTap: _togglePlay,
-              child: VideoPlayer(_controller!),
-            ),
-          ),
-        ),
-      );
-    }
-    return InkWell(
-      onTap: _initializing ? null : _togglePlay,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: 220,
-        padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s12, vertical: AuraSpace.s10),
-        decoration: BoxDecoration(
-          color: AuraSurface.subtle,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            _initializing
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : Icon(
-                    playing
-                        ? Icons.pause_circle_filled_rounded
-                        : Icons.play_circle_fill_rounded,
-                    size: 26,
-                    color: AuraSurface.accentText,
-                  ),
-            const SizedBox(width: AuraSpace.s10),
-            Text(widget.isVideo ? 'Video' : 'Voice note',
-                style: AuraText.small.copyWith(color: AuraSurface.ink)),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// The private `_MediaPlayback` fork that used to live here is RETIRED.
+// Conversation's inline video now goes through the canonical stored-media
+// authority, which every other surface also consumes — see §20's convergence
+// target. Voice and audio already had their canonical player.
 
 final _deliveryUrlProvider =
     FutureProvider.family<String?, String>((ref, mediaId) async {

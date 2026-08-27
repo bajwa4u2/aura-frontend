@@ -24,8 +24,23 @@ String _attachmentRenderer() {
   final src = File(kConversation).readAsStringSync();
   final start = src.indexOf('class _ConversationAttachment');
   expect(start, isNot(-1), reason: 'the conversation attachment renderer must exist');
-  final end = src.indexOf('class _MediaPlayback', start);
-  expect(end, isNot(-1), reason: 'could not bound the attachment renderer');
+
+  // The end of the renderer is simply the next top-level declaration.
+  //
+  // This used to be pinned to `class _MediaPlayback` — the private inline
+  // player that lived directly below. That player has been RETIRED: inline
+  // video is now the shared stored-media authority's job, and Conversation
+  // consumes it like every other surface. Pinning the bound to a neighbour
+  // made these assertions fail for a reason that had nothing to do with what
+  // they assert, so the bound now follows the file's structure instead.
+  final match = RegExp(r'^(class|final|enum|mixin|extension|typedef|abstract)\s',
+          multiLine: true)
+      .allMatches(src, start)
+      .firstWhere((m) => m.start > start,
+          orElse: () => throw StateError('no declaration follows the renderer'));
+  final end = match.start;
+  expect(end, greaterThan(start),
+      reason: 'could not bound the attachment renderer');
   return src.substring(start, end);
 }
 

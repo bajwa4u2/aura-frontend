@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../../core/media/aura_stored_media.dart';
+import '../../../../core/media/stored_media.dart';
 import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_surface.dart';
 import '../../application/meetings_provider.dart';
@@ -268,7 +270,26 @@ class _MeetingAssetsSectionState extends ConsumerState<MeetingAssetsSection> {
         children: [
           if (assets.isEmpty)
             MeetingSection.emptyLine(context, widget.emptyText),
-          for (final asset in assets)
+          for (final asset in assets) ...[
+            // MEETING-RELATED STORED VIDEO — §12.
+            //
+            // A recording is a stored video object, not realtime media, so it
+            // belongs to the canonical stored-media system. Active meeting
+            // camera tiles are untouched: nothing here goes near a live track.
+            //
+            // ADDITIVE ON PURPOSE. The asset row below keeps its title,
+            // subtitle, readiness gating, guest-visibility control and open
+            // action exactly as they were; this only gives a recording a face,
+            // where before the Meeting Record could show one solely as a line
+            // of text.
+            if (_isPlayableVideo(asset))
+              Padding(
+                padding: const EdgeInsets.only(bottom: AuraSpace.s8),
+                child: _AssetVideoPreview(
+                  meetingId: widget.meetingId,
+                  asset: asset,
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.only(bottom: AuraSpace.s6),
               child: Row(
@@ -327,6 +348,7 @@ class _MeetingAssetsSectionState extends ConsumerState<MeetingAssetsSection> {
                 ],
               ),
             ),
+          ],
           if (widget.canManage && widget.allowAdd)
             Wrap(
               spacing: AuraSpace.s8,
@@ -345,6 +367,58 @@ class _MeetingAssetsSectionState extends ConsumerState<MeetingAssetsSection> {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// A meeting asset is a playable video when the meeting says it is READY and
+/// the mime says it is video. Both are required: an in-progress recording
+/// upload already has a video mime and nothing yet to play.
+bool _isPlayableVideo(MeetingAsset asset) =>
+    asset.isReady &&
+    asset.kind != MeetingAssetKind.link &&
+    (asset.mimeType ?? '').toLowerCase().startsWith('video/');
+
+/// Resolves the meeting's own signed URL, then hands the object to the shared
+/// stored-media authority — the same presentation a video gets in a post or a
+/// conversation.
+class _AssetVideoPreview extends ConsumerWidget {
+  const _AssetVideoPreview({required this.meetingId, required this.asset});
+
+  final String meetingId;
+  final MeetingAsset asset;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final resolved = ref.watch(
+      meetingAssetUrlProvider((meetingId: meetingId, assetId: asset.id)),
+    );
+    return resolved.when(
+      data: (url) {
+        if (url == null || url.trim().isEmpty) return const SizedBox.shrink();
+        return AuraStoredMedia(
+          media: StoredMedia.fromParts(
+            mediaId: asset.id,
+            mimeType: asset.mimeType,
+            isPublic: true,
+            sourceUrl: url,
+            fileName: asset.title,
+            sizeBytes: asset.sizeBytes,
+            // The asset model carries SECONDS; presentation carries
+            // milliseconds everywhere (F133).
+            durationMs: asset.durationSeconds == null
+                ? null
+                : asset.durationSeconds! * 1000,
+          ),
+          context: StoredMediaContext.message,
+          maxHeight: 260,
+          borderRadius: BorderRadius.circular(12),
+        );
+      },
+      // The preview enhances the row, it never blocks it: while resolving or
+      // on failure the asset row alone stands, exactly as before.
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 }

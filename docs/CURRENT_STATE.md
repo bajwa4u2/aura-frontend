@@ -1,10 +1,40 @@
 # Aura Release Client — Current State
 
-**Last updated: 2026-08-25**
+**Last updated: 2026-08-26**
 
 ---
 
 ## Status
+
+> **2026-08-26 — STORED VIDEO PRESENTATION IS NOW A PLATFORM AUTHORITY.** A
+> video shared into a post rendered as a broken-image glyph. The cause was not
+> the post card: the backend sets a thumbnail for images only, so `thumbUrl` is
+> null for EVERY stored video, and four surfaces each improvised over the
+> absence — three of them by handing an MP4 to an image decoder.
+>
+> The fix is layered, not local. `stored_media.dart` resolves what a media
+> object IS; `aura_stored_media.dart` decides what it looks like inline through
+> a presenter REGISTRY rather than a closed switch; `AuraVideoSurface` is the
+> one video primitive; `AuraMediaViewer` still owns fullscreen.
+> `CanonicalMediaThumb` is a consumer of that stack, not its owner.
+>
+> Migrated: posts (cards + compose), conversation, correspondence, institution
+> spaces, announcements, institution posts + composer, meeting stored
+> recordings, and the legacy flat-`mediaUrl` path (behind an explicit,
+> named bridge). Conversation's private `_MediaPlayback` fork is RETIRED.
+> Realtime is untouched.
+>
+> Recorded and uploaded video converge on the same object model, so both take
+> the same path.
+>
+> **Platform truth, stated rather than assumed:** `video_player` resolves no
+> Windows or Linux implementation. `storedVideoCanDecodeInline()` returns false
+> there and NO decode is attempted — the surface shows an honest identity tile
+> instead. This is also why the poster is produced server-side (aura-backend
+> `docs/2026-08-26-stored-video-poster-derivative.md`): a JPEG works everywhere.
+>
+> **Not yet certified live** — deployed behaviour is owed on Web, Android and
+> Windows with real uploaded and recorded video.
 
 > **2026-08-25 — MEETINGS §11 ACTIVE WORKSPACE RECONSTRUCTED.** The room now
 > keeps the meeting's identity, participants and elapsed time legible while the

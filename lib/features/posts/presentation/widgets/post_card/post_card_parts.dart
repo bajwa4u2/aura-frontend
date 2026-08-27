@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../../core/media/aura_media_frame.dart';
+import '../../../../../core/media/aura_stored_media.dart';
+import '../../../../../core/media/stored_media.dart';
 import '../../../../../core/ui/aura_platform_components.dart';
 import '../../../../../core/ui/aura_radius.dart';
 import '../../../../../core/ui/aura_space.dart';
@@ -259,15 +261,6 @@ class PostCardSingleMediaCard extends StatelessWidget {
   /// [AuraMediaFrameMode.detail] for a column-balanced render.
   final AuraMediaFrameMode mode;
 
-  String _durationLabel() {
-    final ms = item.duration;
-    if (ms == null || ms <= 0) return '';
-    final totalSeconds = (ms / 1000).round();
-    final minutes = totalSeconds ~/ 60;
-    final seconds = totalSeconds % 60;
-    return '$minutes:${seconds.toString().padLeft(2, '0')}';
-  }
-
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(16);
@@ -281,6 +274,32 @@ class PostCardSingleMediaCard extends StatelessWidget {
       return _buildSvgCard(context, imageUrl, radius);
     }
 
+    // ── Stored video is delegated to the canonical authority.
+    //
+    // The post card used to build its own video presentation: it asked for a
+    // preview URL, which for a poster-less video was the VIDEO url, handed
+    // that to the image frame, and drew its own play button and duration chip
+    // over whatever came back. The image decoder cannot read an MP4, so what
+    // it actually drew them over was a broken-image tile.
+    //
+    // Posts no longer reason about any of this. The authority owns poster
+    // resolution, the play affordance, the duration chip, loading and the
+    // failure states, so a video in a post is the same object it is in a
+    // conversation or an announcement.
+    if (item.isVideo) {
+      return _withCaption(
+        AuraStoredMedia(
+          media: _asStoredMedia(item),
+          context: mode == AuraMediaFrameMode.detail
+              ? StoredMediaContext.detail
+              : StoredMediaContext.feed,
+          maxHeight: maxHeight,
+          borderRadius: radius,
+          onOpenViewer: onTap,
+        ),
+      );
+    }
+
     // ── Empty/error tile.
     if (imageUrl.isEmpty) {
       return _buildEmptyCard(context, radius);
@@ -289,58 +308,6 @@ class PostCardSingleMediaCard extends StatelessWidget {
     // ── Standard image (or video poster). Everything goes through the
     //    canonical [AuraMediaFrame] so crop/contain, max width/height,
     //    and clipping are decided in one place.
-    final overlay = item.isVideo
-        ? Stack(
-            children: [
-              Positioned.fill(
-                child: Center(
-                  child: Container(
-                    width: 68,
-                    height: 68,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.58),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow_rounded,
-                      size: 38,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(AuraRadius.pill),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.videocam,
-                          size: 14, color: Colors.white),
-                      if (_durationLabel().isNotEmpty) ...[
-                        const SizedBox(width: 4),
-                        Text(
-                          _durationLabel(),
-                          style: AuraText.small.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          )
-        : null;
 
     final frame = AuraMediaFrame(
       url: imageUrl,
@@ -351,7 +318,6 @@ class PostCardSingleMediaCard extends StatelessWidget {
       maxHeightOverride: maxHeight,
       borderRadius: radius,
       onTap: onTap,
-      foreground: overlay,
       errorWidget: (_) => Container(
         color: AuraSurface.elevated,
         alignment: Alignment.center,
@@ -364,10 +330,16 @@ class PostCardSingleMediaCard extends StatelessWidget {
       ),
     );
 
+    return _withCaption(frame);
+  }
+
+  /// Caption and edit disclosure ride with the media whatever it is, so a
+  /// video keeps the same surrounding record a photograph gets.
+  Widget _withCaption(Widget media) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        frame,
+        media,
         if ((item.caption ?? '').trim().isNotEmpty) ...[
           const SizedBox(height: AuraSpace.s8),
           Text(
@@ -519,3 +491,26 @@ class PostCardBadge extends StatelessWidget {
     );
   }
 }
+
+/// Adapter from the post card's resolved media row onto the canonical
+/// stored-media model.
+///
+/// `type` is the declared kind and the poster is passed as presentation
+/// metadata; the canonical mime-first rule decides what this actually is.
+StoredMedia _asStoredMedia(PostCardResolvedMediaItem item) =>
+    StoredMedia.fromParts(
+      // Deliberately NOT `item.id`: that is the post-media join id, not a
+      // canonical `Media.id`, and handing it to the resolver would sign a
+      // request for an object that does not exist. Posts resolve by URL, as
+      // they did before, so an absent URL becomes an honest unavailable tile
+      // rather than a wrong lookup.
+      mediaId: '',
+      declaredKind: item.type,
+      isPublic: true,
+      sourceUrl: item.playableUrl,
+      posterUrl: item.posterUrl,
+      caption: item.caption,
+      width: item.width,
+      height: item.height,
+      durationMs: item.duration,
+    );

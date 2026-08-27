@@ -27,12 +27,22 @@ class PostCardResolvedMediaItem {
       ((url ?? '').toLowerCase().endsWith('.svg'));
 
   String get playableUrl => (url ?? '').trim();
+
+  /// The server's poster for this media, or empty when it has none.
+  ///
+  /// For video this is empty for everything the product has ever stored: the
+  /// backend sets a thumbnail only for images. Producing a picture of a video
+  /// is the video surface's problem, not this model's.
+  String get posterUrl => (thumbUrl ?? '').trim();
+
+  /// A URL safe to hand to an IMAGE decoder.
+  ///
+  /// It previously fell back to [playableUrl] for a poster-less video, so an
+  /// MP4 was passed to the image pipeline, failed to decode, and rendered as a
+  /// broken-image tile. A video URL is never an image URL, and saying so here
+  /// is what stops every consumer of this model from repeating the mistake.
   String get previewUrl {
-    if (isVideo) {
-      final thumb = (thumbUrl ?? '').trim();
-      if (thumb.isNotEmpty) return thumb;
-      return playableUrl;
-    }
+    if (isVideo) return posterUrl;
     return playableUrl;
   }
 }

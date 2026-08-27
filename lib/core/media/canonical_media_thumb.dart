@@ -4,6 +4,8 @@ import '../ui/aura_surface.dart';
 import '../../features/feed/domain/feed_media.dart';
 import 'aura_media_frame.dart';
 import 'aura_media_viewer.dart';
+import 'aura_stored_media.dart';
+import 'stored_media.dart';
 
 /// Renders a single canonical [FeedMedia] entry inside the canonical
 /// [AuraMediaFrame].
@@ -61,6 +63,35 @@ class CanonicalMediaThumb extends StatelessWidget {
     final effectiveTap = onTap ??
         (hasViewable ? () => _openViewer(context) : null);
 
+    // VIDEO IS NOT A RASTER URL.
+    //
+    // This adapter used to have no video branch: it handed `media.url` to the
+    // image pipeline whatever the media was. An MP4 given to an image decoder
+    // fails, and the frame fell back to `BrokenMediaTile` — the broken-image
+    // glyph founder-observed on the feed. Because the feed, announcements and
+    // institution announcements all reach media through this one adapter, that
+    // single missing branch broke video on all three at once.
+    //
+    // Stored video is DELEGATED, not handled here. This adapter is a consumer
+    // of the stored-media authority, never its owner: a thumbnail is one
+    // presentation capability of a stored object, not the domain model for
+    // one. Poster resolution, the play affordance, duration, loading and the
+    // honest failure states all belong to that layer, which is why fixing this
+    // one delegation fixes the feed, announcements and institution
+    // announcements together.
+    //
+    // The card still hands off to the fullscreen viewer on tap: a feed card
+    // references media, it is not the media's home.
+    if (media.isVideo) {
+      return AuraStoredMedia(
+        media: _asStoredMedia(media),
+        context: mode == AuraMediaFrameMode.detail
+            ? StoredMediaContext.detail
+            : StoredMediaContext.feed,
+        onOpenViewer: effectiveTap,
+      );
+    }
+
     return AuraMediaFrame(
       url: media.url,
       attachmentId: media.mediaId.isNotEmpty ? media.mediaId : null,
@@ -97,6 +128,24 @@ class CanonicalMediaThumb extends StatelessWidget {
     );
   }
 }
+
+/// Adapter from the feed's wire model onto the canonical stored-media model.
+///
+/// Surfaces keep their own payload shapes; the presentation layer sees exactly
+/// one. `mediaType` is passed as the declared kind and the mime alongside it,
+/// so the canonical mime-first rule decides — this adapter does not.
+StoredMedia _asStoredMedia(FeedMedia media) => StoredMedia.fromParts(
+      mediaId: media.mediaId,
+      mimeType: media.mimeType,
+      declaredKind: media.mediaType,
+      isPublic: media.isPublic,
+      sourceUrl: media.url,
+      posterUrl: media.thumbUrl,
+      caption: media.caption,
+      width: media.width,
+      height: media.height,
+      durationMs: media.duration,
+    );
 
 /// Fallback tile shown when canonical media is missing, deleted, or
 /// access is denied. Kept as a public widget so legacy callers that

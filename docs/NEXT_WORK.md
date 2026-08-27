@@ -1170,3 +1170,25 @@ untouched. 451/451, 17/17, Stage-0 ratified.
 
 **Next:** relocate `CorrespondenceOrchestratorService` to a canonical realtime home, then rule on released
 clients, then retire the backend endpoints.
+
+## Stored video — open items (2026-08-26)
+
+The stored-media presentation authority is built, migrated and unit-certified;
+the server poster derivative is implemented in aura-backend. What remains:
+
+* **Live certification after deploy.** Web, Android and Windows, with real
+  uploaded AND recorded video: compose preview, upload continuity, post card,
+  conversation, correspondence, institution space, meeting stored recording,
+  viewer/open, poster load, poster-failure fallback. No MP4 may reach an image
+  decoder.
+* **`WINDOWS_DESKTOP_STORED_VIDEO_PLAYBACK = GAP`.** `video_player` ships no
+  Windows implementation. Posters make video RECOGNISABLE there; they are not
+  playback. Do not read poster support as Windows video support.
+* **`WINDOWS_DESKTOP_VOICE_PLAYBACK = VERIFY`.** `AuraVoicePlayer` uses the
+  same engine, so voice notes are suspect on Windows. Unverified either way.
+* **`MEETING_RECORDING_CONTAINER_PORTABILITY = GAP`.** Recordings are captured
+  as `video/webm`; iOS/macOS cannot decode it. Resolution options are a
+  canonical recording format or a server transcode — product decision, not
+  required by poster generation.
+* **Announcement composers** keep their attachment-manifest rows by founder
+  ruling. Rich preview there is future product design, not defect repair.

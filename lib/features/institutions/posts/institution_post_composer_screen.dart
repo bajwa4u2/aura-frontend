@@ -16,6 +16,8 @@ import '../../../core/tagging/tag_entities.dart';
 import '../../../core/tagging/tag_text_hydration.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/media/attachment.dart';
+import '../../../core/media/aura_stored_media.dart';
+import '../../../core/media/stored_media.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/link_preview/compose_link_detector.dart';
 import '../../../core/link_preview/internal_reference_card.dart';
@@ -1682,6 +1684,23 @@ class _MediaUploadSlot extends StatelessWidget {
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
         ),
+      );
+    }
+    if (_hasMedia && _isVideo) {
+      // The same defect this composer used to share with the post card: with
+      // no server thumbnail, `thumbUrl` was empty and the MP4 itself went to
+      // Image.network, which cannot decode it — a broken-image glyph under a
+      // play button. Institution post composition now consumes the canonical
+      // authority like every other surface.
+      return AuraStoredMedia(
+        media: StoredMedia.fromParts(
+          mimeType: mimeType,
+          isPublic: true,
+          sourceUrl: mediaUrl,
+          posterUrl: thumbUrl,
+        ),
+        context: StoredMediaContext.compose,
+        borderRadius: BorderRadius.circular(AuraRadius.md),
       );
     }
     if (_hasMedia) {
