@@ -258,6 +258,12 @@ bool isMemberShellPath(String path) {
       path == '/me' ||
       path == '/me/edit' ||
       path == '/me/settings/communications' ||
+      // Preferences and its privacy surface. MEMBER: they read and write this
+      // account's own settings, so an unauthenticated visitor must be sent to
+      // sign in with the destination preserved rather than reaching an empty
+      // shell — the F069 failure this allowlist exists to prevent.
+      path == '/me/preferences' ||
+      path == '/me/blocked' ||
       path == '/settings/communications' ||
       path == '/security' ||
       path == '/me/follow-requests' ||

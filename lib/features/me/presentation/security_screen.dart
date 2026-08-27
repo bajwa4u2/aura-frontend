@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import '../../../core/product/temporal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -231,11 +233,11 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
 
         _SecuritySection(
           icon: Icons.shield_outlined,
-          title: 'Account security',
+          title: 'Sign-in',
           items: [
             _SecurityRow(
               title: 'Password',
-              subtitle: 'Change your current password',
+              subtitle: 'Change the password you sign in with',
               leading: Icons.lock_outline,
               statusLabel: 'Change',
               statusStyle: _StatusStyle.neutral,
@@ -258,12 +260,12 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
         sessionsAsync.when(
           loading: () => const _SectionedPanel(
             title: 'This device',
-            subtitle: 'Loading the session you are using now…',
+            subtitle: 'Checking where you are signed in…',
             child: _LoadingRow(),
           ),
           error: (_, __) => const _SectionedPanel(
             title: 'This device',
-            subtitle: 'Could not load your current session.',
+            subtitle: 'Could not check where you are signed in.',
             child: _ErrorRow(),
           ),
           data: (_) {
@@ -278,7 +280,14 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
         // ── 2. Other active sessions ──────────────────────────────────────
         _SecuritySection(
           icon: Icons.devices_outlined,
-          title: 'Other active sessions',
+          // WHERE YOU ARE SIGNED IN — not "sessions".
+          //
+          // Three different authorities were all called some variant of
+          // "device": /auth/sessions (signed in), /auth/trusted-devices
+          // (skips verification), /devices/me (receives calls and pushes).
+          // A person cannot tell those apart from the word "device", so each
+          // section is now named for what it actually controls.
+          title: 'Where else you are signed in',
           items: [
             ...sessionsAsync.when(
               loading: () => <Widget>[const _LoadingRow()],
@@ -287,7 +296,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                 if (classified.otherActive.isEmpty) {
                   return <Widget>[
                     const _SecurityRow(
-                      title: 'No other active sessions',
+                      title: 'You are only signed in here',
                       subtitle:
                           'You\'re only signed in on this device right now.',
                       leading: Icons.check_circle_outline,
@@ -323,7 +332,9 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
         // ── 3. Trusted devices ────────────────────────────────────────────
         _SecuritySection(
           icon: Icons.phonelink_lock_outlined,
-          title: 'Trusted devices',
+          // NOT the same as being signed in, and not the same as receiving
+          // notifications. This is the list that skips re-verification.
+          title: 'Devices that skip verification',
           subtitle:
               'Skip the email code on devices you\'ve approved long-term.',
           items: devicesAsync.when(
@@ -333,7 +344,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
               if (devices.isEmpty) {
                 return <Widget>[
                   const _SecurityRow(
-                    title: 'No trusted devices',
+                    title: 'No device skips verification',
                     subtitle:
                         'On next sign-in, choose "Trust this device" to add one.',
                     leading: Icons.phonelink_outlined,
@@ -678,20 +689,21 @@ class _SessionHistoryPanel extends StatelessWidget {
   final bool expanded;
   final VoidCallback onToggle;
 
+  /// Through the temporal authority, not a local formatter.
+  ///
+  /// The previous version printed "3d ago" and "12/8/2026" from its own
+  /// arithmetic, and the C0 gate is right that a second time vocabulary in the
+  /// product is a second thing to keep consistent. `AuraTemporal` already
+  /// knows how Aura says when something happened, and it carries the EVENT —
+  /// a sign-in `occurred`, which is what makes the phrasing correct rather
+  /// than merely relative.
   String _formatTime(String? isoString) {
     if (isoString == null || isoString.isEmpty) return '';
-    try {
-      final dt = DateTime.parse(isoString).toLocal();
-      final diff = DateTime.now().difference(dt);
-      if (diff.inSeconds < 60) return 'Just now';
-      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-      if (diff.inHours < 24) return '${diff.inHours}h ago';
-      if (diff.inDays < 7) return '${diff.inDays}d ago';
-      return '${dt.day}/${dt.month}/${dt.year}';
-    } catch (_) {
-      return '';
-    }
+    final dt = DateTime.tryParse(isoString);
+    if (dt == null) return '';
+    return AuraTemporal.humanize(ProductTime(dt, TimeEvent.occurred));
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -714,7 +726,7 @@ class _SessionHistoryPanel extends StatelessWidget {
               ),
               const SizedBox(width: AuraSpace.s8),
               Text(
-                'Sign-in history',
+                'Recent sign-ins',
                 style: AuraText.muted.copyWith(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -729,12 +741,12 @@ class _SessionHistoryPanel extends StatelessWidget {
           child: Column(
             children: [
               _SecurityRow(
-                title: expanded
-                    ? 'Hide sign-in history'
-                    : 'Show recent sign-ins',
+                title: expanded ? 'Hide recent sign-ins' : 'Recent sign-ins',
                 subtitle: count > 0
-                    ? '$count recent events'
-                    : 'No recent sign-in events',
+                    ? (count == 1
+                        ? 'One sign-in on record'
+                        : '$count sign-ins on record')
+                    : 'Nothing on record yet',
                 leading: expanded
                     ? Icons.expand_less_rounded
                     : Icons.expand_more_rounded,
@@ -748,13 +760,29 @@ class _SessionHistoryPanel extends StatelessWidget {
                     if (events.isEmpty) {
                       return <Widget>[
                         const _SecurityRow(
-                          title: 'No sign-in events',
+                          title: 'Nothing to show yet',
                           leading: Icons.history_outlined,
                           statusStyle: _StatusStyle.neutral,
                         ),
                       ];
                     }
-                    return events.map<Widget>((e) {
+                    // BOUNDED, DELIBERATELY.
+                    //
+                    // This rendered every event the endpoint returned, inside
+                    // a panel with no height of its own, so an account with a
+                    // long history produced a wall a person had to scroll past
+                    // to reach anything below it. A sign-in list is read to
+                    // answer "was that me" — which the most recent few answer,
+                    // and a thousand rows do not.
+                    //
+                    // The remainder is not hidden: the count below says exactly
+                    // what is not shown.
+                    const shown = 6;
+                    final visible = events.take(shown).toList();
+                    final hidden = events.length - visible.length;
+
+                    return <Widget>[
+                      ...visible.map<Widget>((e) {
                       final result = (e['result'] ?? '').toString();
                       final ua = (e['userAgentHint'] ?? '').toString();
                       final ip = (e['ipHint'] ?? '').toString();
@@ -764,29 +792,35 @@ class _SessionHistoryPanel extends StatelessWidget {
                         if (ip.isNotEmpty) ip,
                       ].join(' · ');
 
+                      // WRITTEN FOR A PERSON CHECKING THEIR OWN ACCOUNT.
+                      // "Failed password" and a raw result string are what a
+                      // log emits; someone reading this wants to know whether
+                      // it was them.
                       final (title, icon, style) = switch (result) {
                         'SUCCESS' => (
-                            'Successful sign-in',
+                            'Signed in',
                             Icons.login_rounded,
                             _StatusStyle.good
                           ),
                         'TRUSTED_DEVICE' => (
-                            'Sign-in via trusted device',
+                            'Signed in on a trusted device',
                             Icons.phonelink_lock_outlined,
                             _StatusStyle.good
                           ),
                         'FAILED_PASSWORD' => (
-                            'Failed password',
+                            'Wrong password',
                             Icons.lock_outline,
                             _StatusStyle.warn
                           ),
                         'FAILED_CODE' => (
-                            'Failed code attempt',
+                            'Wrong verification code',
                             Icons.pin_outlined,
                             _StatusStyle.warn
                           ),
+                        // An unrecognised result must not print its own enum
+                        // name at a person.
                         _ => (
-                            result,
+                            'Sign-in attempt',
                             Icons.history_outlined,
                             _StatusStyle.neutral,
                           ),
@@ -799,7 +833,17 @@ class _SessionHistoryPanel extends StatelessWidget {
                         statusLabel: timeStr,
                         statusStyle: style,
                       );
-                    }).toList();
+                      }),
+                      if (hidden > 0)
+                        _SecurityRow(
+                          title: hidden == 1
+                              ? 'One older sign-in not shown'
+                              : '$hidden older sign-ins not shown',
+                          subtitle: 'The most recent are listed above',
+                          leading: Icons.more_horiz_rounded,
+                          statusStyle: _StatusStyle.neutral,
+                        ),
+                    ];
                   },
                 ),
             ],

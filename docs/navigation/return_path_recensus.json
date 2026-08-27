@@ -1133,6 +1133,28 @@
   "verdict": "NOT_A_SURFACE"
  },
  {
+  "route": "/me/preferences",
+  "sample": "/me/preferences",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "parentReturn",
+  "deepLinkDestination": "/me",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
+  "route": "/me/blocked",
+  "sample": "/me/blocked",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "parentReturn",
+  "deepLinkDestination": "/me",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
   "route": "/me/settings/communications",
   "sample": "/me/settings/communications",
   "renders": true,

@@ -6,6 +6,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
+import '../../../router.dart' show kMePreferencesRoute;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/auth/admin_access_provider.dart';
@@ -950,21 +952,25 @@ class _MeScreenState extends ConsumerState<MeScreen>
       );
     }
 
+    // THE PROFILE IS NOT A THIRD SETTINGS HUB.
+    //
+    // This section listed Security and Devices and did not mention
+    // communication preferences at all, so the profile answered part of the
+    // settings question, the drawer answered a different part, and the account
+    // menu answered a third. One destination now, which is also the only one
+    // that can stay complete as preferences are added.
+    //
+    // The email-verification signal stays HERE, because it is a state of the
+    // account this screen is already showing rather than a navigation label.
     return MeSection(
       title: 'Settings',
       children: [
         MeSettingsItem(
-          label: 'Security',
-          icon: Icons.shield_outlined,
-          subtitle: 'Password, email verification, and sessions',
+          label: 'Preferences',
+          icon: Icons.tune_outlined,
+          subtitle: 'Account, notifications, security, and privacy',
           trailing: securityTrailing,
-          onTap: () => context.push('/security'),
-        ),
-        MeSettingsItem(
-          label: 'Devices',
-          icon: Icons.devices_other_outlined,
-          subtitle: 'Manage devices that receive calls and notifications',
-          onTap: () => context.push('/devices'),
+          onTap: () => context.push(kMePreferencesRoute),
         ),
       ],
     );

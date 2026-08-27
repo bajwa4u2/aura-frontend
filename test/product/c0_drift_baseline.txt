@@ -27,9 +27,10 @@
 # ── G2 — local humanized elapsed time ────────────────────────────────────────
 G2 3 lib/features/admin/presentation/admin_grants_screen.dart
 G2 3 lib/features/admin/presentation/admin_review_queue_screen.dart
-G2 3 lib/features/devices/presentation/devices_screen.dart
+# devices_screen G2 3 -> 0: converged onto AuraTemporal
+# (Preferences reconstruction, 2026-08-27)
 G2 3 lib/features/institutions/presentation/institution_dashboard_screen.dart
-G2 6 lib/features/me/presentation/security_screen.dart
+G2 3 lib/features/me/presentation/security_screen.dart
 # updates_screen G2 6 -> 0: converged onto AuraTemporal (C2 §12, 2026-08-16)
 
 # ── G3 — local timezone conversion ───────────────────────────────────────────
@@ -49,7 +50,7 @@ G3 1 lib/features/institutions/presentation/institution_invites_screen.dart
 G3 1 lib/features/institutions/presentation/institution_join_requests_screen.dart
 G3 1 lib/features/invitations/presentation/invite_accept_screen.dart
 G3 3 lib/features/me/presentation/me/me_participation_continuity.dart
-G3 2 lib/features/me/presentation/security_screen.dart
+G3 1 lib/features/me/presentation/security_screen.dart
 G3 1 lib/features/meetings/domain/meeting_asset.dart
 G3 1 lib/features/meetings/domain/meeting_conversation_message.dart
 G3 2 lib/features/meetings/presentation/booking_confirm_screen.dart

@@ -102,6 +102,8 @@ route,sample,renders,protected,deeplink_semantic,deeplink_destination,in_app_sem
 /devices,/devices,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT
 /change-password,/change-password,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT
 /settings/communications,/settings/communications,false,false,deepLinkFallback,/home,stackReturn,true,NOT_A_SURFACE
+/me/preferences,/me/preferences,true,false,parentReturn,/me,stackReturn,true,COMPLIANT
+/me/blocked,/me/blocked,true,false,parentReturn,/me,stackReturn,true,COMPLIANT
 /me/settings/communications,/me/settings/communications,true,false,parentReturn,/me,stackReturn,true,COMPLIANT
 /me/follow-requests,/me/follow-requests,true,false,parentReturn,/me,stackReturn,true,COMPLIANT
 /me/invitations,/me/invitations,true,false,parentReturn,/me,stackReturn,true,COMPLIANT

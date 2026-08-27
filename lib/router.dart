@@ -55,6 +55,8 @@ import 'features/communications/presentation/communications_center_screen.dart';
 import 'features/ai/presentation/claim_audit_screen.dart';
 import 'features/me/presentation/me_screen.dart';
 import 'features/me/presentation/edit_profile_screen.dart';
+import 'features/me/presentation/blocked_people_screen.dart';
+import 'features/me/presentation/preferences_screen.dart';
 import 'features/me/presentation/security_screen.dart';
 import 'features/devices/presentation/devices_screen.dart';
 import 'features/me/presentation/change_password_screen.dart';
@@ -178,6 +180,8 @@ const String kCompleteIdentityRoute = '/complete-identity';
 const String kAdminWorkspaceRoute = '/admin';
 const String kAdminCommunicationsRoute = '/admin/communications';
 const String kMeCommunicationsRoute = '/me/settings/communications';
+const String kMePreferencesRoute = '/me/preferences';
+const String kMeBlockedRoute = '/me/blocked';
 const String kRouterBootRoute = '/_boot';
 
 const String kMessagesRoute = '/messages';
@@ -1633,6 +1637,22 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/settings/communications',
             redirect: (_, __) => kMeCommunicationsRoute,
+          ),
+          GoRoute(
+            // THE PREFERENCES LANDING.
+            //
+            // Both navigation entries pointed at narrower screens —
+            // "Preferences" opened notifications and "Settings" opened
+            // security — so the question "where do I change how Aura works
+            // for me" had no answer anywhere in the product.
+            path: kMePreferencesRoute,
+            builder: (_, __) => const PreferencesScreen(),
+          ),
+          GoRoute(
+            // An authority that already supported unblocking and had no
+            // surface offering it.
+            path: kMeBlockedRoute,
+            builder: (_, __) => const BlockedPeopleScreen(),
           ),
           GoRoute(
             path: kMeCommunicationsRoute,

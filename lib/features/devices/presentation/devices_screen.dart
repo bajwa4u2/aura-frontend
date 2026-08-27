@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/product/temporal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/ui/aura_platform_components.dart';
@@ -48,7 +50,7 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not update device: $e')),
+        SnackBar(content: Text('Could not update that device. $e')),
       );
     } finally {
       if (mounted) setState(() => _busyDeviceId = null);
@@ -86,7 +88,7 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not remove device: $e')),
+        SnackBar(content: Text('Could not remove that device. $e')),
       );
     } finally {
       if (mounted) setState(() => _busyDeviceId = null);
@@ -123,11 +125,7 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
     final dt = DateTime.tryParse(raw)?.toLocal();
     if (dt == null) return '';
     final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 1) return 'Active just now';
-    if (diff.inMinutes < 60) return 'Active ${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return 'Active ${diff.inHours}h ago';
-    if (diff.inDays < 7) return 'Active ${diff.inDays}d ago';
-    return 'Active ${dt.day}/${dt.month}/${dt.year}';
+    return 'Active ${AuraTemporal.humanize(ProductTime(dt, TimeEvent.occurred))}';
   }
 
   @override
@@ -135,14 +133,20 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
     final devicesAsync = ref.watch(_myDevicesProvider);
 
     return AuraScaffold(
-      title: 'Devices',
+      // "Your devices" — the ones Aura can REACH you on.
+      //
+      // Three authorities were all called some version of "device": these
+      // (push and calls), trusted devices (skip verification at sign-in), and
+      // sessions (where you are signed in). Nothing in the product told them
+      // apart, so each is now named for what it does.
+      title: 'Your devices',
       body: devicesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, __) => Center(
           child: Padding(
             padding: const EdgeInsets.all(AuraSpace.s24),
             child: Text(
-              'Could not load your devices: $e',
+              'Could not load your devices. $e',
               style: AuraText.muted,
               textAlign: TextAlign.center,
             ),
@@ -162,7 +166,8 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
               child: Padding(
                 padding: EdgeInsets.all(AuraSpace.s24),
                 child: Text(
-                  'No devices registered yet.',
+                  'No devices yet. Sign in on a phone or desktop and it will '
+                  'appear here.',
                   style: AuraText.muted,
                 ),
               ),

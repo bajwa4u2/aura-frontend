@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../router.dart' show kMePreferencesRoute;
+
 import '../../core/auth/admin_access_provider.dart';
 import '../../core/auth/auth_providers.dart';
 import '../../core/auth/session_providers.dart';
@@ -76,10 +78,15 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
         context.go('/me');
         return;
       case 'preferences':
-        context.go('/me/settings/communications');
-        return;
-      case 'settings':
-        context.go('/security');
+        // ONE ENTRY, TO THE LANDING.
+        //
+        // There were two, and both were mislabelled: "Preferences" opened the
+        // communications screen and "Settings" opened security, so a person
+        // choosing between them was choosing between two words for the same
+        // idea and getting whichever narrow screen sat behind the one they
+        // picked. Both destinations are still reachable — from Preferences,
+        // named for what they actually control.
+        context.go(kMePreferencesRoute);
         return;
       case 'claim_audit':
         // Claim audit relocated out of the Create hub — it's an analysis
@@ -675,7 +682,6 @@ class _HeaderAccountBtn extends StatelessWidget {
         itemBuilder: (context) => [
           _menuItem('profile', Icons.person_outline_rounded, 'Profile'),
           _menuItem('preferences', Icons.tune_outlined, 'Preferences'),
-          _menuItem('settings', Icons.shield_outlined, 'Settings'),
           if (isAdmin)
             _menuItem('claim_audit', Icons.fact_check_outlined, 'Claim audit'),
           const PopupMenuDivider(),

@@ -200,6 +200,23 @@ class NavigationAuthority {
   /// icon was dead parameter surface and is retired).
   static const String inviteHubRoute = '/invite';
 
+  // ── PREFERENCES ───────────────────────────────────────────────────────────
+  //
+  // The landing, and the destinations it leads to. Declared here rather than
+  // written as literals at each call site because the C3 ratchet is right
+  // about why: settings destinations were previously reached by three
+  // different surfaces writing three different paths, which is how "Preferences"
+  // and "Settings" came to be two names for two narrower screens.
+  static const String preferencesRoute = '/me/preferences';
+  static const String blockedPeopleRoute = '/me/blocked';
+  static const String communicationPreferencesRoute =
+      '/me/settings/communications';
+  static const String securityRoute = '/security';
+  static const String devicesRoute = '/devices';
+  static const String changePasswordRoute = '/change-password';
+  static const String editProfileRoute = '/me/edit';
+  static const String accountDeletionRoute = '/account-deletion';
+
   /// MESSAGES — the conversation primary's canonical address (used by
   /// in-body headers navigating "back to Messages" when there is no
   /// pop stack, e.g. a direct deep link).

@@ -12,7 +12,7 @@
 3 lib/app/shell/member_shell.dart
 3 lib/app/shell/public_shell.dart
 13 lib/app/shell/rail/rail_modules.dart
-4 lib/app/shell/shell_header_tools.dart
+2 lib/app/shell/shell_header_tools.dart
 1 lib/app/shell/shell_shared.dart
 1 lib/core/translation/communication_translate_action.dart
 1 lib/core/ui/aura_identity_surface.dart
@@ -58,7 +58,7 @@
 2 lib/features/invitations/presentation/invitations_screen.dart
 3 lib/features/invitations/presentation/invite_accept_screen.dart
 2 lib/features/invitations/presentation/invite_hub_screen.dart
-16 lib/features/me/presentation/me_screen.dart
+14 lib/features/me/presentation/me_screen.dart
 5 lib/features/me/presentation/security_screen.dart
 2 lib/features/meetings/presentation/booking_cancel_screen.dart
 1 lib/features/meetings/presentation/booking_confirm_screen.dart

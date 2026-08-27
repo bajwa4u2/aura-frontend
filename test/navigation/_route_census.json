@@ -1334,6 +1334,30 @@
   "parent": ""
  },
  {
+  "path": "/me/preferences",
+  "segments": 2,
+  "params": [],
+  "renders": true,
+  "hasRedirect": false,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
+  "path": "/me/blocked",
+  "segments": 2,
+  "params": [],
+  "renders": true,
+  "hasRedirect": false,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
   "path": "/me/settings/communications",
   "segments": 3,
   "params": [],

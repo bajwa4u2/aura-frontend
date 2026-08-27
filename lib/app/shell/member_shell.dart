@@ -9,6 +9,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../router.dart' show kMePreferencesRoute;
+
 import '../route_classification.dart';
 import '../../core/auth/session_providers.dart';
 import '../../core/authority/capability_projection.dart';
@@ -1064,15 +1066,13 @@ class _MemberDrawerSecondary extends ConsumerWidget {
         const Divider(height: 1, color: AuraSurface.divider),
         const SizedBox(height: AuraSpace.s8),
 
+        // ONE ENTRY, TO THE LANDING. See shell_header_tools for why the
+        // second one was removed rather than relabelled: two words for the
+        // same idea, each opening a different narrow screen.
         _DrawerEntry(
           icon: Icons.tune_outlined,
           label: 'Preferences',
-          onTap: () => go('/me/settings/communications'),
-        ),
-        _DrawerEntry(
-          icon: Icons.shield_outlined,
-          label: 'Settings',
-          onTap: () => go('/security'),
+          onTap: () => go(kMePreferencesRoute),
         ),
         if (isAdmin)
           _DrawerEntry(
