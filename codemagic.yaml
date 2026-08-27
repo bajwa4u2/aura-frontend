@@ -201,52 +201,59 @@ workflows:
           set -uo pipefail
           UDID=$(cat /tmp/aura_sim_udid)
 
-          # RUN EVERY SUITE, AND KEEP GOING PAST A FAILURE.
+          # STATUS COMES FROM COVERAGE, NOT FROM THE EXIT CODE.
           #
-          # `set -e` on the first failing suite would have reported one broken
-          # thing and hidden the rest, which turns finding N iOS defects into N
-          # round trips through a 7-minute build. The loop records each result
-          # and the step fails at the END if any suite did.
+          # The previous version read `flutter test`'s exit status. Three SFU
+          # suites printed "certification identities not provided", skipped
+          # every substantive test, exited 0, and were recorded as PASS. They
+          # had certified nothing. Reporting that as a pass is worse than
+          # reporting nothing: it turns an absence of testing into a claim of
+          # correctness, silently.
           #
-          # EXCLUSIONS, and why each one is excluded rather than merely failing:
-          #   android_return_path      — asserts Android back-gesture semantics
-          #   av_android_certification — Android A/V permission model
-          #   desktop_lifecycle        — desktop window lifecycle
-          # Everything else is a candidate: Aura is one app, and a suite that
-          # cannot run on iOS is a finding, not a reason to omit it.
+          # scripts/certify_suite.py parses the runner's JSON stream and
+          # derives PASS / FAIL / NO_COVERAGE from what actually executed.
+          #
+          # EXCLUSIONS are SKIPPED_PLATFORM — deliberately inapplicable here,
+          # which is a different statement from "did not run".
           EXCLUDE="android_return_path_test|av_android_certification_test|desktop_lifecycle_test"
 
           FAILED=0
+          NOCOV=0
           echo "" >> certification/run-manifest.txt
           echo "SUITE RESULTS" >> certification/run-manifest.txt
 
           for f in integration_test/*.dart; do
             base=$(basename "$f" .dart)
             if echo "$base" | grep -qE "$EXCLUDE"; then
-              echo "  SKIPPED  $base (platform-locked elsewhere)" | tee -a certification/run-manifest.txt
+              echo "  SKIPPED_PLATFORM $base (asserts another platform's semantics)"                 | tee -a certification/run-manifest.txt
               continue
             fi
 
             echo "──────────────────────────────────────────────────────────"
-            echo "RUNNING $base"
-            if flutter test "$f" -d "$UDID" --reporter expanded 2>&1 | tee "certification/$base.log"; then
-              echo "  PASS     $base" | tee -a certification/run-manifest.txt
-            else
-              echo "  FAIL     $base" | tee -a certification/run-manifest.txt
-              FAILED=1
-            fi
+            python3 scripts/certify_suite.py "$f" --device "$UDID"               --out certification 2>&1 | tee -a certification/run-manifest.txt
+            rc=${PIPESTATUS[0]}
+            [ "$rc" = "1" ] && FAILED=1
+            [ "$rc" = "2" ] && NOCOV=1
           done
 
-          echo "" | tee -a certification/run-manifest.txt
-          if [ "$FAILED" -ne 0 ]; then
-            echo "RESULT=FAILED — see the per-suite logs above" | tee -a certification/run-manifest.txt
-          else
-            echo "RESULT=ALL SUITES PASSED" | tee -a certification/run-manifest.txt
-          fi
+          {
+            echo ""
+            echo "RESULT: failures=$FAILED no_coverage=$NOCOV"
+            if [ "$FAILED" -ne 0 ]; then
+              echo "VERDICT=FAILED — a suite reported real failures"
+            elif [ "$NOCOV" -ne 0 ]; then
+              # NOT a pass. A run where something applicable asserted nothing
+              # has an unproven hole in it, and the lane says so.
+              echo "VERDICT=INCOMPLETE — a suite certified nothing (NO_COVERAGE)"
+            else
+              echo "VERDICT=ALL SUITES DEMONSTRATED COVERAGE AND PASSED"
+            fi
+            echo "finished_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } | tee -a certification/run-manifest.txt
 
-          echo "finished_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> certification/run-manifest.txt
-          cat certification/run-manifest.txt
-          exit "$FAILED"
+          [ "$FAILED" -ne 0 ] && exit 1
+          [ "$NOCOV" -ne 0 ] && exit 2
+          exit 0
 
     artifacts:
       - certification/*

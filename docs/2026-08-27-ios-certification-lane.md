@@ -183,6 +183,48 @@ and Bluetooth it is the *only* lane.
 
 ---
 
+## 7a. FALSE-GREEN INCIDENT — recorded, not quietly fixed
+
+**2026-08-27, first 15-suite run.** Three suites were recorded `PASS` having
+certified nothing:
+
+| Suite | What it printed | Recorded | Truth |
+|---|---|---|---|
+| `sfu_multiparty` | certification identities not provided | ~~PASS~~ | **NO_COVERAGE** |
+| `sfu_thread_call_parity` | certification identities not provided | ~~PASS~~ | **NO_COVERAGE** |
+| `sfu_transport_seam` | certification identities not provided | ~~PASS~~ | **NO_COVERAGE** |
+
+Each skipped every substantive test and exited 0. The lane read the exit code.
+
+**The rule this froze:**
+
+> CERTIFICATION STATUS DERIVES FROM DEMONSTRATED COVERAGE, NOT COMMAND SUCCESS.
+
+`scripts/certify_suite.py` now parses the runner's JSON stream and derives
+status from what executed. Hidden bookkeeping entries — the loading and
+setUp/tearDown records the runner emits, which always succeed — are excluded
+from every count, because counting them is exactly how an all-skipped suite
+looks green.
+
+| Status | Meaning |
+|---|---|
+| `PASS` | at least one substantive test ran, and all of them passed |
+| `FAIL` | at least one failed or errored |
+| `NO_COVERAGE` | applicable, ran, asserted nothing |
+| `SKIPPED_PLATFORM` | deliberately inapplicable to this client |
+
+Counts captured per suite: discovered, executed, passed, failed, skipped, and
+the skip reasons. A run containing any `NO_COVERAGE` is `INCOMPLETE`, never a
+pass — a hole is not a success.
+
+**Proven against both controls**, not assumed: a real suite reports
+`PASS (discovered 6, executed 6)` and exits 0; a suite whose every test skips
+with "certification identities not provided" reports
+`NO_COVERAGE (discovered 2, executed 0, skipped 2)` and exits 2, where the old
+lane reported PASS and exited 0.
+
+---
+
 ## 8. Certification artifacts
 
 Every `ios-certification` run seals `certification/run-manifest.txt`:
