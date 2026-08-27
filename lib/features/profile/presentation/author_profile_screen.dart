@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/navigation/navigation_authority.dart';
+
 import '../../../core/auth/session_providers.dart';
 import '../../../core/compliance/blocks_repository.dart';
 import '../../../core/compliance/report_content_sheet.dart';
@@ -587,11 +589,15 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
                         icon: Icons.edit_outlined,
                         onTap: () => context.push('/me/edit'),
                       ),
+                      // A FOURTH entry point, and mislabelled like the others:
+                      // "Settings" that opened only security. Own-profile
+                      // settings mean the Preferences landing.
                       PresenceHeaderAction(
-                        label: 'Settings',
+                        label: 'Preferences',
                         primary: false,
-                        icon: Icons.settings_outlined,
-                        onTap: () => context.push('/security'),
+                        icon: Icons.tune_outlined,
+                        onTap: () =>
+                            context.push(NavigationAuthority.preferencesRoute),
                       ),
                     ]
                     else

@@ -23,7 +23,10 @@ String normalizeMemberFacingRoute(
   } else if (normalizedPath == '/edit-profile') {
     normalizedPath = '/me/edit';
   } else if (normalizedPath == '/settings') {
-    normalizedPath = '/security';
+    // A bare /settings means "take me to my settings", and that answer is now
+    // the Preferences landing. It used to resolve to /security, which sent
+    // anyone following an old link straight past everything except sessions.
+    normalizedPath = '/me/preferences';
   } else if (normalizedPath == '/settings/communications') {
     normalizedPath = '/me/settings/communications';
   } else if (normalizedPath == '/correspondence') {

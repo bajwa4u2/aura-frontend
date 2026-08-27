@@ -78,7 +78,7 @@
 1 lib/features/posts/presentation/compose_screen.dart
 4 lib/features/posts/presentation/post_detail_screen.dart
 3 lib/features/posts/presentation/widgets/post_card.dart
-5 lib/features/profile/presentation/author_profile_screen.dart
+4 lib/features/profile/presentation/author_profile_screen.dart
 1 lib/features/profile/presentation/follow_requests_screen.dart
 1 lib/features/profile/presentation/followers_screen.dart
 1 lib/features/profile/presentation/following_screen.dart
