@@ -104,3 +104,108 @@ workflows:
         # no Apple ID or app-specific password is used.
         auth: integration
         submit_to_testflight: true
+
+  # ===========================================================================
+  # AURA iOS — CERTIFICATION
+  # ===========================================================================
+  # Runs Aura's integration_test suites on a real macOS host against an iOS
+  # runtime, and preserves the evidence.
+  #
+  # ── WHY THIS EXISTS ────────────────────────────────────────────────────────
+  # Chapter after chapter closed with `IOS = PENDING_MACOS_HOST`, which was
+  # literal: the development machine is windows-arm64 and cannot build, boot or
+  # exercise anything iOS. Codemagic already IS a macOS host — it has produced
+  # 16 signed builds — so the boundary was never "no Mac", it was "no Mac
+  # workflow that runs the certification suites".
+  #
+  # ── WHAT THIS PROVES, AND WHAT IT DOES NOT ─────────────────────────────────
+  # This runs on the iOS SIMULATOR. That certifies everything that is a
+  # property of the app on iOS — layout, navigation, touch targets, copy,
+  # platform interaction profile, lifecycle — and it certifies NONE of what is
+  # a property of the hardware: camera, microphone, Bluetooth audio, real
+  # network transitions, push delivery.
+  #
+  # Simulator results are reported as SIMULATOR_CERTIFIED. They are not
+  # RELEASE_CERTIFIED and must never be reported as physical-device evidence.
+  # Physical iPhone coverage needs AWS Device Farm or the founder's own device;
+  # see docs/2026-08-27-ios-certification-lane.md.
+  #
+  # ── NO SIGNING ─────────────────────────────────────────────────────────────
+  # Deliberately no `ios_signing` block and no App Store Connect integration.
+  # A simulator build is not signed, so this workflow needs no Apple credential
+  # of any kind. The signing authority stays where it belongs — in the
+  # TestFlight workflow above — and is not duplicated to reach a test runner.
+  ios-certification:
+    name: Aura iOS — Certification (simulator)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    cache:
+      cache_paths:
+        - $HOME/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
+    scripts:
+      - name: Flutter pub get
+        script: flutter pub get
+
+      - name: Boot an iPhone simulator, and record WHICH one
+        script: |
+          set -euo pipefail
+          xcrun simctl shutdown all || true
+
+          # The newest available iPhone runtime, chosen at run time rather than
+          # pinned: a pinned runtime silently stops existing when Codemagic
+          # updates Xcode, and the failure looks like a test failure.
+          RUNTIME=$(xcrun simctl list runtimes --json \
+            | python3 -c "import json,sys; r=[x for x in json.load(sys.stdin)['runtimes'] if x['isAvailable'] and 'iOS' in x['name']]; print(sorted(r, key=lambda x: x['version'])[-1]['identifier'])")
+          DEVICE_TYPE=$(xcrun simctl list devicetypes --json \
+            | python3 -c "import json,sys; d=[x for x in json.load(sys.stdin)['devicetypes'] if x['productFamily']=='iPhone']; print(d[-1]['identifier'])")
+
+          UDID=$(xcrun simctl create "aura-cert" "$DEVICE_TYPE" "$RUNTIME")
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+
+          mkdir -p certification
+          {
+            echo "AURA iOS CERTIFICATION RUN"
+            echo "build_commit=${CM_COMMIT:-unknown}"
+            echo "build_number=${BUILD_NUMBER:-unknown}"
+            echo "branch=${CM_BRANCH:-unknown}"
+            echo "runtime=$RUNTIME"
+            echo "device_type=$DEVICE_TYPE"
+            echo "simulator_udid=$UDID"
+            echo "xcode=$(xcodebuild -version | head -1)"
+            echo "flutter=$(flutter --version | head -1)"
+            echo "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } | tee certification/run-manifest.txt
+
+          echo "$UDID" > /tmp/aura_sim_udid
+
+      - name: Certify — Preferences
+        script: |
+          set -euo pipefail
+          UDID=$(cat /tmp/aura_sim_udid)
+          flutter test integration_test/preferences_certification_test.dart \
+            -d "$UDID" --reporter expanded 2>&1 \
+            | tee certification/preferences.log
+
+      - name: Certify — Media and Trace
+        script: |
+          set -euo pipefail
+          UDID=$(cat /tmp/aura_sim_udid)
+          flutter test integration_test/media_certification_test.dart \
+            -d "$UDID" --reporter expanded 2>&1 \
+            | tee certification/media.log
+          flutter test integration_test/trace_lifecycle_test.dart \
+            -d "$UDID" --reporter expanded 2>&1 \
+            | tee certification/trace.log
+
+      - name: Seal the run manifest
+        script: |
+          echo "finished_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> certification/run-manifest.txt
+          cat certification/run-manifest.txt
+    artifacts:
+      - certification/*
