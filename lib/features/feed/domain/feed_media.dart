@@ -28,6 +28,8 @@ class FeedMedia {
     this.duration,
     this.url,
     this.thumbUrl,
+    this.originState,
+    this.contentCredentials = false,
   });
 
   /// Stable join id (`InstitutionPostMedia.id`). Different from
@@ -59,6 +61,14 @@ class FeedMedia {
   /// directly; route through AuraResolvableAttachmentImage instead.
   final String? url;
   final String? thumbUrl;
+
+  /// Resolved origin disclosure for THIS item, from the canonical server-side
+  /// resolver. Null means nothing was established — the client renders no
+  /// badge, because an absence of evidence is not a claim.
+  final String? originState;
+
+  /// Whether this item carries Content Credentials, verified or not.
+  final bool contentCredentials;
 
   bool get isPublic => visibility.trim().toUpperCase() == 'PUBLIC';
   bool get isImage =>
@@ -96,6 +106,8 @@ class FeedMedia {
       duration: toInt(m['duration']),
       url: m['url']?.toString(),
       thumbUrl: (m['thumbUrl'] ?? m['thumbnailUrl'])?.toString(),
+      originState: m['originState']?.toString(),
+      contentCredentials: m['contentCredentials'] == true,
     );
   }
 

@@ -26,6 +26,7 @@ import '../../../core/link_preview/link_preview_service.dart';
 import '../../../core/composition/composition_authority.dart';
 import '../../../core/composition/content_intake.dart';
 import '../../../core/media/attachment.dart';
+import '../../../core/media/media_acquisition.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_design_system.dart';
@@ -206,7 +207,12 @@ const List<String> _kRotatingPrompts = [
 
 class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   static const int _limit = ContentLengthPolicy.post;
-  static const int _maxAttachments = 5;
+  /// The shared ceiling, not a surface-local number.
+  ///
+  /// This was 5 here and unbounded elsewhere, so how many photographs a person
+  /// could attach depended on which composer they happened to open. The limit
+  /// is a product policy about compositions, not a property of posts.
+  static const int _maxAttachments = kMaxComposableMedia;
 
   /// Public-UX Phase 5 — current selected intent. Initialised from
   /// the route query param (`?intent=ask`) and rotated to `_none`
@@ -1091,19 +1097,58 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     _scheduleAutosave();
   }
 
-  Future<void> _pickImageFromGallery() async {
+  /// ONE SELECTION, images and videos together.
+  ///
+  /// This was `pickImage` — singular — so composing a post with four
+  /// photographs meant four trips through the picker, and a post with photos
+  /// AND a video meant using two different menu entries. Neither was a policy
+  /// anyone chose; both are the shape the old single-select API left behind.
+  Future<void> _pickMediaFromGallery() async {
     if (!_canAddMoreAttachments || _posting) return;
 
-    final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery);
-    if (file == null) return;
+    final remaining = _maxAttachments - _attachments.length;
+    final picked = await ImagePicker().pickMultipleMedia();
+    if (picked.isEmpty) return;
 
-    await _addPickedFile(
-      file,
-      type: AttachmentKind.image,
-      source: AttachmentSource.gallery,
-    );
+    final admitted = picked.take(remaining).toList(growable: false);
+    for (final file in admitted) {
+      // Kind is inferred PER FILE, because one selection may legitimately
+      // contain both. Branching on the menu entry instead — as the two
+      // separate pickers did — cannot express a mixed choice at all.
+      final isVideo = _looksLikeVideo(file.name, file.mimeType);
+      await _addPickedFile(
+        file,
+        type: isVideo ? AttachmentKind.video : AttachmentKind.image,
+        source: AttachmentSource.gallery,
+      );
+    }
+
+    final message = acquisitionLimitMessage(picked.length - admitted.length);
+    if (message != null && mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
+    }
   }
+
+  /// Kind from the platform's answer, falling back to the extension.
+  ///
+  /// The mime is preferred because it is evidence; the name is a last resort
+  /// for platforms that decline to say. Content truth has the final word
+  /// server-side, so a wrong guess here is corrected rather than believed.
+  bool _looksLikeVideo(String name, String? mimeType) {
+    final mime = (mimeType ?? '').toLowerCase();
+    if (mime.startsWith('video/')) return true;
+    if (mime.startsWith('image/')) return false;
+    final lower = name.toLowerCase();
+    return lower.endsWith('.mp4') ||
+        lower.endsWith('.mov') ||
+        lower.endsWith('.m4v') ||
+        lower.endsWith('.webm') ||
+        lower.endsWith('.mkv') ||
+        lower.endsWith('.3gp');
+  }
+
+  Future<void> _pickImageFromGallery() => _pickMediaFromGallery();
 
   Future<void> _pickImageFromCamera() async {
     if (!_canAddMoreAttachments || _posting) return;

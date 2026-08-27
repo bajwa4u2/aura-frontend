@@ -1049,6 +1049,10 @@ void _openGroupViewer(BuildContext context, dynamic item, int index) {
           intrinsicWidth: m.width,
           intrinsicHeight: m.height,
           downloadContext: _mediaDownloadContext(item.type),
+          // Item-scoped, so the viewer describes the item the person is
+          // actually looking at rather than the composition it came from.
+          originState: m.originState,
+          contentCredentials: m.contentCredentials,
         ),
     ],
   );

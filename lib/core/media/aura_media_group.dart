@@ -40,6 +40,7 @@ import '../ui/aura_text.dart';
 import '../../features/feed/domain/feed_media.dart';
 import 'aura_media_frame.dart';
 import 'canonical_media_thumb.dart';
+import 'media_origin_label.dart';
 
 /// How many items are shown before the rest collapse into a continuation.
 ///
@@ -212,7 +213,23 @@ class _MediaGroupCell extends StatelessWidget {
       onTap: onTap,
     );
 
-    if (overflow <= 0) return tile;
+    // PER-ITEM ORIGIN. Each cell shows its OWN state, so a group holding one
+    // AI-generated image and three photographs labels exactly one cell. A
+    // composition-level badge would be a claim about media it does not
+    // describe.
+    final origin = mediaOriginStateFrom(media.originState);
+    final badge = mediaOriginLabel(origin) == null
+        ? null
+        : Positioned(
+            right: 4,
+            bottom: 4,
+            child: MediaOriginBadge(state: origin, compact: true),
+          );
+
+    if (overflow <= 0) {
+      if (badge == null) return tile;
+      return Stack(fit: StackFit.expand, children: [tile, badge]);
+    }
 
     return Stack(
       fit: StackFit.expand,
@@ -233,6 +250,7 @@ class _MediaGroupCell extends StatelessWidget {
             ),
           ),
         ),
+        if (badge != null) badge,
       ],
     );
   }

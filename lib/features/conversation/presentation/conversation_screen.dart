@@ -49,6 +49,8 @@ import '../../../core/composition/composition_authority.dart';
 import '../../../core/composition/content_intake.dart';
 import '../../../core/content_policy/content_length_policy.dart';
 import '../../../core/media/attachment.dart';
+import '../../../core/media/aura_composition_strip.dart';
+import '../../../core/media/media_acquisition.dart';
 import '../../../core/tagging/governed_tag_field.dart';
 import '../../../core/tagging/mention_scope.dart';
 import '../../../core/tagging/tag_entities.dart';
@@ -651,32 +653,62 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     }
   }
 
-  Future<void> _attachPhoto() async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (picked == null) return;
-    // The inline `.png ? image/png : image/jpeg` ladder that used to stand
-    // here GUESSED, and guessed wrong for heic and webp. Intake infers from
-    // the name when the platform declines to say, and refuses when neither
-    // source of evidence answers.
-    await _admit(await ContentIntake.resolveAndPrepareBytes(
-      path: IntakePath.picker,
-      bytes: await picked.readAsBytes(),
-      fileName: picked.name,
-      declaredMimeType: picked.mimeType,
-      source: AttachmentSource.gallery,
-    ));
+  /// ONE PICKER, IMAGES AND VIDEOS TOGETHER.
+  ///
+  /// `_attachPhoto` and `_attachVideo` were both SINGULAR, so attaching four
+  /// photographs meant opening the picker four times. That was never a policy
+  /// anyone chose — it is the shape the old single-select API left behind.
+  ///
+  /// Selection order is author intent from the first moment, so items are
+  /// admitted in the order they were chosen and never re-sorted.
+  Future<void> _attachMedia() async {
+    final remaining = kMaxComposableMedia - _composition.liveAttachments.length;
+    final acquired = await acquireMultipleMedia(remainingSlots: remaining);
+    if (acquired.isEmpty) return;
+
+    for (final resolution in acquired.resolutions) {
+      await _admit(resolution);
+    }
+
+    // The ceiling is REPORTED, never silent. Quietly dropping the fifth of
+    // five chosen photographs is the exact class of silence this removes.
+    final message = acquisitionLimitMessage(acquired.droppedForLimit);
+    if (message != null && mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
+    }
   }
 
-  Future<void> _attachVideo() async {
-    final picked = await ImagePicker().pickVideo(source: ImageSource.gallery);
-    if (picked == null) return;
-    await _admit(await ContentIntake.resolveAndPrepareBytes(
-      path: IntakePath.picker,
-      bytes: await picked.readAsBytes(),
-      fileName: picked.name,
-      declaredMimeType: picked.mimeType,
-      source: AttachmentSource.gallery,
-    ));
+  /// Move an item. Order is persisted against `MessageMedia.position`, so what
+  /// the author arranges here is what is stored, returned and rendered.
+  void _reorderAttachment(int oldIndex, int newIndex) {
+    setState(() {
+      _composition = _composition.reorderAttachment(oldIndex, newIndex);
+    });
+  }
+
+  /// Remove an item, and make the removal stick.
+  ///
+  /// An upload already in flight may still complete afterwards; the authority
+  /// records the id as cancelled so a late success cannot resurrect media the
+  /// author has taken out.
+  void _removeAttachment(String localId) {
+    setState(() {
+      _composition = _composition.removeAttachment(localId);
+    });
+  }
+
+  /// Retry ONE failed item, leaving its successful siblings alone.
+  ///
+  /// Re-uploading everything to recover one failure would waste the person's
+  /// bandwidth and time on work that already succeeded.
+  Future<void> _retryAttachment(Attachment attachment) async {
+    if (_composition.isWithdrawn(attachment.localId)) return;
+    setState(() {
+      attachment.error = null;
+      attachment.uploading = true;
+    });
+    await _upload(attachment);
   }
 
   void _showAttachMenu() {
@@ -687,20 +719,16 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // ONE entry, because it is ONE selection. Separate "Photo" and
+            // "Video" rows existed only because the pickers behind them were
+            // singular, and they forced a person attaching a photo and a video
+            // to make two trips through the menu.
             ListTile(
-              leading: const Icon(Icons.image_outlined),
-              title: const Text('Photo'),
+              leading: const Icon(Icons.perm_media_outlined),
+              title: const Text('Photos & videos'),
               onTap: () {
                 Navigator.of(ctx).pop();
-                _attachPhoto();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.videocam_outlined),
-              title: const Text('Video'),
-              onTap: () {
-                Navigator.of(ctx).pop();
-                _attachVideo();
+                _attachMedia();
               },
             ),
             ListTile(
@@ -1241,30 +1269,21 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                 ),
               ),
             ),
+            // THE CANONICAL COMPOSITION STRIP.
+            //
+            // The hand-rolled Wrap it replaces removed items by filtering the
+            // list directly, which left no record that the author had
+            // withdrawn them — an upload still in flight could complete
+            // afterwards and put the item back. Removal now goes through the
+            // authority, which records the cancellation so a late success
+            // cannot resurrect it.
             if (_attachments.isNotEmpty)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: AuraSpace.s12),
-                  child: Wrap(
-                    spacing: AuraSpace.s6,
-                    runSpacing: AuraSpace.s6,
-                    children: [
-                      for (final a in _attachments)
-                        _PendingAttachmentTile(
-                          attachment: a,
-                          phase: _composition.phaseOf(a),
-                          onRemove: () => setState(() =>
-                              _composition = _composition.copyWith(
-                                attachments: _composition.attachments
-                                    .where((x) => x.localId != a.localId)
-                                    .toList(growable: false),
-                              )),
-                        ),
-                    ],
-                  ),
-                ),
+              AuraCompositionStrip(
+                attachments: _attachments,
+                phaseOf: _composition.phaseOf,
+                onRemove: _removeAttachment,
+                onReorder: _reorderAttachment,
+                onRetry: _retryAttachment,
               ),
             if (_mentionMatches.isNotEmpty)
               Container(
@@ -1511,100 +1530,6 @@ class _DropIntakeState extends State<_DropIntake> {
 
 /// Pre-send attachment tile: real thumbnail for images, honest labeled
 /// chips for audio/video, upload progress and failure states.
-class _PendingAttachmentTile extends StatelessWidget {
-  const _PendingAttachmentTile(
-      {required this.attachment, required this.phase, required this.onRemove});
-  final Attachment attachment;
-  final AttachmentPhase phase;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final failed = phase == AttachmentPhase.failed;
-    // Everything short of server identity, refusal aside, still reads as busy
-    // - exactly what `mediaId == null && !failed` used to mean, now derived.
-    final busy = AttachmentLifecycle.isPending(phase) && !failed;
-    final preview =
-        attachment.kind == AttachmentKind.image ? attachment.bytes : null;
-    return Stack(
-      children: [
-        Container(
-          width: 84,
-          height: 84,
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            color: AuraSurface.subtle,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-                color: failed ? AuraSurface.dangerInk : AuraSurface.divider),
-          ),
-          child: preview != null
-              ? Image.memory(preview, fit: BoxFit.cover)
-              : Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        switch (attachment.kind) {
-                          AttachmentKind.audio => Icons.mic_rounded,
-                          AttachmentKind.video => Icons.videocam_rounded,
-                          AttachmentKind.image => Icons.image_outlined,
-                          AttachmentKind.document =>
-                            Icons.insert_drive_file_outlined,
-                        },
-                        size: 22,
-                        color: AuraSurface.muted,
-                      ),
-                      const SizedBox(height: 4),
-                      Padding(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 4),
-                        child: Text(
-                          attachment.fileName ?? 'Attachment',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AuraText.micro
-                              .copyWith(color: AuraSurface.muted),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-        ),
-        if (busy)
-          const Positioned.fill(
-            child: ColoredBox(
-              color: Color(0x66000000),
-              child: Center(
-                child: SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2)),
-              ),
-            ),
-          ),
-        Positioned(
-          top: 2,
-          right: 2,
-          child: InkWell(
-            onTap: onRemove,
-            child: Container(
-              decoration: const BoxDecoration(
-                  color: Color(0xAA000000), shape: BoxShape.circle),
-              padding: const EdgeInsets.all(2),
-              child:
-                  const Icon(Icons.close_rounded, size: 14, color: Colors.white),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// The thread's own durable answer to "there is a call happening here".
-/// Renders only from canonical server truth (an ACTIVE realtime session on
-/// this conversation) and only while this client is not already in it.
 class _ConversationLiveRibbon extends ConsumerWidget {
   const _ConversationLiveRibbon({required this.conversationId});
 

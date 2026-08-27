@@ -200,10 +200,83 @@ class CompositionState {
   String? get blockedReason {
     if (isSubmitting) return 'Sending…';
     if (isOverLength) return 'This is longer than the limit.';
+    // A FAILED item is not a slow one. Both block the send, but only one of
+    // them will resolve if the person waits, and telling someone to wait for
+    // something that has already stopped is how a composition appears frozen.
+    if (failedAttachments.isNotEmpty) {
+      final n = failedAttachments.length;
+      return n == 1
+          ? "One item didn't upload. Retry it or remove it."
+          : "$n items didn't upload. Retry them or remove them.";
+    }
     if (hasPendingAttachments) return 'Waiting for attachments to finish.';
     if (isEmpty) return 'Nothing to send yet.';
     return null;
   }
+
+  /// Items that failed and may be retried.
+  ///
+  /// Distinct from rejected: a refusal is terminal, a failure is not, and
+  /// offering Retry on something that can never succeed is a false promise.
+  List<Attachment> get failedAttachments => attachments
+      .where((a) => phaseOf(a) == AttachmentPhase.failed)
+      .toList(growable: false);
+
+  /// True when some items are ready and others have failed.
+  ///
+  /// The state that must never resolve itself silently. Sending the survivors
+  /// would publish a composition the author never approved — three photographs
+  /// where they chose four — and they would not find out.
+  bool get hasPartialFailure =>
+      failedAttachments.isNotEmpty && composableAttachments.isNotEmpty;
+
+  /// REORDER — author intent, expressed deliberately.
+  ///
+  /// Returns a new state with the item at [oldIndex] moved to [newIndex].
+  /// Order is composition intent all the way down: it is persisted against
+  /// `PostMedia.position` / `MessageMedia.position`, returned in that order,
+  /// and rendered in that order by the collage and the immersive viewer.
+  ///
+  /// Out-of-range indices return the state unchanged rather than throwing — a
+  /// drag that ends outside the list is an ordinary gesture, not an error.
+  CompositionState reorderAttachment(int oldIndex, int newIndex) {
+    final list = [...attachments];
+    if (oldIndex < 0 || oldIndex >= list.length) return this;
+    var target = newIndex;
+    // A drag downward reports the index BEFORE removal, which is the classic
+    // off-by-one in every reorderable list.
+    if (target > oldIndex) target -= 1;
+    if (target < 0) target = 0;
+    if (target > list.length - 1) target = list.length - 1;
+    if (target == oldIndex) return this;
+    final moved = list.removeAt(oldIndex);
+    list.insert(target, moved);
+    return copyWith(attachments: list);
+  }
+
+  /// REMOVE — and the removal must stick.
+  ///
+  /// An upload already in flight for this item may still complete afterwards.
+  /// The id is recorded as cancelled so a late success cannot resurrect media
+  /// the author has already taken out of the composition: [holdsClaim] is
+  /// false for a cancelled id, so it can never re-enter `composableAttachments`
+  /// however the upload finishes.
+  CompositionState removeAttachment(String localId) {
+    if (!attachments.any((a) => a.localId == localId)) return this;
+    return copyWith(
+      attachments:
+          attachments.where((a) => a.localId != localId).toList(growable: false),
+      cancelled: {...cancelled, localId},
+    );
+  }
+
+  /// Whether [localId] has been withdrawn and must not be re-admitted.
+  ///
+  /// Read by upload completion handlers before writing a result back, which is
+  /// the one place a stale success could otherwise undo a removal.
+  bool isWithdrawn(String localId) =>
+      cancelled.contains(localId) ||
+      !attachments.any((a) => a.localId == localId);
 
   /// Media is held that retention authority cannot see. Recorded rather than
   /// silently tolerated — see the CO-RC-C5-007 note at the top of this file.

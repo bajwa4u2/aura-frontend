@@ -12,6 +12,7 @@ import 'aura_video_surface.dart' show storedVideoCanDecodeInline;
 import 'immersive_presenter.dart';
 import 'media_initialization.dart';
 import 'media_interaction_profile.dart';
+import 'media_origin_label.dart';
 import 'media_save_button.dart';
 import 'media_url_resolver.dart';
 
@@ -41,6 +42,8 @@ class AuraViewerItem {
     this.intrinsicWidth,
     this.intrinsicHeight,
     this.downloadContext = 'media',
+    this.originState,
+    this.contentCredentials = false,
   });
 
   /// The source/original file URL. For public media this is rendered and
@@ -68,6 +71,13 @@ class AuraViewerItem {
   /// `institution-announcement-media`. Drives the normalized download
   /// filename: `aura-<context>-<yyyy-MM-dd>.<ext>`.
   final String downloadContext;
+
+  /// Resolved origin disclosure for THIS item. Null means nothing established,
+  /// and the viewer then says nothing rather than offering an empty verdict.
+  final String? originState;
+
+  /// Whether this item carries Content Credentials, verified or not.
+  final bool contentCredentials;
 }
 
 /// Open the fullscreen [AuraMediaViewer] over [items], starting on
@@ -828,6 +838,36 @@ class _ViewerBottomBar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // MEDIA INFORMATION — a line, not a forensic console.
+          //
+          // Shown only when something was actually established. NO_EVIDENCE
+          // renders nothing at all: media loses this information constantly,
+          // so an "unverified" line would convert ordinary silence into an
+          // accusation about the person who posted it.
+          if (mediaOriginLabel(mediaOriginStateFrom(item.originState)) != null) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  MediaOriginBadge(
+                    state: mediaOriginStateFrom(item.originState),
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      mediaOriginDetail(
+                            mediaOriginStateFrom(item.originState),
+                            credentials: item.contentCredentials,
+                          ) ??
+                          '',
+                      style: AuraText.small.copyWith(color: Colors.white70),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           if (caption.isNotEmpty) ...[
             SelectionArea(
               child: Text(
