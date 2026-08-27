@@ -156,15 +156,20 @@ workflows:
           set -euo pipefail
           xcrun simctl shutdown all || true
 
-          # The newest available iPhone runtime, chosen at run time rather than
-          # pinned: a pinned runtime silently stops existing when Codemagic
-          # updates Xcode, and the failure looks like a test failure.
-          RUNTIME=$(xcrun simctl list runtimes --json \
-            | python3 -c "import json,sys; r=[x for x in json.load(sys.stdin)['runtimes'] if x['isAvailable'] and 'iOS' in x['name']]; print(sorted(r, key=lambda x: x['version'])[-1]['identifier'])")
-          DEVICE_TYPE=$(xcrun simctl list devicetypes --json \
-            | python3 -c "import json,sys; d=[x for x in json.load(sys.stdin)['devicetypes'] if x['productFamily']=='iPhone']; print(d[-1]['identifier'])")
+          # USE A SIMULATOR THE IMAGE ALREADY HAS, rather than creating one.
+          #
+          # The first version paired "newest iOS runtime" with "last iPhone
+          # device type" and CoreSimulator refused it — SimError 403,
+          # Incompatible device. Those two lists are not a matched pair: a
+          # runtime supports only a subset of device types, and picking one end
+          # of each independently asks for an iPhone that never shipped with
+          # that iOS. `list devices available` only ever reports pairings that
+          # exist, so choosing from it cannot produce that error.
+          SIM=$(xcrun simctl list devices available --json | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];c=[(r,x['name'],x['udid']) for r,v in d.items() if 'iOS' in r for x in v if x.get('isAvailable') and 'iPhone' in x['name']];sys.exit('no available iPhone simulator on this image') if not c else None;b=sorted(c)[-1];print(b[2], b[1].replace(' ','_'), b[0].split('.')[-1])")
+          UDID=$(echo "$SIM" | cut -d' ' -f1)
+          NAME=$(echo "$SIM" | cut -d' ' -f2)
+          RUNTIME=$(echo "$SIM" | cut -d' ' -f3)
 
-          UDID=$(xcrun simctl create "aura-cert" "$DEVICE_TYPE" "$RUNTIME")
           xcrun simctl boot "$UDID"
           xcrun simctl bootstatus "$UDID" -b
 
@@ -174,8 +179,8 @@ workflows:
             echo "build_commit=${CM_COMMIT:-unknown}"
             echo "build_number=${BUILD_NUMBER:-unknown}"
             echo "branch=${CM_BRANCH:-unknown}"
+            echo "device=$NAME"
             echo "runtime=$RUNTIME"
-            echo "device_type=$DEVICE_TYPE"
             echo "simulator_udid=$UDID"
             echo "xcode=$(xcodebuild -version | head -1)"
             echo "flutter=$(flutter --version | head -1)"
