@@ -127,6 +127,13 @@ workflows:
   #
   # Simulator results are reported as SIMULATOR_CERTIFIED. They are not
   # RELEASE_CERTIFIED and must never be reported as physical-device evidence.
+  #
+  # ── IT RUNS EVERYTHING, NOT ONE SURFACE ────────────────────────────────────
+  # Preferences was the first proof of the lane, not its scope. Aura is one
+  # app: every integration suite runs here except the three that assert
+  # another platform's semantics. A suite that cannot run on iOS is a finding
+  # to record, not a reason to leave it out — and on the first broadened run
+  # this found a video tile that overflowed on iOS and on no other platform.
   # Physical iPhone coverage needs AWS Device Farm or the founder's own device;
   # see docs/2026-08-27-ios-certification-lane.md.
   #
@@ -189,28 +196,57 @@ workflows:
 
           echo "$UDID" > /tmp/aura_sim_udid
 
-      - name: Certify — Preferences
+      - name: Certify — every suite iOS can run
         script: |
-          set -euo pipefail
+          set -uo pipefail
           UDID=$(cat /tmp/aura_sim_udid)
-          flutter test integration_test/preferences_certification_test.dart \
-            -d "$UDID" --reporter expanded 2>&1 \
-            | tee certification/preferences.log
 
-      - name: Certify — Media and Trace
-        script: |
-          set -euo pipefail
-          UDID=$(cat /tmp/aura_sim_udid)
-          flutter test integration_test/media_certification_test.dart \
-            -d "$UDID" --reporter expanded 2>&1 \
-            | tee certification/media.log
-          flutter test integration_test/trace_lifecycle_test.dart \
-            -d "$UDID" --reporter expanded 2>&1 \
-            | tee certification/trace.log
+          # RUN EVERY SUITE, AND KEEP GOING PAST A FAILURE.
+          #
+          # `set -e` on the first failing suite would have reported one broken
+          # thing and hidden the rest, which turns finding N iOS defects into N
+          # round trips through a 7-minute build. The loop records each result
+          # and the step fails at the END if any suite did.
+          #
+          # EXCLUSIONS, and why each one is excluded rather than merely failing:
+          #   android_return_path      — asserts Android back-gesture semantics
+          #   av_android_certification — Android A/V permission model
+          #   desktop_lifecycle        — desktop window lifecycle
+          # Everything else is a candidate: Aura is one app, and a suite that
+          # cannot run on iOS is a finding, not a reason to omit it.
+          EXCLUDE="android_return_path_test|av_android_certification_test|desktop_lifecycle_test"
 
-      - name: Seal the run manifest
-        script: |
+          FAILED=0
+          echo "" >> certification/run-manifest.txt
+          echo "SUITE RESULTS" >> certification/run-manifest.txt
+
+          for f in integration_test/*.dart; do
+            base=$(basename "$f" .dart)
+            if echo "$base" | grep -qE "$EXCLUDE"; then
+              echo "  SKIPPED  $base (platform-locked elsewhere)" | tee -a certification/run-manifest.txt
+              continue
+            fi
+
+            echo "──────────────────────────────────────────────────────────"
+            echo "RUNNING $base"
+            if flutter test "$f" -d "$UDID" --reporter expanded 2>&1 | tee "certification/$base.log"; then
+              echo "  PASS     $base" | tee -a certification/run-manifest.txt
+            else
+              echo "  FAIL     $base" | tee -a certification/run-manifest.txt
+              FAILED=1
+            fi
+          done
+
+          echo "" | tee -a certification/run-manifest.txt
+          if [ "$FAILED" -ne 0 ]; then
+            echo "RESULT=FAILED — see the per-suite logs above" | tee -a certification/run-manifest.txt
+          else
+            echo "RESULT=ALL SUITES PASSED" | tee -a certification/run-manifest.txt
+          fi
+
           echo "finished_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> certification/run-manifest.txt
           cat certification/run-manifest.txt
+          exit "$FAILED"
+
     artifacts:
       - certification/*
