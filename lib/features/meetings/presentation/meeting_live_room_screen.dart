@@ -58,10 +58,52 @@ class MeetingTransportBridge {
 
   Stream<RealtimeMediaSnapshot> get mediaStream => _mediaService.snapshots;
 
-  void muteLocalMic() => _controller.toggleMicrophone();
-  void unmuteLocalMic() => _controller.toggleMicrophone();
-  void disableLocalCamera() => _controller.toggleCamera();
-  void enableLocalCamera() => _controller.toggleCamera();
+  // ── ABSOLUTE, BECAUSE THE NAMES ARE ABSOLUTE ─────────────────────────────
+  //
+  // These four were all implemented as `toggle`, so `unmuteLocalMic()` MUTED
+  // an already-unmuted microphone and `enableLocalCamera()` turned a running
+  // camera off. Four methods naming four distinct intentions, backed by two
+  // operations that mean "whatever it is now, make it the other thing".
+  //
+  // That is also why entry preferences reached PAST this bridge to the media
+  // service: applying a saved "join muted" needs SET semantics, and a toggle
+  // would have been wrong half the time. The service has always had
+  // `setMicrophoneEnabled` / `setCameraEnabled`; the bridge simply did not
+  // expose them, so the one rule this file states — that all mic and camera
+  // operations go through the bridge — could not be obeyed.
+  Future<void> setLocalMic(bool enabled) =>
+      _mediaService.setMicrophoneEnabled(enabled);
+  Future<void> setLocalCamera(bool enabled) =>
+      _mediaService.setCameraEnabled(enabled);
+
+  Future<void> muteLocalMic() => setLocalMic(false);
+  Future<void> unmuteLocalMic() => setLocalMic(true);
+  Future<void> disableLocalCamera() => setLocalCamera(false);
+  Future<void> enableLocalCamera() => setLocalCamera(true);
+
+  /// Whether local media has come up yet.
+  ///
+  /// Exposed so a caller can wait for readiness without holding the service
+  /// itself — the reason the entry-preference path used to read the provider.
+  bool get mediaReady => _mediaService.currentSnapshot.ready;
+
+  // ── DEVICE ROUTING ───────────────────────────────────────────────────────
+  //
+  // The in-meeting device menu reached straight past the bridge for these six,
+  // which is the same rule-break the entry preferences made and for the same
+  // reason: the bridge had no surface for them. Switching which camera or
+  // microphone is live IS a mic/camera operation, so it belongs here rather
+  // than in a bottom sheet holding the transport directly.
+  String? get preferredCameraId => _mediaService.preferredVideoDeviceId;
+  String? get preferredMicId => _mediaService.preferredAudioDeviceId;
+  String? get preferredSpeakerId => _mediaService.preferredAudioOutputDeviceId;
+
+  Future<void> switchCamera(String deviceId) =>
+      _mediaService.switchVideoInput(deviceId);
+  Future<void> switchMic(String deviceId) =>
+      _mediaService.switchAudioInput(deviceId);
+  Future<void> routeAudioOutput(String deviceId) =>
+      _mediaService.setAudioOutput(deviceId);
 
   // I1: Screen sharing as Aura Meeting capability.
   Future<void> startScreenShare() => _controller.startScreenShare();
@@ -811,27 +853,29 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   /// Uses the same public controls the in-room buttons use — no join/RTC change.
   void _applyEntryPrefsWhenReady() {
     if (_entryPrefsApplied) return;
-    final media = ref.read(realtimeMediaServiceProvider);
-    if (media.currentSnapshot.ready) {
-      _applyEntryPrefs(media);
+    // THROUGH THE BRIDGE. This read the media service directly, which is the
+    // one thing this file's own rule forbids — and it did so because the
+    // bridge offered only toggles where a saved preference needs SET.
+    if (_bridge.mediaReady) {
+      _applyEntryPrefs();
       return;
     }
-    _entryPrefsSub = media.snapshots.listen((snap) {
+    _entryPrefsSub = _bridge.mediaStream.listen((snap) {
       if (snap.ready) {
         _entryPrefsSub?.cancel();
         _entryPrefsSub = null;
-        _applyEntryPrefs(media);
+        _applyEntryPrefs();
       }
     });
   }
 
-  Future<void> _applyEntryPrefs(RealtimeMediaService media) async {
+  Future<void> _applyEntryPrefs() async {
     if (_entryPrefsApplied) return;
     _entryPrefsApplied = true;
     final prefs = ref.read(meetingEntryPrefsProvider);
     // Only act when the user opted OUT; defaults are on (a no-op otherwise).
-    if (!prefs.micOn) await media.setMicrophoneEnabled(false);
-    if (!prefs.cameraOn) await media.setCameraEnabled(false);
+    if (!prefs.micOn) await _bridge.setLocalMic(false);
+    if (!prefs.cameraOn) await _bridge.setLocalCamera(false);
   }
 
   @override
@@ -953,7 +997,6 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   /// renegotiation) and routes speaker output. Reuses the same picker as
   /// pre-join. Frozen join/signalling path untouched.
   void _showDeviceSettings() {
-    final media = ref.read(realtimeMediaServiceProvider);
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: const Color(0xFF0F172A),
@@ -984,19 +1027,19 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                 ),
                 const SizedBox(height: 16),
                 MeetingDevicePicker(
-                  cameraId: media.preferredVideoDeviceId,
-                  micId: media.preferredAudioDeviceId,
-                  speakerId: media.preferredAudioOutputDeviceId,
+                  cameraId: _bridge.preferredCameraId,
+                  micId: _bridge.preferredMicId,
+                  speakerId: _bridge.preferredSpeakerId,
                   onCameraChanged: (id) {
-                    media.switchVideoInput(id);
+                    _bridge.switchCamera(id);
                     setSheet(() {});
                   },
                   onMicChanged: (id) {
-                    media.switchAudioInput(id);
+                    _bridge.switchMic(id);
                     setSheet(() {});
                   },
                   onSpeakerChanged: (id) {
-                    media.setAudioOutput(id);
+                    _bridge.routeAudioOutput(id);
                     setSheet(() {});
                   },
                 ),
