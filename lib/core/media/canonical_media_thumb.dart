@@ -5,6 +5,9 @@ import '../../features/feed/domain/feed_media.dart';
 import 'aura_media_frame.dart';
 import 'aura_media_viewer.dart';
 import 'aura_stored_media.dart';
+import 'media_interaction_profile.dart';
+import 'trace/aura_trace_mark.dart';
+import 'trace/aura_trace_surface.dart';
 import 'stored_media.dart';
 
 /// Renders a single canonical [FeedMedia] entry inside the canonical
@@ -51,6 +54,49 @@ class CanonicalMediaThumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // TR MOUNTS HERE, not in the collage.
+    //
+    // It was first placed on `AuraMediaGroup` cells, and was therefore INVISIBLE
+    // for the commonest case in the product: a post with ONE image never enters
+    // the collage path at all — the group returns this adapter directly to keep
+    // the single-media treatment. The announcement surfaces call this adapter
+    // directly too.
+    //
+    // So the mark belongs on the ONE shared adapter every surface already routes
+    // through. That is also what makes Trace cross-surface by construction
+    // rather than by a list of integrations somebody has to keep complete.
+    return _withTraceMark(context, _buildMedia(context));
+  }
+
+  /// Overlay the TR affordance, when there is anything to disclose.
+  Widget _withTraceMark(BuildContext context, Widget child) {
+    if (media.trace.isEmpty) return child;
+
+    final touch = MediaInteractionProfile.resolve(canDecodeVideo: true)
+            .pointer ==
+        PointerModel.touch;
+
+    return Stack(
+      children: [
+        child,
+        Positioned(
+          // Bottom-right, away from the play affordance a video centres and the
+          // save control the frame puts top-right. A doorway that overlapped
+          // either would be opened by accident.
+          right: 4,
+          bottom: 4,
+          child: AuraTraceMark(
+            trace: media.trace,
+            compact: mode == AuraMediaFrameMode.thumbnail,
+            touch: touch,
+            onOpen: () => showAuraTrace(context, trace: media.trace),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMedia(BuildContext context) {
     // The inline save affordance is offered only for public image
     // media: its [url] is directly fetchable. Visibility-gated
     // (RESTRICTED/PRIVATE) media needs a freshly signed URL the

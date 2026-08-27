@@ -7,6 +7,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:aura/core/media/aura_media_group.dart';
+import 'package:aura/features/feed/domain/feed_media.dart';
 import 'package:aura/core/media/trace/aura_trace.dart';
 import 'package:aura/core/media/trace/aura_trace_mark.dart';
 import 'package:aura/core/media/trace/aura_trace_surface.dart';
@@ -34,6 +36,31 @@ Future<void> pumpMark(WidgetTester tester, AuraTrace trace,
     ),
   ));
 }
+
+FeedMedia traced(String id) => FeedMedia(
+      id: id,
+      mediaId: id,
+      mediaType: 'IMAGE',
+      mimeType: 'image/jpeg',
+      visibility: 'PUBLIC',
+      url: 'https://example.invalid/$id.jpg',
+      trace: AuraTrace.fromJson({
+        'available': true,
+        'headline': 'Recorded in Aura',
+        'facts': [
+          {'section': 'CAPTURE', 'evidence': 'KNOWN', 'summary': 'Recorded in Aura'}
+        ],
+      }),
+    );
+
+FeedMedia plain(String id) => FeedMedia(
+      id: id,
+      mediaId: id,
+      mediaType: 'IMAGE',
+      mimeType: 'image/jpeg',
+      visibility: 'PUBLIC',
+      url: 'https://example.invalid/$id.jpg',
+    );
 
 void main() {
   group('THE VISIBILITY RULE', () {
@@ -196,6 +223,59 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
       expect(find.text('Trace'), findsNothing);
+    });
+  });
+
+  group('WHERE TR MOUNTS — the bug this suite exists to prevent', () {
+    // The first implementation put TR on AuraMediaGroup CELLS, so it was
+    // invisible for the commonest case in the product: a post with ONE image
+    // never enters the collage path at all — the group returns the shared
+    // adapter directly to keep the single-media treatment. Three announcement
+    // surfaces call that adapter directly too.
+    //
+    // Mounting on the shared adapter is what makes Trace cross-surface by
+    // construction rather than by a list of integrations someone must keep
+    // complete.
+
+    testWidgets('SINGLE media shows TR', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 400,
+            child: AuraMediaGroup(items: [traced('a')]),
+          ),
+        ),
+      ));
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(find.text('TR'), findsOneWidget);
+    });
+
+    testWidgets('a GROUP shows TR once per item that has one', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 400,
+            child: AuraMediaGroup(items: [traced('a'), plain('b'), traced('c')]),
+          ),
+        ),
+      ));
+      await tester.pump(const Duration(milliseconds: 80));
+      // Two of three — per item, never per composition, and never duplicated
+      // by being mounted in two places at once.
+      expect(find.text('TR'), findsNWidgets(2));
+    });
+
+    testWidgets('media with nothing to disclose shows none', (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 400,
+            child: AuraMediaGroup(items: [plain('a'), plain('b')]),
+          ),
+        ),
+      ));
+      await tester.pump(const Duration(milliseconds: 80));
+      expect(find.text('TR'), findsNothing);
     });
   });
 

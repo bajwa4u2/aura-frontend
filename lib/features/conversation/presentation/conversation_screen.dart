@@ -49,6 +49,8 @@ import '../../../core/composition/composition_authority.dart';
 import '../../../core/composition/content_intake.dart';
 import '../../../core/content_policy/content_length_policy.dart';
 import '../../../core/media/attachment.dart';
+import '../../../core/media/trace/aura_trace_mark.dart';
+import '../../../core/media/trace/aura_trace_surface.dart';
 import '../../../core/media/aura_composition_strip.dart';
 import '../../../core/media/media_acquisition.dart';
 import '../../../core/media/media_origin_disclosure.dart';
@@ -1974,9 +1976,16 @@ class _ConversationAttachment extends ConsumerWidget {
           //
           // Behaviour is preserved: a message CONTAINS its media, so it still
           // plays in place rather than pushing a fullscreen surface.
+          // TR sits beside the message media rather than over it: a message
+          // bubble is small, and an overlay would compete with the play
+          // affordance a voice note and a video both need.
           return ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 280),
-            child: AuraStoredMedia(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+            AuraStoredMedia(
               media: StoredMedia.fromParts(
                 mediaId: media.mediaId,
                 mimeType: media.mimeType,
@@ -2001,6 +2010,17 @@ class _ConversationAttachment extends ConsumerWidget {
                   ),
                 ],
               ),
+            ),
+                if (!media.trace.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: AuraTraceMark(
+                      trace: media.trace,
+                      onOpen: () =>
+                          showAuraTrace(context, trace: media.trace),
+                    ),
+                  ),
+              ],
             ),
           );
         }

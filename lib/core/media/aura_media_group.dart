@@ -40,9 +40,6 @@ import '../ui/aura_text.dart';
 import '../../features/feed/domain/feed_media.dart';
 import 'aura_media_frame.dart';
 import 'canonical_media_thumb.dart';
-import 'media_interaction_profile.dart';
-import 'trace/aura_trace_mark.dart';
-import 'trace/aura_trace_surface.dart';
 
 /// How many items are shown before the rest collapse into a continuation.
 ///
@@ -215,38 +212,14 @@ class _MediaGroupCell extends StatelessWidget {
       onTap: onTap,
     );
 
-    // PER-ITEM TRACE. Each cell carries its OWN, so a group holding one
-    // AI-generated image and three photographs marks exactly one cell. A
-    // composition-level mark would be a claim about media it does not describe.
+    // TR IS NOT MOUNTED HERE. It lives on `CanonicalMediaThumb`, which this
+    // cell renders — placing it in both would show the mark twice on a collage
+    // and not at all on a single-media post, which is exactly the bug that
+    // sent it there in the first place.
     //
-    // TR replaces the older origin badge here: the badge asserted a conclusion,
-    // while TR is a doorway to the basis for it. The badge remains for surfaces
-    // that genuinely have room for a word rather than a mark.
-    final badge = media.trace.isEmpty
-        ? null
-        : Positioned(
-            right: 4,
-            bottom: 4,
-            child: Builder(
-              builder: (context) => AuraTraceMark(
-                trace: media.trace,
-                compact: true,
-                // A cell is small and fingers are not. The visible mark stays
-                // compact while the target grows, because a missed tap here
-                // opens the viewer instead — the one thing the person did not
-                // ask for.
-                touch: MediaInteractionProfile.resolve(canDecodeVideo: true)
-                        .pointer ==
-                    PointerModel.touch,
-                onOpen: () => showAuraTrace(context, trace: media.trace),
-              ),
-            ),
-          );
-
-    if (overflow <= 0) {
-      if (badge == null) return tile;
-      return Stack(fit: StackFit.expand, children: [tile, badge]);
-    }
+    // It remains PER ITEM either way: each cell renders its own media, so each
+    // carries its own Trace.
+    if (overflow <= 0) return tile;
 
     return Stack(
       fit: StackFit.expand,
@@ -267,7 +240,6 @@ class _MediaGroupCell extends StatelessWidget {
             ),
           ),
         ),
-        if (badge != null) badge,
       ],
     );
   }

@@ -1,3 +1,4 @@
+import '../../../core/media/trace/aura_trace.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -331,6 +332,7 @@ class ConversationMessage {
                 durationMs: m['durationMs'] is num
                     ? (m['durationMs'] as num).toInt()
                     : null,
+                trace: AuraTrace.fromJson(m['trace']),
               ))
           .toList(),
       replyTo: json['replyTo'] is Map<String, dynamic>
@@ -423,6 +425,7 @@ class MessageMediaRef {
     this.fileSizeBytes,
     this.source,
     this.durationMs,
+    this.trace = AuraTrace.none,
   });
   final String mediaId;
   final String? kind; // IMAGE | AUDIO | VIDEO | OTHER | null
@@ -441,6 +444,13 @@ class MessageMediaRef {
 
   /// F014 — authoritative length in MILLISECONDS (F133).
   final int? durationMs;
+
+  /// The resolved Aura Trace for this attachment.
+  ///
+  /// Conversation is where capture provenance actually lives — a voice note
+  /// recorded through Aura is `RECORDING`, forwarded content is `FORWARD` —
+  /// so these are among the objects Aura knows most about.
+  final AuraTrace trace;
 
   bool get isImage =>
       (kind ?? '').toUpperCase() == 'IMAGE' ||
