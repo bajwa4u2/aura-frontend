@@ -38,16 +38,39 @@ import 'package:aura/features/feed/domain/feed_media.dart';
 /// A resolved Trace, as the server would send it. Built here rather than
 /// derived from `originState`, because the client performs no reasoning: if a
 /// test could synthesise a Trace from a state string, so could the client.
-AuraTrace traceOf(String summary) => AuraTrace.fromJson({
+/// A resolved public account, in the shape the server actually sends.
+///
+/// Built from the wire rather than from a constructor so that a change to the
+/// server contract breaks this harness instead of silently passing against a
+/// shape production no longer uses — which is exactly what happened when the
+/// projection moved to the curated account and this fixture kept asserting
+/// against evidence-shaped keys.
+AuraTrace traceOf(String headline) => AuraTrace.fromJson({
       'available': true,
-      'headline': summary,
-      'facts': [
+      'headline': headline,
+      'source': 'OpenAI Media Service API',
+      'summary': 'This media carries origin information about how it was made.',
+      'evidence': [
         {
-          'section': 'AI_INVOLVEMENT',
-          'evidence': 'DECLARED',
-          'summary': summary,
+          // NOT the headline restated. The resolver deliberately says a
+          // different thing here — the headline is the meaning, the evidence
+          // line is what the file actually said — and a fixture that collapses
+          // them would stop this harness from noticing if the product did.
+          'label': 'The file states it was generated with AI',
+          'detail': 'Aura has not verified the signature on it.',
         }
       ],
+      'history': const [],
+      'publication': null,
+      'uncertainty': const [
+        'Aura has not independently verified the credential signer.',
+      ],
+      'hasConflict': false,
+      'about':
+          'Trace describes available evidence about this content’s origin '
+              'and history. It does not by itself determine whether what the '
+              'content depicts or claims is true.',
+      'density': 'SIMPLE',
     });
 
 FeedMedia img(String id, {String? origin}) => FeedMedia(
@@ -60,7 +83,7 @@ FeedMedia img(String id, {String? origin}) => FeedMedia(
       width: 1600,
       height: 1200,
       originState: origin,
-      trace: origin == null ? AuraTrace.none : traceOf('Creator says AI was used'),
+      trace: origin == null ? AuraTrace.none : traceOf('Created with AI'),
     );
 
 FeedMedia vid(String id, {String? origin}) => FeedMedia(
@@ -75,7 +98,7 @@ FeedMedia vid(String id, {String? origin}) => FeedMedia(
       height: 1920,
       duration: 6000,
       originState: origin,
-      trace: origin == null ? AuraTrace.none : traceOf('Creator says AI was used'),
+      trace: origin == null ? AuraTrace.none : traceOf('Created with AI'),
     );
 
 Attachment att(String id, AttachmentKind kind, {bool failed = false}) =>
@@ -88,6 +111,17 @@ Attachment att(String id, AttachmentKind kind, {bool failed = false}) =>
     );
 
 Future<void> host(WidgetTester tester, Widget child) async {
+  // A REALISTIC VIEWPORT.
+  //
+  // The integration window on a desktop host can be far smaller than any real
+  // client, and the Trace inspector is content-responsive — so a section that
+  // is merely below the fold reads to a test as a section that is missing. The
+  // size is set here rather than asserted around, because shrinking the
+  // assertions to fit a test-only window would be certifying the harness.
+  tester.view.physicalSize = const Size(1400, 1000);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+
   await tester.pumpWidget(
     MaterialApp(home: Scaffold(body: SizedBox(width: 420, child: child))),
   );
@@ -247,10 +281,18 @@ void main() {
       await host(tester, AuraMediaGroup(items: [img('made', origin: 'AI_GENERATED')]));
       await tester.tap(find.text('TR'));
       await tester.pumpAndSettle();
-      expect(find.text('Trace'), findsOneWidget);
-      // The basis beside the fact — a declaration must not read as a
-      // verification on any platform.
-      expect(find.text('Stated by the creator'), findsOneWidget);
+      // The HEADLINE is what a person meets first, on every platform — the
+      // MEANING, not the evidence vocabulary it was derived from.
+      expect(find.text('Created with AI'), findsOneWidget);
+      expect(find.text('The file states it was generated with AI'),
+          findsOneWidget);
+      // TEMP DIAGNOSTIC
+      // And the limit travels with it — an unverified signer must not read as
+      // a verification on any platform.
+      expect(
+        find.textContaining('not independently verified the credential signer'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('Trace opens in the idiom THIS platform actually uses',
@@ -275,7 +317,10 @@ void main() {
         expect(find.text('Close'), findsOneWidget);
       }
       // Either way the facts are the same facts.
-      expect(find.text('Stated by the creator'), findsOneWidget);
+      expect(
+        find.textContaining('not independently verified the credential signer'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('CONFLICTING does not render as an AI verdict', (tester) async {

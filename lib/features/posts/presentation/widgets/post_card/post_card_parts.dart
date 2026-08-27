@@ -347,16 +347,22 @@ class PostCardSingleMediaCard extends StatelessWidget {
             style: AuraText.small.copyWith(height: 1.35),
           ),
         ],
-        if (item.editDisclosure) ...[
-          const SizedBox(height: AuraSpace.s6),
-          Text(
-            'Edited for clarity or privacy',
-            style: AuraText.small.copyWith(
-              color: AuraSurface.muted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+        // RETIRED — a parallel provenance presentation competing with TR.
+        //
+        // This rendered "Edited for clarity or privacy" whenever
+        // `editDisclosure` was true. Every one of the 40 production rows with
+        // that flag is a ProfileMediaPipeline crop, so the line asserted an
+        // editorial judgement about content that nobody ever made: a person
+        // cropping their avatar did not edit it for clarity, and did not edit
+        // it for privacy.
+        //
+        // The same fact now reaches Trace as what it actually is — Aura's own
+        // editor produced these bytes — where it also explains the consequence
+        // that matters, that any credential the original carried no longer
+        // describes the stored file.
+        //
+        // Two provenance presentations on one object is one too many, and this
+        // was the one that could not say what it meant.
       ],
     );
   }
