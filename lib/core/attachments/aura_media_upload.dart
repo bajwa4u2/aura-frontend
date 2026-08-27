@@ -40,6 +40,17 @@ Future<AuraMediaUploadResult> uploadAuraMedia({
   int? width,
   int? height,
   int? duration,
+  /// WHAT THE CREATOR SAYS about this media's origin.
+  ///
+  /// One of `AI_GENERATED`, `AI_EDITED`, `NOT_AI`. Recorded server-side as an
+  /// UPLOADER_DECLARATION — attributable to a person, and ranked beneath
+  /// verified evidence, so a declaration cannot override a content credential
+  /// that disagrees with it.
+  ///
+  /// Null means the person said nothing, which records NOTHING. "I don't know"
+  /// is the absence of a claim, and a stored non-answer would make an
+  /// unexamined object look examined.
+  String? originDeclaration,
   Map<String, dynamic> metadataPatch = const <String, dynamic>{},
   void Function(int sent, int total)? onProgress,
 }) async {
@@ -58,6 +69,8 @@ Future<AuraMediaUploadResult> uploadAuraMedia({
       if (width != null) 'width': width,
       if (height != null) 'height': height,
       if (duration != null) 'duration': duration,
+      if (originDeclaration != null && originDeclaration.trim().isNotEmpty)
+        'originDeclaration': originDeclaration.trim(),
     },
   );
 

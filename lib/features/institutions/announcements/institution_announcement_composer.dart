@@ -20,6 +20,7 @@ import '../../../core/tagging/tag_text_hydration.dart';
 import '../../../core/composition/attachment_lifecycle.dart';
 import '../../../core/composition/composition_authority.dart';
 import '../../../core/composition/content_intake.dart';
+import '../../../core/media/aura_composition_strip.dart';
 import '../../../core/media/attachment.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -319,6 +320,35 @@ class _InstitutionAnnouncementComposerState
     });
   }
 
+  List<Attachment> get _visualAttachments => _attachments
+      .where((a) => a.kind == AttachmentKind.image || a.kind == AttachmentKind.video)
+      .toList(growable: false);
+
+  List<Attachment> get _fileAttachments => _attachments
+      .where((a) => a.kind != AttachmentKind.image && a.kind != AttachmentKind.video)
+      .toList(growable: false);
+
+  CompositionState get _announcementComposition =>
+      CompositionState(attachments: _attachments, requiresBody: false);
+
+  void _removeAttachmentById(String localId) {
+    final match = _attachments.where((a) => a.localId == localId);
+    if (match.isEmpty) return;
+    _removeAttachment(match.first);
+  }
+
+  void _reorderAttachments(int oldIndex, int newIndex) {
+    setState(() {
+      var target = newIndex;
+      if (target > oldIndex) target -= 1;
+      if (target < 0) target = 0;
+      if (target > _attachments.length - 1) target = _attachments.length - 1;
+      if (target == oldIndex) return;
+      final moved = _attachments.removeAt(oldIndex);
+      _attachments.insert(target, moved);
+    });
+  }
+
   Future<void> _uploadAttachment(Attachment attachment) async {
     try {
       final result = await uploadAuraMedia(
@@ -602,9 +632,22 @@ class _InstitutionAnnouncementComposerState
             'Attach images or videos to this announcement. PUBLIC audience uses public delivery; MEMBERS or INTERNAL audience routes media through the signed-URL access gate automatically.',
             style: AuraText.small.copyWith(color: AuraSurface.muted),
           ),
-          if (_attachments.isNotEmpty) ...[
+          // Visual media gets the canonical treatment; non-visual files keep
+          // the row that carries their only identity. See the announcement
+          // editor for the full reasoning — the same rule, one authority.
+          if (_visualAttachments.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s12),
-            ..._attachments.map(
+            AuraCompositionStrip(
+              attachments: _visualAttachments,
+              phaseOf: _announcementComposition.phaseOf,
+              onRemove: _removeAttachmentById,
+              onReorder: _reorderAttachments,
+              onRetry: _uploadAttachment,
+            ),
+          ],
+          if (_fileAttachments.isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s12),
+            ..._fileAttachments.map(
               (attachment) => Container(
                 margin: const EdgeInsets.only(bottom: AuraSpace.s8),
                 padding: const EdgeInsets.all(AuraSpace.s12),

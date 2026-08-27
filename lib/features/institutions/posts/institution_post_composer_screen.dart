@@ -16,8 +16,8 @@ import '../../../core/tagging/tag_entities.dart';
 import '../../../core/tagging/tag_text_hydration.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/media/attachment.dart';
-import '../../../core/media/aura_stored_media.dart';
-import '../../../core/media/stored_media.dart';
+import '../../../core/media/aura_composition_strip.dart';
+import '../../../core/media/media_acquisition.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/link_preview/compose_link_detector.dart';
 import '../../../core/link_preview/internal_reference_card.dart';
@@ -115,6 +115,22 @@ class _InstitutionPostComposerScreenState
   ///
   /// This used to be DISCARDED — only `result.url` was kept — which is half of
   /// why the draft could not hold a governed claim on its own cover.
+  /// THE ORDERED MEDIA COLLECTION — the authority for this composition.
+  ///
+  /// `InstitutionPostMedia` has always carried `position`; only the create
+  /// contract was single-media, so this screen held one `_mediaId` and one
+  /// `_mediaUrl`. Both remain below, derived from the first item, purely so
+  /// draft persistence and restore keep working — they are TRANSITIONAL and
+  /// are never read as the authority.
+  final List<Attachment> _media = [];
+
+  /// Refusals and cancellations, held beside the items rather than on them:
+  /// a refusal is a judgement about intake and the attachment is evidence, so
+  /// merging them would let a later mutation erase the judgement.
+  CompositionState _mediaComposition = const CompositionState(
+    requiresBody: false,
+  );
+
   String? _mediaId;
 
   /// The server-side DRAFT post that holds this composition's media claim.
@@ -432,6 +448,49 @@ class _InstitutionPostComposerScreenState
   /// `_mediaUrl`, because the local store keeps the URL; it is nonetheless real
   /// media, and by the invariant in [_persistDraftNow] it was only written down
   /// because a claim already existed.
+  /// Items the server may be given — everything with real identity.
+  List<Attachment> get _composableMedia => _media
+      .where((a) => (a.mediaId ?? '').trim().isNotEmpty)
+      .toList(growable: false);
+
+  /// Keep the transitional single fields in step with the collection.
+  ///
+  /// Draft persistence and restore still speak in one URL. Deriving them from
+  /// the first item — rather than maintaining them independently — is what
+  /// stops the two representations drifting while the legacy path is retired.
+  void _syncTransitionalMediaFields() {
+    final first = _media.isEmpty ? null : _media.first;
+    _mediaId = (first?.mediaId ?? '').trim().isEmpty ? null : first!.mediaId;
+    _mediaUrl = (first?.url ?? '').trim().isEmpty ? null : first!.url;
+    _mediaThumbUrl = (first?.thumbUrl ?? '').trim().isEmpty
+        ? _mediaUrl
+        : first!.thumbUrl;
+    _mediaMimeType = first?.mimeType;
+  }
+
+  void _removeMediaItem(String localId) {
+    setState(() {
+      _mediaComposition = _mediaComposition.removeAttachment(localId);
+      _media.removeWhere((a) => a.localId == localId);
+      _syncTransitionalMediaFields();
+    });
+    _scheduleDraftSave();
+  }
+
+  void _reorderMediaItem(int oldIndex, int newIndex) {
+    setState(() {
+      var target = newIndex;
+      if (target > oldIndex) target -= 1;
+      if (target < 0) target = 0;
+      if (target > _media.length - 1) target = _media.length - 1;
+      if (target == oldIndex) return;
+      final moved = _media.removeAt(oldIndex);
+      _media.insert(target, moved);
+      _syncTransitionalMediaFields();
+    });
+    _scheduleDraftSave();
+  }
+
   DraftClaim get _draftClaim {
     final uploaded = (_mediaId ?? '').trim().isNotEmpty;
     final restored = (_mediaUrl ?? '').trim().isNotEmpty;
@@ -704,7 +763,17 @@ class _InstitutionPostComposerScreenState
       // and post detail strip the marker on render.
       'title': _encodedTitle(),
       'body': _bodyCtrl.text.trim(),
-      if (_mediaUrl != null && _mediaUrl!.isNotEmpty) 'mediaUrl': _mediaUrl,
+      // THE CANONICAL COLLECTION. Order is the author's, sent as array order,
+      // and the server derives `position` from it rather than from any index
+      // this client might disagree with.
+      //
+      // The legacy `mediaUrl` is deliberately NOT sent alongside it: the server
+      // ignores it when `media` is present, and sending both would invite a
+      // post whose stored order disagreed with its legacy field.
+      'media': [
+        for (final a in _composableMedia)
+          {'mediaId': a.mediaId, 'position': _composableMedia.indexOf(a)},
+      ],
       'visibility': _visibility.wire,
       'distribution': _distribution.wire,
       'primaryTopic': _primaryTopic!.wire,
@@ -746,18 +815,31 @@ class _InstitutionPostComposerScreenState
 
   // ── Media upload (presign flow) ───────────────────────────────────────────
 
-  Future<void> _pickMedia({required bool video}) async {
+  /// ONE SELECTION, images and videos together.
+  ///
+  /// The `video:` flag existed only because the pickers behind it were
+  /// singular; a person attaching two photographs and a video had to use two
+  /// menu entries and three trips. Kind is now inferred per file, so one mixed
+  /// selection is expressible.
+  Future<void> _pickMediaMultiple() async {
     if (_busy || _uploading) return;
-    XFile? file;
-    if (video) {
-      file = await _picker.pickVideo(source: ImageSource.gallery);
-    } else {
-      file = await _picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 92,
-      );
+    final remaining = kMaxComposableMedia - _media.length;
+    if (remaining <= 0) return;
+    final picked = await _picker.pickMultipleMedia();
+    if (picked.isEmpty) return;
+    final admitted = picked.take(remaining).toList(growable: false);
+    for (final f in admitted) {
+      await _uploadPickedFile(f);
     }
-    if (file == null) return;
+    final message = acquisitionLimitMessage(picked.length - admitted.length);
+    if (message != null && mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  Future<void> _uploadPickedFile(XFile file) async {
+    if (_busy) return;
 
     setState(() {
       _uploading = true;
@@ -783,17 +865,11 @@ class _InstitutionPostComposerScreenState
       if (attachment == null) {
         throw _MediaValidationException(resolution.rejectionMessage!);
       }
-      // The destination still decides what it can CARRY. A post has one media
-      // slot and renders an image or a video in it; that is a genuine
-      // destination constraint, not a duplicated type policy.
-      final wanted = video ? AttachmentKind.video : AttachmentKind.image;
-      if (attachment.kind != wanted) {
-        throw _MediaValidationException(
-          video
-              ? 'That is not a video file.'
-              : 'That is not an image file.',
-        );
-      }
+      // KIND IS INFERRED, not demanded. The old check compared what intake
+      // resolved against which BUTTON was pressed, which is why one selection
+      // could never hold a photograph and a video together. Intake has already
+      // refused anything the destination cannot carry.
+      final video = attachment.kind == AttachmentKind.video;
       // WHAT GETS UPLOADED IS WHAT INTAKE PRODUCED, not what was picked.
       //
       // These must travel together. Sending the ORIGINAL bytes with the
@@ -830,12 +906,27 @@ class _InstitutionPostComposerScreenState
 
       if (!mounted) return;
       setState(() {
-        _mediaId = result.mediaId.trim().isEmpty ? null : result.mediaId.trim();
-        _mediaUrl = url;
-        _mediaThumbUrl = result.thumbUrl.trim().isNotEmpty
-            ? result.thumbUrl.trim()
-            : url;
-        _mediaMimeType = mimeType;
+        // APPEND, in selection order. The transitional single fields are
+        // derived from the first item so draft persistence keeps working
+        // without becoming a second source of truth.
+        _media.add(
+          Attachment(
+            localId: '${DateTime.now().microsecondsSinceEpoch}-${_media.length}',
+            kind: mimeType.startsWith('video/')
+                ? AttachmentKind.video
+                : AttachmentKind.image,
+            source: AttachmentSource.gallery,
+            mediaId: result.mediaId.trim().isEmpty ? null : result.mediaId.trim(),
+            url: url,
+            thumbUrl: result.thumbUrl.trim().isNotEmpty
+                ? result.thumbUrl.trim()
+                : url,
+            mimeType: mimeType,
+            bytes: bytes,
+          ),
+        );
+        _mediaComposition = _mediaComposition.copyWith(attachments: [..._media]);
+        _syncTransitionalMediaFields();
       });
       // Claim it before anything persists a reference to it.
       await _ensureServerDraftClaim();
@@ -856,19 +947,6 @@ class _InstitutionPostComposerScreenState
     }
   }
 
-  void _removeMedia() {
-    setState(() {
-      _mediaId = null;
-      _mediaUrl = null;
-      _mediaThumbUrl = null;
-      _mediaMimeType = null;
-    });
-    // The server-side draft, if one exists, is updated by the next autosave
-    // and drops its InstitutionPostMedia link there. Release stays SOFT: the
-    // media becomes reclaimable rather than deleted, which is the retention
-    // authority's decision to make and not this screen's.
-    _scheduleDraftSave();
-  }
 
   // _inferMime removed — replaced with `inferMimeFromFileName` from
   // lib/core/media/media_mime.dart (canonical).
@@ -1357,14 +1435,39 @@ class _InstitutionPostComposerScreenState
                   ],
                   _LabeledField(
                     label: 'Media (optional)',
-                    child: _MediaUploadSlot(
-                      mediaUrl: _mediaUrl,
-                      thumbUrl: _mediaThumbUrl,
-                      mimeType: _mediaMimeType,
-                      uploading: _uploading,
-                      onPickImage: () => _pickMedia(video: false),
-                      onPickVideo: () => _pickMedia(video: true),
-                      onRemove: _removeMedia,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // THE CANONICAL STRIP. A video shows its own frame from
+                        // the local source rather than a glyph, and each item
+                        // carries its own state, order and removal.
+                        if (_media.isNotEmpty)
+                          AuraCompositionStrip(
+                            attachments: _media,
+                            phaseOf: _mediaComposition.phaseOf,
+                            onRemove: _removeMediaItem,
+                            onReorder: _reorderMediaItem,
+                          ),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: (_busy ||
+                                    _uploading ||
+                                    _media.length >= kMaxComposableMedia)
+                                ? null
+                                : _pickMediaMultiple,
+                            icon: const Icon(Icons.perm_media_outlined),
+                            label: Text(_media.isEmpty
+                                ? 'Add photos & videos'
+                                : 'Add more'),
+                          ),
+                        ),
+                        if (_uploading)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 6),
+                            child: LinearProgressIndicator(minHeight: 2),
+                          ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: AuraSpace.s8),
@@ -1552,206 +1655,6 @@ class _ActorBanner extends StatelessWidget {
 }
 
 // ── Media slot — bounded preview, image/video picker, progress, remove ───────
-
-class _MediaUploadSlot extends StatelessWidget {
-  const _MediaUploadSlot({
-    required this.mediaUrl,
-    required this.thumbUrl,
-    required this.mimeType,
-    required this.uploading,
-    required this.onPickImage,
-    required this.onPickVideo,
-    required this.onRemove,
-  });
-
-  final String? mediaUrl;
-  final String? thumbUrl;
-  final String? mimeType;
-  final bool uploading;
-  final VoidCallback onPickImage;
-  final VoidCallback onPickVideo;
-  final VoidCallback onRemove;
-
-  bool get _hasMedia => mediaUrl != null && mediaUrl!.isNotEmpty;
-  bool get _isVideo => (mimeType ?? '').toLowerCase().startsWith('video/');
-
-  static const double _kPreviewMaxWidth = 600;
-  static const double _kPreviewMaxHeight = 340;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: _kPreviewMaxWidth,
-              maxHeight: _kPreviewMaxHeight,
-            ),
-            child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(AuraRadius.md),
-                child: _previewBody(),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: AuraSpace.s10),
-        Row(
-          children: [
-            OutlinedButton.icon(
-              onPressed: uploading ? null : onPickImage,
-              icon: Icon(
-                _hasMedia && !_isVideo
-                    ? Icons.swap_horiz_rounded
-                    : Icons.image_outlined,
-                size: 16,
-              ),
-              label: Text(
-                uploading
-                    ? 'Uploading…'
-                    : _hasMedia && !_isVideo
-                    ? 'Replace image'
-                    : 'Add image',
-              ),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
-                ),
-                textStyle: AuraText.small.copyWith(fontWeight: FontWeight.w600),
-              ),
-            ),
-            const SizedBox(width: AuraSpace.s8),
-            OutlinedButton.icon(
-              onPressed: uploading ? null : onPickVideo,
-              icon: Icon(
-                _hasMedia && _isVideo
-                    ? Icons.swap_horiz_rounded
-                    : Icons.videocam_outlined,
-                size: 16,
-              ),
-              label: Text(
-                uploading
-                    ? 'Uploading…'
-                    : _hasMedia && _isVideo
-                    ? 'Replace video'
-                    : 'Add video',
-              ),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 8,
-                ),
-                textStyle: AuraText.small.copyWith(fontWeight: FontWeight.w600),
-              ),
-            ),
-            if (_hasMedia) ...[
-              const SizedBox(width: AuraSpace.s8),
-              TextButton(
-                onPressed: uploading ? null : onRemove,
-                child: Text(
-                  'Remove',
-                  style: AuraText.small.copyWith(
-                    color: AuraSurface.coRose,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: AuraSpace.s4),
-        Text(
-          'Image up to 8 MB · Video up to 50 MB · uploaded via Aura media presign.',
-          style: AuraText.micro.copyWith(color: AuraSurface.faint, height: 1.4),
-        ),
-      ],
-    );
-  }
-
-  Widget _previewBody() {
-    if (uploading) {
-      return Container(
-        color: AuraSurface.subtle,
-        child: const Center(
-          child: SizedBox(
-            width: 22,
-            height: 22,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ),
-      );
-    }
-    if (_hasMedia && _isVideo) {
-      // The same defect this composer used to share with the post card: with
-      // no server thumbnail, `thumbUrl` was empty and the MP4 itself went to
-      // Image.network, which cannot decode it — a broken-image glyph under a
-      // play button. Institution post composition now consumes the canonical
-      // authority like every other surface.
-      return AuraStoredMedia(
-        media: StoredMedia.fromParts(
-          mimeType: mimeType,
-          isPublic: true,
-          sourceUrl: mediaUrl,
-          posterUrl: thumbUrl,
-        ),
-        context: StoredMediaContext.compose,
-        borderRadius: BorderRadius.circular(AuraRadius.md),
-      );
-    }
-    if (_hasMedia) {
-      final url = thumbUrl?.isNotEmpty == true ? thumbUrl! : mediaUrl!;
-      return Stack(
-        alignment: Alignment.center,
-        children: [
-          Image.network(
-            url,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              color: AuraSurface.subtle,
-              child: const Center(
-                child: Icon(
-                  Icons.broken_image_outlined,
-                  color: AuraSurface.faint,
-                ),
-              ),
-            ),
-          ),
-          if (_isVideo)
-            Container(
-              padding: const EdgeInsets.all(AuraSpace.s8),
-              decoration: const BoxDecoration(
-                color: Colors.black54,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.play_arrow_rounded,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
-        ],
-      );
-    }
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AuraSurface.subtle,
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: const Center(
-        child: Icon(
-          Icons.add_photo_alternate_outlined,
-          color: AuraSurface.faint,
-          size: 32,
-        ),
-      ),
-    );
-  }
-}
 
 class _MediaValidationException implements Exception {
   const _MediaValidationException(this.message);

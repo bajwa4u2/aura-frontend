@@ -12,6 +12,7 @@ import '../../../core/auth/auth_providers.dart';
 import '../../../core/composition/composition_authority.dart';
 import '../../../core/content_policy/content_length_policy.dart';
 import '../../../core/composition/content_intake.dart';
+import '../../../core/media/aura_composition_strip.dart';
 import '../../../core/media/attachment.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
@@ -270,6 +271,42 @@ class _AnnouncementEditorScreenState
     if (!mounted) return;
     setState(() {
       _mediaUploading = _attachments.any((item) => item.uploading);
+    });
+  }
+
+  /// Attachments with a visual representation worth previewing.
+  List<Attachment> get _visualAttachments => _attachments
+      .where((a) => a.kind == AttachmentKind.image || a.kind == AttachmentKind.video)
+      .toList(growable: false);
+
+  /// Everything else. A PDF has no useful preview and its filename IS its
+  /// identity, so it keeps the row rather than being given a placeholder tile.
+  List<Attachment> get _fileAttachments => _attachments
+      .where((a) => a.kind != AttachmentKind.image && a.kind != AttachmentKind.video)
+      .toList(growable: false);
+
+  /// Lifecycle state for the strip, held beside the attachments so a refusal
+  /// is not merged into the evidence it judges.
+  CompositionState get _announcementComposition =>
+      CompositionState(attachments: _attachments, requiresBody: false);
+
+  void _removeAttachmentById(String localId) {
+    final match = _attachments.where((a) => a.localId == localId);
+    if (match.isEmpty) return;
+    _removeAttachment(match.first);
+  }
+
+  /// Order is author intent here too — an announcement's images are read in
+  /// the order they were arranged.
+  void _reorderAttachments(int oldIndex, int newIndex) {
+    setState(() {
+      var target = newIndex;
+      if (target > oldIndex) target -= 1;
+      if (target < 0) target = 0;
+      if (target > _attachments.length - 1) target = _attachments.length - 1;
+      if (target == oldIndex) return;
+      final moved = _attachments.removeAt(oldIndex);
+      _attachments.insert(target, moved);
     });
   }
 
@@ -1345,9 +1382,32 @@ class _AnnouncementEditorScreenState
                         color: Color(0xFF6B6358),
                       ),
                     ),
-                    if (_attachments.isNotEmpty) ...[
+                    // VISUAL MEDIA GETS THE CANONICAL TREATMENT.
+                    //
+                    // Every attachment here rendered as a filename beside a
+                    // glyph, so a photograph and a video were shown as rows of
+                    // text — the two kinds whose content is least guessable
+                    // from a name. Images and video now preview properly, with
+                    // per-item state, order and removal.
+                    //
+                    // Non-visual files KEEP their row: a PDF has no useful
+                    // preview, and replacing its filename with a placeholder
+                    // tile would lose the only identity it has. Mixed
+                    // compositions therefore show both, rather than degrading
+                    // everything to the weaker treatment.
+                    if (_visualAttachments.isNotEmpty) ...[
                       const SizedBox(height: 12),
-                      ..._attachments.map(
+                      AuraCompositionStrip(
+                        attachments: _visualAttachments,
+                        phaseOf: _announcementComposition.phaseOf,
+                        onRemove: _removeAttachmentById,
+                        onReorder: _reorderAttachments,
+                        onRetry: _uploadAttachment,
+                      ),
+                    ],
+                    if (_fileAttachments.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      ..._fileAttachments.map(
                         (attachment) => Container(
                           margin: const EdgeInsets.only(bottom: 10),
                           padding: const EdgeInsets.all(12),

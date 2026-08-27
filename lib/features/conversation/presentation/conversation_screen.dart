@@ -51,6 +51,7 @@ import '../../../core/content_policy/content_length_policy.dart';
 import '../../../core/media/attachment.dart';
 import '../../../core/media/aura_composition_strip.dart';
 import '../../../core/media/media_acquisition.dart';
+import '../../../core/media/media_origin_disclosure.dart';
 import '../../../core/tagging/governed_tag_field.dart';
 import '../../../core/tagging/mention_scope.dart';
 import '../../../core/tagging/tag_entities.dart';
@@ -170,6 +171,13 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   );
 
   List<Attachment> get _attachments => _composition.attachments;
+
+  /// What the author says about the origin of the media they are attaching.
+  ///
+  /// Null by default — saying nothing records nothing. Applied to every item in
+  /// this composition, because a person composing one message is making one
+  /// statement about what they are sending, not one per file.
+  OriginDeclaration? _originDeclaration;
 
   final _recorder = AudioRecorder();
   bool _startingCall = false;
@@ -618,6 +626,12 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     });
     try {
       final result = await uploadAuraMedia(
+        // The author's declaration travels with the upload, so it is
+        // recorded as attributed evidence at presign rather than becoming a
+        // client-side label nothing else can see.
+        originDeclaration: _originDeclaration == null
+            ? null
+            : originDeclarationWire(_originDeclaration!),
         dio: ref.read(dioProvider),
         bytes: attachment.bytes!,
         fileName: attachment.fileName ?? 'attachment',
@@ -780,6 +794,12 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     }
     try {
       final result = await uploadAuraMedia(
+        // The author's declaration travels with the upload, so it is
+        // recorded as attributed evidence at presign rather than becoming a
+        // client-side label nothing else can see.
+        originDeclaration: _originDeclaration == null
+            ? null
+            : originDeclarationWire(_originDeclaration!),
         dio: ref.read(dioProvider),
         bytes: attachment.bytes!,
         fileName: attachment.fileName ?? 'attachment',
@@ -1277,6 +1297,15 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             // afterwards and put the item back. Removal now goes through the
             // authority, which records the cancellation so a late success
             // cannot resurrect it.
+            // Shown only when there is visual media to describe. Asking about
+            // the origin of a voice note or a document would be noise.
+            MediaOriginDisclosureControl(
+              value: _originDeclaration,
+              visible: _attachments.any(
+                (a) => a.kind == AttachmentKind.image || a.kind == AttachmentKind.video,
+              ),
+              onChanged: (v) => setState(() => _originDeclaration = v),
+            ),
             if (_attachments.isNotEmpty)
               AuraCompositionStrip(
                 attachments: _attachments,
