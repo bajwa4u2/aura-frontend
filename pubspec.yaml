@@ -123,6 +123,11 @@ flutter:
     - assets/investor/
     - assets/brand/
     - assets/adi-registration.properties
+    # The Trace lifecycle golden. Declared as an asset so it travels to the
+    # DEVICE with the test bundle — on Android there is no host filesystem path
+    # to read it from, and a proof that only runs on the developer's machine is
+    # not a proof of the released client.
+    - test/fixtures/trace-account.golden.json
 
 flutter_launcher_icons:
   # Pure-Dart pipeline produced every platform/store asset under

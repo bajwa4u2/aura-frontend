@@ -1,0 +1,56 @@
+{
+  "available": true,
+  "headline": "Created with AI",
+  "source": "OpenAI Media Service API",
+  "summary": "This media carries origin information indicating that it was generated using AI.",
+  "evidence": [
+    {
+      "label": "The file states it was generated with AI",
+      "detail": "This is written into the file by the tool that made it, in the standard industry vocabulary. Aura has not verified the signature on it, and metadata like this can be edited or stripped — so it is reported as what the file says, not as something Aura established."
+    },
+    {
+      "label": "Signed in the file by OpenAI OpCo, LLC",
+      "detail": "That name is written into the file’s own certificate. Aura has not verified the signature, so this identifies who the file claims signed it, not who Aura has established did."
+    },
+    {
+      "label": "The file states it was created on 21 August 2026",
+      "detail": "The creation date recorded by the tool that made it. Aura has not independently established when this happened."
+    },
+    {
+      "label": "Content Credentials are attached, and unverified",
+      "detail": "Aura can see a credential in this file but does not verify credentials in this deployment, so nothing it asserts is read as a claim."
+    }
+  ],
+  "history": [
+    {
+      "title": "Created with AI",
+      "detail": "OpenAI Media Service API",
+      "basis": "Content credential observed"
+    },
+    {
+      "title": "Entered Aura",
+      "detail": "22 August 2026",
+      "basis": "Recorded by Aura"
+    },
+    {
+      "title": "Display copies produced",
+      "detail": "The original is retained unchanged.",
+      "basis": "Recorded by Aura"
+    },
+    {
+      "title": "Published",
+      "detail": "M S Bajwa for Aura Platform",
+      "basis": "Recorded by Aura"
+    }
+  ],
+  "publication": {
+    "by": "M S Bajwa",
+    "forInstitution": "Aura Platform"
+  },
+  "uncertainty": [
+    "Aura has not independently verified the credential signer."
+  ],
+  "hasConflict": false,
+  "about": "Trace describes available evidence about this content’s origin and history. It does not by itself determine whether what the content depicts or claims is true.",
+  "density": "RICH"
+}
