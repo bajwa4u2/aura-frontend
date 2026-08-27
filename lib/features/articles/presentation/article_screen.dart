@@ -393,6 +393,7 @@ class _ArticleActionsState extends State<_ArticleActions> {
           inlineAction: CommunicationTranslateAction(
             objectType: CommunicationObjectType.article,
             objectId: article.id,
+            trace: article.trace,
             sourceText: '# ${article.title}\n\n${article.bodyMarkdown}',
             inline: true,
             onResultChanged: (text, language) {

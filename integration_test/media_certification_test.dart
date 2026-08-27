@@ -253,6 +253,31 @@ void main() {
       expect(find.text('Stated by the creator'), findsOneWidget);
     });
 
+    testWidgets('Trace opens in the idiom THIS platform actually uses',
+        (tester) async {
+      await host(tester, AuraMediaGroup(items: [img('made', origin: 'AI_GENERATED')]));
+      await tester.tap(find.text('TR'));
+      await tester.pumpAndSettle();
+
+      // One capability fact, two opposite answers — the same contract the
+      // viewer uses, so this cannot drift into a second platform opinion.
+      final touch = MediaInteractionProfile.resolve(canDecodeVideo: true).pointer ==
+          PointerModel.touch;
+      if (touch) {
+        // A sheet: reachable one-handed, dismissed by dragging down, and here
+        // that gesture conflicts with nothing — Trace has no pan or zoom of
+        // its own to compete with.
+        expect(find.byType(DraggableScrollableSheet), findsOneWidget);
+      } else {
+        // A sheet on a wide screen wastes the space it has and puts the
+        // content at the bottom edge, furthest from where the pointer is.
+        expect(find.byType(DraggableScrollableSheet), findsNothing);
+        expect(find.text('Close'), findsOneWidget);
+      }
+      // Either way the facts are the same facts.
+      expect(find.text('Stated by the creator'), findsOneWidget);
+    });
+
     testWidgets('CONFLICTING does not render as an AI verdict', (tester) async {
       await host(tester, AuraMediaGroup(items: [
         img('x', origin: 'CONFLICTING'),

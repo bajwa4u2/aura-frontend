@@ -949,6 +949,10 @@ class _PostCardState extends ConsumerState<PostCard> {
                         objectId: post.id,
                         sourceText: text,
                         bodyStyle: bodyTextStyle,
+                        // TR reaches the detail screen, the profile and saves
+                        // through here — the three surfaces that render this
+                        // same post and previously showed no mark at all.
+                        trace: post.trace,
                       ),
                     ],
                   );

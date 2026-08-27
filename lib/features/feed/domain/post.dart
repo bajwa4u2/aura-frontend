@@ -1,3 +1,4 @@
+import '../../../core/media/trace/aura_trace.dart';
 import '../../../core/tagging/tag_entities.dart';
 import '../../../core/identity/person_identity_model.dart';
 
@@ -197,6 +198,7 @@ class PostTranslation {
 
 class Post {
   Post({
+    this.trace = AuraTrace.none,
     required this.id,
     required this.authorId,
     required this.text,
@@ -228,6 +230,12 @@ class Post {
     this.intent,
     this.continuesPostId,
   });
+
+  /// AURA TRACE for this post's text. Never absent from the wire: the backend
+  /// says `available: false` when there is nothing to disclose, so silence
+  /// stays distinguishable from a server that has no opinion.
+  final AuraTrace trace;
+
 
   final String id;
   final String authorId;
@@ -367,6 +375,7 @@ class Post {
   }
 
   factory Post.fromJson(Map<String, dynamic> j) {
+    final trace = AuraTrace.fromJson(j['trace']);
     final authorJson = _readMap(j['author']);
     final author = authorJson != null ? PostAuthor.fromJson(authorJson) : null;
 
@@ -394,6 +403,7 @@ class Post {
     final repostOf = repostOfJson != null ? Post.fromJson(repostOfJson) : null;
 
     return Post(
+      trace: trace,
       id: _readString(j['id']) ?? '',
       authorId: authorId,
       text: _readString(j['text']) ?? '',

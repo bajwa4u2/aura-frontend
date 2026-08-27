@@ -1186,7 +1186,16 @@ class FeedReply {
     this.parentReplyId,
     this.accountabilityTagWire,
     this.paidActionWire,
+    this.trace = AuraTrace.none,
   });
+
+  /// AURA TRACE for this reply's text.
+  ///
+  /// Its own, never inherited from the post above it: an institutional reply
+  /// carries institutional authority just as the post does, and reading the
+  /// parent's mark as covering the replies would attribute the wrong authority
+  /// to whoever wrote them.
+  final AuraTrace trace;
 
   final String id;
   final String body;
@@ -1242,6 +1251,7 @@ class FeedReply {
         : const FeedReplyAuthor();
 
     return FeedReply(
+      trace: AuraTrace.fromJson(m['trace']),
       id: s(['id']),
       body: s(['body']),
       mediaUrl: opt(['mediaUrl']),

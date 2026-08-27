@@ -1,3 +1,4 @@
+import '../../../core/media/trace/aura_trace.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -20,7 +21,16 @@ class Article {
     this.author,
     this.revised = false,
     this.retractedAt,
+    this.trace = AuraTrace.none,
   });
+
+  /// AURA TRACE for the article's text.
+  ///
+  /// Parsed and passed even though it resolves empty for every article today,
+  /// so the day something IS disclosable about an article body it is a backend
+  /// change alone — not another hunt through the client for surfaces that
+  /// never mounted the mark.
+  final AuraTrace trace;
 
   final String id;
   final String? slug;
@@ -56,6 +66,7 @@ class Article {
   bool get isRetracted => retractedAt != null;
 
   factory Article.fromJson(Map<String, dynamic> json) => Article(
+        trace: AuraTrace.fromJson(json['trace']),
         id: _s(json['id']),
         slug: _ns(json['slug']),
         title: _s(json['title']),

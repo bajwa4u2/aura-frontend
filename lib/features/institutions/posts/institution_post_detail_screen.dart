@@ -496,6 +496,11 @@ class _ReplyCard extends StatelessWidget {
                 color: AuraSurface.ink,
                 height: 1.5,
               ),
+              // A reply carries its own disclosure. An institutional reply is
+              // institutional speech just as the post above it is, and reading
+              // the parent's mark as covering the replies would attribute the
+              // wrong authority to whoever wrote them.
+              trace: reply.trace,
             ),
           ],
           const SizedBox(height: AuraSpace.s8),

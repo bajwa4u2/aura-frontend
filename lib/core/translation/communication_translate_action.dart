@@ -7,6 +7,9 @@ import '../net/dio_provider.dart';
 import '../ui/aura_radius.dart';
 import '../ui/aura_space.dart';
 import '../ui/aura_surface.dart';
+import '../media/trace/aura_trace.dart';
+import '../media/trace/aura_trace_mark.dart';
+import '../media/trace/aura_trace_surface.dart';
 import '../ui/aura_text.dart';
 import '../ui/aura_text_block.dart';
 import 'communication_translation.dart';
@@ -30,6 +33,7 @@ class CommunicationTranslateAction extends ConsumerStatefulWidget {
     this.translatedBodyBuilder,
     this.inline = false,
     this.onResultChanged,
+    this.trace = AuraTrace.none,
   });
 
   final CommunicationObjectType objectType;
@@ -66,6 +70,22 @@ class CommunicationTranslateAction extends ConsumerStatefulWidget {
   /// The result is still rendered by this widget, immediately below the row,
   /// using the same presentation as the default layout — separating them must
   /// not mean maintaining two of them.
+  /// AURA TRACE for the text this control sits beside.
+  ///
+  /// MOUNTED HERE ON PURPOSE, and the reason is a mistake worth recording.
+  /// TR was first put on one card, and stayed invisible on every other surface
+  /// that shows the same post — the detail screen, the profile, saves, and
+  /// articles all render their own body and their own action row. Four
+  /// separate integrations is the arrangement where one is always missing.
+  ///
+  /// There is no single "post body renderer" in this app to hang it on, the
+  /// way `CanonicalMediaThumb` is genuinely the boundary for media. This
+  /// control is the nearest real one: every surface that can disclose anything
+  /// about its text already renders it. So the coupling is deliberate and it
+  /// is stated rather than implied — a surface that ever drops Translate must
+  /// carry TR itself, and this comment is the warning it will need.
+  final AuraTrace trace;
+
   final bool inline;
 
   /// Reports the currently-shown translation, or null when the reader has
@@ -305,6 +325,21 @@ class _CommunicationTranslateActionState
                     color: AuraSurface.muted,
                   ),
                 ),
+              ),
+            ],
+            // TR, at the end of the row the reader is already looking at.
+            //
+            // Silent on the posts with nothing to disclose, which is most of
+            // them: the mark is a disclosure, not a badge a post earns for
+            // existing.
+            if (widget.trace.isNotEmpty) ...[
+              if (!inline) const Spacer(),
+              const SizedBox(width: AuraSpace.s8),
+              AuraTraceMark(
+                trace: widget.trace,
+                compact: true,
+                onSurface: true,
+                onOpen: () => showAuraTrace(context, trace: widget.trace),
               ),
             ],
           ],
