@@ -1176,19 +1176,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     );
   }
 
-  Future<void> _pickVideoFromGallery() async {
-    if (!_canAddMoreAttachments || _posting) return;
-
-    final picker = ImagePicker();
-    final file = await picker.pickVideo(source: ImageSource.gallery);
-    if (file == null) return;
-
-    await _addPickedFile(
-      file,
-      type: AttachmentKind.video,
-      source: AttachmentSource.gallery,
-    );
-  }
+  /// Gallery video goes through the SAME selection as gallery photos.
+  ///
+  /// Keeping a separate singular video picker would re-create the split this
+  /// pass removed: a person choosing a photo and a video would again have to
+  /// use two menu entries to express one composition.
+  Future<void> _pickVideoFromGallery() => _pickMediaFromGallery();
 
   Future<void> _pickVideoFromCamera() async {
     if (!_canAddMoreAttachments || _posting) return;
