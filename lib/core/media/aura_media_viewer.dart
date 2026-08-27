@@ -8,6 +8,10 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
 import '../ui/aura_text.dart';
+import 'aura_video_surface.dart' show storedVideoCanDecodeInline;
+import 'immersive_presenter.dart';
+import 'media_initialization.dart';
+import 'media_interaction_profile.dart';
 import 'media_save_button.dart';
 import 'media_url_resolver.dart';
 
@@ -356,6 +360,27 @@ class _AuraMediaViewerState extends ConsumerState<AuraMediaViewer> {
     await runMediaSave(context, url: url, filename: _viewerFilenameStem(item));
   }
 
+  /// WHAT THE SAVE ACTION WILL ACTUALLY PRODUCE.
+  ///
+  /// Read from the distribution authority's own answer rather than assumed.
+  /// "Download original" shown to somebody the server will hand a governed
+  /// copy is a promise the backend then breaks, and they find out in their
+  /// downloads folder.
+  ///
+  /// Unknown resolves to the NEUTRAL wording, never the permissive one: a
+  /// server that predates the authority, or a URL not yet resolved, must not
+  /// cause Aura to claim an entitlement it has not been told about.
+  String _saveLabelFor(AuraViewerItem item) {
+    final id = (item.mediaId ?? '').trim();
+    if (id.isEmpty) return 'Save';
+    final resolved = ref.read(mediaUrlProvider(id));
+    final value = resolved.asData?.value;
+    if (value == null) return 'Save';
+    if (value.deliversOriginal) return 'Download original';
+    if (value.deliversGovernedExport) return 'Save a copy';
+    return 'Save';
+  }
+
   void _toast(String message) {
     if (!mounted) return;
     ScaffoldMessenger.maybeOf(context)
@@ -399,7 +424,34 @@ class _AuraMediaViewerState extends ConsumerState<AuraMediaViewer> {
   @override
   Widget build(BuildContext context) {
     final item = _current;
-    final isImage = !item.isVideo;
+
+    // LAYER 4 — resolved once, here, and passed down. Nothing below asks what
+    // device it is on; it asks what it is allowed to offer.
+    final profile = MediaInteractionProfile.resolve(
+      canDecodeVideo: storedVideoCanDecodeInline(),
+    );
+    final caps = ImmersivePresenterRegistry.capabilitiesFor(
+      ImmersiveRequest(
+        isVideo: item.isVideo,
+        mimeType: null,
+        profile: profile,
+        mediaId: item.mediaId,
+        isPublic: item.isPublic,
+        originalUrl: item.originalUrl,
+      ),
+    );
+
+    // Zoom chrome needs BOTH a zoomable presenter and a platform where
+    // discrete controls are the right idiom. On touch the image is under the
+    // user's thumb and the buttons are noise; for video there is nothing to
+    // zoom at all.
+    final showZoomCluster = caps.zoomable && profile.zoomButtons;
+    final showZoomReadout = caps.zoomable && profile.zoomReadout;
+
+    // Open original earns primary chrome exactly when Aura cannot present the
+    // media — the Windows video case — and is otherwise a secondary action.
+    final sourceIsPrimary =
+        caps.sourceActionIsPrimary || profile.persistentSourceActions;
 
     return Focus(
       focusNode: _focusNode,
@@ -464,7 +516,11 @@ class _AuraMediaViewerState extends ConsumerState<AuraMediaViewer> {
                     index: _index,
                     total: widget.items.length,
                     zoomPercent: _zoomPercent(),
-                    showImageControls: isImage,
+                    showZoomCluster: showZoomCluster,
+                    showZoomReadout: showZoomReadout,
+                    sourceIsPrimary: sourceIsPrimary,
+                    edgeToEdge: profile.edgeToEdge,
+                    saveLabel: _saveLabelFor(item),
                     onZoomIn: () => _zoomBy(1.6),
                     onZoomOut: () => _zoomBy(1 / 1.6),
                     onReset: _resetZoom,
@@ -731,7 +787,11 @@ class _ViewerBottomBar extends StatelessWidget {
     required this.index,
     required this.total,
     required this.zoomPercent,
-    required this.showImageControls,
+    required this.showZoomCluster,
+    required this.showZoomReadout,
+    required this.sourceIsPrimary,
+    required this.edgeToEdge,
+    required this.saveLabel,
     required this.onZoomIn,
     required this.onZoomOut,
     required this.onReset,
@@ -744,7 +804,11 @@ class _ViewerBottomBar extends StatelessWidget {
   final int index;
   final int total;
   final int zoomPercent;
-  final bool showImageControls;
+  final bool showZoomCluster;
+  final bool showZoomReadout;
+  final bool sourceIsPrimary;
+  final bool edgeToEdge;
+  final String saveLabel;
   final VoidCallback onZoomIn;
   final VoidCallback onZoomOut;
   final VoidCallback onReset;
@@ -783,7 +847,7 @@ class _ViewerBottomBar extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-              if (showImageControls) ...[
+              if (showZoomReadout) ...[
                 if (total > 1) const SizedBox(width: 10),
                 Tooltip(
                   message: 'Zoom level',
@@ -805,7 +869,7 @@ class _ViewerBottomBar extends StatelessWidget {
             runSpacing: 6,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              if (showImageControls) ...[
+              if (showZoomCluster) ...[
                 _ViewerBarButton(
                   icon: Icons.remove_rounded,
                   tooltip: 'Zoom out',
@@ -828,16 +892,32 @@ class _ViewerBottomBar extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
               ],
+              // ── SOURCE ACTIONS ──────────────────────────────────────
+              //
+              // `Open original` is a SOURCE action, not a viewing feature. It
+              // carries a label only when it has earned primary chrome — which
+              // it does exactly when Aura cannot present the media itself, the
+              // Windows video case, where it stops being clutter and becomes
+              // the only route to watching. Everywhere else it stays an
+              // unlabelled, quieter affordance beside the media rather than a
+              // step the person must take to reach their own photograph.
               _ViewerBarButton(
                 icon: Icons.open_in_new_rounded,
-                tooltip: 'Open original',
-                label: 'Open original',
+                tooltip: sourceIsPrimary
+                    ? 'Open in another app'
+                    : 'Open the original file',
+                label: sourceIsPrimary ? 'Open in another app' : null,
                 onTap: onOpenOriginal,
               ),
+              // Save survives everywhere — wanting a copy is unrelated to
+              // whether the viewer can display it — but its WORDING comes from
+              // the distribution authority's real answer, so the button never
+              // promises an original the server will replace with a governed
+              // copy.
               _ViewerBarButton(
                 icon: Icons.download_rounded,
-                tooltip: 'Download original',
-                label: 'Download original',
+                tooltip: saveLabel,
+                label: saveLabel,
                 onTap: onDownloadOriginal,
               ),
             ],
@@ -970,6 +1050,19 @@ class _ViewerVideo extends ConsumerWidget {
   }
 }
 
+/// `m:ss`, or `h:mm:ss` past an hour. Tabular figures keep the readout from
+/// shifting width as the seconds tick.
+String _clock(Duration d) {
+  final total = d.inSeconds;
+  if (total <= 0) return '0:00';
+  final h = total ~/ 3600;
+  final m = (total % 3600) ~/ 60;
+  final sec = total % 60;
+  final ss = sec.toString().padLeft(2, '0');
+  if (h > 0) return '$h:${m.toString().padLeft(2, '0')}:$ss';
+  return '$m:$ss';
+}
+
 class _ViewerVideoPlayer extends StatefulWidget {
   const _ViewerVideoPlayer({required this.url});
 
@@ -995,7 +1088,17 @@ class _ViewerVideoPlayerState extends State<_ViewerVideoPlayer> {
     try {
       final controller = VideoPlayerController.networkUrl(Uri.parse(url));
       _controller = controller;
-      _initialize = controller.initialize().then((_) async {
+      // BOUNDED — this is where the indefinite spinner came from.
+      //
+      // `initialize()` rejects on a decode error, so `catchError` handled that
+      // case correctly. It does not reject when the load simply STALLS, and a
+      // stall is silence rather than an error, so the FutureBuilder below sat
+      // on `ConnectionState.waiting` forever and the honest message a line
+      // down was unreachable. Bounding the wait is what connects them.
+      _initialize = boundedMediaInit(
+        MediaInitPhase.acquisition,
+        () => controller.initialize(),
+      ).then((_) async {
         await controller.setLooping(true);
         if (mounted) setState(() {});
       }).catchError((_) {
@@ -1034,48 +1137,110 @@ class _ViewerVideoPlayerState extends State<_ViewerVideoPlayer> {
             !controller.value.isInitialized) {
           return const Center(child: CircularProgressIndicator(strokeWidth: 2));
         }
+        final value = controller.value;
+        final duration = value.duration;
+        final position = value.position;
+
         return Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Flexible(
                 child: AspectRatio(
-                  aspectRatio: controller.value.aspectRatio > 0
-                      ? controller.value.aspectRatio
-                      : 16 / 9,
+                  // PORTRAIT VIDEO USES THE PORTRAIT SHAPE. The measured aspect
+                  // is preferred over any assumed one, so a phone recording is
+                  // pillarboxed inside the stage rather than cropped to fill a
+                  // landscape box — destroying the top and bottom of somebody's
+                  // video to make the frame tidy is not a presentation choice
+                  // Aura gets to make on their behalf.
+                  aspectRatio: value.aspectRatio > 0 ? value.aspectRatio : 16 / 9,
                   child: VideoPlayer(controller),
                 ),
               ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _ViewerBarButton(
-                    icon: controller.value.isPlaying
-                        ? Icons.pause_rounded
-                        : Icons.play_arrow_rounded,
-                    tooltip: controller.value.isPlaying ? 'Pause' : 'Play',
-                    label: controller.value.isPlaying ? 'Pause' : 'Play',
-                    onTap: () async {
-                      if (controller.value.isPlaying) {
-                        await controller.pause();
-                      } else {
+              const SizedBox(height: 10),
+              // THE TRANSPORT. Play/pause and restart were the whole control
+              // set before this; a video you cannot scrub is a video you cannot
+              // actually use.
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _ViewerBarButton(
+                      icon: value.isPlaying
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      tooltip: value.isPlaying ? 'Pause' : 'Play',
+                      onTap: () async {
+                        if (value.isPlaying) {
+                          await controller.pause();
+                        } else {
+                          await controller.play();
+                        }
+                        if (mounted) setState(() {});
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _clock(position),
+                      style: AuraText.small.copyWith(
+                        color: Colors.white70,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 260,
+                      child: Semantics(
+                        label: 'Seek',
+                        value: '${_clock(position)} of ${_clock(duration)}',
+                        child: Slider(
+                          min: 0,
+                          max: duration.inMilliseconds
+                              .clamp(1, 1 << 30)
+                              .toDouble(),
+                          value: position.inMilliseconds
+                              .clamp(0, duration.inMilliseconds)
+                              .toDouble(),
+                          onChanged: (ms) async {
+                            await controller
+                                .seekTo(Duration(milliseconds: ms.round()));
+                            if (mounted) setState(() {});
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _clock(duration),
+                      style: AuraText.small.copyWith(
+                        color: Colors.white54,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _ViewerBarButton(
+                      icon: value.volume > 0
+                          ? Icons.volume_up_rounded
+                          : Icons.volume_off_rounded,
+                      tooltip: value.volume > 0 ? 'Mute' : 'Unmute',
+                      onTap: () async {
+                        await controller.setVolume(value.volume > 0 ? 0 : 1);
+                        if (mounted) setState(() {});
+                      },
+                    ),
+                    const SizedBox(width: 4),
+                    _ViewerBarButton(
+                      icon: Icons.replay_rounded,
+                      tooltip: 'Restart',
+                      onTap: () async {
+                        await controller.seekTo(Duration.zero);
                         await controller.play();
-                      }
-                      if (mounted) setState(() {});
-                    },
-                  ),
-                  const SizedBox(width: 6),
-                  _ViewerBarButton(
-                    icon: Icons.replay_rounded,
-                    tooltip: 'Restart',
-                    onTap: () async {
-                      await controller.seekTo(Duration.zero);
-                      await controller.play();
-                      if (mounted) setState(() {});
-                    },
-                  ),
-                ],
+                        if (mounted) setState(() {});
+                      },
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

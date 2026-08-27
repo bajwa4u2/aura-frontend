@@ -32,6 +32,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
+import 'media_initialization.dart';
+
 import '../ui/aura_radius.dart';
 import '../ui/aura_space.dart';
 import '../ui/aura_surface.dart';
@@ -125,7 +127,12 @@ class _AuraVoicePlayerState extends State<AuraVoicePlayer> {
       setState(() => _initializing = true);
       try {
         final c = VideoPlayerController.networkUrl(Uri.parse(widget.url));
-        await c.initialize();
+        // Bounded: the honest `_failed` state below is unreachable while a
+        // stalled load never completes and never throws.
+        await boundedMediaInit(
+          MediaInitPhase.acquisition,
+          () => c.initialize(),
+        );
         // Drives the progress bar and the position readout. Without this the
         // control could play while the surface stayed frozen — which is what
         // "no timeline presentation" looked like.

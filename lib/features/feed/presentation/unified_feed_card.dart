@@ -9,7 +9,7 @@ import '../../../core/media/aura_attachment_image.dart';
 import '../../../core/media/aura_media_frame.dart';
 import '../../../core/media/aura_media_viewer.dart';
 import '../../../core/media/aura_stored_media.dart';
-import '../../../core/media/canonical_media_thumb.dart';
+import '../../../core/media/aura_media_group.dart';
 import '../../../core/media/media_mime.dart';
 import '../../../core/media/stored_media.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -331,10 +331,22 @@ class UnifiedFeedCard extends ConsumerWidget {
             // and signed URLs replace the permanent R2 URL.
             if (item.media.isNotEmpty) ...[
               const SizedBox(height: AuraSpace.s10),
-              CanonicalMediaThumb(
-                media: item.media.first,
+              // THE WHOLE ORDERED GROUP, not `media.first`.
+              //
+              // The backend has always shipped an ordered array — `PostMedia`
+              // and `MessageMedia` are join tables with an explicit `position`,
+              // and every read path sorts by it. This card rendered the first
+              // entry and silently discarded the rest, so a four-photograph
+              // post looked like a one-photograph post to everyone who saw it.
+              //
+              // Order is passed straight through. Re-deriving it here from
+              // upload time or media type would substitute an accident for the
+              // author's intent.
+              AuraMediaGroup(
+                items: item.media,
                 mode: mediaMode,
                 downloadContext: _mediaDownloadContext(item.type),
+                onOpenItem: (index) => _openGroupViewer(context, item, index),
               ),
             ] else if (item.mediaUrl != null && item.mediaUrl!.isNotEmpty) ...[
               const SizedBox(height: AuraSpace.s10),
@@ -1014,6 +1026,34 @@ class _Avatar extends StatelessWidget {
 
 /// Filename-context token for the fullscreen viewer's download action,
 /// derived from the feed item's type.
+/// Open the immersive viewer with the WHOLE group in context, starting on the
+/// item that was tapped.
+///
+/// Passing the group rather than the single item is what lets a person move
+/// photo -> video -> photo without leaving and re-entering the viewer for each
+/// one. The viewer already supported multiple items and a page counter; every
+/// caller was simply handing it a list of one.
+void _openGroupViewer(BuildContext context, dynamic item, int index) {
+  final media = item.media as List<FeedMedia>;
+  showAuraMediaViewer(
+    context,
+    initialIndex: index,
+    items: [
+      for (final m in media)
+        AuraViewerItem(
+          originalUrl: (m.url ?? '').trim(),
+          mediaId: m.mediaId.trim().isEmpty ? null : m.mediaId.trim(),
+          isPublic: m.isPublic,
+          isVideo: m.isVideo,
+          caption: m.caption,
+          intrinsicWidth: m.width,
+          intrinsicHeight: m.height,
+          downloadContext: _mediaDownloadContext(item.type),
+        ),
+    ],
+  );
+}
+
 String _mediaDownloadContext(FeedItemType type) {
   switch (type) {
     case FeedItemType.institutionPost:

@@ -28,6 +28,7 @@ class MediaUrlResult {
     this.width,
     this.height,
     this.duration,
+    this.distribution,
   });
 
   final String id;
@@ -39,6 +40,27 @@ class MediaUrlResult {
   final int? width;
   final int? height;
   final int? duration;
+
+  /// WHAT THE SERVER WILL ACTUALLY HAND OVER — `ORIGINAL`, `AURA_EXPORT`,
+  /// `PRESENTATION` or `NONE`.
+  ///
+  /// Read so a label can say what the action will really produce. Offering
+  /// "Download original" to somebody the distribution authority will answer
+  /// with a governed copy is a promise the backend then quietly breaks, and the
+  /// person only discovers it in their downloads folder.
+  ///
+  /// Null from a server that predates the authority. Callers treat null as
+  /// "unknown" and fall back to neutral wording rather than guessing the
+  /// permissive answer.
+  final String? distribution;
+
+  /// True when this viewer is entitled to the untouched source object.
+  bool get deliversOriginal =>
+      (distribution ?? '').toUpperCase() == 'ORIGINAL';
+
+  /// True when the server will produce a governed Aura copy instead.
+  bool get deliversGovernedExport =>
+      (distribution ?? '').toUpperCase() == 'AURA_EXPORT';
 
   bool get isPublic => visibility.toUpperCase() == MediaVisibility.public;
 
@@ -143,6 +165,7 @@ class MediaUrlResolver {
       expiresAt: expiresAt,
       mimeType: payload['mimeType']?.toString(),
       mediaType: payload['mediaType']?.toString(),
+      distribution: payload['distribution']?.toString(),
       width: _asInt(payload['width']),
       height: _asInt(payload['height']),
       duration: _asInt(payload['duration']),

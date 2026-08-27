@@ -69,6 +69,7 @@ import '../ui/aura_text.dart';
 import 'local_video_source_stub.dart'
     if (dart.library.io) 'local_video_source_io.dart'
     if (dart.library.html) 'local_video_source_web.dart';
+import 'media_initialization.dart';
 import 'media_url_resolver.dart';
 
 /// Whether the running platform can decode video in-process.
@@ -244,10 +245,19 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface> {
         });
         return;
       }
-      await controller.initialize();
+      // BOUNDED. A stalled load is silence, not an error, so without this the
+      // surface would sit in `_preparing` forever instead of reaching the
+      // honest failure state below.
+      await boundedMediaInit(
+        MediaInitPhase.acquisition,
+        () => controller.initialize(),
+      );
       // Some platforms present nothing until a position is requested, so the
       // poster would be a black rectangle rather than a frame of the video.
-      await controller.seekTo(Duration.zero);
+      await boundedMediaInit(
+        MediaInitPhase.decode,
+        () => controller.seekTo(Duration.zero),
+      );
       if (!mounted) {
         await controller.dispose();
         return;
