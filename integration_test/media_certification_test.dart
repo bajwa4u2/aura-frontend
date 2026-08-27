@@ -232,6 +232,27 @@ void main() {
       expect(find.text('TR'), findsNWidgets(2));
     });
 
+    testWidgets('a SINGLE media item is marked — the case that was invisible',
+        (tester) async {
+      // The regression this exists for: TR was mounted on collage CELLS, and a
+      // post with one image never enters the collage path — the group returns
+      // the shared adapter directly to keep the single-media treatment. Every
+      // group assertion above passed the whole time.
+      await host(tester, AuraMediaGroup(items: [img('made', origin: 'AI_GENERATED')]));
+      expect(find.text('TR'), findsOneWidget);
+    });
+
+    testWidgets('and opening it shows the basis, on the real platform',
+        (tester) async {
+      await host(tester, AuraMediaGroup(items: [img('made', origin: 'AI_GENERATED')]));
+      await tester.tap(find.text('TR'));
+      await tester.pumpAndSettle();
+      expect(find.text('Trace'), findsOneWidget);
+      // The basis beside the fact — a declaration must not read as a
+      // verification on any platform.
+      expect(find.text('Stated by the creator'), findsOneWidget);
+    });
+
     testWidgets('CONFLICTING does not render as an AI verdict', (tester) async {
       await host(tester, AuraMediaGroup(items: [
         img('x', origin: 'CONFLICTING'),
