@@ -16,6 +16,8 @@ import '../../../core/ui/aura_text_block.dart';
 import '../data/invitations_client.dart';
 import '../data/invite_presentation.dart';
 import '../../correspondence/data/correspondence_live_service.dart';
+import '../../conversation/data/conversations_repository.dart';
+import '../../../core/ui/aura_surface.dart';
 
 final _inviteInboxProvider = FutureProvider<List<Map<String, dynamic>>>((
   ref,
@@ -121,6 +123,19 @@ class _InvitationsScreenState extends ConsumerState<InvitationsScreen> {
               ),
             ),
             const SizedBox(height: AuraSpace.s14),
+            // THE CANONICAL INVITATIONS, ON THE PAGE THAT NAMES THEM.
+            //
+            // The backend computes /me/invitations as the destination for an
+            // INVITATION notification, and this screen could not render one:
+            // its Incoming list reads the LEGACY invitation model, while a
+            // canonical AuraInvitation (a conversation, an institution, a
+            // meeting) could only be accepted from a row buried inside
+            // Messages. Founder-observed 2026-08-28: the notification landed
+            // here correctly and offered no way to accept or decline.
+            //
+            // Same repository calls Messages already uses -- one accept
+            // authority, shown in both places, not a second implementation.
+            const _CanonicalInvitationsSection(),
             _SectionHeader(title: 'Incoming', countAsync: inboxAsync),
             const SizedBox(height: AuraSpace.s10),
             _InviteListBlock(
@@ -650,4 +665,99 @@ String _pickString(Map<String, dynamic> map, List<String> keys) {
     if (value.isNotEmpty) return value;
   }
   return '';
+}
+
+/// Canonical AuraInvitations awaiting this person's decision.
+///
+/// Renders nothing at all when there are none, so the page is unchanged for
+/// everyone who has no pending invitation.
+class _CanonicalInvitationsSection extends ConsumerWidget {
+  const _CanonicalInvitationsSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pending = ref.watch(pendingInvitationsProvider);
+    return pending.maybeWhen(
+      data: (invitations) {
+        if (invitations.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Waiting on you', style: AuraText.title),
+            const SizedBox(height: AuraSpace.s10),
+            for (final invitation in invitations)
+              _CanonicalInviteCard(invitation: invitation),
+            const SizedBox(height: AuraSpace.s14),
+          ],
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _CanonicalInviteCard extends ConsumerWidget {
+  const _CanonicalInviteCard({required this.invitation});
+  final PendingInvitation invitation;
+
+  String get _what => switch (invitation.targetKind.toUpperCase()) {
+        'CONVERSATION' => 'a conversation',
+        'INSTITUTION' => 'an institution',
+        'MEETING' => 'a meeting',
+        _ => 'Aura',
+      };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final note = (invitation.note ?? '').trim();
+    return AuraCard(
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.s14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              note.isEmpty
+                  ? 'You were invited to $_what'
+                  : 'You were invited to $_what — "$note"',
+              style: AuraText.body.copyWith(color: AuraSurface.ink),
+            ),
+            const SizedBox(height: AuraSpace.s12),
+            Wrap(
+              spacing: AuraSpace.s8,
+              runSpacing: AuraSpace.s8,
+              children: [
+                AuraPrimaryButton(
+                  label: 'Accept',
+                  onPressed: () async {
+                    final repo = ref.read(conversationsRepositoryProvider);
+                    await repo.acceptInvitation(invitation.id);
+                    ref.invalidate(pendingInvitationsProvider);
+                    ref.invalidate(conversationsListProvider);
+                    if (!context.mounted) return;
+                    if (invitation.targetKind.toUpperCase() ==
+                        'CONVERSATION') {
+                      context.push(
+                        NavigationAuthority.conversationRoute(
+                          invitation.targetId,
+                        ),
+                      );
+                    }
+                  },
+                ),
+                AuraSecondaryButton(
+                  label: 'Decline',
+                  onPressed: () async {
+                    final repo = ref.read(conversationsRepositoryProvider);
+                    await repo.declineInvitation(invitation.id);
+                    ref.invalidate(pendingInvitationsProvider);
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
