@@ -398,14 +398,30 @@ Two supporting repairs, both also caused by induced failures:
 * **The rebuild branch STILL UNPROVEN.** The Pixel was revoked by the 60s
   heartbeat timeout while dark, and never got to exercise it.
 
-**`DIAGNOSTICS_REFUSED_FOR_DEPARTED_PARTICIPANT`** — OPEN, medium, and a neat
-recurrence of a principle already learned tonight. The queued blackout traces
-never arrived: `/realtime/sessions/:id/stage/diagnostics` requires an ACTIVE
-participant, so once the Pixel was revoked every held report was refused. **The
-evidence explaining why a participant was lost is rejected on the grounds that
-the participant was lost.** Observability must not depend on the resource whose
-failure it reports — first the network, now session membership. Fix: accept
-reports from a recently-departed participant.
+**`DIAGNOSTIC_QUEUE_HAD_NO_OWN_RETRY`** — FIXED 2026-08-28, and recorded
+because the FIRST DIAGNOSIS WAS WRONG.
+
+I recorded this as `DIAGNOSTICS_REFUSED_FOR_DEPARTED_PARTICIPANT`, asserting
+that `/realtime/sessions/:id/stage/diagnostics` requires an ACTIVE participant
+and therefore refused the Pixel's held traces once it was revoked. That was
+never checked. Reading `recordClientDiagnostic` afterwards: its only guard is
+that a participant ROW EXISTS -- `joinState` is not consulted at all -- so a
+departed participant's reports are accepted perfectly well.
+
+The actual defect was in the queue I had just written. It flushed only
+opportunistically, after some LATER report happened to succeed, which fails in
+precisely the situation the queue exists for: the network dies, the call ends,
+the room is torn down, and no further diagnostic is ever attempted -- so the
+held evidence is never delivered and the outage stays unexplained. Twice now a
+blackout produced no Android traces at all.
+
+The queue now retries on its own: every 15s while anything is held, bounded to
+20 rounds so a permanently offline client does not poll forever.
+
+The lesson is about me rather than the code: I attributed a failure to a
+plausible mechanism in someone else's component without reading it, while the
+real cause sat in the component I had written an hour earlier. Check the thing
+you built most recently first.
 
 **`RECOVERY_BUDGET_VS_SERVER_PATIENCE`** — OPEN, low, recorded because tuning
 either number blindly would be a mistake. The server revokes at 60s. Detection

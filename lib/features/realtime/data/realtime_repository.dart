@@ -511,6 +511,7 @@ class RealtimeRepository {
       while (_pendingDiagnostics.length > _diagnosticQueueCap) {
         _pendingDiagnostics.removeAt(0);
       }
+      _armDiagnosticRetry();
       return;
     }
     // That post succeeded, so connectivity is back — anything held during the
@@ -540,6 +541,44 @@ class RealtimeRepository {
       debugPrint('[rtc] stage diagnostic report failed: $e');
       return false;
     }
+  }
+
+  /// THE QUEUE NEEDS ITS OWN HEARTBEAT.
+  ///
+  /// The first version flushed only after a LATER report happened to succeed,
+  /// which fails in exactly the case the queue exists for: the network dies,
+  /// the call ends, the room is torn down, and no further diagnostic is ever
+  /// attempted -- so the held evidence is never delivered and the outage
+  /// stays unexplained. Measured 2026-08-28: a whole blackout produced no
+  /// Android traces, and I initially misread the cause as the endpoint
+  /// refusing a departed participant. It does not; it only requires that a
+  /// participant ROW exist. The queue simply had no way to try again.
+  ///
+  /// So it retries on its own, bounded: every 15 seconds while anything is
+  /// held, giving up after [_diagnosticRetryLimit] rounds so a permanently
+  /// offline client does not poll forever.
+  static const Duration _diagnosticRetryEvery = Duration(seconds: 15);
+  static const int _diagnosticRetryLimit = 20;
+  Timer? _diagnosticRetryTimer;
+  int _diagnosticRetryRounds = 0;
+
+  void _armDiagnosticRetry() {
+    if (_diagnosticRetryTimer != null) return;
+    _diagnosticRetryRounds = 0;
+    _diagnosticRetryTimer = Timer.periodic(_diagnosticRetryEvery, (t) async {
+      _diagnosticRetryRounds += 1;
+      if (_pendingDiagnostics.isEmpty ||
+          _diagnosticRetryRounds > _diagnosticRetryLimit) {
+        t.cancel();
+        _diagnosticRetryTimer = null;
+        return;
+      }
+      await _flushPendingDiagnostics();
+      if (_pendingDiagnostics.isEmpty) {
+        t.cancel();
+        _diagnosticRetryTimer = null;
+      }
+    });
   }
 
   Future<void> _flushPendingDiagnostics() async {
