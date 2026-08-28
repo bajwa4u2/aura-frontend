@@ -1717,22 +1717,10 @@ class RealtimeController extends StateNotifier<RealtimeState>
     state = state.copyWith(isMediaBusy: true, clearMediaError: true);
 
     try {
-      // FETCHING ICE CREDENTIALS AND OPENING THE CAMERA ARE INDEPENDENT.
-      //
-      // They were awaited in sequence, so the person waited for a network
-      // round trip and THEN for the camera to warm up. Measured on real calls:
-      // 3.0-4.5s from accept to the stage transport existing, of which both of
-      // these are a part. Neither needs the other's result, so both start now
-      // and are awaited together.
-      //
-      // `Future.wait` rather than two bare awaits: it attaches a listener to
-      // every future immediately, so a failure in one is never reported as an
-      // unhandled error while the other is still in flight.
-      final configFuture = _resolveRtcConfiguration(
+      final configuration = await _resolveRtcConfiguration(
         sessionId,
         refreshTurnCredentials: refreshTurnCredentials,
       );
-      final startedAt = DateTime.now();
 
       // LIVE viewer (founder charter 2026-08-17): receive-only is a
       // ROLE fact, never derived from who started the session — in an
@@ -1766,22 +1754,11 @@ class RealtimeController extends StateNotifier<RealtimeState>
           state.isVideoMode &&
           (state.policy?.videoAllowed ?? true);
 
-      // Whether THIS call is the one that acquires media. The speakerphone
-      // default below keys on it: applying that on every reconnect would
-      // silently override a manual toggle mid-call.
-      final acquiringNow = !state.isMediaReady && !receiveOnly;
-      final captureFuture = acquiringNow
-          ? _mediaService.ensureLocalMedia(
-              audio: wantsAudio,
-              video: wantsVideo,
-            )
-          : Future<void>.value();
-
-      final settled = await Future.wait<Object?>([configFuture, captureFuture]);
-      final configuration = settled.first as Map<String, dynamic>;
-      final capturedAt = DateTime.now();
-
-      if (acquiringNow) {
+      if (!state.isMediaReady && !receiveOnly) {
+        await _mediaService.ensureLocalMedia(
+          audio: wantsAudio,
+          video: wantsVideo,
+        );
         // 2026-08-14 — default output routing, applied once when media
         // first becomes ready (not on every reconnect/renegotiation, so a
         // manual toggle mid-call is never silently overridden). Video
@@ -1795,37 +1772,14 @@ class RealtimeController extends StateNotifier<RealtimeState>
         }
       }
 
-      // TWO ANNOUNCEMENTS, NOT A SEQUENCE. Each is a socket round trip and
-      // neither depends on the other, so waiting for the first before sending
-      // the second added a round trip to every join for nothing.
-      await Future.wait([
-        _socketService.emitAck('session:audio.set', <String, dynamic>{
-          'sessionId': sessionId,
-          'enabled': wantsAudio,
-        }),
-        _socketService.emitAck('session:video.set', <String, dynamic>{
-          'sessionId': sessionId,
-          'enabled': wantsVideo,
-        }),
-      ]);
-
-      // WHERE THE WAIT AFTER ACCEPT ACTUALLY GOES.
-      //
-      // Founder: the dead wait after accept "should not be even observable".
-      // Server records show JOIN to STAGE_CREATED and STAGE_CREATED to
-      // PUBLISHED, but cannot separate camera warm-up from a network round
-      // trip. This says which, so the next repair is aimed rather than
-      // guessed. Counts only, fire and forget.
-      final now = DateTime.now();
-      unawaited(_repository.reportStageDiagnostic(
-        sessionId,
-        phase: 'timing',
-        code: 'media_ready',
-        message: 'setupMs=${capturedAt.difference(startedAt).inMilliseconds} '
-            'announceMs=${now.difference(capturedAt).inMilliseconds} '
-            'video=$wantsVideo receiveOnly=$receiveOnly',
-        platform: _clientPlatform,
-      ).catchError((_) {}));
+      await _socketService.emitAck('session:audio.set', <String, dynamic>{
+        'sessionId': sessionId,
+        'enabled': wantsAudio,
+      });
+      await _socketService.emitAck('session:video.set', <String, dynamic>{
+        'sessionId': sessionId,
+        'enabled': wantsVideo,
+      });
 
       state = state.copyWith(
         isMediaBusy: false,
