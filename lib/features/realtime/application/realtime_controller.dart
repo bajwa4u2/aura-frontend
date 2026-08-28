@@ -2080,7 +2080,79 @@ class RealtimeController extends StateNotifier<RealtimeState>
   // The base signature names this `state`, which would shadow the
   // StateNotifier's own `state` used inside — the rename is deliberate.
   // ignore: avoid_renaming_method_parameters
+  // ── JOINED_LOST_MID_CALL — observation, not repair ────────────────────────
+  //
+  // Founder ruling §D. A long call drops to "connecting" and re-hydrates, and
+  // the minimised call falls back to its passive representation. Measured
+  // 2026-08-28 with both ends observed at the same moment: the SERVER had this
+  // participant ACTIVE with a heartbeat six seconds old and all three
+  // Cloudflare transports open and carrying media, while THIS client rendered
+  // "Connecting… Setting up your session".
+  //
+  //     FIRST_BROKEN_ARROW = server participant ACTIVE
+  //                          -> client believes it is not joined
+  //
+  // So the question is not "did the transport fail" — it demonstrably did not.
+  // It is "what moved this client's own joinState", and no server record can
+  // answer that. This records the transition and what was true around it.
+  //
+  // Deliberately NOT a fix. Two changes shipped into this path yesterday on
+  // green static checks alone and both had to be reverted; the next change
+  // here gets made against evidence.
+  AppLifecycleState? _lastLifecycleState;
+  int _lifecycleReports = 0;
+
+  /// Bounded so a pathological flap cannot become a firehose. Transitions are
+  /// rare by nature; if this cap is ever reached that is itself the finding.
+  static const int _maxLifecycleReports = 60;
+
+  @override
+  set state(RealtimeState value) {
+    RealtimeState? previous;
+    if (mounted) {
+      previous = super.state;
+    }
+    super.state = value;
+    if (previous == null) return;
+    _observeJoinTransition(previous, value);
+  }
+
+  void _observeJoinTransition(RealtimeState before, RealtimeState after) {
+    final joinChanged = before.joinState != after.joinState;
+    final connectionChanged = before.connectionStatus != after.connectionStatus;
+    if (!joinChanged && !connectionChanged) return;
+    if (_lifecycleReports >= _maxLifecycleReports) return;
+
+    final sessionId = _managedSessionId;
+    if (sessionId.isEmpty) return;
+    _lifecycleReports += 1;
+
+    // `lastSocketEvent` is the closest thing this controller has to a cause:
+    // almost every transition here is driven by a socket event, and the name
+    // of the last one narrows the trigger to a handful of code paths without
+    // shipping a stack trace to the server.
+    unawaited(_repository.reportStageDiagnostic(
+      sessionId,
+      phase: 'lifecycle',
+      code: joinChanged ? 'join_state' : 'connection_state',
+      message: 'join=${before.joinState.name}->${after.joinState.name} '
+          'conn=${before.connectionStatus.name}->${after.connectionStatus.name} '
+          'lastEvent=${after.lastSocketEvent ?? 'none'} '
+          'socket=${_socketService.isConnected} '
+          'mediaReady=${after.isMediaReady} '
+          'participants=${after.participants.length} '
+          'lifecycle=${_lastLifecycleState?.name ?? 'unknown'} '
+          'terminating=$_terminating '
+          'awaitingRejoin=$_awaitingReconnectRejoin',
+      platform: _clientPlatform,
+    ).catchError((_) {}));
+  }
+
   void didChangeAppLifecycleState(AppLifecycleState lifecycleState) {
+    // Recorded for every transition, not only `resumed` — a call that breaks
+    // while the tab is hidden needs the hidden state in the record, and the
+    // early return below would otherwise discard exactly that.
+    _lastLifecycleState = lifecycleState;
     if (lifecycleState != AppLifecycleState.resumed) return;
     if (!state.isJoined || _terminating) return;
     // Wake-from-sleep / tab-foreground: the socket may have survived while
