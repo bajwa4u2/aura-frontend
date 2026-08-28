@@ -463,6 +463,30 @@ class MessageMediaRef {
       (mimeType ?? '').startsWith('video/');
 }
 
+/// WHAT ACCEPTING AN INVITATION PRODUCED, according to the server.
+///
+/// `resolutionRef` is the conversation the acceptance FORMED — not the one it
+/// was sent from. Those are now different objects by design, and only the
+/// server knows which is which.
+class InvitationAcceptance {
+  const InvitationAcceptance({
+    required this.invitationId,
+    required this.targetKind,
+    required this.resolutionRef,
+  });
+
+  final String invitationId;
+  final String targetKind;
+
+  /// Empty when the server did not resolve one. The client must NOT fall back
+  /// to the invitation target: that is the predecessor, and routing there is
+  /// the defect this exists to prevent.
+  final String resolutionRef;
+
+  bool get isConversation => targetKind.toUpperCase() == 'CONVERSATION';
+  bool get hasDestination => resolutionRef.isNotEmpty;
+}
+
 class PendingInvitation {
   const PendingInvitation({
     required this.id,
@@ -786,9 +810,31 @@ class ConversationsRepository {
         .toList();
   }
 
-  Future<Map<String, dynamic>> acceptInvitation(String id) async {
+  /// Accept an invitation and return WHERE THE SERVER SAYS TO GO.
+  ///
+  /// Accepting an invitation to a conversation no longer widens that
+  /// conversation — it forms a new one for the resulting participant set, and
+  /// the conversation that was invited FROM stays private to the people who
+  /// were already in it (founder ruling 2026-08-28).
+  ///
+  /// So `targetId` is the wrong destination now, and it is the destination
+  /// every acceptance screen used. It would send the newcomer at a
+  /// conversation they are deliberately not a party of, and rely on the
+  /// resulting denial to bounce them somewhere else — a private conversation
+  /// as an error state.
+  ///
+  /// `resolutionRef` is the server's own answer to "what did accepting this
+  /// produce". The client does not reconstruct it, because a client that can
+  /// derive the destination can derive the wrong one.
+  Future<InvitationAcceptance> acceptInvitation(String id) async {
     final res = await _dio.post<dynamic>('/invitations/$id/accept');
-    return _unwrap(res.data)['invitation'] as Map<String, dynamic>? ?? const {};
+    final invitation =
+        _unwrap(res.data)['invitation'] as Map<String, dynamic>? ?? const {};
+    return InvitationAcceptance(
+      invitationId: (invitation['id'] ?? id).toString(),
+      targetKind: (invitation['targetKind'] ?? '').toString(),
+      resolutionRef: (invitation['resolutionRef'] ?? '').toString().trim(),
+    );
   }
 
   Future<void> declineInvitation(String id) async {

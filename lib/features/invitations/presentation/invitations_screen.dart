@@ -731,15 +731,16 @@ class _CanonicalInviteCard extends ConsumerWidget {
                   label: 'Accept',
                   onPressed: () async {
                     final repo = ref.read(conversationsRepositoryProvider);
-                    await repo.acceptInvitation(invitation.id);
+                    final accepted =
+                        await repo.acceptInvitation(invitation.id);
                     ref.invalidate(pendingInvitationsProvider);
                     ref.invalidate(conversationsListProvider);
                     if (!context.mounted) return;
-                    if (invitation.targetKind.toUpperCase() ==
-                        'CONVERSATION') {
+                    // Server resolution, not the invitation target.
+                    if (accepted.isConversation && accepted.hasDestination) {
                       context.push(
                         NavigationAuthority.conversationRoute(
-                          invitation.targetId,
+                          accepted.resolutionRef,
                         ),
                       );
                     }

@@ -241,12 +241,17 @@ class _InvitationRow extends ConsumerWidget {
             label: 'Accept',
             onPressed: () async {
               final repo = ref.read(conversationsRepositoryProvider);
-              await repo.acceptInvitation(invitation.id);
+              final accepted = await repo.acceptInvitation(invitation.id);
               ref.invalidate(pendingInvitationsProvider);
               ref.invalidate(conversationsListProvider);
-              if (context.mounted) {
+              // The conversation this acceptance FORMED, never the one it was
+              // sent from — see InvitationAcceptance.
+              if (context.mounted && accepted.hasDestination) {
                 context.push(
-                    NavigationAuthority.conversationRoute(invitation.targetId));
+                  NavigationAuthority.conversationRoute(
+                    accepted.resolutionRef,
+                  ),
+                );
               }
             },
           ),

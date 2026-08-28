@@ -59,10 +59,19 @@ class _ClaimInvitationScreenState extends ConsumerState<ClaimInvitationScreen> {
     final repo = ref.read(conversationsRepositoryProvider);
     try {
       final invitation = await repo.claimBind(widget.token);
-      await repo.acceptInvitation(invitation.id);
+      final accepted = await repo.acceptInvitation(invitation.id);
       if (!mounted) return;
-      if (invitation.targetKind == 'CONVERSATION') {
-        context.go(NavigationAuthority.conversationRoute(invitation.targetId));
+      // THE SERVER SAYS WHERE ACCEPTING LANDED YOU.
+      //
+      // Not `invitation.targetId`. Accepting an invitation to a conversation
+      // forms a NEW conversation for the resulting participant set, and the
+      // one it was sent from stays private to the people already in it. Going
+      // to the target would send this person at a conversation they are
+      // deliberately not a party of.
+      if (accepted.isConversation && accepted.hasDestination) {
+        context.go(
+          NavigationAuthority.conversationRoute(accepted.resolutionRef),
+        );
       } else {
         context.go('/home');
       }
