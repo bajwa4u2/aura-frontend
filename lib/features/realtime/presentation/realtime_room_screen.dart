@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../../core/media/media_control_labels.dart';
 import '../../../core/auth/session_providers.dart';
@@ -180,6 +181,18 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     _capturedContainer ??= ProviderScope.containerOf(context, listen: false);
     if (_didBoot) return;
     _didBoot = true;
+
+    // KEEP THE SCREEN AWAKE FOR THE WHOLE CALL.
+    //
+    // The Meetings room has done this since it was built; this room -- every
+    // conversation and direct call -- never did, so a phone dimmed and slept
+    // mid-call while the person was still talking. Founder-observed
+    // 2026-08-28 on Android.
+    //
+    // Same call, same lifecycle position, released in dispose: two rooms
+    // showing the same kind of live video should not disagree about whether
+    // the device may fall asleep during one.
+    WakelockPlus.enable();
     // A4: publish that the dedicated full-screen call surface is mounted.
     // The PiP widget reads `state.isCallRoomVisible` instead of route path,
     // so the transition between full and PiP is driven by the same state
@@ -266,6 +279,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
   @override
   void dispose() {
+    // Release the wake lock when leaving the room.
+    WakelockPlus.disable();
     _durationTimer?.cancel();
     _preJoinTruthTimer?.cancel();
 
