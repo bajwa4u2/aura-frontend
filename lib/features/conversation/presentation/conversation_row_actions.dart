@@ -89,24 +89,38 @@ class ConversationActions {
       builder: (context) => AlertDialog(
         backgroundColor: AuraSurface.card,
         title: const Text('Delete from your history?'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'This removes $title from YOUR conversation history. '
-              'It does not delete anything for the people you were talking to '
-              '— they keep their own copy.',
-              style: AuraText.body.copyWith(color: AuraSurface.muted),
-            ),
-            const SizedBox(height: AuraSpace.s12),
-            Text(
-              'You will still be a participant, so anything said from now on '
-              'will appear. This cannot be undone — to hide a conversation '
-              'reversibly, archive it instead.',
-              style: AuraText.small.copyWith(color: AuraSurface.faint),
-            ),
-          ],
+        // THE CONFIRMATION MUST NOT OVERFLOW.
+        //
+        // This was a bare Column, so on a short viewport -- a laptop with the
+        // browser chrome taking half the height, a phone in landscape, or a
+        // long conversation title wrapping to several lines -- the content
+        // ran past the dialog instead of scrolling. Founder-observed
+        // 2026-08-28.
+        //
+        // A confirmation is the last place to clip text: this one carries the
+        // two facts the person most needs before an irreversible action --
+        // that it deletes nothing for the other party, and that it cannot be
+        // undone. Losing either off the bottom edge is worse than a scrollbar.
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'This removes $title from YOUR conversation history. '
+                'It does not delete anything for the people you were talking '
+                'to — they keep their own copy.',
+                style: AuraText.body.copyWith(color: AuraSurface.muted),
+              ),
+              const SizedBox(height: AuraSpace.s12),
+              Text(
+                'You will still be a participant, so anything said from now '
+                'on will appear. This cannot be undone — to hide a '
+                'conversation reversibly, archive it instead.',
+                style: AuraText.small.copyWith(color: AuraSurface.faint),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -136,11 +150,14 @@ class ConversationActions {
       builder: (context) => AlertDialog(
         backgroundColor: AuraSurface.card,
         title: const Text('Leave this conversation?'),
-        content: Text(
-          'You will stop taking part in $title and stop receiving its '
-          'messages. Your history is not deleted, and you can be brought '
-          'back in later.',
-          style: AuraText.body.copyWith(color: AuraSurface.muted),
+        // Same protection as the delete confirmation beside it.
+        content: SingleChildScrollView(
+          child: Text(
+            'You will stop taking part in $title and stop receiving its '
+            'messages. Your history is not deleted, and you can be brought '
+            'back in later.',
+            style: AuraText.body.copyWith(color: AuraSurface.muted),
+          ),
         ),
         actions: [
           TextButton(

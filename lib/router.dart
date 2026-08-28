@@ -14,6 +14,7 @@ import 'core/auth/session_bootstrap.dart';
 import 'core/product/product_state.dart';
 import 'core/product/product_state_view.dart';
 import 'core/auth/session_providers.dart';
+import 'core/auth/session_hint.dart';
 import 'core/diagnostics/runtime_trace.dart';
 import 'core/institutions/institution_access_provider.dart';
 import 'core/authority/authority_providers.dart';
@@ -2616,9 +2617,36 @@ final routerProvider = Provider<GoRouter>((ref) {
           // mistaken for a signed-out visitor.
           final tokenStore = ref.read(tokenStoreProvider);
           await tokenStore.load();
-          if (!tokenStore.isAuthed) {
+
+          // AN EXPIRED TOKEN IS NOT A SIGNED-OUT VISITOR.
+          //
+          // This used to gate on `tokenStore.isAuthed`, which deliberately
+          // reports FALSE for a persisted access token that is past its `exp`
+          // -- see its own doc comment: it does that so the bootstrap refresh
+          // path runs and swaps in a live token before any protected request
+          // fires. It answers "is this token immediately usable", NOT "is
+          // this person signed out", and reading it as the second ejected
+          // real members.
+          //
+          // Founder-observed 2026-08-28: a call started from an institution
+          // space rang the callee correctly, and the CALLER was redirected
+          // here to the guest meeting-code screen while still displayed as
+          // signed in. The session showed SESSION_CREATED and INVITE_ACCEPTED
+          // with no PARTICIPANT_JOINED for the host and no SDP exchange at
+          // all -- the callee was connected to nobody.
+          //
+          // The refresh token cannot be consulted here: on web it is an
+          // HttpOnly cookie and is not readable from Dart. What CAN be known
+          // is whether a session exists at all -- a member token (expired or
+          // not) or a persisted session hint. Only their joint absence means
+          // nobody is signed in.
+          final rawToken = (tokenStore.accessToken ?? '').trim();
+          final hasMemberToken =
+              rawToken.isNotEmpty && !isGuestAccessToken(rawToken);
+          final hasHint = await hasSessionHint();
+          if (!hasMemberToken && !hasHint) {
             debugPrint(
-              '[killswitch] realtime->join (unauthenticated)'
+              '[killswitch] realtime->join (no session)'
               ' from=${state.uri} sessionId=$sessionId'
               ' screen=RealtimeRoomScreen',
             );
