@@ -344,7 +344,21 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
             participants: info.participants,
             startedAt: info.startedAt,
             isOwner: info.isOwner,
-            onReturn: info.isOwner ? () => _returnToCall(info) : null,
+            // RETURNING IS ALWAYS AVAILABLE. Ending is not.
+            //
+            // This was `info.isOwner ? ... : null`, so a passive PiP — the
+            // one shown when this tab is not the media owner — had NO return
+            // handler at all and the button did nothing. Founder-observed
+            // 2026-08-28: "nothing happens on return".
+            //
+            // The irony is that `_returnToCall` already has a branch written
+            // for exactly that case, navigating to the session and letting
+            // the room resolve it. It was simply unreachable.
+            //
+            // Ending stays owner-only: closing a call from a tab that does
+            // not own the media is a different act with different
+            // consequences.
+            onReturn: () => _returnToCall(info),
             // A1: passive (cross-tab) PiPs cannot end the call; only the
             // owner tab has the media session and authoritative state.
             onEnd: info.isOwner ? _endCallFromPip : null,
