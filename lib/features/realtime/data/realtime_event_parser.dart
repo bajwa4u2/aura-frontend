@@ -57,8 +57,11 @@ class RealtimeEventParser {
     final nextParticipants = participantsJson != null
         ? _oneEntryPerIdentity(
             participantsJson
-                .map((json) =>
-                    RealtimeParticipant.fromJson(_normalizeParticipantJson(json)))
+                .map((json) => _carryForwardIdentity(
+                      state.participants,
+                      RealtimeParticipant.fromJson(
+                          _normalizeParticipantJson(json)),
+                    ))
                 .toList(),
           )
         : (_looksLikeParticipantPayload(payload)
@@ -221,6 +224,95 @@ class RealtimeEventParser {
     return out;
   }
 
+  /// The same rule for a whole-roster payload: match each incoming row to the
+  /// entry already held and carry forward what the new row does not carry.
+  ///
+  /// A roster list is authoritative about WHO IS PRESENT — anybody absent from
+  /// it is gone, and nothing here changes that. It is not automatically
+  /// authoritative about every field of everybody in it.
+  static RealtimeParticipant _carryForwardIdentity(
+    List<RealtimeParticipant> current,
+    RealtimeParticipant incoming,
+  ) {
+    final incomingUserId = incoming.userId.trim();
+    final incomingRuntime = (incoming.runtimeDeviceId ?? '').trim();
+    final incomingId = incoming.id.trim();
+
+    for (final participant in current) {
+      final sameId =
+          incomingId.isNotEmpty && participant.id.trim() == incomingId;
+      final sameUser = incomingUserId.isNotEmpty &&
+          participant.userId.trim() == incomingUserId;
+      final sameRuntime = incomingRuntime.isNotEmpty &&
+          (participant.runtimeDeviceId ?? '').trim() == incomingRuntime;
+      if (sameId || sameUser || sameRuntime) {
+        return _reconcile(participant, incoming);
+      }
+    }
+    return incoming;
+  }
+
+  /// AN UPDATE MAY CHANGE WHAT IT CARRIES. IT MAY NOT ERASE WHAT IT OMITS.
+  ///
+  /// Roster entries arrive from two kinds of payload. The snapshot names the
+  /// canonical `RealtimeSessionParticipant.id`; a live presence event
+  /// (`session:participant.joined` and its siblings) carries `userId`,
+  /// `socketId` and the media flags it exists to announce, and no row id.
+  ///
+  /// The merge replaced the whole entry with the incoming one, so the moment a
+  /// presence event arrived the participant id was gone. Measured in
+  /// production 2026-08-28, in the space of two seconds on the same client:
+  ///
+  ///     09:50:35.792  roster ids=[none, cmtcj956]
+  ///     09:50:37.886  roster ids=[none, none]      dev=YyI9Ua-6
+  ///
+  /// Everything downstream keys on that id. Cloudflare's bindings resolved,
+  /// the client bound both tracks, the renderer was created, held and
+  /// decoding — and the call stage looked up `renderersByParticipant[p.id]`
+  /// with an empty id and drew one tile. The phone kept its copy of the id and
+  /// drew two, which is why the same build behaved differently on each end.
+  ///
+  /// So live state comes from the event — that is what an event is for — and
+  /// identity is preserved when the event does not carry it.
+  static RealtimeParticipant _reconcile(
+    RealtimeParticipant existing,
+    RealtimeParticipant incoming,
+  ) {
+    String pick(String next, String previous) =>
+        next.trim().isNotEmpty ? next : previous;
+    String? pickOptional(String? next, String? previous) =>
+        (next ?? '').trim().isNotEmpty ? next : previous;
+
+    return RealtimeParticipant(
+      // Identity — never erased by an update that did not mention it.
+      id: pick(incoming.id, existing.id),
+      userId: pick(incoming.userId, existing.userId),
+      runtimeDeviceId:
+          pickOptional(incoming.runtimeDeviceId, existing.runtimeDeviceId),
+      displayName: pickOptional(incoming.displayName, existing.displayName),
+      handle: pickOptional(incoming.handle, existing.handle),
+      avatarUrl: pickOptional(incoming.avatarUrl, existing.avatarUrl),
+      displayRole: pickOptional(incoming.displayRole, existing.displayRole),
+      institutionName:
+          pickOptional(incoming.institutionName, existing.institutionName),
+      institutionHandle:
+          pickOptional(incoming.institutionHandle, existing.institutionHandle),
+      institutionRole:
+          pickOptional(incoming.institutionRole, existing.institutionRole),
+      institutionTitle:
+          pickOptional(incoming.institutionTitle, existing.institutionTitle),
+      joinedAt: incoming.joinedAt ?? existing.joinedAt,
+      leftAt: incoming.leftAt ?? existing.leftAt,
+      // Live state — the event is the authority, that is why it was sent.
+      role: incoming.role,
+      joinState: pick(incoming.joinState, existing.joinState),
+      isPresent: incoming.isPresent,
+      audioOn: incoming.audioOn,
+      videoOn: incoming.videoOn,
+      screenOn: incoming.screenOn,
+    );
+  }
+
   static List<RealtimeParticipant> _mergeSingleParticipant(
     List<RealtimeParticipant> current,
     RealtimeParticipant incoming,
@@ -238,7 +330,7 @@ class RealtimeEventParser {
       final sameRuntime = participantRuntime.isNotEmpty && participantRuntime == incomingRuntime;
 
       if (sameUser || sameRuntime) {
-        out.add(incoming);
+        out.add(_reconcile(participant, incoming));
         replaced = true;
       } else {
         out.add(participant);
