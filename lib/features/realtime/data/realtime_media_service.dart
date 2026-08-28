@@ -170,6 +170,16 @@ class RealtimeQualitySample {
 class RealtimeMediaService {
   RealtimeMediaService();
 
+  /// The only label `createLocalMediaStream` may be given.
+  ///
+  /// On native the label IS the stream's `ownerTag`, and Android resolves a
+  /// renderer's source from `localStreams` only when that tag reads exactly
+  /// `local`. Any other value sends the lookup to `getStreamForId`, which
+  /// searches peer connections by id, finds nothing, and hands the renderer a
+  /// null stream — silently. Named here so the constraint is stated once
+  /// rather than rediscovered from a black tile.
+  static const String _localOwnerTag = 'local';
+
   final StreamController<RealtimeMediaSnapshot> _snapshots =
       StreamController<RealtimeMediaSnapshot>.broadcast();
   final StreamController<RealtimePeerHealthEvent> _peerHealth =
@@ -649,7 +659,11 @@ class RealtimeMediaService {
     }
 
     final existing = _remoteStreams[peerKey];
-    final stream = existing ?? await createLocalMediaStream('remote-$peerKey');
+    // Same trap as the stage path: the label becomes the ownerTag on native,
+    // and only 'local' resolves against `localStreams`. This branch is the
+    // rare one — a track event normally arrives with its own stream — which
+    // is exactly why it could stay wrong without anyone noticing.
+    final stream = existing ?? await createLocalMediaStream(_localOwnerTag);
     if (existing == null) {
       _remoteStreams[peerKey] = stream;
     }
@@ -1322,7 +1336,28 @@ class RealtimeMediaService {
       if (video == null) continue;
       if (_remoteRenderersByParticipant.containsKey(entry.key)) continue;
       try {
-        final stream = await createLocalMediaStream('remote-${entry.key}');
+        // THE LABEL IS THE OWNER TAG ON NATIVE. It is not a name.
+        //
+        // `createLocalMediaStream(label)` returns `MediaStreamNative(streamId,
+        // label)`, and the second positional is `ownerTag` — so a descriptive
+        // label becomes the tag. Android then resolves the renderer's source
+        // with:
+        //
+        //     if (ownerTag.equals("local")) localStreams.get(streamId)
+        //     else                          getStreamForId(streamId, ownerTag)
+        //
+        // and `getStreamForId` searches peer connections by id. A tag of
+        // `remote-cmt…` matches no peer connection, so the renderer resolved a
+        // NULL stream and drew nothing — while every call returned success.
+        // The stream really is in `localStreams`; it was created there.
+        //
+        // Web ignores the label entirely and always tags 'local', which is why
+        // the browser rendered and the phone did not. Founder-observed
+        // 2026-08-28: "pixel still having no remote video".
+        //
+        // The identity of WHOSE media this is lives in the map key, where it
+        // belongs, not in a string the platform reinterprets.
+        final stream = await createLocalMediaStream(_localOwnerTag);
         await stream.addTrack(video);
         final audio = entry.value.audio;
         if (audio != null) await stream.addTrack(audio);
@@ -1348,7 +1383,22 @@ class RealtimeMediaService {
         // Stated here rather than fixed at the constructor: the stream really
         // is locally constructed, and the thing that is actually true is that
         // this renderer is not the local one.
-        renderer.muted = false;
+        //
+        // WEB ONLY, AND NEVER FATAL. Native routes remote audio to the device
+        // and has never needed this; it also refuses the call outright when
+        // the stream is not locally tagged. The first version of this fix was
+        // unguarded, and on Android it threw before the renderer was
+        // registered — costing the tile it was meant to give sound to. A
+        // diagnostic nicety must not be able to do that, so it is scoped to
+        // the platform with the defect and wrapped besides.
+        if (kIsWeb) {
+          try {
+            renderer.muted = false;
+          } catch (_) {
+            // Audio routing is a platform concern; a refusal here is not a
+            // reason to lose the picture.
+          }
+        }
         _remoteStreamsByParticipant[entry.key] = stream;
         _remoteRenderersByParticipant[entry.key] = renderer;
         created += 1;
