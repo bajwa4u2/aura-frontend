@@ -360,14 +360,17 @@ class RealtimeController extends StateNotifier<RealtimeState>
       );
     } catch (error) {
       final status = _troubleStatus();
+      final reconnecting = status == RealtimeConnectionStatus.reconnecting;
+      // `copyWith` KEEPS a field when passed null -- it is
+      // `errorMessage ?? this.errorMessage`. Clearing requires the explicit
+      // flag, so passing null here would have left a stale error sitting
+      // under "Reconnecting…" rather than removing it.
       state = state.copyWith(
         connectionStatus: status,
-        errorMessage: status == RealtimeConnectionStatus.error
-            ? error.toString()
-            : null,
-        infoMessage: status == RealtimeConnectionStatus.reconnecting
-            ? 'Reconnecting…'
-            : null,
+        clearErrorMessage: reconnecting,
+        errorMessage: reconnecting ? null : error.toString(),
+        clearInfoMessage: !reconnecting,
+        infoMessage: reconnecting ? 'Reconnecting…' : null,
       );
       rethrow;
     }
@@ -657,13 +660,25 @@ class RealtimeController extends StateNotifier<RealtimeState>
           // server revokes on time. A streak exhausted inside the budget is
           // still a call worth waiting for, so the shared budget has the
           // final word on what the person is shown.
+          // A RECONNECTING CALL IS NOT AN ERROR, AND MUST NOT READ LIKE ONE.
+          // The raw transport reason is deliberately truthful when the call
+          // has genuinely failed, but showing it WHILE still reconnecting put
+          // a DioException string on screen beside "Reconnecting…" -- founder,
+          // 2026-08-28: "raw message in pixel was too odd and uggly beside
+          // reconnecting". Truth is owed when there is bad news; during a
+          // recovery that may still succeed, the honest state is simply that
+          // we are trying.
           final status = _troubleStatus();
+          final reconnecting = status == RealtimeConnectionStatus.reconnecting;
           state = state.copyWith(
             connectionStatus: status,
             joinState: RealtimeJoinState.idle,
-            clearInfoMessage: true,
-            errorMessage: 'Live connection could not be established. '
-                '($reason)',
+            clearInfoMessage: !reconnecting,
+            infoMessage: reconnecting ? 'Reconnecting…' : null,
+            clearErrorMessage: reconnecting,
+            errorMessage: reconnecting
+                ? null
+                : 'Live connection could not be established. ($reason)',
           );
         }
         return; // Do not rethrow — 'socket:connected' will retry.
@@ -726,13 +741,25 @@ class RealtimeController extends StateNotifier<RealtimeState>
           // server revokes on time. A streak exhausted inside the budget is
           // still a call worth waiting for, so the shared budget has the
           // final word on what the person is shown.
+          // A RECONNECTING CALL IS NOT AN ERROR, AND MUST NOT READ LIKE ONE.
+          // The raw transport reason is deliberately truthful when the call
+          // has genuinely failed, but showing it WHILE still reconnecting put
+          // a DioException string on screen beside "Reconnecting…" -- founder,
+          // 2026-08-28: "raw message in pixel was too odd and uggly beside
+          // reconnecting". Truth is owed when there is bad news; during a
+          // recovery that may still succeed, the honest state is simply that
+          // we are trying.
           final status = _troubleStatus();
+          final reconnecting = status == RealtimeConnectionStatus.reconnecting;
           state = state.copyWith(
             connectionStatus: status,
             joinState: RealtimeJoinState.idle,
-            clearInfoMessage: true,
-            errorMessage: 'Live connection could not be re-established. '
-                '($reason)',
+            clearInfoMessage: !reconnecting,
+            infoMessage: reconnecting ? 'Reconnecting…' : null,
+            clearErrorMessage: reconnecting,
+            errorMessage: reconnecting
+                ? null
+                : 'Live connection could not be re-established. ($reason)',
           );
         }
         return;
@@ -2375,14 +2402,16 @@ class RealtimeController extends StateNotifier<RealtimeState>
         // error here is what put a recovering call on an error/retry screen
         // after 25 seconds.
         final socketStatus = _troubleStatus();
+        final socketReconnecting =
+            socketStatus == RealtimeConnectionStatus.reconnecting;
         state = state.copyWith(
           connectionStatus: socketStatus,
-          errorMessage: socketStatus == RealtimeConnectionStatus.error
-              ? event.payload['message']?.toString()
-              : null,
-          infoMessage: socketStatus == RealtimeConnectionStatus.reconnecting
-              ? 'Reconnecting…'
-              : null,
+          clearErrorMessage: socketReconnecting,
+          errorMessage: socketReconnecting
+              ? null
+              : event.payload['message']?.toString(),
+          clearInfoMessage: !socketReconnecting,
+          infoMessage: socketReconnecting ? 'Reconnecting…' : null,
           lastSocketEvent: event.name,
         );
         return;

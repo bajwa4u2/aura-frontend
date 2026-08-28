@@ -414,6 +414,26 @@ costs 18s and the retry backoff adds 2+6+15 = 23s, so a full budget runs to
 the FIRST backoff before touching anything else — attempt one is the one most
 likely to succeed and currently waits needlessly.
 
+**`PIP_SURVIVES_CALL_END`** — OPEN, low-medium. Founder-observed 2026-08-28:
+"on ending call pip show minimized sometimes", clarified as ending the call
+HIMSELF. The floating call widget outlives the call that owns it, so a
+minimised card is offered for a session that is over. Distinct from the PiP
+rebuild already recorded in §3 -- that is a design question, this is a teardown
+one, and it should not wait for the rebuild.
+
+**`CLIENT_DOES_NOT_REJOIN_WHEN_THE_NETWORK_RETURNS`** — OPEN, and the next
+thing worth building. In the 2026-08-28 patience test the server kept the call
+alive throughout (no heartbeat_timeout, no SESSION_ENDED, session still ACTIVE
+afterwards) and the person still had to rejoin BY HAND through the thread
+banner, with the web side needing a refresh. Detection, patience, reclaim and
+server-side survival are all correct now; nothing notices that connectivity
+came back and re-joins on its own.
+
+Stated carefully, because the evidence does not go further: the founder ENDED
+that call himself, so whether the client would eventually have self-recovered
+is UNTESTED. What is established is only that it did not do so promptly, and
+that a manual rejoin was what actually restored the call.
+
 **`RECONNECT_PATIENCE_IS_NOT_SHARED`** — OPEN, HIGH, and it caps the value of
 everything above. Founder-observed: during the outage the client "was
 redirected to error/retry almost after 25 sec". The arithmetic is exact —
