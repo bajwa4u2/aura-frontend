@@ -555,6 +555,43 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     return true;
   }
 
+  /// A STACK TRACE IS NOT A SENTENCE.
+  ///
+  /// Founder-photographed 2026-08-28, on a phone with the network pulled:
+  ///
+  ///     SocketException: Failed host lookup: 'api.auraplatform.org'
+  ///     (OS Error: No address associated with hostname, errno = 7)
+  ///
+  /// printed in a red panel where a person was meant to read it. That text
+  /// is exactly right for the diagnostics channel and exactly wrong here: it
+  /// names our hostname, an errno, and an OS call, and tells the reader
+  /// nothing they can act on. The raw reason is still reported to the server
+  /// -- nothing is lost from the trace -- it simply stops being shown to a
+  /// human as though it were an explanation.
+  ///
+  /// Only transport-shaped failures are translated. Anything the product
+  /// itself composed ("The host ended the call") is already a sentence and
+  /// passes through untouched, because a blanket rewrite would replace good
+  /// messages with a vaguer one.
+  static String _humanError(String raw) {
+    final lower = raw.toLowerCase();
+    const transportShapes = <String>[
+      'socketexception',
+      'failed host lookup',
+      'dioexception',
+      'clientexception',
+      'handshakeexception',
+      'timeoutexception',
+      'connection refused',
+      'errno',
+      'os error',
+    ];
+    final looksTransport = transportShapes.any(lower.contains);
+    if (!looksTransport) return raw;
+    return 'No connection right now. This will resume by itself when the '
+        'network is back.';
+  }
+
   void _navigateAfterCall(RealtimeSession? session) {
     // CO-RC-C7-005 Phase 5: this used to invalidate `threadDetailProvider`
     // and `messagesProvider` so a stale live-session ribbon would clear when
@@ -1391,7 +1428,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                     ),
                   ),
                   child: Text(
-                    state.errorMessage ?? '',
+                    _humanError(state.errorMessage ?? ''),
                     style: AuraText.small.copyWith(color: AuraSurface.coRose),
                     textAlign: TextAlign.center,
                   ),
@@ -1607,11 +1644,29 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         // F044 — the instruction is only truthful when the viewer genuinely
         // still has a Join to perform. Idle alone never established that: it
         // also covers "already asked, in flight" and "already over".
+        // A BROKEN CONNECTION AND A CALL NOT YET JOINED ARE DIFFERENT THINGS.
+        //
+        // "Setting up your session" is the sentence for a call being
+        // established. It is untrue for one that was established and lost,
+        // and the difference matters to the person: one is waiting, the
+        // other is losing something they were in the middle of.
+        final isRecovering =
+            state.connectionStatus == RealtimeConnectionStatus.reconnecting;
+        if (isRecovering) {
+          return (
+            Icons.wifi_tethering_rounded,
+            'Reconnecting…',
+            'Your connection dropped. Restoring the call.',
+            false,
+            false,
+          );
+        }
         if (!readyToJoinIsTruthful(
           joinState: state.joinState,
           joinIntentInFlight: _joinIntentInFlight,
           sessionIsActive: state.session?.isActive,
           isBusy: state.isBusy,
+          isRecovering: isRecovering,
         )) {
           return (
             isMeeting ? Icons.event_note_rounded : Icons.call_rounded,

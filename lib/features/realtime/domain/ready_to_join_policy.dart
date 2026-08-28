@@ -60,7 +60,24 @@ bool readyToJoinIsTruthful({
   required bool joinIntentInFlight,
   required bool? sessionIsActive,
   bool isBusy = false,
+  bool isRecovering = false,
 }) {
+  // A DROPPED CONNECTION IS NOT AN INVITATION TO JOIN.
+  //
+  // Founder-photographed 2026-08-28: mid-call, with the network pulled, the
+  // room offered "Ready to join / Tap Join call to enter" -- for a call the
+  // person was ALREADY IN, that the server was still holding, and that the
+  // client was in the middle of rejoining on its own.
+  //
+  // The predicate reached that conclusion honestly from what it was given:
+  // joinState falls to idle when a transport drops, the session really is
+  // active, and no join was in flight. Every input was correct and the
+  // answer was wrong, because the one fact that mattered was missing --
+  // whether this idle is a person who has not joined, or a person whose
+  // connection broke. Those need opposite sentences, and only one of them
+  // has a Join button.
+  if (isRecovering) return false;
+
   // Intent already expressed: whatever the lifecycle says this instant, the
   // person is not waiting to be told to join.
   if (joinIntentInFlight) return false;
