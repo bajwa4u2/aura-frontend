@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
@@ -474,6 +476,22 @@ class RealtimeRepository {
   ///
   /// Best-effort and never throws: diagnosis must not become a second way for
   /// a call to break.
+  /// Diagnostics that could not be sent, held until the network returns.
+  ///
+  /// THE BLIND SPOT THIS CLOSES (2026-08-28). A diagnostic describing a
+  /// network failure is emitted WHILE THE NETWORK IS DOWN, so the post fails
+  /// and the record is discarded — and the events that matter most are
+  /// precisely the ones that can never arrive. An induced wifi drop on a real
+  /// call produced a completely empty trace: every ICE transition and every
+  /// recovery attempt happened, and not one was recorded.
+  ///
+  /// Bounded to the last [_diagnosticQueueCap] entries. This is a debugging
+  /// aid, not a delivery guarantee: dropping the OLDEST keeps the newest
+  /// picture, and an unbounded queue on a long outage would be a leak.
+  final List<Map<String, String>> _pendingDiagnostics = <Map<String, String>>[];
+  static const int _diagnosticQueueCap = 40;
+  bool _flushingDiagnostics = false;
+
   Future<void> reportStageDiagnostic(
     String sessionId, {
     required String phase,
@@ -481,18 +499,59 @@ class RealtimeRepository {
     required String message,
     required String platform,
   }) async {
+    final entry = <String, String>{
+      'sessionId': sessionId,
+      'phase': phase,
+      'code': code,
+      'message': message,
+      'platform': platform,
+    };
+    if (!await _postDiagnostic(entry)) {
+      _pendingDiagnostics.add(entry);
+      while (_pendingDiagnostics.length > _diagnosticQueueCap) {
+        _pendingDiagnostics.removeAt(0);
+      }
+      return;
+    }
+    // That post succeeded, so connectivity is back — anything held during the
+    // outage can go now, in the order it happened.
+    unawaited(_flushPendingDiagnostics());
+  }
+
+  Future<bool> _postDiagnostic(Map<String, String> entry) async {
     try {
       await _dio.post(
-        '/realtime/sessions/$sessionId/stage/diagnostics',
+        '/realtime/sessions/${entry['sessionId']}/stage/diagnostics',
         data: <String, dynamic>{
-          'phase': phase,
-          'code': code,
-          'message': message,
-          'platform': platform,
+          'phase': entry['phase'],
+          'code': entry['code'],
+          // Mark what was held, so a replayed trace is never mistaken for a
+          // live one when reading timings back.
+          'message': entry.containsKey('held')
+              ? '${entry['message']} held=1'
+              : entry['message'],
+          'platform': entry['platform'],
         },
       );
+      return true;
     } catch (e) {
       debugPrint('[rtc] stage diagnostic report failed: $e');
+      return false;
+    }
+  }
+
+  Future<void> _flushPendingDiagnostics() async {
+    if (_flushingDiagnostics || _pendingDiagnostics.isEmpty) return;
+    _flushingDiagnostics = true;
+    try {
+      while (_pendingDiagnostics.isNotEmpty) {
+        final entry = _pendingDiagnostics.first;
+        entry['held'] = '1';
+        if (!await _postDiagnostic(entry)) return; // still down; keep the rest
+        _pendingDiagnostics.removeAt(0);
+      }
+    } finally {
+      _flushingDiagnostics = false;
     }
   }
 

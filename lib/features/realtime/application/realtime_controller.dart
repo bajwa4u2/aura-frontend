@@ -3101,80 +3101,97 @@ class RealtimeController extends StateNotifier<RealtimeState>
   /// now RECLAIMS a participant's previous transport instead of refusing the
   /// new one, so open-over-a-dead-one is a supported act; and a rebuild
   /// re-publishes and re-subscribes, which converges the whole registry
-  /// instead of only repairing connectivity. One mechanism, already exercised
-  /// on every join, rather than a second one that runs only in the rare case
-  /// and is therefore never known to work.
+  /// instead of only repairing connectivity.
+  ///
+  /// THIS LOOPS, AND THE FIRST VERSION DID NOT. That version made ONE attempt
+  /// and returned, trusting `onLost` to call it again -- but `onLost` fires
+  /// once per transport, and by then the transport had been destroyed. So the
+  /// three-attempt budget was unreachable, and a first attempt made while the
+  /// network was still down ended recovery permanently. Measured on a real
+  /// call 2026-08-28: wifi off on the phone, one doomed attempt, then nothing
+  /// watching when the network came back, and video stayed frozen.
+  ///
+  /// The lesson generalises: recovery cannot depend on being re-triggered by
+  /// the thing that failed. It has to drive itself until it succeeds or its
+  /// budget runs out.
   Future<void> _recoverStage(String reason) async {
     final sessionId = _managedSessionId;
     if (sessionId.isEmpty || !state.isJoined || _terminating || _endingCall) {
       return;
     }
-    // Leaving is not losing. A transport torn down on the way out must not be
-    // resurrected underneath somebody who is trying to hang up.
+    // Leaving is not losing, and one recovery at a time.
     if (_recoveringStage) return;
-
-    if (_stageRecoveries >= _stageRecoveryBackoff.length) {
-      unawaited(_repository.reportStageDiagnostic(
-        sessionId,
-        phase: 'recover',
-        code: 'stage_recovery_exhausted',
-        message: 'reason=$reason attempts=$_stageRecoveries',
-        platform: _clientPlatform,
-      ));
-      return;
-    }
-
     _recoveringStage = true;
-    final attempt = _stageRecoveries + 1;
-    _stageRecoveries = attempt;
+
     try {
-      unawaited(_repository.reportStageDiagnostic(
-        sessionId,
-        phase: 'recover',
-        code: 'stage_recovery_start',
-        message: 'reason=$reason attempt=$attempt',
-        platform: _clientPlatform,
-      ));
+      for (var attempt = _stageRecoveries + 1;
+          attempt <= _stageRecoveryBackoff.length;
+          attempt += 1) {
+        _stageRecoveries = attempt;
+        _reportRecovery(sessionId, 'stage_recovery_start',
+            'reason=$reason attempt=$attempt');
 
-      await Future<void>.delayed(_stageRecoveryBackoff[attempt - 1]);
-      // Conditions can change while backing off — leaving, ending, or a
-      // transport that came back on its own.
-      if (!mounted || !state.isJoined || _terminating || _endingCall) return;
+        await Future<void>.delayed(_stageRecoveryBackoff[attempt - 1]);
+        // Conditions change while backing off: the person may be leaving, or
+        // an unrelated path may have re-attached the stage already.
+        if (!mounted || !state.isJoined || _terminating || _endingCall) return;
+        if (_mediaService.usesStageTransport) {
+          _reportRecovery(sessionId, 'stage_recovery_moot',
+              'reason=$reason attempt=$attempt');
+          _armRecoveryBudgetReset();
+          return;
+        }
 
-      await _mediaService.detachStage();
-      await _ensureStageConnected('recover');
+        try {
+          await _mediaService.detachStage();
+          await _ensureStageConnected('recover');
+        } catch (error) {
+          _reportRecovery(sessionId, 'stage_recovery_failed',
+              'reason=$reason attempt=$attempt err=$error');
+          continue;
+        }
 
-      unawaited(_repository.reportStageDiagnostic(
-        sessionId,
-        phase: 'recover',
-        code: 'stage_recovery_done',
-        message: 'reason=$reason attempt=$attempt '
-            'stage=${_mediaService.usesStageTransport}',
-        platform: _clientPlatform,
-      ));
+        if (_mediaService.usesStageTransport) {
+          _reportRecovery(sessionId, 'stage_recovery_done',
+              'reason=$reason attempt=$attempt');
+          _armRecoveryBudgetReset();
+          return;
+        }
+        // attachStage swallowed its own failure and left no stage. Keep going
+        // rather than reporting a success that did not happen.
+        _reportRecovery(sessionId, 'stage_recovery_incomplete',
+            'reason=$reason attempt=$attempt');
+      }
 
-      // GIVE THE BUDGET BACK, BUT ONLY FOR A CALL THAT ACTUALLY RECOVERED.
-      //
-      // A long call that loses its transport once, recovers, and hits an
-      // unrelated problem an hour later should not find its budget already
-      // spent. But a network that flaps -- recover, fail, recover, fail --
-      // must not win an unlimited supply of attempts by briefly succeeding.
-      // Sustained health is the difference, so the reset waits for it.
-      _stageRecoveryReset?.cancel();
-      _stageRecoveryReset = Timer(const Duration(seconds: 60), () {
-        _stageRecoveries = 0;
-      });
-    } catch (error) {
-      unawaited(_repository.reportStageDiagnostic(
-        sessionId,
-        phase: 'recover',
-        code: 'stage_recovery_failed',
-        message: 'reason=$reason attempt=$attempt err=$error',
-        platform: _clientPlatform,
-      ));
+      _reportRecovery(sessionId, 'stage_recovery_exhausted',
+          'reason=$reason attempts=$_stageRecoveries');
     } finally {
       _recoveringStage = false;
     }
+  }
+
+  void _reportRecovery(String sessionId, String code, String message) {
+    unawaited(_repository.reportStageDiagnostic(
+      sessionId,
+      phase: 'recover',
+      code: code,
+      message: message,
+      platform: _clientPlatform,
+    ));
+  }
+
+  /// GIVE THE BUDGET BACK, BUT ONLY FOR A CALL THAT ACTUALLY RECOVERED.
+  ///
+  /// A long call that loses its transport once, recovers, and hits an
+  /// unrelated problem an hour later should not find its budget already spent.
+  /// But a network that flaps -- recover, fail, recover, fail -- must not win
+  /// an unlimited supply of attempts by briefly succeeding. Sustained health
+  /// is the difference, so the reset waits for it.
+  void _armRecoveryBudgetReset() {
+    _stageRecoveryReset?.cancel();
+    _stageRecoveryReset = Timer(const Duration(seconds: 60), () {
+      _stageRecoveries = 0;
+    });
   }
 
   Future<void> _ensureStageConnected(String reason) async {
