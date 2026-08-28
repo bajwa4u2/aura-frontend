@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -281,6 +282,39 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
   @override
   void dispose() {
+    // WHY DID THE ROOM GO AWAY?
+    //
+    // Founder, 2026-08-28, during an induced outage: "call screen
+    // disappeared, presence was underneath, i didnt tap anything". Neither
+    // exit in this screen is automatic -- both are buttons -- and the session
+    // did not end until he ended it, so something OUTSIDE the room unmounted
+    // it and there was no evidence to say what. `[RTC NAV]` next door is a
+    // debugPrint, which release builds strip, so the one moment worth
+    // observing is the one that reports nothing.
+    //
+    // This records the unmount with the intent flags, so an exit the person
+    // did NOT ask for is distinguishable from leave and minimise. Bounded:
+    // counts and enum names, no identifiers, no media.
+    try {
+      final st = ref.read(realtimeControllerProvider);
+      final sid = (st.sessionId ?? '').trim();
+      if (sid.isNotEmpty) {
+        unawaited(ref.read(realtimeRepositoryProvider).reportStageDiagnostic(
+              sid,
+              phase: 'lifecycle',
+              code: 'room_unmounted',
+              message: 'intentToLeave=$_intentToLeave '
+                  'navigatedAway=$_hasNavigatedAway '
+                  'join=${st.joinState.name} conn=${st.connectionStatus.name} '
+                  'ending=${st.isEndingCall} '
+                  'lastEvent=${st.lastSocketEvent ?? 'none'}',
+              platform: kIsWeb ? 'web' : defaultTargetPlatform.name,
+            ));
+      }
+    } catch (_) {
+      // Observability must never be able to break a teardown.
+    }
+
     // Release the wake lock when leaving the room.
     WakelockPlus.disable();
     _durationTimer?.cancel();
