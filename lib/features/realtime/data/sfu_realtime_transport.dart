@@ -43,6 +43,9 @@ class SfuRealtimeTransport implements RealtimeTransport {
   final void Function(String reason)? onLost;
 
   Timer? _iceGrace;
+  Timer? _liveness;
+  int _lastLivenessBytes = -1;
+  int _stallTicks = 0;
   bool _lostReported = false;
   bool _closing = false;
 
@@ -525,6 +528,8 @@ class SfuRealtimeTransport implements RealtimeTransport {
     _closing = true;
     _iceGrace?.cancel();
     _iceGrace = null;
+    _liveness?.cancel();
+    _liveness = null;
     // Stop accepting negotiation work first: anything still queued must not
     // mutate a session that is being torn down.
     _queue.close();
@@ -600,6 +605,79 @@ class SfuRealtimeTransport implements RealtimeTransport {
       // whose completer is already finished, so leaving it in place is the
       // same as having no monitor at all -- which is precisely what shipped.
       _armTransportWatch(pc);
+      _armLivenessProbe(pc);
+    }
+  }
+
+  /// IS ANYTHING STILL ARRIVING?
+  ///
+  /// ICE STATE IS TOO SLOW TO BE THE ONLY SIGNAL, measured twice on real
+  /// calls (2026-08-28). Pulling the network does not move ICE out of
+  /// `connected` until consent freshness expires, which is around THIRTY
+  /// SECONDS on both Chrome and Android. A fifteen-second outage therefore
+  /// produced frozen video, an unchanged ICE state, and not one event from
+  /// the state-based watch above -- it was listening for something that had
+  /// not happened yet.
+  ///
+  /// Bytes are the honest signal. This reads the SELECTED CANDIDATE PAIR
+  /// rather than `inbound-rtp`, because a pair keeps counting STUN consent
+  /// traffic even when every remote participant is muted with the camera off.
+  /// Watching media bytes alone would call a silent-but-healthy call dead.
+  void _armLivenessProbe(RTCPeerConnection pc) {
+    _liveness?.cancel();
+    _lastLivenessBytes = -1;
+    _stallTicks = 0;
+    _liveness = Timer.periodic(const Duration(seconds: 3), (_) async {
+      if (_closing || _lostReported) return;
+      final bytes = await _livenessBytes(pc);
+      if (bytes < 0) return; // unreadable this tick; not evidence of anything
+      if (_lastLivenessBytes < 0 || bytes > _lastLivenessBytes) {
+        if (_stallTicks > 0) {
+          unawaited(_report('op=LIVE state=resumed afterTicks=$_stallTicks'));
+        }
+        _lastLivenessBytes = bytes;
+        _stallTicks = 0;
+        return;
+      }
+      _stallTicks += 1;
+      // Four ticks is about twelve seconds with NOTHING arriving -- not even
+      // a consent check. That is a dead path, not a quiet one, and it is well
+      // inside the sixty seconds the server waits before dropping us.
+      if (_stallTicks >= 4) {
+        _declareLost('media_stalled_${_stallTicks * 3}s');
+      }
+    });
+  }
+
+  /// Bytes received on the live path, or -1 when it cannot be read.
+  Future<int> _livenessBytes(RTCPeerConnection pc) async {
+    try {
+      var pair = 0;
+      var transport = 0;
+      var rtp = 0;
+      for (final report in await pc.getStats()) {
+        final v = report.values;
+        switch (report.type) {
+          case 'candidate-pair':
+            // Only the pair actually carrying traffic; the others are
+            // historical and never move again.
+            final nominated = v['nominated'] == true;
+            final selected = v['selected'] == true;
+            final succeeded = v['state'] == 'succeeded';
+            if (nominated || selected || succeeded) {
+              pair += ((v['bytesReceived'] as num?) ?? 0).toInt();
+            }
+          case 'transport':
+            transport += ((v['bytesReceived'] as num?) ?? 0).toInt();
+          case 'inbound-rtp':
+            rtp += ((v['bytesReceived'] as num?) ?? 0).toInt();
+        }
+      }
+      if (pair > 0) return pair;
+      if (transport > 0) return transport;
+      return rtp;
+    } catch (_) {
+      return -1;
     }
   }
 
@@ -651,6 +729,8 @@ class SfuRealtimeTransport implements RealtimeTransport {
   void _declareLost(String reason) {
     _iceGrace?.cancel();
     _iceGrace = null;
+    _liveness?.cancel();
+    _liveness = null;
     if (_lostReported || _closing) return;
     _lostReported = true;
     unawaited(_report('op=ICE state=lost reason=$reason'));

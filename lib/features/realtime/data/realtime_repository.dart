@@ -525,10 +525,12 @@ class RealtimeRepository {
         data: <String, dynamic>{
           'phase': entry['phase'],
           'code': entry['code'],
-          // Mark what was held, so a replayed trace is never mistaken for a
-          // live one when reading timings back.
-          'message': entry.containsKey('held')
-              ? '${entry['message']} held=1'
+          // Mark what was replayed, so a held trace is never mistaken for a
+          // live one when reading timings back. NOT `held=` -- the render
+          // diagnostic already emits a `held=N` counter, and the collision
+          // made the queue marker unsearchable the first time out.
+          'message': entry.containsKey('queued')
+              ? '${entry['message']} queued=1'
               : entry['message'],
           'platform': entry['platform'],
         },
@@ -546,7 +548,7 @@ class RealtimeRepository {
     try {
       while (_pendingDiagnostics.isNotEmpty) {
         final entry = _pendingDiagnostics.first;
-        entry['held'] = '1';
+        entry['queued'] = '1';
         if (!await _postDiagnostic(entry)) return; // still down; keep the rest
         _pendingDiagnostics.removeAt(0);
       }
