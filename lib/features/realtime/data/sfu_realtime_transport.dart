@@ -326,6 +326,39 @@ class SfuRealtimeTransport implements RealtimeTransport {
           .map((e) => e.cast<String, dynamic>())
           .toList(growable: false),
     );
+    // REPORT WHAT THE BIND ACTUALLY DID.
+    //
+    // Cloudflare returned valid bindings with real mids for BOTH audio and
+    // video in both directions (proven server-side 2026-08-28), and the tiles
+    // were still black. The bind rule drops a binding on three separate
+    // conditions and reports none of them, so this is the only remaining
+    // unlit stretch between a correct provider response and a dark screen.
+    //
+    // Counts only -- no media, no identifiers beyond mids the client already
+    // holds. Fire-and-forget so a diagnostic cannot break a call.
+    try {
+      final audit = auditRemoteBindings(
+        lines: lastReceivingLines,
+        serverBindings: ((subscribed['bindings'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((e) => e.cast<String, dynamic>())
+            .toList(growable: false),
+      );
+      unawaited(_repository.reportStageDiagnostic(
+        sessionId,
+        phase: 'bind',
+        code: audit.bound == audit.serverBindings
+            ? 'bind_complete'
+            : audit.bound == 0
+                ? 'bind_none'
+                : 'bind_partial',
+        message: audit.summary,
+        platform: kIsWeb ? 'web' : defaultTargetPlatform.name,
+      ));
+    } catch (_) {
+      // Never let observability fail the call.
+    }
+
     final merged = Map<String, RemoteParticipantMedia>.from(_remote);
     sfuRemoteMedia(bindings: bindings).forEach((participantId, media) {
       final existing = merged[participantId];

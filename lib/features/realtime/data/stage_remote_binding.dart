@@ -95,6 +95,98 @@ List<StageRemoteBinding> resolveRemoteBindings({
   return out;
 }
 
+/// WHY A BINDING WAS DROPPED.
+///
+/// resolveRemoteBindings discards a binding on three separate conditions and
+/// says nothing about which. A client can receive two perfectly valid
+/// bindings from Cloudflare -- correct provider session, correct track names,
+/// real mids -- attach ZERO of them, and leave no trace at all. That silence
+/// is why "Cloudflare returned valid bindings" and "the tile is black" could
+/// both be true with nothing in between to inspect.
+class StageBindingAudit {
+  const StageBindingAudit({
+    required this.serverBindings,
+    required this.transceivers,
+    required this.receivingLines,
+    required this.bound,
+    required this.droppedNoMid,
+    required this.droppedNoMatchingLine,
+    required this.directionUnreadable,
+    required this.receiverTrackNull,
+  });
+
+  final int serverBindings;
+  final int transceivers;
+  final int receivingLines;
+  final int bound;
+
+  /// Provider named no m-line for this track.
+  final int droppedNoMid;
+
+  /// The named mid matched no transceiver that is receiving with a track.
+  final int droppedNoMatchingLine;
+
+  /// getCurrentDirection() threw, so the line could not be called receiving.
+  /// On a platform where this throws, EVERY remote binding is dropped.
+  final int directionUnreadable;
+
+  /// Transceiver exists and is receiving, but carries no receiver track.
+  final int receiverTrackNull;
+
+  String get summary =>
+      'server=$serverBindings transceivers=$transceivers '
+      'receiving=$receivingLines bound=$bound '
+      'noMid=$droppedNoMid noLine=$droppedNoMatchingLine '
+      'dirUnreadable=$directionUnreadable noTrack=$receiverTrackNull';
+}
+
+/// Audit the same rule [resolveRemoteBindings] applies, without changing it.
+///
+/// Deliberately a SEPARATE function: the binding rule is on the media hot path
+/// and is not altered tocarry diagnostics.
+StageBindingAudit auditRemoteBindings({
+  required List<StageReceivingLine> lines,
+  required List<Map<String, dynamic>> serverBindings,
+}) {
+  var directionUnreadable = 0;
+  var receiverTrackNull = 0;
+  final byMid = <String, StageReceivingLine>{};
+  for (final line in lines) {
+    if (line.direction == null) directionUnreadable++;
+    if (line.receiverTrack == null) receiverTrackNull++;
+    final mid = line.mid;
+    if (mid == null || !line.isReceiving || line.receiverTrack == null) continue;
+    byMid[mid] = line;
+  }
+
+  var noMid = 0;
+  var noLine = 0;
+  var bound = 0;
+  for (final b in serverBindings) {
+    final mid = b['mid'];
+    if (mid == null) {
+      noMid++;
+      continue;
+    }
+    if (byMid['$mid'] == null) {
+      noLine++;
+      continue;
+    }
+    bound++;
+  }
+
+  return StageBindingAudit(
+    serverBindings: serverBindings.length,
+    transceivers: lines.length,
+    receivingLines: byMid.length,
+    bound: bound,
+    droppedNoMid: noMid,
+    droppedNoMatchingLine: noLine,
+    directionUnreadable: directionUnreadable,
+    receiverTrackNull: receiverTrackNull,
+  );
+}
+
 /// Bind remote media on [pc] using the bindings Aura returned from subscribe.
 ///
 /// Call this immediately after the subscribe renegotiation completes. There is
@@ -122,5 +214,11 @@ Future<List<StageRemoteBinding>> bindRemoteMedia({
       receiverTrack: t.receiver.track,
     ));
   }
+  lastReceivingLines = lines;
   return resolveRemoteBindings(lines: lines, serverBindings: serverBindings);
 }
+
+/// The transceiver snapshot from the most recent [bindRemoteMedia] call,
+/// so the caller can audit WHY bindings were dropped without asking the
+/// peer connection a second time and racing its state.
+List<StageReceivingLine> lastReceivingLines = const [];
