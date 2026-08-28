@@ -30,6 +30,8 @@ import '../application/realtime_controller.dart';
 import '../application/realtime_providers.dart';
 import '../domain/realtime_enums.dart';
 import '../domain/ready_to_join_policy.dart';
+import '../domain/remote_media_presentation.dart'
+    show ParticipantRef, rendererForParticipant, shouldShowUnattributedMedia;
 import '../domain/realtime_models.dart';
 import '../domain/realtime_state.dart';
 import 'widgets/realtime_consent_sheet.dart';
@@ -1177,8 +1179,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     required String myUserId,
     required bool wide,
   }) {
-    final hasAnyRenderer =
-        state.localRenderer != null || state.remoteRenderers.isNotEmpty;
+    final hasAnyRenderer = state.localRenderer != null ||
+        state.remoteRenderers.isNotEmpty ||
+        state.remoteRenderersByParticipant.isNotEmpty;
     final body = hasAnyRenderer
         ? _buildMeetingStage(state: state, myUserId: myUserId)
         : _buildMeetingWaitingStage(state: state, myUserId: myUserId);
@@ -1245,10 +1248,13 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     required String myUserId,
   }) {
     if (state.isVideoMode &&
-        (state.localRenderer != null || state.remoteRenderers.isNotEmpty)) {
+        (state.localRenderer != null ||
+            state.remoteRenderers.isNotEmpty ||
+            state.remoteRenderersByParticipant.isNotEmpty)) {
       return _VideoGrid(
         localRenderer: state.localRenderer,
         remoteRenderers: state.remoteRenderers,
+        renderersByParticipant: state.remoteRenderersByParticipant,
         participants: state.participants,
         myUserId: myUserId,
         micOn: state.microphoneEnabled,
@@ -2266,7 +2272,15 @@ class _CallStage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mediaError = (state.mediaError ?? '').trim();
-    final hasRemoteRenderers = state.remoteRenderers.isNotEmpty;
+    // BOTH TRANSPORTS, ONE QUESTION.
+    //
+    // `remoteRenderers` is device-keyed and is written only by the MESH
+    // per-peer callbacks. The stage transport has one peer connection and
+    // nothing device-shaped to key on, so under SFU that map is permanently
+    // empty and asking it alone answers "is anyone's media here?" with a
+    // confident, wrong no.
+    final hasRemoteRenderers = state.remoteRenderers.isNotEmpty ||
+        state.remoteRenderersByParticipant.isNotEmpty;
     final hasLocalRenderer = state.localRenderer != null;
     final hasAnyRenderer = hasLocalRenderer || hasRemoteRenderers;
 
@@ -2285,6 +2299,7 @@ class _CallStage extends StatelessWidget {
       return _VideoGrid(
         localRenderer: state.localRenderer,
         remoteRenderers: state.remoteRenderers,
+        renderersByParticipant: state.remoteRenderersByParticipant,
         participants: state.participants,
         myUserId: myUserId,
         micOn: state.microphoneEnabled,
@@ -2319,13 +2334,30 @@ class _VideoGrid extends StatelessWidget {
   const _VideoGrid({
     required this.localRenderer,
     required this.remoteRenderers,
+    required this.renderersByParticipant,
     required this.participants,
     required this.myUserId,
     required this.micOn,
   });
 
   final RTCVideoRenderer? localRenderer;
+
+  /// MESH media, keyed by device. Written only by the per-peer `onTrack` /
+  /// `onAddStream` callbacks, so it is empty for the whole life of an SFU
+  /// call.
   final Map<String, RTCVideoRenderer> remoteRenderers;
+
+  /// CANONICAL media, keyed by Aura participant id — what the stage transport
+  /// populates and what both transports agree on.
+  ///
+  /// Founder-observed 2026-08-28: an SFU call where Cloudflare returned valid
+  /// bindings, the client bound both remote tracks to real receiving
+  /// transceivers (`bound=2 noMid=0 noLine=0 dirUnreadable=0 noTrack=0`), the
+  /// roster read "Media on", and this grid still drew one tile — because it
+  /// iterated the device-keyed map alone. The Meetings live room had already
+  /// been migrated to participant-first resolution; this surface had not, and
+  /// that difference was the entire defect.
+  final Map<String, RTCVideoRenderer> renderersByParticipant;
   final List<RealtimeParticipant> participants;
   final String myUserId;
   final bool micOn;
@@ -2379,11 +2411,58 @@ class _VideoGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // PARTICIPANT FIRST, DEVICE ONLY TO LOCATE MESH MEDIA.
+    //
+    // Identity comes from the roster entry. A device key is used solely to
+    // find a mesh renderer for that person — never to decide who they are,
+    // and never as the thing being iterated. Iterating devices is what made
+    // this grid blind to the stage transport, which has no devices at all.
     final entries = <(String, RTCVideoRenderer, bool)>[];
     if (localRenderer != null) {
       entries.add(('You', localRenderer!, true));
     }
+
+    final claimed = <String>{};
+    final others = <ParticipantRef>[];
+    for (final p in participants) {
+      if (p.userId.trim().isNotEmpty && p.userId.trim() == myUserId.trim()) {
+        continue;
+      }
+      final key = (p.runtimeDeviceId ?? '').trim();
+      // Claim the device even when no renderer resolves: an unclaimed
+      // renderer must mean "nobody in the roster owns this", not "this
+      // person's media has not arrived yet".
+      if (key.isNotEmpty) {
+        claimed.add(key);
+        claimed.add(_rawSocket(key));
+      }
+      final ref = ParticipantRef(
+        id: p.id,
+        userId: p.userId,
+        runtimeDeviceId: p.runtimeDeviceId,
+      );
+      others.add(ref);
+      final renderer = rendererForParticipant(
+        participant: ref,
+        byParticipant: renderersByParticipant,
+        byDevice: remoteRenderers,
+      );
+      if (renderer == null) continue;
+      entries.add((_nameOf(p), renderer, false));
+    }
+
+    // A live renderer nobody in the roster claims — shown only while somebody
+    // is genuinely still awaiting a device id. After a refresh the previous
+    // renderer sits under the OLD device key, and painting it here put the
+    // same human on the stage twice (founder-observed 2026-08-26 in Meetings,
+    // where this same guard was added).
+    final showUnattributed = shouldShowUnattributedMedia(others);
     for (final entry in remoteRenderers.entries) {
+      if (claimed.contains(_rawSocket(entry.key)) ||
+          claimed.contains(entry.key)) {
+        continue;
+      }
+      if (!showUnattributed) continue;
       entries.add((_labelForPeerKey(entry.key), entry.value, false));
     }
 

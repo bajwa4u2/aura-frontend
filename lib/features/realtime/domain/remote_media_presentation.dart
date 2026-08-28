@@ -150,3 +150,35 @@ Map<String, RemoteParticipantMedia> sfuRemoteMedia({
 /// been replaced.
 bool shouldShowUnattributedMedia(List<ParticipantRef> others) =>
     others.any((p) => (p.runtimeDeviceId ?? '').trim().isEmpty);
+
+/// WHERE A PARTICIPANT'S RENDERER LIVES — one rule, both transports.
+///
+/// Two maps carry remote renderers and they answer to different keys:
+///
+///  * [byParticipant] is canonical, keyed by Aura participant id, and is what
+///    the STAGE transport populates. One peer connection, no devices.
+///  * [byDevice] is keyed by `runtimeDeviceId` and is written only by the MESH
+///    per-peer `onTrack` / `onAddStream` callbacks.
+///
+/// Participant identity is asked first and the device key is used only to
+/// LOCATE mesh media for a person the roster has already named. That ordering
+/// is the whole rule, and getting it backwards is not a cosmetic mistake:
+/// iterating [byDevice] alone makes a surface structurally blind to the stage
+/// transport, because under SFU that map is empty for the entire call.
+///
+/// Founder-observed 2026-08-28 on the conversation call screen — valid
+/// Cloudflare bindings, both remote tracks bound to real receiving
+/// transceivers, roster reading "Media on", and one tile on the stage. The
+/// Meetings live room had already been migrated; this rule exists so the two
+/// surfaces cannot drift apart again.
+RTCVideoRenderer? rendererForParticipant({
+  required ParticipantRef participant,
+  required Map<String, RTCVideoRenderer> byParticipant,
+  required Map<String, RTCVideoRenderer> byDevice,
+}) {
+  final canonical = byParticipant[participant.id];
+  if (canonical != null) return canonical;
+  final device = (participant.runtimeDeviceId ?? '').trim();
+  if (device.isEmpty) return null;
+  return byDevice[device];
+}

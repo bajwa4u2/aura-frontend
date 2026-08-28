@@ -1904,8 +1904,20 @@ class _MeetingVideoGrid extends StatelessWidget {
       // only ever used to LOCATE mesh media, never to decide who somebody is.
       // The stage path has no device-keyed renderers at all, so without this
       // its video would not display.
-      final renderer = renderersByParticipant[p.id] ??
-          (key.isNotEmpty ? remoteRenderers[key] : null);
+      //
+      // The rule itself now lives in `rendererForParticipant` and is shared
+      // with the conversation call stage. It was written twice and only
+      // applied once: the conversation stage kept iterating devices, and under
+      // SFU drew an empty grid over live media (2026-08-28).
+      final renderer = rendererForParticipant(
+        participant: ParticipantRef(
+          id: p.id,
+          userId: p.userId,
+          runtimeDeviceId: p.runtimeDeviceId,
+        ),
+        byParticipant: renderersByParticipant,
+        byDevice: remoteRenderers,
+      );
       tiles.add(_ParticipantTile(
         // Video state is the LIVE track, not the roster's videoOn hint. The
         // roster flag can be stale-false (a peer's camera-on didn't propagate),
