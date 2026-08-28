@@ -151,3 +151,61 @@ LEAVE_REJOIN
 GHOST_PARTICIPANT
 CLEANUP
 ```
+
+---
+
+## 7. CERTIFIED — two-party, 2026-08-28
+
+Session `cmtcjkli20080qi0ckpxv92v0`, `routingMode = SFU`, both clients on
+`bece265`.
+
+Four defects stood between valid Cloudflare bindings and a visible picture.
+Each was found by measurement, and each was a different layer:
+
+| # | Defect | Layer |
+|---|---|---|
+| 1 | conversation grid iterated the DEVICE-keyed map | presentation |
+| 2 | `RealtimeState.copyWith` accepted `remoteRenderersByParticipant` and never assigned it | state |
+| 3 | `createLocalMediaStream(label)` — the label IS the native `ownerTag`; only `local` resolves | platform |
+| 4 | a presence event replaced a roster entry wholesale, erasing the participant id | roster merge |
+
+Number 4 was the one that survived all the others, and it is the reason the
+same build behaved differently on each end: the phone kept its copy of the id
+and drew two tiles, the browser lost it and drew one.
+
+The grid probe caught it in the act, on one client, two seconds apart:
+
+```
+09:50:35.792  roster ids=[none, cmtcj956]
+09:50:37.886  roster ids=[none, none]     dev=YyI9Ua-6
+```
+
+### Evidence after the repair
+
+```
+ROSTER_IDENTITY   both clients  ids=[cmtcjkli,cmtcjkln]  for the whole call
+PARTICIPANT_LOOKUP  first=HIT   both
+TILES               2           both
+CHROME remote       720x1280    72 frames / 3s   audio element muted=false
+PIXEL  remote       ramped 640x360 → 960x540 → 1280x720, renderVideo=true
+AUDIO               founder-confirmed both directions
+CAMERA_OFF_ON       Chrome measured; both sides founder-verified
+REJOIN              transports 3 created / 1 closed / 2 open
+                    participants 2 rows, both ACTIVE, no duplicate
+                    recovery byPart=0 → byPart=1 in ~4s
+GHOST_TILE          none — tiles=2 on both sides after rejoin
+```
+
+### Recorded, not repaired
+
+* `CAMERA_STATE_NOT_PROPAGATED_TO_REMOTE_ROSTER` — while Chrome's camera was
+  off, the Pixel's roster still read `vOn=true`. Probes fired in that window
+  with changing resolution and never with `vOn=false`. Nothing depends on the
+  flag today (tiles key on the live track, which is why this broke nothing),
+  but an avatar-on-camera-off presentation could not rely on it.
+* `CAMERA_OFF_IS_A_BLACK_TILE` — the track is disabled rather than removed, so
+  the far side keeps the tile and it goes black. The Meetings room has a
+  camera-off tile state; the conversation grid does not.
+* `NATIVE_SCREEN_SHARE_OWNER_TAG_TRAP` — `createLocalMediaStream('screen-share')`
+  at `realtime_media_service.dart:1131` carries defect 3's exact semantic.
+  Still executable. Owed after SFU certification.
