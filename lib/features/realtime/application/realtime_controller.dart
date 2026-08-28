@@ -2286,6 +2286,25 @@ class RealtimeController extends StateNotifier<RealtimeState>
         final joinedUserId = _participantUserIdFromPayload(event.payload);
         final joinedSocketId = _transportPeerKeyFromPayload(event.payload);
 
+        // THE SERVER NAMES THE SOCKETS THIS ARRIVAL REPLACES.
+        //
+        // `replacedSocketIds` has been on this payload all along and NOTHING
+        // consumed it. The local `_peerSocketByUserId` fallback below only
+        // works when this client happened to learn the previous socket from a
+        // live broadcast; a roster hydrated over REST never carries one, and a
+        // transport loss can clear it. In those cases the returning person was
+        // added BESIDE their own dead peer -- founder-observed 2026-08-28 as a
+        // fourth tile in a three-party call after a reload.
+        //
+        // Honouring the server's list first makes the retirement independent
+        // of what this client happened to remember. The local fallback stays
+        // for older payloads.
+        for (final replaced in _replacedSocketIdsFromPayload(event.payload)) {
+          if (replaced.isEmpty || replaced == joinedSocketId) continue;
+          _removePendingOfferTarget(replaced);
+          unawaited(_mediaService.removePeer(replaced));
+        }
+
         // A rejoin inside the grace window: the seat was held; release the
         // "Reconnecting…" flag and retire the stale peer connection so the
         // fresh negotiation binds to the new socket cleanly.
@@ -2864,6 +2883,20 @@ class RealtimeController extends StateNotifier<RealtimeState>
   ///
   /// Invariant (dictated by the backend join contract): the EXISTING peer offers
   /// to the NEWCOMER; the newcomer only answers. We only ever hold a peer's LIVE
+  /// Sockets the server says this arrival replaces.
+  ///
+  /// Tolerant of shape: the payload has carried a plain list, and a rejoin
+  /// after a continuity gap is exactly the case where getting this wrong
+  /// leaves a permanent duplicate participant on screen.
+  List<String> _replacedSocketIdsFromPayload(Map<String, dynamic> payload) {
+    final raw = payload['replacedSocketIds'];
+    if (raw is! List) return const <String>[];
+    return raw
+        .map((entry) => entry?.toString().trim() ?? '')
+        .where((entry) => entry.isNotEmpty)
+        .toList(growable: false);
+  }
+
   /// socketId if we learned it from a participant.joined broadcast — i.e. we
   /// were already in the room when they joined. A newcomer sees existing peers
   /// only via the REST/hydrate roster, WITHOUT a live socketId, so it is
