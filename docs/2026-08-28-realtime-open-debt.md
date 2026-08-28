@@ -1,5 +1,56 @@
 # Realtime — open debt after the 2026-08-28 session
 
+---
+
+## FROZEN — MEETINGS SURFACE, 2026-08-28
+
+**Founder ruling:** *"everything good so far in meetings, freeze/lock this state
+after inspection of data. We should not touch meetings again until I found
+something wrong."*
+
+**Do not modify the meetings surface.** Not to improve it, not to make it
+consistent with the conversation surface, not to apply a fix that "obviously"
+belongs there too. It is working, it was verified, and it stays as it is until
+the founder finds a fault.
+
+### The state being frozen, inspected not assumed
+
+Session `cmtde8u2m…`, three participants, ~14 minutes, ended 00:31:56.
+
+```
+transports  3 created, 0 left open      no orphaned provider sessions
+tracks      12, ALL ENDED, 0 ACTIVE     nothing left subscribable
+departures  00:33:27 / 00:33:48 / 00:34:07, each explicit
+```
+
+Staggered explicit departures with NO 60-second heartbeat decay — this call
+ended properly rather than dying, which is what distinguishes it from the three
+that failed earlier the same evening.
+
+Verified working in this state: three-party meeting; invite link to a guest,
+login gate, join; screen share start AND stop with camera restore; clean
+teardown.
+
+### The honest edge on this freeze
+
+The freeze is on the SURFACE. Several open items live in code the meetings
+surface SHARES with conversation calls — the media service, the stage
+transport, `stage-media-authority.service.ts`. Two open items in particular
+cannot be fixed anywhere without reaching meetings:
+
+* `PHANTOM_TRACK_ROWS_FROM_SOCKET_STATE` — present in the frozen session itself
+  (12 track rows, only 5 carrying a provider name).
+* `STAGE_NO_ICE_RECOVERY`, and transport recovery generally.
+
+So "do not touch meetings" cannot mean "never change shared code", or the
+platform stops moving. It means: **meetings is not a place to make changes FOR,
+and any shared change that could reach it must be declared as such and
+re-verified on meetings before it is called done.** Silently altering meetings
+through a shared path would violate the freeze exactly as much as editing its
+screen.
+
+---
+
 Recorded so none of it depends on anyone remembering. Ordered by what a
 person actually feels, not by how interesting it is to fix.
 
@@ -173,8 +224,28 @@ Trace `op=REPLACE kind=video track=b4d33f88` at 19:59:44, and the receiving
 participant confirmed he could see the shared screen. Proven end to end, not
 inferred from a green suite.
 
-**Stop-sharing remains UNVERIFIED.** The call ended before we reached it. The
-camera-restore half of the repair has never been exercised in a real call.
+**Stop-sharing VERIFIED CLOSED, 20:30 in a three-party meeting.** Two REPLACE
+traces carrying DIFFERENT track ids -- `dd0cd40f` on start, `ab4bb4f1` on stop
+-- and the founder confirmed sharing on and off works. The first attempt that
+evening produced two traces carrying ONE id, which is what exposed the
+`_adoptLocal` defect; the differing ids are the proof the camera now goes back
+on the wire.
+
+**SURFACE BOUNDARY, stated because it matters (founder correction).** That
+verification happened on the MEETINGS surface. The two surfaces are separate
+screens with separate tile rendering:
+
+| | conversation call | meeting |
+|---|---|---|
+| share starts, remote sees it | VERIFIED 19:59:44 | VERIFIED |
+| stop restores camera for remote | **NOT VERIFIED** | VERIFIED 20:30 |
+
+The outbound MECHANISM is common to both -- one `startScreenShare`, one media
+service, one transport, and the `op=REPLACE` traces come from that shared
+transport -- so the publish path itself is proven. What remains unproven is
+stop-share AS EXPERIENCED on the conversation surface, which draws its own
+tiles. A working meeting is not evidence about a call; that is the same rule
+already recorded for cross-platform certification, applied to surfaces.
 
 Four further gaps, all found by USE rather than by reading:
 
