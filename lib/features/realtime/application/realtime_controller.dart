@@ -321,6 +321,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
       ' socketId=${_socketService.socketId}',
     );
     if (_socketService.isConnected) {
+      _clearTrouble();
       if (state.connectionStatus != RealtimeConnectionStatus.connected) {
         state = state.copyWith(connectionStatus: RealtimeConnectionStatus.connected);
       }
@@ -352,14 +353,21 @@ class RealtimeController extends StateNotifier<RealtimeState>
         identity: identity,
       );
 
+      _clearTrouble();
       state = state.copyWith(
         connectionStatus: RealtimeConnectionStatus.connected,
         infoMessage: 'Live connection ready.',
       );
     } catch (error) {
+      final status = _troubleStatus();
       state = state.copyWith(
-        connectionStatus: RealtimeConnectionStatus.error,
-        errorMessage: error.toString(),
+        connectionStatus: status,
+        errorMessage: status == RealtimeConnectionStatus.error
+            ? error.toString()
+            : null,
+        infoMessage: status == RealtimeConnectionStatus.reconnecting
+            ? 'Reconnecting…'
+            : null,
       );
       rethrow;
     }
@@ -645,8 +653,13 @@ class RealtimeController extends StateNotifier<RealtimeState>
           // exceptions) — never business data — and the exact reason is
           // what makes the state truthful and diagnosable.
           final reason = error.toString().replaceFirst('Exception: ', '');
+          // The streak counts ATTEMPTS; the budget counts TIME, and the
+          // server revokes on time. A streak exhausted inside the budget is
+          // still a call worth waiting for, so the shared budget has the
+          // final word on what the person is shown.
+          final status = _troubleStatus();
           state = state.copyWith(
-            connectionStatus: RealtimeConnectionStatus.error,
+            connectionStatus: status,
             joinState: RealtimeJoinState.idle,
             clearInfoMessage: true,
             errorMessage: 'Live connection could not be established. '
@@ -709,8 +722,13 @@ class RealtimeController extends StateNotifier<RealtimeState>
           // Same bounded-truth semantics as join(): a rejoin loop must not
           // hide the establishment reason behind an endless banner either.
           final reason = error.toString().replaceFirst('Exception: ', '');
+          // The streak counts ATTEMPTS; the budget counts TIME, and the
+          // server revokes on time. A streak exhausted inside the budget is
+          // still a call worth waiting for, so the shared budget has the
+          // final word on what the person is shown.
+          final status = _troubleStatus();
           state = state.copyWith(
-            connectionStatus: RealtimeConnectionStatus.error,
+            connectionStatus: status,
             joinState: RealtimeJoinState.idle,
             clearInfoMessage: true,
             errorMessage: 'Live connection could not be re-established. '
@@ -2276,6 +2294,9 @@ class RealtimeController extends StateNotifier<RealtimeState>
     switch (event.name) {
       case 'socket:connected':
         _cancelSignalingGrace();
+        // Recovered: the NEXT problem gets a fresh budget rather than
+        // inheriting a spent one from an incident already survived.
+        _clearTrouble();
         state = state.copyWith(
           connectionStatus: RealtimeConnectionStatus.connected,
           lastSocketEvent: event.name,
@@ -2348,9 +2369,20 @@ class RealtimeController extends StateNotifier<RealtimeState>
         return;
       case 'socket:connect_error':
       case 'socket:error':
+        // A transport error DURING A LIVE CALL is a reconnect, not a verdict.
+        // socket.io keeps retrying on its own, and both stage recovery and
+        // the server are still holding the call open at this point; showing
+        // error here is what put a recovering call on an error/retry screen
+        // after 25 seconds.
+        final socketStatus = _troubleStatus();
         state = state.copyWith(
-          connectionStatus: RealtimeConnectionStatus.error,
-          errorMessage: event.payload['message']?.toString(),
+          connectionStatus: socketStatus,
+          errorMessage: socketStatus == RealtimeConnectionStatus.error
+              ? event.payload['message']?.toString()
+              : null,
+          infoMessage: socketStatus == RealtimeConnectionStatus.reconnecting
+              ? 'Reconnecting…'
+              : null,
           lastSocketEvent: event.name,
         );
         return;
@@ -3114,6 +3146,56 @@ class RealtimeController extends StateNotifier<RealtimeState>
   /// The lesson generalises: recovery cannot depend on being re-triggered by
   /// the thing that failed. It has to drive itself until it succeeds or its
   /// budget runs out.
+  /// ONE PATIENCE BUDGET FOR THE WHOLE CALL.
+  ///
+  /// THE DEFECT THIS CLOSES (founder-observed 2026-08-28): during a network
+  /// outage the call "was redirected to error/retry almost after 25 sec".
+  /// That is `_establishTimeout` (20s) plus `_idAssignmentMaxWait` (5s) in
+  /// the socket service — and it fired while stage recovery was still
+  /// working and while the server was still holding the participant.
+  ///
+  /// THREE COMPONENTS EACH DECIDED WHEN THE CALL WAS DEAD, AND DISAGREED:
+  ///
+  ///     socket establishment   25s   -> error/retry on screen
+  ///     stage recovery         ~41s  (18s detect + 2/6/15 backoff)
+  ///     server revoke          60s
+  ///
+  /// The SHORTEST answer owned what the person saw, so a call that was being
+  /// recovered correctly still looked broken — and the error path could tear
+  /// down the very controller doing the recovering. Making the transport
+  /// recoverable is worth nothing while the UI gives up first.
+  ///
+  /// The ordering has to run the other way: the person sees "reconnecting"
+  /// until recovery has genuinely had its chance, and only then error. This
+  /// budget sits ABOVE stage recovery's ~41s so recovery is never cut off
+  /// mid-attempt, and BELOW the server's 60s revoke so we never promise a
+  /// call the server has already given up on.
+  ///
+  /// It is not infinite patience: a call outside its budget, or with no live
+  /// session at all, still reports the real failure. Truth over hope, only
+  /// later than before.
+  static const Duration _reconnectPatience = Duration(seconds: 45);
+  DateTime? _troubleSince;
+
+  /// What a connection failure should LOOK like right now.
+  RealtimeConnectionStatus _troubleStatus() {
+    // No live call to be patient about — a failure is simply a failure.
+    final inCall = (state.sessionId ?? '').isNotEmpty &&
+        (state.isJoined || state.joinState == RealtimeJoinState.joining) &&
+        !_terminating &&
+        !_endingCall;
+    if (!inCall) return RealtimeConnectionStatus.error;
+
+    final since = _troubleSince ??= DateTime.now();
+    if (DateTime.now().difference(since) < _reconnectPatience) {
+      return RealtimeConnectionStatus.reconnecting;
+    }
+    return RealtimeConnectionStatus.error;
+  }
+
+  /// The call is healthy again: the next problem starts its own budget.
+  void _clearTrouble() => _troubleSince = null;
+
   Future<void> _recoverStage(
     String reason,
     Object lost,

@@ -378,8 +378,73 @@ Two supporting repairs, both also caused by induced failures:
   empty and there was no way to tell a probe that saw health from one that was
   not running.
 
-**Next verification owed:** a 40-second outage, long enough to clear both the
-18-second stall threshold and ICE's ~30s consent timeout.
+### 40-second test result (21:51-21:53) — detection PROVEN, one branch still owed
+
+```
+21:51:42 web      op=LIVE bytes=1718314 stall=0 armed=true
+21:51:46 android  op=LIVE bytes=6384475 stall=0 armed=true
+21:52:09 web      op=ICE state=lost reason=media_stalled_18s iceHealthy=true
+21:52:09 web      stage_recovery_resubscribe reason=media_stalled_18s
+```
+
+* **Detection PROVEN.** The byte probe armed, tracked real counters, and caught
+  the stall at exactly 18s. Fourth signal design; the first that ever fired.
+* **The protective branch PROVEN.** Web read its OWN ice as healthy, concluded
+  the silence belonged to the departed peer, and RE-SUBSCRIBED rather than
+  rebuilding. Its publication was never touched, so other participants in that
+  call would have been unaffected. This is the branch that matters most: the
+  previous version would have torn down a healthy transport to fix somebody
+  else's problem.
+* **The rebuild branch STILL UNPROVEN.** The Pixel was revoked by the 60s
+  heartbeat timeout while dark, and never got to exercise it.
+
+**`DIAGNOSTICS_REFUSED_FOR_DEPARTED_PARTICIPANT`** — OPEN, medium, and a neat
+recurrence of a principle already learned tonight. The queued blackout traces
+never arrived: `/realtime/sessions/:id/stage/diagnostics` requires an ACTIVE
+participant, so once the Pixel was revoked every held report was refused. **The
+evidence explaining why a participant was lost is rejected on the grounds that
+the participant was lost.** Observability must not depend on the resource whose
+failure it reports — first the network, now session membership. Fix: accept
+reports from a recently-departed participant.
+
+**`RECOVERY_BUDGET_VS_SERVER_PATIENCE`** — OPEN, low, recorded because tuning
+either number blindly would be a mistake. The server revokes at 60s. Detection
+costs 18s and the retry backoff adds 2+6+15 = 23s, so a full budget runs to
+~41s. Not wrong, but far closer to the server's limit than intended. Shorten
+the FIRST backoff before touching anything else — attempt one is the one most
+likely to succeed and currently waits needlessly.
+
+**`RECONNECT_PATIENCE_IS_NOT_SHARED`** — OPEN, HIGH, and it caps the value of
+everything above. Founder-observed: during the outage the client "was
+redirected to error/retry almost after 25 sec". The arithmetic is exact —
+`realtime_socket_service.dart` uses `_establishTimeout = 20s` plus
+`_idAssignmentMaxWait = 5s`, so socket establishment fails at 25s and the UI
+surfaces error/retry.
+
+Three components independently decide when a call is dead, and they disagree:
+
+| authority | gives up at |
+|---|---|
+| socket establishment | **25s** -> error/retry screen |
+| stage recovery | detection 18s, full budget ~41s |
+| server revoke | 60s |
+
+The SHORTEST one owns what the person sees. Stage recovery is still working
+behind a screen that has already declared failure, and if that path tears down
+the controller then recovery dies with it regardless of how correct it is.
+
+This is the same "two authorities for one question" shape as the phantom track
+rows and the roster-vs-renderer grid, now in the time dimension: nobody owns
+"how long do we wait before calling a call lost".
+
+**Making the transport recoverable does not help while the UI gives up first.**
+The fix is a single shared patience budget — the call reads as reconnecting
+until recovery genuinely exhausts itself or the server revokes, and only then
+does error/retry appear. That ordering (server 60s > recovery ~41s > socket
+25s) is currently inverted.
+
+**Next verification owed:** the rebuild branch — an outage on a client whose own
+ICE genuinely dies, short enough that it is not revoked before recovery runs.
 
 ---
 
