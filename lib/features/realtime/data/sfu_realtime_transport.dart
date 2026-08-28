@@ -301,6 +301,38 @@ class SfuRealtimeTransport implements RealtimeTransport {
         .toList(growable: false);
     if (trackIds.isEmpty) return _remote;
 
+    // RETIRE RECEIVERS FOR TRACKS THAT NO LONGER EXIST.
+    //
+    // `_subscribed` only ever grew. When somebody republishes — camera off and
+    // on, a re-acquisition after a reconnect — the server mints NEW track rows
+    // and ends the old ones, so the next reconcile subscribes again and
+    // Cloudflare adds another pair of `recvonly` m-lines. The previous pair
+    // stays on this peer connection for the rest of the call.
+    //
+    // Measured live 2026-08-28: transceivers climbing 6 → 8 → 10 → 12 → 14
+    // with `receiving=12 bound=2`. Ten dead lines, two live ones.
+    //
+    // A track that has vanished from the session's available list is one this
+    // client can no longer be receiving anything on. Closing it on OUR OWN
+    // provider session drops our receiver; it does not touch the publisher's
+    // track, which belongs to them.
+    final availableSet = trackIds.toSet();
+    final stale =
+        _subscribed.where((id) => !availableSet.contains(id)).toList(growable: false);
+    if (stale.isNotEmpty) {
+      final retired =
+          await _repository.unsubscribeStageTracks(sessionId, trackIds: stale);
+      // Forget them regardless of what the provider said. If the close failed
+      // we are no worse off than before, and continuing to treat a dead track
+      // as subscribed would block a later re-subscribe to a track that reuses
+      // the id — the one way this could make things worse.
+      _subscribed.removeAll(stale);
+      unawaited(_report(
+        'op=RETIRE stale=${stale.length} retired=$retired '
+        'subscribed=${_subscribed.length}',
+      ));
+    }
+
     // Only subscribe to what is NEW.
     //
     // THE DEFECT THIS FIXES (found on the real product path, 2026-08-26): the

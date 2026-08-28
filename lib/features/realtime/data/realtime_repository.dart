@@ -438,6 +438,28 @@ class RealtimeRepository {
     return _unwrapMap(res.data);
   }
 
+  /// Retire the RECEIVE side of tracks this client no longer needs.
+  ///
+  /// Best-effort: failing to tidy a stale receiver leaves the client exactly
+  /// where it already was, so it must never fail the reconciliation that
+  /// noticed it.
+  Future<int> unsubscribeStageTracks(
+    String sessionId, {
+    required List<String> trackIds,
+  }) async {
+    if (trackIds.isEmpty) return 0;
+    try {
+      final res = await _dio.post(
+        '/realtime/sessions/$sessionId/stage/tracks/unsubscribe',
+        data: <String, dynamic>{'trackIds': trackIds},
+      );
+      final body = _unwrapMap(res.data);
+      return (body['retired'] as num?)?.toInt() ?? 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
   Future<void> renegotiateStage(
     String sessionId, {
     required String answerSdp,
