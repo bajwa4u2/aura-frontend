@@ -88,7 +88,29 @@ class RealtimeController extends StateNotifier<RealtimeState>
   // per-peer grace; their tile shows "Reconnecting…" and only leaves for real
   // when the window expires.
   Timer? _signalingGraceTimer;
-  static const Duration _signalingGrace = Duration(seconds: 45);
+  /// THE CLIENT MUST NOT ABANDON A SESSION THE SERVER STILL HOLDS.
+  ///
+  /// This was 45s while the server revokes a silent participant at 60s, so a
+  /// client destroyed its own resume state FIFTEEN SECONDS BEFORE the call it
+  /// was trying to rejoin actually expired. On expiry this grace calls
+  /// `resetSessionMedia()` and clears session context -- which takes
+  /// `_resumeSessionId` with it, and that is precisely what the automatic
+  /// rejoin on `socket:connected` needs. The recovery mechanism disarmed
+  /// itself, which is why a returning network did not restore the call and
+  /// the founder had to rejoin by hand through the thread banner
+  /// (2026-08-28).
+  ///
+  /// The ordering has to be: the client keeps hoping slightly LONGER than the
+  /// server does, never shorter. Then a socket that returns at 50 seconds
+  /// still finds a session to rejoin, and if the server HAS revoked, the
+  /// rejoin fails cleanly through `_mapJoinError` and says so -- an honest
+  /// failure after asking, rather than a silent teardown that never asked.
+  ///
+  /// This is deliberately NOT the same number as the UI patience budget.
+  /// What we SHOW and what we DESTROY are different questions: after 45s we
+  /// stop promising the person it will come back, but we keep the session
+  /// recoverable until the server itself has let go.
+  static const Duration _signalingGrace = Duration(seconds: 75);
   final Map<String, Timer> _peerGraceTimers = <String, Timer>{};
   static const Duration _peerGrace = Duration(seconds: 45);
   // userId → last known live socketId, so a rejoining peer's stale peer
