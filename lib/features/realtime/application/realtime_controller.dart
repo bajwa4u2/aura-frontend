@@ -2757,6 +2757,36 @@ class RealtimeController extends StateNotifier<RealtimeState>
       case 'policy:updated':
       case 'session:policyUpdated':
       case 'session:updated':
+      // SOMEBODY'S PUBLISHED MEDIA CHANGED. THAT IS ITS OWN FACT.
+      //
+      // Re-subscription used to happen only when the roster changed, and a
+      // roster change is a different event from a publication. A participant
+      // who joined and published four seconds later was reconciled against
+      // BEFORE they had anything to offer, and nothing ever asked again:
+      // measured 2026-08-28 in a three-party call where all three transports
+      // were open and one person's media reached nobody.
+      //
+      // The reconciliation is idempotent, so this needs no de-duplication of
+      // its own: the transport subscribes only track ids it has not already
+      // subscribed to, and the media service replaces renderers only when the
+      // resolved tracks actually differ.
+      case 'session:media.published':
+        if (state.joinState == RealtimeJoinState.idle) {
+          state = state.copyWith(lastSocketEvent: event.name);
+          return;
+        }
+        // THE PUBLISHER RECONCILES TOO, AND THAT IS FINE.
+        //
+        // Suppressing it would need this controller to know its own
+        // participant id, which it does not hold today — and the work saved
+        // is nothing: `listSubscribableTracks` already excludes the caller's
+        // own tracks, so a publisher's reconcile finds only what it may
+        // already have, `fresh` comes back empty, and the transport returns
+        // without calling the provider at all. Plumbing an identity through
+        // to skip a no-op would be the more expensive mistake.
+        state = state.copyWith(lastSocketEvent: event.name);
+        unawaited(_reconcileRtcPeers('media.published'));
+        return;
       case 'session:participantUpdated':
       case 'session:participantRemoved':
       case 'consent:updated':
@@ -2931,9 +2961,20 @@ class RealtimeController extends StateNotifier<RealtimeState>
 
   void reportGridObservation(String message) {
     if (message == _lastGridObservation) return;
-    _lastGridObservation = message;
+    // DO NOT SPEND THE DEDUPE KEY ON AN OBSERVATION THAT WAS NEVER SENT.
+    //
+    // The first version stamped `_lastGridObservation` before checking the
+    // session id, so an observation made in the instant before the session
+    // was known counted as "already reported" — and if the state then held
+    // steady, the identical message was suppressed for ever and the probe
+    // stayed silent for the whole call. That happened on 2026-08-28: Chrome
+    // produced no grid report at all for a session it was plainly in.
+    //
+    // Instrumentation that can silently stop reporting is worse than none,
+    // because its silence reads as "nothing to say".
     final sessionId = _managedSessionId;
     if (sessionId.isEmpty) return;
+    _lastGridObservation = message;
     unawaited(_repository.reportStageDiagnostic(
       sessionId,
       phase: 'grid',

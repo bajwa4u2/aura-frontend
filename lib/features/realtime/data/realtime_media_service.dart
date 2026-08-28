@@ -1046,7 +1046,7 @@ class RealtimeMediaService {
       return false;
     }
 
-    final local = _localStream ?? await createLocalMediaStream('local');
+    final local = _localStream ?? await createLocalMediaStream(_localOwnerTag);
     _localStream = local;
     try {
       await local.addTrack(track);
@@ -1127,8 +1127,18 @@ class RealtimeMediaService {
         }
         if (!replaced) {
           try {
+            // SAME TRAP AS THE REMOTE PATH: the label becomes the native
+            // `ownerTag`, and only `local` resolves against the platform's
+            // `localStreams` registry. A stream tagged `screen-share` is a
+            // stream the native side cannot find — the exact defect that made
+            // Android draw nothing for remote video (2026-08-28), still
+            // executable here because this branch only runs when a peer has
+            // no video sender to replace.
+            //
+            // What this stream IS, is local. That is the whole content of the
+            // argument, and the descriptive name belonged nowhere near it.
             final sendStream =
-                _localStream ?? await createLocalMediaStream('screen-share');
+                _localStream ?? await createLocalMediaStream(_localOwnerTag);
             await peer.addTrack(screenTrack, sendStream);
             needsRenegotiation = true;
           } catch (error) {

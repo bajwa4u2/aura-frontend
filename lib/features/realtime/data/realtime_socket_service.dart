@@ -402,6 +402,11 @@ class RealtimeSocketService {
       'session:participant.joined',
       'session:participant.resumed',
       'session:participant.left',
+      // A PUBLICATION IS NOT A ROSTER CHANGE. Somebody who joined and then
+      // published a few seconds later was reconciled against before they had
+      // anything to offer, and nothing asked again — a whole participant's
+      // media reached nobody in a real three-party call (2026-08-28).
+      'session:media.published',
       'session:track.updated',
       'session:offer',
       'session:answer',

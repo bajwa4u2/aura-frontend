@@ -2454,6 +2454,17 @@ class _VideoGrid extends StatelessWidget {
     return v.startsWith('socket:') ? v.substring(7) : v;
   }
 
+  /// The local person's own avatar, so a camera-off self tile is a face
+  /// rather than a void. Read from the roster, which already holds it.
+  String? _selfAvatarUrl() {
+    final me = myUserId.trim();
+    if (me.isEmpty) return null;
+    for (final p in participants) {
+      if (p.userId.trim() == me) return p.avatarUrl;
+    }
+    return null;
+  }
+
   String _nameOf(RealtimeParticipant p) {
     if (p.userId == myUserId) return 'You';
     final name = (p.displayName ?? '').trim();
@@ -2504,10 +2515,21 @@ class _VideoGrid extends StatelessWidget {
     // find a mesh renderer for that person — never to decide who they are,
     // and never as the thing being iterated. Iterating devices is what made
     // this grid blind to the stage transport, which has no devices at all.
-    final entries = <(String, RTCVideoRenderer, bool)>[];
-    if (localRenderer != null) {
-      entries.add(('You', localRenderer!, true));
-    }
+    // A TILE IS A PERSON, NOT A RENDERER.
+    //
+    // Founder-observed 2026-08-28 in a three-party call: a participant with
+    // their camera off had their audio subscribed and bound on every client
+    // and appeared on none of them, because a tile was only built where a
+    // video renderer existed. That relationship is backwards — participation
+    // creates the tile, and video is optional content inside it.
+    final entries = <_TileSpec>[];
+    entries.add(_TileSpec(
+      label: 'You',
+      renderer: localRenderer,
+      avatarUrl: _selfAvatarUrl(),
+      mirror: true,
+      micOn: micOn,
+    ));
 
     final claimed = <String>{};
     final others = <ParticipantRef>[];
@@ -2534,8 +2556,13 @@ class _VideoGrid extends StatelessWidget {
         byParticipant: renderersByParticipant,
         byDevice: remoteRenderers,
       );
-      if (renderer == null) continue;
-      entries.add((_nameOf(p), renderer, false));
+      entries.add(_TileSpec(
+        label: _nameOf(p),
+        renderer: renderer,
+        avatarUrl: p.avatarUrl,
+        mirror: false,
+        micOn: p.audioOn,
+      ));
     }
 
     // A live renderer nobody in the roster claims — shown only while somebody
@@ -2550,7 +2577,13 @@ class _VideoGrid extends StatelessWidget {
         continue;
       }
       if (!showUnattributed) continue;
-      entries.add((_labelForPeerKey(entry.key), entry.value, false));
+      entries.add(_TileSpec(
+        label: _labelForPeerKey(entry.key),
+        renderer: entry.value,
+        avatarUrl: null,
+        mirror: false,
+        micOn: true,
+      ));
     }
 
     return LayoutBuilder(
@@ -2558,54 +2591,18 @@ class _VideoGrid extends StatelessWidget {
         final w = constraints.maxWidth;
         final h = constraints.maxHeight;
 
-        if (entries.length == 1) {
-          return _VideoTile(
-            label: entries.first.$1,
-            renderer: entries.first.$2,
-            mirror: entries.first.$3,
-            micOn: entries.first.$1 == 'You' ? micOn : true,
-          );
-        }
+        if (entries.length == 1) return _tile(entries.first);
 
         if (entries.length == 2) {
-          final isLandscape = w > h;
-          if (isLandscape) {
-            return Row(
-              children: entries
-                  .map(
-                    (e) => Expanded(
-                      child: _VideoTile(
-                        label: e.$1,
-                        renderer: e.$2,
-                        mirror: e.$3,
-                        micOn: e.$1 == 'You' ? micOn : true,
-                      ),
-                    ),
-                  )
-                  .toList(),
-            );
-          }
-          return Column(
-            children: entries
-                .map(
-                  (e) => Expanded(
-                    child: _VideoTile(
-                      label: e.$1,
-                      renderer: e.$2,
-                      mirror: e.$3,
-                      micOn: e.$1 == 'You' ? micOn : true,
-                    ),
-                  ),
-                )
-                .toList(),
-          );
+          final children = entries
+              .map((e) => Expanded(child: _tile(e)))
+              .toList(growable: false);
+          return w > h ? Row(children: children) : Column(children: children);
         }
 
         // 3+ participants — responsive grid
         final cols = w >= 900
             ? 3
-            : w >= 600
-            ? 2
             : 2;
         final rows = (entries.length / cols).ceil();
         final tileH = h / rows;
@@ -2615,104 +2612,230 @@ class _VideoGrid extends StatelessWidget {
           width: w,
           height: h,
           child: Wrap(
-            children: entries.map((e) {
-              return SizedBox(
-                width: tileW,
-                height: tileH,
-                child: _VideoTile(
-                  label: e.$1,
-                  renderer: e.$2,
-                  mirror: e.$3,
-                  micOn: e.$1 == 'You' ? micOn : true,
-                ),
-              );
-            }).toList(),
+            children: entries
+                .map((e) => SizedBox(width: tileW, height: tileH, child: _tile(e)))
+                .toList(growable: false),
           ),
         );
       },
     );
   }
+
+  Widget _tile(_TileSpec spec) => _VideoTile(
+        label: spec.label,
+        renderer: spec.renderer,
+        avatarUrl: spec.avatarUrl,
+        mirror: spec.mirror,
+        micOn: spec.micOn,
+      );
+}
+
+/// One seat at the table. The renderer is optional; the person is not.
+class _TileSpec {
+  const _TileSpec({
+    required this.label,
+    required this.renderer,
+    required this.avatarUrl,
+    required this.mirror,
+    required this.micOn,
+  });
+
+  final String label;
+  final RTCVideoRenderer? renderer;
+  final String? avatarUrl;
+  final bool mirror;
+  final bool micOn;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VIDEO TILE
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _VideoTile extends StatelessWidget {
+/// ONE SEAT. Video when there is video, the person when there is not.
+///
+/// ## Identity is not a permanent label
+///
+/// Founder-frozen direction: the live canvas is media-first and low-noise, and
+/// a participant's name is not painted over their picture for the whole call.
+/// It is revealed on intent — hover with a pointer, tap on touch — and recedes
+/// again. The avatar already says who somebody is when their camera is off, so
+/// a nameplate exists to resolve ambiguity, not to prove identity.
+///
+/// The muted indicator is the one persistent mark, and it earns the space: it
+/// is live STATE rather than identity, and it answers "why can I not hear
+/// them" at a glance, which is the question that otherwise costs a person the
+/// whole conversation.
+class _VideoTile extends StatefulWidget {
   const _VideoTile({
     required this.label,
     required this.renderer,
     required this.micOn,
+    this.avatarUrl,
     this.mirror = false,
   });
 
   final String label;
-  final RTCVideoRenderer renderer;
+
+  /// Optional. A participant with their camera off still has a tile — that is
+  /// the entire point of the 2026-08-28 repair.
+  final RTCVideoRenderer? renderer;
+  final String? avatarUrl;
   final bool micOn;
   final bool mirror;
 
   @override
+  State<_VideoTile> createState() => _VideoTileState();
+}
+
+class _VideoTileState extends State<_VideoTile> {
+  bool _identityVisible = false;
+  Timer? _hideTimer;
+
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    super.dispose();
+  }
+
+  void _show({Duration? autoHideAfter}) {
+    _hideTimer?.cancel();
+    if (!_identityVisible) setState(() => _identityVisible = true);
+    if (autoHideAfter != null) {
+      _hideTimer = Timer(autoHideAfter, () {
+        if (mounted) setState(() => _identityVisible = false);
+      });
+    }
+  }
+
+  void _hide() {
+    _hideTimer?.cancel();
+    if (_identityVisible) setState(() => _identityVisible = false);
+  }
+
+  bool get _hasVideo {
+    final renderer = widget.renderer;
+    if (renderer == null) return false;
+    // The TRACK is the truth, not a roster flag — the same rule the rest of
+    // this chapter settled on.
+    return renderer.srcObject != null && renderer.renderVideo;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Stack(
+    final tile = Stack(
       fit: StackFit.expand,
       children: [
         Container(color: const Color(0xFF080E18)),
-        // EVERY TILE FILLS ITS FRAME, WHATEVER THE SOURCE.
-        //
-        // Founder-observed in a real two-party call, 2026-08-25: "in call
-        // frame one vertical one landscape". A phone publishes portrait
-        // (9:16) and a laptop webcam publishes landscape (16:9). With
-        // `Contain` each stream is letterboxed to its OWN aspect inside a
-        // shared tile, so the two participants appeared as two differently
-        // shaped pictures — one tall and pillarboxed, one wide — in a grid
-        // that is meant to read as equal seats at the same table.
-        //
-        // `Cover` crops instead of letterboxing, so every tile is the same
-        // shape and the composition stays coherent no matter what anyone
-        // dialled in from. This is what the Meetings live room and the PiP
-        // already do; the thread-call room was the one surface still
-        // letterboxing.
-        RTCVideoView(
-          renderer,
-          mirror: mirror,
-          objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-        ),
-        // Name + mic overlay at bottom-left
+        if (_hasVideo)
+          // EVERY TILE FILLS ITS FRAME, WHATEVER THE SOURCE.
+          //
+          // Founder-observed in a real two-party call, 2026-08-25: "in call
+          // frame one vertical one landscape". A phone publishes portrait and
+          // a laptop webcam publishes landscape; `Contain` letterboxes each to
+          // its OWN aspect inside a shared tile, so two people appear as two
+          // differently shaped pictures in a grid meant to read as equal seats.
+          RTCVideoView(
+            widget.renderer!,
+            mirror: widget.mirror,
+            objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+          )
+        else
+          _CameraOffPresence(label: widget.label, avatarUrl: widget.avatarUrl),
+
+        // Muted: live state, always legible.
+        if (!widget.micOn)
+          Positioned(
+            left: AuraSpace.s10,
+            bottom: AuraSpace.s10,
+            child: Container(
+              padding: const EdgeInsets.all(AuraSpace.s6),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.55),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.mic_off_rounded,
+                size: 13,
+                color: Colors.white70,
+              ),
+            ),
+          ),
+
+        // Identity: on intent only.
         Positioned(
           left: AuraSpace.s10,
-          bottom: AuraSpace.s10,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s8,
-              vertical: AuraSpace.s4,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.55),
-              borderRadius: BorderRadius.circular(AuraRadius.pill),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (!micOn) ...[
-                  const Icon(
-                    Icons.mic_off_rounded,
-                    size: 11,
-                    color: Colors.white70,
+          right: AuraSpace.s10,
+          bottom: widget.micOn ? AuraSpace.s10 : 40,
+          child: IgnorePointer(
+            child: AnimatedOpacity(
+              opacity: _identityVisible ? 1 : 0,
+              duration: const Duration(milliseconds: 140),
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AuraSpace.s8,
+                    vertical: AuraSpace.s4,
                   ),
-                  const SizedBox(width: 4),
-                ],
-                Text(
-                  label,
-                  style: AuraText.micro.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.55),
+                    borderRadius: BorderRadius.circular(AuraRadius.pill),
+                  ),
+                  child: Text(
+                    widget.label,
+                    style: AuraText.micro.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
       ],
+    );
+
+    return MouseRegion(
+      onEnter: (_) => _show(),
+      onExit: (_) => _hide(),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        // Touch has no hover, so a tap reveals and the label recedes on its
+        // own. Without the timer the first tap would turn into exactly the
+        // permanent nameplate this replaces.
+        onTap: () => _identityVisible
+            ? _hide()
+            : _show(autoHideAfter: const Duration(seconds: 3)),
+        child: tile,
+      ),
+    );
+  }
+}
+
+/// A person whose camera is off. Their face, not a void.
+class _CameraOffPresence extends StatelessWidget {
+  const _CameraOffPresence({required this.label, required this.avatarUrl});
+
+  final String label;
+  final String? avatarUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = math.min(
+          math.min(constraints.maxWidth, constraints.maxHeight) * 0.34,
+          120.0,
+        );
+        return Center(
+          child: AuraAvatar(
+            imageUrl: avatarUrl,
+            name: label,
+            size: size.clamp(40.0, 120.0),
+          ),
+        );
+      },
     );
   }
 }
