@@ -197,6 +197,22 @@ class RealtimeState {
       remoteRenderers: clearRemoteRenderers
           ? <String, RTCVideoRenderer>{}
           : (remoteRenderers ?? this.remoteRenderers),
+      // A PARAMETER THAT IS ACCEPTED MUST BE ASSIGNED.
+      //
+      // This line was missing. `copyWith` took
+      // `remoteRenderersByParticipant`, ignored it, and let the field fall
+      // back to its `const {}` default — so the canonical, participant-keyed
+      // renderer map was destroyed on every single state update, while the
+      // call site in the controller read as though it were being carried.
+      //
+      // Nothing upstream could reveal it: the media service built the
+      // renderers correctly, the snapshot carried them correctly, and the
+      // element was in the document with a live track. Founder-observed
+      // 2026-08-28 as an SFU call that bound both remote tracks
+      // (`bound=2 noMid=0 noLine=0`) and still drew one tile.
+      remoteRenderersByParticipant: clearRemoteRenderers
+          ? <String, RTCVideoRenderer>{}
+          : (remoteRenderersByParticipant ?? this.remoteRenderersByParticipant),
       microphoneEnabled: microphoneEnabled ?? this.microphoneEnabled,
       cameraEnabled: cameraEnabled ?? this.cameraEnabled,
       mediaError: clearMediaError ? null : (mediaError ?? this.mediaError),
