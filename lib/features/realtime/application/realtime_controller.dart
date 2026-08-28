@@ -2916,6 +2916,33 @@ class RealtimeController extends StateNotifier<RealtimeState>
   String get _clientPlatform =>
       kIsWeb ? 'web' : defaultTargetPlatform.name;
 
+  /// THE LAST UNLIT STRETCH: canonical map → state → widget → tile → mount.
+  ///
+  /// Every arrow before this one is now evidenced. Cloudflare returns valid
+  /// bindings, the client binds them, the media service creates and holds a
+  /// renderer, and the track decodes at ~30fps — and on web the tile is not
+  /// drawn. Server records cannot see any of the remaining steps, and reading
+  /// the widget tree by hand has twice produced a plausible wrong answer.
+  ///
+  /// So the grid states what it saw and what it decided, once per distinct
+  /// observation. Deduplicated because `build` runs on every frame and an
+  /// undeduplicated report would be a firehose, not evidence.
+  String? _lastGridObservation;
+
+  void reportGridObservation(String message) {
+    if (message == _lastGridObservation) return;
+    _lastGridObservation = message;
+    final sessionId = _managedSessionId;
+    if (sessionId.isEmpty) return;
+    unawaited(_repository.reportStageDiagnostic(
+      sessionId,
+      phase: 'grid',
+      code: 'grid_state',
+      message: message,
+      platform: _clientPlatform,
+    ));
+  }
+
   /// Canonical trigger label for the stage trace (§6).
   static String _stageTrigger(String reason) {
     switch (reason) {

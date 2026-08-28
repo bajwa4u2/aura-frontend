@@ -1136,7 +1136,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     required bool canModerate,
     required bool wide,
   }) {
-    final stage = _CallStage(state: state, myUserId: myUserId);
+    final stage = _CallStage(state: state, myUserId: myUserId, ref: ref);
 
     if (!wide || _activePanel == null) return stage;
 
@@ -2264,10 +2264,82 @@ class _ConnectionBanner extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _CallStage extends StatelessWidget {
-  const _CallStage({required this.state, required this.myUserId});
+  const _CallStage({required this.state, required this.myUserId, this.ref});
 
   final RealtimeState state;
   final String myUserId;
+  final WidgetRef? ref;
+
+  /// Short, stable id fragment. Enough to compare two identifiers, not enough
+  /// to be an identifier.
+  static String _short(String value) {
+    final v = value.trim();
+    return v.isEmpty ? 'none' : (v.length <= 8 ? v : v.substring(0, 8));
+  }
+
+  /// STATE WHAT WAS SEEN AND WHAT WAS DECIDED — the arrows a server cannot see.
+  ///
+  /// Bounded deliberately: id PREFIXES, counts, and booleans. No display
+  /// names, no handles, no device identifiers in full, no SDP, no media.
+  void _observe({
+    required RealtimeState state,
+    required String myUserId,
+    required String branch,
+    required bool someoneSharingScreen,
+  }) {
+    final reporter = ref;
+    if (reporter == null) return;
+
+    final byParticipant = state.remoteRenderersByParticipant;
+    final byDevice = state.remoteRenderers;
+
+    final lines = <String>[
+      'branch=$branch video=${state.isVideoMode} share=$someoneSharingScreen '
+          'local=${state.localRenderer != null} me=${_short(myUserId)}',
+      'roster=${state.participants.length} '
+          'ids=[${state.participants.map((p) => _short(p.id)).join(',')}]',
+      'byPart=${byParticipant.length} '
+          'keys=[${byParticipant.keys.map(_short).join(',')}]',
+      'legacy=${byDevice.length} '
+          'keys=[${byDevice.keys.map(_short).join(',')}]',
+    ];
+
+    var tiles = state.localRenderer != null ? 1 : 0;
+    for (final p in state.participants) {
+      final isSelf =
+          p.userId.trim().isNotEmpty && p.userId.trim() == myUserId.trim();
+      if (isSelf) continue;
+      final device = (p.runtimeDeviceId ?? '').trim();
+      final first = byParticipant[p.id];
+      final legacy = device.isEmpty ? null : byDevice[device];
+      final renderer = first ?? legacy;
+      if (renderer != null) tiles += 1;
+      lines.add(
+        'p=${_short(p.id)} dev=${_short(device)} vOn=${p.videoOn} '
+        'aOn=${p.audioOn} present=${p.isPresent} '
+        'first=${first != null ? 'HIT' : 'MISS'} '
+        'legacy=${device.isEmpty ? 'SKIP' : (legacy != null ? 'HIT' : 'MISS')} '
+        'tile=${renderer != null} '
+        'src=${renderer?.srcObject != null} '
+        'dim=${renderer?.videoWidth ?? 0}x${renderer?.videoHeight ?? 0} '
+        'renderVideo=${renderer?.renderVideo}',
+      );
+    }
+    lines.add('tiles=$tiles');
+
+    final message = lines.join(' | ');
+    // After the frame: `build` must stay free of side effects, and a report
+    // that runs mid-build can re-enter the widget tree.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        reporter
+            .read(realtimeControllerProvider.notifier)
+            .reportGridObservation(message);
+      } catch (_) {
+        // Observability must never be able to break the call stage.
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -2294,8 +2366,23 @@ class _CallStage extends StatelessWidget {
     final someoneSharingScreen =
         state.isScreenSharing || state.participants.any((p) => p.screenOn);
 
+    final takesGrid =
+        (state.isVideoMode || someoneSharingScreen) && hasAnyRenderer;
+    _observe(
+      state: state,
+      myUserId: myUserId,
+      branch: takesGrid
+          ? 'grid'
+          : (state.isMediaBusy && !state.isMediaReady && !hasAnyRenderer)
+              ? 'loading'
+              : (mediaError.isNotEmpty && !hasAnyRenderer)
+                  ? 'warning'
+                  : 'avatar',
+      someoneSharingScreen: someoneSharingScreen,
+    );
+
     // Video call (or active screen share) with renderers
-    if ((state.isVideoMode || someoneSharingScreen) && hasAnyRenderer) {
+    if (takesGrid) {
       return _VideoGrid(
         localRenderer: state.localRenderer,
         remoteRenderers: state.remoteRenderers,
