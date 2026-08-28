@@ -5,6 +5,19 @@ person actually feels, not by how interesting it is to fix.
 
 ---
 
+## 0. STATE AT END OF 2026-08-28
+
+Closed today, founder-certified or measured: private conversation disclosure
+boundary, SFU media (two- and three-party), **global SFU cutover**
+(`REALTIME_SFU_CLIENT_PATH=enabled` — note the value is the literal string
+`enabled`, not a boolean), provider track-name uniqueness, late-answer call
+invites, session auto-end under recovering participants, messages-list N+1,
+the 429 rate-limit split, and the native screen-share owner-tag trap.
+
+Everything below is what remains.
+
+---
+
 ## 1. `JOINED_LOST_MID_CALL` — the one under several symptoms
 
 The controller stops considering itself joined while the call is still running.
@@ -20,7 +33,40 @@ socket reconnect, the stale-presence sweep (15s cadence, 30s stale window).
 None of them obviously produces 7–10 minutes, which is exactly why it needs
 evidence rather than another guess.
 
-**Next step:** capture a long call's chronology at the moment of the drop.
+### What was established 2026-08-28, with both sides observed at once
+
+```
+SERVER   bajwawrites  ACTIVE, heartbeat ~6s old
+         zakria       ACTIVE
+         mrshah       DISCONNECTED
+CLIENT   Chrome       "Connecting… Setting up your session" at 06:39 in
+                      0 HTTP calls in 120s · navigator.onLine = true
+```
+
+Heartbeats travel over the SOCKET, not HTTP, so zero HTTP calls is consistent
+with a live socket — and the server had just received one.
+
+```
+FIRST_BROKEN_ARROW = server participant ACTIVE (heartbeats arriving)
+                     -> client renders "Connecting…" / not joined
+```
+
+The transport is NOT implicated: all three Cloudflare stage transports were
+open and carrying media throughout. It is the client's own
+`joinState`/`connectionStatus` drifting out of agreement with a session it is
+demonstrably still connected to.
+
+Hypothesis tested and DISCARDED: the 5-minute `WebReleaseWatch` inserting
+`_ReleaseAvailableBanner` and remounting the subtree. No banner was present
+while the fault was on screen.
+
+**Next step, and it is instrumentation rather than a fix:** record the
+`JOINED true -> false` transition with its trigger, alongside socket
+connect/disconnect and app-lifecycle state (founder ruling §D). Client change,
+so it does not ship until it has been through a real call.
+
+A consequence of this defect was ending calls outright until today's auto-end
+repair — see §7. That repair stops the ENDING; it does not stop the flicker.
 
 ---
 
@@ -98,3 +144,23 @@ Closed and founder-certified this session: SFU media (two- and three-party),
 private conversation disclosure boundary, the messages-list N+1, the rate-limit
 split that was returning 429s on Messages, the native screen-share owner-tag
 trap, and provider track-name uniqueness.
+
+---
+
+## 7. Closed today, recorded because the reasoning matters
+
+* **`CALL_INVITE_EXPIRES_BEFORE_ANSWER`** — `RING_TTL_SECONDS = 90` was being
+  used as admission authority. The accept path itself stamped EXPIRED at 94s
+  and 115s while the caller was still on the call, then marked the answerer
+  LEFT. Every "his call doesn't work" for one participant tonight was this,
+  not transport. The TTL now governs ringing only; DECLINED/REJECTED/REVOKED
+  still refuse, because those are decisions and expiry is only the absence of
+  one. Proven live: answered at **196s**, admitted.
+
+* **`SESSION_AUTO_END_UNDER_RECOVERING_PARTICIPANTS`** — both auto-end paths
+  counted only ACTIVE/JOINING and passed the result as
+  `hasActiveOrRecoverableParticipant`. DISCONNECTED is precisely the
+  recoverable state. A call could end under people still sitting in it. The
+  orchestrator's own comment had disclosed the discrepancy as "not fixed"; it
+  stopped being theoretical, so it is closed at both call sites.
+
