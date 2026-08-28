@@ -191,11 +191,25 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
       // dead screen.
       final local = ref.read(realtimeControllerProvider);
       final session = local.session;
-      final stillActive = local.isJoined &&
-          session != null &&
-          session.isActive &&
-          (local.sessionId ?? '') == info.sessionId;
-      if (!stillActive) {
+
+      // A TAP THAT DOES NOTHING IS THE WORST OF THE THREE OUTCOMES.
+      //
+      // This used to require `isJoined && session.isActive` before returning,
+      // and silently cleared the session otherwise — so anything that knocked
+      // the controller out of `joined` for a moment (a socket reconnect, a
+      // re-hydrate mid-call) turned the PiP into a dead button that also
+      // threw the call reference away. Founder-observed 2026-08-28: "after
+      // minimizing, return doesn't work".
+      //
+      // The session id is the only thing worth guarding on here: if the PiP
+      // is showing a DIFFERENT session from the one the controller holds, the
+      // reference really is stale and clearing it is right. If it is the same
+      // session, the room screen is the authority on whether it is still
+      // live — it already renders an ended call honestly — so go there and
+      // let it answer, rather than deciding from flags that are allowed to
+      // flicker.
+      final sameSession = (local.sessionId ?? '').trim() == info.sessionId.trim();
+      if (!sameSession && session != null) {
         ref.read(realtimeControllerProvider.notifier).clearLocalSession();
         return;
       }

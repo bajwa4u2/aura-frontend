@@ -1326,6 +1326,7 @@ class RealtimeMediaService {
     var created = 0;
     var attached = 0;
     var retired = 0;
+    var rebuilt = 0;
     var failures = 0;
     String? firstError;
     final withVideo = media.values.where((m) => m.hasVideo).length;
@@ -1344,7 +1345,45 @@ class RealtimeMediaService {
     for (final entry in media.entries) {
       final video = entry.value.video;
       if (video == null) continue;
-      if (_remoteRenderersByParticipant.containsKey(entry.key)) continue;
+
+      // A RENDERER MUST FOLLOW THE TRACK, NOT JUST THE PERSON.
+      //
+      // This used to skip any participant who already had a renderer, so when
+      // somebody republished — camera off and on, a re-acquisition, a
+      // reconnect — their tile kept the OLD track. The provider had replaced
+      // it, the old one had stopped, and the tile went on rendering a corpse.
+      //
+      // Founder-observed 2026-08-28 in a three-party call: a participant
+      // duplicated, one person's video vanished, and finally the wrong
+      // person's media appeared under another name. The diagnostic said it
+      // plainly — `RENDER_NONE created=0 held=2` arriving immediately after a
+      // republish: the media service saw new tracks and built nothing.
+      //
+      // So identity decides WHICH renderer, and track identity decides
+      // whether that renderer still holds the right thing.
+      final existingRenderer = _remoteRenderersByParticipant[entry.key];
+      if (existingRenderer != null) {
+        final held = _remoteStreamsByParticipant[entry.key];
+        final heldVideo = held?.getVideoTracks() ?? const <MediaStreamTrack>[];
+        final heldAudio = held?.getAudioTracks() ?? const <MediaStreamTrack>[];
+        final sameVideo = heldVideo.isNotEmpty && heldVideo.first.id == video.id;
+        final incomingAudio = entry.value.audio;
+        final sameAudio = incomingAudio == null
+            ? heldAudio.isEmpty
+            : heldAudio.isNotEmpty && heldAudio.first.id == incomingAudio.id;
+        if (sameVideo && sameAudio) continue;
+
+        // Something genuinely changed. Retire the stale renderer so the
+        // rebuild below attaches the live tracks — and so the dead m-line
+        // stops being a candidate for anything.
+        _remoteRenderersByParticipant.remove(entry.key);
+        existingRenderer.srcObject = null;
+        await existingRenderer.dispose();
+        final staleStream = _remoteStreamsByParticipant.remove(entry.key);
+        await staleStream?.dispose();
+        rebuilt += 1;
+      }
+
       try {
         // THE LABEL IS THE OWNER TAG ON NATIVE. It is not a name.
         //
@@ -1440,7 +1479,8 @@ class RealtimeMediaService {
                   : 'render_attached',
       message: 'participants=${media.length} withVideo=$withVideo '
           'created=$created attachedVideoTracks=$attached '
-          'retired=$retired held=${_remoteRenderersByParticipant.length} '
+          'retired=$retired rebuilt=$rebuilt '
+          'held=${_remoteRenderersByParticipant.length} '
           'failures=$failures'
           '${firstError == null ? '' : ' err=${_shortRenderError(firstError!)}'}',
     ));
