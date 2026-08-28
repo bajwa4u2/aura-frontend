@@ -21,9 +21,30 @@ import 'stage_remote_binding.dart';
 /// not reach another Aura session's media if it tried: a subscribe carries
 /// AURA track ids, which the server resolves inside the caller's own session.
 class SfuRealtimeTransport implements RealtimeTransport {
-  SfuRealtimeTransport(this._repository);
+  SfuRealtimeTransport(this._repository, {this.onLost});
 
   final RealtimeRepository _repository;
+
+  /// Called ONCE when this transport is judged unrecoverable in place.
+  ///
+  /// THE GAP THIS CLOSES (2026-08-28). Mesh watched every peer connection
+  /// (`checkPeersHealth`, `_escalateIceFailure`, `restartIce`) and could
+  /// rebuild a dead one. On the stage none of that ran: `checkPeersHealth`
+  /// iterates `_peers`, which is empty under SFU, and the only ICE handler
+  /// here was the one-shot completer in `_waitForIce`, never re-armed. So a
+  /// transport that died mid-call stayed dead until somebody hung up.
+  ///
+  /// Three calls died exactly that way in one evening: transport lost, then
+  /// sixty seconds of silence, then `heartbeat_timeout`. Nothing detected it
+  /// and nothing tried.
+  ///
+  /// This reports; it does not repair. The owner decides what recovery means,
+  /// because re-establishing a transport is a session-level act.
+  final void Function(String reason)? onLost;
+
+  Timer? _iceGrace;
+  bool _lostReported = false;
+  bool _closing = false;
 
   @override
   String get id => 'sfu';
@@ -499,6 +520,11 @@ class SfuRealtimeTransport implements RealtimeTransport {
 
   @override
   Future<void> close() async {
+    // Deliberate teardown. Set BEFORE anything can change ICE state, so the
+    // watch above cannot mistake a leave for a failure.
+    _closing = true;
+    _iceGrace?.cancel();
+    _iceGrace = null;
     // Stop accepting negotiation work first: anything still queued must not
     // mutate a session that is being torn down.
     _queue.close();
@@ -563,10 +589,71 @@ class SfuRealtimeTransport implements RealtimeTransport {
     pc.onIceConnectionState = check;
     check(pc.iceConnectionState ??
         RTCIceConnectionState.RTCIceConnectionStateNew);
-    await done.future.timeout(
-      const Duration(seconds: 30),
-      onTimeout: () =>
-          throw StateError('stage transport never connected [sfu:ice_timeout]'),
-    );
+    try {
+      await done.future.timeout(
+        const Duration(seconds: 30),
+        onTimeout: () => throw StateError(
+            'stage transport never connected [sfu:ice_timeout]'),
+      );
+    } finally {
+      // RE-ARM, ALWAYS. The connect wait replaced this handler with a closure
+      // whose completer is already finished, so leaving it in place is the
+      // same as having no monitor at all -- which is precisely what shipped.
+      _armTransportWatch(pc);
+    }
+  }
+
+  /// Watch the transport for the rest of its life, not just until it connects.
+  void _armTransportWatch(RTCPeerConnection pc) {
+    pc.onIceConnectionState = (RTCIceConnectionState state) {
+      switch (state) {
+        case RTCIceConnectionState.RTCIceConnectionStateConnected:
+        case RTCIceConnectionState.RTCIceConnectionStateCompleted:
+          // Recovered on its own. A brief `disconnected` is ordinary on a
+          // roaming or congested network and must not cost anyone their call.
+          if (_iceGrace != null) {
+            _iceGrace?.cancel();
+            _iceGrace = null;
+            unawaited(_report('op=ICE state=recovered'));
+          }
+          return;
+
+        case RTCIceConnectionState.RTCIceConnectionStateDisconnected:
+          // Give it a chance before declaring anything. Most disconnects heal.
+          _iceGrace?.cancel();
+          _iceGrace = Timer(const Duration(seconds: 10), () {
+            _declareLost('ice_disconnected_10s');
+          });
+          unawaited(_report('op=ICE state=disconnected grace=10s'));
+          return;
+
+        case RTCIceConnectionState.RTCIceConnectionStateFailed:
+          // Terminal for this connection: ICE has exhausted its candidates.
+          _declareLost('ice_failed');
+          return;
+
+        case RTCIceConnectionState.RTCIceConnectionStateClosed:
+          _iceGrace?.cancel();
+          _iceGrace = null;
+          return;
+
+        default:
+          return;
+      }
+    };
+  }
+
+  /// Report loss ONCE, and never while deliberately closing.
+  ///
+  /// A transport being torn down passes through the same ICE states as one
+  /// that died. Recovering a call the person is leaving would be worse than
+  /// the defect this fixes.
+  void _declareLost(String reason) {
+    _iceGrace?.cancel();
+    _iceGrace = null;
+    if (_lostReported || _closing) return;
+    _lostReported = true;
+    unawaited(_report('op=ICE state=lost reason=$reason'));
+    onLost?.call(reason);
   }
 }

@@ -1655,6 +1655,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
     _awaitingReconnectRejoin = false;
     _stopHeartbeat();
     _stopStatsTimer();
+    _stageRecoveryReset?.cancel();
     _cancelTurnRefresh();
     _cancelSignalingGrace();
     for (final timer in _peerGraceTimers.values) {
@@ -3074,6 +3075,108 @@ class RealtimeController extends StateNotifier<RealtimeState>
     }
   }
 
+  /// How many times this session has rebuilt a lost stage transport.
+  ///
+  /// Bounded on purpose. A network that is genuinely gone will fail every
+  /// attempt, and a client that retries forever burns the battery, hammers
+  /// the provider, and still cannot connect. Three tries, widening, then stop
+  /// and say so.
+  int _stageRecoveries = 0;
+  bool _recoveringStage = false;
+  Timer? _stageRecoveryReset;
+  static const List<Duration> _stageRecoveryBackoff = <Duration>[
+    Duration(seconds: 2),
+    Duration(seconds: 6),
+    Duration(seconds: 15),
+  ];
+
+  /// Rebuild a stage transport that died mid-call.
+  ///
+  /// THE GAP THIS CLOSES (2026-08-28). Nothing on the stage path detected a
+  /// dead transport and nothing rebuilt one. Three calls died identically in
+  /// one evening -- transport lost, sixty seconds of silence, then
+  /// `heartbeat_timeout` -- while the person sat looking at a frozen call.
+  ///
+  /// Rebuilding rather than ICE-restarting in place is deliberate. The server
+  /// now RECLAIMS a participant's previous transport instead of refusing the
+  /// new one, so open-over-a-dead-one is a supported act; and a rebuild
+  /// re-publishes and re-subscribes, which converges the whole registry
+  /// instead of only repairing connectivity. One mechanism, already exercised
+  /// on every join, rather than a second one that runs only in the rare case
+  /// and is therefore never known to work.
+  Future<void> _recoverStage(String reason) async {
+    final sessionId = _managedSessionId;
+    if (sessionId.isEmpty || !state.isJoined || _terminating || _endingCall) {
+      return;
+    }
+    // Leaving is not losing. A transport torn down on the way out must not be
+    // resurrected underneath somebody who is trying to hang up.
+    if (_recoveringStage) return;
+
+    if (_stageRecoveries >= _stageRecoveryBackoff.length) {
+      unawaited(_repository.reportStageDiagnostic(
+        sessionId,
+        phase: 'recover',
+        code: 'stage_recovery_exhausted',
+        message: 'reason=$reason attempts=$_stageRecoveries',
+        platform: _clientPlatform,
+      ));
+      return;
+    }
+
+    _recoveringStage = true;
+    final attempt = _stageRecoveries + 1;
+    _stageRecoveries = attempt;
+    try {
+      unawaited(_repository.reportStageDiagnostic(
+        sessionId,
+        phase: 'recover',
+        code: 'stage_recovery_start',
+        message: 'reason=$reason attempt=$attempt',
+        platform: _clientPlatform,
+      ));
+
+      await Future<void>.delayed(_stageRecoveryBackoff[attempt - 1]);
+      // Conditions can change while backing off — leaving, ending, or a
+      // transport that came back on its own.
+      if (!mounted || !state.isJoined || _terminating || _endingCall) return;
+
+      await _mediaService.detachStage();
+      await _ensureStageConnected('recover');
+
+      unawaited(_repository.reportStageDiagnostic(
+        sessionId,
+        phase: 'recover',
+        code: 'stage_recovery_done',
+        message: 'reason=$reason attempt=$attempt '
+            'stage=${_mediaService.usesStageTransport}',
+        platform: _clientPlatform,
+      ));
+
+      // GIVE THE BUDGET BACK, BUT ONLY FOR A CALL THAT ACTUALLY RECOVERED.
+      //
+      // A long call that loses its transport once, recovers, and hits an
+      // unrelated problem an hour later should not find its budget already
+      // spent. But a network that flaps -- recover, fail, recover, fail --
+      // must not win an unlimited supply of attempts by briefly succeeding.
+      // Sustained health is the difference, so the reset waits for it.
+      _stageRecoveryReset?.cancel();
+      _stageRecoveryReset = Timer(const Duration(seconds: 60), () {
+        _stageRecoveries = 0;
+      });
+    } catch (error) {
+      unawaited(_repository.reportStageDiagnostic(
+        sessionId,
+        phase: 'recover',
+        code: 'stage_recovery_failed',
+        message: 'reason=$reason attempt=$attempt err=$error',
+        platform: _clientPlatform,
+      ));
+    } finally {
+      _recoveringStage = false;
+    }
+  }
+
   Future<void> _ensureStageConnected(String reason) async {
     final sessionId = _managedSessionId;
     if (sessionId.isEmpty) return;
@@ -3097,7 +3200,10 @@ class RealtimeController extends StateNotifier<RealtimeState>
       final trigger = _stageTrigger(reason);
       if (!_mediaService.usesStageTransport) {
         await _mediaService.attachStage(
-          SfuRealtimeTransport(_repository),
+          SfuRealtimeTransport(
+            _repository,
+            onLost: (reason) => unawaited(_recoverStage(reason)),
+          ),
           sessionId: sessionId,
           trigger: trigger,
         );
