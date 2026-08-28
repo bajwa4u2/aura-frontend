@@ -1,11 +1,39 @@
 import 'dart:async';
 
+
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../../../core/media/device_permission.dart';
 import '../domain/remote_media_presentation.dart';
 import 'realtime_transport.dart';
+
+/// What a camera request ACTUALLY achieved.
+///
+/// [enabled] is the state now in effect, which is not necessarily the state
+/// that was asked for: a camera that cannot be acquired reports false. The
+/// caller publishes THIS, never its own intent.
+class _SelectedPath {
+  const _SelectedPath({
+    required this.candidateType,
+    required this.protocol,
+    required this.networkType,
+  });
+  final String? candidateType;
+  final String? protocol;
+  final String? networkType;
+}
+
+class CameraSetResult {
+  const CameraSetResult({
+    required this.enabled,
+    required this.needsRenegotiation,
+  });
+
+  final bool enabled;
+  final bool needsRenegotiation;
+}
 
 class RealtimeMediaSnapshot {
   const RealtimeMediaSnapshot({
@@ -100,17 +128,43 @@ class RealtimeQualitySample {
     this.jitterMs,
     this.packetLossPct,
     this.bitrateKbps,
+    this.selectedCandidateType,
+    this.transportProtocol,
+    this.networkType,
   });
   final int? rttMs;
   final int? jitterMs;
   final double? packetLossPct;
   final int? bitrateKbps;
 
+  /// WHICH TRANSPORT ACTUALLY CARRIED THE CALL.
+  ///
+  /// HOST / SRFLX / PRFLX / RELAY, read from the SELECTED candidate pair —
+  /// not from the ICE servers that were issued. Every sample written before
+  /// this stored the column default UNKNOWN, so production could not answer,
+  /// from its own records, whether any call had ever used TURN. Issuance and
+  /// provider health are capability, never carriage.
+  ///
+  /// Null when the platform does not expose it. Never guessed.
+  final String? selectedCandidateType;
+
+  /// UDP / TCP / TLS for the selected pair. For a relayed candidate this is
+  /// the protocol to the TURN server (`relayProtocol`), which is the leg that
+  /// answers "did this traverse 443?" — the question coturn could not.
+  final String? transportProtocol;
+
+  /// WIFI / ETHERNET / CELLULAR / VPN. Some browsers withhold this for
+  /// fingerprinting reasons; absent means absent.
+  final String? networkType;
+
   bool get hasAny =>
       rttMs != null ||
       jitterMs != null ||
       packetLossPct != null ||
-      bitrateKbps != null;
+      bitrateKbps != null ||
+      selectedCandidateType != null ||
+      transportProtocol != null ||
+      networkType != null;
 }
 
 class RealtimeMediaService {
@@ -892,21 +946,130 @@ class RealtimeMediaService {
     _publish();
   }
 
-  Future<void> setCameraEnabled(bool enabled) async {
-    final videoTracks =
+  /// Set the camera and report WHAT IS ACTUALLY IN EFFECT.
+  ///
+  /// This used to return void, and the caller published its own INTENT to
+  /// the session. When acquisition had failed there was no video track to
+  /// flip, this method quietly stayed off, and the controller still told the
+  /// server `enabled: true`. Founder-observed 2026-08-28: five
+  /// `VIDEO_STATE_CHANGED publishState=ON` events for a participant with
+  /// zero outbound video RTP and a black self-view. A boolean saying
+  /// camera=true is not evidence that a camera is capturing.
+  ///
+  /// It also now RE-ACQUIRES. Turning the camera off and on again could not
+  /// recover a stream that was never captured — `setCameraEnabled` only ever
+  /// flipped `track.enabled` on tracks that already existed (the same
+  /// property `_attachLocalTracks` documents as unrecoverable). That is why
+  /// the camera "could not be turned on again" and only rejoining helped.
+  ///
+  /// [CameraSetResult.needsRenegotiation] mirrors [startScreenShare]: a peer
+  /// that never had a video sender needs the track ADDED, which the caller
+  /// must follow with a re-offer.
+  Future<CameraSetResult> setCameraEnabled(bool enabled) async {
+    var videoTracks =
         _localStream?.getVideoTracks() ?? const <MediaStreamTrack>[];
-    // No video track means we degraded to audio-only (camera busy in another
-    // app/browser). Don't claim the camera is "on" — that produced the
-    // misleading cam=true / localVid=false badge. Stay off until a real
-    // re-acquire succeeds.
+    var needsRenegotiation = false;
+
     if (enabled && videoTracks.isEmpty) {
-      _cameraEnabled = false;
-      _publish();
-      return;
+      needsRenegotiation = await _reacquireCamera();
+      videoTracks =
+          _localStream?.getVideoTracks() ?? const <MediaStreamTrack>[];
+      if (videoTracks.isEmpty) {
+        // The device is genuinely unavailable — busy in another app or
+        // browser, refused, or absent. Stay off and SAY so, rather than
+        // reporting a publish that cannot exist.
+        _cameraEnabled = false;
+        _publish();
+        return const CameraSetResult(enabled: false, needsRenegotiation: false);
+      }
     }
+
     _cameraEnabled = enabled;
     await _setTrackEnabled(tracks: videoTracks, enabled: enabled);
     _publish();
+    return CameraSetResult(
+      enabled: enabled,
+      needsRenegotiation: needsRenegotiation,
+    );
+  }
+
+  /// Try to obtain a real camera track and put it on every peer.
+  ///
+  /// Returns whether any peer needed the track ADDED rather than replaced,
+  /// which requires the caller to re-offer. Defensive throughout: a failure
+  /// leaves the call exactly as it was and is reported as "still off".
+  Future<bool> _reacquireCamera() async {
+    if (_disposed) return false;
+
+    MediaStream? fresh;
+    try {
+      fresh = await navigator.mediaDevices.getUserMedia(<String, dynamic>{
+        'audio': false,
+        'video': _preferredVideoDeviceId == null
+            ? <String, dynamic>{
+                'width': <String, dynamic>{'ideal': 1280},
+                'height': <String, dynamic>{'ideal': 720},
+              }
+            : <String, dynamic>{
+                'deviceId': <String, dynamic>{
+                  'exact': _preferredVideoDeviceId,
+                },
+                'width': <String, dynamic>{'ideal': 1280},
+                'height': <String, dynamic>{'ideal': 720},
+              },
+      });
+    } catch (error) {
+      debugPrint('[rtc-media] camera re-acquire FAILED err=$error');
+      return false;
+    }
+
+    final track =
+        fresh.getVideoTracks().isNotEmpty ? fresh.getVideoTracks().first : null;
+    if (track == null) {
+      try {
+        await fresh.dispose();
+      } catch (_) {}
+      return false;
+    }
+
+    final local = _localStream ?? await createLocalMediaStream('local');
+    _localStream = local;
+    try {
+      await local.addTrack(track);
+    } catch (error) {
+      debugPrint('[rtc-media] camera re-acquire addTrack err=$error');
+    }
+
+    var needsRenegotiation = false;
+    for (final entry in _peers.entries) {
+      final peer = entry.value;
+      try {
+        var replaced = false;
+        for (final sender in await peer.getSenders()) {
+          if (sender.track?.kind == 'video') {
+            await sender.replaceTrack(track);
+            replaced = true;
+          }
+        }
+        if (!replaced) {
+          // No video sender existed — this call was audio-only to that peer,
+          // which is exactly the state a failed initial acquisition leaves
+          // behind. Adding a track changes the m-lines, so the caller
+          // re-offers.
+          await peer.addTrack(track, local);
+          needsRenegotiation = true;
+        }
+      } catch (error) {
+        debugPrint(
+          '[rtc-media] camera re-acquire attach err=$error peerKey=${entry.key}',
+        );
+      }
+    }
+
+    debugPrint(
+      '[rtc-media] camera re-acquired renegotiate=$needsRenegotiation',
+    );
+    return needsRenegotiation;
   }
 
   Future<void> _setTrackEnabled({
@@ -1297,6 +1460,10 @@ class RealtimeMediaService {
     var totalBitrateKbps = 0;
     var sawBitrate = false;
 
+    String? candidateType;
+    String? transportProtocol;
+    String? networkType;
+
     for (final entry in Map<String, RTCPeerConnection>.from(_peers).entries) {
       List<StatsReport> reports;
       try {
@@ -1304,6 +1471,27 @@ class RealtimeMediaService {
       } catch (_) {
         continue;
       }
+
+      // THE SELECTED PAIR, resolved by id rather than guessed. `getStats`
+      // returns a flat list, so the path is transport -> candidate-pair ->
+      // local-candidate.
+      final byId = <String, Map<String, dynamic>>{
+        for (final r in reports)
+          r.id: Map<String, dynamic>.from(r.values as Map),
+      };
+      final path = _resolveSelectedPath(reports, byId);
+      if (path != null) {
+        // Mesh has one pair per peer. Rank so "did ANY leg need a relay"
+        // survives aggregation — a single relayed leg is the answer that
+        // matters, and averaging it away would hide it.
+        if (_candidateRank(path.candidateType) >
+            _candidateRank(candidateType)) {
+          candidateType = path.candidateType;
+          transportProtocol = path.protocol;
+        }
+        networkType ??= path.networkType;
+      }
+
       for (final report in reports) {
         final type = report.type;
         final values = report.values;
@@ -1357,11 +1545,88 @@ class RealtimeMediaService {
           ? null
           : (worstLossPct * 100).round() / 100,
       bitrateKbps: sawBitrate ? totalBitrateKbps : null,
+      selectedCandidateType: candidateType,
+      transportProtocol: transportProtocol,
+      networkType: networkType,
     );
 
     await _adaptToSample(sample);
     return sample;
   }
+
+  /// Rank so a relayed leg beats a direct one during aggregation.
+  int _candidateRank(String? type) => switch (type) {
+        'RELAY' => 4,
+        'SRFLX' => 3,
+        'PRFLX' => 2,
+        'HOST' => 1,
+        _ => 0,
+      };
+
+  /// Resolve the ACTIVE candidate pair for one peer connection.
+  ///
+  /// Prefers the transport's own `selectedCandidatePairId`; falls back to a
+  /// nominated/succeeded pair, because not every platform publishes the
+  /// transport report. Returns null rather than a default when nothing
+  /// resolves — an unknown path must stay unknown.
+  _SelectedPath? _resolveSelectedPath(
+    List<StatsReport> reports,
+    Map<String, Map<String, dynamic>> byId,
+  ) {
+    Map<String, dynamic>? pair;
+    for (final r in reports) {
+      if (r.type == 'transport') {
+        final id = r.values['selectedCandidatePairId']?.toString();
+        if (id != null && byId.containsKey(id)) {
+          pair = byId[id];
+          break;
+        }
+      }
+    }
+    if (pair == null) {
+      for (final r in reports) {
+        if (r.type != 'candidate-pair') continue;
+        final v = Map<String, dynamic>.from(r.values as Map);
+        final nominated = v['nominated'] == true;
+        final succeeded =
+            v['state']?.toString().toLowerCase() == 'succeeded';
+        if (nominated || succeeded) {
+          pair = Map<String, dynamic>.from(v as Map);
+          if (nominated) break;
+        }
+      }
+    }
+    if (pair == null) return null;
+
+    final localId = pair['localCandidateId']?.toString();
+    final local = localId == null ? null : byId[localId];
+    if (local == null) return null;
+
+    final type = local['candidateType']?.toString().toUpperCase();
+    // For a relayed candidate the meaningful protocol is the leg to the TURN
+    // server, which is what answers whether 443 was used.
+    final proto = (type == 'RELAY'
+            ? (local['relayProtocol'] ?? local['protocol'])
+            : local['protocol'])
+        ?.toString()
+        .toUpperCase();
+    final net = local['networkType']?.toString().toUpperCase();
+
+    return _SelectedPath(
+      candidateType: _knownCandidateType(type),
+      protocol: _knownProtocol(proto),
+      networkType: _knownNetworkType(net),
+    );
+  }
+
+  // Only values the session schema actually defines survive. Anything else
+  // is dropped rather than passed through as an invented enum member.
+  String? _knownCandidateType(String? v) =>
+      const {'HOST', 'SRFLX', 'PRFLX', 'RELAY'}.contains(v) ? v : null;
+  String? _knownProtocol(String? v) =>
+      const {'UDP', 'TCP', 'TLS'}.contains(v) ? v : null;
+  String? _knownNetworkType(String? v) =>
+      const {'WIFI', 'ETHERNET', 'CELLULAR', 'VPN'}.contains(v) ? v : null;
 
   Future<void> _adaptToSample(RealtimeQualitySample sample) async {
     final loss = sample.packetLossPct;

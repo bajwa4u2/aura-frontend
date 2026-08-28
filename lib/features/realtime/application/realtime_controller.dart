@@ -1189,6 +1189,15 @@ class RealtimeController extends StateNotifier<RealtimeState>
               if (quality.bitrateKbps != null)
                 'bitrateKbps': quality.bitrateKbps,
               if (quality.rttMs != null) 'rtt': quality.rttMs,
+              // The path the media ACTUALLY took. Omitted when the platform
+              // does not expose it, so the session keeps UNKNOWN rather than
+              // recording a guess.
+              if (quality.selectedCandidateType != null)
+                'selectedCandidateType': quality.selectedCandidateType,
+              if (quality.transportProtocol != null)
+                'transportProtocol': quality.transportProtocol,
+              if (quality.networkType != null)
+                'networkType': quality.networkType,
             },
           })
           .then((ack) {
@@ -1270,13 +1279,42 @@ class RealtimeController extends StateNotifier<RealtimeState>
       return;
     }
 
-    final enabled = !state.cameraEnabled;
-    await _mediaService.setCameraEnabled(enabled);
+    final requested = !state.cameraEnabled;
+
+    // PUBLISH WHAT HAPPENED, NOT WHAT WAS ASKED FOR.
+    //
+    // This used to send `requested` to the session and patch the local
+    // track with it, discarding whether the camera actually came on.
+    // When acquisition had failed there was nothing to enable, and the
+    // session was still told the camera was publishing: founder-observed
+    // 2026-08-28, five VIDEO_STATE_CHANGED publishState=ON events with
+    // zero outbound video RTP and a black self-view on the publisher.
+    // Both the far side and the publisher were told video was on, and
+    // neither was told the camera had never opened.
+    final result = await _mediaService.setCameraEnabled(requested);
+    final enabled = result.enabled;
+
     await _socketService.emitAck('session:video.set', <String, dynamic>{
       'sessionId': sessionId,
       'enabled': enabled,
     });
     _patchMyTrack(videoOn: enabled);
+
+    // A re-acquired camera on a peer that never had a video sender changes
+    // the m-lines, so it needs a re-offer — same contract as screen share.
+    if (result.needsRenegotiation) {
+      await _renegotiateExistingPeers();
+    }
+
+    // Asking for the camera and not getting it is a fact the person is
+    // entitled to, rather than a silent no-op they retry forever.
+    if (requested && !enabled) {
+      state = state.copyWith(
+        infoMessage:
+            'Your camera could not be started. Close any other app or browser tab using it, then try again.',
+        clearErrorMessage: true,
+      );
+    }
   }
 
   /// Thread/DM speaker toggle (2026-08-14 repair). Local-only device
