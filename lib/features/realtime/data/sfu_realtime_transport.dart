@@ -424,18 +424,68 @@ class SfuRealtimeTransport implements RealtimeTransport {
   }
 
   @override
-  Future<void> replaceVideoSource(MediaStreamTrack track) async {
+  Future<void> replaceVideoSource(MediaStreamTrack? track) async =>
+      _replaceSource(kind: 'video', track: track);
+
+  @override
+  Future<void> replaceAudioSource(MediaStreamTrack? track) async =>
+      _replaceSource(kind: 'audio', track: track);
+
+  Future<void> _replaceSource({
+    required String kind,
+    required MediaStreamTrack? track,
+  }) async {
     final pc = _pc;
     if (pc == null) return;
     final senders = await pc.getSenders();
     for (final sender in senders) {
-      if (sender.track?.kind != 'video') continue;
+      if (sender.track?.kind != kind) continue;
       // replaceTrack, not renegotiation: the publication, the transport and
       // the Aura session all stay exactly as they are, and subscribers keep
       // receiving without re-subscribing.
       await sender.replaceTrack(track);
+      // KEEP `_local` IN AGREEMENT WITH WHAT IS ON THE WIRE.
+      //
+      // setMicrophoneEnabled/setCameraEnabled below toggle `enabled` on the
+      // tracks held in `_local`. Replacing a sender's track without updating
+      // that stream would leave mute pointing at the RETIRED track: the
+      // control would report success and the live track would keep sending.
+      await _adoptLocal(kind: kind, track: track);
+      unawaited(_report(
+        'op=REPLACE kind=$kind track=${track?.id ?? 'cleared'}',
+      ));
       return;
     }
+    // NO SENDER TO REPLACE. Reached when the call published no track of this
+    // kind at attach — camera denied, or an audio-only join now trying to
+    // share a screen. Replacement cannot help here; it needs a publish and a
+    // renegotiation. Reported rather than returned silently, because a silent
+    // return here is exactly the shape of the defect this method exists to
+    // close.
+    unawaited(_report('op=REPLACE_NO_SENDER kind=$kind'));
+  }
+
+  Future<void> _adoptLocal({
+    required String kind,
+    required MediaStreamTrack? track,
+  }) async {
+    final local = _local;
+    if (local == null) return;
+    final existing =
+        kind == 'video' ? local.getVideoTracks() : local.getAudioTracks();
+    for (final old in existing) {
+      if (identical(old, track)) continue;
+      try {
+        await local.removeTrack(old);
+      } catch (_) {
+        // Best effort: a stream that refuses the removal must not take the
+        // replacement down with it. The sender already carries the new track.
+      }
+    }
+    if (track == null) return;
+    try {
+      await local.addTrack(track);
+    } catch (_) {}
   }
 
   @override

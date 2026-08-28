@@ -60,7 +60,10 @@ class _ScriptedTransport implements RealtimeTransport {
   }
 
   @override
-  Future<void> replaceVideoSource(MediaStreamTrack track) async {}
+  Future<void> replaceVideoSource(MediaStreamTrack? track) async {}
+
+  @override
+  Future<void> replaceAudioSource(MediaStreamTrack? track) async {}
   @override
   Future<void> setMicrophoneEnabled(bool enabled) async {}
   @override

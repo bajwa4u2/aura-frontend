@@ -138,6 +138,42 @@ control. The tile layer already complies; the header and dock do not.
 
 ---
 
+## 8. From the whole-system pass — `docs/2026-08-28-calling-system-transition-gaps.md`
+
+Walking every call-lifecycle transition instead of waiting for reports found
+ONE structural defect under several symptoms: **on the stage path local media
+was published exactly once, at attach, and never again.** `publishLocal()` had
+a single call site. Everything that changed local media afterwards iterated
+`_peers` — empty under the stage — and so reached nobody, silently, while the
+person doing it saw every sign of success.
+
+* **`STAGE_OUTBOUND_NEVER_REPUBLISHED`** — REPAIRED, unverified in a call.
+  Screen share start/stop, camera and mic device selection, and camera
+  re-acquisition now route through one transport-aware method. Screen share was
+  reaching nobody for every user from the moment the global SFU cutover landed.
+* **`STAGE_NO_ICE_RECOVERY`** — OPEN, high. `checkPeersHealth()` iterates
+  `_peers` and is a no-op on the stage; the only ICE handler is the one-shot
+  completer at open, never re-armed. No failure detection, no restart
+  (`restartIce`), no TURN rotation (`updateIceConfiguration`). A transport that
+  dies mid-call stays dead until somebody hangs up. **Candidate cause for §1
+  `JOINED_LOST_MID_CALL` — measure before assuming otherwise.**
+* **`STAGE_NO_ADAPTIVE_QUALITY`** — OPEN, medium. Bitrate cap, degradation
+  preference and `collectQualitySample` are all mesh-only, so the adaptive loop
+  in `_adaptToSample` runs on empty input and we have no outbound stats from
+  the stage path.
+* **`STAGE_REPUBLISH_AFTER_NO_CAPTURE`** — OPEN, low. Replacement needs an
+  existing sender. A call that published no video at attach (camera denied, or
+  audio-only) needs a real publish and renegotiation. Now reported as
+  `REPLACE_NO_SENDER` instead of failing silently.
+
+The governing lesson, worth more than any single fix: **an interface method
+with no caller is not a feature.** `replaceVideoSource` was written,
+implemented correctly against the provider, reviewed and shipped — and the
+outbound path stayed frozen because nothing called it. Same shape as the
+presence event that carried a participant id nobody read.
+
+---
+
 ## What is NOT debt
 
 Closed and founder-certified this session: SFU media (two- and three-party),

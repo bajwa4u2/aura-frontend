@@ -1054,31 +1054,19 @@ class RealtimeMediaService {
       debugPrint('[rtc-media] camera re-acquire addTrack err=$error');
     }
 
-    var needsRenegotiation = false;
-    for (final entry in _peers.entries) {
-      final peer = entry.value;
-      try {
-        var replaced = false;
-        for (final sender in await peer.getSenders()) {
-          if (sender.track?.kind == 'video') {
-            await sender.replaceTrack(track);
-            replaced = true;
-          }
-        }
-        if (!replaced) {
-          // No video sender existed — this call was audio-only to that peer,
-          // which is exactly the state a failed initial acquisition leaves
-          // behind. Adding a track changes the m-lines, so the caller
-          // re-offers.
-          await peer.addTrack(track, local);
-          needsRenegotiation = true;
-        }
-      } catch (error) {
-        debugPrint(
-          '[rtc-media] camera re-acquire attach err=$error peerKey=${entry.key}',
-        );
-      }
-    }
+    // Routed rather than looped over `_peers`: on the stage that map is empty,
+    // and a camera recovered after a denied or busy device would have been
+    // published to nobody.
+    //
+    // The stage case that replacement CANNOT serve is the one this method
+    // exists for: a call that published no video at all has no sender to
+    // replace, and needs a publish. The transport reports that as
+    // `REPLACE_NO_SENDER` rather than returning silently — see
+    // `SfuRealtimeTransport._replaceSource`. Closing it properly means
+    // republishing on the stage, which is [STAGE_REPUBLISH_AFTER_NO_CAPTURE]
+    // in the debt ledger and is NOT closed here.
+    final needsRenegotiation =
+        await _replaceOutboundVideo(track, reason: 'camera-reacquire');
 
     debugPrint(
       '[rtc-media] camera re-acquired renegotiate=$needsRenegotiation',
@@ -1101,6 +1089,88 @@ class RealtimeMediaService {
   /// requires renegotiation; returns true so the controller re-offers.
   /// Before this, sharing a screen in an audio meeting silently reached
   /// no one: replaceTrack found no video sender to replace.
+  /// Carry an outbound media change to WHICHEVER transport is live.
+  ///
+  /// THE DEFECT THIS CLOSES (2026-08-28). Every outbound change below —
+  /// screen share, camera flip, device selection, camera re-acquisition —
+  /// was written in the mesh era and iterated `_peers` directly. Under the
+  /// stage that map is EMPTY, so each of them updated the local preview,
+  /// returned success, and reached nobody. Nothing threw and nothing logged,
+  /// because an empty loop is a successful loop.
+  ///
+  /// `RealtimeTransport.replaceVideoSource` had existed and been implemented
+  /// correctly the whole time. It had no callers. Routing every outbound
+  /// change through one method is what stops the next capability from
+  /// rediscovering this the same way.
+  ///
+  /// Returns whether a mesh peer needed the track ADDED rather than replaced,
+  /// which is the caller's signal to re-offer. The stage never needs that:
+  /// replacement is in place and subscribers keep receiving.
+  Future<bool> _replaceOutboundVideo(
+    MediaStreamTrack? track, {
+    required String reason,
+  }) async {
+    final stage = _stage;
+    if (stage != null) {
+      await stage.replaceVideoSource(track);
+      return false;
+    }
+
+    var needsRenegotiation = false;
+    for (final entry in _peers.entries) {
+      try {
+        final senders = await entry.value.getSenders();
+        var replaced = false;
+        for (final sender in senders) {
+          if (sender.track?.kind != 'video') continue;
+          await sender.replaceTrack(track);
+          replaced = true;
+        }
+        if (!replaced && track != null) {
+          // SAME TRAP AS THE REMOTE PATH: the label becomes the native
+          // `ownerTag`, and only `local` resolves against the platform's
+          // `localStreams` registry. A stream tagged with a descriptive name
+          // is a stream the native side cannot find — the exact defect that
+          // made Android draw nothing for remote video (2026-08-28).
+          final sendStream =
+              _localStream ?? await createLocalMediaStream(_localOwnerTag);
+          await entry.value.addTrack(track, sendStream);
+          needsRenegotiation = true;
+        }
+      } catch (error) {
+        debugPrint(
+          '[rtc] outbound video replace failed reason=$reason '
+          'peerKey=${entry.key} err=$error',
+        );
+      }
+    }
+    return needsRenegotiation;
+  }
+
+  /// Microphone selection. Same contract as [_replaceOutboundVideo].
+  Future<void> _replaceOutboundAudio(
+    MediaStreamTrack? track, {
+    required String reason,
+  }) async {
+    final stage = _stage;
+    if (stage != null) {
+      await stage.replaceAudioSource(track);
+      return;
+    }
+    for (final peer in _peers.values) {
+      try {
+        final senders = await peer.getSenders();
+        for (final sender in senders) {
+          if (sender.track?.kind != 'audio') continue;
+          await sender.replaceTrack(track);
+        }
+      } catch (error) {
+        debugPrint('[rtc] outbound audio replace failed reason=$reason '
+            'err=$error');
+      }
+    }
+  }
+
   Future<bool> startScreenShare() async {
     if (_disposed || _isScreenSharing) return false;
 
@@ -1115,39 +1185,8 @@ class RealtimeMediaService {
     final screenTracks = stream.getVideoTracks();
     if (screenTracks.isNotEmpty) {
       final screenTrack = screenTracks.first;
-      for (final entry in _peers.entries) {
-        final peer = entry.value;
-        final senders = await peer.getSenders();
-        var replaced = false;
-        for (final sender in senders) {
-          if (sender.track?.kind == 'video') {
-            await sender.replaceTrack(screenTrack);
-            replaced = true;
-          }
-        }
-        if (!replaced) {
-          try {
-            // SAME TRAP AS THE REMOTE PATH: the label becomes the native
-            // `ownerTag`, and only `local` resolves against the platform's
-            // `localStreams` registry. A stream tagged `screen-share` is a
-            // stream the native side cannot find — the exact defect that made
-            // Android draw nothing for remote video (2026-08-28), still
-            // executable here because this branch only runs when a peer has
-            // no video sender to replace.
-            //
-            // What this stream IS, is local. That is the whole content of the
-            // argument, and the descriptive name belonged nowhere near it.
-            final sendStream =
-                _localStream ?? await createLocalMediaStream(_localOwnerTag);
-            await peer.addTrack(screenTrack, sendStream);
-            needsRenegotiation = true;
-          } catch (error) {
-            debugPrint(
-              '[rtc] screen addTrack failed peerKey=${entry.key} err=$error',
-            );
-          }
-        }
-      }
+      needsRenegotiation =
+          await _replaceOutboundVideo(screenTrack, reason: 'screen-share');
       try {
         await _applyDegradationPreference(screenTrack, 'maintain-resolution');
       } catch (_) {}
@@ -1167,20 +1206,10 @@ class RealtimeMediaService {
     final cameraTrack = (cameraTracks != null && cameraTracks.isNotEmpty)
         ? cameraTracks.first
         : null;
-    for (final peer in _peers.values) {
-      try {
-        final senders = await peer.getSenders();
-        for (final sender in senders) {
-          if (sender.track?.kind == 'video') {
-            // Audio-only meetings have no camera track to restore — clear the
-            // sender instead of leaving a dead screen track on the wire.
-            await sender.replaceTrack(cameraTrack);
-          }
-        }
-      } catch (error) {
-        debugPrint('[rtc] stopScreenShare restore failed err=$error');
-      }
-    }
+    // Audio-only meetings have no camera track to restore — a null clears the
+    // sender rather than leaving a frozen frame of someone's desktop on the
+    // wire.
+    await _replaceOutboundVideo(cameraTrack, reason: 'screen-share-stop');
 
     await _disposeStream(_screenStream);
     _screenStream = null;
@@ -1908,17 +1937,7 @@ class RealtimeMediaService {
     }
     newTrack.enabled = wasEnabled;
 
-    for (final peer in _peers.values) {
-      try {
-        for (final sender in await peer.getSenders()) {
-          if (sender.track?.kind == 'video') {
-            await sender.replaceTrack(newTrack);
-          }
-        }
-      } catch (error) {
-        debugPrint('[rtc-media] switchVideoInput replaceTrack err=$error');
-      }
-    }
+    await _replaceOutboundVideo(newTrack, reason: 'video-input');
 
     for (final old in local.getVideoTracks()) {
       try {
@@ -1963,17 +1982,7 @@ class RealtimeMediaService {
     }
     newTrack.enabled = wasEnabled;
 
-    for (final peer in _peers.values) {
-      try {
-        for (final sender in await peer.getSenders()) {
-          if (sender.track?.kind == 'audio') {
-            await sender.replaceTrack(newTrack);
-          }
-        }
-      } catch (error) {
-        debugPrint('[rtc-media] switchAudioInput replaceTrack err=$error');
-      }
-    }
+    await _replaceOutboundAudio(newTrack, reason: 'audio-input');
 
     for (final old in local.getAudioTracks()) {
       try {

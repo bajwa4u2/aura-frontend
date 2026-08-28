@@ -47,10 +47,18 @@ abstract class RealtimeTransport {
 
   /// Replace the published video source in place.
   ///
-  /// This is camera switching, and it is a TRACK replacement: no new session,
-  /// no new participant, no re-admission, and never one replacement path per
-  /// subscriber.
-  Future<void> replaceVideoSource(MediaStreamTrack track);
+  /// This is camera switching, screen share, and device selection, and it is a
+  /// TRACK replacement: no new session, no new participant, no re-admission,
+  /// and never one replacement path per subscriber.
+  ///
+  /// A null track CLEARS the sender. Stopping a screen share in an audio-only
+  /// call has no camera to restore, and leaving the retired screen track on
+  /// the wire would keep publishing a frozen frame of someone's desktop.
+  Future<void> replaceVideoSource(MediaStreamTrack? track);
+
+  /// Replace the published audio source in place. Same contract as
+  /// [replaceVideoSource]; this is microphone selection.
+  Future<void> replaceAudioSource(MediaStreamTrack? track);
 
   Future<void> setMicrophoneEnabled(bool enabled);
 
