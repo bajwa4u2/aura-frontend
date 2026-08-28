@@ -29,7 +29,6 @@ class SfuRealtimeTransport implements RealtimeTransport {
   String get id => 'sfu';
 
   RTCPeerConnection? _pc;
-  MediaStream? _local;
   String? _sessionId;
   final List<Map<String, dynamic>> _publishedTracks = <Map<String, dynamic>>[];
 
@@ -166,7 +165,6 @@ class SfuRealtimeTransport implements RealtimeTransport {
     MediaStream? local,
   }) async {
     _sessionId = sessionId;
-    _local = local;
 
     final pc = await createPeerConnection(<String, dynamic>{
       // Relay credentials still come from Aura's own TURN issuance; STUN here
@@ -444,13 +442,20 @@ class SfuRealtimeTransport implements RealtimeTransport {
       // the Aura session all stay exactly as they are, and subscribers keep
       // receiving without re-subscribing.
       await sender.replaceTrack(track);
-      // KEEP `_local` IN AGREEMENT WITH WHAT IS ON THE WIRE.
+      // `_local` IS NOT OURS TO EDIT.
       //
-      // setMicrophoneEnabled/setCameraEnabled below toggle `enabled` on the
-      // tracks held in `_local`. Replacing a sender's track without updating
-      // that stream would leave mute pointing at the RETIRED track: the
-      // control would report success and the live track would keep sending.
-      await _adoptLocal(kind: kind, track: track);
+      // An earlier version of this method rewrote `_local` here so that the
+      // mute controls below would follow the replacement. That stream is the
+      // SAME OBJECT the media service holds as its local capture, so editing
+      // it corrupted the caller's own notion of its camera: starting a screen
+      // share swapped the camera track out of the media service's stream, and
+      // stopping the share then read "the camera track" back out and found
+      // the SCREEN track -- replacing it with itself and never restoring the
+      // camera. Measured live 2026-08-28, two REPLACE traces carrying one
+      // track id.
+      //
+      // The sender is the authority on what is being sent. Mute reads it
+      // directly (see below) and nothing needs to be mirrored anywhere.
       unawaited(_report(
         'op=REPLACE kind=$kind track=${track?.id ?? 'cleared'}',
       ));
@@ -465,40 +470,30 @@ class SfuRealtimeTransport implements RealtimeTransport {
     unawaited(_report('op=REPLACE_NO_SENDER kind=$kind'));
   }
 
-  Future<void> _adoptLocal({
+  @override
+  Future<void> setMicrophoneEnabled(bool enabled) =>
+      _setSenderTracksEnabled(kind: 'audio', enabled: enabled);
+
+  @override
+  Future<void> setCameraEnabled(bool enabled) =>
+      _setSenderTracksEnabled(kind: 'video', enabled: enabled);
+
+  /// Toggle what is ACTUALLY BEING SENT.
+  ///
+  /// Reading the senders rather than a held stream means mute always acts on
+  /// the current track, including one that arrived by replacement. The stream
+  /// this transport was opened with can go stale the moment a source is
+  /// replaced; the sender cannot.
+  Future<void> _setSenderTracksEnabled({
     required String kind,
-    required MediaStreamTrack? track,
+    required bool enabled,
   }) async {
-    final local = _local;
-    if (local == null) return;
-    final existing =
-        kind == 'video' ? local.getVideoTracks() : local.getAudioTracks();
-    for (final old in existing) {
-      if (identical(old, track)) continue;
-      try {
-        await local.removeTrack(old);
-      } catch (_) {
-        // Best effort: a stream that refuses the removal must not take the
-        // replacement down with it. The sender already carries the new track.
-      }
-    }
-    if (track == null) return;
-    try {
-      await local.addTrack(track);
-    } catch (_) {}
-  }
-
-  @override
-  Future<void> setMicrophoneEnabled(bool enabled) async {
-    for (final t in _local?.getAudioTracks() ?? const <MediaStreamTrack>[]) {
-      t.enabled = enabled;
-    }
-  }
-
-  @override
-  Future<void> setCameraEnabled(bool enabled) async {
-    for (final t in _local?.getVideoTracks() ?? const <MediaStreamTrack>[]) {
-      t.enabled = enabled;
+    final pc = _pc;
+    if (pc == null) return;
+    for (final sender in await pc.getSenders()) {
+      final track = sender.track;
+      if (track == null || track.kind != kind) continue;
+      track.enabled = enabled;
     }
   }
 
@@ -523,7 +518,6 @@ class SfuRealtimeTransport implements RealtimeTransport {
       debugPrint('[sfu] peer close failed: $e');
     }
     _pc = null;
-    _local = null;
     _sessionId = null;
     _publishedTracks.clear();
     _subscribed.clear();

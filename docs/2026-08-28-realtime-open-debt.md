@@ -166,6 +166,67 @@ person doing it saw every sign of success.
   audio-only) needs a real publish and renegotiation. Now reported as
   `REPLACE_NO_SENDER` instead of failing silently.
 
+### Live results, 2026-08-28 evening — two calls, sessions cmtdd92hc / cmtdddq3l
+
+**`STAGE_OUTBOUND_NEVER_REPUBLISHED` is VERIFIED CLOSED for the web publisher.**
+Trace `op=REPLACE kind=video track=b4d33f88` at 19:59:44, and the receiving
+participant confirmed he could see the shared screen. Proven end to end, not
+inferred from a green suite.
+
+**Stop-sharing remains UNVERIFIED.** The call ended before we reached it. The
+camera-restore half of the repair has never been exercised in a real call.
+
+Four further gaps, all found by USE rather than by reading:
+
+* **`ANDROID_SCREEN_SHARE_KILLS_CALL`** — OPEN, high. Sharing from Android does
+  not fail, it drops the participant out of the call: transport lost at the
+  instant of the tap, **no `SCREEN_STATE_CHANGED` event ever recorded for that
+  device**, then a 60s decay to heartbeat_timeout. Cause: the packaged manifest
+  declares 7 services, all Firebase/GMS, and NO call foreground service; there
+  is no `FOREGROUND_SERVICE_MEDIA_PROJECTION` permission anywhere in any merged
+  release manifest. The `FOREGROUND_SERVICE_MICROPHONE`/`_CAMERA` permissions
+  are declared and unused, above a comment explaining why a backgrounded call
+  needs the service that was never built. Never worked; not a regression.
+  Interim remedy proposed: hide the control on Android — a button that reliably
+  ends your call is worse than an absent one.
+* **`STAGE_TRANSPORT_NOT_RECLAIMED_ON_REFRESH`** — OPEN, high. Refreshing mid
+  call yields a new socket while the server still holds the participant's
+  previous stage transport, so every attach is refused with
+  `stage:transport_exists` and the refreshed tab sits in the call unable to
+  publish or subscribe. `attachStage` already carries a comment about this dead
+  end, written about a half-attached transport; refresh reaches it by another
+  road. Recovers only when the old socket fully drops. Strong candidate for
+  "after minimising, return doesn't work".
+* **`STAGE_SCREEN_TRACK_ROW_WITHOUT_PUBLICATION`** — OPEN, medium. A SCREEN
+  track row is written from the `session:screen.set` socket event with
+  `providerTrackName = null`: ACTIVE, direction SEND, and nothing on the wire.
+  Observed on the failed share. The server reports a screen share that does not
+  exist. Unconsumed authority again, in the other direction.
+* **`STAGE_RETIRE_RETIRES_NOTHING`** — OPEN, medium. Observed
+  `op=RETIRE stale=2 retired=0 subscribed=0`: the client correctly identified
+  two stale receivers and the server retired zero of them. The client half of
+  the retirement work is doing its job; the server half is not.
+
+* **`LOCAL_CAPTURE_NOT_RELEASED_ON_REMOTE_SESSION_END`** — OPEN, HIGH, and the
+  most sensitive item in this file. Observed 2026-08-28: the session was ended
+  (`SESSION_ENDED` 00:01:43) and the web client **kept the camera engaged**. It
+  released only on a manual page refresh. A call that ends must release capture
+  immediately, whoever ended it and however it ended — a camera that stays live
+  after the call is a privacy failure, not a tidiness one. `resetSessionMedia()`
+  is evidently not reached on a session ended remotely; the client tears down
+  local media when the PERSON leaves, not when the SESSION does. Same shape as
+  every other gap here: a transition nobody wrote a rule for.
+
+**No transport recovery, reconfirmed twice in one evening.** Both calls died
+the same way: `PARTICIPANT_TRANSPORT_LOST reason=disconnect`, then exactly 60
+seconds of nothing, then `heartbeat_timeout`. No reconnect attempt, no ICE
+restart, no recovery of any kind — see `STAGE_NO_ICE_RECOVERY` above. This is
+now the single highest-value open item: it is what turns any transient network
+or lifecycle event into a lost call.
+
+Also observed, cosmetic: a `media-ready` attach fires during teardown and logs
+`stage:participation_revoked`. Harmless, noisy.
+
 The governing lesson, worth more than any single fix: **an interface method
 with no caller is not a feature.** `replaceVideoSource` was written,
 implemented correctly against the provider, reviewed and shipped — and the
