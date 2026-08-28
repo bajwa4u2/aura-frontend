@@ -46,6 +46,7 @@ class SfuRealtimeTransport implements RealtimeTransport {
   Timer? _liveness;
   int _lastLivenessBytes = -1;
   int _stallTicks = 0;
+  int _ticks = 0;
   bool _probing = false;
   bool _lostReported = false;
   bool _closing = false;
@@ -610,41 +611,61 @@ class SfuRealtimeTransport implements RealtimeTransport {
     }
   }
 
-  /// IS ANYTHING STILL ARRIVING?
+  /// IS MEDIA STILL ARRIVING?
   ///
-  /// ICE STATE IS TOO SLOW TO BE THE ONLY SIGNAL, measured twice on real
-  /// calls (2026-08-28). Pulling the network does not move ICE out of
-  /// `connected` until consent freshness expires, which is around THIRTY
-  /// SECONDS on both Chrome and Android. A fifteen-second outage therefore
-  /// produced frozen video, an unchanged ICE state, and not one event from
-  /// the state-based watch above -- it was listening for something that had
-  /// not happened yet.
+  /// TWO WRONG SIGNALS PRECEDED THIS, both measured on real calls
+  /// (2026-08-28), and the pair of mistakes is the useful part.
   ///
-  /// Bytes are the honest signal. This reads the SELECTED CANDIDATE PAIR
-  /// rather than `inbound-rtp`, because a pair keeps counting STUN consent
-  /// traffic even when every remote participant is muted with the camera off.
-  /// Watching media bytes alone would call a silent-but-healthy call dead.
+  /// ICE STATE IS TOO SLOW. Pulling the network does not move ICE out of
+  /// `connected` until consent freshness expires, about THIRTY SECONDS on
+  /// both Chrome and Android. A fifteen-second outage froze the video and
+  /// produced no state change at all.
+  ///
+  /// CANDIDATE-PAIR BYTES ARE TOO PERMISSIVE. Chosen next precisely because
+  /// they keep counting when everyone is muted -- but they also keep counting
+  /// STUN consent traffic when NO MEDIA IS FLOWING, so the probe watched a
+  /// number rise through an entire outage and reported health. Avoiding a
+  /// false positive that way bought a guaranteed false negative.
+  ///
+  /// So: measure the thing the person actually loses -- RECEIVED MEDIA.
+  ///
+  /// The silent-call trap that pushed me to candidate-pair is handled without
+  /// giving up the signal: stall detection ARMS ONLY AFTER MEDIA HAS BEEN SEEN
+  /// TO FLOW. A call that never had inbound RTP -- everyone muted, cameras off,
+  /// or a receive-nothing session -- never arms, so it cannot be torn down for
+  /// being quiet. What is detected is media that WAS arriving and STOPPED,
+  /// which is exactly the frozen-video condition and nothing else.
   void _armLivenessProbe(RTCPeerConnection pc) {
     _liveness?.cancel();
     _lastLivenessBytes = -1;
     _stallTicks = 0;
+    _ticks = 0;
     _liveness = Timer.periodic(const Duration(seconds: 3), (_) async {
       if (_closing || _lostReported) return;
       // NO OVERLAPPING PROBES. Timer.periodic does not await its callback, so
       // a slow getStats() would let two ticks read the SAME byte count and
       // each count it as a stall -- reaching the threshold in half the time
-      // and tearing down a healthy call. A false positive here is worse than
-      // a late detection, because it interrupts calls that were fine.
+      // and tearing down a healthy call.
       if (_probing) return;
       _probing = true;
       final int bytes;
       try {
-        bytes = await _livenessBytes(pc);
+        bytes = await _mediaBytesReceived(pc);
       } finally {
         _probing = false;
       }
-      if (bytes < 0) return; // unreadable this tick; not evidence of anything
-      if (_lastLivenessBytes < 0 || bytes > _lastLivenessBytes) {
+      _ticks += 1;
+      if (bytes < 0) return; // unreadable tick; not evidence of anything
+
+      // A PROBE THAT NEVER SPEAKS CANNOT BE DEBUGGED. Twice now the trace came
+      // back empty and there was no way to tell a probe that saw health from
+      // one that was not running. It says where it stands every ~30s.
+      if (_ticks % 10 == 0) {
+        unawaited(_report('op=LIVE bytes=$bytes stall=$_stallTicks '
+            'armed=${_lastLivenessBytes >= 0}'));
+      }
+
+      if (bytes > _lastLivenessBytes) {
         if (_stallTicks > 0) {
           unawaited(_report('op=LIVE state=resumed afterTicks=$_stallTicks'));
         }
@@ -652,56 +673,48 @@ class SfuRealtimeTransport implements RealtimeTransport {
         _stallTicks = 0;
         return;
       }
+      // Not yet armed: media has never been seen to flow, so there is nothing
+      // to have stopped.
+      if (_lastLivenessBytes <= 0) return;
+
       _stallTicks += 1;
-      // Four ticks is about twelve seconds with NOTHING arriving -- not even
-      // a consent check. That is a dead path, not a quiet one, and it is well
-      // inside the sixty seconds the server waits before dropping us.
-      if (_stallTicks >= 4) {
+      // Six ticks is about eighteen seconds of media that WAS arriving and is
+      // now not. Comfortably inside the sixty seconds the server waits before
+      // dropping the participant, and long enough that a brief stutter or a
+      // slow keyframe does not qualify.
+      if (_stallTicks >= 6) {
         _declareLost('media_stalled_${_stallTicks * 3}s');
       }
     });
   }
 
-  /// Bytes received on the live path, or -1 when it cannot be read.
-  Future<int> _livenessBytes(RTCPeerConnection pc) async {
+  /// Bytes of MEDIA received, or -1 when stats cannot be read.
+  Future<int> _mediaBytesReceived(RTCPeerConnection pc) async {
     try {
-      var pair = 0;
-      var transport = 0;
       var rtp = 0;
       for (final report in await pc.getStats()) {
-        final v = report.values;
-        switch (report.type) {
-          case 'candidate-pair':
-            // Only the pair actually carrying traffic; the others are
-            // historical and never move again.
-            final nominated = v['nominated'] == true;
-            final selected = v['selected'] == true;
-            final succeeded = v['state'] == 'succeeded';
-            if (nominated || selected || succeeded) {
-              pair += ((v['bytesReceived'] as num?) ?? 0).toInt();
-            }
-          case 'transport':
-            transport += ((v['bytesReceived'] as num?) ?? 0).toInt();
-          case 'inbound-rtp':
-            rtp += ((v['bytesReceived'] as num?) ?? 0).toInt();
-        }
+        if (report.type != 'inbound-rtp') continue;
+        rtp += ((report.values['bytesReceived'] as num?) ?? 0).toInt();
       }
-      if (pair > 0) return pair;
-      if (transport > 0) return transport;
       return rtp;
     } catch (_) {
       return -1;
     }
   }
 
-  /// Watch the transport for the rest of its life, not just until it connects.
+  /// Watch ICE for the rest of the transport's life, not just until it
+  /// connects.
+  ///
+  /// This is the FAST PATH, kept alongside the byte probe rather than replaced
+  /// by it. ICE state is too slow to be the only signal -- consent freshness
+  /// runs about thirty seconds -- but when the stack does declare `failed`
+  /// there is no reason to wait eighteen seconds for bytes to confirm what it
+  /// already knows.
   void _armTransportWatch(RTCPeerConnection pc) {
     pc.onIceConnectionState = (RTCIceConnectionState state) {
       switch (state) {
         case RTCIceConnectionState.RTCIceConnectionStateConnected:
         case RTCIceConnectionState.RTCIceConnectionStateCompleted:
-          // Recovered on its own. A brief `disconnected` is ordinary on a
-          // roaming or congested network and must not cost anyone their call.
           if (_iceGrace != null) {
             _iceGrace?.cancel();
             _iceGrace = null;
@@ -710,7 +723,7 @@ class SfuRealtimeTransport implements RealtimeTransport {
           return;
 
         case RTCIceConnectionState.RTCIceConnectionStateDisconnected:
-          // Give it a chance before declaring anything. Most disconnects heal.
+          // Most disconnects heal. Give it a window before escalating.
           _iceGrace?.cancel();
           _iceGrace = Timer(const Duration(seconds: 10), () {
             _declareLost('ice_disconnected_10s');
@@ -719,7 +732,6 @@ class SfuRealtimeTransport implements RealtimeTransport {
           return;
 
         case RTCIceConnectionState.RTCIceConnectionStateFailed:
-          // Terminal for this connection: ICE has exhausted its candidates.
           _declareLost('ice_failed');
           return;
 
