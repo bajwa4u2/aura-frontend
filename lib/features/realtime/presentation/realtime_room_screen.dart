@@ -281,6 +281,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
   @override
   void dispose() {
+    _chromeTimer?.cancel();
     // Release the wake lock when leaving the room.
     WakelockPlus.disable();
     _durationTimer?.cancel();
@@ -732,9 +733,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
             color: AuraSurface.subtle,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
-          child: _CallPanelContent(
+          child: _panelContent(
             panelId: panelId,
-            sessionId: widget.sessionId,
             myUserId: myUserId,
             canModerate: canModerate,
             scrollController: scrollController,
@@ -947,10 +947,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
             builder: (context, constraints) {
               final wide = constraints.maxWidth >= 860;
 
-              return Column(
-                children: [
-                  // ── Header bar ────────────────────────────────────────────────
-                  _CallTopBar(
+              final topBar = _CallTopBar(
                     title: _callTitle(state.session, state.isVideoMode),
                     contextLabel: _contextLabel(state.session),
                     duration: callDuration,
@@ -998,63 +995,11 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                         : null,
                     sessionTypeChip: _buildSessionTypeChip(),
                     trustLine: _buildTrustLine(),
-                  ),
+                  );
 
-                  // ── Phase 3 — per-type focus reinforcement ───────────────────
-                  // Single-line text band that shifts focus per session type:
-                  // "Speaker-led session" for public briefings/classes,
-                  // "Q&A session" for media interactions. Internal meetings
-                  // and research sessions stay quiet.
-                  if (_buildFocusBanner() case final focus?) focus,
-
-                  // ── Phase 4 — in-session presence line ───────────────────────
-                  // Calm line beneath the focus banner (or directly under
-                  // the top bar when there's no focus banner) that names
-                  // how many participants are present. Reads from existing
-                  // realtime state — no extra fetch.
-                  if (_buildPresenceLine(state) case final presence?) presence,
-
-                  // ── Consent banner ────────────────────────────────────────────
-                  RealtimeConsentSheet(
-                    currentUserId: myUserId.isNotEmpty ? myUserId : null,
-                    consents: state.consents,
-                  ),
-
-                  // ── Connection issue banner ───────────────────────────────────
-                  if (showConnectionIssue)
-                    _ConnectionBanner(
-                      isBusy: state.isBusy || isConnecting,
-                      onReconnect: () => controller.resume(widget.sessionId),
-                    ),
-
-                  // ── Main body ─────────────────────────────────────────────────
-                  Expanded(
-                    child: isMeetingSession && state.isJoined
-                        ? _buildMeetingRoom(
-                            state: state,
-                            myUserId: myUserId,
-                            wide: wide,
-                          )
-                        : state.isJoined
-                        ? _buildActiveCall(
-                            state: state,
-                            controller: controller,
-                            myUserId: myUserId,
-                            canModerate: canModerate,
-                            wide: wide,
-                          )
-                        : _buildPreJoin(
-                            context: context,
-                            state: state,
-                            controller: controller,
-                            policy: policy,
-                            roomIsClosed: roomIsClosed,
-                          ),
-                  ),
-
-                  // ── Call controls ─────────────────────────────────────────────
-                  if (state.isJoined)
-                    isMeetingSession
+              final dockOrNull = () {
+                if (!state.isJoined) return null;
+                return isMeetingSession
                         ? _MeetingControlDock(
                             micOn: state.microphoneEnabled,
                             cameraOn: state.cameraEnabled,
@@ -1117,10 +1062,220 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                                 ? () => unawaited(_endCallAndClose(controller))
                                 : () =>
                                       unawaited(_leaveAndNavigate(controller)),
+                          );
+              }();
+
+              final banners = <Widget>[
+                  // ── Phase 3 — per-type focus reinforcement ───────────────────
+                  // Single-line text band that shifts focus per session type:
+                  // "Speaker-led session" for public briefings/classes,
+                  // "Q&A session" for media interactions. Internal meetings
+                  // and research sessions stay quiet.
+                  if (_buildFocusBanner() case final focus?) focus,
+
+                  // ── Phase 4 — in-session presence line ───────────────────────
+                  // Calm line beneath the focus banner (or directly under
+                  // the top bar when there's no focus banner) that names
+                  // how many participants are present. Reads from existing
+                  // realtime state — no extra fetch.
+                  if (_buildPresenceLine(state) case final presence?) presence,
+
+                  // ── Consent banner ────────────────────────────────────────────
+                  RealtimeConsentSheet(
+                    currentUserId: myUserId.isNotEmpty ? myUserId : null,
+                    consents: state.consents,
+                  ),
+
+                  // ── Connection issue banner ───────────────────────────────────
+                  if (showConnectionIssue)
+                    _ConnectionBanner(
+                      isBusy: state.isBusy || isConnecting,
+                      onReconnect: () => controller.resume(widget.sessionId),
+                    ),
+
+                  // ── Main body ─────────────────────────────────────────────────
+                  Expanded(
+                    child: isMeetingSession && state.isJoined
+                        ? _buildMeetingRoom(
+                            state: state,
+                            myUserId: myUserId,
+                            wide: wide,
+                          )
+                        : state.isJoined
+                        ? _buildActiveCall(
+                            state: state,
+                            controller: controller,
+                            myUserId: myUserId,
+                            canModerate: canModerate,
+                            wide: wide,
+                          )
+                        : _buildPreJoin(
+                            context: context,
+                            state: state,
+                            controller: controller,
+                            policy: policy,
+                            roomIsClosed: roomIsClosed,
                           ),
-                ],
+                  ),
+
+              ];
+
+              // FULL-BLEED WHILE IN A CALL. The media is the surface; the
+              // header and dock float over it and recede.
+              final immersive = state.isJoined && !isMeetingSession;
+              final body = state.isJoined
+                  ? (isMeetingSession
+                      ? _buildMeetingRoom(state: state, myUserId: myUserId, wide: wide)
+                      : _buildActiveCall(
+                          state: state,
+                          controller: controller,
+                          myUserId: myUserId,
+                          canModerate: canModerate,
+                          wide: wide,
+                        ))
+                  : _buildPreJoin(
+                      context: context,
+                      state: state,
+                      controller: controller,
+                      policy: policy,
+                      roomIsClosed: roomIsClosed,
+                    );
+
+              if (!immersive) {
+                return Column(
+                  children: [
+                    topBar,
+                    ...banners,
+                    Expanded(child: body),
+                    if (dockOrNull != null) dockOrNull,
+                  ],
+                );
+              }
+
+              return Listener(
+                // Listener, not GestureDetector: it sees the pointer during
+                // the bubble phase even when a tile handles the tap itself,
+                // so revealing a name and waking the controls are not rivals.
+                behavior: HitTestBehavior.translucent,
+                onPointerDown: (_) => _wakeChrome(),
+                onPointerHover: (_) => _wakeChrome(),
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Column(
+                        children: [
+                          ...banners,
+                          Expanded(child: body),
+                        ],
+                      ),
+                    ),
+                    _recedingChrome(align: Alignment.topCenter, child: topBar),
+                    if (dockOrNull != null)
+                      _recedingChrome(
+                        align: Alignment.bottomCenter,
+                        child: dockOrNull,
+                      ),
+                  ],
+                ),
               );
             },
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The panel, wherever it is shown, with the secondary acts attached.
+  ///
+  /// Share Screen and Go Live moved off the canvas into MORE, so every place
+  /// that renders the panel has to carry them — a sheet on narrow screens, a
+  /// side column on wide ones. Built through Consumer so the panel keeps
+  /// reflecting live state (a share in progress, a Live that just started)
+  /// wherever it happens to be mounted.
+  Widget _panelContent({
+    required String panelId,
+    required String myUserId,
+    required bool canModerate,
+    VoidCallback? onClose,
+    ScrollController? scrollController,
+  }) {
+    return Consumer(
+      builder: (context, ref, _) {
+        final state = ref.watch(realtimeControllerProvider);
+        final publiclyLive = state.session?.isLive == true;
+        final liveEligible = _liveControlsEligible(state, myUserId);
+        final observer = _amObserver(state, myUserId);
+        return _CallPanelContent(
+          panelId: panelId,
+          sessionId: widget.sessionId,
+          myUserId: myUserId,
+          canModerate: canModerate,
+          onClose: onClose,
+          scrollController: scrollController,
+          isScreenSharing: state.isScreenSharing,
+          isTogglingScreenShare: _togglingScreenShare,
+          onToggleScreenShare:
+              observer ? null : () => unawaited(_toggleScreenShare()),
+          isPubliclyLive: publiclyLive,
+          onGoLive: !liveEligible
+              ? null
+              : publiclyLive
+                  // Ending a Live is never gated on video: a broadcaster whose
+                  // camera closed mid-broadcast must still be able to close
+                  // the public door.
+                  ? () => unawaited(_endLive(state))
+                  : (_callCarriesVideo(state)
+                      ? () => unawaited(_goLive(state))
+                      : null),
+        );
+      },
+    );
+  }
+
+  // ── Controls on demand ────────────────────────────────────────────────────
+  //
+  // Founder-frozen: PRESENCE FIRST, CONTROLS ON DEMAND. The call canvas is
+  // media, and the header and dock are visitors on it. They appear on intent
+  // — pointer movement, a tap — and recede again, so what dominates the screen
+  // is the people in the call rather than the apparatus around them.
+  //
+  // They start visible for a moment on entry: a control surface nobody can
+  // find is its own defect, and the first seconds of a call are exactly when
+  // somebody reaches for mute.
+  bool _chromeVisible = true;
+  Timer? _chromeTimer;
+
+  static const Duration _chromeLinger = Duration(seconds: 3);
+
+  void _wakeChrome() {
+    _chromeTimer?.cancel();
+    if (!_chromeVisible && mounted) setState(() => _chromeVisible = true);
+    _chromeTimer = Timer(_chromeLinger, () {
+      // A panel is open, or the call has ended — leave the chrome alone.
+      if (!mounted || _activePanel != null) return;
+      setState(() => _chromeVisible = false);
+    });
+  }
+
+  void _holdChrome() {
+    // While a pointer rests on the controls themselves they must not vanish
+    // under the hand reaching for them.
+    _chromeTimer?.cancel();
+    if (!_chromeVisible && mounted) setState(() => _chromeVisible = true);
+  }
+
+  Widget _recedingChrome({required Widget child, required Alignment align}) {
+    return Align(
+      alignment: align,
+      child: MouseRegion(
+        onEnter: (_) => _holdChrome(),
+        onExit: (_) => _wakeChrome(),
+        child: IgnorePointer(
+          ignoring: !_chromeVisible,
+          child: AnimatedOpacity(
+            opacity: _chromeVisible ? 1 : 0,
+            duration: const Duration(milliseconds: 180),
+            child: child,
           ),
         ),
       ),
@@ -1151,9 +1306,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
               color: AuraSurface.subtle,
               border: Border(left: BorderSide(color: AuraSurface.divider)),
             ),
-            child: _CallPanelContent(
+            child: _panelContent(
               panelId: _activePanel!,
-              sessionId: widget.sessionId,
               myUserId: myUserId,
               canModerate: canModerate,
               onClose: () => setState(() => _activePanel = null),
@@ -1199,9 +1353,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
               color: AuraSurface.subtle,
               border: Border(left: BorderSide(color: AuraSurface.divider)),
             ),
-            child: _CallPanelContent(
+            child: _panelContent(
               panelId: _activePanel!,
-              sessionId: widget.sessionId,
               myUserId: myUserId,
               canModerate: true,
               onClose: () => setState(() => _activePanel = null),
@@ -3215,38 +3368,18 @@ class _CallControlDock extends StatelessWidget {
               const SizedBox(width: AuraSpace.s8),
             ],
 
-            // Screen share — audio AND video calls (the shared media
-            // service adds the track with renegotiation on audio-only
-            // peers, so audio calls genuinely support it).
-            if (showPublishControls && onToggleScreenShare != null) ...[
-              _DockButton(
-                icon: isScreenSharing
-                    ? Icons.stop_screen_share_rounded
-                    : Icons.screen_share_rounded,
-                label: isScreenSharing ? 'Stop share' : 'Share',
-                active: isScreenSharing,
-                onPressed:
-                    isTogglingScreenShare ? () {} : onToggleScreenShare!,
-              ),
-              const SizedBox(width: AuraSpace.s8),
-            ],
-
-            // GO LIVE — a PRIMARY in-call act, so it sits in the dock
-            // rather than buried in a panel (founder 2026-08-17: "there is
-            // no option in running video call to make it live, i think its
-            // burried").
-            if (onGoLive != null) ...[
-              _DockButton(
-                icon: isPubliclyLive
-                    ? Icons.stop_circle_outlined
-                    : Icons.sensors_rounded,
-                label: isPubliclyLive ? 'End Live' : 'Go Live',
-                active: isPubliclyLive,
-                warning: isPubliclyLive,
-                onPressed: onGoLive!,
-              ),
-              const SizedBox(width: AuraSpace.s8),
-            ],
+            // SHARE SCREEN AND GO LIVE NOW LIVE UNDER MORE.
+            //
+            // Founder-frozen direction: the live canvas is media-first, and
+            // every persistent control has to justify occupying it. These two
+            // are deliberate, occasional acts — not things a person reaches
+            // for mid-sentence — so they belong one intent away rather than
+            // permanently over somebody's face.
+            //
+            // (Go Live was moved INTO the dock on 2026-08-17 because it was
+            // buried behind a panel nobody opened. That was right then; the
+            // answer now is that MORE opens onto the acts themselves rather
+            // than onto another list, so nothing is buried by being there.)
 
             // Speaker (mobile-native only — 2026-08-14 repair)
             if (showSpeakerToggle) ...[
@@ -3261,16 +3394,14 @@ class _CallControlDock extends StatelessWidget {
               const SizedBox(width: AuraSpace.s8),
             ],
 
-            // Participants
-            _DockButton(
-              icon: Icons.people_rounded,
-              label: 'Participants',
-              active: activePanel == _kPanelParticipants,
-              onPressed: onParticipants,
-            ),
-            const SizedBox(width: AuraSpace.s8),
+            // NO STANDALONE PARTICIPANTS CONTROL.
+            //
+            // It was redundant: MORE now opens directly onto participant
+            // identities and management, so a second primary button led to
+            // the same place by a longer route while costing permanent space
+            // on the canvas.
 
-            // More / Settings
+            // More — participants, sharing, going live, host controls
             _DockButton(
               icon: Icons.tune_rounded,
               label: 'More',
@@ -3554,6 +3685,63 @@ class _LeaveButton extends StatelessWidget {
 // PANEL CONTENT (shared by desktop side panel + mobile bottom sheet)
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// A single act inside a panel. Reads as a row, not as dock chrome.
+class _PanelAction extends StatelessWidget {
+  const _PanelAction({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    this.active = false,
+    this.warning = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+  final bool active;
+  final bool warning;
+
+  @override
+  Widget build(BuildContext context) {
+    final tint = warning
+        ? const Color(0xFFE5484D)
+        : active
+            ? AuraSurface.accent
+            : Colors.white;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s8),
+      child: Material(
+        color: AuraSurface.subtle,
+        borderRadius: BorderRadius.circular(AuraRadius.md),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AuraRadius.md),
+          onTap: onPressed,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s12,
+              vertical: AuraSpace.s12,
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: 18, color: tint),
+                const SizedBox(width: AuraSpace.s12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: AuraText.body.copyWith(
+                      color: onPressed == null ? Colors.white38 : tint,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _CallPanelContent extends ConsumerStatefulWidget {
   const _CallPanelContent({
     required this.panelId,
@@ -3562,6 +3750,11 @@ class _CallPanelContent extends ConsumerStatefulWidget {
     required this.canModerate,
     this.onClose,
     this.scrollController,
+    this.isScreenSharing = false,
+    this.isTogglingScreenShare = false,
+    this.onToggleScreenShare,
+    this.isPubliclyLive = false,
+    this.onGoLive,
   });
 
   final String panelId;
@@ -3570,6 +3763,14 @@ class _CallPanelContent extends ConsumerStatefulWidget {
   final bool canModerate;
   final VoidCallback? onClose;
   final ScrollController? scrollController;
+
+  /// Secondary acts, moved off the canvas. They are deliberate and
+  /// occasional; they do not earn permanent space over somebody's face.
+  final bool isScreenSharing;
+  final bool isTogglingScreenShare;
+  final VoidCallback? onToggleScreenShare;
+  final bool isPubliclyLive;
+  final VoidCallback? onGoLive;
 
   @override
   ConsumerState<_CallPanelContent> createState() => _CallPanelContentState();
@@ -3721,6 +3922,49 @@ class _CallPanelContentState extends ConsumerState<_CallPanelContent> {
           currentUserId: widget.myUserId.isNotEmpty ? widget.myUserId : null,
           consents: state.consents,
         ),
+
+        // WHO IS HERE, FIRST AND DIRECTLY.
+        //
+        // Founder-frozen: opening MORE must expose participant identities and
+        // management itself, not offer another list to open. A second hop to
+        // reach the people in the call is the noise this removes, not a
+        // tidier place to put it.
+        RealtimeParticipantList(
+          participants: state.participants,
+          session: state.session,
+          canModerate: widget.canModerate,
+          currentUserId: widget.myUserId,
+          hostUserId: state.session?.startedByUserId,
+          remoteRenderers: state.remoteRenderers,
+          onRemove: ctrl.removeParticipant,
+        ),
+        const SizedBox(height: AuraSpace.s12),
+
+        // Secondary acts, off the canvas.
+        if (widget.onToggleScreenShare != null || widget.onGoLive != null) ...[
+          if (widget.onToggleScreenShare != null)
+            _PanelAction(
+              icon: widget.isScreenSharing
+                  ? Icons.stop_screen_share_rounded
+                  : Icons.screen_share_rounded,
+              label: widget.isScreenSharing ? 'Stop sharing' : 'Share screen',
+              active: widget.isScreenSharing,
+              onPressed: widget.isTogglingScreenShare
+                  ? null
+                  : widget.onToggleScreenShare,
+            ),
+          if (widget.onGoLive != null)
+            _PanelAction(
+              icon: widget.isPubliclyLive
+                  ? Icons.stop_circle_outlined
+                  : Icons.sensors_rounded,
+              label: widget.isPubliclyLive ? 'End Live' : 'Go Live',
+              active: widget.isPubliclyLive,
+              warning: widget.isPubliclyLive,
+              onPressed: widget.onGoLive,
+            ),
+          const SizedBox(height: AuraSpace.s12),
+        ],
 
         // Host controls
         if (widget.canModerate) ...[
