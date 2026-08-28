@@ -35,6 +35,26 @@ RUN flutter build web --release --no-wasm-dry-run \
 # directory indexes before falling back to /index.html.
 RUN dart run tool/web/generate_route_metadata.dart
 
+# PRECOMPRESS FOR gzip_static.
+#
+# The front door was serving main.dart.js at its full 7.2 MB with no
+# Content-Encoding at all -- measured in production 2026-08-28 -- so every
+# cold load pulled roughly 4-5x more than it needed to.
+#
+# Compressing at BUILD time rather than per-request buys the maximum ratio
+# (-9) once, instead of a middling ratio recomputed on every request, and
+# costs the runtime container no CPU. nginx serves the .gz beside the
+# original via gzip_static and falls back to on-the-fly gzip for anything
+# not precompressed.
+#
+# -k keeps the original: gzip_static needs BOTH, and a client that sends no
+# Accept-Encoding must still get an uncompressed body.
+#
+# NOT brotli: stock nginx has no brotli module, and nginx:alpine ships no
+# ngx_brotli. Claiming brotli here would mean either a custom nginx build or
+# a silently-ignored directive. gzip is what this image can actually honour.
+RUN find build/web -type f -size +1k \( -name '*.js' -o -name '*.css' -o -name '*.json' -o -name '*.svg' -o -name '*.wasm' -o -name '*.ttf' -o -name '*.otf' \) -exec gzip -9 -k -f {} \;
+
 # ---- runtime stage ----
 FROM nginx:alpine
 
@@ -91,6 +111,24 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '  absolute_redirect off;' \
 '  port_in_redirect off;' \
 '  server_tokens off;' \
+'' \
+'  # ── Compression ─────────────────────────────────────────────────' \
+'  # The bundle was served UNCOMPRESSED: 7.2 MB of main.dart.js with no' \
+'  # Content-Encoding, revalidated on every visit. gzip_static serves the' \
+'  # .gz produced at build time (max ratio, zero runtime CPU); gzip covers' \
+'  # anything without a precompressed twin, such as proxied share pages.' \
+'  gzip_static on;' \
+'  gzip on;' \
+'  gzip_comp_level 6;' \
+'  gzip_min_length 1024;' \
+'  gzip_proxied any;' \
+'  # Vary: Accept-Encoding — without it a shared cache can hand a' \
+'  # compressed body to a client that never asked for one.' \
+'  gzip_vary on;' \
+'  # text/html is always compressed when gzip is on and must not be listed.' \
+'  gzip_types text/plain text/css application/javascript application/json' \
+'             application/manifest+json image/svg+xml application/wasm' \
+'             font/ttf font/otf;' \
 '' \
 '  # App shell / entrypoints have STABLE names but change every build, so' \
 '  # they MUST revalidate. Serving them immutable (below) froze returning' \
