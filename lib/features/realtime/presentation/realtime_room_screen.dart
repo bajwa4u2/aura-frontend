@@ -555,6 +555,31 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     return true;
   }
 
+  /// IS THIS CALL BEING RESTORED?
+  ///
+  /// The first version asked only `connectionStatus == reconnecting`, which is
+  /// true for a window and then is not. Founder-photographed 2026-08-28: at
+  /// 00:50 and 01:11 into an outage the room was still offering "Ready to
+  /// join / Tap Join call to enter" with a Join button, because by then the
+  /// patience budget had expired and the status had moved on to `error` --
+  /// even though the session was alive, the server still held the
+  /// participant, and the client was rejoining.
+  ///
+  /// The durable question is not which status enum we are in. It is: CAN THIS
+  /// PERSON ACTUALLY JOIN RIGHT NOW? Without a connection they cannot, and
+  /// offering the button is an instruction to do something impossible -- the
+  /// same reasoning `readyToJoinIsTruthful` already applies to a session that
+  /// has ended.
+  bool _isRecovering(RealtimeState state) {
+    if (state.connectionStatus == RealtimeConnectionStatus.reconnecting) {
+      return true;
+    }
+    // Off the network, with a call still there to go back to.
+    return state.session?.isActive == true &&
+        (state.connectionStatus == RealtimeConnectionStatus.error ||
+            state.connectionStatus == RealtimeConnectionStatus.disconnected);
+  }
+
   /// A STACK TRACE IS NOT A SENTENCE.
   ///
   /// Founder-photographed 2026-08-28, on a phone with the network pulled:
@@ -1415,8 +1440,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
               // over the status is no longer `reconnecting`, and the real
               // reason appears exactly as before.
               if ((state.errorMessage ?? '').isNotEmpty &&
-                  state.connectionStatus !=
-                      RealtimeConnectionStatus.reconnecting) ...[
+                  !_isRecovering(state)) ...[
                 const SizedBox(height: AuraSpace.s12),
                 Container(
                   padding: const EdgeInsets.all(AuraSpace.s12),
@@ -1650,8 +1674,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         // established. It is untrue for one that was established and lost,
         // and the difference matters to the person: one is waiting, the
         // other is losing something they were in the middle of.
-        final isRecovering =
-            state.connectionStatus == RealtimeConnectionStatus.reconnecting;
+        final isRecovering = _isRecovering(state);
         if (isRecovering) {
           return (
             Icons.wifi_tethering_rounded,

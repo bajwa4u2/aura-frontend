@@ -101,16 +101,21 @@ class RealtimeController extends StateNotifier<RealtimeState>
   /// (2026-08-28).
   ///
   /// The ordering has to be: the client keeps hoping slightly LONGER than the
-  /// server does, never shorter. Then a socket that returns at 50 seconds
-  /// still finds a session to rejoin, and if the server HAS revoked, the
-  /// rejoin fails cleanly through `_mapJoinError` and says so -- an honest
-  /// failure after asking, rather than a silent teardown that never asked.
+  /// server does, never shorter. Then a socket that returns inside the
+  /// server's window still finds a session to rejoin, and if the server HAS
+  /// revoked, the rejoin fails cleanly through `_mapJoinError` and says so --
+  /// an honest failure after asking, rather than a silent teardown that never
+  /// asked.
+  ///
+  /// Raised 45 -> 75 -> 135 as the server's tolerance went 60 -> 120. These
+  /// two numbers move together or the defect returns; the client must outlast
+  /// the server, never the reverse.
   ///
   /// This is deliberately NOT the same number as the UI patience budget.
   /// What we SHOW and what we DESTROY are different questions: after 45s we
   /// stop promising the person it will come back, but we keep the session
   /// recoverable until the server itself has let go.
-  static const Duration _signalingGrace = Duration(seconds: 75);
+  static const Duration _signalingGrace = Duration(seconds: 135);
   final Map<String, Timer> _peerGraceTimers = <String, Timer>{};
   static const Duration _peerGrace = Duration(seconds: 45);
   // userId → last known live socketId, so a rejoining peer's stale peer
@@ -3225,7 +3230,10 @@ class RealtimeController extends StateNotifier<RealtimeState>
   /// It is not infinite patience: a call outside its budget, or with no live
   /// session at all, still reports the real failure. Truth over hope, only
   /// later than before.
-  static const Duration _reconnectPatience = Duration(seconds: 45);
+  /// Sits just UNDER the server's 120s revoke (founder ruling 2026-08-28),
+  /// so the UI never keeps promising a call the server has already ended,
+  /// and never stops promising one it is still holding.
+  static const Duration _reconnectPatience = Duration(seconds: 110);
   DateTime? _troubleSince;
 
   /// What a connection failure should LOOK like right now.
