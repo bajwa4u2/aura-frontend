@@ -327,6 +327,62 @@ Four further gaps, all found by USE rather than by reading:
 
   Fix: treat `muted` as a stream, not a snapshot — rebuild on unmute.
 
+### TRANSPORT RECOVERY — status at end of 2026-08-28
+
+**What is PROVEN, in real calls:**
+
+* **Transport reclaim** (`4105df4`). A mid-call refresh now recovers instead of
+  leaving the tab stageless with every attach refused by
+  `stage:transport_exists`. Founder-exercised twice, including the sequence
+  "first pixel then after refresh web all normal". This is the fix that has
+  actually been saving calls tonight.
+* **Rejoin re-establishes media.** A participant who drops now rejoins and
+  rebuilds the stage (`op=SUBSCRIBE trig=JOIN` → `PUBLISH` → both sides
+  `renderVideo=true`), rather than sitting frozen until `heartbeat_timeout`.
+  This only works BECAUSE of reclaim; the rejoin's `openTransport` would
+  previously have been refused.
+
+**What is BUILT and has NEVER FIRED: automatic loss detection.** Three signal
+choices, each disproved by an induced failure rather than by reasoning:
+
+| signal | why it failed |
+|---|---|
+| ICE connection state | TOO SLOW — consent freshness is ~30s on BOTH Chrome and Android, so a 15s outage never changed state. I had recorded this as a Chrome-only risk and assumed Android's network callback covered it; the Pixel behaved identically. |
+| selected candidate-pair bytes | TOO PERMISSIVE — keeps counting STUN consent traffic while NO media flows, so the probe watched a number rise through an entire outage and reported health. |
+| inbound-rtp bytes (current) | measures what the person actually loses; arms only AFTER media has been seen to flow, so a legitimately silent call cannot be torn down. UNVERIFIED. |
+
+The recurring error in my own reasoning, worth more than the fix: **twice I
+chose a signal for its theoretical robustness rather than for whether it tracks
+what the user loses.** Candidate-pair bytes were strictly more robust as a
+connectivity measure and completely useless as a liveness measure. Avoiding a
+false positive that way bought a guaranteed false negative — the worse trade,
+since a false positive interrupts a working call while a false negative means
+the feature does not exist.
+
+Two supporting repairs, both also caused by induced failures:
+
+* **Recovery drives its own retries** (`48af6fc`). The first version made ONE
+  attempt and relied on `onLost` calling it again — but `onLost` fires once per
+  transport, and by then the transport was destroyed. The three-attempt budget
+  was unreachable, and a first attempt made while the network was still down
+  ended recovery permanently. *Recovery must not depend on being re-triggered
+  by the component that failed.*
+* **Diagnostics survive the outage they describe** (`48af6fc`). Reports about a
+  network failure were posted over the failed network, so every ICE transition
+  and recovery attempt vanished and the trace came back empty. Failed reports
+  are now held (newest 40) and replayed marked `queued=1`. *Observability must
+  not depend on the resource whose failure it reports.* The first marker was
+  `held=1`, which collided with the render diagnostic's own `held=N` counter
+  and made the queue unsearchable — fixed to `queued=1`.
+* The probe now reports its own reading every ~30s, because twice the trace was
+  empty and there was no way to tell a probe that saw health from one that was
+  not running.
+
+**Next verification owed:** a 40-second outage, long enough to clear both the
+18-second stall threshold and ICE's ~30s consent timeout.
+
+---
+
 **No transport recovery, reconfirmed twice in one evening.** Both calls died
 the same way: `PARTICIPANT_TRANSPORT_LOST reason=disconnect`, then exactly 60
 seconds of nothing, then `heartbeat_timeout`. No reconnect attempt, no ICE

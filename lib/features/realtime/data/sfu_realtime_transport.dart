@@ -40,7 +40,13 @@ class SfuRealtimeTransport implements RealtimeTransport {
   ///
   /// This reports; it does not repair. The owner decides what recovery means,
   /// because re-establishing a transport is a session-level act.
-  final void Function(String reason)? onLost;
+  /// [iceHealthy] distinguishes the two causes that look identical from here:
+  /// MY transport died, or THE OTHER PARTY went away. Media stopping proves
+  /// only that nothing is arriving. When ICE is still connected the path is
+  /// fine and rebuilding it would interrupt my own published media for
+  /// everyone else -- actively harmful in a group call -- so the owner
+  /// re-subscribes instead.
+  final void Function(String reason, bool iceHealthy)? onLost;
 
   Timer? _iceGrace;
   Timer? _liveness;
@@ -758,7 +764,12 @@ class SfuRealtimeTransport implements RealtimeTransport {
     _liveness = null;
     if (_lostReported || _closing) return;
     _lostReported = true;
-    unawaited(_report('op=ICE state=lost reason=$reason'));
-    onLost?.call(reason);
+    final ice = _pc?.iceConnectionState;
+    final iceHealthy =
+        ice == RTCIceConnectionState.RTCIceConnectionStateConnected ||
+            ice == RTCIceConnectionState.RTCIceConnectionStateCompleted;
+    unawaited(
+        _report('op=ICE state=lost reason=$reason iceHealthy=$iceHealthy'));
+    onLost?.call(reason, iceHealthy);
   }
 }

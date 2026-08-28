@@ -3114,13 +3114,40 @@ class RealtimeController extends StateNotifier<RealtimeState>
   /// The lesson generalises: recovery cannot depend on being re-triggered by
   /// the thing that failed. It has to drive itself until it succeeds or its
   /// budget runs out.
-  Future<void> _recoverStage(String reason) async {
+  Future<void> _recoverStage(
+    String reason,
+    Object lost,
+    bool iceHealthy,
+  ) async {
     final sessionId = _managedSessionId;
     if (sessionId.isEmpty || !state.isJoined || _terminating || _endingCall) {
       return;
     }
     // Leaving is not losing, and one recovery at a time.
     if (_recoveringStage) return;
+    // Already replaced by another path — nothing to recover.
+    if (!_mediaService.ownsStage(lost)) return;
+
+    // MEDIA STOPPED, BUT THE PATH IS FINE.
+    //
+    // Media stopping proves only that nothing is arriving; it does not say
+    // whose fault that is. When ICE is still connected, MY transport is
+    // healthy and the silence is the other participant leaving, sleeping, or
+    // losing their own network. Rebuilding here would tear down my own
+    // publication and interrupt everyone else in the call to fix a problem I
+    // do not have. Re-resolving who is publishing is the proportionate act,
+    // and it is what picks their media back up when they return.
+    if (iceHealthy) {
+      _reportRecovery(sessionId, 'stage_recovery_resubscribe', 'reason=$reason');
+      try {
+        await _mediaService.refreshStageRemoteMedia(trigger: 'RECOVER');
+      } catch (error) {
+        _reportRecovery(
+            sessionId, 'stage_recovery_resubscribe_failed', 'err=$error');
+      }
+      return;
+    }
+
     _recoveringStage = true;
 
     try {
@@ -3135,7 +3162,13 @@ class RealtimeController extends StateNotifier<RealtimeState>
         // Conditions change while backing off: the person may be leaving, or
         // an unrelated path may have re-attached the stage already.
         if (!mounted || !state.isJoined || _terminating || _endingCall) return;
-        if (_mediaService.usesStageTransport) {
+        // MOOT MEANS REPLACED, NOT MERELY PRESENT. This asked
+        // `usesStageTransport` -- which is `_stage != null` -- so a DEAD
+        // transport still counted as "someone already fixed it" and recovery
+        // declared itself unnecessary every single time. Detection worked,
+        // recovery never ran, and the call died. Measured 2026-08-28:
+        // media_stalled_18s, then stage_recovery_moot three seconds later.
+        if (!_mediaService.ownsStage(lost)) {
           _reportRecovery(sessionId, 'stage_recovery_moot',
               'reason=$reason attempt=$attempt');
           _armRecoveryBudgetReset();
@@ -3216,11 +3249,16 @@ class RealtimeController extends StateNotifier<RealtimeState>
     try {
       final trigger = _stageTrigger(reason);
       if (!_mediaService.usesStageTransport) {
+        late final SfuRealtimeTransport transport;
+        transport = SfuRealtimeTransport(
+          _repository,
+          // The transport identifies ITSELF, so recovery can tell whether the
+          // thing that died is still the live one.
+          onLost: (reason, iceHealthy) =>
+              unawaited(_recoverStage(reason, transport, iceHealthy)),
+        );
         await _mediaService.attachStage(
-          SfuRealtimeTransport(
-            _repository,
-            onLost: (reason) => unawaited(_recoverStage(reason)),
-          ),
+          transport,
           sessionId: sessionId,
           trigger: trigger,
         );

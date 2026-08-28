@@ -1225,6 +1225,19 @@ class RealtimeMediaService {
   /// Whether this session's media moves through the stage transport.
   bool get usesStageTransport => _stage != null;
 
+  /// Is THIS transport still the live one?
+  ///
+  /// `usesStageTransport` answers presence, not health, and a DEAD transport
+  /// is still non-null. Recovery used that to decide whether its work had
+  /// already been done by someone else, so it declared itself moot every time
+  /// -- including when the transport it was called about was the dead one
+  /// still sitting in this field. Detection worked and recovery never ran.
+  /// Measured 2026-08-28: `media_stalled_18s` followed three seconds later by
+  /// `stage_recovery_moot`, and the call died.
+  ///
+  /// Identity is the question actually being asked.
+  bool ownsStage(Object transport) => identical(_stage, transport);
+
   /// Which transport is carrying media, for observability (§2).
   String get transportId => _stage?.id ?? 'mesh';
 
