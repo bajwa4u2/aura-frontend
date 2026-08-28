@@ -1349,6 +1349,49 @@ class RealtimeMediaService {
   /// A participant who stops publishing video loses their renderer; one who
   /// leaves entirely loses renderer and stream. Nothing is keyed by device, so
   /// reconnecting does not manufacture a second tile.
+  /// `muted` IS A STREAM, NOT A SNAPSHOT.
+  ///
+  /// THE DEFECT THIS CLOSES (2026-08-28, three-party meeting). Both call
+  /// surfaces decide whether to draw a tile with
+  ///
+  ///     return tracks.first.muted != true;
+  ///
+  /// read ONCE, at build time. A remote track arrives `muted = true` and flips
+  /// to `false` only when frames actually begin to flow. Nothing listened for
+  /// that transition, so a tile built inside the window rendered "camera off"
+  /// and STAYED there until an unrelated rebuild happened along.
+  ///
+  /// It is per-viewer by construction, which is why the same call looked like a
+  /// different bug to each participant, and why it survived so long: the server
+  /// sees a healthy published track, the client reports `bind_complete` and a
+  /// live attached renderer, and the person still sees an avatar. Every arrow
+  /// in the chain is green.
+  ///
+  /// Several browser contexts on ONE machine sharing a single camera lengthen
+  /// the muted window and turn an occasional race into the usual outcome.
+  ///
+  /// Republishing the snapshot is enough: the tiles derive liveness from the
+  /// renderer they already hold, so they only need an excuse to look again.
+  void _watchRemoteVideoLiveness(MediaStreamTrack video) {
+    try {
+      video.onUnMute = () {
+        if (_disposed) return;
+        _publish();
+      };
+      video.onMute = () {
+        if (_disposed) return;
+        _publish();
+      };
+      video.onEnded = () {
+        if (_disposed) return;
+        _publish();
+      };
+    } catch (_) {
+      // A platform without these callbacks must not lose its picture over
+      // them. The tile still renders; it just will not re-evaluate early.
+    }
+  }
+
   Future<void> _syncParticipantRenderers(
     Map<String, RemoteParticipantMedia> media,
   ) async {
@@ -1479,6 +1522,7 @@ class RealtimeMediaService {
         }
         _remoteStreamsByParticipant[entry.key] = stream;
         _remoteRenderersByParticipant[entry.key] = renderer;
+        _watchRemoteVideoLiveness(video);
         created += 1;
         // WHAT THE RENDERER ACTUALLY RECEIVED, not what we handed it.
         //

@@ -197,11 +197,23 @@ Four further gaps, all found by USE rather than by reading:
   end, written about a half-attached transport; refresh reaches it by another
   road. Recovers only when the old socket fully drops. Strong candidate for
   "after minimising, return doesn't work".
-* **`STAGE_SCREEN_TRACK_ROW_WITHOUT_PUBLICATION`** — OPEN, medium. A SCREEN
-  track row is written from the `session:screen.set` socket event with
-  `providerTrackName = null`: ACTIVE, direction SEND, and nothing on the wire.
-  Observed on the failed share. The server reports a screen share that does not
-  exist. Unconsumed authority again, in the other direction.
+* **`PHANTOM_TRACK_ROWS_FROM_SOCKET_STATE`** — OPEN, medium-high. First seen as
+  a SCREEN row with `providerTrackName = null` and assumed screen-specific. It
+  is not. Measured on a three-party call 2026-08-28, EVERY participant carried
+  **two ACTIVE rows per track type**: one written by the stage publish, with a
+  transport id and a real provider name, and one written from the
+  `AUDIO_STATE_CHANGED` / `VIDEO_STATE_CHANGED` socket event with neither.
+  The second represents nothing on the wire.
+
+  Two authorities for one question — the socket state event and the actual
+  publication both claim to say which tracks exist, and only one of them has
+  ever touched Cloudflare. Prime suspect for the subscribable count swinging
+  2 -> 4 -> 1 across consecutive binds in one call, and for `receiving`
+  outrunning `bound`. Predates the 2026-08-28 work.
+
+  The fix is a decision, not a patch: publication is the authority on what
+  exists, and socket state events describe INTENT (`the camera is on`), never
+  inventory.
 * **`STAGE_RETIRE_RETIRES_NOTHING`** — OPEN, medium. Observed
   `op=RETIRE stale=2 retired=0 subscribed=0`: the client correctly identified
   two stale receivers and the server retired zero of them. The client half of
@@ -216,6 +228,33 @@ Four further gaps, all found by USE rather than by reading:
   is evidently not reached on a session ended remotely; the client tears down
   local media when the PERSON leaves, not when the SESSION does. Same shape as
   every other gap here: a transition nobody wrote a rule for.
+
+* **`REMOTE_TRACK_MUTE_READ_ONCE`** — the cause of "I can see everyone but they
+  cannot see me", found 2026-08-28 in a three-party meeting. Both call surfaces
+  decide whether to draw video with
+
+      return tracks.first.muted != true;
+
+  read ONCE at build time. `muted` is a live property: a remote track arrives
+  `muted = true` and flips to `false` only when frames actually start flowing.
+  **Nothing anywhere listens for that transition** — `onMute` / `onUnMute` /
+  `onEnded` exist on `MediaStreamTrack` and have no subscribers in the codebase.
+  A tile built inside that window renders "camera off" and STAYS there until
+  some unrelated rebuild happens to occur.
+
+  It is per-viewer by construction, which is why it looks like a different bug
+  to every participant in the same call, and why it has resisted diagnosis: the
+  server sees a healthy published track, the client reports `bind_complete` and
+  a live attached renderer, and the person still sees an avatar. Every arrow in
+  the chain is green.
+
+  Observed exactly: `receiving=3 bound=1 noTrack=0` with `render_none
+  participants=2 withVideo=1 held=1` — media arriving, renderer held, tile
+  blank. Aggravated when several browser contexts on ONE machine contend for a
+  single camera, which lengthens the muted window and makes losing the race
+  likely rather than rare.
+
+  Fix: treat `muted` as a stream, not a snapshot — rebuild on unmute.
 
 **No transport recovery, reconfirmed twice in one evening.** Both calls died
 the same way: `PARTICIPANT_TRANSPORT_LOST reason=disconnect`, then exactly 60
