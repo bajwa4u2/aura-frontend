@@ -12,6 +12,7 @@ import '../../../core/media/media_control_labels.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
+import '../../../core/navigation/navigation_authority.dart';
 import '../../../core/services/call_presence_bridge.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_design_system.dart';
@@ -145,6 +146,19 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   RealtimeSurfaceType? _lastKnownSurfaceType;
   String? _lastKnownSurfaceId;
   String? _lastKnownInstitutionId;
+
+  /// LIVE OBSERVER EXIT. An observer's exit is NOT the stage's parent
+  /// surface. They entered a public broadcast from the Live directory and
+  /// hold no standing in the Conversation that owns the stage, so returning
+  /// them to `/messages/c/<id>` sends them to an address they cannot open.
+  /// That is the error page a real observer hit on leaving a Live.
+  ///
+  /// Recorded here rather than read at exit time because `leave()` clears
+  /// the participant list before the return route is computed. It is
+  /// refreshed only while my own participant row is actually present, so a
+  /// promotion from observer to stage updates it and teardown does not
+  /// clobber it.
+  bool _lastKnownIsObserver = false;
   Timer? _durationTimer;
 
   /// F044 — set the moment an explicit join/resume intent exists, cleared once
@@ -414,6 +428,14 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     final explicit = _decodeReturnRoute(widget.returnTo);
     if (_isUsableReturnRoute(explicit)) {
       return explicit;
+    }
+
+    // An observer never inherits the stage's parent surface. Send them
+    // back to the Live directory they came from rather than into a
+    // conversation they are not a member of. An explicit `returnTo`
+    // still wins above, because that names where they actually were.
+    if (_lastKnownIsObserver) {
+      return NavigationAuthority.liveDirectoryRoute;
     }
 
     final surfaceType = session?.surfaceType ?? _lastKnownSurfaceType;
@@ -748,6 +770,16 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         _lastKnownSurfaceType = session.surfaceType;
         _lastKnownSurfaceId = (session.surfaceId ?? '').trim();
         _lastKnownInstitutionId = _meetingInstitutionId(session);
+        final myUserId = ref
+            .read(_realtimeCurrentUserProvider)
+            .maybeWhen(data: readUserIdFromAuthMe, orElse: () => '');
+        final mine = next.participants
+            .where((p) => p.userId == myUserId)
+            .firstOrNull;
+        if (mine != null) {
+          _lastKnownIsObserver =
+              mine.role == RealtimeParticipantRole.observer;
+        }
       }
       if (next.isJoined && !_wasJoined) {
         _wasJoined = true;

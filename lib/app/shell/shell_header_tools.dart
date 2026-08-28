@@ -372,7 +372,17 @@ class _HeaderLiveBtn extends ConsumerWidget {
           context.push(NavigationAuthority.liveDirectoryRoute);
         } else if (value.startsWith('__watch:')) {
           final id = value.substring('__watch:'.length);
-          context.push(NavigationAuthority.realtimeSessionJoinRoute(id));
+          // Carry where the viewer actually was into the session, so leaving
+          // the broadcast returns them there. Without it the room can only
+          // derive an exit from the stage's own surface — the Conversation
+          // that owns the call — which an observer is not a member of, and
+          // which therefore resolves to an error page for them.
+          context.push(
+            NavigationAuthority.realtimeSessionJoinRoute(
+              id,
+              returnTo: GoRouterState.of(context).uri.toString(),
+            ),
+          );
         } else {
           context.go(NavigationAuthority.realtimeSessionRoute(value));
         }

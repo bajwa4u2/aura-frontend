@@ -116,6 +116,22 @@ class MeetingSessionAdapter {
   }
 
   static MeetingSessionFault _fault(RealtimeState state) {
+    // A SESSION THAT IS OVER IS NOT A SERVICE OUTAGE.
+    //
+    // A meeting whose room has ENDED failed every join with
+    // "Aura could not reach the meeting service. This is usually brief." —
+    // wrong on both counts, and it invited a retry that could never
+    // succeed. `meetingConcluded` already carried the honest sentence and
+    // had no producer; the session's own `hasEnded` is that producer.
+    //
+    // Placed ahead of the joinState switch because the lifecycle status is
+    // the stronger fact: how this device's attempt failed cannot outrank
+    // the room no longer existing.
+    final session = state.session;
+    if (session != null && session.hasEnded) {
+      return MeetingSessionFault.meetingConcluded;
+    }
+
     switch (state.joinState) {
       case RealtimeJoinState.rejected:
       case RealtimeJoinState.removed:

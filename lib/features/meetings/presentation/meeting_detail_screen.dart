@@ -219,8 +219,28 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
 
   Meeting get meeting => widget.meeting;
   bool get isHost => widget.isHost;
-  String? get _resolvedInstitutionId =>
-      widget.institutionId ?? meeting.owningInstitutionId;
+  /// THE INSTITUTION THIS VIEWER MAY BE ROUTED INTO — not the meeting's
+  /// owner.
+  ///
+  /// This used to fall back to `meeting.owningInstitutionId` with no
+  /// membership check, and every path built from it inherited that: an
+  /// external booked attendee entered the room at
+  /// `/institution/<orgId>/meetings/<id>/live` and left to
+  /// `/institution/<orgId>/meetings` — an institution workspace they are not
+  /// a member of and must not be able to reach. Founder-observed
+  /// 2026-08-28: the booker was stranded there with no way back.
+  ///
+  /// The membership question is already answered above, once, by
+  /// `routing.belongsToOwningInstitution`: a viewer who belongs is
+  /// canonicalised onto the institution address, so `widget.institutionId`
+  /// is non-null for exactly those viewers. A viewer reaching this body with
+  /// it null does so BECAUSE they do not belong. Deriving the owner again
+  /// here created a second authority for the same question, and the wrong
+  /// one decided where people were sent.
+  ///
+  /// Null now means "route this viewer through their own surfaces", which is
+  /// what the null branches at every call site already do.
+  String? get _resolvedInstitutionId => widget.institutionId;
   String get _liveBasePath => _resolvedInstitutionId == null
       ? '/home'
       : '/institution/${_resolvedInstitutionId!}/meetings/${meeting.id}/live';
