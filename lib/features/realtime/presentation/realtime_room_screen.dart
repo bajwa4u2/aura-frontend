@@ -1324,7 +1324,28 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                 style: AuraText.muted,
                 textAlign: TextAlign.center,
               ),
-              if ((state.errorMessage ?? '').isNotEmpty) ...[
+              // A RECONNECTING CALL SHOWS THAT IT IS RECONNECTING, AND
+              // NOTHING ELSE.
+              //
+              // This box renders whatever `errorMessage` happens to hold, and
+              // it did so regardless of connection status -- so a raw
+              // transport reason (`Bad state: queue closed [queue:closed]`,
+              // a DioException) sat in a red panel underneath "Reconnecting…"
+              // while the call was in fact recovering. Founder, twice:
+              // "raw message in pixel was too odd and uggly beside
+              // reconnecting".
+              //
+              // The first attempt at this fixed the four places that SET the
+              // message, which was the wrong layer: any setter anywhere, or a
+              // message left over from before the drop, reaches this widget
+              // just the same. The rule is a presentation rule and belongs
+              // here, once -- while we are still trying, the honest thing to
+              // show is that we are trying. When the attempt is genuinely
+              // over the status is no longer `reconnecting`, and the real
+              // reason appears exactly as before.
+              if ((state.errorMessage ?? '').isNotEmpty &&
+                  state.connectionStatus !=
+                      RealtimeConnectionStatus.reconnecting) ...[
                 const SizedBox(height: AuraSpace.s12),
                 Container(
                   padding: const EdgeInsets.all(AuraSpace.s12),
