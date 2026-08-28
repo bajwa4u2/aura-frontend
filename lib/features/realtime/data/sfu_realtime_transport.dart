@@ -131,6 +131,27 @@ class SfuRealtimeTransport implements RealtimeTransport {
   }
 
   @override
+  Future<void> report({
+    required String phase,
+    required String code,
+    required String message,
+  }) async {
+    final sessionId = _sessionId;
+    if (sessionId == null) return;
+    try {
+      await _repository.reportStageDiagnostic(
+        sessionId,
+        phase: phase,
+        code: code,
+        message: message,
+        platform: kIsWeb ? 'web' : defaultTargetPlatform.name,
+      );
+    } catch (_) {
+      // Observability must never fail a call.
+    }
+  }
+
+  @override
   Future<void> open({
     required String sessionId,
     MediaStream? local,

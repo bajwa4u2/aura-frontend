@@ -25,6 +25,13 @@ import 'package:aura/features/realtime/domain/remote_media_presentation.dart';
 ///
 ///     changed remote media    ->  exactly one update  ->  stable
 class _ScriptedTransport implements RealtimeTransport {
+  @override
+  Future<void> report({
+    required String phase,
+    required String code,
+    required String message,
+  }) async {}
+
   Map<String, RemoteParticipantMedia> next = const {};
   int refreshes = 0;
 

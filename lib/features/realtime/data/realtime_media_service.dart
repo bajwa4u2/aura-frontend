@@ -1299,6 +1299,13 @@ class RealtimeMediaService {
   Future<void> _syncParticipantRenderers(
     Map<String, RemoteParticipantMedia> media,
   ) async {
+    var created = 0;
+    var attached = 0;
+    var retired = 0;
+    var failures = 0;
+    String? firstError;
+    final withVideo = media.values.where((m) => m.hasVideo).length;
+
     // Retire anyone no longer present.
     for (final id in _remoteRenderersByParticipant.keys.toList()) {
       if (media.containsKey(id) && media[id]!.hasVideo) continue;
@@ -1307,6 +1314,7 @@ class RealtimeMediaService {
       await renderer?.dispose();
       final stream = _remoteStreamsByParticipant.remove(id);
       await stream?.dispose();
+      retired += 1;
     }
 
     for (final entry in media.entries) {
@@ -1320,12 +1328,68 @@ class RealtimeMediaService {
         if (audio != null) await stream.addTrack(audio);
         final renderer = await _createRemoteRenderer();
         renderer.srcObject = stream;
+        // THIS RENDERER SHOWS SOMEBODY ELSE, SO IT MUST BE AUDIBLE.
+        //
+        // flutter_webrtc's web renderer mutes its audio element when the
+        // stream's `ownerTag == 'local'`, which is right: a local stream is
+        // your own microphone and playing it back is echo. But the stage
+        // transport hands over bare tracks, not a stream, so this composes one
+        // with `createLocalMediaStream` — and on web that constructor stamps
+        // `ownerTag = 'local'` regardless of whose media it carries
+        // (dart_webrtc `factory_impl.dart`: `MediaStreamWeb(jsMs, 'local')`).
+        //
+        // So every SFU participant's audio arrived on a muted element. Native
+        // clients route remote audio through the device and never saw it,
+        // which is exactly the shape of the founder's "audio one way only"
+        // (2026-08-28): the phone heard the browser, the browser heard
+        // nothing. The mesh path was unaffected because its streams come from
+        // `onTrack` already tagged remote.
+        //
+        // Stated here rather than fixed at the constructor: the stream really
+        // is locally constructed, and the thing that is actually true is that
+        // this renderer is not the local one.
+        renderer.muted = false;
         _remoteStreamsByParticipant[entry.key] = stream;
         _remoteRenderersByParticipant[entry.key] = renderer;
+        created += 1;
+        // WHAT THE RENDERER ACTUALLY RECEIVED, not what we handed it.
+        //
+        // `addTrack` on a locally-created stream is a platform call on
+        // native and a plain JS call on web, and the two do not fail the same
+        // way. Reading the stream back distinguishes "the track is on the
+        // stream the renderer is showing" from "the call returned without
+        // complaining" — which is the difference between a picture and a
+        // black tile, and is invisible from the server.
+        attached += stream.getVideoTracks().length;
       } catch (e) {
+        failures += 1;
+        firstError ??= e.toString();
         debugPrint('[rtc] participant renderer failed for ${entry.key}: $e');
       }
     }
+
+    // Bounded, counts only — no identifiers, no media, no SDP.
+    unawaited(_stage?.report(
+      phase: 'render',
+      code: failures > 0
+          ? 'render_failed'
+          : created == 0
+              ? 'render_none'
+              : attached < created
+                  ? 'render_empty_stream'
+                  : 'render_attached',
+      message: 'participants=${media.length} withVideo=$withVideo '
+          'created=$created attachedVideoTracks=$attached '
+          'retired=$retired held=${_remoteRenderersByParticipant.length} '
+          'failures=$failures'
+          '${firstError == null ? '' : ' err=${_shortRenderError(firstError!)}'}',
+    ));
+  }
+
+  /// Compact error label for a render report — never a full platform trace.
+  static String _shortRenderError(String raw) {
+    final text = raw.replaceAll(RegExp(r'\s+'), ' ').trim();
+    return text.length > 80 ? '${text.substring(0, 80)}...' : text;
   }
 
   /// Whether two remote-media maps say the same thing.

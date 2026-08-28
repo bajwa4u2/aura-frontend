@@ -60,6 +60,22 @@ abstract class RealtimeTransport {
   /// leave — a failed cleanup must never strand the person in the call.
   Future<void> close();
 
+  /// Report one client-side fact about this transport, for the operator.
+  ///
+  /// The stage path already reports its subscribe and bind outcomes this way,
+  /// and those reports are what identified two consecutive defects that no
+  /// server record could see. Rendering is the next unlit stretch: a bound
+  /// track that never reaches a renderer looks, from the server, exactly like
+  /// one that did.
+  ///
+  /// Default is a no-op so mesh is unchanged and so a transport can never be
+  /// obliged to have an opinion about diagnostics.
+  Future<void> report({
+    required String phase,
+    required String code,
+    required String message,
+  }) async {}
+
   /// What is actually moving.
   ///
   /// The selector has to be observable (§6), and certification has to assert

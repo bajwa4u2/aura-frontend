@@ -18,6 +18,13 @@ import 'package:aura/features/realtime/domain/remote_media_presentation.dart';
 /// again and sat in a connected call with no remote media, in both directions,
 /// in two live browser calls.
 class _FlakyTransport implements RealtimeTransport {
+  @override
+  Future<void> report({
+    required String phase,
+    required String code,
+    required String message,
+  }) async {}
+
   _FlakyTransport({required this.failuresBeforeSuccess});
 
   final int failuresBeforeSuccess;
