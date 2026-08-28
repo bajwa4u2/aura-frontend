@@ -2533,10 +2533,44 @@ class _VideoGrid extends StatelessWidget {
 
     final claimed = <String>{};
     final others = <ParticipantRef>[];
+    // ONE PERSON, ONE SEAT.
+    //
+    // A tile is now created for every roster entry rather than only for
+    // entries that already had a renderer, which is what makes a camera-off
+    // participant visible. It also means anything WRONG with the roster
+    // becomes visible: a person carrying two entries — a rejoin whose old row
+    // has not been retired, a second device — used to be silently invisible
+    // because only one of the two had media, and now seats twice.
+    //
+    // Founder-observed 2026-08-28: "every call is a double call, becomes 4
+    // tiles". Identity decides the seat; media decides what is drawn in it.
+    // Where a person has two entries the one holding media wins, because that
+    // is the connection actually carrying them.
+    final seated = <String>{};
+    final ordered = <RealtimeParticipant>[];
     for (final p in participants) {
       if (p.userId.trim().isNotEmpty && p.userId.trim() == myUserId.trim()) {
         continue;
       }
+      // Someone who has left is not in the call, whatever the roster still
+      // holds. Presence is a fact about now.
+      final joinState = p.joinState.trim().toUpperCase();
+      if (joinState == 'LEFT' || joinState == 'REMOVED') continue;
+      if (p.leftAt != null) continue;
+      ordered.add(p);
+    }
+    // Prefer the entry that actually carries media for a given person.
+    ordered.sort((a, b) {
+      bool hasMedia(RealtimeParticipant x) =>
+          renderersByParticipant.containsKey(x.id) ||
+          remoteRenderers.containsKey((x.runtimeDeviceId ?? '').trim());
+      final am = hasMedia(a) ? 0 : 1;
+      final bm = hasMedia(b) ? 0 : 1;
+      return am.compareTo(bm);
+    });
+    for (final p in ordered) {
+      final identity = p.userId.trim().isNotEmpty ? p.userId.trim() : p.id.trim();
+      if (identity.isNotEmpty && !seated.add(identity)) continue;
       final key = (p.runtimeDeviceId ?? '').trim();
       // Claim the device even when no renderer resolves: an unclaimed
       // renderer must mean "nobody in the roster owns this", not "this
