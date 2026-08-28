@@ -46,6 +46,7 @@ class SfuRealtimeTransport implements RealtimeTransport {
   Timer? _liveness;
   int _lastLivenessBytes = -1;
   int _stallTicks = 0;
+  bool _probing = false;
   bool _lostReported = false;
   bool _closing = false;
 
@@ -629,7 +630,19 @@ class SfuRealtimeTransport implements RealtimeTransport {
     _stallTicks = 0;
     _liveness = Timer.periodic(const Duration(seconds: 3), (_) async {
       if (_closing || _lostReported) return;
-      final bytes = await _livenessBytes(pc);
+      // NO OVERLAPPING PROBES. Timer.periodic does not await its callback, so
+      // a slow getStats() would let two ticks read the SAME byte count and
+      // each count it as a stall -- reaching the threshold in half the time
+      // and tearing down a healthy call. A false positive here is worse than
+      // a late detection, because it interrupts calls that were fine.
+      if (_probing) return;
+      _probing = true;
+      final int bytes;
+      try {
+        bytes = await _livenessBytes(pc);
+      } finally {
+        _probing = false;
+      }
       if (bytes < 0) return; // unreadable this tick; not evidence of anything
       if (_lastLivenessBytes < 0 || bytes > _lastLivenessBytes) {
         if (_stallTicks > 0) {
