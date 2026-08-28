@@ -84,15 +84,21 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   }
 
   String? _routeFor(AppNotification n) {
-    // AURA CONVERSATION SYSTEM (canon 2026-08-16): canonical conversation
-    // notifications carry conversationId in data; invitations land on
-    // Messages where the invitation row offers accept/decline.
-    final conversationId =
-        (n.payload['conversationId'] ?? '').toString().trim();
-    if (conversationId.isNotEmpty) {
-      return '/messages/c/$conversationId';
-    }
-    if (n.type == 'INVITATION') return '/messages';
+    // THE SERVER'S DESTINATION IS THE AUTHORITY.
+    //
+    // This resolver used to run two type switches BEFORE consulting the
+    // stored deeplink, so a governed destination the backend had already
+    // computed was discarded by the client. `INVITATION` was sent to
+    // `/messages` while the server said `/me/invitations`; since the
+    // recipient is not a party to the conversation until they accept,
+    // Messages cannot show the invitation and the notification led nowhere.
+    // Founder-observed 2026-08-28.
+    //
+    // The conversationId branch was the same inversion -- latent rather than
+    // harmful, because for MESSAGE the server computes the identical route --
+    // and it is closed the same way rather than left as the next one to fire.
+    // It survives BELOW as a legacy fallback for rows written before the
+    // backend stored a deeplink.
 
     // CH-12 E6 — media restriction notices resolve through the CANONICAL
     // destination authority, before the stored-deeplink shortcut.
@@ -112,10 +118,17 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     }
 
     // Phase 3 — backend stores a canonical deeplink in payload.deeplink
-    // for every notification kind that has a target. Honor it first; the
-    // manual resolver below is the legacy fallback for older rows.
+    // for every notification kind that has a target. Honor it first; every
+    // resolver below is the legacy fallback for rows written before it.
     final stored = n.deeplink;
     if (stored != null) return stored;
+
+    // LEGACY FALLBACKS ONLY — reached when the row carries no deeplink.
+    final conversationId =
+        (n.payload['conversationId'] ?? '').toString().trim();
+    if (conversationId.isNotEmpty) {
+      return '/messages/c/$conversationId';
+    }
     if (n.directThreadId != null && n.directThreadId!.isNotEmpty) {
       return '/direct/${n.directThreadId}';
     }
