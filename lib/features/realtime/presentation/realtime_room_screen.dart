@@ -175,58 +175,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   DateTime _now = DateTime.now();
   // Panel state: null = closed; only one panel open at a time
   String? _activePanel;
-
-  // ── CONTROLS ON DEMAND (open debt §5: media-first canvas) ────────────
-  //
-  // A call is the picture of the person you are talking to. Chrome that
-  // permanently occupies the top and bottom of the screen makes the picture
-  // the smaller half of its own surface, which on a phone is most of the
-  // complaint. So the chrome yields: it is there when you arrive, it steps
-  // out of the way while nothing is happening, and any tap brings it back.
-  //
-  // MEETINGS ARE NOT INCLUDED. That surface is frozen and proven; this is the
-  // call path only.
-  bool _chromeVisible = true;
-  Timer? _chromeTimer;
-  bool _chromeArmed = false;
-
-  static const Duration _chromeIdle = Duration(seconds: 4);
-
-  void _armChromeTimer() {
-    _chromeTimer?.cancel();
-    _chromeTimer = Timer(_chromeIdle, () {
-      if (!mounted) return;
-      setState(() => _chromeVisible = false);
-    });
-  }
-
-  /// Any tap on the canvas. Brings the chrome back, or dismisses it early.
-  void _toggleChrome() {
-    setState(() => _chromeVisible = !_chromeVisible);
-    if (_chromeVisible) _armChromeTimer();
-  }
-
-  /// BRING IT BACK WITHOUT REQUIRING A TAP ON THE PICTURE.
-  ///
-  /// Founder, 2026-08-29: "its collapsing in pixel and coming back but on
-  /// browser its just gone never back". On web the video is a platform view —
-  /// an HTML element — and pointer events over it do not reach Flutter's
-  /// detector, so the tap that restores the chrome on Android never arrives
-  /// in a browser. A person was left with no way back to the controls, which
-  /// is far worse than chrome that never yielded in the first place.
-  ///
-  /// Movement is the right signal on a pointer device regardless: that is how
-  /// every desktop video surface behaves, and it does not require guessing
-  /// that the picture is tappable. Only touches state when something actually
-  /// changes, so a moving mouse does not rebuild the call on every frame.
-  void _revealChrome() {
-    if (!_chromeVisible) {
-      setState(() => _chromeVisible = true);
-    }
-    if (_chromeArmed) _armChromeTimer();
-  }
-
-
   // Captured at first didChangeDependencies so dispose() can emit a best-effort
   // leave without using `ref` (which throws once the State is being disposed).
   ProviderContainer? _capturedContainer;
@@ -335,7 +283,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
   @override
   void dispose() {
-    _chromeTimer?.cancel();
     // WHY DID THE ROOM GO AWAY?
     //
     // Founder, 2026-08-28, during an induced outage: "call screen
@@ -1097,150 +1044,63 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         // / home indicator. Wrap the whole call surface in SafeArea so the
         // top bar and the control dock are never drawn under system UI on
         // iOS/Android (and under the title bar on a windowed desktop build).
-        // Wraps the WHOLE call surface, chrome included, so the collapsed
-        // strip at top and bottom is still live area: a pointer arriving
-        // anywhere brings the controls back. `opaque: false` keeps it out of
-        // the way of everything underneath.
-        body: MouseRegion(
-          opaque: false,
-          onHover: (_) => _revealChrome(),
-          onEnter: (_) => _revealChrome(),
-          child: SafeArea(
+        body: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
               final wide = constraints.maxWidth >= 860;
 
-              // THE CHROME IS BUILT ONCE AND PLACED TWICE.
-              //
-              // Inline in the column where it must always be present
-              // (pre-join, and meetings, which are frozen), and floating over
-              // the canvas during a call, where it must be able to leave
-              // WITHOUT resizing the picture underneath it.
-              final Widget callTopBar = _CallTopBar(
-                  title: _callTitle(state.session, state.isVideoMode),
-                  contextLabel: _contextLabel(state.session),
-                  duration: callDuration,
-                  // Stage/private participants only — the watching
-                  // audience is a separate truth (charter §26 O).
-                  participantCount: state.participants
-                  .where(
-                  (p) =>
-                  p.role != RealtimeParticipantRole.observer,
-                  )
-                  .length,
-                  isPubliclyLive: state.session?.isLive == true,
-                  viewerCount: state.participants
-                  .where(
-                  (p) =>
-                  p.role == RealtimeParticipantRole.observer &&
-                  p.joinState.toUpperCase() == 'ACTIVE',
-                  )
-                  .length,
-                  isConnecting: isConnecting,
-                  hasIssue: showConnectionIssue,
-                  // ACCEPTED/JOINING: the invited party's ACCEPT has been
-                  // authoritatively confirmed by the backend, but they have
-                  // not yet actually joined media — distinct from both
-                  // "Ringing…" (no answer yet) and "Live" (connected).
-                  // Must not be collapsed into either.
-                  isAccepted:
-                  !isMeetingSession &&
-                  state.isJoined &&
-                  state.isPeerAcceptedNotYetPresent,
-                  isRinging:
-                  !isMeetingSession &&
-                  state.isJoined &&
-                  state.participants.length <= 1 &&
-                  !state.acceptedByPeer &&
-                  ringingSessionIds.contains(widget.sessionId),
-                  waitingLabel:
-                  isMeetingSession &&
-                  state.isJoined &&
-                  state.participants.length <= 1
-                  ? 'Waiting for guest to join'
-                  : null,
-                  onMinimize: state.isJoined
-                  ? () => _minimizeCall(state.session)
-                  : null,
-                  sessionTypeChip: _buildSessionTypeChip(),
-                  trustLine: _buildTrustLine(),
-                  );
-
-              final Widget callDock = _CallControlDock(
-                  micOn: state.microphoneEnabled,
-                  cameraOn: state.cameraEnabled,
-                  isVideoMode: state.isVideoMode,
-                  activePanel: _activePanel,
-                  pendingRequests: canModerate ? joinRequestCount : 0,
-                  // LIVE viewer (charter 2026-08-17): publishing
-                  // is a ROLE fact — every stage participant in
-                  // an escalated call keeps their controls; only
-                  // OBSERVER-role viewers are receive-only
-                  // (publish controls would be lies for them).
-                  showPublishControls: !_amObserver(
-                  state,
-                  myUserId,
-                  ),
-                  onToggleMic: controller.toggleMicrophone,
-                  onToggleCamera: controller.toggleCamera,
-                  isScreenSharing: state.isScreenSharing,
-                  isTogglingScreenShare: _togglingScreenShare,
-                  onToggleScreenShare: () =>
-                  unawaited(_toggleScreenShare()),
-                  isPubliclyLive: publiclyLive,
-                  onGoLive: !liveEligible
-                  ? null
-                  : publiclyLive
-                  // ENDING a Live is never gated on video: a
-                  // broadcaster whose camera closed mid-
-                  // broadcast must still be able to close the
-                  // public door.
-                  ? () => unawaited(_endLive(state))
-                  : (_callCarriesVideo(state)
-                  ? () => unawaited(_goLive(state))
-                  : null),
-                  showSpeakerToggle: _supportsSpeakerphoneToggle,
-                  speakerOn: state.speakerphoneEnabled,
-                  onToggleSpeaker: () =>
-                  unawaited(controller.toggleSpeakerphone()),
-                  onMore: () => _togglePanel(_kPanelMore, wide),
-                  isEndCall: isHost,
-                  isEnding: state.isEndingCall,
-                  onLeave: state.isEndingCall
-                  ? null
-                  : isHost
-                  ? () => unawaited(_endCallAndClose(controller))
-                  : () =>
-                  unawaited(_leaveAndNavigate(controller)),
-                  );
-
-              // Arm the idle timer once, on the transition INTO a joined
-              // call, rather than every build: a timer re-armed on each frame
-              // would never fire, and the chrome would never yield.
-              final chromeEligible = state.isJoined && !isMeetingSession;
-              if (chromeEligible && !_chromeArmed) {
-                _chromeArmed = true;
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) _armChromeTimer();
-                });
-              } else if (!chromeEligible && _chromeArmed) {
-                _chromeArmed = false;
-                _chromeTimer?.cancel();
-                if (!_chromeVisible) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) setState(() => _chromeVisible = true);
-                  });
-                }
-              }
-
               return Column(
                 children: [
                   // ── Header bar ────────────────────────────────────────────────
-                  // Collapses with the dock while the call is running. Meetings
-                  // keep their chrome — that surface is frozen.
-                  // Inline only where the chrome never leaves. During a call
-                  // it floats over the stage instead — see the Stack below.
-                  if (!chromeEligible) callTopBar,
+                  _CallTopBar(
+                    title: _callTitle(state.session, state.isVideoMode),
+                    contextLabel: _contextLabel(state.session),
+                    duration: callDuration,
+                    // Stage/private participants only — the watching
+                    // audience is a separate truth (charter §26 O).
+                    participantCount: state.participants
+                        .where(
+                          (p) =>
+                              p.role != RealtimeParticipantRole.observer,
+                        )
+                        .length,
+                    isPubliclyLive: state.session?.isLive == true,
+                    viewerCount: state.participants
+                        .where(
+                          (p) =>
+                              p.role == RealtimeParticipantRole.observer &&
+                              p.joinState.toUpperCase() == 'ACTIVE',
+                        )
+                        .length,
+                    isConnecting: isConnecting,
+                    hasIssue: showConnectionIssue,
+                    // ACCEPTED/JOINING: the invited party's ACCEPT has been
+                    // authoritatively confirmed by the backend, but they have
+                    // not yet actually joined media — distinct from both
+                    // "Ringing…" (no answer yet) and "Live" (connected).
+                    // Must not be collapsed into either.
+                    isAccepted:
+                        !isMeetingSession &&
+                        state.isJoined &&
+                        state.isPeerAcceptedNotYetPresent,
+                    isRinging:
+                        !isMeetingSession &&
+                        state.isJoined &&
+                        state.participants.length <= 1 &&
+                        !state.acceptedByPeer &&
+                        ringingSessionIds.contains(widget.sessionId),
+                    waitingLabel:
+                        isMeetingSession &&
+                            state.isJoined &&
+                            state.participants.length <= 1
+                        ? 'Waiting for guest to join'
+                        : null,
+                    onMinimize: state.isJoined
+                        ? () => _minimizeCall(state.session)
+                        : null,
+                    sessionTypeChip: _buildSessionTypeChip(),
+                    trustLine: _buildTrustLine(),
+                  ),
 
                   // ── Phase 3 — per-type focus reinforcement ───────────────────
                   // Single-line text band that shifts focus per session type:
@@ -1270,19 +1130,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                     ),
 
                   // ── Main body ─────────────────────────────────────────────────
-                  // Translucent so tiles and their own controls still receive
-                  // their taps; this only picks up the ones nothing else
-                  // wanted, which is exactly "the person tapped the picture".
                   Expanded(
-                    child: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: GestureDetector(
-                      behavior: HitTestBehavior.translucent,
-                      onTap: (state.isJoined && !isMeetingSession)
-                          ? _toggleChrome
-                          : null,
-                      child: isMeetingSession && state.isJoined
+                    child: isMeetingSession && state.isJoined
                         ? _buildMeetingRoom(
                             state: state,
                             myUserId: myUserId,
@@ -1296,49 +1145,18 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                             canModerate: canModerate,
                             wide: wide,
                           )
-                          : _buildPreJoin(
-                              context: context,
-                              state: state,
-                              controller: controller,
-                              policy: policy,
-                              roomIsClosed: roomIsClosed,
-                            ),
+                        : _buildPreJoin(
+                            context: context,
+                            state: state,
+                            controller: controller,
+                            policy: policy,
+                            roomIsClosed: roomIsClosed,
                           ),
-                        ),
-
-                        // FLOATING, NOT COLLAPSING. The canvas keeps its full
-                        // height whether these are shown or not, so the video
-                        // never re-fits and never appears to zoom.
-                        if (chromeEligible)
-                          Positioned(
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            child: _FloatingChrome(
-                              visible: _chromeVisible || _activePanel != null,
-                              fromTop: true,
-                              child: callTopBar,
-                            ),
-                          ),
-                        if (chromeEligible)
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            child: _FloatingChrome(
-                              visible: _chromeVisible || _activePanel != null,
-                              fromTop: false,
-                              child: callDock,
-                            ),
-                          ),
-                      ],
-                    ),
                   ),
 
                   // ── Call controls ─────────────────────────────────────────────
                   if (state.isJoined)
                     isMeetingSession
-                        // Meetings keep their dock: that surface is frozen.
                         ? _MeetingControlDock(
                             micOn: state.microphoneEnabled,
                             cameraOn: state.cameraEnabled,
@@ -1353,11 +1171,56 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                                       unawaited(_leaveAndNavigate(controller)),
                             isEnding: state.isEndingCall,
                           )
-                        : const SizedBox.shrink(),
+                        : _CallControlDock(
+                            micOn: state.microphoneEnabled,
+                            cameraOn: state.cameraEnabled,
+                            isVideoMode: state.isVideoMode,
+                            activePanel: _activePanel,
+                            pendingRequests: canModerate ? joinRequestCount : 0,
+                            // LIVE viewer (charter 2026-08-17): publishing
+                            // is a ROLE fact — every stage participant in
+                            // an escalated call keeps their controls; only
+                            // OBSERVER-role viewers are receive-only
+                            // (publish controls would be lies for them).
+                            showPublishControls: !_amObserver(
+                              state,
+                              myUserId,
+                            ),
+                            onToggleMic: controller.toggleMicrophone,
+                            onToggleCamera: controller.toggleCamera,
+                            isScreenSharing: state.isScreenSharing,
+                            isTogglingScreenShare: _togglingScreenShare,
+                            onToggleScreenShare: () =>
+                                unawaited(_toggleScreenShare()),
+                            isPubliclyLive: publiclyLive,
+                            onGoLive: !liveEligible
+                                ? null
+                                : publiclyLive
+                                // ENDING a Live is never gated on video: a
+                                // broadcaster whose camera closed mid-
+                                // broadcast must still be able to close the
+                                // public door.
+                                ? () => unawaited(_endLive(state))
+                                : (_callCarriesVideo(state)
+                                      ? () => unawaited(_goLive(state))
+                                      : null),
+                            showSpeakerToggle: _supportsSpeakerphoneToggle,
+                            speakerOn: state.speakerphoneEnabled,
+                            onToggleSpeaker: () =>
+                                unawaited(controller.toggleSpeakerphone()),
+                            onMore: () => _togglePanel(_kPanelMore, wide),
+                            isEndCall: isHost,
+                            isEnding: state.isEndingCall,
+                            onLeave: state.isEndingCall
+                                ? null
+                                : isHost
+                                ? () => unawaited(_endCallAndClose(controller))
+                                : () =>
+                                      unawaited(_leaveAndNavigate(controller)),
+                          ),
                 ],
               );
             },
-          ),
           ),
         ),
       ),
@@ -3400,50 +3263,6 @@ class _MediaWarningView extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // CALL CONTROL DOCK
 // ─────────────────────────────────────────────────────────────────────────────
-
-/// Chrome that floats over the picture rather than taking space from it.
-///
-/// THE PICTURE MUST NOT RESIZE. The first version collapsed the chrome out of
-/// the layout, which handed its height to the canvas — and because tiles fit
-/// with `cover`, the video rescaled and cropped harder every time the controls
-/// left. Founder, 2026-08-29: "rather than top bottom collapsing its over
-/// zooming to hide them". The zoom was the canvas honestly re-fitting a
-/// changed box; the mistake was changing the box at all.
-///
-/// So the canvas is full height throughout and the chrome slides over it. The
-/// picture is identical whether the controls are shown or not, which is what
-/// "media-first canvas" was asking for and how every video surface behaves.
-class _FloatingChrome extends StatelessWidget {
-  const _FloatingChrome({
-    required this.visible,
-    required this.fromTop,
-    required this.child,
-  });
-
-  final bool visible;
-
-  /// Which edge it retreats to, so it leaves the way it arrived.
-  final bool fromTop;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    const duration = Duration(milliseconds: 180);
-    return IgnorePointer(
-      ignoring: !visible,
-      child: AnimatedSlide(
-        duration: duration,
-        curve: Curves.easeOutCubic,
-        offset: visible ? Offset.zero : Offset(0, fromTop ? -1 : 1),
-        child: AnimatedOpacity(
-          duration: duration,
-          opacity: visible ? 1 : 0,
-          child: child,
-        ),
-      ),
-    );
-  }
-}
 
 class _CallControlDock extends StatelessWidget {
   const _CallControlDock({
