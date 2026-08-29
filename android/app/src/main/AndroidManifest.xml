@@ -24,14 +24,30 @@
         android:usesPermissionFlags="neverForLocation" />
 
     <!--
-      A call that keeps running when the app is backgrounded needs a
-      foreground service, and from Android 14 (API 34) it must declare the
-      SPECIFIC type it uses. Without these the OS may kill capture the moment
-      the person switches apps mid-call.
+      NO FOREGROUND SERVICE PERMISSIONS, BECAUSE THERE IS NO FOREGROUND SERVICE.
+      ─────────────────────────────────────────────────────────────────────────
+      This block used to declare FOREGROUND_SERVICE, FOREGROUND_SERVICE_CAMERA
+      and FOREGROUND_SERVICE_MICROPHONE, with a comment saying they keep a
+      backgrounded call's capture alive. They do not, and never did. A
+      permission grants nothing on its own: capture survives backgrounding only
+      if the app actually starts a foreground service of that type, and Aura
+      starts none. The merged release manifest carries no <service> of ours, no
+      android:foregroundServiceType anywhere, and no plugin contributes either;
+      there is no startForeground call in the app. The permissions were inert.
+
+      They were added 2026-08-25 (33ae22d), AFTER the released 1.3.0 build
+      (version code 24), which shipped without them. Their only observable
+      effect was to make Google Play demand a foreground-service declaration
+      naming a task the app does not perform — and Play is explicit that
+      "you can only use foreground services if your app performs tasks
+      noticeable to the user when they're not directly interacting with your
+      app." Answering it would have been a false declaration; the honest fix is
+      to stop asking for what we do not use.
+
+      If a backgrounded call ever needs to keep capturing, the work is a real
+      foreground service with the matching type — a feature, implemented and
+      proven — and these permissions come back WITH it, not before it.
     -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
 
     <!-- Keeps the connection alive while the screen is off during a call. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
