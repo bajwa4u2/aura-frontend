@@ -856,13 +856,28 @@ class _AnnouncementEditorScreenState
           data['platformUserId']?.toString(),
         ]);
       });
-    } catch (_) {
+    } catch (e) {
+      // A FAILED REQUEST IS NOT A DISCONNECTED ACCOUNT.
+      //
+      // This wrote `connected = false` on ANY error, so an offline moment, a
+      // timeout or a 500 erased a destination the person had deliberately set
+      // up -- the same defect the composer had, in a second surface. Only an
+      // answer from the provider may change what we believe about the account;
+      // a failure to reach it leaves the last known state alone.
+      //
+      // 401/403 IS an answer: the authorisation is stale. That still means an
+      // account exists, so it is not cleared here either -- clearing it is
+      // what removed the destination instead of offering a reconnect.
       if (!mounted) return;
-      setState(() {
-        _tiktokConnected = false;
-        _tiktokAccountLabel = '';
-        _tiktokError = null;
-      });
+      final code = e is DioException ? (e.response?.statusCode ?? 0) : 0;
+      final providerAnsweredAbsent = code == 404;
+      if (providerAnsweredAbsent) {
+        setState(() {
+          _tiktokConnected = false;
+          _tiktokAccountLabel = '';
+          _tiktokError = null;
+        });
+      }
     } finally {
       if (mounted) {
         setState(() => _tiktokLoading = false);
@@ -897,13 +912,28 @@ class _AnnouncementEditorScreenState
           data['linkedinMemberId']?.toString(),
         ]);
       });
-    } catch (_) {
+    } catch (e) {
+      // A FAILED REQUEST IS NOT A DISCONNECTED ACCOUNT.
+      //
+      // This wrote `connected = false` on ANY error, so an offline moment, a
+      // timeout or a 500 erased a destination the person had deliberately set
+      // up -- the same defect the composer had, in a second surface. Only an
+      // answer from the provider may change what we believe about the account;
+      // a failure to reach it leaves the last known state alone.
+      //
+      // 401/403 IS an answer: the authorisation is stale. That still means an
+      // account exists, so it is not cleared here either -- clearing it is
+      // what removed the destination instead of offering a reconnect.
       if (!mounted) return;
-      setState(() {
-        _linkedinConnected = false;
-        _linkedinAccountLabel = '';
-        _linkedinError = null;
-      });
+      final code = e is DioException ? (e.response?.statusCode ?? 0) : 0;
+      final providerAnsweredAbsent = code == 404;
+      if (providerAnsweredAbsent) {
+        setState(() {
+          _linkedinConnected = false;
+          _linkedinAccountLabel = '';
+          _linkedinError = null;
+        });
+      }
     } finally {
       if (mounted) {
         setState(() => _linkedinLoading = false);

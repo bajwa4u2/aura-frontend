@@ -154,6 +154,82 @@ the separation the old code collapsed:
 Only `notOffered` may be invisible. Everything else says what it is and, where
 one exists, offers the action.
 
+### 4b. Destination presentation — the slice completed
+
+**OLD MODEL.** Each provider owned ~90 lines that decided its own visibility,
+subtitle and enablement from its own booleans, and the two did not agree:
+
+```dart
+final linkedinVisible = _linkedinLoading || _linkedinConnected;
+// TikTok had no visibility guard at all
+final linkedinHelper = (_linkedinError ?? '').trim();   // e.toString()
+```
+
+So TikTok always appeared and LinkedIn disappeared whenever `connected` went
+false — which, since `connected` came from a swallowed error, meant whenever a
+request failed. **That asymmetry is exactly the reported symptom.** The
+subtitle also rendered a raw exception where a sentence belongs.
+
+**NEW MODEL.** One `_buildDestinationRow`, driven by `DestinationCapability`
+and nothing else. A destination becomes invisible for exactly one reason:
+`notOffered`.
+
+| State | Shown | Control | Publish allowed |
+|---|---|---|---|
+| `available` | yes | Switch | **yes** |
+| `connectRequired` | yes | **Connect** | no |
+| `reconnectRequired` | yes | **Reconnect** | no |
+| `temporarilyUnavailable` | yes | **Retry** | no |
+| `unsupportedContent` | yes | disabled, reason shown | no |
+| `unsupportedPlatform` | yes | disabled | no |
+| `accountNotEligible` | yes | disabled | no |
+| `notOffered` | **no** | — | no |
+
+**Actions follow state at the action too.** The publish guard asked
+`_tiktokConnected`; it now asks `_tiktok.isPublishable`, so a
+disabled-looking destination cannot reach the legacy publishing path behind
+the UI. `_syncExternalPublishingToggles` likewise clears a selection only when
+the destination genuinely cannot take the composition — a merely unreachable
+provider no longer silently discards a choice the person made.
+
+**Legacy consumers.**
+
+| Consumer | Status |
+|---|---|
+| `compose_screen` visibility/subtitle/enablement | **retired** — fields deleted, not merely unused |
+| `compose_screen` publish guard | **retired** |
+| `compose_screen._syncExternalPublishingToggles` | **retired** |
+| `announcement_editor_screen` probe | **authority converged** — a failed request no longer writes `connected = false`; only a 404 does |
+| `announcement_editor_screen` / `announcement_distribution` presentation | **NOT converged** — still renders from `linkedinConnected` / `tiktokConnected` booleans |
+| `me_connected_accounts_panel` | **different capability context** — it manages connections rather than resolving them for a composition, and is documented as such rather than converged |
+
+**Draft preservation.** No path in this slice mutates the composition on a
+provider failure: the probe writes only destination state, the publish guard
+returns before touching the draft, and toggle sync clears a boolean. Provider
+failure cannot remove media, clear text, or reset the composer.
+
+**Proof, client-side only.** 18 tests in
+`test/distribution/destination_capability_test.dart`, including the regression
+that matters most — *no failure state hides a destination* — asserted across
+every state at once, so a reintroduced disappearance fails loudly.
+
+---
+
+### 4c. Mobile capture — doors removed
+
+The path to a photograph was **Compose → "Add attachment" → sheet → "Take
+photo" → camera**: three taps and two doors to do the thing people open a
+composer for. The sheet also offered "Choose photo" and "Choose video" as
+separate entries, while `_pickVideoFromGallery` is literally
+`=> _pickMediaFromGallery()` — one behaviour wearing two labels, in a picker
+that already returns photographs and videos in a single selection. The split
+existed only in the menu, and it made a person choose a category before
+choosing content.
+
+Now, where a camera exists: **Photo · Video · Library · More**, with capture
+one tap from the composer. "More" keeps the fuller set, which is where a file
+type nobody has in mind belongs.
+
 ---
 
 ## 5. CANONICAL CONTENT IDENTITY

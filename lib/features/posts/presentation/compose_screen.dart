@@ -316,15 +316,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   final bool _tiktokActionBusy = false;
   bool _publishToTikTok = false;
   bool _publishingToTikTok = false;
-  bool _tiktokConnected = false;
-  String _tiktokAccountLabel = '';
-  String? _tiktokError;
 
   bool _linkedinLoading = false;
   bool _publishToLinkedIn = false;
-  bool _linkedinConnected = false;
-  String _linkedinAccountLabel = '';
-  String? _linkedinError;
 
   bool get _isReply =>
       widget.replyToPostId != null || widget.replyToInstitutionPostId != null;
@@ -731,8 +725,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       setState(() {
         _tiktokLoading = true;
         _linkedinLoading = true;
-        _tiktokError = null;
-        _linkedinError = null;
       });
     }
 
@@ -782,16 +774,15 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           connected: _readLinkedInConnected(linkedinAccount),
           accountLabel: _readLinkedInAccountLabel(linkedinAccount),
         );
-        _tiktokConnected = _tiktok.isPublishable;
-        _tiktokAccountLabel = _tiktok.accountLabel;
-        _linkedinConnected = _linkedin.isPublishable;
-        _linkedinAccountLabel = _linkedin.accountLabel;
       });
-    } catch (e) {
+    } catch (_) {
+      // WE COULD NOT ASK. That is a state, not an error message -- and
+      // certainly not `e.toString()` rendered at a person, which is what used
+      // to appear here. Both destinations stay visible and say so.
       if (!mounted) return;
       setState(() {
-        _tiktokError = e.toString();
-        _linkedinError = e.toString();
+        _tiktok = _tiktok.copyWith(state: DestinationState.temporarilyUnavailable);
+        _linkedin = _linkedin.copyWith(state: DestinationState.temporarilyUnavailable);
       });
     } finally {
       if (mounted) {
@@ -983,10 +974,21 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
   }
 
+  /// A DESTINATION THAT CANNOT PUBLISH MUST NOT STAY SELECTED.
+  ///
+  /// This asked `_linkedinConnected`, a boolean that went false on any failed
+  /// request -- so a network blip silently cleared a choice the person had
+  /// deliberately made. The capability is the authority now: selection is
+  /// dropped only when the destination genuinely cannot take this
+  /// composition, and a destination that is merely unreachable keeps the
+  /// person's intent while the switch itself stays disabled.
   void _syncExternalPublishingToggles() {
     _syncTikTokToggle();
 
-    if (!_linkedinConnected && _publishToLinkedIn) {
+    if (!_tiktok.isPublishable && _publishToTikTok) {
+      _publishToTikTok = false;
+    }
+    if (!_linkedin.isPublishable && _publishToLinkedIn) {
       _publishToLinkedIn = false;
     }
   }
@@ -2621,11 +2623,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
 
     if (_publishToTikTok) {
-      if (!_tiktokConnected) {
+      // ONE AUTHORITY AT THE ACTION TOO. A disabled-looking destination must
+      // not be able to reach the legacy publishing path behind the UI.
+      if (!_tiktok.isPublishable) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Connect TikTok in Me before publishing externally.'),
-          ),
+          SnackBar(content: Text('${_tiktok.label}: ${_tiktok.statusLine}')),
         );
         return;
       }
@@ -2879,7 +2881,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Add attachment', style: AuraText.title),
+                const Text('Add to this post', style: AuraText.title),
                 const SizedBox(height: AuraSpace.s12),
                 ComposeAttachmentActionButton(
                   icon: Icons.camera_alt_outlined,
@@ -2890,32 +2892,29 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   },
                 ),
                 const SizedBox(height: AuraSpace.s10),
+                if (_supportsCameraCapture) ...[
+                  const SizedBox(height: AuraSpace.s10),
+                  ComposeAttachmentActionButton(
+                    icon: Icons.videocam_outlined,
+                    label: 'Record video',
+                    onTap: () async {
+                      Navigator.of(sheetContext).pop();
+                      await _pickVideoFromCamera();
+                    },
+                  ),
+                ],
+                const SizedBox(height: AuraSpace.s10),
+                // ONE ENTRY, BECAUSE IT IS ONE ACTION. "Choose photo" and
+                // "Choose video" both ran `_pickMediaFromGallery`, and the
+                // picker returns photographs and videos in a single
+                // selection -- so the split existed only in the menu, and it
+                // made a person choose a category before choosing content.
                 ComposeAttachmentActionButton(
                   icon: Icons.photo_library_outlined,
-                  label: 'Choose photo',
+                  label: 'Choose photo or video',
                   onTap: () async {
                     Navigator.of(sheetContext).pop();
-                    await _pickImageFromGallery();
-                  },
-                ),
-                const SizedBox(height: AuraSpace.s10),
-                ComposeAttachmentActionButton(
-                  icon: Icons.videocam_outlined,
-                  label: _supportsCameraCapture
-                      ? 'Record video'
-                      : 'Choose video',
-                  onTap: () async {
-                    Navigator.of(sheetContext).pop();
-                    await _pickVideoFromCamera();
-                  },
-                ),
-                const SizedBox(height: AuraSpace.s10),
-                ComposeAttachmentActionButton(
-                  icon: Icons.video_library_outlined,
-                  label: 'Choose video',
-                  onTap: () async {
-                    Navigator.of(sheetContext).pop();
-                    await _pickVideoFromGallery();
+                    await _pickMediaFromGallery();
                   },
                 ),
               ],
@@ -3192,12 +3191,49 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           ],
         ),
         const SizedBox(height: AuraSpace.s10),
+        // CAPTURE IS NOT AN ATTACHMENT MENU ITEM.
+        //
+        // The path to a photograph used to be: Compose -> "Add attachment" ->
+        // sheet -> "Take photo" -> camera. Three taps and two doors to do the
+        // thing people open a composer to do. The sheet also offered "Choose
+        // photo" and "Choose video" as separate entries when
+        // `_pickVideoFromGallery` is literally `=> _pickMediaFromGallery()` --
+        // one behaviour wearing two labels, in a picker that already returns
+        // photographs and videos together.
+        //
+        // Where a camera exists, taking a photo and recording a video are the
+        // two things a person came to do, so they are one tap. Everything else
+        // stays behind "More", which is where a file type nobody has in mind
+        // belongs.
         Wrap(
           spacing: AuraSpace.s10,
           runSpacing: AuraSpace.s10,
           children: [
+            if (_supportsCameraCapture) ...[
+              AuraSecondaryButton(
+                label: 'Photo',
+                icon: Icons.camera_alt_outlined,
+                onPressed: (_posting || !_canAddMoreAttachments)
+                    ? null
+                    : _pickImageFromCamera,
+              ),
+              AuraSecondaryButton(
+                label: 'Video',
+                icon: Icons.videocam_outlined,
+                onPressed: (_posting || !_canAddMoreAttachments)
+                    ? null
+                    : _pickVideoFromCamera,
+              ),
+            ],
             AuraSecondaryButton(
-              label: 'Add attachment',
+              label: _supportsCameraCapture ? 'Library' : 'Add media',
+              icon: Icons.photo_library_outlined,
+              onPressed: (_posting || !_canAddMoreAttachments)
+                  ? null
+                  : _pickMediaFromGallery,
+            ),
+            AuraSecondaryButton(
+              label: 'More',
               icon: Icons.add,
               onPressed: (_posting || !_canAddMoreAttachments)
                   ? null
@@ -3246,30 +3282,113 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     );
   }
 
+  /// ONE ROW, DRIVEN BY THE CAPABILITY, FOR EVERY DESTINATION.
+  ///
+  /// THE MODEL THIS REPLACES. Each provider had its own ~90 lines deciding
+  /// visibility, subtitle and enablement from its own booleans, and the two
+  /// did not agree:
+  ///
+  ///     final linkedinVisible = _linkedinLoading || _linkedinConnected;
+  ///     // TikTok had no visibility guard at all
+  ///
+  /// So TikTok always appeared and LinkedIn disappeared whenever `connected`
+  /// went false -- which, since `connected` came from a swallowed error, meant
+  /// whenever a GET failed. That asymmetry is precisely what "sometimes TikTok
+  /// appears; LinkedIn can disappear entirely" describes.
+  ///
+  /// The subtitle also rendered `_linkedinError`, which was `e.toString()` --
+  /// a raw exception where a sentence belongs.
+  ///
+  /// Presentation now reads the capability and nothing else. A destination
+  /// disappears for exactly one reason: it is `notOffered`.
+  Widget _buildDestinationRow({
+    required DestinationCapability cap,
+    required IconData icon,
+    required bool selected,
+    required ValueChanged<bool> onChanged,
+  }) {
+    if (!cap.isVisible) return const SizedBox.shrink();
+
+    final busy = cap.id == 'tiktok'
+        ? (_tiktokLoading || _tiktokActionBusy)
+        : _linkedinLoading;
+    final canPublishHere = cap.isPublishable && !_posting;
+
+    Widget trailing;
+    if (busy) {
+      trailing = const SizedBox(
+        width: 18,
+        height: 18,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    } else if (cap.hasRecoveryAction) {
+      // THE CASE THE OLD MODEL HANDLED WORST. An expired authorisation used to
+      // erase the destination; the person had done nothing wrong and was given
+      // nothing to do. The action is the whole point of distinguishing this
+      // state, so it is what occupies the control.
+      trailing = TextButton(
+        onPressed: _posting ? null : () => _openDestinationSettings(cap),
+        child: Text(cap.actionLabel!),
+      );
+    } else if (cap.state == DestinationState.temporarilyUnavailable) {
+      trailing = TextButton(
+        onPressed: _posting ? null : _loadExternalConnections,
+        child: Text(cap.actionLabel!),
+      );
+    } else {
+      trailing = Switch(
+        value: selected && canPublishHere,
+        onChanged: canPublishHere ? onChanged : null,
+      );
+    }
+
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: AuraSurface.ink),
+        const SizedBox(width: AuraSpace.s10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                cap.label,
+                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                busy ? 'Checking connection…' : cap.statusLine,
+                style: AuraText.small.copyWith(color: AuraSurface.muted),
+              ),
+            ],
+          ),
+        ),
+        trailing,
+      ],
+    );
+  }
+
+  /// Where a person goes to connect or reconnect a destination.
+  ///
+  /// Deliberately not an in-composer OAuth flow: the composition is the thing
+  /// being protected, and sending someone through an external authorisation
+  /// mid-draft is how drafts get lost.
+  void _openDestinationSettings(DestinationCapability cap) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          cap.state == DestinationState.reconnectRequired
+              ? '${cap.label} needs signing in again — open Me › Connected accounts.'
+              : 'Connect ${cap.label} from Me › Connected accounts.',
+        ),
+      ),
+    );
+  }
+
   Widget _buildExternalPublishingBlock() {
     if (_isReply) return const SizedBox.shrink();
-
-    final canUseTikTok = _tiktokConnected && _hasTikTokVideo && !_posting;
-    final tiktokSubtitle = _tiktokLoading
-        ? 'Checking connection…'
-        : !_tiktokConnected
-        ? 'Connect TikTok from Me to publish externally.'
-        : !_hasTikTokVideo
-        ? 'Add and upload one video to enable TikTok publishing.'
-        : _tiktokAccountLabel.isNotEmpty
-        ? 'Connected as $_tiktokAccountLabel'
-        : 'Connected';
-
-    final linkedinVisible = _linkedinLoading || _linkedinConnected;
-    final canUseLinkedIn = _linkedinConnected && !_posting;
-    final linkedinSubtitle = _linkedinLoading
-        ? 'Checking connection…'
-        : _linkedinAccountLabel.isNotEmpty
-        ? 'Connected as $_linkedinAccountLabel'
-        : 'Connected';
-
-    final tiktokHelper = (_tiktokError ?? '').trim();
-    final linkedinHelper = (_linkedinError ?? '').trim();
+    if (!_tiktok.isVisible && !_linkedin.isVisible) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -3289,119 +3408,23 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.music_note_outlined,
-                    size: 18,
-                    color: AuraSurface.ink,
-                  ),
-                  const SizedBox(width: AuraSpace.s10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'TikTok',
-                          style: AuraText.body.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          tiktokSubtitle,
-                          style: AuraText.small.copyWith(
-                            color: AuraSurface.muted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_tiktokLoading || _tiktokActionBusy)
-                    const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  else
-                    Switch(
-                      value: _publishToTikTok,
-                      onChanged: canUseTikTok
-                          ? (value) {
-                              setState(() {
-                                _publishToTikTok = value;
-                              });
-                            }
-                          : null,
-                    ),
-                ],
+              _buildDestinationRow(
+                cap: _tiktok,
+                icon: Icons.music_note_outlined,
+                selected: _publishToTikTok,
+                onChanged: (v) => setState(() => _publishToTikTok = v),
               ),
-              if (tiktokHelper.isNotEmpty) ...[
-                const SizedBox(height: AuraSpace.s10),
-                Text(
-                  tiktokHelper,
-                  style: AuraText.small.copyWith(color: AuraSurface.coSun),
-                ),
-              ],
-              if (linkedinVisible) ...[
+              if (_tiktok.isVisible && _linkedin.isVisible) ...[
                 const SizedBox(height: AuraSpace.s12),
                 Container(height: 1, color: AuraSurface.divider),
                 const SizedBox(height: AuraSpace.s12),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.business_center_outlined,
-                      size: 18,
-                      color: AuraSurface.ink,
-                    ),
-                    const SizedBox(width: AuraSpace.s10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'LinkedIn',
-                            style: AuraText.body.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            linkedinSubtitle,
-                            style: AuraText.small.copyWith(
-                              color: AuraSurface.muted,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (_linkedinLoading)
-                      const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    else
-                      Switch(
-                        value: _publishToLinkedIn,
-                        onChanged: canUseLinkedIn
-                            ? (value) {
-                                setState(() {
-                                  _publishToLinkedIn = value;
-                                });
-                              }
-                            : null,
-                      ),
-                  ],
-                ),
-                if (linkedinHelper.isNotEmpty) ...[
-                  const SizedBox(height: AuraSpace.s10),
-                  Text(
-                    linkedinHelper,
-                    style: AuraText.small.copyWith(color: AuraSurface.coSun),
-                  ),
-                ],
               ],
+              _buildDestinationRow(
+                cap: _linkedin,
+                icon: Icons.business_center_outlined,
+                selected: _publishToLinkedIn,
+                onChanged: (v) => setState(() => _publishToLinkedIn = v),
+              ),
               if (_publishToTikTok || _publishToLinkedIn) ...[
                 const SizedBox(height: AuraSpace.s10),
                 Text(
