@@ -175,6 +175,38 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   DateTime _now = DateTime.now();
   // Panel state: null = closed; only one panel open at a time
   String? _activePanel;
+
+  // ── CONTROLS ON DEMAND (open debt §5: media-first canvas) ────────────
+  //
+  // A call is the picture of the person you are talking to. Chrome that
+  // permanently occupies the top and bottom of the screen makes the picture
+  // the smaller half of its own surface, which on a phone is most of the
+  // complaint. So the chrome yields: it is there when you arrive, it steps
+  // out of the way while nothing is happening, and any tap brings it back.
+  //
+  // MEETINGS ARE NOT INCLUDED. That surface is frozen and proven; this is the
+  // call path only.
+  bool _chromeVisible = true;
+  Timer? _chromeTimer;
+  bool _chromeArmed = false;
+
+  static const Duration _chromeIdle = Duration(seconds: 4);
+
+  void _armChromeTimer() {
+    _chromeTimer?.cancel();
+    _chromeTimer = Timer(_chromeIdle, () {
+      if (!mounted) return;
+      setState(() => _chromeVisible = false);
+    });
+  }
+
+  /// Any tap on the canvas. Brings the chrome back, or dismisses it early.
+  void _toggleChrome() {
+    setState(() => _chromeVisible = !_chromeVisible);
+    if (_chromeVisible) _armChromeTimer();
+  }
+
+
   // Captured at first didChangeDependencies so dispose() can emit a best-effort
   // leave without using `ref` (which throws once the State is being disposed).
   ProviderContainer? _capturedContainer;
@@ -283,6 +315,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
   @override
   void dispose() {
+    _chromeTimer?.cancel();
     // WHY DID THE ROOM GO AWAY?
     //
     // Founder, 2026-08-28, during an induced outage: "call screen
@@ -1049,10 +1082,36 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
             builder: (context, constraints) {
               final wide = constraints.maxWidth >= 860;
 
+              // Arm the idle timer once, on the transition INTO a joined
+              // call, rather than every build: a timer re-armed on each frame
+              // would never fire, and the chrome would never yield.
+              final chromeEligible = state.isJoined && !isMeetingSession;
+              if (chromeEligible && !_chromeArmed) {
+                _chromeArmed = true;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) _armChromeTimer();
+                });
+              } else if (!chromeEligible && _chromeArmed) {
+                _chromeArmed = false;
+                _chromeTimer?.cancel();
+                if (!_chromeVisible) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) setState(() => _chromeVisible = true);
+                  });
+                }
+              }
+
               return Column(
                 children: [
                   // ── Header bar ────────────────────────────────────────────────
-                  _CallTopBar(
+                  // Collapses with the dock while the call is running. Meetings
+                  // keep their chrome — that surface is frozen.
+                  _CollapsibleChrome(
+                    visible: _chromeVisible ||
+                        !state.isJoined ||
+                        isMeetingSession ||
+                        _activePanel != null,
+                    child: _CallTopBar(
                     title: _callTitle(state.session, state.isVideoMode),
                     contextLabel: _contextLabel(state.session),
                     duration: callDuration,
@@ -1100,6 +1159,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                         : null,
                     sessionTypeChip: _buildSessionTypeChip(),
                     trustLine: _buildTrustLine(),
+                    ),
                   ),
 
                   // ── Phase 3 — per-type focus reinforcement ───────────────────
@@ -1130,8 +1190,16 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                     ),
 
                   // ── Main body ─────────────────────────────────────────────────
+                  // Translucent so tiles and their own controls still receive
+                  // their taps; this only picks up the ones nothing else
+                  // wanted, which is exactly "the person tapped the picture".
                   Expanded(
-                    child: isMeetingSession && state.isJoined
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTap: (state.isJoined && !isMeetingSession)
+                          ? _toggleChrome
+                          : null,
+                      child: isMeetingSession && state.isJoined
                         ? _buildMeetingRoom(
                             state: state,
                             myUserId: myUserId,
@@ -1145,18 +1213,20 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                             canModerate: canModerate,
                             wide: wide,
                           )
-                        : _buildPreJoin(
-                            context: context,
-                            state: state,
-                            controller: controller,
-                            policy: policy,
-                            roomIsClosed: roomIsClosed,
-                          ),
+                          : _buildPreJoin(
+                              context: context,
+                              state: state,
+                              controller: controller,
+                              policy: policy,
+                              roomIsClosed: roomIsClosed,
+                            ),
+                    ),
                   ),
 
                   // ── Call controls ─────────────────────────────────────────────
                   if (state.isJoined)
                     isMeetingSession
+                        // Meetings keep their dock: that surface is frozen.
                         ? _MeetingControlDock(
                             micOn: state.microphoneEnabled,
                             cameraOn: state.cameraEnabled,
@@ -1171,7 +1241,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                                       unawaited(_leaveAndNavigate(controller)),
                             isEnding: state.isEndingCall,
                           )
-                        : _CallControlDock(
+                        : _CollapsibleChrome(
+                            visible: _chromeVisible || _activePanel != null,
+                            child: _CallControlDock(
                             micOn: state.microphoneEnabled,
                             cameraOn: state.cameraEnabled,
                             isVideoMode: state.isVideoMode,
@@ -1217,6 +1289,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                                 ? () => unawaited(_endCallAndClose(controller))
                                 : () =>
                                       unawaited(_leaveAndNavigate(controller)),
+                            ),
                           ),
                 ],
               );
@@ -3263,6 +3336,28 @@ class _MediaWarningView extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // CALL CONTROL DOCK
 // ─────────────────────────────────────────────────────────────────────────────
+
+/// Chrome that yields to the picture.
+///
+/// Collapses to nothing rather than fading in place, because the point is the
+/// space, not the pixels: a call is the picture of the person you are talking
+/// to, and on a phone the top bar and the dock were taking a third of it.
+class _CollapsibleChrome extends StatelessWidget {
+  const _CollapsibleChrome({required this.visible, required this.child});
+
+  final bool visible;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.topCenter,
+      child: visible ? child : const SizedBox(width: double.infinity),
+    );
+  }
+}
 
 class _CallControlDock extends StatelessWidget {
   const _CallControlDock({
