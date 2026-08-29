@@ -216,7 +216,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   /// This was 5 here and unbounded elsewhere, so how many photographs a person
   /// could attach depended on which composer they happened to open. The limit
   /// is a product policy about compositions, not a property of posts.
-  static const int _maxAttachments = kMaxComposableMedia;
+  static const int _maxAttachments = kMaxMemberPostMedia;
 
   /// Public-UX Phase 5 — current selected intent. Initialised from
   /// the route query param (`?intent=ask`) and rotated to `_none`
@@ -1275,7 +1275,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         await acquireMultipleMedia(remainingSlots: _remainingAttachments);
     await _addAcquired(acquired);
 
-    final message = acquisitionLimitMessage(acquired.droppedForLimit);
+    final message = acquisitionLimitMessage(acquired.droppedForLimit,
+          limit: kMaxMemberPostMedia);
     if (message != null && mounted) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(message)));

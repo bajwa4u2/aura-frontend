@@ -88,7 +88,7 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
   String? _feedDraftId;
   bool _published = false;
 
-  int get _remainingSlots => kMaxComposableMedia - _attachments.length;
+  int get _remainingSlots => kMaxMemberPostMedia - _attachments.length;
   bool get _hasContent => _attachments.isNotEmpty;
 
   /// Everything acquired is ready to leave.
@@ -156,7 +156,8 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
         accepted.add(a);
       }
 
-      final limitNote = acquisitionLimitMessage(acquired.droppedForLimit);
+      final limitNote = acquisitionLimitMessage(acquired.droppedForLimit,
+          limit: kMaxMemberPostMedia);
       if (limitNote != null) _say(limitNote);
       if (accepted.isEmpty) return;
 

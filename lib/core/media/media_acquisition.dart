@@ -44,7 +44,27 @@ import 'attachment.dart';
 /// this a composition stops reading as a composition and becomes a file
 /// listing, and every item costs upload time, memory and a decoder slot in
 /// somebody's feed.
+///
+/// This is the ACQUISITION ceiling, not the publication rule. Destinations
+/// have their own limits and they are not the same number — see
+/// [kMaxMemberPostMedia].
 const int kMaxComposableMedia = 10;
+
+/// What a MEMBER POST accepts — the rule `posts.service.ts` enforces three
+/// times over: "A post can have at most 5 attachments".
+///
+/// The client used to carry only the ceiling above, so it accepted a sixth
+/// item, UPLOADED it, and discovered the rule at publish. Founder, 2026-08-29:
+/// five photographs from the library, then a recorded video clip. Every
+/// upload succeeded, every item reached READY on the server, and the post
+/// could never be published — the whole cost landing on the person, who
+/// filmed something and waited for it to upload before being refused.
+///
+/// A limit the client does not know is a limit the client will let somebody
+/// break. Institution posts are deliberately NOT this number: their own
+/// authority allows ten, so they keep using the ceiling. Each surface honours
+/// the rule that actually governs it.
+const int kMaxMemberPostMedia = 5;
 
 /// The outcome of one acquisition.
 class MediaAcquisition {
@@ -266,9 +286,13 @@ Future<MediaAcquisition> resolveAcquired({
 }
 
 /// What to tell someone when the ceiling turned items away.
-String? acquisitionLimitMessage(int dropped) {
+///
+/// [limit] is the DESTINATION's rule, not this file's ceiling: a member post
+/// takes five and an institution post takes ten, so a message that quoted one
+/// constant would be wrong on one of them. Callers state their own.
+String? acquisitionLimitMessage(int dropped, {int limit = kMaxComposableMedia}) {
   if (dropped <= 0) return null;
   return dropped == 1
-      ? 'One item was not added — up to $kMaxComposableMedia can be attached.'
-      : '$dropped items were not added — up to $kMaxComposableMedia can be attached.';
+      ? 'One item was not added — up to $limit can be attached.'
+      : '$dropped items were not added — up to $limit can be attached.';
 }
