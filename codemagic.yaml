@@ -63,18 +63,51 @@ workflows:
     scripts:
       - name: Flutter pub get
         script: flutter pub get
+      # THE VARIABLE WAS SET AND THE DECODE STILL FAILED.
+      #
+      # Build #17 (2026-08-29) died here with
+      #   base64: stdin: (null): error decoding base64 input stream
+      # after the `-n` guard had already passed. So the value was present and
+      # simply was not decodable base64 — a raw plist pasted in, a truncated
+      # copy, or characters the BSD decoder on macOS rejects.
+      #
+      # The old shape could not tell those apart: one `base64 --decode`, no
+      # check on what came out, and an error message that names neither the
+      # variable nor what to do. It also wrote a half-decoded file on the way
+      # out, so a later step would have failed somewhere less obvious.
+      #
+      # This tries the two shapes the value can honestly take — base64 of the
+      # plist, or the plist itself — and accepts whichever `plutil -lint`
+      # confirms is a real property list. Anything else fails HERE, with the
+      # exact command to produce a good value. The value is never printed.
       - name: Provision Firebase iOS config (FCM → APNs)
         script: |
-          set -e
-          if [ -n "$FIREBASE_IOS_CONFIG_BASE64" ]; then
-            echo "$FIREBASE_IOS_CONFIG_BASE64" | base64 --decode \
-              > ios/Runner/GoogleService-Info.plist
-            echo "GoogleService-Info.plist provisioned for build."
-          else
+          set -eu
+          PLIST=ios/Runner/GoogleService-Info.plist
+
+          if [ -z "${FIREBASE_IOS_CONFIG_BASE64:-}" ]; then
             echo "WARNING: FIREBASE_IOS_CONFIG_BASE64 is not set."
             echo "The build will still produce a signed IPA, but iOS push"
             echo "notifications (FCM) will not function until the plist is"
             echo "provided. See FIREBASE_SETUP.md."
+            exit 0
+          fi
+
+          if printf '%s' "$FIREBASE_IOS_CONFIG_BASE64" | tr -d '[:space:]' \
+               | base64 --decode > "$PLIST" 2>/dev/null \
+             && plutil -lint "$PLIST" >/dev/null 2>&1; then
+            echo "GoogleService-Info.plist provisioned (base64 value decoded)."
+          elif printf '%s' "$FIREBASE_IOS_CONFIG_BASE64" > "$PLIST" \
+             && plutil -lint "$PLIST" >/dev/null 2>&1; then
+            echo "GoogleService-Info.plist provisioned (value was the plist)."
+          else
+            rm -f "$PLIST"
+            echo "FIREBASE_IOS_CONFIG_BASE64 is set, but its value is neither"
+            echo "base64 of a property list nor a property list. Re-encode the"
+            echo "file and replace the value in the firebase_ios group:"
+            echo "  base64 -i ios/Runner/GoogleService-Info.plist | pbcopy"
+            echo "(The value itself is deliberately never printed.)"
+            exit 1
           fi
       - name: Flutter analyze
         script: flutter analyze
