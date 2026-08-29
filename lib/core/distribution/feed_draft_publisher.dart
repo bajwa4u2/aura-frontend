@@ -76,14 +76,27 @@ class FeedDraftPublisher {
     required String draftId,
     required String text,
     required List<String> mediaIds,
+    required String primaryTopic,
   }) async {
     final id = draftId.trim();
     if (id.isEmpty) {
       throw ArgumentError('A draft id is required to publish [share:no_id]');
     }
+    // A TOP-LEVEL POST IS A PUBLIC RECORD, AND A RECORD IS FILED UNDER
+    // SOMETHING. The backend refuses one without a primary topic --
+    // "A primary topic is required to publish a public record" -- and that is
+    // classification doctrine, not a validation quirk to route around. Share
+    // asks for the topic rather than bypassing the rule, and the parameter is
+    // required so a caller cannot forget it and discover the refusal only in
+    // production, which is exactly how it was found.
+    final topic = primaryTopic.trim();
+    if (topic.isEmpty) {
+      throw ArgumentError('A primary topic is required [share:no_topic]');
+    }
 
     await _dio.put<dynamic>('/posts/$id', data: <String, dynamic>{
       'text': text,
+      'primaryTopic': topic,
       'media': <Map<String, dynamic>>[
         for (var i = 0; i < mediaIds.length; i++)
           {'mediaId': mediaIds[i], 'position': i, 'caption': null},

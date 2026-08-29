@@ -81,7 +81,8 @@ void main() {
     test('publishing a share never touches the author-keyed draft', () async {
       final publisher = FeedDraftPublisher(dio);
       final id = await publisher.createDraft();
-      await publisher.publish(draftId: id, text: 'hello', mediaIds: ['m1']);
+      await publisher.publish(draftId: id, text: 'hello', mediaIds: ['m1'],
+              primaryTopic: 'TECHNOLOGY');
 
       // THE ASSERTION THAT FAILS AGAINST THE OLD BEHAVIOUR. The previous
       // implementation's entire feed path was these two endpoints.
@@ -96,7 +97,8 @@ void main() {
     test('every write names the draft it means', () async {
       final publisher = FeedDraftPublisher(dio);
       final id = await publisher.createDraft();
-      await publisher.publish(draftId: id, text: 'hello', mediaIds: const []);
+      await publisher.publish(draftId: id, text: 'hello', mediaIds: const [],
+              primaryTopic: 'TECHNOLOGY');
 
       expect(calls, contains('POST /posts/held'));
       expect(calls, contains('PUT /posts/draft_share_1'));
@@ -107,7 +109,8 @@ void main() {
       final publisher = FeedDraftPublisher(dio);
       final id = await publisher.createDraft();
       final result =
-          await publisher.publish(draftId: id, text: 't', mediaIds: const []);
+          await publisher.publish(draftId: id, text: 't', mediaIds: const [],
+              primaryTopic: 'TECHNOLOGY');
       expect(result.draftId, 'draft_share_1');
       expect(result.postId, 'post_9');
     });
@@ -126,7 +129,8 @@ void main() {
       );
       await expectLater(
         FeedDraftPublisher(failing)
-            .publish(draftId: id, text: 'a', mediaIds: const []),
+            .publish(draftId: id, text: 'a', mediaIds: const [],
+              primaryTopic: 'TECHNOLOGY'),
         throwsA(isA<DioException>()),
       );
 
@@ -134,7 +138,8 @@ void main() {
       // is what could otherwise pick up a Compose draft that had since become
       // the most recently updated one.
       calls.clear();
-      await publisher.publish(draftId: id, text: 'a', mediaIds: const []);
+      await publisher.publish(draftId: id, text: 'a', mediaIds: const [],
+              primaryTopic: 'TECHNOLOGY');
       expect(calls, contains('POST /posts/draft_share_1/publish'));
       expect(touchedAuthorKeyedDraft(calls), isFalse);
     });
@@ -144,10 +149,39 @@ void main() {
       // A publisher that could fall back to "the current draft" when given
       // nothing is precisely the hazard; it refuses instead.
       expect(
-        () => publisher.publish(draftId: '  ', text: 't', mediaIds: const []),
+        () => publisher.publish(
+            draftId: '  ', text: 't', mediaIds: const [],
+            primaryTopic: 'TECHNOLOGY'),
         throwsA(isA<ArgumentError>()),
       );
       expect(calls, isEmpty);
+    });
+  });
+
+  group('TOPIC IS NOT OPTIONAL', () {
+    test('publishing without a topic is refused before any request', () async {
+      // The backend refuses a top-level post with no primary topic -- "A
+      // primary topic is required to publish a public record". Share found
+      // that out in production. Refusing here, before the draft is written,
+      // means the composition is never half-published against a rule the
+      // client already knows.
+      final publisher = FeedDraftPublisher(dio);
+      final id = await publisher.createDraft();
+      calls.clear();
+      await expectLater(
+        publisher.publish(
+            draftId: id, text: 't', mediaIds: const [], primaryTopic: '  '),
+        throwsA(isA<ArgumentError>()),
+      );
+      expect(calls, isEmpty);
+    });
+
+    test('the chosen topic reaches the draft write', () async {
+      final publisher = FeedDraftPublisher(dio);
+      final id = await publisher.createDraft();
+      await publisher.publish(
+          draftId: id, text: 't', mediaIds: const [], primaryTopic: 'HOUSING');
+      expect(calls, contains('PUT /posts/draft_share_1'));
     });
   });
 

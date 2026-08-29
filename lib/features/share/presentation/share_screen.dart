@@ -38,7 +38,6 @@ import '../../../core/net/dio_provider.dart';
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/composition/attachment_lifecycle.dart';
 import '../../../core/composition/composition_authority.dart';
-import '../../../core/distribution/aura_destination.dart';
 import '../../../core/distribution/feed_draft_publisher.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/media/attachment.dart';
@@ -51,7 +50,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../conversation/data/conversations_repository.dart';
+import '../../topics/topic.dart';
 
 class ShareScreen extends ConsumerStatefulWidget {
   const ShareScreen({super.key});
@@ -74,7 +73,9 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
 
   List<Attachment> get _attachments => _composition.attachments;
 
-  AuraDestination? _destination;
+  /// The topic this goes under. Required: a top-level post is a public
+  /// record and the record is filed under something.
+  AuraTopic? _primaryTopic;
   bool _busy = false;
   bool _sending = false;
 
@@ -229,8 +230,8 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
   // ── PUBLICATION ──────────────────────────────────────────────────────
 
   Future<void> _publish() async {
-    final destination = _destination;
-    if (destination == null || !destination.isActionable) return;
+    final topic = _primaryTopic;
+    if (topic == null) return;
     if (!_allReady || _sending) return;
 
     setState(() => _sending = true);
@@ -241,26 +242,16 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
           .toList(growable: false);
       final text = _context.text.trim();
 
-      if (destination.isConversation) {
-        // THE EXISTING SEND AUTHORITY, with the media Share already uploaded.
-        // No second upload, no second composer, no reconstructed draft.
-        await ref.read(conversationsRepositoryProvider).send(
-              destination.conversationId!,
-              text,
-              mediaIds: mediaIds,
-            );
-      } else {
-        await _publishToFeed(text: text, mediaIds: mediaIds);
-      }
+      await _publishToFeed(text: text, mediaIds: mediaIds, topic: topic);
 
       if (!mounted) return;
-      _say(destination.isConversation ? 'Sent.' : 'Published.');
+      _say('Published.');
       context.pop(true);
     } catch (e) {
       if (!mounted) return;
       // AN EXTERNAL FAILURE MUST NOT COST SOMEBODY THEIR CONTENT. The
       // composition is untouched here: nothing is removed, cleared or reset,
-      // so the person can choose another destination or try again.
+      // so the person can try again.
       _say(AppErrorMapper.from(e, feature: 'share this').message);
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -270,6 +261,7 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
   Future<void> _publishToFeed({
     required String text,
     required List<String> mediaIds,
+    required AuraTopic topic,
   }) async {
     // THIS SHARE PUBLISHES ITS OWN DRAFT, NEVER "THE" DRAFT.
     //
@@ -284,6 +276,7 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
       draftId: draftId,
       text: text,
       mediaIds: mediaIds,
+      primaryTopic: topic.wire,
     );
     _published = true;
   }
@@ -339,7 +332,7 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
               ),
             ),
             const SizedBox(height: AuraSpace.s20),
-            _buildDestinationChooser(),
+            _buildTopicChooser(),
             const SizedBox(height: AuraSpace.s20),
             _buildAction(),
           ],
@@ -375,62 +368,81 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
     );
   }
 
-  Widget _buildDestinationChooser() {
-    final d = _destination;
+  /// WHERE IT GOES IS NO LONGER A QUESTION.
+  ///
+  /// Share offered Feed or Conversation. Founder ruling 2026-08-29 collapsed
+  /// it to one path: a share goes to the feed. A person who wants to send a
+  /// photograph to somebody is already in that conversation, where sending has
+  /// its own authority -- asking the question twice, in two places, bought
+  /// nothing and made the fast path slower.
+  ///
+  /// What IS asked is the topic, because the backend will refuse the post
+  /// without one and that refusal is doctrine: a top-level post is a public
+  /// record, and a record is filed under something. The question is asked
+  /// here, once, in the words the feed already uses -- never bypassed.
+  Widget _buildTopicChooser() {
+    final t = _primaryTopic;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Where should it go?',
+          'What is it about?',
           style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: AuraSpace.s10),
-        Wrap(
-          spacing: AuraSpace.s10,
-          runSpacing: AuraSpace.s10,
-          children: [
-            ChoiceChip(
-              label: const Text('Your feed'),
-              selected: d?.isFeed ?? false,
-              onSelected: _sending
-                  ? null
-                  : (_) => setState(
-                        () => _destination = const AuraDestination.feed(),
-                      ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: ActionChip(
+            avatar: Icon(
+              t == null ? Icons.label_outline : Icons.label,
+              size: 18,
             ),
-            ChoiceChip(
-              label: Text(d?.isConversation == true ? d!.label : 'A conversation'),
-              selected: d?.isConversation ?? false,
-              onSelected: _sending ? null : (_) => _pickConversation(),
-            ),
-          ],
+            label: Text(t?.label ?? 'Choose a topic'),
+            onPressed: _sending ? null : _pickTopic,
+          ),
         ),
       ],
     );
   }
 
-  Future<void> _pickConversation() async {
-    // Deliberately the EXISTING conversation list rather than a Share-owned
-    // picker: which conversations a person may send to is an access question
-    // that already has an authority.
-    final chosen = await showModalBottomSheet<Map<String, String>>(
+  Future<void> _pickTopic() async {
+    final chosen = await showModalBottomSheet<AuraTopic>(
       context: context,
       backgroundColor: AuraSurface.page,
       isScrollControlled: true,
-      builder: (sheetContext) => const _ConversationPickerSheet(),
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.symmetric(vertical: AuraSpace.s12),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AuraSpace.s16, AuraSpace.s4, AuraSpace.s16, AuraSpace.s12,
+              ),
+              child: Text(
+                'Choose a topic',
+                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+            for (final topic in AuraTopic.values)
+              ListTile(
+                title: Text(topic.label),
+                trailing: topic == _primaryTopic
+                    ? const Icon(Icons.check, size: 20)
+                    : null,
+                onTap: () => Navigator.of(sheetContext).pop(topic),
+              ),
+          ],
+        ),
+      ),
     );
     if (!mounted || chosen == null) return;
-    setState(() {
-      _destination = AuraDestination.conversation(
-        id: chosen['id']!,
-        title: chosen['title'],
-      );
-    });
+    setState(() => _primaryTopic = chosen);
   }
 
   Widget _buildAction() {
-    final d = _destination;
-    final ready = _allReady && d != null && d.isActionable && !_sending;
+    final t = _primaryTopic;
+    final ready = _allReady && t != null && !_sending;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AuraSpace.s4),
       child: Row(
@@ -438,79 +450,17 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
           Expanded(
             child: Text(
               _allReady
-                  ? (d == null ? 'Choose where it goes' : d.label)
+                  ? (t == null ? 'Choose a topic' : t.label)
                   : 'Preparing…',
               style: AuraText.small.copyWith(color: AuraSurface.muted),
             ),
           ),
           AuraPrimaryButton(
-            label: _sending ? 'Working…' : (d?.actionVerb ?? 'Share'),
+            label: _sending ? 'Working…' : 'Share',
             onPressed: ready ? _publish : null,
           ),
         ],
       ),
     );
-  }
-}
-
-/// The conversations a person may send into.
-class _ConversationPickerSheet extends ConsumerWidget {
-  const _ConversationPickerSheet();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return SafeArea(
-      child: FutureBuilder<List<dynamic>>(
-        future: _load(ref),
-        builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
-            // The state authority, not a bare spinner. A full-surface wait is
-            // a product state with a voice, and the C0 gate exists to keep it
-            // one rather than letting each new surface invent its own.
-            return const Padding(
-              padding: EdgeInsets.all(AuraSpace.s24),
-              child: AuraProductState(state: ProductState.loading),
-            );
-          }
-          final items = snap.data ?? const [];
-          if (items.isEmpty) {
-            return const Padding(
-              padding: EdgeInsets.all(AuraSpace.s24),
-              child: Text('No conversations yet.'),
-            );
-          }
-          return ListView.builder(
-            shrinkWrap: true,
-            itemCount: items.length,
-            itemBuilder: (context, i) {
-              final c = items[i] as Map<String, dynamic>;
-              final id = (c['id'] ?? '').toString();
-              final title = (c['title'] ?? c['displayName'] ?? '').toString();
-              return ListTile(
-                leading: const Icon(Icons.forum_outlined),
-                title: Text(title.isEmpty ? 'Conversation' : title),
-                onTap: () => Navigator.of(context)
-                    .pop(<String, String>{'id': id, 'title': title}),
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-
-  Future<List<dynamic>> _load(WidgetRef ref) async {
-    try {
-      final res = await ref.read(dioProvider).get('/conversations');
-      final raw = res.data;
-      if (raw is Map && raw['conversations'] is List) {
-        return raw['conversations'] as List;
-      }
-      if (raw is Map && raw['data'] is List) return raw['data'] as List;
-      if (raw is List) return raw;
-      return const [];
-    } on DioException {
-      return const [];
-    }
   }
 }

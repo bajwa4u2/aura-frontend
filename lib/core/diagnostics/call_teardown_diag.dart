@@ -102,7 +102,7 @@ class CallDiag {
     Object? state;
     Object? ctx;
     try {
-      if (key is GlobalKey<State>) state = key.currentState;
+      state = key.currentState;
       ctx = key.currentContext;
     } catch (e) {
       // Reading currentState during an unstable tree can itself throw; that
