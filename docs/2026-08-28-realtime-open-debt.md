@@ -542,3 +542,63 @@ trap, and provider track-name uniqueness.
   orchestrator's own comment had disclosed the discrepancy as "not fixed"; it
   stopped being theoretical, so it is closed at both call sites.
 
+
+---
+
+## 2026-08-29 — observed: Pixel rings, iPhone does not
+
+Three-party call: founder on iPhone (TestFlight build), Zakria on Pixel (an
+older sideloaded APK), Mrs Bajwa in the browser. **The Pixel rang. The iPhone
+showed only the in-app overlay** — no banner, no sound.
+
+This is not a regression and it is not a transport failure. It is the shape the
+code already has, observed for the first time on real hardware.
+
+### What the code says, before any inference
+
+**The ring is native Android code with no iOS counterpart.**
+`AuraCallPushReceiver.kt` → `IncomingCallPresenter.kt` build the incoming-call
+surface: `CallStyle.forIncomingCall`, full-screen intent, `ongoing`,
+`FLAG_NO_CLEAR` and `FLAG_INSISTENT` — that last flag is what makes a ring a
+ring rather than one chime. `ios/Runner/AppDelegate.swift` is stock Flutter
+boilerplate: no PushKit, no CallKit, no notification handling of any kind.
+
+**The backend already scopes the behaviour to Android and says why.** In
+`fcm-push.adapter.ts`, `deviceOwnsCallPresentation = isCallInvite &&
+isAndroidDevice`, commented: *"Scoped to Android on purpose. iOS has no
+equivalent hook and still needs its APNs alert, so its payload is untouched;
+iOS call presentation remains the separately-tracked, uncertified platform."*
+An iOS device therefore receives a `notification` block plus `aps: { sound:
+'default', badge: 1, contentAvailable: true }` — **a banner with a sound, never
+a call ring.** Even delivered perfectly, the iPhone was never going to behave
+like the Pixel.
+
+**Foreground suppression is not the explanation.** `main.dart` calls
+`setForegroundNotificationPresentationOptions(alert: true, badge: true, sound:
+true)`, so a delivered push shows even with the app open.
+
+**This is the first iOS build that could ever have had an FCM token.** Every
+TestFlight build before #22 died at *Provision Firebase iOS config*, and before
+that the step warned-and-continued with no plist at all. Without
+`GoogleService-Info.plist`, `Firebase.initializeApp()` throws into a
+`debugPrint`, `getToken()` returns null, and `DeviceService` returns null and
+registers nothing — silently. An iPhone may simply have no device row yet.
+
+### The two candidates, and the observation that separates them
+
+| | Cause | What a LOCKED iPhone does when called |
+|---|---|---|
+| A | The push never arrives — no registered iOS device, or notifications not permitted | nothing at all |
+| B | The push arrives as designed — a banner, because iOS has no ring path | banner + sound on the lock screen |
+
+One locked-phone call settles it. **B is a missing feature (PushKit + CallKit),
+not a defect to repair**; A is a registration defect and the place to look is
+the app's own Devices screen on the iPhone, plus iOS Settings → Aura →
+Notifications.
+
+### What this did NOT measure
+
+`IOS_REALTIME_TRANSPORT` is still `PENDING_PHYSICAL_IPHONE`. This call
+exercised the invite path, not the media path. That question needs the iPhone
+*connected* in a call with audio or video actually flowing — see §11.5 of
+`docs/2026-08-27-ios-certification-lane.md`.
