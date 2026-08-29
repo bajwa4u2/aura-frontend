@@ -602,3 +602,68 @@ Notifications.
 exercised the invite path, not the media path. That question needs the iPhone
 *connected* in a call with audio or video actually flowing — see §11.5 of
 `docs/2026-08-27-ios-certification-lane.md`.
+
+### Resolved, same call: iOS media transport works on real hardware
+
+Founder-observed, 2026-08-29: the iPhone **joined the call and carried audio
+and video**, three-party, alongside a Pixel and a browser.
+
+That closes `IOS_REALTIME_TRANSPORT = PENDING_PHYSICAL_IPHONE` for the
+assertion that matters most — *"an ORDINARY call still connects on the
+production ICE set"*, which certification build #7 reported as FAILED on the
+simulator. It was a false negative from the environment, exactly as §11.5
+suspected and deliberately refused to assume. iOS is fine; the simulator is
+not a place where this can be measured.
+
+**Not closed by it:** the relay-only assertion, *"media traverses Cloudflare
+TURN over TLS/443 on this platform"*. A normal call selects whatever path ICE
+prefers and almost never the relay, so this call says nothing about the forced
+relay-only leg on iOS. It remains unmeasured on Apple hardware.
+
+```
+IOS_REALTIME_ORDINARY_CALL   = PROVEN on physical iPhone (audio + video)
+IOS_REALTIME_RELAY_ONLY_443  = still unmeasured on device
+```
+
+### Root cause of the silent iPhone: the token was never registered
+
+The discriminator ran: with the app **backgrounded**, the iPhone received
+nothing at all — not a banner, not a sound. That is candidate A, and the
+delivery side is provably not at fault:
+
+* Firebase project `aura-22b3a` carries the Apple app **`org.auraplatform.app`**
+  with **both** Development and Production APNs auth keys (Key ID `9R9536X5U4`,
+  Team `4WZQA8T5MT`), FCM API V1 enabled, Sender ID `837054852821` — matching
+  the plist the build now ships.
+* The backend sends iOS a real alert payload — `notification` block plus
+  `aps: { sound: 'default', badge: 1 }` — because `deviceOwnsCallPresentation`
+  is Android-only.
+* `setForegroundNotificationPresentationOptions(alert/badge/sound)` is set.
+
+Everything downstream of the token is correct. There was no token.
+
+`DeviceService._fcmPayload` called `FirebaseMessaging.instance.getToken()`
+directly. **On Apple platforms that returns null until APNs has handed the app
+its device token**, and that registration is asynchronous — routinely unfinished
+in the moments after `requestPermission()` returns. So the first and only
+attempt returned null, `_buildPayload` returned null, and
+`_doRegisterCurrentDevice` **returned early — above `_bindTokenRefresh()`**.
+The listener that would have caught the token arriving a second later was never
+attached. Nothing retried. The only trace was a `debugPrint`.
+
+On Android `getToken()` is available immediately, which is the whole of the
+asymmetry: same code, one platform where the first attempt succeeds and one
+where it cannot.
+
+Fixed in two parts, both of which stand on their own:
+
+1. `_awaitApnsToken()` — a bounded ~5s poll of `getAPNSToken()` before asking
+   for the FCM token on iOS/macOS. Gives up rather than hanging a sign-in.
+2. `_bindTokenRefresh()` now runs **before** the null-payload return, so a
+   token that lands later registers itself instead of being lost.
+
+Still to confirm on device: an iPhone row appearing under Aura → Devices, and a
+ring arriving with the app backgrounded. Note that even when this lands, iOS
+gets a **banner with a sound, not a ring** — the insistent full-screen call
+surface is native Android code with no iOS counterpart, and giving iOS a real
+ring is PushKit + CallKit, a feature rather than a repair.

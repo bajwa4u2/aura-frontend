@@ -77,7 +77,22 @@ class DeviceService {
       await _ensureNativePushPermission();
 
       final payload = await _buildPayload();
-      if (payload == null) return;
+      if (payload == null) {
+        // BIND FIRST, GIVE UP SECOND.
+        //
+        // This used to return here, before `_bindTokenRefresh()` at the bottom
+        // of the method. On iOS that made the whole thing single-shot: the
+        // first `getToken()` came back null because APNs had not finished
+        // registering, we returned, and the listener that would have caught
+        // the token arriving a second later was never attached. The device
+        // never registered, and the only trace was a debugPrint.
+        //
+        // Binding before the early return costs nothing when a token is
+        // already in hand and is the difference between a deferred
+        // registration and none at all.
+        _bindTokenRefresh();
+        return;
+      }
 
       final id = _cachedDeviceId ?? await _loadPersistedDeviceId();
       if (id != null && id.isNotEmpty) {
@@ -321,10 +336,56 @@ class DeviceService {
     }
   }
 
+  /// Poll for the APNs device token, bounded. Apple gives no future to await,
+  /// so the only honest shape is a short retry that gives up rather than one
+  /// that hangs a sign-in. ~5s total is far longer than a normal grant takes
+  /// and short enough that a device with notifications denied is not stalled.
+  static const Duration _apnsPollInterval = Duration(milliseconds: 500);
+  static const int _apnsPollAttempts = 10;
+
+  Future<void> _awaitApnsToken() async {
+    for (var attempt = 0; attempt < _apnsPollAttempts; attempt++) {
+      try {
+        final apns = await FirebaseMessaging.instance.getAPNSToken();
+        if (apns != null && apns.isNotEmpty) return;
+      } catch (e) {
+        debugPrint('DeviceService._awaitApnsToken failed: $e');
+        return;
+      }
+      await Future<void>.delayed(_apnsPollInterval);
+    }
+    debugPrint(
+      'DeviceService: no APNs token after '
+      '${_apnsPollAttempts * _apnsPollInterval.inMilliseconds}ms — '
+      'push registration deferred to onTokenRefresh',
+    );
+  }
+
   Future<Map<String, dynamic>?> _fcmPayload({
     required String platform,
   }) async {
     try {
+      // ON APPLE PLATFORMS THE FCM TOKEN DOES NOT EXIST YET.
+      //
+      // `getToken()` on iOS returns null until APNs has handed the app its
+      // device token, and that registration is asynchronous — it is routinely
+      // not finished in the moments after `requestPermission()` returns. On
+      // Android the token is there immediately, which is exactly why Android
+      // rang and the iPhone did not: the first and only attempt came back
+      // null, `_buildPayload` returned null, and the device was never
+      // registered at all. Nothing downstream is wrong — the Firebase project
+      // carries both APNs auth keys for `org.auraplatform.app` and the backend
+      // sends iOS a real alert payload. There was simply no token to send to.
+      //
+      // So wait for the APNs token first, briefly and boundedly. If it never
+      // arrives we still return null — but `_doRegisterCurrentDevice` now
+      // binds the refresh listener before giving up, so the token that lands a
+      // moment later registers itself.
+      if (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS) {
+        await _awaitApnsToken();
+      }
+
       final token = await FirebaseMessaging.instance.getToken();
       if (token == null || token.isEmpty) return null;
 
