@@ -37,11 +37,22 @@ class CanonicalMediaThumb extends StatelessWidget {
     this.alignment = AlignmentDirectional.centerStart,
     this.onTap,
     this.downloadContext = 'media',
+    this.fillCell = false,
   });
 
   final FeedMedia media;
   final AuraMediaFrameMode mode;
   final AlignmentGeometry alignment;
+
+  /// FILL THE SPACE THE CALLER HAS ALREADY MEASURED.
+  ///
+  /// `AuraMediaFrameMode.thumbnail` caps the frame at 72px, which is right
+  /// for a chip in a list row and wrong inside a collage cell: the group has
+  /// already decided the cell's size, and a 72px image aligned inside it is
+  /// what made a four-image post render as four stamps adrift in empty navy.
+  /// With this set the frame keeps thumbnail's 1:1 cover treatment and lets
+  /// the cell's own constraints govern the size.
+  final bool fillCell;
 
   /// Explicit tap override. When null the thumb opens the fullscreen
   /// [AuraMediaViewer] for this media.
@@ -147,6 +158,8 @@ class CanonicalMediaThumb extends StatelessWidget {
       intrinsicHeight: media.height,
       mode: mode,
       alignment: alignment,
+      maxWidthOverride: fillCell ? double.infinity : null,
+      maxHeightOverride: fillCell ? double.infinity : null,
       semanticLabel: media.caption,
       onTap: effectiveTap,
       saveUrl: saveUrl.isEmpty ? null : saveUrl,

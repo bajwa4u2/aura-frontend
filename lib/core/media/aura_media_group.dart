@@ -210,6 +210,8 @@ class _MediaGroupCell extends StatelessWidget {
       mode: AuraMediaFrameMode.thumbnail,
       downloadContext: downloadContext,
       onTap: onTap,
+      // The cell is already sized by the group's grid; the tile fills it.
+      fillCell: true,
     );
 
     // TR IS NOT MOUNTED HERE. It lives on `CanonicalMediaThumb`, which this
