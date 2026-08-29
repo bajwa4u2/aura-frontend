@@ -93,15 +93,25 @@ class MediaSaveService {
             .trim()
             .toLowerCase();
         final filename = _resolveFilename(suggestedFilename, uri, mime);
-        return platform.persistMediaBytes(
+        // AWAITED ON PURPOSE, INSIDE THE TRY.
+        //
+        // `return platform.persistMediaBytes(...)` handed the Future back
+        // unawaited, so it settled outside this try: if the platform save
+        // failed asynchronously the catch below never ran, the direct-link
+        // fallback was never reached, and the caller received a rejected
+        // Future instead of the graceful degradation the catch exists to
+        // provide. Awaiting brings the call inside the guard it was always
+        // meant to be inside.
+        return await platform.persistMediaBytes(
           bytes: response.bodyBytes,
           filename: filename,
           mimeType: mime.isEmpty ? 'application/octet-stream' : mime,
         );
       }
     } catch (_) {
-      // Network failure or a cross-origin block — fall through to the
-      // direct-link path so the platform can still complete the save.
+      // Network failure, a cross-origin block, or a platform save that threw —
+      // fall through to the direct-link path so the platform can still
+      // complete the save.
     }
 
     final filename = _resolveFilename(suggestedFilename, uri, '');
