@@ -7,7 +7,8 @@
       "namespace": "android_app",
       "package_name": "org.auraplatform.app",
       "sha256_cert_fingerprints": [
-        "84:39:92:54:A2:A1:CA:65:E2:35:17:4D:06:DF:EA:73:2A:B2:28:BB:B9:1A:1C:E9:3F:D8:1B:24:E3:6D:7B:8C"
+        "84:39:92:54:A2:A1:CA:65:E2:35:17:4D:06:DF:EA:73:2A:B2:28:BB:B9:1A:1C:E9:3F:D8:1B:24:E3:6D:7B:8C",
+        "9D:20:D5:B2:27:9B:7C:1A:DC:E9:63:51:4F:D2:DF:B8:AE:66:D1:D4:D8:20:CF:99:99:B9:7F:8E:0D:7D:9D:61"
       ]
     }
   }
