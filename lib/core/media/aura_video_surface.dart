@@ -134,6 +134,7 @@ class AuraVideoSurface extends StatefulWidget {
     this.durationMs,
     this.fileName,
     this.maxHeight,
+    this.fill = false,
     this.borderRadius,
     this.tap = AuraVideoTap.inline,
     this.onOpenViewer,
@@ -164,6 +165,15 @@ class AuraVideoSurface extends StatefulWidget {
   final String? fileName;
 
   final double? maxHeight;
+
+  /// FILL THE CELL THE CALLER HAS ALREADY MEASURED.
+  ///
+  /// A video normally sets its own shape from its intrinsic aspect. Inside a
+  /// collage cell that is wrong: the group has decided the geometry, and a
+  /// video that keeps its own ratio leaves the same dead space that made a
+  /// four-image post look broken. A mixed post shows it plainest -- the image
+  /// cells fill and the video cell does not, so the grid reads as damaged.
+  final bool fill;
   final BorderRadius? borderRadius;
   final AuraVideoTap tap;
 
@@ -358,20 +368,23 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface> {
 
     final durationLabel = formatVideoDuration(widget.durationMs);
 
+    final stack = Stack(
+      fit: StackFit.expand,
+      children: [
+        surface,
+        if (!_playing) _playAffordance(),
+        if (widget.showDuration && durationLabel.isNotEmpty)
+          Positioned(top: 12, right: 12, child: _durationChip(durationLabel)),
+      ],
+    );
+
+    // Filling means the cell's constraints decide, so the intrinsic aspect
+    // is not imposed on top of them.
     final content = ClipRRect(
       borderRadius: radius,
-      child: AspectRatio(
-        aspectRatio: _aspectRatio,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            surface,
-            if (!_playing) _playAffordance(),
-            if (widget.showDuration && durationLabel.isNotEmpty)
-              Positioned(top: 12, right: 12, child: _durationChip(durationLabel)),
-          ],
-        ),
-      ),
+      child: widget.fill
+          ? stack
+          : AspectRatio(aspectRatio: _aspectRatio, child: stack),
     );
 
     return Semantics(
@@ -546,6 +559,7 @@ class AuraVideoMedia extends ConsumerWidget {
     this.durationMs,
     this.fileName,
     this.maxHeight,
+    this.fill = false,
     this.borderRadius,
     this.tap = AuraVideoTap.inline,
     this.onOpenViewer,
@@ -566,6 +580,9 @@ class AuraVideoMedia extends ConsumerWidget {
   final VoidCallback? onOpenViewer;
   final bool showDuration;
 
+  /// See [AuraVideoSurface.fill] — the collage cell case.
+  final bool fill;
+
   Widget _surface(String url) => AuraVideoSurface(
         url: url,
         posterUrl: posterUrl,
@@ -574,6 +591,7 @@ class AuraVideoMedia extends ConsumerWidget {
         durationMs: durationMs,
         fileName: fileName,
         maxHeight: maxHeight,
+        fill: fill,
         borderRadius: borderRadius,
         tap: tap,
         onOpenViewer: onOpenViewer,

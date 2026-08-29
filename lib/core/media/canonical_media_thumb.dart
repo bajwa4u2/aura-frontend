@@ -145,6 +145,10 @@ class CanonicalMediaThumb extends StatelessWidget {
         context: mode == AuraMediaFrameMode.detail
             ? StoredMediaContext.detail
             : StoredMediaContext.feed,
+        // A video in a collage fills its cell exactly as the images beside
+        // it do — a mixed post is where a cell that keeps its own aspect
+        // reads as a broken grid.
+        fill: fillCell,
         onOpenViewer: effectiveTap,
       );
     }

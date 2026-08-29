@@ -62,6 +62,7 @@ class StoredMediaRequest {
     required this.media,
     this.context = StoredMediaContext.feed,
     this.maxHeight,
+    this.fill = false,
     this.borderRadius,
     this.onOpenViewer,
     this.onOpenFile,
@@ -71,6 +72,11 @@ class StoredMediaRequest {
   final StoredMedia media;
   final StoredMediaContext context;
   final double? maxHeight;
+
+  /// Fill the space the caller has already measured, instead of taking shape
+  /// from the media's own aspect. Set by collage cells — see
+  /// [AuraVideoSurface.fill].
+  final bool fill;
   final BorderRadius? borderRadius;
 
   /// Hand-off to the fullscreen viewer, where the surface offers one.
@@ -189,6 +195,7 @@ Widget? _videoPresenter(BuildContext context, StoredMediaRequest r) {
     durationMs: media.durationMs,
     fileName: media.fileName,
     maxHeight: maxHeight,
+    fill: r.fill,
     borderRadius: r.borderRadius,
     tap: tap,
     onOpenViewer: r.onOpenViewer,
@@ -274,6 +281,7 @@ class AuraStoredMedia extends StatelessWidget {
     required this.media,
     this.context = StoredMediaContext.feed,
     this.maxHeight,
+    this.fill = false,
     this.borderRadius,
     this.onOpenViewer,
     this.onOpenFile,
@@ -283,6 +291,10 @@ class AuraStoredMedia extends StatelessWidget {
   final StoredMedia media;
   final StoredMediaContext context;
   final double? maxHeight;
+
+  /// Fill the caller's measured space — collage cells. See
+  /// [AuraVideoSurface.fill].
+  final bool fill;
   final BorderRadius? borderRadius;
   final VoidCallback? onOpenViewer;
   final VoidCallback? onOpenFile;
@@ -296,6 +308,7 @@ class AuraStoredMedia extends StatelessWidget {
         media: media,
         context: context,
         maxHeight: maxHeight,
+        fill: fill,
         borderRadius: borderRadius,
         onOpenViewer: onOpenViewer,
         onOpenFile: onOpenFile,
