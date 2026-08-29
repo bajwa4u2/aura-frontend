@@ -742,6 +742,28 @@ class RealtimeController extends StateNotifier<RealtimeState>
       clearErrorMessage: true,
     );
     try {
+      // A SOCKET THAT DIED CANNOT VOUCH FOR THE MEDIA TRANSPORT BESIDE IT.
+      //
+      // THE DEFECT THIS CLOSES (measured 2026-08-29, wifi pulled on a phone).
+      // The rejoin restored the session perfectly -- no heartbeat_timeout, the
+      // participant stayed ACTIVE, the client came back unattended in 16s --
+      // and the media never returned. The transport table said why: after
+      // three rejoins the phone still had ONE transport, the original one from
+      // before the outage, still marked OPEN and pointing at a Cloudflare
+      // session that had died with the network. The other participant went on
+      // subscribing to its tracks and collecting 404s and 410s forever.
+      //
+      // The cause is `usesStageTransport`, which is `_stage != null` --
+      // PRESENCE, NOT HEALTH. `_ensureStageConnected` saw a non-null stage and
+      // took the refresh path, so the dead transport was never replaced. It is
+      // the same mistake as the recovery guard that asked whether a stage
+      // existed rather than whether it was still THE one, and it produced the
+      // worse half of the same outcome: session recovery that leaves the media
+      // plane dead.
+      //
+      // Detaching first costs a re-open on a transport that might have
+      // survived. Keeping a dead one costs the call.
+      await _mediaService.detachStage();
       // No standalone connect() call here — _performJoin's own connect()
       // (delegating to RealtimeSocketService.ensureConnected(), single-
       // flight) is the sole transport-establishment owner. A second call
