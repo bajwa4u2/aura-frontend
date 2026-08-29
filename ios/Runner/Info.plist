@@ -75,19 +75,41 @@
 
 	<!--
 	  Location: the Aura app itself does not request, store, or share
-	  the user's location. This purpose string exists because Apple's
-	  static analyzer (`Transporter` / App Store Connect validator,
-	  error 90683) flags the binary as referencing CoreLocation through
-	  a linked dependency — the Firebase iOS SDK pulled in by
-	  `firebase_core` / `firebase_messaging` references
-	  `CLLocationManager` whether or not the host app calls it. Apple
-	  requires a user-facing string for that reference even when the
-	  prompt is never triggered. The string is worded so a reviewer can
-	  reconcile it with the actual app behaviour (no location feature
-	  is wired today; adding one in the future would still honour this
-	  string).
+	  the user's location. Nothing under `lib/` references CoreLocation,
+	  geolocator, or `Permission.location` — the only permissions Aura
+	  asks for through `permission_handler` are camera and microphone.
+
+	  These purpose strings exist because Apple's static analyzer
+	  (`Transporter` / App Store Connect validator, error ITMS-90683)
+	  flags the BINARY as referencing CoreLocation through linked
+	  dependencies, and says so explicitly: "While your app might not use
+	  these APIs, a purpose string is still required." Two dependencies
+	  can carry that reference — the Firebase iOS SDK, and
+	  `permission_handler`, whose iOS pod compiles every permission
+	  handler it ships, location included, unless it is told not to.
+	  Which of the two triggered it has not been established, and the
+	  requirement is the same either way.
+
+	  BOTH keys are needed. Build 26 delivered successfully on
+	  2026-08-29 and Apple still returned ITMS-90683, naming
+	  NSLocationAlwaysAndWhenInUseUsageDescription: the WhenInUse key
+	  alone did not cover the reference. They are worded identically and
+	  truthfully, so a reviewer can reconcile them with an app that has
+	  no location feature.
+
+	  THE DURABLE FIX IS TO STOP SHIPPING THE REFERENCE, not to describe
+	  it better: `permission_handler` supports compile-time exclusion via
+	  `GCC_PREPROCESSOR_DEFINITIONS` in the Podfile (`PERMISSION_LOCATION=0`,
+	  `PERMISSION_LOCATION_ALWAYS=0`, keeping only CAMERA and MICROPHONE).
+	  That is deliberately NOT done here: this repo commits no Podfile —
+	  Flutter generates it during the build — so introducing one is a
+	  change to the iOS build itself, and it does not belong in the middle
+	  of a release that has only just built end to end. It is the right
+	  next change, made on its own.
 	-->
 	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Aura does not currently use your location. This permission is requested only if you later enable a feature that needs it (for example, surfacing nearby live sessions). Your location is never shared.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Aura does not currently use your location. This permission is requested only if you later enable a feature that needs it (for example, surfacing nearby live sessions). Your location is never shared.</string>
 
 	<!--
