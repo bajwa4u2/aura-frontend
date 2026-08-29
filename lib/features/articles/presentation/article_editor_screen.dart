@@ -5,11 +5,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/composition/composition_authority.dart';
-import '../../../core/composition/content_intake.dart';
+import '../../../core/media/media_acquisition.dart';
 import '../../../core/media/attachment.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/product/product_state.dart';
@@ -256,19 +255,17 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
   Future<void> _pickCover() async {
     final id = _articleId;
     if (id == null || _coverBusy) return;
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (picked == null) return;
+    // THE CANONICAL ACQUISITION, not a private picker.
+    //
+    // This constructed its own `ImagePicker` and then repeated intake by hand.
+    // Both halves already exist in `media_acquisition`, and going around it
+    // cost this surface the Android Photo Picker: `image_picker_android`
+    // defaults `useAndroidPhotoPicker` to false, so a private picker opens the
+    // legacy file browser. A person choosing a cover was shown a file manager.
+    final resolution = await acquireSingleImage();
+    if (resolution == null) return;
     setState(() => _coverBusy = true);
     try {
-      // ONE governed door. `?? 'image/jpeg'` GUESSED, and guessed wrong for
-      // every png, webp and heic the platform declined to name.
-      final resolution = await ContentIntake.resolveAndPrepareBytes(
-        path: IntakePath.picker,
-        bytes: await picked.readAsBytes(),
-        fileName: picked.name,
-        declaredMimeType: picked.mimeType,
-        source: AttachmentSource.gallery,
-      );
       final cover = resolution.attachment;
       if (cover == null || cover.kind != AttachmentKind.image) {
         throw _CoverRefused(
@@ -280,7 +277,7 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
       final result = await uploadAuraMedia(
         dio: ref.read(dioProvider),
         bytes: cover.bytes!,
-        fileName: cover.fileName ?? picked.name,
+        fileName: cover.fileName ?? 'cover',
         mimeType: cover.mimeType!,
         originalMimeType: cover.originalMimeType,
         kind: wireKind(cover.kind),
@@ -330,16 +327,9 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
   }
 
   Future<void> _insertImage() async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (picked == null) return;
+    final resolution = await acquireSingleImage();
+    if (resolution == null) return;
     try {
-      final resolution = await ContentIntake.resolveAndPrepareBytes(
-        path: IntakePath.picker,
-        bytes: await picked.readAsBytes(),
-        fileName: picked.name,
-        declaredMimeType: picked.mimeType,
-        source: AttachmentSource.gallery,
-      );
       final inline = resolution.attachment;
       if (inline == null || inline.kind != AttachmentKind.image) {
         throw _CoverRefused(
@@ -351,7 +341,7 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
       final result = await uploadAuraMedia(
         dio: ref.read(dioProvider),
         bytes: inline.bytes!,
-        fileName: inline.fileName ?? picked.name,
+        fileName: inline.fileName ?? 'image',
         mimeType: inline.mimeType!,
         originalMimeType: inline.originalMimeType,
         kind: wireKind(inline.kind),

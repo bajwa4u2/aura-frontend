@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:record/record.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -772,18 +771,17 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   /// Video MESSAGE: capture from the camera (browser/device capture UI),
   /// then it joins the pending attachments like any media.
   Future<void> _recordVideoMessage() async {
-    final picked = await ImagePicker().pickVideo(source: ImageSource.camera);
-    if (picked == null) return;
-    final bytes = await picked.readAsBytes();
     // A video MESSAGE sends itself — capture IS the send. It goes through the
     // same governed door as everything else; capture earns no exemption.
-    await _uploadAndSendImmediately(await ContentIntake.resolveAndPrepareBytes(
-      path: IntakePath.picker,
-      bytes: bytes,
-      fileName: picked.name,
-      declaredMimeType: picked.mimeType ?? 'video/webm',
-      source: AttachmentSource.camera,
-    ));
+    //
+    // Through the canonical acquisition now, rather than a private picker.
+    // The hand-written version also carried `?? 'video/webm'`, which GUESSED a
+    // container the phone had not claimed -- Android records mp4, and a wrong
+    // declared type is exactly what the intake door exists to refuse rather
+    // than invent.
+    final acquired = await captureVideo(remainingSlots: 1);
+    if (acquired.resolutions.isEmpty) return;
+    await _uploadAndSendImmediately(acquired.resolutions.first);
   }
 
   /// Voice/video MESSAGES are sent the moment capture completes (WhatsApp

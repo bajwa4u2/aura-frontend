@@ -32,6 +32,8 @@ library;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
+import 'package:image_picker_android/image_picker_android.dart';
+import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
 
 import '../composition/content_intake.dart';
 import 'attachment.dart';
@@ -63,6 +65,41 @@ class MediaAcquisition {
   final int droppedForLimit;
 
   bool get isEmpty => resolutions.isEmpty && droppedForLimit == 0;
+}
+
+/// USE THE PHOTO PICKER, NOT THE FILE BROWSER.
+///
+/// THE DEFECT THIS CLOSES, reproduced on a Pixel 9a 2026-08-29. Tapping
+/// Library opened `com.android.documentsui.picker.PickActivity` -- a FILE
+/// MANAGER, offering "Search this device", Images/Audio/Videos/Documents
+/// chips, and a Recent files list whose only entry was a `ui.xml`. Somebody
+/// looking for a photograph was shown an XML document. It read as "the
+/// library doesn't load anything", and nothing was broken: it was the wrong
+/// picker.
+///
+/// `image_picker_android` defaults `useAndroidPhotoPicker` to FALSE, so every
+/// call in the app fell back to the legacy `ACTION_OPEN_DOCUMENT` intent
+/// instead of Android's Photo Picker. That default is a plugin decision made
+/// for compatibility, and it silently costs every surface that picks media --
+/// Compose as much as Share.
+///
+/// Armed HERE, at every entry point of this module, and NOWHERE ELSE.
+///
+/// It was briefly armed at app startup too, while the composers still built
+/// their own pickers -- a compensation for the bypasses rather than a fix for
+/// them. Those are retired now: every acquisition in the app comes through
+/// this file, so the guarantee lives with the thing it guards instead of in a
+/// boot-time side effect that no reader would connect to a file browser
+/// appearing three screens away.
+///
+/// Idempotent and Android-only by construction: on other platforms the
+/// instance is not `ImagePickerAndroid` and this does nothing.
+void ensureAndroidPhotoPicker() {
+  if (kIsWeb) return;
+  final platform = ImagePickerPlatform.instance;
+  if (platform is ImagePickerAndroid) {
+    platform.useAndroidPhotoPicker = true;
+  }
 }
 
 /// Whether this platform can capture rather than only choose.
@@ -117,6 +154,7 @@ Future<MediaAcquisition> _capture({
   if (remainingSlots <= 0) {
     return const MediaAcquisition(resolutions: [], droppedForLimit: 0);
   }
+  ensureAndroidPhotoPicker();
   final file = await take(picker ?? ImagePicker());
   // Cancelling the camera is a decision, not a failure. It contributes
   // nothing and says nothing.
@@ -144,12 +182,47 @@ Future<MediaAcquisition> acquireMultipleMedia({
   if (remainingSlots <= 0) {
     return const MediaAcquisition(resolutions: [], droppedForLimit: 0);
   }
+  ensureAndroidPhotoPicker();
   final picked = await (picker ?? ImagePicker()).pickMultipleMedia();
   return resolveAcquired(
     files: picked,
     remainingSlots: remainingSlots,
     source: AttachmentSource.gallery,
   );
+}
+
+/// Choose exactly ONE image.
+///
+/// WHY A SINGULAR FUNCTION EXISTS ALONGSIDE THE PLURAL ONE. An avatar, an
+/// article cover and an inline illustration are each ONE SLOT, not a
+/// composition of one -- the person is replacing a specific thing, and
+/// offering multi-select there would let them pick four images for a space
+/// that holds one and then silently discard three.
+///
+/// Its absence is why three surfaces still reached for `ImagePicker`
+/// directly: the module had no shape for the thing they actually needed, so
+/// they went around it, and every one of them inherited the legacy file
+/// browser as a result. A canonical module that does not cover the real cases
+/// does not get used; it gets bypassed.
+/// [imageQuality] re-encodes before the file ever reaches intake. An avatar
+/// does not need a 12-megapixel original, and the person should not pay to
+/// upload one; it is left null everywhere the ORIGINAL is the point.
+Future<IntakeResolution?> acquireSingleImage({
+  int? imageQuality,
+  ImagePicker? picker,
+}) async {
+  ensureAndroidPhotoPicker();
+  final file = await (picker ?? ImagePicker()).pickImage(
+    source: ImageSource.gallery,
+    imageQuality: imageQuality,
+  );
+  if (file == null) return null;
+  final acquired = await resolveAcquired(
+    files: [file],
+    remainingSlots: 1,
+    source: AttachmentSource.gallery,
+  );
+  return acquired.resolutions.isEmpty ? null : acquired.resolutions.first;
 }
 
 /// Turn already-selected files into ordered intake resolutions.
@@ -170,18 +243,24 @@ Future<MediaAcquisition> resolveAcquired({
 
   final out = <IntakeResolution>[];
   for (final f in admitted) {
-    out.add(
-      await ContentIntake.resolveAndPrepareBytes(
-        path: IntakePath.picker,
-        bytes: await f.readAsBytes(),
-        fileName: f.name,
-        // The platform's answer is preferred; intake infers from the name when
-        // it declines to say, and refuses when neither answers. It is never
-        // guessed from the extension here.
-        declaredMimeType: f.mimeType,
-        source: source,
-      ),
+    final resolution = await ContentIntake.resolveAndPrepareBytes(
+      path: IntakePath.picker,
+      bytes: await f.readAsBytes(),
+      fileName: f.name,
+      // The platform's answer is preferred; intake infers from the name when
+      // it declines to say, and refuses when neither answers. It is never
+      // guessed from the extension here.
+      declaredMimeType: f.mimeType,
+      source: source,
     );
+    // KEEP THE LOCAL ORIGIN. Intake works in bytes, which is right for
+    // deciding what something IS -- but the file is the only thing that can
+    // still be asked what a VIDEO is: duration, dimensions and rotation come
+    // from decoding the file, not from a byte array. Dropping it here would
+    // have left every module-acquired video unmeasurable, and any caller that
+    // uploads from `attachment.file` silently doing nothing at all.
+    resolution.attachment?.file = f;
+    out.add(resolution);
   }
   return MediaAcquisition(resolutions: out, droppedForLimit: dropped);
 }

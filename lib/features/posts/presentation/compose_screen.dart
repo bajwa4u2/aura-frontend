@@ -29,7 +29,6 @@ import '../../../core/link_preview/link_preview.dart';
 import '../../../core/link_preview/link_preview_card.dart';
 import '../../../core/link_preview/link_preview_service.dart';
 import '../../../core/composition/composition_authority.dart';
-import '../../../core/composition/content_intake.dart';
 import '../../../core/media/attachment.dart';
 import '../../../core/media/media_acquisition.dart';
 import '../../../core/net/dio_provider.dart';
@@ -515,20 +514,6 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return _editorDirection() == TextDirection.rtl
         ? TextAlign.right
         : TextAlign.left;
-  }
-
-  /// How big the picked file is, or null when the platform will not say.
-  ///
-  /// Null means UNKNOWN, and intake treats unknown as "do not judge on size"
-  /// rather than as zero -- refusing a file because the platform declined to
-  /// measure it would turn a missing fact into a rejection.
-  Future<int?> _measureFileSize(XFile file) async {
-    try {
-      final length = await file.length();
-      return length >= 0 ? length : null;
-    } catch (_) {
-      return null;
-    }
   }
 
   /// WHAT A VIDEO IS, MEASURED BEFORE IT LEAVES THE DEVICE.
@@ -1286,46 +1271,15 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   Future<void> _pickMediaFromGallery() async {
     if (!_canAddMoreAttachments || _posting) return;
 
-    final remaining = _maxAttachments - _attachments.length;
-    final picked = await ImagePicker().pickMultipleMedia();
-    if (picked.isEmpty) return;
+    final acquired =
+        await acquireMultipleMedia(remainingSlots: _remainingAttachments);
+    await _addAcquired(acquired);
 
-    final admitted = picked.take(remaining).toList(growable: false);
-    for (final file in admitted) {
-      // Kind is inferred PER FILE, because one selection may legitimately
-      // contain both. Branching on the menu entry instead — as the two
-      // separate pickers did — cannot express a mixed choice at all.
-      final isVideo = _looksLikeVideo(file.name, file.mimeType);
-      await _addPickedFile(
-        file,
-        type: isVideo ? AttachmentKind.video : AttachmentKind.image,
-        source: AttachmentSource.gallery,
-      );
-    }
-
-    final message = acquisitionLimitMessage(picked.length - admitted.length);
+    final message = acquisitionLimitMessage(acquired.droppedForLimit);
     if (message != null && mounted) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(message)));
     }
-  }
-
-  /// Kind from the platform's answer, falling back to the extension.
-  ///
-  /// The mime is preferred because it is evidence; the name is a last resort
-  /// for platforms that decline to say. Content truth has the final word
-  /// server-side, so a wrong guess here is corrected rather than believed.
-  bool _looksLikeVideo(String name, String? mimeType) {
-    final mime = (mimeType ?? '').toLowerCase();
-    if (mime.startsWith('video/')) return true;
-    if (mime.startsWith('image/')) return false;
-    final lower = name.toLowerCase();
-    return lower.endsWith('.mp4') ||
-        lower.endsWith('.mov') ||
-        lower.endsWith('.m4v') ||
-        lower.endsWith('.webm') ||
-        lower.endsWith('.mkv') ||
-        lower.endsWith('.3gp');
   }
 
   Future<void> _pickImageFromGallery() => _pickMediaFromGallery();
@@ -1345,15 +1299,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       return;
     }
 
-    final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.camera);
-    if (file == null) return;
-
-    await _addPickedFile(
-      file,
-      type: AttachmentKind.image,
-      source: AttachmentSource.camera,
-    );
+    // THE CANONICAL ACQUISITION, not a private picker. Every direct
+    // `ImagePicker` in the app has now been retired: they were how the Android
+    // Photo Picker got lost, because `image_picker_android` defaults it off
+    // and each private picker inherited that default independently.
+    final acquired = await capturePhoto(remainingSlots: _remainingAttachments);
+    await _addAcquired(acquired, expect: AttachmentKind.image);
   }
 
   /// Gallery video goes through the SAME selection as gallery photos.
@@ -1378,96 +1329,90 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       return;
     }
 
-    final picker = ImagePicker();
-    final file = await picker.pickVideo(
-      source: ImageSource.camera,
+    final acquired = await captureVideo(
+      remainingSlots: _remainingAttachments,
       maxDuration: const Duration(seconds: 30),
     );
-    if (file == null) return;
-
-    await _addPickedFile(
-      file,
-      type: AttachmentKind.video,
-      source: AttachmentSource.camera,
-    );
+    await _addAcquired(acquired, expect: AttachmentKind.video);
   }
 
-  Future<void> _addPickedFile(
-    XFile file, {
-    required AttachmentKind type,
-    required AttachmentSource source,
+  int get _remainingAttachments => _maxAttachments - _attachments.length;
+
+  /// Admit ALREADY-RESOLVED acquisitions into the composition.
+  ///
+  /// Intake now happens once, inside the acquisition module, instead of again
+  /// here. That duplication is what made a private `ImagePicker` feel natural
+  /// in this file: once a surface re-does the door, owning the door's input
+  /// follows, and five different picker APIs followed from that.
+  ///
+  /// [expect] is the kind the BUTTON promised. Intake decides what the content
+  /// actually is, and a mismatch is refused rather than reclassified --
+  /// recording a document as a video because it arrived through the Video
+  /// button would put a lie into the content identity.
+  Future<void> _addAcquired(
+    MediaAcquisition acquired, {
+    AttachmentKind? expect,
   }) async {
+    for (final resolution in acquired.resolutions) {
+      final attachment = resolution.attachment;
+      if (attachment == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(resolution.rejectionMessage!)),
+        );
+        continue;
+      }
+      if (expect != null && attachment.kind != expect) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              expect == AttachmentKind.video
+                  ? 'That is not a video file.'
+                  : 'That is not an image file.',
+            ),
+          ),
+        );
+        continue;
+      }
+      await _admitAttachment(attachment);
+    }
+  }
+
+  /// Put one resolved attachment into the composition and start its upload.
+  ///
+  /// What used to be the tail of `_addPickedFile`, with the intake half
+  /// removed: the door is the acquisition module's now, and doing it twice is
+  /// what made this screen keep its own pickers.
+  Future<void> _admitAttachment(Attachment attachment) async {
     if (_attachments.length >= _maxAttachments) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Maximum 5 attachments per post.')),
-      );
-      return;
-    }
-
-    // ONE governed door. `kind` used to be whatever the CALLER declared, and
-    // the mime was not resolved here at all — `_uploadAttachment` inferred it
-    // later and fell back to `application/octet-stream`, which the server's
-    // allow-list refuses at presign. The attachment appeared in the composer,
-    // climbed, and failed late.
-    // SIZE IS PART OF THE DOOR, AND IT WAS BEING SKIPPED.
-    //
-    // `resolveFile` refuses an empty file and an oversized one -- but both
-    // checks are guarded by `sizeBytes != null`, and this call never passed
-    // it. So a zero-byte capture (a cancelled recording, a camera that failed
-    // after creating its file, an OS that reclaimed the temp file early)
-    // sailed through intake, appeared in the composition, uploaded, and failed
-    // somewhere further down where the person could no longer tell what went
-    // wrong. The same silence covered files past the size ceiling.
-    final int? sizeBytes = await _measureFileSize(file);
-    final resolution = ContentIntake.resolveFile(
-      path: IntakePath.picker,
-      file: file,
-      sizeBytes: sizeBytes,
-      source: source,
-    );
-    final attachment = resolution.attachment;
-    if (attachment == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(resolution.rejectionMessage!)),
-      );
-      return;
-    }
-    // The picker promised a kind; the content decides whether it kept the
-    // promise. Uploading a document through the Video button is a refusal, not
-    // a reclassification.
-    if (attachment.kind != type) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            type == AttachmentKind.video
-                ? 'That is not a video file.'
-                : 'That is not an image file.',
-          ),
+          content: Text('Maximum $_maxAttachments attachments per post.'),
         ),
       );
       return;
     }
 
-    if (type == AttachmentKind.image) {
-      final bytes = await file.readAsBytes();
-      attachment.bytes = bytes;
-      try {
-        final size = await _decodeImageSize(bytes);
-        attachment.width = size?['width'];
-        attachment.height = size?['height'];
-      } catch (_) {}
-    } else if (type == AttachmentKind.video) {
-      // A recorded video is measured here for the same reason a photograph is
-      // decoded here: so the composition knows what it is holding before it
-      // asks anyone else.
-      await _probeVideoIdentity(attachment, file);
+    if (attachment.kind == AttachmentKind.image) {
+      final bytes = attachment.bytes;
+      if (bytes != null) {
+        try {
+          final size = await _decodeImageSize(bytes);
+          attachment.width = size?['width'];
+          attachment.height = size?['height'];
+        } catch (_) {}
+      }
+    } else if (attachment.kind == AttachmentKind.video) {
+      // Measured here for the same reason a photograph is decoded here: so the
+      // composition knows what it is holding before it asks anyone else.
+      final file = attachment.file;
+      if (file != null) await _probeVideoIdentity(attachment, file);
     }
+
     attachment.uploading = true;
     attachment.attachedToDraft = false;
-
     _ensureCaptionController(attachment);
 
     setState(() {

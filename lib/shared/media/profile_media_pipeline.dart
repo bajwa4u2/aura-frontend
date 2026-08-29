@@ -28,9 +28,10 @@ import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/media/media_acquisition.dart';
+
 import '../../core/attachments/aura_media_upload.dart';
 import '../../core/composition/attachment_lifecycle.dart';
-import '../../core/composition/content_intake.dart';
 import '../../core/media/attachment.dart';
 import 'profile_media_editor.dart';
 
@@ -87,30 +88,21 @@ class ProfileMediaPipeline {
     required int maxBytes,
     required String fileTag,
   }) async {
-    final file = await _picker.pickImage(
-      source: ImageSource.gallery,
+    // ONE governed door, reached through the canonical acquisition rather
+    // than a private picker. This held its own `ImagePicker` and repeated
+    // intake by hand; both already exist in `media_acquisition`, and the
+    // private picker cost this surface the Android Photo Picker, so choosing
+    // an avatar opened a file browser.
+    final resolution = await acquireSingleImage(
       imageQuality: 92,
+      picker: _picker,
     );
-    if (file == null) {
+    if (resolution == null) {
       return const ProfileMediaResult.failed(
         ProfileMediaFailure.cancelled,
         null,
       );
     }
-
-    final bytes = await file.readAsBytes();
-
-    // ONE governed door. This method used to carry its own MIME whitelist and
-    // its own `_inferMime`, which is the same private answer every composer
-    // had before CH-13 — and it refused a `.heic` or `.gif` with a message
-    // naming three formats rather than the canonical vocabulary.
-    final resolution = await ContentIntake.resolveAndPrepareBytes(
-      path: IntakePath.picker,
-      bytes: bytes,
-      fileName: file.name,
-      declaredMimeType: file.mimeType,
-      source: AttachmentSource.gallery,
-    );
     final picked = resolution.attachment;
     if (picked == null) {
       return ProfileMediaResult.failed(
@@ -137,6 +129,7 @@ class ProfileMediaPipeline {
     // would be a few dozen kilobytes once cropped. What is stored is the
     // CROPPED output at [config]'s fixed size; the only real constraint is
     // that the editor can decode the original on a phone.
+    final bytes = picked.bytes ?? const <int>[];
     if (bytes.length > maxBytes) {
       final mb = (maxBytes / (1024 * 1024)).toStringAsFixed(0);
       return ProfileMediaResult.failed(
@@ -158,7 +151,7 @@ class ProfileMediaPipeline {
     // only platforms that can.
     final cropped = await ProfileMediaEditor.open(
       context,
-      imageBytes: picked.bytes ?? bytes,
+      imageBytes: picked.bytes ?? Uint8List.fromList(bytes),
       config: config,
     );
     if (cropped == null) {
@@ -171,7 +164,7 @@ class ProfileMediaPipeline {
     return _upload(
       cropped,
       config: config,
-      fileName: _processedName(file.name, fileTag),
+      fileName: _processedName(picked.fileName ?? fileTag, fileTag),
       // READ BEFORE THE EDIT, because after it there is nothing left to read.
       //
       // The crop re-encodes, which destroys whatever Content Credentials the
@@ -179,7 +172,7 @@ class ProfileMediaPipeline {
       // describes the ORIGINAL bytes and would be a false claim about these.
       // Forgetting what it SAID is not, and this is the only moment anything
       // can still see it.
-      sourceOrigin: scanSourceOrigin(picked.bytes ?? bytes),
+      sourceOrigin: scanSourceOrigin(picked.bytes ?? Uint8List.fromList(bytes)),
     );
   }
 

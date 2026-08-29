@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/errors/app_error_mapper.dart';
@@ -108,7 +107,6 @@ class _InstitutionPostComposerScreenState
   // `mediaUrl`; the composer surfaces a real upload widget but persists only
   // the URL of the first uploaded asset. Multi-asset support is a separate
   // backend contract change (flagged below).
-  final ImagePicker _picker = ImagePicker();
   String? _mediaUrl;
 
   /// The server's identity for the uploaded media.
@@ -825,20 +823,28 @@ class _InstitutionPostComposerScreenState
     if (_busy || _uploading) return;
     final remaining = kMaxComposableMedia - _media.length;
     if (remaining <= 0) return;
-    final picked = await _picker.pickMultipleMedia();
-    if (picked.isEmpty) return;
-    final admitted = picked.take(remaining).toList(growable: false);
-    for (final f in admitted) {
-      await _uploadPickedFile(f);
+    // THE CANONICAL ACQUISITION. This held a private `ImagePicker` and
+    // re-implemented the module's ceiling, ordering and limit message by hand
+    // -- and the private picker cost this screen the Android Photo Picker, so
+    // choosing media opened the legacy file browser.
+    final acquired = await acquireMultipleMedia(remainingSlots: remaining);
+    if (acquired.isEmpty) return;
+    for (final r in acquired.resolutions) {
+      await _uploadResolved(r);
     }
-    final message = acquisitionLimitMessage(picked.length - admitted.length);
+    final message = acquisitionLimitMessage(acquired.droppedForLimit);
     if (message != null && mounted) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
-  Future<void> _uploadPickedFile(XFile file) async {
+  /// Upload one ALREADY-RESOLVED item.
+  ///
+  /// Intake happens once, in the acquisition module, rather than again here.
+  /// Repeating it was how this screen ended up with its own picker: once a
+  /// surface re-does the door, owning the door's input feels natural.
+  Future<void> _uploadResolved(IntakeResolution resolution) async {
     if (_busy) return;
 
     setState(() {
@@ -847,20 +853,6 @@ class _InstitutionPostComposerScreenState
     });
 
     try {
-      final bytes = await file.readAsBytes();
-
-      // ONE governed door. This branch used to resolve the mime itself and
-      // fall back to `video/mp4` or `image/jpeg` when neither the platform nor
-      // the filename answered — a guess, and the same class of defect as the
-      // conversation composer's inline ladder. It then judged type and size
-      // against constants only this screen knew about.
-      final resolution = await ContentIntake.resolveAndPrepareBytes(
-        path: IntakePath.picker,
-        bytes: bytes,
-        fileName: file.name,
-        declaredMimeType: file.mimeType,
-        source: AttachmentSource.gallery,
-      );
       final attachment = resolution.attachment;
       if (attachment == null) {
         throw _MediaValidationException(resolution.rejectionMessage!);
@@ -878,7 +870,7 @@ class _InstitutionPostComposerScreenState
       // a picked HEIC resolves to image/jpeg and carries re-encoded bytes.
       final prepared = attachment.bytes!;
       final mimeType = attachment.mimeType!;
-      final uploadName = attachment.fileName ?? file.name;
+      final uploadName = attachment.fileName ?? 'media';
 
       final size = video ? null : await _decodeImageSize(prepared);
 
@@ -922,7 +914,7 @@ class _InstitutionPostComposerScreenState
                 ? result.thumbUrl.trim()
                 : url,
             mimeType: mimeType,
-            bytes: bytes,
+            bytes: prepared,
           ),
         );
         _mediaComposition = _mediaComposition.copyWith(attachments: [..._media]);

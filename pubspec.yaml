@@ -50,6 +50,10 @@ dependencies:
 
   # Media + file picking
   image_picker: ^1.1.2
+  # Direct, so the Android Photo Picker can be switched on explicitly --
+  # image_picker_android defaults `useAndroidPhotoPicker` to FALSE, which
+  # sends every picker call to the legacy file browser.
+  image_picker_android: ^0.8.13
   file_picker: ^8.0.0
   record: ^6.2.0
   cached_network_image: ^3.3.1

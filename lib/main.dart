@@ -23,6 +23,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+
   // Prevent Flutter framework errors from surfacing as uncaught browser errors.
   // In production web builds the default handler re-throws, which creates noise
   // in the console. We log and continue instead.
