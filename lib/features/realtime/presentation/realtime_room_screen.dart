@@ -1208,8 +1208,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                             speakerOn: state.speakerphoneEnabled,
                             onToggleSpeaker: () =>
                                 unawaited(controller.toggleSpeakerphone()),
-                            onParticipants: () =>
-                                _togglePanel(_kPanelParticipants, wide),
                             onMore: () => _togglePanel(_kPanelMore, wide),
                             isEndCall: isHost,
                             isEnding: state.isEndingCall,
@@ -3275,7 +3273,6 @@ class _CallControlDock extends StatelessWidget {
     required this.pendingRequests,
     required this.onToggleMic,
     required this.onToggleCamera,
-    required this.onParticipants,
     required this.onMore,
     required this.onLeave,
     this.isEndCall = false,
@@ -3298,7 +3295,6 @@ class _CallControlDock extends StatelessWidget {
   final int pendingRequests;
   final VoidCallback onToggleMic;
   final VoidCallback onToggleCamera;
-  final VoidCallback onParticipants;
   final VoidCallback onMore;
   final VoidCallback? onLeave;
   final bool isEndCall;
@@ -3433,15 +3429,6 @@ class _CallControlDock extends StatelessWidget {
               ),
               const SizedBox(width: AuraSpace.s8),
             ],
-
-            // Participants
-            _DockButton(
-              icon: Icons.people_rounded,
-              label: 'Participants',
-              active: activePanel == _kPanelParticipants,
-              onPressed: onParticipants,
-            ),
-            const SizedBox(width: AuraSpace.s8),
 
             // More / Settings
             _DockButton(
@@ -3894,6 +3881,23 @@ class _CallPanelContentState extends ConsumerState<_CallPanelContent> {
           currentUserId: widget.myUserId.isNotEmpty ? widget.myUserId : null,
           consents: state.consents,
         ),
+
+        // PARTICIPANT MANAGEMENT LIVES HERE (open debt §5, 2026-08-28:
+        // "Share Screen + Go Live + participant management under `More`, no
+        // redundant primary Participants control").
+        //
+        // Who is in the call is a thing you consult, not a thing you do, so
+        // it does not earn a primary control beside Mic and Camera. The dock
+        // had eight controls on a phone and this was one of them. The list
+        // itself is unchanged -- the same widget, the same moderation
+        // affordances -- it is only reached from one place now instead of
+        // owning a slot in the dock.
+        _PanelHeader(
+          title: 'In this call',
+          count: state.participants.length,
+        ),
+        _buildParticipants(state, ctrl),
+        const SizedBox(height: AuraSpace.s12),
 
         // Host controls
         if (widget.canModerate) ...[
