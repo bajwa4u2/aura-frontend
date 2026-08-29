@@ -1189,7 +1189,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
     }
 
     CallDiag.emit('call.end', 'begin',
-        data: {'session': _managedSessionId ?? ''});
+        data: {'session': _managedSessionId});
     final sessionId = _managedSessionId;
     final session = state.session;
     if (sessionId.isEmpty && session == null) {
@@ -2175,10 +2175,6 @@ class RealtimeController extends StateNotifier<RealtimeState>
     await _reconcileRtcPeers('track-change');
   }
 
-  @override
-  // The base signature names this `state`, which would shadow the
-  // StateNotifier's own `state` used inside — the rename is deliberate.
-  // ignore: avoid_renaming_method_parameters
   // ── JOINED_LOST_MID_CALL — observation, not repair ────────────────────────
   //
   // Founder ruling §D. A long call drops to "connecting" and re-hydrates, and
@@ -2247,6 +2243,10 @@ class RealtimeController extends StateNotifier<RealtimeState>
     ).catchError((_) {}));
   }
 
+  @override
+  // The base signature names this `state`, which would shadow the
+  // StateNotifier's own `state` used inside — the rename is deliberate.
+  // ignore: avoid_renaming_method_parameters
   void didChangeAppLifecycleState(AppLifecycleState lifecycleState) {
     // Recorded for every transition, not only `resumed` — a call that breaks
     // while the tab is hidden needs the hidden state in the record, and the

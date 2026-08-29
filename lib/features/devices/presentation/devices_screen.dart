@@ -124,7 +124,6 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
     if (raw == null || raw.isEmpty) return '';
     final dt = DateTime.tryParse(raw)?.toLocal();
     if (dt == null) return '';
-    final diff = DateTime.now().difference(dt);
     return 'Active ${AuraTemporal.humanize(ProductTime(dt, TimeEvent.occurred))}';
   }
 

@@ -1568,7 +1568,7 @@ class RealtimeMediaService {
           'retired=$retired rebuilt=$rebuilt '
           'held=${_remoteRenderersByParticipant.length} '
           'failures=$failures'
-          '${firstError == null ? '' : ' err=${_shortRenderError(firstError!)}'}',
+          '${firstError == null ? '' : ' err=${_shortRenderError(firstError)}'}',
     ));
   }
 
@@ -1727,7 +1727,7 @@ class RealtimeMediaService {
       // local-candidate.
       final byId = <String, Map<String, dynamic>>{
         for (final r in reports)
-          r.id: Map<String, dynamic>.from(r.values as Map),
+          r.id: Map<String, dynamic>.from(r.values),
       };
       final path = _resolveSelectedPath(reports, byId);
       if (path != null) {
@@ -1836,7 +1836,7 @@ class RealtimeMediaService {
     if (pair == null) {
       for (final r in reports) {
         if (r.type != 'candidate-pair') continue;
-        final v = Map<String, dynamic>.from(r.values as Map);
+        final v = Map<String, dynamic>.from(r.values);
         final nominated = v['nominated'] == true;
         final succeeded =
             v['state']?.toString().toLowerCase() == 'succeeded';
