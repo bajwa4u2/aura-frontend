@@ -355,3 +355,71 @@ Rewritten in `4d8cc50` to accept either shape the value can honestly take
 (base64 of the plist, or the plist itself), confirm the result with
 `plutil -lint`, delete the partial file on failure, and print the one command
 that produces a good value. The value is never printed, in any branch.
+
+### 11.5 What the credentials actually proved — build #7
+
+With the defines forwarded, the realtime suites ran on iOS for the first time.
+Build **#7** (`2ed6f94`, finished 2026-08-29T21:30:13Z):
+
+```
+PASS  av_certification_test                  8/8
+PASS  create_landing_test                    5/5
+PASS  create_meeting_certification_test      8/8
+PASS  media_certification_test              26/26
+PASS  meetings_certification_test           14/14
+PASS  preferences_certification_test         6/6
+PASS  signed_in_institution_return_test      2/2
+FAIL  relay_certification_test               4 executed, 2 passed, 2 FAILED
+FAIL  sfu_certification_test                 1 executed, 1 FAILED
+NO_COVERAGE  sfu_media_service_test, sfu_multiparty_controller_test,
+             sfu_multiparty_test, sfu_thread_call_parity_test,
+             sfu_transport_seam_test
+RESULT: failures=1 no_coverage=1  →  VERDICT=FAILED
+```
+
+The split inside `relay_certification_test` is the whole finding:
+
+| Assertion | Result |
+|---|---|
+| the backend issues CLOUDFLARE credentials for this identity | **PASS** |
+| the issued set carries TURN/TLS on 443 | **PASS** |
+| media traverses Cloudflare TURN over TLS/443 on this platform | **FAIL** |
+| an ORDINARY call still connects on the production ICE set | **FAIL** |
+
+The control plane works on iOS. Transport does not, on this host.
+
+**This is not evidence that Cloudflare TURN is broken, and it is not a
+regression from this release.** Three things say so:
+
+1. `bf7c54a` records the same suite measured passing on **Windows** and on a
+   **physical Pixel 9a** — `localType=relay, remoteType=relay,
+   relayProtocol=tls` over the same 443 URL, with real getUserMedia audio and
+   bytes moving both ways. Same backend, same issuance path, same ICE set.
+2. The ORDINARY-call test creates two peer connections **in one process on one
+   host** with no transport policy. It needs no TURN, no camera and no external
+   network, and it failed too — so whatever stopped the relay test is upstream
+   of Cloudflare.
+3. Nothing under `lib/` has changed since `b73e8a1`, the commit this release
+   builds from.
+
+**What it is NOT allowed to become:** a skip. The obvious move is to declare
+these suites simulator-inapplicable, like the Android and desktop ones, and
+recover a green lane. That would be a guess dressed as a policy. The simulator
+has no capture device and no real network path, and that is the likely cause —
+but "likely" is not what a certification says. If iOS genuinely cannot carry
+relay-only TURN/TLS, a skip would hide exactly the defect this lane exists to
+find, and it would hide it behind our own reasoning rather than behind a
+missing credential.
+
+So the FAILED verdict stands as written, and the boundary is stated instead of
+engineered away:
+
+```
+IOS_REALTIME_CONTROL_PLANE   = SIMULATOR_CERTIFIED (issuance, TURN/TLS 443 set)
+IOS_REALTIME_TRANSPORT       = FAILED on simulator; PENDING_PHYSICAL_IPHONE
+CLOUDFLARE_TURN_TLS_443      = PROVEN on Windows and a physical Pixel 9a
+```
+
+The one measurement that resolves it is `relay_certification_test` on a
+physical iPhone. Until then neither "iOS realtime works" nor "iOS realtime is
+broken" is a statement this lane is entitled to make.
