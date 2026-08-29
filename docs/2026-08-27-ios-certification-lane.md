@@ -248,7 +248,11 @@ video for interactive sessions (150-minute maximum).
 
 - Apple signing stays in Codemagic's secure environment. Not exported, not
   mirrored, not downloaded.
-- The certification workflow holds no credential of any kind.
+- The certification workflow now holds ONE identity, and only that: the
+  `aura_cert` group (`AURA_CERT_EMAIL`, `AURA_CERT_PASSWORD`), secure
+  variables in the Codemagic UI. Added 2026-08-29 — see §11. Their values
+  appear nowhere in this repository and are never printed by a build step;
+  the runner echoes only the NAMES it forwarded.
 - No secret is committed, printed, or moved between providers.
 - AWS resources stay under AWS IAM.
 
@@ -270,3 +274,84 @@ PHYSICAL_IPHONE_PROOF             = NOT YET
 **`IOS = PENDING_MACOS_HOST` is retired.** It is replaced by two precise
 statuses: `SIMULATOR_CERTIFIED` where the simulator is sufficient, and
 `PENDING_PHYSICAL_IPHONE` where it is not.
+
+---
+
+## 11. 2026-08-29 — two credential hops, both broken, both closed
+
+The lane was established and still certified nothing about realtime. Two
+separate defects, found by running it rather than by reading it.
+
+### 11.1 The group was never listed, so it was never injected
+
+`ios-certification` declared no `environment.groups` at all. Every realtime
+suite reads an identity, finds none, and stands itself down — so the run
+reported `VERDICT=INCOMPLETE` with **zero failures**. An honest verdict, and
+an easy one to misread as "nothing is wrong".
+
+Fixed by creating the `aura_cert` group in the Codemagic UI and listing it in
+the workflow (`e69615e`).
+
+### 11.2 The group was listed, and it still certified nothing
+
+Build **#6** (`e69615e`, finished 2026-08-29T20:40:05Z) ran with the group
+injected and still reported seven suites `NO_COVERAGE`:
+
+```
+relay_certification_test         NO_COVERAGE (4 skipped)
+sfu_certification_test           NO_COVERAGE (1 skipped)
+sfu_media_service_test           NO_COVERAGE (2 skipped)
+sfu_multiparty_controller_test   NO_COVERAGE (3 skipped)
+sfu_multiparty_test              NO_COVERAGE (1 skipped)
+sfu_thread_call_parity_test      NO_COVERAGE (1 skipped)
+sfu_transport_seam_test          NO_COVERAGE (1 skipped)
+RESULT: failures=0 no_coverage=1  →  VERDICT=INCOMPLETE
+```
+
+The suites do not read the environment. They read
+`String.fromEnvironment('AURA_CERT_EMAIL')` — a **`--dart-define`, resolved when
+the test is compiled**. `scripts/certify_suite.py` built its `flutter test`
+command with no defines, so an exported shell variable reached the runner and
+never reached the compiler.
+
+Listing the group was necessary and, on its own, did nothing.
+
+Fixed in `2ed6f94`: the runner forwards every name the suites read, prints only
+the names it forwarded, and forwards nothing that is unset — so a genuinely
+absent identity still reports `NO_COVERAGE`, which is the outcome this runner
+exists to preserve.
+
+### 11.3 What is still not covered, and why
+
+`aura_cert` holds exactly two variables. Five suites need identities that do
+not exist in any group:
+
+| Variable | Needed by |
+|---|---|
+| `AURA_SFU_CERT_EMAILS` | media service, multiparty, multiparty controller, thread parity, transport seam |
+| `AURA_SFU_CERT_PASSWORD` | the same five |
+| `AURA_EXTRA_EMAIL` / `AURA_EXTRA_PASSWORD` | multiparty controller (3–5 participants, one identity each) |
+
+Until those are added to `aura_cert`, those suites report `NO_COVERAGE` and the
+lane verdict stays `INCOMPLETE` however many other suites pass. That is
+correct behaviour, not a defect — and it is a founder-only step, because it
+means real Aura accounts and their passwords.
+
+### 11.4 The release lane failed too, and separately
+
+`ios-testflight` build **#17** (`b73e8a1`) died at *Provision Firebase iOS
+config* with
+
+```
+base64: stdin: (null): error decoding base64 input stream
+```
+
+**after** its own `-n "$FIREBASE_IOS_CONFIG_BASE64"` guard had passed — so the
+variable was set and its value was not decodable base64. The step could not
+tell a bad value from a missing one, wrote a half-decoded plist on its way out,
+and named neither the variable nor the remedy.
+
+Rewritten in `4d8cc50` to accept either shape the value can honestly take
+(base64 of the plist, or the plist itself), confirm the result with
+`plutil -lint`, delete the partial file on failure, and print the one command
+that produces a good value. The value is never printed, in any branch.
