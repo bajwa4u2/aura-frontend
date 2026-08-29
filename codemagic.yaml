@@ -150,6 +150,21 @@ workflows:
       flutter: stable
       xcode: latest
       cocoapods: default
+      groups:
+        # WITHOUT THIS THE CERTIFICATION CERTIFIES NOTHING.
+        #
+        # The realtime suites need a real identity to reach the Aura control
+        # plane, and skip themselves when AURA_CERT_EMAIL / AURA_CERT_PASSWORD
+        # are absent. This workflow declared no groups at all, so they were
+        # never injected, three SFU suites reported NO_COVERAGE, and the run
+        # ended VERDICT=INCOMPLETE with zero failures -- an honest verdict
+        # that nothing had been proven about the part that matters most.
+        #
+        # The same trap is documented on ios-testflight above: a group must be
+        # LISTED here to be injected; existing in the Codemagic UI is not
+        # enough. Both variables are SECURE variables in that UI (group:
+        # aura_cert) and their values appear nowhere in this repository.
+        - aura_cert
     cache:
       cache_paths:
         - $HOME/.pub-cache
