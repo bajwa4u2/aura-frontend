@@ -146,3 +146,29 @@ used — one call site, `IncomingCallPresenter.setFullScreenIntent` on a
 core functionality *Making and receiving calls*, pre-grant opt-in *No*, since
 the client already degrades to a heads-up notification where the permission is
 not granted and opting in would add a second Google review to this release.
+
+---
+
+## Submission state — 2026-08-29
+
+| Platform | Artifact | Where it is | What that is NOT |
+|---|---|---|---|
+| Web | 1.4.0 build 25 | **LIVE** at `auraplatform.org` | — |
+| iOS | build 27 | **TestFlight accepted, installed on a real iPhone** | not App Store review, not released |
+| Android | version code 27 | **In review** — Closed testing – Alpha | not rolled out to testers yet; production is separately gated on Google's access review, applied 2026-08-28 |
+| Windows | `1.4.0.0` x64 | **In certification** | not published to the Store |
+
+Three different words for three different things, and none of them is
+"released". Each is a queue owned by the store, not by us.
+
+### The one measurement that just became possible
+
+`IOS_REALTIME_TRANSPORT` has stood at `PENDING_PHYSICAL_IPHONE` since
+certification build #7: the control plane passed on iOS, transport failed, and
+the failure could not be attributed between "iOS cannot" and "a simulator
+cannot" without real hardware. See §11.5 of
+`docs/2026-08-27-ios-certification-lane.md`.
+
+Build 27 is now installed on a physical iPhone. That is the hardware the
+question was waiting on. One ordinary Aura call placed from it — connecting or
+not — resolves a boundary that no amount of further simulator work can.
