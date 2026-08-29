@@ -58,10 +58,56 @@ def flutter_executable() -> str:
     return "flutter"
 
 
+# THE CREDENTIALS THE REALTIME SUITES READ ARE COMPILE-TIME, NOT ENVIRONMENT.
+#
+# `relay_certification_test`, `sfu_certification_test` and their neighbours read
+# their identity through `String.fromEnvironment('AURA_CERT_EMAIL')`. That is a
+# `--dart-define`, resolved when the test is COMPILED. An exported shell
+# variable of the same name reaches this process and never reaches the compiler,
+# so the constant stays empty and every substantive test stands itself down.
+#
+# The 2026-08-29 run proved it: the `aura_cert` group was added to the workflow,
+# the variables were present in the build environment, and the suites still
+# reported NO_COVERAGE with "certification identities not provided". Injecting
+# the group was necessary and did nothing on its own — the last hop was missing.
+#
+# So the runner forwards them itself. Values are never printed; only the NAMES
+# of what was forwarded are echoed, which is enough to tell a NO_COVERAGE caused
+# by a missing credential apart from one caused by a suite that simply cannot
+# run here.
+# Every name an integration suite reads through `String.fromEnvironment`, so a
+# credential that exists in the build environment is never lost at this hop.
+# Forwarding a name that is not set is a no-op, so the list may safely exceed
+# what any single lane provides — a suite whose identities are genuinely absent
+# still reports NO_COVERAGE, which is the honest outcome.
+_FORWARDED_DEFINES = (
+    "AURA_API_BASE",
+    "AURA_CERT_EMAIL",
+    "AURA_CERT_PASSWORD",
+    # the multi-identity suites (SFU multiparty, media service, thread parity)
+    "AURA_SFU_CERT_EMAILS",
+    "AURA_SFU_CERT_PASSWORD",
+    "AURA_EXTRA_EMAIL",
+    "AURA_EXTRA_PASSWORD",
+)
+
+
+def forwarded_names() -> list[str]:
+    """The forwarded variables that are actually set in this environment."""
+    return [name for name in _FORWARDED_DEFINES if os.environ.get(name)]
+
+
 def run(suite: str, device: str | None) -> tuple[list[dict], int]:
     cmd = [flutter_executable(), "test", suite, "--reporter", "json"]
     if device:
         cmd += ["-d", device]
+
+    forwarded = forwarded_names()
+    cmd += [f"--dart-define={name}={os.environ[name]}" for name in forwarded]
+    print(
+        "dart-defines forwarded: " + (", ".join(forwarded) if forwarded else "none"),
+        flush=True,
+    )
 
     events: list[dict] = []
     proc = subprocess.Popen(

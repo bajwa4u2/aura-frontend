@@ -164,6 +164,13 @@ workflows:
         # LISTED here to be injected; existing in the Codemagic UI is not
         # enough. Both variables are SECURE variables in that UI (group:
         # aura_cert) and their values appear nowhere in this repository.
+        #
+        # NECESSARY, AND NOT SUFFICIENT ON ITS OWN. Listing the group only puts
+        # the values in this process's environment. The suites read them with
+        # `String.fromEnvironment`, which resolves at COMPILE time from
+        # `--dart-define` — so the first run with this group still reported
+        # NO_COVERAGE. scripts/certify_suite.py now carries them across that
+        # last hop; see the comment on _FORWARDED_DEFINES there.
         - aura_cert
     cache:
       cache_paths:
