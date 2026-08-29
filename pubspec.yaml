@@ -208,7 +208,7 @@ msix_config:
   # Continuity/Accountability views, governed topic relationships,
   # communication translation, reshare commentary, severity-aware
   # moderation labels, notification routing repairs.
-  msix_version: 1.3.0.0
+  msix_version: 1.4.0.0
   description: "Aura — a platform for purposeful public and personal communication, where conversations keep their context and people and institutions speak under clear, accountable identity."
   publisher: CN=3E4027A7-4D4D-4492-B8DE-BBE425E307E5
   logo_path: assets\aura_icon.png
