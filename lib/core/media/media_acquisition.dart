@@ -50,8 +50,10 @@ import 'attachment.dart';
 /// [kMaxMemberPostMedia].
 const int kMaxComposableMedia = 10;
 
-/// What a MEMBER POST accepts — the rule `posts.service.ts` enforces three
-/// times over: "A post can have at most 5 attachments".
+/// What a MEMBER POST accepts — mirroring `MAX_MEMBER_POST_ATTACHMENTS` in
+/// `posts.service.ts`, which is the rule. Founder raised it from five to ten
+/// on 2026-08-29 ("make atleast 10 man"); five was the stricter surface for
+/// no stated reason while institution posts already allowed ten.
 ///
 /// The client used to carry only the ceiling above, so it accepted a sixth
 /// item, UPLOADED it, and discovered the rule at publish. Founder, 2026-08-29:
@@ -64,7 +66,7 @@ const int kMaxComposableMedia = 10;
 /// break. Institution posts are deliberately NOT this number: their own
 /// authority allows ten, so they keep using the ceiling. Each surface honours
 /// the rule that actually governs it.
-const int kMaxMemberPostMedia = 5;
+const int kMaxMemberPostMedia = 10;
 
 /// The outcome of one acquisition.
 class MediaAcquisition {
