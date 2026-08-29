@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -36,6 +38,9 @@ import '../../../core/media/trace/aura_trace_mark.dart';
 import '../../../core/media/trace/aura_trace_surface.dart';
 import '../domain/feed_item.dart';
 import 'feed_interaction_bar.dart';
+import '../../posts/presentation/widgets/post_card.dart'
+    show viewerIdentityProvider;
+import '../../posts/presentation/widgets/post_card/post_owner_actions.dart';
 
 /// Single render path for every feed surface.
 ///
@@ -210,6 +215,7 @@ class UnifiedFeedCard extends ConsumerWidget {
               author: item.author,
               publishedAt: item.publishedAt ?? item.createdAt,
               profileRoute: adaptedProfile,
+              trailing: _ownerActions(context, ref),
             ),
             // Phase 3 — explicit "Verified institution" reinforcement
             // for official posts when the existing identity badge is
@@ -824,13 +830,75 @@ ReactionTarget? _replyReactionTargetFor(FeedItem parent, String replyId) {
   return PostReactionTarget(id);
 }
 
+/// OWNER ACTIONS ON THE CARD THE PERSON ACTUALLY MEETS THEIR POST ON.
+///
+/// Scoped to the viewer's own user posts. The other three feed types are
+/// somebody else's decision and already have an authority: an institution
+/// post is governed by institution role and enforced on its detail screen, an
+/// announcement is administered and withdrawable from its own detail, and an
+/// article is RETRACTED rather than deleted on purpose -- offering "Delete"
+/// here would promise destruction the article flow does not perform.
+///
+/// The actions call `confirmAndDeletePost`, the same authority PostCard uses,
+/// so the two cards cannot drift on what deleting means or which caches it
+/// clears.
+///
+/// HISTORY WORTH KEEPING: this was reverted once as the suspected cause of an
+/// app-wide freeze. It was not. The freeze was `GoRouterState.of(context)`
+/// called once per feed row, fixed in 8003e87, and it reproduced with this
+/// code entirely absent.
+extension _UnifiedFeedCardOwnerActions on UnifiedFeedCard {
+  Widget? _ownerActions(BuildContext context, WidgetRef ref) {
+    if (item.type != FeedItemType.userPost) return null;
+    if (item.authorType != FeedAuthorType.user) return null;
+
+    final viewerId = ref.watch(viewerIdentityProvider).valueOrNull?.userId ?? '';
+    final authorId = item.author.id.trim();
+    if (viewerId.isEmpty || authorId.isEmpty || authorId != viewerId) {
+      return null;
+    }
+
+    final postId = item.id.trim();
+    if (postId.isEmpty) return null;
+
+    return PopupMenuButton<String>(
+      tooltip: 'Manage this post',
+      padding: EdgeInsets.zero,
+      icon: const Icon(Icons.more_horiz, size: 20, color: AuraSurface.faint),
+      itemBuilder: (context) => const [
+        PopupMenuItem<String>(value: 'edit', child: Text('Edit work')),
+        PopupMenuItem<String>(value: 'delete', child: Text('Delete work')),
+      ],
+      onSelected: (choice) {
+        if (choice == 'edit') {
+          editOwnPost(context, postId);
+        } else if (choice == 'delete') {
+          // One row among many: the person stays in the feed and the list
+          // refreshes under them.
+          unawaited(
+            confirmAndDeletePost(
+              context,
+              ref,
+              postId: postId,
+              leaveSurfaceOnSuccess: false,
+            ),
+          );
+        }
+      },
+    );
+  }
+}
+
 class _AuthorRow extends StatelessWidget {
   const _AuthorRow({
     required this.author,
     required this.publishedAt,
     required this.profileRoute,
+    this.trailing,
   });
 
+  /// Owner actions, when the viewer wrote this. Nothing otherwise.
+  final Widget? trailing;
   final FeedAuthor author;
   final DateTime? publishedAt;
   final String? profileRoute;
@@ -915,6 +983,7 @@ class _AuthorRow extends StatelessWidget {
             ),
             style: AuraText.micro.copyWith(color: AuraSurface.faint),
           ),
+        if (trailing != null) trailing!,
       ],
     );
   }
