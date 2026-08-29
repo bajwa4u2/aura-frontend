@@ -1,12 +1,20 @@
 # Aura 1.4.0 — Store Release Notes (public-facing)
 
-Version `1.4.0+26`, client commit `b73e8a1` for everything under `lib/`.
+Version `1.4.0+27`, client commit `b73e8a1` for everything under `lib/`.
 
-The build number moved 25 → 26 for one reason: version code 25 declared
-three foreground-service permissions the app never uses, and Google Play
-will not accept a release carrying them without a declaration describing a
-task Aura does not perform. 26 removes them. Nothing else about the app
-changed, so every line below still describes 26 exactly as it described 25.
+The build number moved twice, and neither move changed the app:
+
+* **25 → 26** — version code 25 declared three foreground-service
+  permissions Aura never uses, and Google Play will not accept a release
+  carrying them without a declaration describing a task the app does not
+  perform. 26 removes them.
+* **26 → 27** — iOS build 26 delivered successfully and App Store Connect
+  returned ITMS-90683, asking for
+  `NSLocationAlwaysAndWhenInUseUsageDescription` alongside the WhenInUse key
+  already present. The key was added; App Store Connect will not accept the
+  same build number twice, so the number moved and both stores get 27.
+
+Every line below still describes 27 exactly as it described 25.
 
 Written to the same shape as `RELEASE_NOTES_1.3.0_STORE.md`: what a person
 gets, in the words they would use for it. No internal names, no defect
@@ -106,20 +114,25 @@ replaced, not merely submitted.
 ### Android — Google Play
 
 ```
-path         build/app/outputs/bundle/release/Aura-1.4.0+26-release.aab
-size         79,921,983 bytes
-sha256       1635d213d1074b20bc600f21abe68382d7103f29c1770ebc22b801e5b4bbf8fa
-versionCode  26
+path         build/app/outputs/bundle/release/Aura-1.4.0+27-release.aab
+size         79,924,075 bytes
+sha256       2c52c13b6ff01eb3ab80906267db6e18d3ac3918754a3273d8e1695e88b34686
+versionCode  27
 versionName  1.4.0
 ```
 
-Permissions in its merged manifest — the reason this build exists:
+Permissions in its merged manifest — read out of the shipped artifact, not
+the source file, because the merger is what Play actually reads:
 
 ```
 ACCESS_NETWORK_STATE  BLUETOOTH  BLUETOOTH_CONNECT  CAMERA  INTERNET
 MODIFY_AUDIO_SETTINGS  POST_NOTIFICATIONS  RECORD_AUDIO
 USE_FULL_SCREEN_INTENT  WAKE_LOCK
 ```
+
+No `FOREGROUND_SERVICE*` and no `android:foregroundServiceType` — checked in
+the merged manifest, where the only remaining occurrences of those words are
+inside the comment explaining their removal.
 
 No `FOREGROUND_SERVICE*`. `USE_FULL_SCREEN_INTENT` stays, because it is really
 used — one call site, `IncomingCallPresenter.setFullScreenIntent` on a
