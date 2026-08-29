@@ -1,6 +1,12 @@
 # Aura 1.4.0 — Store Release Notes (public-facing)
 
-Version `1.4.0+25`, client commit `b73e8a1`.
+Version `1.4.0+26`, client commit `b73e8a1` for everything under `lib/`.
+
+The build number moved 25 → 26 for one reason: version code 25 declared
+three foreground-service permissions the app never uses, and Google Play
+will not accept a release carrying them without a declaration describing a
+task Aura does not perform. 26 removes them. Nothing else about the app
+changed, so every line below still describes 26 exactly as it described 25.
 
 Written to the same shape as `RELEASE_NOTES_1.3.0_STORE.md`: what a person
 gets, in the words they would use for it. No internal names, no defect
@@ -65,3 +71,59 @@ NOT WRITTEN YET, and deliberately so. iOS certification currently returns
 `VERDICT=INCOMPLETE` (zero failures, one suite with no coverage) and the
 last run predates this release entirely. Store copy for a build that has
 not been certified would be asserting something we have not established.
+
+---
+
+## Release artifacts — what to upload, and how to know it is the right file
+
+Recorded here because both remaining uploads are manual, and "the right file"
+is a question a hash answers and a filename does not.
+
+### Windows — Microsoft Store
+
+```
+path    build/windows/x64/runner/Release/aura.msix
+size    32,798,941 bytes
+sha256  9185bbacb15d07de1eb66a91cbd8de430d9a62c6d236480dde657b23169714ca
+sha1    e7728371501202719b4bdb256766d1ddc7f611af
+```
+
+Package identity, read from the AppxManifest inside it:
+
+```
+Name                   AuraPlatformLLC.AURAPLATFORM
+Version                1.4.0.0
+ProcessorArchitecture  x64
+Publisher              CN=3E4027A7-4D4D-4492-B8DE-BBE425E307E5
+PublisherDisplayName   Aura Platform LLC
+```
+
+`1.4.0.0` is the point: the submission that was refused carried `1.3.0.0`, the
+same full name as the package already in the Store with different contents.
+Submission 11 currently still holds that 1.3.0.0 package, so it must be
+replaced, not merely submitted.
+
+### Android — Google Play
+
+```
+path         build/app/outputs/bundle/release/Aura-1.4.0+26-release.aab
+size         79,921,983 bytes
+sha256       1635d213d1074b20bc600f21abe68382d7103f29c1770ebc22b801e5b4bbf8fa
+versionCode  26
+versionName  1.4.0
+```
+
+Permissions in its merged manifest — the reason this build exists:
+
+```
+ACCESS_NETWORK_STATE  BLUETOOTH  BLUETOOTH_CONNECT  CAMERA  INTERNET
+MODIFY_AUDIO_SETTINGS  POST_NOTIFICATIONS  RECORD_AUDIO
+USE_FULL_SCREEN_INTENT  WAKE_LOCK
+```
+
+No `FOREGROUND_SERVICE*`. `USE_FULL_SCREEN_INTENT` stays, because it is really
+used — one call site, `IncomingCallPresenter.setFullScreenIntent` on a
+`CallStyle.forIncomingCall` notification — and its Play declaration is answered:
+core functionality *Making and receiving calls*, pre-grant opt-in *No*, since
+the client already degrades to a heads-up notification where the permission is
+not granted and opting in would add a second Google review to this release.
