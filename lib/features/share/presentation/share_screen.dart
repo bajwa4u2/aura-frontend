@@ -39,6 +39,7 @@ import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/composition/attachment_lifecycle.dart';
 import '../../../core/composition/composition_authority.dart';
 import '../../../core/distribution/aura_destination.dart';
+import '../../../core/distribution/feed_draft_publisher.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/media/attachment.dart';
 import '../../../core/media/aura_composition_strip.dart';
@@ -77,6 +78,15 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
   bool _busy = false;
   bool _sending = false;
 
+  /// The draft this share owns, once it has one.
+  ///
+  /// Kept across a failed publish so a retry continues with the SAME draft.
+  /// Creating a second would leave the first behind as a stray DRAFT, and
+  /// `getLatestHeld` returns the most recently updated DRAFT -- so the stray
+  /// would become what Compose resumed the next time it opened.
+  String? _feedDraftId;
+  bool _published = false;
+
   int get _remainingSlots => kMaxComposableMedia - _attachments.length;
   bool get _hasContent => _attachments.isNotEmpty;
 
@@ -96,6 +106,15 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
 
   @override
   void dispose() {
+    // A DRAFT THIS SHARE CREATED AND NEVER PUBLISHED MUST NOT OUTLIVE IT.
+    //
+    // `getLatestHeld` returns the most recently updated DRAFT, so a row left
+    // behind here would be what Compose resumed next -- the same collision in
+    // the other direction. Named by id, best effort, and never a broad clear.
+    final stray = _feedDraftId;
+    if (stray != null && !_published) {
+      unawaited(FeedDraftPublisher(ref.read(dioProvider)).discardDraft(stray));
+    }
     _context.dispose();
     super.dispose();
   }
@@ -252,18 +271,21 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
     required String text,
     required List<String> mediaIds,
   }) async {
-    final dio = ref.read(dioProvider);
-    // The feed's publication authority works through the author's ONE held
-    // draft: upsert it, then publish it. Share uses that same path rather
-    // than a private endpoint, which is what keeps one publication authority.
-    await dio.put('/posts/draft', data: <String, dynamic>{
-      'text': text,
-      'media': [
-        for (var i = 0; i < mediaIds.length; i++)
-          {'mediaId': mediaIds[i], 'position': i, 'caption': null},
-      ],
-    });
-    await dio.post('/posts/draft/publish');
+    // THIS SHARE PUBLISHES ITS OWN DRAFT, NEVER "THE" DRAFT.
+    //
+    // The first version wrote `PUT /posts/draft` and `POST
+    // /posts/draft/publish`, both keyed by author alone -- so somebody with an
+    // unfinished post in Compose who then shared a photograph would have had
+    // that unfinished post REPLACED by the photograph and published in its
+    // place.
+    final publisher = FeedDraftPublisher(ref.read(dioProvider));
+    final draftId = _feedDraftId ??= await publisher.createDraft();
+    await publisher.publish(
+      draftId: draftId,
+      text: text,
+      mediaIds: mediaIds,
+    );
+    _published = true;
   }
 
   void _say(String message) {

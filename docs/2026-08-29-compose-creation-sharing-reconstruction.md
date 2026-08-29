@@ -380,3 +380,86 @@ Five anti-drift gates caught the new surface. All satisfied, none bypassed:
 | Phase-1 flows | UNVERIFIED_PENDING_DEPLOY/DEVICE |
 
 Re-upload: none. Second draft model: none.
+
+
+---
+
+## 9. THE HELD-DRAFT COLLISION (found and repaired before device testing)
+
+### The defect
+
+Share's first Feed path was:
+
+```
+PUT  /posts/draft          // overwrite whatever is held
+POST /posts/draft/publish  // publish whatever is held
+```
+
+Both are keyed by AUTHOR. So somebody holding an unfinished post in Compose,
+who then shared a photograph, would have had **their unfinished post replaced
+by the photograph and published in its place.**
+
+### Root cause
+
+Every draft operation in `posts.service` resolves by author alone —
+`getLatestHeld(userId)`, `saveLatestHeld(userId)`, `publishLatestHeld(userId)`,
+`clearLatestHeld(userId)`. One draft per person, by construction. Two creation
+intentions collapsed into one row because the endpoint's key was the author
+rather than the draft.
+
+**AND IT RUNS BOTH WAYS.** `getLatestHeld` selects the most recently updated
+DRAFT, so a Share draft left behind becomes what Compose resumes next time —
+Share silently inheriting Compose's chair.
+
+### The fix: identity, not a second model
+
+**No schema change, no migration, no `ShareDraft`.** The same service already
+exposed an identity-addressed path that nothing was using:
+
+```
+POST /posts/held        -> creates a NEW row, returns its id
+PUT  /posts/:id         -> updates THAT draft
+POST /posts/:id/publish -> publishes THAT post
+DELETE /posts/:id       -> removes THAT draft
+```
+
+`FeedDraftPublisher` uses only these. It has **no method that resolves the
+caller's draft** — `publish` requires a `draftId` and throws without one, so
+publishing the wrong draft is not something care at the call site prevents; it
+is unreachable.
+
+### Ownership rules
+
+| Event | What happens |
+|---|---|
+| publish | that draft id only |
+| retry after failure | **the same** draft id, kept on the screen |
+| leave with an unpublished draft | that id deleted, best effort, named |
+| any failure | Compose's draft untouched — never addressed |
+
+`discardDraft` names one id. There is no `clearCurrentDraft()` here, because a
+broad clear is exactly how one creation context destroys another's.
+
+### Legacy drafts
+
+Untouched. No migration was required precisely because no schema changed:
+existing held drafts remain the author's single Compose draft, reached by the
+unchanged `GET /posts/draft`. Share simply stops competing for that row.
+
+### Control tests
+
+`test/distribution/feed_draft_publisher_test.dart` — 30 tests, and the first
+group proves the guard is a control rather than a description: it runs the OLD
+sequence (`PUT /posts/draft`, `POST /posts/draft/publish`) through the same
+predicate and asserts it IS flagged. Without that, every other assertion could
+pass against the very defect they exist to prevent.
+
+The predicate matches paths **exactly**: `/posts/draft` is a prefix of
+`/posts/draft_share_1`, and a `contains` check reported a correctly
+id-addressed call as a singleton one — a guard against a dangerous path
+flagging the safe path instead.
+
+### Status
+
+**HELD_DRAFT_COLLISION = STRUCTURALLY_CONVERGED.** Device proof still owed for
+the human flows.
