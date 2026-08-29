@@ -37,6 +37,7 @@ import '../../../core/product/product_language.dart';
 import '../application/meeting_session_adapter.dart';
 import 'meeting_semantics.dart';
 import 'widgets/meeting_room_controls.dart';
+import '../../../core/auth/session_bootstrap.dart';
 
 // E1 — MeetingTransportBridge: sole interface between meeting UI and WebRTC layer.
 // All mic/camera/screen operations from meeting widgets MUST go through this bridge.
@@ -834,7 +835,21 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     final guestId = (widget.guestUserId ?? '').trim();
     if (guestId.isNotEmpty) {
       final tokenStore = ref.read(tokenStoreProvider);
-      if (!tokenStore.isAuthed) {
+
+      // SEE guest_waiting_room_screen._ensureGuestAuth FOR THE FULL NOTE.
+      // On web a member's session is an HttpOnly cookie, so `isAuthed` is
+      // false until `/auth/refresh` settles. Minting a guest token in that
+      // window overwrites a member's account session with one that is never
+      // refreshed -- unrecoverable without signing in again. This screen is
+      // reached from a THREAD CALL too (realtime hands off to
+      // `/meetings/:id/live`), so the window is not hypothetical: it is
+      // where members were losing their session mid-call.
+      try {
+        await ref.read(sessionBootstrapProvider.future);
+      } catch (_) {}
+      if (!mounted) return;
+
+      if (!tokenStore.isMemberSession && !tokenStore.isAuthed) {
         try {
           final repo = ref.read(meetingsRepositoryProvider);
           final guestAuth = await repo.exchangeGuestAuth(guestId);

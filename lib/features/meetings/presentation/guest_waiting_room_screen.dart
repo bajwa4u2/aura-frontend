@@ -11,6 +11,7 @@ import '../../../core/ui/guest_shell.dart';
 import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
 import 'meeting_lifecycle_presenter.dart';
+import '../../../core/auth/session_bootstrap.dart';
 
 class GuestWaitingRoomScreen extends ConsumerStatefulWidget {
   final String meetingId;
@@ -76,9 +77,29 @@ class _GuestWaitingRoomScreenState
   Future<void> _ensureGuestAuth() async {
     final tokenStore = ref.read(tokenStoreProvider);
     await tokenStore.load();
+
+    // A MEMBER'S SESSION IS NOT RESTORED FROM STORAGE ON WEB.
+    //
+    // It lives in an HttpOnly cookie, so `load()` cannot see it and
+    // `isAuthed` reads FALSE for a signed-in member until `/auth/refresh`
+    // has run. The old guard asked in exactly that window, and a member
+    // arriving here mid-call was handed a GUEST token on top of their own
+    // account session. There is no way back from that: refresh-on-401 is
+    // deliberately skipped for guest tokens, so they are stranded
+    // signed-out until they sign in by hand -- which is what "auth gone"
+    // looked like from the outside.
+    //
+    // Absence of a token is not evidence of not being a member. Settle the
+    // session question first, then ask it.
+    try {
+      await ref.read(sessionBootstrapProvider.future);
+    } catch (_) {}
+    if (!mounted) return;
+
     // If the token was wiped (e.g. page refresh on web clears the in-memory
     // token), re-exchange using the guestId URL param which survives reloads.
     final guestId = (widget.guestId ?? '').trim();
+    if (tokenStore.isMemberSession) return;
     if (!tokenStore.isAuthed && guestId.isNotEmpty) {
       try {
         final repo = ref.read(meetingsRepositoryProvider);

@@ -2658,12 +2658,39 @@ final routerProvider = Provider<GoRouter>((ref) {
               rawToken.isNotEmpty && !isGuestAccessToken(rawToken);
           final hasHint = await hasSessionHint();
           if (!hasMemberToken && !hasHint) {
+            // A CALL IS NOT A MEETING, AND A TOKENLESS VISITOR IS NOT A GUEST.
+            //
+            // This branch used to send EVERY sessionless visitor to
+            // `/meetings/join`, on the premise stated above -- that anyone
+            // without a token on `/realtime/` is "always a misrouted meeting
+            // guest". That was true when `/realtime/` meant meetings. Thread
+            // and conversation calls live here too, so the premise now
+            // misfires on the people it was written to protect: a member of a
+            // CONVERSATION call whose session cannot be read is handed a
+            // meeting code-entry screen, asked for a code that does not exist
+            // and never will, under a "Sign in | Join" header. Founder-
+            // observed 2026-08-29 during a four-person thread call.
+            //
+            // The meeting-guest reading is kept where there is actual
+            // evidence for it -- a `code` in the address (a `guestId` is
+            // already handled by the hard block above). Absence of a token is
+            // not that evidence. Everyone else is sent to sign in and
+            // returned to the call they were trying to reach.
+            if (code.isNotEmpty) {
+              debugPrint(
+                '[killswitch] realtime->join (meeting code, no session)'
+                ' from=${state.uri} sessionId=$sessionId code=$code'
+                ' screen=RealtimeRoomScreen',
+              );
+              return '/meetings/join';
+            }
+            final encoded = Uri.encodeComponent(state.uri.toString());
             debugPrint(
-              '[killswitch] realtime->join (no session)'
+              '[killswitch] realtime->login (no session)'
               ' from=${state.uri} sessionId=$sessionId'
               ' screen=RealtimeRoomScreen',
             );
-            return '/meetings/join';
+            return '/login?redirect=$encoded';
           }
           return null;
         },
