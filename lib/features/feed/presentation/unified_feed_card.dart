@@ -89,7 +89,21 @@ class UnifiedFeedCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentPath = GoRouterState.of(context).uri.path;
+    // NOT `GoRouterState.of(context)`, WHICH IS NOT A PLAIN INHERITED READ.
+    //
+    // It resolves which route match the CALLING ELEMENT belongs to, through
+    // the route-state registry. Once per feed row that pegged the main thread
+    // at 100% and the app stopped responding -- founder-observed 2026-08-29,
+    // and located by stage markers inside this build: the trace entered the
+    // first card and never reached the next statement. Every worker thread
+    // was idle, so it was neither image decode nor a rebuild storm (fewer
+    // than fifty builds); it was this one call, per card.
+    //
+    // The card only wants the address currently being displayed, which is a
+    // property of the router, not of this element's position in it. The
+    // delegate already holds it, and reading it is a plain lookup.
+    final currentPath =
+        GoRouter.of(context).routerDelegate.currentConfiguration.uri.path;
     final adaptedTarget = FeedRouting.adaptTargetRoute(
       item.targetRoute,
       currentPath: currentPath,
