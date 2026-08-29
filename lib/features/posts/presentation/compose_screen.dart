@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/content_policy/content_length_policy.dart';
@@ -17,7 +18,11 @@ import '../../../core/tagging/tag_entities.dart';
 import '../../../core/tagging/tag_text_hydration.dart';
 import '../../../core/compliance/objectionable_content.dart';
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/distribution/destination_capability.dart';
 import '../../../core/link_preview/compose_link_detector.dart';
+import '../../../core/media/local_video_source_stub.dart'
+    if (dart.library.io) '../../../core/media/local_video_source_io.dart'
+    if (dart.library.html) '../../../core/media/local_video_source_web.dart';
 import '../../../core/link_preview/internal_reference_card.dart';
 import '../../../core/rich_content/rich_paste_field.dart';
 import '../../../core/link_preview/link_preview.dart';
@@ -302,6 +307,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   DateTime? _lastSavedAt;
   Timer? _autosaveDebounce;
 
+  DestinationCapability _tiktok = const DestinationCapability(
+      id: 'tiktok', label: 'TikTok', state: DestinationState.temporarilyUnavailable);
+  DestinationCapability _linkedin = const DestinationCapability(
+      id: 'linkedin', label: 'LinkedIn', state: DestinationState.temporarilyUnavailable);
+
   bool _tiktokLoading = false;
   final bool _tiktokActionBusy = false;
   bool _publishToTikTok = false;
@@ -513,6 +523,77 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         : TextAlign.left;
   }
 
+  /// How big the picked file is, or null when the platform will not say.
+  ///
+  /// Null means UNKNOWN, and intake treats unknown as "do not judge on size"
+  /// rather than as zero -- refusing a file because the platform declined to
+  /// measure it would turn a missing fact into a rejection.
+  Future<int?> _measureFileSize(XFile file) async {
+    try {
+      final length = await file.length();
+      return length >= 0 ? length : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// WHAT A VIDEO IS, MEASURED BEFORE IT LEAVES THE DEVICE.
+  ///
+  /// THE MISSING PRODUCER (2026-08-29). `Attachment.durationMs`, `width` and
+  /// `height` are read all over the product -- `aura_video_surface` renders a
+  /// duration label, layouts size themselves from the aspect ratio, the upload
+  /// sends all three -- and NOTHING EVER WROTE THEM FOR VIDEO. `_addPickedFile`
+  /// populated dimensions only `if (type == AttachmentKind.image)`, and the
+  /// upload then read them back as
+  ///
+  ///     width:    attachment.isImage ? attachment.width : null,
+  ///     duration: attachment.isVideo ? attachment.durationMs : null,
+  ///
+  /// so every recorded video arrived at storage with no dimensions, no
+  /// duration and nothing for a poster to be laid out against. The file was
+  /// intact; the CONTENT IDENTITY was not. That is why a video that uploaded
+  /// successfully still rendered as broken -- upload success was never content
+  /// success.
+  ///
+  /// Measured locally rather than inferred later: the person is holding the
+  /// device that just made this file, and the same facts recovered server-side
+  /// after the fact would arrive too late to lay the composer out with.
+  ///
+  /// BEST EFFORT BY CONSTRUCTION. A platform without video playback support,
+  /// a codec the decoder declines, a file the OS has already reclaimed -- none
+  /// of those may cost the person their capture. Failure returns null and the
+  /// attachment proceeds exactly as it does today, which is the current
+  /// behaviour and therefore cannot regress it.
+  Future<void> _probeVideoIdentity(Attachment attachment, XFile file) async {
+    VideoPlayerController? controller;
+    try {
+      // The platform abstraction this codebase already uses for local video
+      // (`aura_video_surface` resolves the same one). Reaching for `dart:io`
+      // here would have compiled cleanly, passed analysis, and broken the WEB
+      // build -- a platform the release must ship.
+      controller = localVideoController(file.path);
+      if (controller == null) return;
+      await controller.initialize().timeout(const Duration(seconds: 8));
+      final v = controller.value;
+      final ms = v.duration.inMilliseconds;
+      if (ms > 0) attachment.durationMs = ms;
+      final size = v.size;
+      if (size.width > 0 && size.height > 0) {
+        // ROTATION IS PART OF THE SHAPE, NOT A DETAIL. A phone recording in
+        // portrait reports a landscape natural size with a 90-degree rotation,
+        // and laying it out from the raw numbers produces a sideways letterbox
+        // in every feed it reaches.
+        final quarterTurned = v.rotationCorrection == 90 || v.rotationCorrection == 270;
+        attachment.width = (quarterTurned ? size.height : size.width).round();
+        attachment.height = (quarterTurned ? size.width : size.height).round();
+      }
+    } catch (_) {
+      // Unmeasurable is not unusable.
+    } finally {
+      await controller?.dispose();
+    }
+  }
+
   Future<Map<String, int>?> _decodeImageSize(Uint8List bytes) async {
     final codec = await ui.instantiateImageCodec(bytes);
     final frame = await codec.getNextFrame();
@@ -664,21 +745,47 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         throw Exception('User id is missing.');
       }
 
-      final results = await Future.wait<dynamic>([
-        _safeGet(dio, '/integrations/tiktok/account'),
-        _safeGet(dio, '/integrations/linkedin/account'),
+      // A PROBE REPORTS WHAT HAPPENED. IT DOES NOT ANSWER FOR THE PROVIDER.
+      //
+      // These used to go through `_safeGet`, which returns null on ANY failure
+      // -- and null then became `connected = false`, which removed the
+      // destination from the composer entirely. A dropped request, an expired
+      // token, a 500 and a genuinely unconnected account were one answer, so
+      // whether LinkedIn appeared depended on whether a transient GET
+      // succeeded. That is the "does not feel deterministic" defect, exactly.
+      final probes = await Future.wait<_ProviderProbe>([
+        _probeProvider(dio, '/integrations/tiktok/account'),
+        _probeProvider(dio, '/integrations/linkedin/account'),
       ]);
 
-      final tiktokAccount = _unwrapTikTokAccount(results[0]?.data);
-      final linkedinAccount = _unwrapLinkedInAccount(results[1]?.data);
+      final tiktokAccount = _unwrapTikTokAccount(probes[0].data);
+      final linkedinAccount = _unwrapLinkedInAccount(probes[1].data);
 
       if (!mounted) return;
 
       setState(() {
-        _tiktokConnected = _readTikTokConnected(tiktokAccount);
-        _tiktokAccountLabel = _readTikTokAccountLabel(tiktokAccount);
-        _linkedinConnected = _readLinkedInConnected(linkedinAccount);
-        _linkedinAccountLabel = _readLinkedInAccountLabel(linkedinAccount);
+        _tiktok = _resolveDestination(
+          id: 'tiktok',
+          label: 'TikTok',
+          probe: probes[0],
+          connected: _readTikTokConnected(tiktokAccount),
+          accountLabel: _readTikTokAccountLabel(tiktokAccount),
+          // TikTok publishes video. A composition without one cannot go there,
+          // and saying so beats offering an action that will fail.
+          contentSupported: _hasTikTokVideo,
+          unsupportedDetail: 'TikTok needs a video in this post',
+        );
+        _linkedin = _resolveDestination(
+          id: 'linkedin',
+          label: 'LinkedIn',
+          probe: probes[1],
+          connected: _readLinkedInConnected(linkedinAccount),
+          accountLabel: _readLinkedInAccountLabel(linkedinAccount),
+        );
+        _tiktokConnected = _tiktok.isPublishable;
+        _tiktokAccountLabel = _tiktok.accountLabel;
+        _linkedinConnected = _linkedin.isPublishable;
+        _linkedinAccountLabel = _linkedin.accountLabel;
       });
     } catch (e) {
       if (!mounted) return;
@@ -694,6 +801,56 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         });
       }
     }
+  }
+
+  /// One provider read, with the FAILURE KEPT rather than discarded.
+  Future<_ProviderProbe> _probeProvider(Dio dio, String path) async {
+    try {
+      final res = await dio.get(path);
+      return _ProviderProbe(reachable: true, data: res.data);
+    } on DioException catch (e) {
+      final code = e.response?.statusCode ?? 0;
+      // 401/403 mean the provider ANSWERED and refused this authorisation --
+      // that is a reconnect, not an absence, and it is the case that used to
+      // make a destination the person deliberately connected disappear.
+      if (code == 401 || code == 403) {
+        return const _ProviderProbe(reachable: true, authorisationValid: false);
+      }
+      // 404 is a real "no such connection".
+      if (code == 404) return const _ProviderProbe(reachable: true);
+      // Anything else -- offline, timeout, 5xx -- is us failing to ask.
+      return const _ProviderProbe(reachable: false);
+    } catch (_) {
+      return const _ProviderProbe(reachable: false);
+    }
+  }
+
+  DestinationCapability _resolveDestination({
+    required String id,
+    required String label,
+    required _ProviderProbe probe,
+    required bool connected,
+    required String accountLabel,
+    bool contentSupported = true,
+    String? unsupportedDetail,
+  }) {
+    final state = destinationStateFromProbe(
+      reachable: probe.reachable,
+      // A refused authorisation still means an account IS connected; it is the
+      // token that is stale. Treating it as unconnected is what erased it.
+      connected: connected || !probe.authorisationValid,
+      authorisationValid: probe.authorisationValid,
+      contentSupported: contentSupported,
+    );
+    return DestinationCapability(
+      id: id,
+      label: label,
+      state: state,
+      accountLabel: accountLabel,
+      detail: state == DestinationState.unsupportedContent
+          ? unsupportedDetail
+          : null,
+    );
   }
 
   Future<Response<dynamic>?> _safeGet(
@@ -1230,9 +1387,20 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     // later and fell back to `application/octet-stream`, which the server's
     // allow-list refuses at presign. The attachment appeared in the composer,
     // climbed, and failed late.
+    // SIZE IS PART OF THE DOOR, AND IT WAS BEING SKIPPED.
+    //
+    // `resolveFile` refuses an empty file and an oversized one -- but both
+    // checks are guarded by `sizeBytes != null`, and this call never passed
+    // it. So a zero-byte capture (a cancelled recording, a camera that failed
+    // after creating its file, an OS that reclaimed the temp file early)
+    // sailed through intake, appeared in the composition, uploaded, and failed
+    // somewhere further down where the person could no longer tell what went
+    // wrong. The same silence covered files past the size ceiling.
+    final int? sizeBytes = await _measureFileSize(file);
     final resolution = ContentIntake.resolveFile(
       path: IntakePath.picker,
       file: file,
+      sizeBytes: sizeBytes,
       source: source,
     );
     final attachment = resolution.attachment;
@@ -1268,6 +1436,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         attachment.width = size?['width'];
         attachment.height = size?['height'];
       } catch (_) {}
+    } else if (type == AttachmentKind.video) {
+      // A recorded video is measured here for the same reason a photograph is
+      // decoded here: so the composition knows what it is holding before it
+      // asks anyone else.
+      await _probeVideoIdentity(attachment, file);
     }
     attachment.uploading = true;
     attachment.attachedToDraft = false;
@@ -1322,8 +1495,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       originalMimeType: attachment.originalMimeType,
       kind: wireKind(attachment.kind),
       source: wireSource(attachment.source),
-      width: attachment.isImage ? attachment.width : null,
-      height: attachment.isImage ? attachment.height : null,
+      // NOT `isImage ? … : null`. Dimensions were nulled for video because
+      // nothing measured them; measuring them and then discarding them at the
+      // door would be the same defect wearing a different hat.
+      width: attachment.width,
+      height: attachment.height,
       duration: attachment.isVideo ? attachment.durationMs : null,
       metadataPatch: <String, dynamic>{
         'caption': captionText.isEmpty ? null : captionText,
@@ -3498,4 +3674,24 @@ class _IntentChip extends StatelessWidget {
       ),
     );
   }
+}
+
+/// What one provider read actually reported.
+///
+/// Deliberately not a bool: the difference between "the provider said no" and
+/// "we could not reach the provider" is the whole defect this replaces.
+class _ProviderProbe {
+  const _ProviderProbe({
+    required this.reachable,
+    this.authorisationValid = true,
+    this.data,
+  });
+
+  /// Did we get an answer at all?
+  final bool reachable;
+
+  /// Did the provider refuse this authorisation (401/403)?
+  final bool authorisationValid;
+
+  final dynamic data;
 }

@@ -450,6 +450,20 @@ that call himself, so whether the client would eventually have self-recovered
 is UNTESTED. What is established is only that it did not do so promptly, and
 that a manual rejoin was what actually restored the call.
 
+**`STRANDED_SWEEP_ALWAYS_THROWS`** — OPEN, medium. Seen in media-worker logs
+on EVERY session end, going back through the whole evening:
+
+```
+WARN [CorrespondenceOrchestratorService] stranded.sweep_failed
+     sessionId=… message=Cannot read properties of undefined (reading 'to')
+```
+
+It is caught and logged, so nothing visibly breaks -- which is exactly why it
+has survived. A sweep that throws on every single invocation is not doing the
+work it exists to do, and `reading 'to'` on an undefined receiver looks like a
+socket/room handle that is absent in the worker process. Unrelated to the
+realtime repairs; found while reading logs for something else.
+
 **`RECONNECT_PATIENCE_IS_NOT_SHARED`** — OPEN, HIGH, and it caps the value of
 everything above. Founder-observed: during the outage the client "was
 redirected to error/retry almost after 25 sec". The arithmetic is exact —
