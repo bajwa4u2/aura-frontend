@@ -206,6 +206,26 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     if (_chromeVisible) _armChromeTimer();
   }
 
+  /// BRING IT BACK WITHOUT REQUIRING A TAP ON THE PICTURE.
+  ///
+  /// Founder, 2026-08-29: "its collapsing in pixel and coming back but on
+  /// browser its just gone never back". On web the video is a platform view —
+  /// an HTML element — and pointer events over it do not reach Flutter's
+  /// detector, so the tap that restores the chrome on Android never arrives
+  /// in a browser. A person was left with no way back to the controls, which
+  /// is far worse than chrome that never yielded in the first place.
+  ///
+  /// Movement is the right signal on a pointer device regardless: that is how
+  /// every desktop video surface behaves, and it does not require guessing
+  /// that the picture is tappable. Only touches state when something actually
+  /// changes, so a moving mouse does not rebuild the call on every frame.
+  void _revealChrome() {
+    if (!_chromeVisible) {
+      setState(() => _chromeVisible = true);
+    }
+    if (_chromeArmed) _armChromeTimer();
+  }
+
 
   // Captured at first didChangeDependencies so dispose() can emit a best-effort
   // leave without using `ref` (which throws once the State is being disposed).
@@ -1077,7 +1097,15 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         // / home indicator. Wrap the whole call surface in SafeArea so the
         // top bar and the control dock are never drawn under system UI on
         // iOS/Android (and under the title bar on a windowed desktop build).
-        body: SafeArea(
+        // Wraps the WHOLE call surface, chrome included, so the collapsed
+        // strip at top and bottom is still live area: a pointer arriving
+        // anywhere brings the controls back. `opaque: false` keeps it out of
+        // the way of everything underneath.
+        body: MouseRegion(
+          opaque: false,
+          onHover: (_) => _revealChrome(),
+          onEnter: (_) => _revealChrome(),
+          child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
               final wide = constraints.maxWidth >= 860;
@@ -1294,6 +1322,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                 ],
               );
             },
+          ),
           ),
         ),
       ),
