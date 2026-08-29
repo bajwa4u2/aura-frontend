@@ -88,7 +88,27 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '  listen       ${PORT};' \
 '  listen  [::]:${PORT};' \
 '  server_name  app.auraplatform.org www.auraplatform.org;' \
-'  return 301 https://auraplatform.org$request_uri;' \
+'' \
+'  # ANDROID APP LINKS ARE VERIFIED AGAINST THE HOST THAT WAS TAPPED.' \
+'  #' \
+'  # The manifest declares BOTH auraplatform.org and app.auraplatform.org,' \
+'  # and Android fetches /.well-known/assetlinks.json from each WITHOUT' \
+'  # following redirects. This block answered 301 for every path, so the' \
+'  # file was unreachable on app.* and that domain could never verify --' \
+'  # Play reported "2 domains not verified", and a tapped legacy link' \
+'  # opened a browser instead of the app.' \
+'  #' \
+'  # Serving one static file is NOT a second origin: no application is' \
+'  # served, no cookie set, nothing same-origin granted. Every other path' \
+'  # still redirects, so the canonical-origin rule above stands.' \
+'  location = /.well-known/assetlinks.json {' \
+'    root /usr/share/nginx/html;' \
+'    default_type application/json;' \
+'  }' \
+'' \
+'  location / {' \
+'    return 301 https://auraplatform.org$request_uri;' \
+'  }' \
 '}' \
 '' \
 'server {' \

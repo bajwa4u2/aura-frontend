@@ -7,8 +7,7 @@
       "namespace": "android_app",
       "package_name": "org.auraplatform.app",
       "sha256_cert_fingerprints": [
-        "REPLACE_WITH_UPLOAD_KEY_SHA256_FINGERPRINT",
-        "REPLACE_WITH_PLAY_APP_SIGNING_SHA256_FINGERPRINT"
+        "84:39:92:54:A2:A1:CA:65:E2:35:17:4D:06:DF:EA:73:2A:B2:28:BB:B9:1A:1C:E9:3F:D8:1B:24:E3:6D:7B:8C"
       ]
     }
   }
