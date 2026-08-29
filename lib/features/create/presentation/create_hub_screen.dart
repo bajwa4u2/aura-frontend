@@ -158,6 +158,19 @@ class CreateHubScreen extends ConsumerWidget {
             cardWidth: 260,
             gap: AuraSpace.s12,
             cards: [
+              // SHARE IS FIRST BECAUSE IT IS THE MOST COMMON INTENTION AND
+              // THE MOST TIME-SENSITIVE. Somebody holding a photograph they
+              // want to send is not browsing a menu of ways to write.
+              //
+              // It is a card here rather than a navigation destination on
+              // purpose: this hub already asks "what do you want to make?",
+              // and Share is a new answer to that question, not a new place.
+              _CreateCard(
+                title: 'Share',
+                subtitle: 'A photo or video, straight to a feed or a person.',
+                icon: Icons.camera_alt_outlined,
+                onTap: (ctx) => ctx.push('/share'),
+              ),
               _CreateCard(
                 title: 'Message',
                 subtitle: 'Talk to someone. Add more people whenever you like.',

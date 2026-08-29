@@ -25,8 +25,22 @@ void main() {
     return titles.join('·');
   }
 
-  test('visible Create cards are exactly Message · Post · Announcement', () {
-    expect(cardTitles(), 'Announcement·Article·Message·Post');
+  test('visible Create cards are exactly Share · Message · Post · Announcement',
+      () {
+    // SHARE ADDED 2026-08-29 BY FOUNDER RULING, not by drift.
+    //
+    // The frozen vocabulary was Message · Post · Article-when-real ·
+    // contextual Announcement, and this gate exists so a card cannot appear
+    // because some feature wanted a doorway. Share is a new CREATION
+    // INTENTION rather than a new tenant: "I have something I want to share"
+    // sits beside "I want to say something", and the ruling that added it
+    // also fixed its placement (first) and its name (Share, not "Photo or
+    // video" -- photo and video are today's acquisition capabilities, not the
+    // product boundary).
+    //
+    // The bans below are unchanged and still hold: Invitation, Institution,
+    // Conversation and Write remain out.
+    expect(cardTitles(), 'Announcement·Article·Message·Post·Share');
   });
 
   test('banned Create tenants stay out', () {

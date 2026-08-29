@@ -30,6 +30,7 @@
 /// turns a selection into an ORDERED list of intake resolutions and stops.
 library;
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 
 import '../composition/content_intake.dart';
@@ -62,6 +63,74 @@ class MediaAcquisition {
   final int droppedForLimit;
 
   bool get isEmpty => resolutions.isEmpty && droppedForLimit == 0;
+}
+
+/// Whether this platform can capture rather than only choose.
+///
+/// The web has no in-process camera through `image_picker`; a browser file
+/// input with `capture` is the OS picker wearing a different hat, and
+/// pretending otherwise puts a "Take photo" button in front of somebody who
+/// will get a file browser.
+bool get supportsCameraCapture => !kIsWeb;
+
+/// Capture ONE photograph.
+///
+/// THE CLAIM THIS MAKES TRUE. The header above has always said camera
+/// converges here, and there was no camera function in this file at all --
+/// so every composer reached for `ImagePicker` directly and applied its own
+/// intake, its own ceiling and its own idea of what a capture is. The
+/// composer's own file called five different picker APIs.
+///
+/// Capture is singular on purpose: a camera returns one thing at a time, and
+/// modelling it as a degenerate multi-select would invent a plural the device
+/// never offers.
+Future<MediaAcquisition> capturePhoto({
+  required int remainingSlots,
+  ImagePicker? picker,
+}) =>
+    _capture(
+      remainingSlots: remainingSlots,
+      take: (p) => p.pickImage(source: ImageSource.camera),
+      picker: picker,
+    );
+
+/// Record ONE video.
+///
+/// [maxDuration] is a product ceiling rather than a device limit: past it a
+/// share stops being a moment and becomes an upload the person waits on.
+Future<MediaAcquisition> captureVideo({
+  required int remainingSlots,
+  Duration maxDuration = const Duration(seconds: 60),
+  ImagePicker? picker,
+}) =>
+    _capture(
+      remainingSlots: remainingSlots,
+      take: (p) => p.pickVideo(source: ImageSource.camera, maxDuration: maxDuration),
+      picker: picker,
+    );
+
+Future<MediaAcquisition> _capture({
+  required int remainingSlots,
+  required Future<XFile?> Function(ImagePicker) take,
+  ImagePicker? picker,
+}) async {
+  if (remainingSlots <= 0) {
+    return const MediaAcquisition(resolutions: [], droppedForLimit: 0);
+  }
+  final file = await take(picker ?? ImagePicker());
+  // Cancelling the camera is a decision, not a failure. It contributes
+  // nothing and says nothing.
+  if (file == null) {
+    return const MediaAcquisition(resolutions: [], droppedForLimit: 0);
+  }
+  return resolveAcquired(
+    files: [file],
+    remainingSlots: remainingSlots,
+    // The SOURCE is the one thing capture must not lose. It is what lets a
+    // preview offer "Retake" rather than "Remove", and what provenance reads
+    // to say this was made here rather than chosen from a library.
+    source: AttachmentSource.camera,
+  );
 }
 
 /// Pick several media items — images, videos, or a mix — in one selection.

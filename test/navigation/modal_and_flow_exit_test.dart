@@ -100,7 +100,15 @@ void main() {
     // addressable identity of its own: it is an inspection OF an object the
     // person is already looking at, so a URL that reopened it would be asking
     // for a disclosure with no object behind the request.
-    expect(full, 17,
+    // 18th member added 2026-08-29 by the Share chapter:
+    // `features/share/presentation/share_screen.dart` — the conversation
+    // picker. Reclassified against §6 rather than having the number bumped:
+    // it BEHAVES as a sheet — transient, dismissed by dragging down or
+    // tapping the barrier, returns the chosen conversation to its caller, and
+    // traps nothing. It is deliberately not a route because it has no
+    // addressable identity: a URL that reopened it would be asking to choose
+    // a destination for a share draft that no longer exists.
+    expect(full, 18,
         reason: 'the full-height sheet population changed — reclassify it '
             'against §6 (behaviour, not dimensions) rather than adjusting '
             'this number');

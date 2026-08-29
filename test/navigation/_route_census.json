@@ -1636,6 +1636,18 @@
   "parent": ""
  },
  {
+  "path": "/share",
+  "segments": 1,
+  "params": [],
+  "renders": true,
+  "hasRedirect": false,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
   "path": "/compose",
   "segments": 1,
   "params": [],

@@ -281,3 +281,102 @@ untouched defects is not an outcome:
 
 Nothing here is PRODUCT_PROVEN. Railway is in a declared deploy incident, so
 neither the API nor the web build could be shipped for a real run.
+
+
+---
+
+## 8. SHARE — the content-first creation intention (founder ruling 2026-08-29)
+
+### Roles, frozen
+
+| | |
+|---|---|
+| **COMPOSE** | discourse-first. Media supported, secondary. |
+| **SHARE** | content-first. |
+
+They coexist. Share does not replace ordinary media inside Compose. Mobile
+camera-first creation belongs to Share.
+
+### Placement
+
+`/create` hub, **first card**, labelled **Share**. Not "Photo or video": photo
+and video are today's acquisition capabilities, not the product boundary — the
+architecture must accept links, rich content and share-in later without
+renaming the product.
+
+**MOBILE NAVIGATION UNCHANGED.** No tab added, reordered or removed; Home
+untouched; no new primary destination. The hub already asks what you want to
+make, and Share is a new answer, not a new place.
+
+### What Share owns: almost nothing
+
+| Concern | Authority consumed |
+|---|---|
+| acquisition | `media_acquisition` — capturePhoto / captureVideo / acquireMultipleMedia |
+| the door | `ContentIntake` |
+| content identity | `Attachment` (local file/bytes + width/height/durationMs) |
+| draft | `CompositionState`, requiresBody false |
+| phases / readiness | `AttachmentLifecycle` |
+| preview | **`AuraCompositionStrip`** |
+| upload | `uploadAuraMedia` |
+| feed publication | PUT /posts/draft then POST /posts/draft/publish |
+| conversation send | `conversationsRepository.send(id, body, mediaIds:)` |
+
+No ShareAttachment, ShareDraft, ShareUpload or ShareMedia exists.
+
+### Camera acquisition convergence
+
+`media_acquisition` claimed camera convergence and had **no camera function**.
+It now has capturePhoto and captureVideo, and Share is their first caller.
+Capture is singular by design — a camera returns one thing at a time, and a
+degenerate multi-select would invent a plural the device never offers.
+`AttachmentSource.camera` survives intake, which is what lets a preview say
+Retake rather than Remove. Compose's direct picker calls remain OPEN.
+
+### Upload behind preview
+
+The attachment enters `CompositionState` and is drawn by
+`AuraCompositionStrip` from its LOCAL source before any upload starts; uploads
+run behind it with per-item progress, explicit failure and retry. Nobody waits
+on a round trip to recognise what they just made.
+
+### Destination model
+
+`AuraDestination` (Feed | Conversation) is deliberately NOT
+`DestinationCapability`. Internal destinations are always available; external
+capability depends on providers we do not own. Collapsing them is how provider
+health starts deciding whether Aura content is publishable. Order is fixed:
+capture, preview, context, Aura destination, publish — external distribution
+downstream and optional.
+
+### /compose?mode=media
+
+**Inventoried: zero in-app callers.** It can only arrive from a typed URL or an
+external deep link, so it is an intent expressed before there was a surface for
+it. On mobile it now resolves into Share; the route is NOT deleted and deep
+links still work. On web/desktop the sheet remains — Share is mobile-first, and
+forcing it onto a desktop composer would make one platform wear another's
+shape.
+
+### Governance gates crossed, and how
+
+Five anti-drift gates caught the new surface. All satisfied, none bypassed:
+
+* route classification x2 — `/share` classified MEMBER
+* full-height sheet census — conversation picker reclassified against the
+  census's own section 6 (transient, dismissible, returns a value, traps
+  nothing, no addressable identity), not merely counted
+* C0 full-surface spinner — replaced with `AuraProductState(loading)`
+* Create vocabulary gate — updated with the founder ruling recorded IN the
+  test, so it reads as a decision rather than drift
+
+### Status
+
+| | |
+|---|---|
+| ANDROID / IOS | IMPLEMENTED — UNVERIFIED, no device run |
+| WEB | IMPLEMENTED, build-verified |
+| WINDOWS | IMPLEMENTED, unverified |
+| Phase-1 flows | UNVERIFIED_PENDING_DEPLOY/DEVICE |
+
+Re-upload: none. Second draft model: none.

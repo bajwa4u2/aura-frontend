@@ -253,6 +253,10 @@ bool isMemberShellPath(String path) {
       path == '/activity' ||
       path == '/create' ||
       path == '/compose' ||
+      // Share creates content as this member, so it is member-owned for the
+      // same reason /compose is: an unauthenticated visitor has nothing to
+      // share from and nowhere to share it to.
+      path == '/share' ||
       path == '/announcements/create' ||
       path == '/ai/claim-audit' ||
       path == '/me' ||

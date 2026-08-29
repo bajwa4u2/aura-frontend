@@ -609,9 +609,30 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       _loadExternalConnections();
     }
 
+    // `mode=media` PREDATES SHARE, AND SHARE IS WHAT IT WAS REACHING FOR.
+    //
+    // Nothing in the app passes this parameter -- it was inventoried and has
+    // zero in-app callers -- so it can only arrive from a hand-typed URL or an
+    // external deep link. It is therefore an INTENT to create from media,
+    // expressed before there was a surface for it.
+    //
+    // On mobile that intent now has a home, and two competing camera-first
+    // flows would be exactly the duplication this chapter exists to remove, so
+    // the intent is resolved into Share rather than half-served here. The
+    // route is NOT deleted and nothing breaks: a deep link still works, it
+    // simply arrives somewhere better.
+    //
+    // On web and desktop the sheet remains right. Share is a mobile-first
+    // interaction, and forcing it onto a desktop composer for the sake of
+    // source uniformity would make one platform wear another's shape.
     if (_isMediaFirst) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _showAddAttachmentSheet();
+        if (!mounted) return;
+        if (supportsCameraCapture) {
+          context.pushReplacement('/share');
+        } else {
+          _showAddAttachmentSheet();
+        }
       });
     }
 

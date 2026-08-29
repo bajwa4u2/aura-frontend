@@ -127,6 +127,7 @@ route,sample,renders,protected,deeplink_semantic,deeplink_destination,in_app_sem
 /admin/moderation,/admin/moderation,true,false,parentReturn,/admin,stackReturn,true,COMPLIANT
 /admin/media-appeals,/admin/media-appeals,true,false,parentReturn,/admin,stackReturn,true,COMPLIANT
 /admin/support,/admin/support,true,false,parentReturn,/admin,stackReturn,true,COMPLIANT
+/share,/share,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT
 /compose,/compose,true,false,flowCancel,/home,flowCancel,true,COMPLIANT
 /posts/:postId/edit,/posts/x-postid/edit,true,false,flowCancel,/home,flowCancel,true,COMPLIANT
 /enter-institution,/enter-institution,true,true,deepLinkFallback,/home,stackReturn,true,PROTECTED_BOUNDARY

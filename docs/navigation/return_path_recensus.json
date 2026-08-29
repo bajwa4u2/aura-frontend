@@ -1408,6 +1408,17 @@
   "verdict": "COMPLIANT"
  },
  {
+  "route": "/share",
+  "sample": "/share",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "deepLinkFallback",
+  "deepLinkDestination": "/home",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
   "route": "/compose",
   "sample": "/compose",
   "renders": true,

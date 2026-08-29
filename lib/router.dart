@@ -62,6 +62,7 @@ import 'features/me/presentation/security_screen.dart';
 import 'features/devices/presentation/devices_screen.dart';
 import 'features/me/presentation/change_password_screen.dart';
 import 'features/posts/presentation/compose_screen.dart';
+import 'features/share/presentation/share_screen.dart';
 import 'features/posts/presentation/post_detail_screen.dart';
 import 'features/profile/presentation/author_profile_screen.dart';
 import 'features/profile/presentation/follow_requests_screen.dart';
@@ -1784,6 +1785,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           // front of it.
           //
           // Canonical messaging is unaffected and lives at /messages.
+          // SHARE — the content-first creation intention.
+          //
+          // A sibling of /compose rather than a mode of it. `/compose` is
+          // discourse-first and owns text, topics, tags and external
+          // distribution; Share starts from content that already exists and
+          // asks where it should go. They converge beneath the surface on one
+          // acquisition module, one draft type, one preview and one upload --
+          // different entrances, one content system.
+          GoRoute(
+            path: '/share',
+            builder: (context, state) => const ShareScreen(),
+          ),
           GoRoute(
             path: '/compose',
             builder: (context, state) {
