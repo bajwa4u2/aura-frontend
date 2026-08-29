@@ -907,6 +907,27 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     });
 
     final state = ref.watch(realtimeControllerProvider);
+
+    // SEED THE RETURN ADDRESS FROM WHAT IS TRUE NOW, NOT ONLY FROM CHANGES.
+    //
+    // The last-known surface was captured exclusively inside `ref.listen`,
+    // which fires on TRANSITIONS after the listener registers. A callee whose
+    // session is already hydrated when this screen mounts never produces such
+    // a transition, so the capture never ran and `_safeReturnRoute` fell
+    // through to /home. Observed in a live two-party call, 2026-08-29:
+    // `[RTC NAV] action=go target=/home ... surfaceType=` on ending a call
+    // that began in a conversation — the person was returned to Home instead
+    // of the conversation they were called into.
+    //
+    // Reading the current value costs nothing and closes the gap for every
+    // path that arrives already-joined.
+    final seedSession = state.session;
+    if (seedSession != null) {
+      _lastKnownSurfaceType ??= seedSession.surfaceType;
+      final seedId = (seedSession.surfaceId ?? '').trim();
+      if (seedId.isNotEmpty) _lastKnownSurfaceId ??= seedId;
+      _lastKnownInstitutionId ??= _meetingInstitutionId(seedSession);
+    }
     final controller = ref.read(realtimeControllerProvider.notifier);
     final meAsync = ref.watch(_realtimeCurrentUserProvider);
     final ringingSessionIds = ref.watch(callerRingbackProvider);
@@ -3346,7 +3367,20 @@ class _CallControlDock extends StatelessWidget {
       // release build (no debug overflow banner to catch it). Wrapping in
       // a horizontal scroll view guarantees every control stays reachable
       // regardless of screen width, instead of guessing at exact spacing.
-      child: SingleChildScrollView(
+      //
+      // 2026-08-29 — THE EXIT IS NOT ONE OF THE SCROLLABLE ONES.
+      //
+      // Observed in a live two-party call on a Pixel: seven controls do not
+      // fit, so the row opened scrolled to the left and the End button sat
+      // off-screen. Scrolling did reveal it — "reachable" was true — but a
+      // person who wants out of a call should not have to discover that a
+      // toolbar scrolls. Leave is pinned outside the scroll view and the
+      // rest scroll beneath it, so the way out is always on screen no
+      // matter how many controls the session earns.
+      child: Row(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -3439,17 +3473,19 @@ class _CallControlDock extends StatelessWidget {
               onPressed: onMore,
             ),
 
-            // Spacer before leave
-            const SizedBox(width: AuraSpace.s16),
-
-            // Leave / End button (distinct, red)
-            _LeaveButton(
-              onPressed: onLeave,
-              label: isEnding ? 'Ending…' : (isEndCall ? 'End' : 'Leave'),
-              busy: isEnding,
-            ),
           ],
         ),
+            ),
+          ),
+
+          // PINNED. Never scrolls out of reach.
+          const SizedBox(width: AuraSpace.s12),
+          _LeaveButton(
+            onPressed: onLeave,
+            label: isEnding ? 'Ending…' : (isEndCall ? 'End' : 'Leave'),
+            busy: isEnding,
+          ),
+        ],
       ),
     );
   }
@@ -3892,10 +3928,10 @@ class _CallPanelContentState extends ConsumerState<_CallPanelContent> {
         // itself is unchanged -- the same widget, the same moderation
         // affordances -- it is only reached from one place now instead of
         // owning a slot in the dock.
-        _PanelHeader(
-          title: 'In this call',
-          count: state.participants.length,
-        ),
+        // NO HEADER OF ITS OWN. The participant list already titles itself
+        // "Members" and states the count; adding a second heading above it
+        // rendered as an empty strip with nothing in it — seen in a live
+        // call, 2026-08-29.
         _buildParticipants(state, ctrl),
         const SizedBox(height: AuraSpace.s12),
 
