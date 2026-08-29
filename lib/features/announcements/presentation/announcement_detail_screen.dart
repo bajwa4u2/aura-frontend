@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app/shell/rail/rail_composition.dart';
+import '../../../core/auth/admin_access_provider.dart';
+import '../../../core/navigation/canonical_destinations.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/link_preview/display_link_preview.dart';
 import '../../../core/media/aura_media_frame.dart';
@@ -24,6 +29,7 @@ import '../../feed/domain/feed_media.dart';
 import '../../posts/presentation/widgets/post_card/post_card_utils.dart';
 import '../../share/aura_share_sheet.dart';
 import '../../updates/providers.dart';
+import '../domain/announcement.dart';
 import '../providers.dart';
 
 const Map<String, String> _announcementTranslationLanguageLabels = {
@@ -254,13 +260,141 @@ class _AnnouncementDetailScreenState
     }
   }
 
+  /// Withdraw / remove, for the authority that publishes announcements.
+  Widget _buildAdminActions(Announcement a) {
+    return PopupMenuButton<String>(
+      tooltip: 'Manage this announcement',
+      itemBuilder: (context) => const [
+        PopupMenuItem<String>(
+          value: 'unpublish',
+          child: Text('Unpublish'),
+        ),
+        PopupMenuItem<String>(
+          value: 'remove',
+          child: Text('Remove'),
+        ),
+      ],
+      onSelected: (choice) {
+        if (choice == 'unpublish') {
+          unawaited(_unpublish(a));
+        } else if (choice == 'remove') {
+          unawaited(_remove(a));
+        }
+      },
+    );
+  }
+
+  Future<bool> _confirm({
+    required String title,
+    required String body,
+    required String confirmLabel,
+  }) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AuraSurface.page,
+        title: Text(title, style: AuraText.subtitle),
+        content: Text(body, style: AuraText.body),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(confirmLabel),
+          ),
+        ],
+      ),
+    );
+    return ok ?? false;
+  }
+
+  Future<void> _unpublish(Announcement a) async {
+    final ok = await _confirm(
+      title: 'Unpublish this announcement?',
+      body: 'It stops appearing to readers. It is kept, and can be published '
+          'again.',
+      confirmLabel: 'Unpublish',
+    );
+    if (!ok || !mounted) return;
+    try {
+      await ref.read(announcementsRepoProvider).unpublish(a.id);
+      if (!mounted) return;
+      ref.invalidate(announcementBySlugProvider(widget.slug));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unpublished.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppErrorMapper.from(e, feature: 'unpublish this').message,
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _remove(Announcement a) async {
+    final ok = await _confirm(
+      title: 'Remove this announcement?',
+      body: 'It is taken down and no longer listed.',
+      confirmLabel: 'Remove',
+    );
+    if (!ok || !mounted) return;
+    try {
+      await ref.read(announcementsRepoProvider).remove(a.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Removed.')),
+      );
+      // The address no longer resolves to anything worth standing on.
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go(announcementsIndexDestination());
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppErrorMapper.from(e, feature: 'remove this').message,
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(announcementBySlugProvider(widget.slug));
 
+    // A PUBLISHED ANNOUNCEMENT MUST BE WITHDRAWABLE.
+    //
+    // `unpublish` and `remove` existed on the repository, and the backend has
+    // carried soft-delete for both admin and institution announcements the
+    // whole time -- but nothing in the app ever called any of it. Both ends
+    // were built and wired to nothing, so an announcement, once published,
+    // could not be taken down from inside Aura at all. On a governance
+    // surface that is the worst way for a capability to be missing.
+    //
+    // The two are kept distinct because they mean different things:
+    // unpublishing withdraws it from view and keeps it; removing is the
+    // deletion. Neither is offered to anyone who cannot already administer
+    // announcements -- the same authority that publishes them.
+    final isAdmin =
+        ref.watch(appAdminAccessProvider).valueOrNull?.isAdmin ?? false;
+    final loaded = async.valueOrNull;
+
     return AuraScaffold(
       title: 'Announcement',
       showHomeAction: true,
+      actions: (isAdmin && loaded != null)
+          ? <Widget>[_buildAdminActions(loaded)]
+          : null,
       // Discourse detail composition: the page widens to host a
       // contextual rail; AuraDiscourseSurface keeps the announcement
       // body itself at the kReadWidth reading measure and drops the

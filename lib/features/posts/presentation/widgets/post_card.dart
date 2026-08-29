@@ -28,7 +28,7 @@ import '../../../feed/domain/post.dart';
 import '../../../feed/presentation/quoted_post_preview.dart';
 import '../../../saves/providers.dart';
 import '../../data/reactions_repository.dart';
-import '../post_detail_screen.dart' show postProvider, repliesProvider;
+import 'post_card/post_owner_actions.dart';
 import 'post_card/post_card_models.dart';
 import 'post_card/post_card_parts.dart';
 import 'post_card/post_card_utils.dart';
@@ -447,67 +447,16 @@ class _PostCardState extends ConsumerState<PostCard> {
     return false;
   }
 
-  Future<void> _deletePost(BuildContext context, String postId) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Delete work'),
-          content: const Text(
-            'This will remove the work from the record. This action cannot be undone.',
-          ),
-          actions: [
-            AuraGhostButton(
-              label: 'Cancel',
-              onPressed: () => Navigator.of(ctx).pop(false),
-            ),
-            AuraPrimaryButton(
-              label: 'Delete',
-              onPressed: () => Navigator.of(ctx).pop(true),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmed != true || !context.mounted) return;
-
-    try {
-      final dio = ref.read(dioProvider);
-      await dio.delete('/posts/$postId');
-
-      // Feed surfaces cache posts client-side (Riverpod) — without this,
-      // a deleted post/reply keeps showing until the user manually
-      // refreshes. Repost/reply already invalidate on success; delete was
-      // missing the same call.
-      invalidateUnifiedFeedSurfaces(ref);
-      // Also invalidate the detail-screen providers: the post's own detail
-      // cache, and — when this is a reply — the parent's reply list, so a
-      // reply deleted from a thread disappears immediately too.
-      ref.invalidate(postProvider(postId));
-      final parentId = (widget.post.replyToPostId ?? '').trim();
-      if (parentId.isNotEmpty) {
-        ref.invalidate(repliesProvider(parentId));
-      }
-
-      if (!context.mounted) return;
-
-      ScaffoldMessenger.of(
+  /// Delegates to the single owner-action authority so the feed card and this
+  /// card cannot drift apart on what deleting means or which caches it clears.
+  /// See `post_card/post_owner_actions.dart`.
+  Future<void> _deletePost(BuildContext context, String postId) =>
+      confirmAndDeletePost(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Work deleted')));
-
-      if (context.canPop()) {
-        context.pop();
-      } else {
-        context.go('/home');
-      }
-    } catch (_) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Could not delete post')));
-    }
-  }
+        ref,
+        postId: postId,
+        parentPostId: widget.post.replyToPostId,
+      );
 
   /// Apple Store §1.2 UGC compliance — block the post author. Shows a
   /// confirmation dialog so the action is intentional, then calls the

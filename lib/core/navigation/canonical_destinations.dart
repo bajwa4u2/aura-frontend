@@ -115,3 +115,25 @@ String? canonicalLiveDestination({
         spaceId: spaceId,
       );
 }
+
+/// `/posts/:postId/edit` — the editor for a post the viewer wrote.
+///
+/// Minted here rather than typed at the call site so the owner actions on the
+/// feed card and on `PostCard` cannot drift to two different addresses for the
+/// same act.
+String? postEditDestination(String? postId) {
+  final id = _clean(postId);
+  return id == null ? null : '/posts/$id/edit';
+}
+
+/// `/home` — the member's own surface.
+///
+/// The fallback for an action that destroyed the page it was performed on and
+/// has nowhere to pop back to.
+String memberHomeDestination() => '/home';
+
+/// `/announcements` — the announcement index.
+///
+/// Where a reader lands when the announcement they were reading is removed
+/// from under them.
+String announcementsIndexDestination() => '/announcements';

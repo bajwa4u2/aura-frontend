@@ -77,7 +77,13 @@
 # — the one canonical conversation-creation lifecycle).
 1 lib/features/posts/presentation/compose_screen.dart
 4 lib/features/posts/presentation/post_detail_screen.dart
-3 lib/features/posts/presentation/widgets/post_card.dart
+# 2026-08-29 owner actions unified: 3 -> 2. Deleting a post lived only in
+# PostCard, so the feed card -- the surface where a person actually meets
+# their own post -- had no way to remove it. The confirmation, the endpoint
+# and the cache invalidations moved to post_card/post_owner_actions.dart so
+# both cards call one authority, and its own navigation is minted by
+# canonical_destinations (postEditDestination, memberHomeDestination).
+2 lib/features/posts/presentation/widgets/post_card.dart
 4 lib/features/profile/presentation/author_profile_screen.dart
 1 lib/features/profile/presentation/follow_requests_screen.dart
 1 lib/features/profile/presentation/followers_screen.dart
