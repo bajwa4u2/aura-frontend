@@ -423,3 +423,33 @@ CLOUDFLARE_TURN_TLS_443      = PROVEN on Windows and a physical Pixel 9a
 The one measurement that resolves it is `relay_certification_test` on a
 physical iPhone. Until then neither "iOS realtime works" nor "iOS realtime is
 broken" is a statement this lane is entitled to make.
+
+### 11.6 The release lane, end to end, for the first time
+
+`ios-testflight` had never reached its own later steps. Each build died at the
+first thing in front of it, and fixing that only revealed the next:
+
+| Build | Died at | Cause |
+|---|---|---|
+| #17 | Provision Firebase iOS config | `FIREBASE_IOS_CONFIG_BASE64` held a value that was not decodable base64 |
+| #19 | Flutter analyze | plain `flutter analyze` exits 1 on ANY issue; 10 real warnings plus 33 style infos |
+| #20 | Flutter analyze | `--no-fatal-infos` applied, but Codemagic's newer Flutter reports a warning the authoring machine's does not — `unawaited_return_in_try_block` |
+| #21 | Flutter test | three widget tests, all asserting *"ListTile background color or ink splashes may be invisible"* — again only on the newer Flutter |
+| **#22** | — | **signed IPA built (3m 13s) and uploaded to App Store Connect** |
+
+Two of those five are the same lesson: **the authoring machine's Flutter is
+older than CI's, so a green local run is evidence and not proof.** Both of the
+things CI caught were real — a fallback path that could never run, and radio
+rows whose ripples painted behind their own background.
+
+The Firebase value was recovered rather than recreated: re-encoded from the
+canonical `ios/Runner/GoogleService-Info.plist`, which names the same Firebase
+project (`aura-22b3a`, `org.auraplatform.app`) as the tracked
+`android/app/google-services.json` already in production.
+
+Certification build #7 predates the analyzer edits in `292ad6a`. Its verdict
+still stands for the realtime paths: every one of those edits is behaviour-
+neutral by the analyzer's own flow analysis — a dead `??`, two unnecessary
+casts, an unnecessary `!`, unused imports, and an `@override` annotation moved
+onto the method that was already overriding by signature. None of them changes
+dispatch or control flow.
