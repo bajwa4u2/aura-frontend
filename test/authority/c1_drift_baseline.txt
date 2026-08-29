@@ -42,7 +42,11 @@ R1 3 lib/features/institutions/presentation/institution_invites_screen.dart
 R1 1 lib/features/institutions/presentation/institution_join_requests_screen.dart
 R1 3 lib/features/me/presentation/me_screen.dart
 R1 1 lib/features/public/widgets/reply_unit.dart
-R1 14 lib/features/realtime/presentation/widgets/floating_call_widget.dart
+# 2026-08-29 burn-down 14 -> 13, recorded at release certification. The
+# ratchet had been failing on this unrecorded reduction, which is the gate
+# working as designed: a baseline that overstates drift is as untrue as one
+# that understates it.
+R1 13 lib/features/realtime/presentation/widgets/floating_call_widget.dart
 R1 4 lib/router.dart
 
 # -- R2 -- 3 files / 6 sites
@@ -55,3 +59,12 @@ R2 2 lib/features/posts/presentation/widgets/communication_continuity_view.dart
 # (ConsequentialAct.correspondAsInstitution) that C7 consumes when it builds
 # the chooser at message initiation. The rule stays armed at zero.
 
+# 2026-08-29 announcements: withdrawal reached its surface. `unpublish` and
+# `remove` existed on the repository and the backend carried soft-delete for
+# admin and institution announcements alike, and NOTHING in the app called
+# any of it -- a published announcement could not be taken down from inside
+# Aura. Gating those on `appAdminAccessProvider.isAdmin` is the legitimate
+# reading this rule already names: administering an announcement is a
+# GOVERNANCE act the backend enforces as an admin check, not a capability
+# question about a member. Recorded rather than burned down.
+R1 3 lib/features/announcements/presentation/announcement_detail_screen.dart
