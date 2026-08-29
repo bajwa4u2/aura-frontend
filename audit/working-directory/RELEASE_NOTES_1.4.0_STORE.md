@@ -91,10 +91,16 @@ is a question a hash answers and a filename does not.
 
 ```
 path    build/windows/x64/runner/Release/aura.msix
-size    32,798,941 bytes
-sha256  9185bbacb15d07de1eb66a91cbd8de430d9a62c6d236480dde657b23169714ca
-sha1    e7728371501202719b4bdb256766d1ddc7f611af
+size    32,798,507 bytes
+sha256  3a35fa996e514cce3540c41b55aaa19bc58c45902a0dbd262141f7128ddae938
 ```
+
+Rebuilt from the current HEAD after the day's code fixes landed. The first
+package was cut before them and would have shipped Windows without the saved-
+media fallback repair or the composer Material fix — and it would have looked
+current, because a build-number bump does not move `msix_version`: the identity
+stays `1.4.0.0` either way. That is exactly why the hash, not the version, is
+what identifies the right file.
 
 Package identity, read from the AppxManifest inside it:
 
