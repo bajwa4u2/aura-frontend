@@ -29,7 +29,6 @@ library;
 
 import 'dart:async';
 
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -44,13 +43,10 @@ import '../../../core/media/attachment.dart';
 import '../../../core/media/aura_composition_strip.dart';
 import '../../../core/media/media_acquisition.dart';
 import '../../../core/ui/aura_platform_components.dart';
-import '../../../core/product/product_state.dart';
-import '../../../core/product/product_state_view.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../topics/topic.dart';
 
 class ShareScreen extends ConsumerStatefulWidget {
   const ShareScreen({super.key});
@@ -73,9 +69,13 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
 
   List<Attachment> get _attachments => _composition.attachments;
 
-  /// The topic this goes under. Required: a top-level post is a public
-  /// record and the record is filed under something.
-  AuraTopic? _primaryTopic;
+  /// WHO IT GOES TO. Fixed, and deliberately not a control.
+  ///
+  /// A share is everyday: a photograph goes to the people who follow you,
+  /// which is also why it needs no topic -- classification is what a PUBLIC
+  /// record requires, and this is not one. Publishing to the record is
+  /// Compose's job, where audience and topic are both already asked.
+  static const String _visibility = 'FOLLOWERS';
   bool _busy = false;
   bool _sending = false;
 
@@ -230,8 +230,6 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
   // ── PUBLICATION ──────────────────────────────────────────────────────
 
   Future<void> _publish() async {
-    final topic = _primaryTopic;
-    if (topic == null) return;
     if (!_allReady || _sending) return;
 
     setState(() => _sending = true);
@@ -242,7 +240,7 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
           .toList(growable: false);
       final text = _context.text.trim();
 
-      await _publishToFeed(text: text, mediaIds: mediaIds, topic: topic);
+      await _publishToFeed(text: text, mediaIds: mediaIds);
 
       if (!mounted) return;
       _say('Published.');
@@ -261,7 +259,6 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
   Future<void> _publishToFeed({
     required String text,
     required List<String> mediaIds,
-    required AuraTopic topic,
   }) async {
     // THIS SHARE PUBLISHES ITS OWN DRAFT, NEVER "THE" DRAFT.
     //
@@ -276,7 +273,7 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
       draftId: draftId,
       text: text,
       mediaIds: mediaIds,
-      primaryTopic: topic.wire,
+      visibility: _visibility,
     );
     _published = true;
   }
@@ -332,7 +329,6 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
               ),
             ),
             const SizedBox(height: AuraSpace.s20),
-            _buildTopicChooser(),
             const SizedBox(height: AuraSpace.s20),
             _buildAction(),
           ],
@@ -368,90 +364,15 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
     );
   }
 
-  /// WHERE IT GOES IS NO LONGER A QUESTION.
-  ///
-  /// Share offered Feed or Conversation. Founder ruling 2026-08-29 collapsed
-  /// it to one path: a share goes to the feed. A person who wants to send a
-  /// photograph to somebody is already in that conversation, where sending has
-  /// its own authority -- asking the question twice, in two places, bought
-  /// nothing and made the fast path slower.
-  ///
-  /// What IS asked is the topic, because the backend will refuse the post
-  /// without one and that refusal is doctrine: a top-level post is a public
-  /// record, and a record is filed under something. The question is asked
-  /// here, once, in the words the feed already uses -- never bypassed.
-  Widget _buildTopicChooser() {
-    final t = _primaryTopic;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'What is it about?',
-          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: AuraSpace.s10),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: ActionChip(
-            avatar: Icon(
-              t == null ? Icons.label_outline : Icons.label,
-              size: 18,
-            ),
-            label: Text(t?.label ?? 'Choose a topic'),
-            onPressed: _sending ? null : _pickTopic,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _pickTopic() async {
-    final chosen = await showModalBottomSheet<AuraTopic>(
-      context: context,
-      backgroundColor: AuraSurface.page,
-      isScrollControlled: true,
-      builder: (sheetContext) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.symmetric(vertical: AuraSpace.s12),
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AuraSpace.s16, AuraSpace.s4, AuraSpace.s16, AuraSpace.s12,
-              ),
-              child: Text(
-                'Choose a topic',
-                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-              ),
-            ),
-            for (final topic in AuraTopic.values)
-              ListTile(
-                title: Text(topic.label),
-                trailing: topic == _primaryTopic
-                    ? const Icon(Icons.check, size: 20)
-                    : null,
-                onTap: () => Navigator.of(sheetContext).pop(topic),
-              ),
-          ],
-        ),
-      ),
-    );
-    if (!mounted || chosen == null) return;
-    setState(() => _primaryTopic = chosen);
-  }
-
   Widget _buildAction() {
-    final t = _primaryTopic;
-    final ready = _allReady && t != null && !_sending;
+    final ready = _allReady && !_sending;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AuraSpace.s4),
       child: Row(
         children: [
           Expanded(
             child: Text(
-              _allReady
-                  ? (t == null ? 'Choose a topic' : t.label)
-                  : 'Preparing…',
+              _allReady ? 'Goes to your followers' : 'Preparing…',
               style: AuraText.small.copyWith(color: AuraSurface.muted),
             ),
           ),

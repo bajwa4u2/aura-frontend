@@ -100,15 +100,15 @@ void main() {
     // addressable identity of its own: it is an inspection OF an object the
     // person is already looking at, so a URL that reopened it would be asking
     // for a disclosure with no object behind the request.
-    // 18th member added 2026-08-29 by the Share chapter:
-    // `features/share/presentation/share_screen.dart` — the conversation
-    // picker. Reclassified against §6 rather than having the number bumped:
-    // it BEHAVES as a sheet — transient, dismissed by dragging down or
-    // tapping the barrier, returns the chosen conversation to its caller, and
-    // traps nothing. It is deliberately not a route because it has no
-    // addressable identity: a URL that reopened it would be asking to choose
-    // a destination for a share draft that no longer exists.
-    expect(full, 18,
+    // 18th member RETIRED 2026-08-29, same day it was added, by the Share
+    // chapter itself: `features/share/presentation/share_screen.dart`. It was
+    // the destination picker (Feed or Conversation), then briefly the topic
+    // picker that replaced it. Both are gone because Share stopped asking
+    // questions: a share goes to the person's followers, and a post addressed
+    // to followers is not a public record, so it needs no classification
+    // either. The population falls to 17 — recorded here rather than left to
+    // drift, because a census that only ever rises stops being a census.
+    expect(full, 17,
         reason: 'the full-height sheet population changed — reclassify it '
             'against §6 (behaviour, not dimensions) rather than adjusting '
             'this number');

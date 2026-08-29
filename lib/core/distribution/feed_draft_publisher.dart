@@ -76,27 +76,39 @@ class FeedDraftPublisher {
     required String draftId,
     required String text,
     required List<String> mediaIds,
-    required String primaryTopic,
+    required String visibility,
+    String? primaryTopic,
   }) async {
     final id = draftId.trim();
     if (id.isEmpty) {
       throw ArgumentError('A draft id is required to publish [share:no_id]');
     }
-    // A TOP-LEVEL POST IS A PUBLIC RECORD, AND A RECORD IS FILED UNDER
-    // SOMETHING. The backend refuses one without a primary topic --
-    // "A primary topic is required to publish a public record" -- and that is
-    // classification doctrine, not a validation quirk to route around. Share
-    // asks for the topic rather than bypassing the rule, and the parameter is
-    // required so a caller cannot forget it and discover the refusal only in
-    // production, which is exactly how it was found.
-    final topic = primaryTopic.trim();
-    if (topic.isEmpty) {
-      throw ArgumentError('A primary topic is required [share:no_topic]');
+    // CLASSIFICATION IS REQUIRED WHERE CLASSIFICATION IS THE POINT.
+    //
+    // A PUBLIC post is a public record and the backend refuses one with no
+    // primary topic. A post addressed to followers is not a public record, and
+    // requiring a topic there meant everyday sharing had to be filed under a
+    // taxonomy of public life -- Government, Housing, Public Safety -- with no
+    // honest slot for it (founder ruling 2026-08-29).
+    //
+    // The pairing is asserted here so a caller cannot reach the server with a
+    // public record and no topic and learn about it from a 400, which is how
+    // this was found in the first place.
+    final vis = visibility.trim().toUpperCase();
+    if (vis.isEmpty) {
+      throw ArgumentError('A visibility is required [share:no_visibility]');
+    }
+    final topic = (primaryTopic ?? '').trim();
+    if (vis == 'PUBLIC' && topic.isEmpty) {
+      throw ArgumentError(
+        'A primary topic is required for a public record [share:no_topic]',
+      );
     }
 
     await _dio.put<dynamic>('/posts/$id', data: <String, dynamic>{
       'text': text,
-      'primaryTopic': topic,
+      'visibility': vis,
+      if (topic.isNotEmpty) 'primaryTopic': topic,
       'media': <Map<String, dynamic>>[
         for (var i = 0; i < mediaIds.length; i++)
           {'mediaId': mediaIds[i], 'position': i, 'caption': null},

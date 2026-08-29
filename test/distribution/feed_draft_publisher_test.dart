@@ -81,8 +81,7 @@ void main() {
     test('publishing a share never touches the author-keyed draft', () async {
       final publisher = FeedDraftPublisher(dio);
       final id = await publisher.createDraft();
-      await publisher.publish(draftId: id, text: 'hello', mediaIds: ['m1'],
-              primaryTopic: 'TECHNOLOGY');
+      await publisher.publish(draftId: id, text: 'hello', mediaIds: ['m1'], visibility: 'FOLLOWERS');
 
       // THE ASSERTION THAT FAILS AGAINST THE OLD BEHAVIOUR. The previous
       // implementation's entire feed path was these two endpoints.
@@ -97,8 +96,7 @@ void main() {
     test('every write names the draft it means', () async {
       final publisher = FeedDraftPublisher(dio);
       final id = await publisher.createDraft();
-      await publisher.publish(draftId: id, text: 'hello', mediaIds: const [],
-              primaryTopic: 'TECHNOLOGY');
+      await publisher.publish(draftId: id, text: 'hello', mediaIds: const [], visibility: 'FOLLOWERS');
 
       expect(calls, contains('POST /posts/held'));
       expect(calls, contains('PUT /posts/draft_share_1'));
@@ -109,8 +107,7 @@ void main() {
       final publisher = FeedDraftPublisher(dio);
       final id = await publisher.createDraft();
       final result =
-          await publisher.publish(draftId: id, text: 't', mediaIds: const [],
-              primaryTopic: 'TECHNOLOGY');
+          await publisher.publish(draftId: id, text: 't', mediaIds: const [], visibility: 'FOLLOWERS');
       expect(result.draftId, 'draft_share_1');
       expect(result.postId, 'post_9');
     });
@@ -129,8 +126,7 @@ void main() {
       );
       await expectLater(
         FeedDraftPublisher(failing)
-            .publish(draftId: id, text: 'a', mediaIds: const [],
-              primaryTopic: 'TECHNOLOGY'),
+            .publish(draftId: id, text: 'a', mediaIds: const [], visibility: 'FOLLOWERS'),
         throwsA(isA<DioException>()),
       );
 
@@ -138,8 +134,7 @@ void main() {
       // is what could otherwise pick up a Compose draft that had since become
       // the most recently updated one.
       calls.clear();
-      await publisher.publish(draftId: id, text: 'a', mediaIds: const [],
-              primaryTopic: 'TECHNOLOGY');
+      await publisher.publish(draftId: id, text: 'a', mediaIds: const [], visibility: 'FOLLOWERS');
       expect(calls, contains('POST /posts/draft_share_1/publish'));
       expect(touchedAuthorKeyedDraft(calls), isFalse);
     });
@@ -151,37 +146,50 @@ void main() {
       expect(
         () => publisher.publish(
             draftId: '  ', text: 't', mediaIds: const [],
-            primaryTopic: 'TECHNOLOGY'),
+            visibility: 'FOLLOWERS'),
         throwsA(isA<ArgumentError>()),
       );
       expect(calls, isEmpty);
     });
   });
 
-  group('TOPIC IS NOT OPTIONAL', () {
-    test('publishing without a topic is refused before any request', () async {
-      // The backend refuses a top-level post with no primary topic -- "A
-      // primary topic is required to publish a public record". Share found
-      // that out in production. Refusing here, before the draft is written,
-      // means the composition is never half-published against a rule the
-      // client already knows.
+  group('CLASSIFICATION FOLLOWS THE RECORD', () {
+    test('a PUBLIC post with no topic is refused before any request', () async {
+      // A public post IS the public record, and the backend refuses one that
+      // is not classified. Refusing here, before the draft is written, means
+      // the composition is never half-published against a rule the client
+      // already knows -- which is how the failure was found.
       final publisher = FeedDraftPublisher(dio);
       final id = await publisher.createDraft();
       calls.clear();
       await expectLater(
         publisher.publish(
-            draftId: id, text: 't', mediaIds: const [], primaryTopic: '  '),
+            draftId: id, text: 't', mediaIds: const [], visibility: 'PUBLIC'),
         throwsA(isA<ArgumentError>()),
       );
       expect(calls, isEmpty);
     });
 
-    test('the chosen topic reaches the draft write', () async {
+    test('a FOLLOWERS post publishes with no topic at all', () async {
+      // Share's whole path. Everyday sharing is not a public record, so it is
+      // not filed under a taxonomy of public life.
       final publisher = FeedDraftPublisher(dio);
       final id = await publisher.createDraft();
       await publisher.publish(
-          draftId: id, text: 't', mediaIds: const [], primaryTopic: 'HOUSING');
+          draftId: id, text: 't', mediaIds: const [], visibility: 'FOLLOWERS');
       expect(calls, contains('PUT /posts/draft_share_1'));
+      expect(calls, contains('POST /posts/draft_share_1/publish'));
+    });
+
+    test('visibility is always stated, never left to a server default',
+        () async {
+      final publisher = FeedDraftPublisher(dio);
+      final id = await publisher.createDraft();
+      await expectLater(
+        publisher.publish(
+            draftId: id, text: 't', mediaIds: const [], visibility: '  '),
+        throwsA(isA<ArgumentError>()),
+      );
     });
   });
 
