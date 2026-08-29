@@ -1,11 +1,8 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../posts/presentation/widgets/post_card.dart'
-    show viewerIdentityProvider;
+import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/link_preview/display_link_preview.dart';
 import '../../../core/media/aura_attachment_image.dart';
@@ -39,8 +36,6 @@ import '../../../core/media/trace/aura_trace_mark.dart';
 import '../../../core/media/trace/aura_trace_surface.dart';
 import '../domain/feed_item.dart';
 import 'feed_interaction_bar.dart';
-import '../../../core/auth/session_providers.dart';
-import '../../posts/presentation/widgets/post_card/post_owner_actions.dart';
 
 /// Single render path for every feed surface.
 ///
@@ -201,7 +196,6 @@ class UnifiedFeedCard extends ConsumerWidget {
               author: item.author,
               publishedAt: item.publishedAt ?? item.createdAt,
               profileRoute: adaptedProfile,
-              trailing: _ownerActions(context, ref),
             ),
             // Phase 3 — explicit "Verified institution" reinforcement
             // for official posts when the existing identity badge is
@@ -816,78 +810,16 @@ ReactionTarget? _replyReactionTargetFor(FeedItem parent, String replyId) {
   return PostReactionTarget(id);
 }
 
-/// OWNER ACTIONS ON THE CARD THE PERSON ACTUALLY SEES.
-///
-/// The feed had none: a post you published appeared in Home with no way to
-/// edit or remove it without opening it first. Found by sharing a photograph.
-///
-/// Scoped deliberately to the viewer's OWN user posts. The other three feed
-/// types are somebody else's decision to make and already have their own
-/// authority: an institution post is governed by institution role and its
-/// detail screen enforces that; an announcement is administered, and is now
-/// withdrawable from its own detail; an article is RETRACTED rather than
-/// deleted, on purpose, so offering "Delete" here would promise destruction
-/// the article flow deliberately does not perform.
-///
-/// The actions call `confirmAndDeletePost` — the same authority PostCard uses
-/// — rather than repeating the confirmation, the endpoint and the cache
-/// invalidations a second time.
-extension _UnifiedFeedCardOwnerActions on UnifiedFeedCard {
-  Widget? _ownerActions(BuildContext context, WidgetRef ref) {
-    if (item.type != FeedItemType.userPost) return null;
-    if (item.authorType != FeedAuthorType.user) return null;
-
-    final viewerId = ref.watch(viewerIdentityProvider).valueOrNull?.userId ?? '';
-    final authorId = item.author.id.trim();
-    if (viewerId.isEmpty || authorId.isEmpty || authorId != viewerId) {
-      return null;
-    }
-
-    final postId = item.id.trim();
-    if (postId.isEmpty) return null;
-
-    return PopupMenuButton<String>(
-      tooltip: 'Your work',
-      padding: EdgeInsets.zero,
-      icon: const Icon(Icons.more_horiz, size: 20, color: AuraSurface.faint),
-      itemBuilder: (context) => const [
-        PopupMenuItem<String>(value: 'edit', child: Text('Edit work')),
-        PopupMenuItem<String>(value: 'delete', child: Text('Delete work')),
-      ],
-      onSelected: (choice) {
-        if (choice == 'edit') {
-          editOwnPost(context, postId);
-        } else if (choice == 'delete') {
-          // The card is one row among many, so the person stays in the feed;
-          // the list refreshes under them.
-          unawaited(
-            confirmAndDeletePost(
-              context,
-              ref,
-              postId: postId,
-              leaveSurfaceOnSuccess: false,
-            ),
-          );
-        }
-      },
-    );
-  }
-}
-
 class _AuthorRow extends StatelessWidget {
   const _AuthorRow({
     required this.author,
     required this.publishedAt,
     required this.profileRoute,
-    this.trailing,
   });
 
   final FeedAuthor author;
   final DateTime? publishedAt;
   final String? profileRoute;
-
-  /// Owner actions, when the viewer wrote this. Nothing otherwise.
-  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -969,7 +901,6 @@ class _AuthorRow extends StatelessWidget {
             ),
             style: AuraText.micro.copyWith(color: AuraSurface.faint),
           ),
-        if (trailing != null) trailing!,
       ],
     );
   }
