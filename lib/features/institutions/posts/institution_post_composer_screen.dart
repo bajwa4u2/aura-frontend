@@ -1740,23 +1740,41 @@ class _VisibilitySection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AuraSpace.s8),
-          RadioGroup<InstitutionPostVisibility>(
-            groupValue: visibility,
-            onChanged: (selected) {
-              if (selected != null) onChange(selected);
-            },
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final v in InstitutionPostVisibility.values)
-                  RadioListTile<InstitutionPostVisibility>(
-                    value: v,
-                    title: Text(v.label, style: AuraText.body),
-                    dense: true,
-                    activeColor: const Color(0xFF0D9488),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-              ],
+          // THE TILES NEED A MATERIAL INSIDE THE DECORATION, NOT OUTSIDE IT.
+          //
+          // These rows sit in a Container whose BoxDecoration paints a
+          // background. A ListTile draws its own colour and its ink splash
+          // onto the nearest ancestor Material — which, without this, is the
+          // one ABOVE the decoration, so every ripple was painted underneath
+          // the section's own background and never seen. Newer Flutter
+          // asserts on exactly this ("ListTile background color or ink
+          // splashes may be invisible"), which is how it surfaced: three
+          // widget tests failed on Codemagic's Flutter and passed on the
+          // older one here.
+          //
+          // A transparent Material between the decoration and the tiles gives
+          // them somewhere to paint that is in front of it. Nothing about the
+          // section's appearance changes; the taps become visible.
+          Material(
+            type: MaterialType.transparency,
+            child: RadioGroup<InstitutionPostVisibility>(
+              groupValue: visibility,
+              onChanged: (selected) {
+                if (selected != null) onChange(selected);
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final v in InstitutionPostVisibility.values)
+                    RadioListTile<InstitutionPostVisibility>(
+                      value: v,
+                      title: Text(v.label, style: AuraText.body),
+                      dense: true,
+                      activeColor: const Color(0xFF0D9488),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                ],
+              ),
             ),
           ),
         ],
