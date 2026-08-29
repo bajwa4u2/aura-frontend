@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import 'call_teardown_diag.dart';
+
 /// Lightweight, debug-only runtime tracing.
 ///
 /// This module exists to make runtime regressions reproducible and
@@ -36,6 +38,13 @@ class RuntimeTrace {
 
   static final Map<String, int> _counters = {};
 
+  /// Channels mirrored into the release diagnostic. See the note in [emit].
+  static const Set<String> _diagChannels = {
+    'router.refresh',
+    'shell.build',
+    'error.boundary',
+  };
+
   /// Emit a trace line. No-op in release.
   ///
   /// `data` is rendered as space-separated `key=value` pairs after the
@@ -47,6 +56,15 @@ class RuntimeTrace {
     String message, {
     Map<String, Object?>? data,
   }) {
+    // DIAGNOSTIC BRIDGE (bounded, removable). These three channels are the
+    // ones needed to attribute the call-teardown reactivation failure in a
+    // RELEASE binary, where everything below is stripped. Forwarding here
+    // rather than at each callsite keeps the change to one place and does not
+    // enable debug tracing generally -- only these channels cross over, and
+    // only when CallDiag's own gate is set.
+    if (_diagChannels.contains(channel)) {
+      CallDiag.emit(channel, message, data: data);
+    }
     if (!kDebugMode) return;
     final n = (_counters[channel] = (_counters[channel] ?? 0) + 1);
     final extra = (data == null || data.isEmpty)

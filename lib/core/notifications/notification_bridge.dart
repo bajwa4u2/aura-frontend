@@ -19,6 +19,7 @@ import 'notification_arrival_gate.dart';
 import 'notification_presentation.dart';
 import 'sw_message_bridge.dart';
 import '../navigation/canonical_destinations.dart';
+import '../diagnostics/call_teardown_diag.dart';
 
 final auraScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
@@ -49,6 +50,12 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
   @override
   void initState() {
     super.initState();
+    // DIAGNOSTIC (bounded, removable): does the app-lifetime messenger key
+    // participate in the call-teardown reactivation failure?
+    CallDiag.emit('bridge.init', 'NotificationBridge',
+        data: {'state': CallDiag.id(this)});
+    CallDiag.keyBinding(DiagKeyLabel.notificationMessenger,
+        auraScaffoldMessengerKey, 'bridge.initState');
     if (!kIsWeb) {
       _initFcm();
     } else {
@@ -58,6 +65,8 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
 
   @override
   void dispose() {
+    CallDiag.emit('bridge.dispose', 'NotificationBridge',
+        data: {'state': CallDiag.id(this)});
     _fcmForegroundSub?.cancel();
     _fcmTapSub?.cancel();
     stopSwNavigateListener();

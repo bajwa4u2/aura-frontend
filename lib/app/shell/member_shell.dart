@@ -35,6 +35,7 @@ import '../../features/institutions/ui/institution_ds.dart';
 import 'rail/rail_composition.dart';
 import '../../core/identity/person_identity_model.dart';
 import '../../core/institutions/institution_route_authority.dart';
+import '../../core/diagnostics/call_teardown_diag.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // INSTITUTION COLOR PALETTE — teal authority, calm workspace
@@ -165,6 +166,11 @@ class MemberShell extends StatelessWidget {
         //     opens on demand as a drawer. Content gets the whole viewport.
         final showLeftRail = isTablet && !isMeetingFocus;
 
+        CallDiag.keyBinding(
+          DiagKeyLabel.memberShellScaffold,
+          _memberScaffoldKey,
+          'member_shell.build attached=${!showLeftRail} path=$path',
+        );
         return Scaffold(
           key: showLeftRail ? null : _memberScaffoldKey,
           backgroundColor: AuraSurface.page,
@@ -358,6 +364,11 @@ class InstitutionShell extends ConsumerWidget {
           ),
         );
 
+        CallDiag.keyBinding(
+          DiagKeyLabel.institutionShellScaffold,
+          _institutionScaffoldKey,
+          'institution_shell.build attached=${!showLeftRail}',
+        );
         return Scaffold(
           key: showLeftRail ? null : _institutionScaffoldKey,
           backgroundColor: AuraSurface.page,

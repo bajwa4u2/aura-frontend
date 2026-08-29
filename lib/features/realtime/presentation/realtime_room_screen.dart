@@ -41,6 +41,7 @@ import 'widgets/realtime_join_requests_panel.dart';
 import 'widgets/realtime_participant_list.dart';
 import '../../../core/identity/person_identity_model.dart';
 import '../../../core/navigation/canonical_destinations.dart';
+import '../../../core/diagnostics/call_teardown_diag.dart';
 
 class _CallRouteRedirectingFallback extends StatelessWidget {
   const _CallRouteRedirectingFallback();
@@ -626,6 +627,10 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     // these providers, which means the `dm` branch had been inert already.
 
     final target = _safeReturnRoute(session);
+    CallDiag.emit('call.return', 'resolved', data: {
+      'target': target,
+      'surface': session?.surfaceType.name ?? '',
+    });
     debugPrint(
       '[RTC NAV] action=go target=$target sessionId=${session?.id ?? widget.sessionId} surfaceType=${session?.surfaceType.name ?? ""} lastEvent=${ref.read(realtimeControllerProvider).lastSocketEvent ?? ""}',
     );
@@ -797,6 +802,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   void _minimizeCall(RealtimeSession? session) {
     // Navigate back without ending the call — PiP widget takes over.
     final target = _safeReturnRoute(session);
+    CallDiag.emit('call.minimize', 'go', data: {'target': target});
     context.go(target);
   }
 

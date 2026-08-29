@@ -10,6 +10,7 @@ import '../core/navigation/return_path_frame.dart';
 import 'shell/admin_shell.dart';
 import 'shell/member_shell.dart';
 import 'shell/public_shell.dart';
+import '../core/diagnostics/call_teardown_diag.dart';
 
 export 'shell/admin_shell.dart' show AdminShell;
 export 'shell/member_shell.dart' show MemberShell, InstitutionShell;
@@ -104,6 +105,10 @@ class AppShell extends ConsumerWidget {
       shell = PublicShell(child: framed);
       chose = 'PublicShell';
     }
+    CallDiag.emit('shell.build', chose, data: {
+      'shellWidget': CallDiag.id(shell),
+      'element': CallDiag.id(context),
+    });
     RuntimeTrace.emit(
       'shell.build',
       'selected shell',

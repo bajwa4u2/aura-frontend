@@ -10,6 +10,7 @@ import 'app/aura_app.dart';
 import 'core/auth/auth_providers.dart';
 import 'core/diagnostics/runtime_trace.dart';
 import 'core/utils/configure_url_strategy.dart';
+import 'core/diagnostics/call_teardown_diag.dart';
 
 // Top-level handler required by firebase_messaging for background/killed-app
 // message processing. Must be annotated so the Dart tree shaker keeps it.
@@ -30,6 +31,11 @@ Future<void> main() async {
   // TRACE: always print full stack so the exact crashing line is visible in
   // browser DevTools console regardless of build mode.
   FlutterError.onError = (FlutterErrorDetails details) {
+    // DIAGNOSTIC: print the retained diagnostic tail BESIDE the crash. The
+    // ordering is the evidence -- which key was bound to what, and what
+    // rebuilt, in the frames before reactivation failed. Emits only under the
+    // bounded gate, never swallows, never alters what follows.
+    CallDiag.dumpRecent(details.exceptionAsString());
     debugPrint('[FLUTTER_ERROR] ${details.exceptionAsString()}');
     debugPrint('[FLUTTER_ERROR] library: ${details.library}');
     debugPrint('[FLUTTER_ERROR] context: ${details.context}');

@@ -18,6 +18,7 @@ import '../domain/realtime_enums.dart';
 import '../domain/realtime_models.dart';
 import '../domain/call_mode.dart';
 import '../domain/realtime_state.dart';
+import '../../../core/diagnostics/call_teardown_diag.dart';
 
 class RealtimeController extends StateNotifier<RealtimeState>
     with WidgetsBindingObserver {
@@ -1133,6 +1134,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
     final sessionId = (state.sessionId ?? '').trim();
     if (sessionId.isEmpty) return;
 
+    CallDiag.emit('call.leave', 'begin', data: {'session': sessionId});
     await _terminateSession(
       keepSocketConnected: true,
       infoMessage: 'You left live.',
@@ -1186,6 +1188,8 @@ class RealtimeController extends StateNotifier<RealtimeState>
       return;
     }
 
+    CallDiag.emit('call.end', 'begin',
+        data: {'session': _managedSessionId ?? ''});
     final sessionId = _managedSessionId;
     final session = state.session;
     if (sessionId.isEmpty && session == null) {
