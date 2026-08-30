@@ -1348,6 +1348,8 @@ class _AnnouncementEditorScreenState
                             // second scrollable that eats the wheel.
                             maxLines: null,
                             minLines: 2,
+                            // Same ownership declaration as the body.
+                            scrollPhysics: const NeverScrollableScrollPhysics(),
                             textDirection: _announcementEditorDirectionFor(text),
                             textAlign: _announcementEditorAlignFor(text),
                             decoration: const InputDecoration(
@@ -1390,6 +1392,31 @@ class _AnnouncementEditorScreenState
                             controller: _bodyController,
                             maxLines: null,
                             minLines: 10,
+                            // AND THE FIELD EXPLICITLY DECLINES SCROLL
+                            // OWNERSHIP.
+                            //
+                            // `maxLines: null` alone was necessary and NOT
+                            // sufficient. It removed the field's scroll EXTENT,
+                            // and a Flutter widget test then showed the wheel
+                            // reaching the parent — but the deployed web build
+                            // still refused to scroll while the pointer sat over
+                            // the field, empty body included. On Flutter web the
+                            // field's inner Scrollable consumes the wheel
+                            // whether or not it has anywhere to go, and no
+                            // widget test reproduces that: the same probe passes
+                            // in all configurations under `flutter test`, which
+                            // is exactly why this was re-proven in a browser
+                            // instead of declared fixed from a green suite.
+                            //
+                            // With no extent to scroll, refusing ownership is a
+                            // statement of fact rather than a suppression: the
+                            // field has nothing of its own to move, so the
+                            // editor's SingleChildScrollView takes every
+                            // gesture, from anywhere on the surface. Caret
+                            // following still works — an expanded field keeps
+                            // the caret inside its own bounds and the outer
+                            // scrollable brings it into view.
+                            scrollPhysics: const NeverScrollableScrollPhysics(),
                             textDirection: _announcementEditorDirectionFor(text),
                             textAlign: _announcementEditorAlignFor(text),
                             decoration: const InputDecoration(

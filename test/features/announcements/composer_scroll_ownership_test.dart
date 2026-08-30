@@ -112,6 +112,16 @@ void main() {
     };
 
     composers.forEach((label, path) {
+      test('$label body field declines scroll ownership', () {
+        // `maxLines: null` removes the field's extent; this removes its claim
+        // on the gesture. Both are needed on Flutter web, where the inner
+        // Scrollable consumes a wheel event whether or not it has anywhere to
+        // go — a behaviour no widget test in this repo reproduces, which is
+        // why it is pinned here by contract rather than by simulation.
+        final src = code(source(path));
+        expect(src, contains('NeverScrollableScrollPhysics()'));
+      });
+
       test('$label declares no bounded multi-line field', () {
         final src = code(source(path));
         // A bounded maxLines above 1 is the trap. `maxLines: 1` is a

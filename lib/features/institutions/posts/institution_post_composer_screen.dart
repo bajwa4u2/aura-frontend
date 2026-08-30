@@ -1421,6 +1421,11 @@ class _InstitutionPostComposerScreenState
                           // one that merely looks similar.
                           maxLines: null,
                           minLines: 8,
+                          // Declines scroll ownership for the same reason the
+                          // announcement body does: with nothing of its own to
+                          // scroll, the enclosing view should take every
+                          // gesture including those starting over the field.
+                          scrollPhysics: const NeverScrollableScrollPhysics(),
                           decoration: _decoration('Write your post…'),
                           style: AuraText.body,
                           buildCounter: _zeroCounter,
