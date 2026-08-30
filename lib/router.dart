@@ -164,6 +164,8 @@ import 'features/support/presentation/support_agent_screen.dart';
 import 'features/support/presentation/admin_support_console_screen.dart';
 import 'features/media_governance/presentation/restricted_media_screen.dart';
 import 'features/admin/presentation/admin_media_appeals_screen.dart';
+import 'features/identity/presentation/identity_verification_screen.dart';
+import 'features/admin/presentation/identity_review_screen.dart';
 
 const String kInstitutionDashboardRoute = '/institution/dashboard';
 const String kInstitutionCreateRoute = '/institution/create';
@@ -1649,6 +1651,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/security',
             builder: (_, __) => const SecurityScreen(),
           ),
+          GoRoute(
+            path: NavigationAuthority.identityVerificationRoute,
+            builder: (_, __) => const IdentityVerificationScreen(),
+          ),
           GoRoute(path: '/devices', builder: (_, __) => const DevicesScreen()),
           GoRoute(
             path: '/change-password',
@@ -1741,6 +1747,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/admin/users',
             builder: (_, __) => const AdminUsersScreen(),
+          ),
+          GoRoute(
+            path: '/admin/identity-review',
+            builder: (_, __) => const IdentityReviewScreen(),
           ),
           GoRoute(
             path: '/admin/grants',

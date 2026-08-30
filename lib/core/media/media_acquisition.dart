@@ -30,7 +30,8 @@
 /// turns a selection into an ORDERED list of intake resolutions and stops.
 library;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:image_picker/image_picker.dart';
 import 'package:image_picker_android/image_picker_android.dart';
 import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
@@ -130,7 +131,17 @@ void ensureAndroidPhotoPicker() {
 /// input with `capture` is the OS picker wearing a different hat, and
 /// pretending otherwise puts a "Take photo" button in front of somebody who
 /// will get a file browser.
-bool get supportsCameraCapture => !kIsWeb;
+///
+/// NEITHER DOES WINDOWS. This read `!kIsWeb`, which is true on desktop, where
+/// `image_picker` has no camera implementation at all — so a Windows user was
+/// offered "Take photo" and got either a file browser or nothing. The web was
+/// the only excluded case because the web was the only one anybody tested.
+/// Capture is an Android/iOS capability; everywhere else, choosing is the
+/// honest verb.
+bool get supportsCameraCapture =>
+    !kIsWeb &&
+    (defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS);
 
 /// Capture ONE photograph.
 ///

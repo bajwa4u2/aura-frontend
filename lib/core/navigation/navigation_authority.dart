@@ -211,6 +211,12 @@ class NavigationAuthority {
   static const String blockedPeopleRoute = '/me/blocked';
   static const String communicationPreferencesRoute =
       '/me/settings/communications';
+  /// Where a person asks to have their identity verified.
+  ///
+  /// A member destination, not an admin one: the review surface is separate
+  /// and permission-gated, because being verified and deciding who is verified
+  /// are different capabilities.
+  static const String identityVerificationRoute = '/verify-identity';
   static const String securityRoute = '/security';
   static const String devicesRoute = '/devices';
   static const String changePasswordRoute = '/change-password';

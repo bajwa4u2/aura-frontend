@@ -270,6 +270,12 @@ bool isMemberShellPath(String path) {
       path == '/me/blocked' ||
       path == '/settings/communications' ||
       path == '/security' ||
+      // Identity verification. MEMBER, emphatically not public: the screen
+      // reads this account's own submission history and offers to upload a
+      // government document. An unauthenticated visitor reaching it would get
+      // an empty shell inviting them to hand over a passport, so a cold entry
+      // must be sent to sign in with the destination preserved.
+      path == '/verify-identity' ||
       path == '/me/follow-requests' ||
       path == '/me/invitations' ||
       path == '/invite' ||

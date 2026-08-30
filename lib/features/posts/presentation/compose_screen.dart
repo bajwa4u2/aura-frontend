@@ -340,7 +340,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   bool get _hasUploadingAttachments => _attachments.any((a) => a.uploading);
   bool get _canAddMoreAttachments =>
       !_isReply && _attachments.length < _maxAttachments;
-  bool get _supportsCameraCapture => !kIsWeb;
+  /// Delegated to the acquisition authority rather than re-derived.
+  ///
+  /// This was its own `!kIsWeb`, a second copy of a rule that was wrong in the
+  /// same way — it offered Windows a camera it does not have. Two copies of a
+  /// capability check is how one of them stays wrong after the other is fixed.
+  bool get _supportsCameraCapture => supportsCameraCapture;
 
   Attachment? get _primaryTikTokVideoAttachment {
     for (final attachment in _attachments) {
