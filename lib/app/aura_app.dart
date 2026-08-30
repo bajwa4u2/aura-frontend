@@ -214,12 +214,23 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     // failed, and reported `failed` to CallKit, which is exactly what a
     // caller left ringing into nothing looks like from the other side.
     //
-    // So the answer waits for Aura to actually be able to act, bounded. iOS
-    // gives a backgrounded app only seconds after an answer, so this cannot be
-    // patient — but it must not be instant either.
+    // So the answer waits for Aura to actually be able to act, bounded.
+    //
+    // THE BUDGET WAS SIX SECONDS, AND SIX SECONDS ENDED CALLS. Founder, build
+    // 34: "i try to press as it ring but it cut off". Answering during a cold
+    // launch — engine booting, TokenStore restoring, all triggered by the VoIP
+    // push itself — can exceed six seconds, and on timeout this path reports
+    // the call `failed`, which hangs it up. The person pressed Answer and
+    // Aura ended their call for them.
+    //
+    // The ceiling now sits inside the server's ring window rather than under
+    // it, so a slow restore costs a moment of "connecting" instead of the
+    // call. It stays bounded and still reports `failed` honestly if identity
+    // genuinely never arrives — waiting forever on a call that cannot be
+    // joined would be its own kind of lie.
     Future<bool> awaitAuthed() async {
       const step = Duration(milliseconds: 150);
-      for (var i = 0; i < 40; i++) {
+      for (var i = 0; i < 200; i++) {
         if (!mounted) return false;
         if (ref.read(isAuthedProvider)) return true;
         await Future<void>.delayed(step);
