@@ -142,6 +142,32 @@ void main() {
     );
   });
 
+  test('a natively-delivered call reaches the same canonical state', () {
+    // CallKit and the app were two independent call systems on iOS:
+    // IosCallKit.onIncomingCall existed and was bound by nobody, so a
+    // VoIP-delivered invitation reached the system call screen and never
+    // reached the incoming-call bridge. The phone rang and Aura did not know.
+    final app = _code(_read('lib/app/aura_app.dart'));
+    expect(
+      app.contains('callKit.onIncomingCall ='),
+      isTrue,
+      reason: 'native arrival must be bound, or PushKit calls never enter '
+          'canonical state.',
+    );
+
+    final binding = _between(
+      _read('lib/app/aura_app.dart'),
+      'callKit.onIncomingCall =',
+      'callKit.onVoipTokenInvalidated',
+    );
+    expect(
+      binding.contains('incomingCallBridgeProvider'),
+      isTrue,
+      reason: 'the bridge is the one authority both surfaces read; binding the '
+          'callback without feeding it changes nothing.',
+    );
+  });
+
   test('the in-app accept button does not report the call declined', () {
     // Scoped to the success branch only. The later remove(id) in the
     // invite-expired branch is correct: that call genuinely is over.

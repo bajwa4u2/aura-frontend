@@ -55,9 +55,20 @@ class IosCallKit {
   /// invite is not left pending in the UI on a device that will never ring.
   Future<void> Function(String sessionId, String reason)? onRejectedBySystem;
 
-  /// A VoIP push arrived and a call screen is now up. Presentation has already
-  /// happened natively; this exists so Aura can reconcile its own state.
-  Future<void> Function(String sessionId, bool hasVideo)? onIncomingCall;
+  /// A VoIP push arrived and a call screen is now up.
+  ///
+  /// THIS IS THE RECONCILIATION SEAM, AND IT WAS NEVER CONNECTED. Presentation
+  /// has already happened natively, but Aura's own incoming-call state only
+  /// ever learned about a call from the socket. When the VoIP push was the
+  /// thing that arrived — which is the whole point of PushKit — CallKit and
+  /// the app held two unrelated opinions about whether a call existed: the
+  /// phone rang and nothing in Aura knew it.
+  ///
+  /// The full native payload is handed over, not just an id, because the VoIP
+  /// dictionary already carries the caller's identity and the invite's expiry.
+  /// Anything less would force the app to re-derive what the push already
+  /// said.
+  Future<void> Function(Map<String, dynamic> payload)? onIncomingCall;
 
   bool get isSupported => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
@@ -130,7 +141,7 @@ class IosCallKit {
         await onVoipTokenInvalidated?.call();
         break;
       case 'incomingCall':
-        await onIncomingCall?.call(sessionId, args['hasVideo'] == true);
+        await onIncomingCall?.call(args);
         break;
       case 'answer':
         await onAnswer?.call(sessionId);

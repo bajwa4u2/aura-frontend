@@ -100,6 +100,61 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       }
     };
 
+    // ONE CALL, ONE CANONICAL STATE — INCLUDING WHEN THE PUSH IS WHAT ARRIVED.
+    //
+    // CallKit and Aura's own incoming-call state were independent systems on
+    // iOS. `IosCallKit.onIncomingCall` existed and was bound by nobody, so a
+    // VoIP-delivered invitation reached the system call screen and never
+    // reached `incomingCallBridgeProvider`. Everything downstream of that
+    // bridge — the in-app card, the ring alert, terminal reconciliation, the
+    // payload the accept path prefers — was therefore blind to any call that
+    // arrived by push rather than by socket. Two surfaces, two opinions, one
+    // call.
+    //
+    // The bridge is the single authority, so the native arrival is folded into
+    // it in the shape every other transport already uses. It dedupes by
+    // sessionId, so the socket's `call:incoming` landing a moment later is
+    // harmless — whichever arrives first wins and the other is absorbed.
+    callKit.onIncomingCall = (payload) async {
+      final sessionId = '${payload['sessionId'] ?? ''}'.trim();
+      if (sessionId.isEmpty) return;
+      final raw = <String, dynamic>{};
+      final nativeRaw = payload['raw'];
+      if (nativeRaw is Map) {
+        nativeRaw.forEach((k, v) => raw['$k'] = v);
+      }
+      String pick(String key) => '${raw[key] ?? ''}'.trim();
+
+      try {
+        ref.read(incomingCallBridgeProvider.notifier).addIncoming({
+          // The invite id is the notification identity everywhere else; the
+          // session is the fallback so a payload without one still registers
+          // rather than being dropped by addIncoming's empty-id guard.
+          'id': pick('inviteId').isNotEmpty ? pick('inviteId') : sessionId,
+          'notificationKind': 'CALL_RINGING',
+          '_auraLifecycleSource': 'nativeCall',
+          'data': <String, dynamic>{
+            'sessionId': sessionId,
+            'realtimeSessionId': pick('realtimeSessionId'),
+            'inviteId': pick('inviteId'),
+            // The overlay refuses anything that is not an INTERRUPT, and a
+            // ringing call is the definition of one.
+            'attention': 'INTERRUPT',
+            'callState': 'RINGING',
+            'mediaMode': pick('mediaMode'),
+            'callKind': pick('mediaMode'),
+            'expiresAt': pick('expiresAt'),
+            'callerDisplayName': pick('callerDisplayName'),
+            'callerHandle': pick('callerHandle'),
+            'deeplink': pick('deeplink'),
+            'threadId': pick('threadId'),
+          },
+        });
+      } catch (e) {
+        debugPrint('[callkit] bridging native arrival failed: $e');
+      }
+    };
+
     callKit.onVoipTokenInvalidated = () async {
       try {
         await ref.read(deviceServiceProvider).deactivateVoipDevice();
