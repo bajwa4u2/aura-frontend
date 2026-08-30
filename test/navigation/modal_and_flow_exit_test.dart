@@ -108,7 +108,21 @@ void main() {
     // to followers is not a public record, so it needs no classification
     // either. The population falls to 17 — recorded here rather than left to
     // drift, because a census that only ever rises stops being a census.
-    expect(full, 17,
+    // 18th and 19th members added 2026-08-30 by the eligibility chapter:
+    // `core/eligibility/jurisdiction_confirm_sheet.dart`, which presents ONE
+    // surface through two entry points — `showJurisdictionConfirmSheet`
+    // (confirms and writes) and `showJurisdictionPicker` (returns the choice
+    // to a caller who will write it as part of a larger submission). The
+    // census counts call sites, so one surface is honestly two entries here.
+    // Reclassified against §6 rather than having the number bumped: it
+    // BEHAVES as a sheet — transient, dismissible by the barrier or a drag,
+    // returns a value to its caller, and traps nothing. It is deliberately
+    // not a route for the reason it exists at all: it interrupts someone who
+    // is holding an unpublished draft, and a route would take them off the
+    // surface holding it. A country confirmation also has no addressable
+    // identity — a URL that reopened it would be asking a question with no
+    // refused act behind it.
+    expect(full, 19,
         reason: 'the full-height sheet population changed — reclassify it '
             'against §6 (behaviour, not dimensions) rather than adjusting '
             'this number');

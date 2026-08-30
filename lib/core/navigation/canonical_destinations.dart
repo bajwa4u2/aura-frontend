@@ -137,3 +137,33 @@ String memberHomeDestination() => '/home';
 /// Where a reader lands when the announcement they were reading is removed
 /// from under them.
 String announcementsIndexDestination() => '/announcements';
+
+/// `/` — the public front door.
+///
+/// Distinct from [memberHomeDestination]: this is where a person who may not
+/// be signed in belongs. A booking cancellation is reached from an emailed
+/// link by someone who is very often neither signed in nor a member, so
+/// sending them to `/home` would bounce them through an auth gate to reach a
+/// page they did not ask for.
+String publicRootDestination() => '/';
+
+/// `/meet/:slug/book`, or its institution-scoped form.
+///
+/// The calendar a booking came from. Someone who cancels because the time did
+/// not suit them wants the next time, not a front page — so the address is
+/// built from the profile the booking already names, and lives here rather
+/// than being assembled inline at the one screen that happens to need it.
+///
+/// Returns null when there is no profile to return to; a caller must not
+/// render a dead "book another time" control.
+String? meetingBookingDestination({
+  required String profileSlug,
+  String institutionSlug = '',
+}) {
+  final slug = _clean(profileSlug);
+  if (slug == null) return null;
+  final institution = _clean(institutionSlug);
+  return institution == null
+      ? '/meet/$slug/book'
+      : '/i/$institution/meet/$slug/book';
+}

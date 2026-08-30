@@ -75,6 +75,12 @@ class AppErrorMapper {
         statusCode: status,
         code: backendCode,
         requestId: requestId,
+        // Eligibility refusals are 403s that a person may be able to clear
+        // themselves — by adding a date of birth, or confirming where they
+        // are. The flag is what separates those from the ones only time can
+        // lift, so it has to survive the mapping or the UI cannot tell them
+        // apart. See `EligibilityRefusal`.
+        resolvable: _readResolvable(envelope),
       );
     }
 
@@ -280,6 +286,18 @@ class AppErrorMapper {
     if (direct != null && direct.isNotEmpty) return direct;
 
     return null;
+  }
+
+  /// `error.details.resolvable`, strictly as a boolean.
+  ///
+  /// Anything that is not literally `true` or `false` is reported as unknown
+  /// rather than coerced. A string "false" coerced by truthiness would tell
+  /// the UI to offer a retry precisely when the backend said not to.
+  static bool? _readResolvable(Map<String, dynamic>? envelope) {
+    final error = _asMap(envelope?['error']) ?? envelope;
+    final details = _asMap(error?['details']);
+    final value = details?['resolvable'];
+    return value is bool ? value : null;
   }
 
   static List<String>? _readIssues(Map<String, dynamic>? outer) {

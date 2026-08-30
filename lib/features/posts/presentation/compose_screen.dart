@@ -12,6 +12,8 @@ import 'package:video_player/video_player.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/content_policy/content_length_policy.dart';
+import '../../../core/eligibility/eligibility_affordance.dart';
+import '../../../core/eligibility/eligibility_refusal.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/tagging/governed_tag_field.dart';
 import '../../../core/tagging/tag_entities.dart';
@@ -2761,6 +2763,33 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       // findings, may already be published) — the user just didn't
       // complete the review sheet. Nothing went wrong; say nothing.
       if (e is _ReplyReviewInterrupted) return;
+
+      // ELIGIBILITY REFUSAL — CHECKED BEFORE THE GENERIC 403 BRANCHES.
+      //
+      // Age eligibility and the raise-issue capability gate both answer 403,
+      // and the branch below matches on status alone. Reaching it first would
+      // tell a 17-year-old that raising issues "may require account
+      // verification" when the real answer is that publication is 18 where
+      // they are — a wrong explanation is worse than a generic one, because
+      // it sends them to verify an account that is already verified.
+      if (EligibilityRefusal.from(AppErrorMapper.from(e)) != null) {
+        final retry = await handleEligibilityRefusal(
+          context,
+          ref,
+          e,
+          feature: 'publish this',
+        );
+        if (!retry || !mounted) return;
+
+        // THE DRAFT IS STILL HERE. Nothing above cleared the controllers or
+        // the attachments, so re-entering `_publish` republishes the same
+        // composition rather than asking anyone to write it again. `_posting`
+        // has to be released first or the guard at the top of `_publish`
+        // would silently drop the retry.
+        setState(() => _posting = false);
+        await _publish();
+        return;
+      }
 
       // Capability gate: backend returns 403 when the user is not eligible
       // to raise issues (CAN_RAISE_ISSUE_GATE_ENABLED=true). Show a calm,

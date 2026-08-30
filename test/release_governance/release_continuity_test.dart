@@ -98,25 +98,48 @@ void main() {
       // client.url).
     });
 
-    test('the notice is NON-BLOCKING and dismissible', () {
+    // ────────────────────────────────────────────────────────────────
+    // THERE IS NO RELEASE NOTICE ANY MORE.
+    //
+    // These two tests used to assert the OPPOSITE: that a dismissible "a new
+    // release is available" bar sat above the header whenever the deployed
+    // bundle moved ahead of the tab. Founder decision, 2026-08-30 — remove it.
+    // On a platform that deploys several times a day it was permanent
+    // furniture reporting our deployment cadence to people who had not asked,
+    // and dismissing it only lasted until the next deploy.
+    //
+    // The assertions are inverted rather than deleted, because "no banner" is
+    // now the invariant worth defending: the easiest way for it to come back
+    // is for someone to read the surrounding release-continuity machinery and
+    // conclude that a notice is missing.
+    // ────────────────────────────────────────────────────────────────
+    test('a compatible client is shown NOTHING', () {
       final gate = _read(_kGate);
-      expect(gate, contains('_ReleaseAvailableBanner'));
-      expect(gate, contains('_dismissed'));
-      // It wraps the child rather than replacing it -- the running client
-      // still works.
-      expect(gate, contains('Expanded(child: widget.child)'));
+      expect(gate.contains('_ReleaseAvailableBanner'), isFalse);
+      expect(gate.contains('webReleaseAvailableProvider'), isFalse);
     });
 
-    test('it only appears when the backend has NO complaint', () {
-      // A blocked or maintenance verdict is a different, stronger state and
-      // must keep its own screen; stacking a soft notice on top would muddle
-      // two very different messages.
-      final gate = _read(_kGate);
+    test('compatible returns the child unchanged, with nothing wrapped around it', () {
+      // The strongest form of "non-blocking": there is no chrome to block
+      // with. A Column with an Expanded child was the shape the banner
+      // needed; its absence is what proves the banner is gone rather than
+      // merely hidden behind a flag.
+      final gate = _code(_kGate);
       final compatibleBranch = gate.substring(
         gate.indexOf('case CompatibilityStatus.compatible:'),
         gate.indexOf('case CompatibilityStatus.degraded'),
       );
-      expect(compatibleBranch, contains('webReleaseAvailableProvider'));
+      expect(compatibleBranch, contains('return widget.child'));
+      expect(compatibleBranch.contains('Expanded('), isFalse);
+    });
+
+    test('a genuinely incompatible client is still stopped', () {
+      // Removing the soft notice must not have removed the hard one. Blocked
+      // and maintenance are different, stronger states and keep their own
+      // screens — that is precisely why the soft notice was safe to delete.
+      final gate = _code(_kGate);
+      expect(gate, contains('case CompatibilityStatus.blocked'));
+      expect(gate, contains('case CompatibilityStatus.degraded'));
     });
   });
 }

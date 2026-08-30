@@ -29,6 +29,9 @@ import '../../composition/domain/composition_models.dart';
 import '../domain/announcement.dart';
 import '../providers.dart';
 import 'announcement_distribution.dart';
+import '../../../core/eligibility/eligibility_affordance.dart';
+import '../../../core/eligibility/eligibility_refusal.dart';
+import '../../../core/errors/app_error_mapper.dart';
 
 enum AnnouncementEditorScope {
   platform,
@@ -729,13 +732,24 @@ class _AnnouncementEditorScreenState
     });
   }
 
-  Future<void> _submitAnnouncement() async {
+  /// Publish the announcement.
+  ///
+  /// [reuseDraftId] exists for ONE reason: this flow creates a draft and then
+  /// publishes it, so a refusal that lands on the publish step leaves a real
+  /// draft behind. Re-running the whole method after the person clears the
+  /// refusal would create a SECOND draft and quietly leave the first one
+  /// orphaned. A retry therefore republishes the draft it already made.
+  Future<void> _submitAnnouncement({String? reuseDraftId}) async {
     if (!_canSubmit) return;
 
     setState(() {
       _submitting = true;
       _submitError = null;
     });
+
+    // Held outside the try so a refusal on the publish step can hand the
+    // retry the draft that already exists.
+    String? pendingDraftId;
 
     try {
       if (!_isPlatformMode) {
@@ -762,13 +776,27 @@ class _AnnouncementEditorScreenState
           .where((id) => id.isNotEmpty)
           .toList(growable: false);
 
-      final draft = await repo.createDraft(
-        title: _titleController.text.trim(),
-        summary: _summaryController.text.trim(),
-        excerpt: _excerptFromDraft(),
-        bodyMarkdown: _bodyController.text.trim(),
-        mediaIds: mediaIds,
-      );
+      final reuse = (reuseDraftId ?? '').trim();
+      // Updating rather than merely re-reading the draft: the person may have
+      // adjusted the text while the confirmation sheet was open, and the
+      // announcement they publish should be the one on their screen.
+      final draft = reuse.isNotEmpty
+          ? await repo.updateDraft(
+              id: reuse,
+              title: _titleController.text.trim(),
+              summary: _summaryController.text.trim(),
+              excerpt: _excerptFromDraft(),
+              bodyMarkdown: _bodyController.text.trim(),
+              mediaIds: mediaIds,
+            )
+          : await repo.createDraft(
+              title: _titleController.text.trim(),
+              summary: _summaryController.text.trim(),
+              excerpt: _excerptFromDraft(),
+              bodyMarkdown: _bodyController.text.trim(),
+              mediaIds: mediaIds,
+            );
+      pendingDraftId = draft.id;
 
       if (_publishToAura) {
         await repo.publish(draft.id);
@@ -819,6 +847,26 @@ class _AnnouncementEditorScreenState
       _leaveEditorAfterSuccess(published.slug);
     } on DioException catch (e) {
       if (!mounted) return;
+
+      // ELIGIBILITY REFUSAL — checked before the generic Dio message, which
+      // would render the same sentence with no way to act on it.
+      if (EligibilityRefusal.from(AppErrorMapper.from(e)) != null) {
+        setState(() => _submitting = false);
+        final retry = await handleEligibilityRefusal(
+          context,
+          ref,
+          e,
+          feature: 'publish this',
+        );
+        // Retry the PUBLISH, not the whole submission: everything typed is
+        // still on screen, and the draft it already created is reused rather
+        // than duplicated.
+        if (retry && mounted) {
+          await _submitAnnouncement(reuseDraftId: pendingDraftId);
+        }
+        return;
+      }
+
       setState(() {
         _submitError = _readDioError(e);
       });

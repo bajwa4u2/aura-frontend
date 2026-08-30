@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/auth/session_providers.dart';
+import '../../../core/eligibility/jurisdiction_confirm_sheet.dart';
+import '../../../core/eligibility/jurisdictions.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -36,10 +38,36 @@ class IdentityBaselineScreen extends ConsumerStatefulWidget {
 class _IdentityBaselineScreenState
     extends ConsumerState<IdentityBaselineScreen> {
   DateTime? _selected;
+  /// ISO-3166 alpha-2, self-declared.
+  ///
+  /// CAPTURED HERE, AT CREATION, ON PURPOSE. Founder decision, 2026-08-30:
+  /// no new account is to be left with a null jurisdiction where the governed
+  /// signup path can capture one. Every legacy account has a null because the
+  /// column did not exist; that is a debt to work off, not a pattern to keep
+  /// reproducing on every new sign-up.
+  String? _jurisdiction;
   bool _busy = false;
   String? _error;
 
   static final DateTime _earliestPlausible = DateTime.utc(1900, 1, 1);
+
+  Future<void> _pickJurisdiction() async {
+    final picked = await showJurisdictionPicker(
+      context,
+      ref,
+      title: 'Where are you?',
+      explanation:
+          'Age rules differ by country. This is only used to apply the right ones — it is never shown on your profile.',
+      initial:
+          _jurisdiction ??
+          WidgetsBinding.instance.platformDispatcher.locale.countryCode,
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _jurisdiction = picked;
+      _error = null;
+    });
+  }
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
@@ -61,6 +89,11 @@ class _IdentityBaselineScreenState
     final msg = (e?.message ?? '').toLowerCase();
 
     if (code != null && code >= 400 && code < 500) {
+      // Rendered verbatim, and that now includes an eligibility refusal: a
+      // 403 here means the account threshold was not met, and the backend's
+      // own sentence ("You must be 16 or older to use Aura.") is both the
+      // honest answer and the only one allowed to be shown — Policy §5
+      // forbids echoing the date or the computed age back.
       final raw = e?.response?.data;
       if (raw is Map && raw['message'] is String) {
         return raw['message'] as String;
@@ -90,6 +123,11 @@ class _IdentityBaselineScreenState
       return;
     }
 
+    if (!isKnownJurisdiction(_jurisdiction)) {
+      setState(() => _error = 'Please select where you are.');
+      return;
+    }
+
     setState(() {
       _busy = true;
       _error = null;
@@ -101,7 +139,10 @@ class _IdentityBaselineScreenState
     try {
       await dio.patch(
         '/users/me/identity-baseline',
-        data: {'dateOfBirth': iso},
+        // Both facts in ONE request. Sending them separately would leave a
+        // window in which the account has a country but no date of birth, and
+        // the account gate runs on the arrival of the date of birth.
+        data: {'dateOfBirth': iso, 'jurisdiction': _jurisdiction},
       );
 
       if (!mounted) return;
@@ -158,7 +199,7 @@ class _IdentityBaselineScreenState
                     const Text('Complete your profile', style: AuraText.title),
                     const SizedBox(height: AuraSpace.s8),
                     Text(
-                      'Before continuing, please confirm your date of birth. This is part of Aura\'s identity baseline for every member.',
+                      'Before continuing, please confirm your date of birth and where you are. Both are part of Aura\'s identity baseline for every member, and neither is shown on your profile.',
                       style: AuraText.body.copyWith(
                         color: AuraSurface.muted,
                         height: 1.5,
@@ -180,6 +221,26 @@ class _IdentityBaselineScreenState
                           label,
                           style: AuraText.body.copyWith(
                             color: selected == null
+                                ? AuraSurface.muted
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AuraSpace.s14),
+                    InkWell(
+                      onTap: _busy ? null : _pickJurisdiction,
+                      borderRadius: BorderRadius.circular(AuraRadius.r12),
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Where you are',
+                        ),
+                        child: Text(
+                          _jurisdiction == null
+                              ? 'Select country'
+                              : jurisdictionName(_jurisdiction),
+                          style: AuraText.body.copyWith(
+                            color: _jurisdiction == null
                                 ? AuraSurface.muted
                                 : null,
                           ),

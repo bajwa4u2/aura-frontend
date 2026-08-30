@@ -38,6 +38,7 @@ class AppError {
     this.code,
     this.requestId,
     this.issues,
+    this.resolvable,
   });
 
   final AppErrorType type;
@@ -54,6 +55,15 @@ class AppError {
 
   /// Field-level validation issues from `error.details.issues`, when present.
   final List<String>? issues;
+
+  /// `error.details.resolvable`, when the backend states it.
+  ///
+  /// Whether the PERSON can do something that makes this succeed. A refusal
+  /// that only time can lift (an age threshold) is `false`, and a UI that
+  /// offers a retry anyway invites a person to press a button that cannot
+  /// work. Null means the backend did not say — treated as "do not offer a
+  /// retry", because silence is not permission to promise one.
+  final bool? resolvable;
 
   bool get isAuthRequired => type == AppErrorType.authRequired;
   bool get hasIssues => issues != null && issues!.isNotEmpty;

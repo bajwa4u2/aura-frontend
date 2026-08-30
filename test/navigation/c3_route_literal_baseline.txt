@@ -60,7 +60,6 @@
 2 lib/features/invitations/presentation/invite_hub_screen.dart
 14 lib/features/me/presentation/me_screen.dart
 5 lib/features/me/presentation/security_screen.dart
-2 lib/features/meetings/presentation/booking_cancel_screen.dart
 1 lib/features/meetings/presentation/booking_confirm_screen.dart
 1 lib/features/meetings/presentation/booking_reschedule_screen.dart
 1 lib/features/meetings/presentation/create_meeting_screen.dart
@@ -130,3 +129,9 @@
 # ZERO scattered literals (1 -> 0 and 1 -> 0).
 0 lib/features/conversation/presentation/conversation_screen.dart
 0 lib/features/articles/presentation/article_screen.dart
+# 2026-08-30 booking-cancellation burn-down: publicRootDestination() and
+# meetingBookingDestination() now exist on the canonical destinations, so the
+# cancellation screen carries ZERO scattered literals (2 -> 0). Both were
+# introduced by the cancel-with-reason work itself — the screen had assembled
+# `/meet/:slug/book` inline and repeated `context.go('/')` three times.
+0 lib/features/meetings/presentation/booking_cancel_screen.dart

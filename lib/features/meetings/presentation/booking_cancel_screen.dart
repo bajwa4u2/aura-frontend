@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/navigation/canonical_destinations.dart';
+import '../../../core/product/product_state.dart';
+import '../../../core/product/product_state_view.dart';
+import '../../../core/product/temporal.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/guest_shell.dart';
 import '../application/meetings_provider.dart';
@@ -105,17 +109,19 @@ class _BookingCancelScreenState extends ConsumerState<BookingCancelScreen> {
   /// time, not the home page. Built from the profile the booking already
   /// names, so it returns them to the same person's calendar rather than a
   /// generic entry point.
-  String? get _bookAgainRoute {
-    if (_slug.isEmpty) return null;
-    if (_institutionSlug.isNotEmpty) {
-      return '/i/$_institutionSlug/meet/$_slug/book';
-    }
-    return '/meet/$_slug/book';
-  }
+  String? get _bookAgainRoute => meetingBookingDestination(
+    profileSlug: _slug,
+    institutionSlug: _institutionSlug,
+  );
 
   String _whenLabel() {
-    final at = _scheduledAt?.toLocal();
-    if (at == null) return '';
+    final scheduled = _scheduledAt;
+    if (scheduled == null) return '';
+    // The one place a zone decision is allowed to be made for a human-facing
+    // time. A screen that calls `toLocal()` itself is deciding timezone
+    // semantics on its own, which is how two surfaces end up disagreeing
+    // about when the same meeting is.
+    final at = ProductTime(scheduled, TimeEvent.scheduled).local;
     const months = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December',
@@ -155,10 +161,13 @@ class _BookingCancelScreenState extends ConsumerState<BookingCancelScreen> {
 
   List<Widget> _body(ThemeData theme) {
     if (_loading) {
+      // The state authority owns full-surface states, so "we are looking for
+      // your booking" looks the same here as everywhere else in the product.
       return const [
-        Center(child: CircularProgressIndicator()),
-        SizedBox(height: AuraSpace.s16),
-        Center(child: Text('Finding your booking…')),
+        AuraProductState(
+          state: ProductState.loading,
+          headline: 'Finding your booking…',
+        ),
       ];
     }
 
@@ -170,7 +179,7 @@ class _BookingCancelScreenState extends ConsumerState<BookingCancelScreen> {
         Text(_error!, style: theme.textTheme.bodyMedium),
         const SizedBox(height: AuraSpace.s24),
         FilledButton(
-          onPressed: () => context.go('/'),
+          onPressed: () => context.go(publicRootDestination()),
           child: const Text('Back to home'),
         ),
       ];
@@ -202,7 +211,7 @@ class _BookingCancelScreenState extends ConsumerState<BookingCancelScreen> {
           ),
         if (route != null) const SizedBox(height: AuraSpace.s8),
         TextButton(
-          onPressed: () => context.go('/'),
+          onPressed: () => context.go(publicRootDestination()),
           child: const Text('Back to home'),
         ),
       ];
@@ -243,7 +252,7 @@ class _BookingCancelScreenState extends ConsumerState<BookingCancelScreen> {
       ),
       const SizedBox(height: AuraSpace.s8),
       TextButton(
-        onPressed: _working ? null : () => context.go('/'),
+        onPressed: _working ? null : () => context.go(publicRootDestination()),
         child: const Text('Keep my booking'),
       ),
     ];

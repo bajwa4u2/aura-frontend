@@ -9,6 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
+import '../../../core/eligibility/eligibility_affordance.dart';
+import '../../../core/eligibility/eligibility_refusal.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/tagging/governed_tag_field.dart';
 import '../../../core/tagging/tag_entities.dart';
@@ -1114,6 +1116,27 @@ class _InstitutionPostComposerScreenState
       context.pop(true);
     } catch (e) {
       if (!mounted) return;
+
+      // ELIGIBILITY REFUSAL. Institution voice is TWO gates — personal
+      // publication and the flat 18 for representing an institution — so a
+      // refusal here can mean either. The backend says which; this hands the
+      // person its sentence and, where a country confirmation would change
+      // the answer, the one control that resolves it.
+      if (EligibilityRefusal.from(AppErrorMapper.from(e)) != null) {
+        setState(() => _busy = false);
+        final retry = await handleEligibilityRefusal(
+          context,
+          ref,
+          e,
+          feature: 'publish this',
+        );
+        // The composition is untouched either way: no controller was cleared
+        // and no draft discarded, so a retry republishes exactly what was
+        // already written.
+        if (retry && mounted) await _publishNow();
+        return;
+      }
+
       setState(() {
         _busy = false;
         _error = _readError(e, 'Could not publish post.');
