@@ -21,6 +21,7 @@ import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/publication/aura_publication_title.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../../composition/data/composition_repository.dart';
@@ -179,7 +180,11 @@ class _AnnouncementEditorScreenState
       : 'Institution announcement';
 
   String get _introText => _isPlatformMode
-      ? 'Write once. Let the system support clarity without taking over the surface.'
+      // Was: "Write once. Let the system support clarity without taking over
+      // the surface." That is design doctrine describing how the SURFACE was
+      // built, addressed to whoever built it. It reached a person about to
+      // write a platform announcement and told them nothing they could act on.
+      ? 'Publish a notice to everyone on Aura. It appears in Announcements and can be pinned to the top.'
       // Institution publishing is shipped through the institution post path,
       // not this surface. Surfacing this from here is intentional: the
       // editor's affordances (review, translate, attachments) remain
@@ -356,14 +361,6 @@ class _AnnouncementEditorScreenState
     return '${Uri.base.origin}/announcements/$cleanSlug';
   }
 
-  String _buildLinkedInAnnouncementCommentary() {
-    return _firstNonEmpty([
-      _trimmedOrEmpty(_summaryController.text),
-      _trimmedOrEmpty(_bodyController.text),
-      _trimmedOrEmpty(_titleController.text),
-    ]);
-  }
-
   String _buildTikTokAnnouncementCaption() {
     final base = _firstNonEmpty([
       _trimmedOrEmpty(_titleController.text),
@@ -378,9 +375,22 @@ class _AnnouncementEditorScreenState
     required String slug,
   }) async {
     final dio = ref.read(dioProvider);
+    // THE SERVER ALREADY KNOWS HOW TO SAY THIS, AND SAYS IT BETTER.
+    //
+    // `commentary` used to be sent from here as _firstNonEmpty([summary, body,
+    // title]) — ONE of the three, so the announcement's TITLE never reached
+    // LinkedIn. The post arrived carrying the image and a bare summary line,
+    // which is what "showing image, without title and summary" looks like from
+    // the outside.
+    //
+    // The backend composes title + summary + body from the canonical
+    // announcement record and appends the canonical URL itself. Sending a
+    // weaker client-built string simply overrode it. Omitting it lets the
+    // authority that holds the record write the post — the same reasoning this
+    // endpoint already applies to canonicalUrl, which it resolves server-side
+    // precisely because the client's version could be wrong.
     final payload = {
       'announcementId': announcementId,
-      'commentary': _buildLinkedInAnnouncementCommentary(),
       'canonicalUrl': _canonicalAnnouncementUrl(slug),
     };
 
@@ -1582,6 +1592,21 @@ class _AnnouncementEditorScreenState
                 style: const TextStyle(color: Colors.redAccent),
               ),
             ],
+            // WHY PUBLISH IS OFF, WHERE IT CAN ACTUALLY BE READ.
+            //
+            // This reason existed and was correct — it was attached to the
+            // disabled button as a Tooltip. A tooltip needs a hover, a
+            // disabled control frequently does not receive one, and on a
+            // touch screen there is no hover at all. So the button sat dead
+            // with the explanation sealed inside it, which is exactly the
+            // "dead end" the tooltip was added to prevent.
+            if (!_canSubmit && (_submitBlockedReason ?? '').trim().isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Text(
+                _submitBlockedReason!,
+                style: AuraText.small.copyWith(color: AuraSurface.muted),
+              ),
+            ],
             const SizedBox(height: 22),
             Wrap(
               spacing: 12,
@@ -1591,13 +1616,9 @@ class _AnnouncementEditorScreenState
                   label: 'Cancel',
                   onPressed: _submitting ? null : _cancelEditor,
                 ),
-                Tooltip(
-                  // A disabled control that will not say why is a dead end.
-                  message: _submitBlockedReason ?? '',
-                  child: AuraPrimaryButton(
-                    label: _submitting ? 'Publishing' : 'Publish announcement',
-                    onPressed: _canSubmit ? _submitAnnouncement : null,
-                  ),
+                AuraPrimaryButton(
+                  label: _submitting ? 'Publishing' : 'Publish announcement',
+                  onPressed: _canSubmit ? _submitAnnouncement : null,
                 ),
               ],
             ),

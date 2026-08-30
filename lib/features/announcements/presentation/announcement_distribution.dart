@@ -112,7 +112,17 @@ class _AnnouncementDistributionState extends State<AnnouncementDistribution> {
         ),
         _row(
           title: 'LinkedIn',
-          subtitle: widget.linkedinConnected ? 'Connected' : 'Not connected',
+          // A DEAD SWITCH MUST AT LEAST SAY WHERE IT COMES ALIVE.
+          //
+          // The control is correctly disabled with no connected account —
+          // there is nothing to publish to. But it read only "Not connected",
+          // which describes the state and withholds the remedy, so the switch
+          // looked broken rather than unavailable. The connection is made on
+          // the profile screen; saying so is the difference between a dead
+          // control and a next step.
+          subtitle: widget.linkedinConnected
+              ? 'Connected'
+              : 'Not connected — connect LinkedIn on your profile',
           value: linkedin,
           onChanged: widget.linkedinConnected
               ? (v) {

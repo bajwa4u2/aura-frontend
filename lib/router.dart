@@ -248,6 +248,24 @@ bool requiresInstitutionAccessForPath(String path) {
     return false;
   }
 
+  // READING AN INSTITUTION POST IS NOT ACTING AS THE INSTITUTION.
+  //
+  // Same doctrine as the meeting-attendance exemption above, and the same
+  // defect it was written to stop: an institutionId in the path is URL
+  // CONTEXT, not a claim to institution identity. An institution post is
+  // published to be read — it appears in the public feed and carries a
+  // shareable address — so a reader who is not a member was being told they
+  // were not a member of something they were only trying to read.
+  //
+  // Composition stays gated: `posts/new` is genuinely speaking AS the
+  // institution and is excluded here exactly as `meetings/new` is above.
+  final institutionPostReadPath = RegExp(
+    r'^/institution/[^/]+/posts/(?!new(?:/|$))[^/]+',
+  );
+  if (institutionPostReadPath.hasMatch(path)) {
+    return false;
+  }
+
   // All other /institution/:id/... routes require institution access.
   final institutionSubPath = RegExp(r'^/institution/[^/]+/.+');
   return institutionSubPath.hasMatch(path);
