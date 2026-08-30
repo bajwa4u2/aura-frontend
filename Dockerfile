@@ -245,6 +245,18 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '    return 200 "User-agent: *\nAllow: /p/\nAllow: /media/\nAllow: /institutions\nAllow: /u/\nDisallow: /admin\nDisallow: /institution/\nDisallow: /messages\nDisallow: /conversations\nDisallow: /activity\nDisallow: /notifications\nDisallow: /saved\nDisallow: /settings\nDisallow: /me\n";' \
 '  }' \
 '' \
+'  # Static discovery endpoints must not fall through to the Flutter shell.' \
+'  location = /sitemap.xml {' \
+'    default_type application/xml;' \
+'    add_header Cache-Control "public, max-age=3600";' \
+'    try_files $uri =404;' \
+'  }' \
+'  location = /indexnow-key.txt {' \
+'    default_type text/plain;' \
+'    add_header Cache-Control "public, max-age=3600";' \
+'    try_files $uri =404;' \
+'  }' \
+'' \
 '  location ~ ^/media/[^/]+/raw$ {' \
 '    resolver 1.1.1.1 8.8.8.8 valid=300s ipv6=off;' \
 '    resolver_timeout 5s;' \

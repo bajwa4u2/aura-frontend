@@ -80,6 +80,7 @@ Thumbs.db
 # Claude Code local settings
 # -----------------------------
 .claude/
+.indexnow-state.json
 # Return-path audit intermediates (regenerate with tools/navigation_audit)
 /routes.json
 /nav_audit.json
