@@ -43,6 +43,8 @@ import 'conversation_avatar.dart';
 import 'conversation_identity.dart';
 import 'message_interactions.dart';
 import '../../realtime/application/realtime_providers.dart';
+import '../../updates/incoming_call_bridge.dart';
+import 'conversation_incoming_call.dart';
 import '../../../core/composition/attachment_lifecycle.dart';
 import '../../../core/composition/composition_authority.dart';
 import '../../../core/composition/content_intake.dart';
@@ -1237,6 +1239,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             // offer it — after a refresh, a dismissed card, a missed
             // notification, or a frozen accept. Never "gone to never come
             // back".
+            ConversationIncomingCall(conversationId: widget.conversationId),
             _ConversationLiveRibbon(conversationId: widget.conversationId),
             Expanded(
               child: messagesAsync.when(
@@ -1570,6 +1573,18 @@ class _ConversationLiveRibbon extends ConsumerWidget {
       realtimeControllerProvider.select((s) => s.isJoined),
     );
     if (joined) return const SizedBox.shrink();
+
+    // ONE RIBBON. This one answers "is there a call I could join?" from a
+    // server poll; the projection above answers "you are being invited right
+    // now" from the canonical invitation. When both are true they describe the
+    // same call, and the invitation is the more urgent and more precise of the
+    // two — so it wins, and this defers rather than stacking a second strip
+    // saying nearly the same thing.
+    final invitation = conversationIncomingCall(
+      ref.watch(incomingCallBridgeProvider),
+      conversationId,
+    );
+    if (invitation != null) return const SizedBox.shrink();
 
     final session = ref
         .watch(conversationActiveLiveProvider(conversationId))

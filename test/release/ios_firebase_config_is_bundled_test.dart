@@ -70,6 +70,34 @@ void main() {
     );
   });
 
+  test('iOS still registers an ordinary FCM device, distinctly from VoIP', () {
+    // The two iOS registrations are different authorities and must both
+    // survive: FCM carries ordinary notifications, APNS/PushKit carries the
+    // VoIP call. One iPhone legitimately holds both, and collapsing them would
+    // produce a registration that looks healthy and receives nothing.
+    final service =
+        File('lib/features/devices/device_service.dart').readAsStringSync();
+
+    expect(
+      RegExp(r"TargetPlatform\.iOS:\s*\n\s*return _fcmPayload\(platform: 'IOS'\)")
+          .hasMatch(service),
+      isTrue,
+      reason: 'the ordinary iOS path must still map to an FCM payload.',
+    );
+    expect(
+      service.contains("'provider': 'APNS'"),
+      isTrue,
+      reason: 'the PushKit row is registered as APNS — the provider is what '
+          'distinguishes it from the ordinary FCM row.',
+    );
+    expect(
+      service.contains('_awaitApnsToken'),
+      isTrue,
+      reason: 'getToken() before APNs has registered returns null on iOS, '
+          'which is how the FCM row silently fails to exist.',
+    );
+  });
+
   test('the config file itself is present and identifies this app', () {
     // Gitignored and provisioned by CI from FIREBASE_IOS_CONFIG_BASE64, so its
     // absence here is a local-setup condition rather than a defect. When it IS
