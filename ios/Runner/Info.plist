@@ -133,6 +133,20 @@
 		  run exercises it. See docs/av/AV_PRODUCT_CONTRACT.md.
 		-->
 		<string>audio</string>
+		<!--
+		  NOW EARNED, AND ONLY NOW. The comment above this array used to warn
+		  that claiming `voip` without PushKit + CallKit is a rejection
+		  trigger, which is exactly why it was absent: an FCM alert dressed as
+		  a call is not a call, and declaring the capability for it would have
+		  been a false claim about the binary.
+
+		  AppDelegate.swift now registers a PKPushRegistry for `.voIP` and
+		  reports every VoIP push to a CXProvider unconditionally — the two
+		  halves Apple requires, present together. The mode is declared
+		  because the app genuinely does this, not because we want the
+		  delivery guarantees that come with it.
+		-->
+		<string>voip</string>
 	</array>
 
 	<!--

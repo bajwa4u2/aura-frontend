@@ -130,6 +130,85 @@ class DeviceService {
     }
   }
 
+  /// Register the PushKit VoIP token as its OWN device row.
+  ///
+  /// A VoIP token is not an FCM token wearing a different hat. It comes from a
+  /// different registry, rotates on its own schedule, and APNs delivers to it
+  /// on a different topic (`<bundle>.voip`) with a different push type. Writing
+  /// it into the FCM row would produce a registration that looks healthy and
+  /// receives nothing — the same class of silent failure that kept the iPhone
+  /// quiet in the first place.
+  ///
+  /// So it is registered as `provider: APNS`, which no client has ever used and
+  /// which the backend's direct APNs adapter already serves. That makes the
+  /// provider itself the discriminator: on iOS, an APNS row means PushKit, and
+  /// an FCM row means the ordinary alert path. One person on one iPhone
+  /// legitimately has both.
+  Future<void> registerVoipToken(String token) async {
+    if (kIsWeb || token.trim().isEmpty) return;
+    if (defaultTargetPlatform != TargetPlatform.iOS) return;
+    if (!_isAuthed()) return;
+    try {
+      final payload = <String, dynamic>{
+        'platform': 'IOS',
+        'provider': 'APNS',
+        'token': token.trim(),
+        'deviceName': '${_resolveDeviceName()} (calls)',
+        'appVersion': const String.fromEnvironment(
+          'APP_VERSION',
+          defaultValue: '1.0.0',
+        ),
+        'locale': _resolveLocale(),
+        'timezone': _resolveTimezone(),
+        'isActive': true,
+      };
+      final id = await _loadPersistedVoipDeviceId();
+      if (id != null && id.isNotEmpty) {
+        await _repository.updateDevice(id, payload);
+      } else {
+        final device = await _repository.register(payload);
+        if (device.id.isNotEmpty) await _persistVoipDeviceId(device.id);
+      }
+      debugPrint('[callkit] voip device registered');
+    } catch (e) {
+      debugPrint('DeviceService.registerVoipToken failed: $e');
+    }
+  }
+
+  /// iOS invalidated the VoIP token. Deactivate rather than delete, so the
+  /// backend stops attempting delivery to a credential Apple has retired
+  /// without losing the row's history.
+  Future<void> deactivateVoipDevice() async {
+    final id = await _loadPersistedVoipDeviceId();
+    if (id == null || id.isEmpty || !_isAuthed()) return;
+    try {
+      await _repository.updateDevice(id, {'isActive': false});
+    } catch (e) {
+      debugPrint('DeviceService.deactivateVoipDevice failed: $e');
+    }
+  }
+
+  static const _kVoipDeviceId = 'aura_voip_device_id';
+
+  Future<String?> _loadPersistedVoipDeviceId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(_kVoipDeviceId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _persistVoipDeviceId(String id) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_kVoipDeviceId, id);
+    } catch (_) {
+      // Non-fatal: a lost id means the next registration creates a new row
+      // rather than updating this one, which the backend tolerates.
+    }
+  }
+
   /// Persist any FCM token rotation pushed by Firebase. Without this the
   /// backend keeps a stale token after the OS rotates it, and offline rings
   /// stop arriving silently.
