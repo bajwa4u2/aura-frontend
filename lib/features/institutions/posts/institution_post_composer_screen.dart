@@ -1412,8 +1412,20 @@ class _InstitutionPostComposerScreenState
                           controller: _bodyCtrl,
                           focusNode: _bodyFocus,
                           maxLength: InstitutionPost.maxBodyChars,
-                          maxLines: 14,
+                          // The identical scroll trap the announcement editor
+                          // had: a bounded maxLines turns this into a second
+                          // Scrollable that swallows the wheel once the text
+                          // overflows, stranding the controls below it on short
+                          // viewports. Same one-line remedy, applied here
+                          // because it is the same defect and not a different
+                          // one that merely looks similar.
+                          maxLines: null,
                           minLines: 8,
+                          // Declines scroll ownership for the same reason the
+                          // announcement body does: with nothing of its own to
+                          // scroll, the enclosing view should take every
+                          // gesture including those starting over the field.
+                          scrollPhysics: const NeverScrollableScrollPhysics(),
                           decoration: _decoration('Write your post…'),
                           style: AuraText.body,
                           buildCounter: _zeroCounter,
