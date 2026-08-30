@@ -99,6 +99,7 @@ route,sample,renders,protected,deeplink_semantic,deeplink_destination,in_app_sem
 /me,/me,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT
 /me/edit,/me/edit,true,false,flowCancel,/me,flowCancel,true,COMPLIANT
 /security,/security,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT
+/verify-identity,/verify-identity,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT
 /devices,/devices,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT
 /change-password,/change-password,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT
 /settings/communications,/settings/communications,false,false,deepLinkFallback,/home,stackReturn,true,NOT_A_SURFACE
@@ -116,6 +117,7 @@ route,sample,renders,protected,deeplink_semantic,deeplink_destination,in_app_sem
 /admin/institutions,/admin/institutions,true,false,parentReturn,/admin,stackReturn,true,COMPLIANT
 /admin/institutions/:id/members,/admin/institutions/x-id/members,true,false,parentReturn,/admin/institutions,stackReturn,true,COMPLIANT
 /admin/users,/admin/users,true,false,parentReturn,/admin,stackReturn,true,COMPLIANT
+/admin/identity-review,/admin/identity-review,true,false,parentReturn,/admin,stackReturn,true,COMPLIANT
 /admin/grants,/admin/grants,true,false,parentReturn,/admin,stackReturn,true,COMPLIANT
 /admin/audit-logs,/admin/audit-logs,true,false,parentReturn,/admin,stackReturn,true,COMPLIANT
 /admin/settings,/admin/settings,true,false,parentReturn,/admin,stackReturn,true,COMPLIANT
