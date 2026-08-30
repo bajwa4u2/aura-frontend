@@ -140,6 +140,62 @@ class IncomingCallBridgeNotifier
     if (next.length != state.length) state = next;
   }
 
+  /// ACCEPTING A CALL IS NOT ENDING IT — and on iOS that distinction IS the
+  /// call.
+  ///
+  /// Every path that cleared a ringing card used to funnel through
+  /// [_onSessionTerminated], which reports the CallKit call ended. That is
+  /// correct for a call that is over and catastrophic for one that was just
+  /// answered: reporting a call ended tears down the CallKit call, and with it
+  /// the audio session and — after a lock-screen answer — the backgrounded
+  /// app's entire justification to keep running. The join had already
+  /// succeeded, so the failure looked like anything but an accept bug.
+  ///
+  /// Production trace, session cmtf7np66..., 2026-08-30:
+  ///
+  ///   02:49:18  iPhone joins, joinState ACTIVE, participants=2
+  ///   02:49:21  media bound (bound=2), remote video attached
+  ///   02:49:23  roster drops 2 -> 1, [stage:session_not_active], transport
+  ///             closed, caller still waiting
+  ///
+  /// Five seconds. The call was answered, connected, and then ended by the
+  /// act of answering it.
+  ///
+  /// The card still has to go — nobody wants a ringing card over a call they
+  /// are now in — but the call must not. This is that path: same tombstone,
+  /// same removal, no termination. CallKit is told the call CONNECTED, which
+  /// is what actually happened.
+  void clearAccepted(String sessionId) {
+    final trimmed = sessionId.trim();
+    if (trimmed.isEmpty) return;
+    _guard.recordClear(trimmed);
+    // Deliberately NOT reportEnded. See above.
+    IosCallKit.instance.reportConnected(trimmed);
+    final next = state.where((item) {
+      final data = item['data'];
+      final sid = data is Map ? _str(data['sessionId']) : '';
+      return sid != trimmed;
+    }).toList();
+    if (next.length != state.length) state = next;
+  }
+
+  /// [clearAccepted] addressed by notification id — for the in-app card, whose
+  /// accept button knows the card it is on rather than the session beneath it.
+  void removeAccepted(String id) {
+    if (id.isEmpty) return;
+    for (final item in state) {
+      if (_str(item['id']) != id) continue;
+      final data = item['data'];
+      final sid = data is Map ? _str(data['sessionId']) : '';
+      if (sid.isNotEmpty) {
+        clearAccepted(sid);
+        return;
+      }
+      break;
+    }
+    state = state.where((item) => _str(item['id']) != id).toList();
+  }
+
   void remove(String id) {
     if (id.isEmpty) return;
     // Local-timeout/accept/decline/dismiss removal — tombstone the

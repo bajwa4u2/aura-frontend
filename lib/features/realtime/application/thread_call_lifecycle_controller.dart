@@ -230,7 +230,9 @@ class ThreadCallLifecycleController
       sessionId,
       source: ThreadCallLifecycleSource.callee,
     );
-    _ref.read(incomingCallBridgeProvider.notifier).removeBySession(sessionId);
+    // ACCEPTED, not ended. removeBySession() reports the CallKit call ended,
+    // which on iOS terminates the very call this method just joined.
+    _ref.read(incomingCallBridgeProvider.notifier).clearAccepted(sessionId);
   }
 
   Future<void> joinThreadCallSession(
@@ -295,9 +297,13 @@ class ThreadCallLifecycleController
         .read(realtimeControllerProvider.notifier)
         .join(sessionId)
         .then((_) {
+          // A SUCCESSFUL JOIN IS THE OPPOSITE OF A TERMINAL EVENT.
+          // This fires on every join that works — caller, callee and
+          // route alike — so routing it through the terminal choke point
+          // meant every connected call reported itself ended to CallKit.
           _ref
               .read(incomingCallBridgeProvider.notifier)
-              .removeBySession(sessionId);
+              .clearAccepted(sessionId);
         })
         .catchError((Object error) {
           state = state.copyWith(

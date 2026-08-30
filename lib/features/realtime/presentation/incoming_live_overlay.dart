@@ -321,7 +321,9 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       await ref
           .read(threadCallLifecycleProvider.notifier)
           .acceptIncomingCall(item);
-      ref.read(incomingCallBridgeProvider.notifier).remove(id);
+      // remove() reports the CallKit call DECLINED — on the accept button.
+      // It ended the call and mislabelled it in the system call log.
+      ref.read(incomingCallBridgeProvider.notifier).removeAccepted(id);
       if (id.isNotEmpty) {
         // Best-effort — marking the notification read must never surface
         // as a join failure. Previously awaited inline: a transient

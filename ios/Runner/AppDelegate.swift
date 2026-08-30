@@ -154,7 +154,17 @@ import UIKit
         result(false)
         return
       }
-      provider?.reportOutgoingCall(with: uuid, connectedAt: Date())
+      // An INCOMING CallKit call has no "report connected" API: the system
+      // considers it connected the moment CXAnswerCallAction is fulfilled,
+      // which the delegate below already does. reportOutgoingCall() used to
+      // be called here against an incoming call's UUID — an API mismatch
+      // CallKit simply ignores, so it read as a working connection signal
+      // while doing nothing at all.
+      //
+      // Kept as an explicit acknowledgement rather than deleted, because
+      // Dart's accept path calls it and the honest answer to "is this call
+      // connected" is yes — established at answer time, not here.
+      _ = uuid
       result(true)
 
     case "voipToken":
