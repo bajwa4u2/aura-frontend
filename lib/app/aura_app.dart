@@ -106,10 +106,40 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       } catch (_) {}
     };
 
+    // ANSWERING FROM A LOCK SCREEN IS A COLD START, AND AUTH LOADS ASYNC.
+    //
+    // Physical evidence, build 28: the CallKit screen appeared and answering
+    // left the caller waiting. The answer arrives the instant Dart says
+    // `ready`, which is during initState — before TokenStore.load() has
+    // finished restoring the session. The join then ran unauthenticated,
+    // failed, and reported `failed` to CallKit, which is exactly what a
+    // caller left ringing into nothing looks like from the other side.
+    //
+    // So the answer waits for Aura to actually be able to act, bounded. iOS
+    // gives a backgrounded app only seconds after an answer, so this cannot be
+    // patient — but it must not be instant either.
+    Future<bool> awaitAuthed() async {
+      const step = Duration(milliseconds: 150);
+      for (var i = 0; i < 40; i++) {
+        if (!mounted) return false;
+        if (ref.read(isAuthedProvider)) return true;
+        await Future<void>.delayed(step);
+      }
+      return ref.read(isAuthedProvider);
+    }
+
     callKit.onAnswer = (sessionId) async {
       // The system sheet already reads "connecting". If the join fails we must
       // say so rather than leave it there — a CallKit call connected to nothing
       // is worse than one that ends honestly.
+      final authed = await awaitAuthed();
+      debugPrint('[callkit] answer session=$sessionId authed=$authed');
+      if (!authed) {
+        // Nothing can be joined without an identity. Say so rather than hold
+        // the system call UI open on a call that cannot proceed.
+        await callKit.reportEnded(sessionId, reason: 'failed');
+        return;
+      }
       try {
         final controller = ref.read(threadCallLifecycleProvider.notifier);
         // Prefer the invite payload the socket already delivered; a cold start
