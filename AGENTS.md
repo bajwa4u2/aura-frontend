@@ -99,13 +99,13 @@ Opt-in (load only when the task requires):
 - `docs/AURA_MESSAGES_FLAGSHIP_REDESIGN.md` — correspondence redesign
 - `docs/ADMIN_FRONTEND_READINESS_HANDOFF.md`, `docs/ADMIN_RUNTIME_GOVERNANCE.md` — admin shell
 - `docs/AURA_REAL_PUSH_TOKEN_ACQUISITION.md`, `docs/AURA_FRONTEND_DEVICE_REGISTRATION.md` — push / device
-- `../docs/AURA_FULL_FRONTEND_REDESIGN_PLAN.md`, `../docs/AURA_HERO_SURFACES_REBUILD_MAP.md` — frontend roadmap
+- `../docs/frontend/AURA_FULL_FRONTEND_REDESIGN_PLAN.md`, `../docs/frontend/AURA_HERO_SURFACES_REBUILD_MAP.md` — frontend roadmap. Note `../docs/` is **outside any git repository** (`aura/.git` is an empty directory): working references, not authority. Both paths corrected 2026-08-30 — they previously omitted `frontend/` and resolved to nothing.
 
 Do not load by default:
 
 - `aura.stderr.log`, `aura.stdout.log`, `logcat-aura.log`, `flutter_verbose.log`, `deps.txt`, `build-error.log` — debug artifacts, often huge
 - `../marketing/**` — load only for positioning, copy, or external-facing work
-- `../docs/RELEASE_READINESS_AUDIT_*.md` — release readiness; load only for that
+- `../docs/readiness/RELEASE_READINESS_AUDIT_*.md` — release readiness; load only for that (path corrected 2026-08-30)
 - `docs/business_deck/` — marketing-adjacent; load only when working on decks
 - `.dart_tool/`, `build/`, `ios/Pods/`, `android/.gradle/`, `web/canvaskit/` — generated
 
