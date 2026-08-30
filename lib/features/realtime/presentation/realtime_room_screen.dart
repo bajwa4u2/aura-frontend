@@ -4132,7 +4132,7 @@ class _RoomInviteCard extends StatelessWidget {
               isDense: true,
             ),
             minLines: 1,
-            maxLines: 2,
+            maxLines: null,
           ),
           const SizedBox(height: AuraSpace.s12),
           if (isSearching)

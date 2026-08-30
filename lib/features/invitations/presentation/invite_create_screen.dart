@@ -407,7 +407,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                   TextField(
                     controller: _messageController,
                     minLines: 3,
-                    maxLines: 5,
+                    maxLines: null,
                     decoration: const InputDecoration(
                       labelText: 'Message',
                       hintText: 'Add a short note if you want',
@@ -630,7 +630,7 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
                 TextField(
                   controller: _messageController,
                   minLines: 3,
-                  maxLines: 5,
+                  maxLines: null,
                   decoration: const InputDecoration(
                     labelText: 'Message',
                     hintText: 'Add context to this invitation',

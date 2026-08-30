@@ -117,7 +117,7 @@ class _ClaimAuditScreenState extends ConsumerState<ClaimAuditScreen> {
                 const SizedBox(height: AuraSpace.s14),
                 TextField(
                   controller: _ctl,
-                  maxLines: 8,
+                  maxLines: null,
                   decoration: const InputDecoration(
                     labelText: 'Draft to review',
                   ),

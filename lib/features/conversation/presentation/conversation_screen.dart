@@ -444,7 +444,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         content: TextField(
           controller: controller,
           autofocus: true,
-          maxLines: 6,
+          maxLines: null,
           minLines: 1,
           decoration: const InputDecoration(hintText: 'Message'),
         ),

@@ -394,7 +394,7 @@ class _OwnershipRecoveryDialogState extends State<_OwnershipRecoveryDialog> {
             const SizedBox(height: AuraSpace.s12),
             TextField(
               controller: _reason,
-              maxLines: 3,
+              maxLines: null,
               decoration: const InputDecoration(
                 labelText: 'Reason (required)',
                 hintText: 'Why ownership must be restored by the platform.',

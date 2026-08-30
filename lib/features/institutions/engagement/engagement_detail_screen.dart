@@ -589,7 +589,7 @@ class _OfficialReplySheetState extends ConsumerState<_OfficialReplySheet> {
                 controller: _bodyCtrl,
                 focusNode: _bodyFocus,
                 maxLength: _maxChars,
-                maxLines: 7,
+                maxLines: null,
                 minLines: 5,
                 onChanged: (_) => setState(() {}),
                 enabled: !_busy,

@@ -1181,7 +1181,7 @@ class _PreparationNotesSectionState
       children: [
         TextField(
           controller: _ctrl,
-          maxLines: 5,
+          maxLines: null,
           textCapitalization: TextCapitalization.sentences,
           decoration: const InputDecoration(
             hintText:

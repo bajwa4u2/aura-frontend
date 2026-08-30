@@ -577,7 +577,7 @@ class _UpsertUnitSheetState extends ConsumerState<_UpsertUnitSheet> {
             TextField(
               controller: _descCtrl,
               decoration: const InputDecoration(labelText: 'Description'),
-              maxLines: 3,
+              maxLines: null,
               enabled: !_saving,
             ),
             const SizedBox(height: AuraSpace.s12),

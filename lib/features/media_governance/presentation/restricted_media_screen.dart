@@ -348,7 +348,7 @@ class _AppealForm extends StatelessWidget {
           textField: true,
           child: TextField(
             controller: controller,
-            maxLines: 4,
+            maxLines: null,
             maxLength: 2000,
             enabled: !submitting,
             decoration: const InputDecoration(

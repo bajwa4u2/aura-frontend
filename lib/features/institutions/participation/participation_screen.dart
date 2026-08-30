@@ -765,7 +765,7 @@ class _CreateParticipationSheetState
               const SizedBox(height: AuraSpace.s8),
               TextField(
                 controller: _notesController,
-                maxLines: 3,
+                maxLines: null,
                 style: AuraText.body.copyWith(color: AuraSurface.ink),
                 decoration: InputDecoration(
                   hintText: 'Any additional context for the public…',

@@ -534,7 +534,7 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
               availableWidth: _titleFieldWidth(context),
             ),
             inputFormatters: const [PublicationTitleInputFormatter()],
-            maxLines: 3,
+            maxLines: null,
             minLines: 1,
             decoration: const InputDecoration(
               hintText: 'Title',

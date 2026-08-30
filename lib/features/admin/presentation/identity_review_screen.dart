@@ -295,7 +295,7 @@ class _QueueRowState extends ConsumerState<_QueueRow> {
               TextField(
                 controller: _reason,
                 minLines: 2,
-                maxLines: 4,
+                maxLines: null,
                 decoration: const InputDecoration(
                   labelText: 'Reason (the person is shown this)',
                 ),

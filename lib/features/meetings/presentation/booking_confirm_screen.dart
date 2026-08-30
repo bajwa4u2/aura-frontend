@@ -226,7 +226,7 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
 
             TextFormField(
               controller: _notesCtrl,
-              maxLines: 3,
+              maxLines: null,
               textCapitalization: TextCapitalization.sentences,
               decoration: const InputDecoration(
                 labelText: 'Notes (optional)',

@@ -303,7 +303,7 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
           TextFormField(
             controller: _descController,
             style: AuraText.body,
-            maxLines: 2,
+            maxLines: null,
             decoration: const InputDecoration(labelText: 'Description (optional)', hintText: 'What is this space for?'),
           ),
           const SizedBox(height: AuraSpace.s12),

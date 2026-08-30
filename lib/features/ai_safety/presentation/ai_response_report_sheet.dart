@@ -194,7 +194,7 @@ class _AiResponseReportSheetState
           child: TextField(
             controller: _noteCtrl,
             enabled: !_submitting,
-            maxLines: 4,
+            maxLines: null,
             maxLength: 2000,
             style: AuraText.body,
             decoration: const InputDecoration(

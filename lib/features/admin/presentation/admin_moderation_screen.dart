@@ -467,7 +467,7 @@ class _ActionPanelState extends State<_ActionPanel> {
             const SizedBox(height: AuraSpace.s6),
             TextField(
               controller: _privateNoteCtrl,
-              maxLines: 2,
+              maxLines: null,
               style: AuraText.body,
               decoration: InputDecoration(
                 hintText: 'Internal note — not visible to reporter',
@@ -490,7 +490,7 @@ class _ActionPanelState extends State<_ActionPanel> {
             const SizedBox(height: AuraSpace.s6),
             TextField(
               controller: _summaryCtrl,
-              maxLines: 2,
+              maxLines: null,
               style: AuraText.body,
               decoration: InputDecoration(
                 hintText: 'Brief outcome shared with the reporter',
@@ -513,7 +513,7 @@ class _ActionPanelState extends State<_ActionPanel> {
             const SizedBox(height: AuraSpace.s6),
             TextField(
               controller: _noteCtrl,
-              maxLines: 2,
+              maxLines: null,
               style: AuraText.body,
               decoration: InputDecoration(
                 hintText: 'Optional note attached to this action',

@@ -393,7 +393,7 @@ class _InstitutionRequestVerificationScreenState
               TextField(
                 controller: _purpose,
                 enabled: enabled,
-                maxLines: 5,
+                maxLines: null,
                 inputFormatters: [LengthLimitingTextInputFormatter(900)],
                 decoration: const InputDecoration(
                   labelText: 'Purpose',

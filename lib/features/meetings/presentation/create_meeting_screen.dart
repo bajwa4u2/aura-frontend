@@ -788,7 +788,7 @@ class _CreationForm extends StatelessWidget {
                 const SizedBox(height: AuraSpace.s12),
                 TextField(
                   controller: agendaCtrl,
-                  maxLines: 4,
+                  maxLines: null,
                   textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(
                     labelText: 'Agenda or description',
@@ -1000,7 +1000,7 @@ class _CreationForm extends StatelessWidget {
               children: [
                 TextField(
                   controller: inviteCtrl,
-                  maxLines: 2,
+                  maxLines: null,
                   decoration: const InputDecoration(
                     labelText:
                         'Name <email@example.com>, Another <email@example.com>',

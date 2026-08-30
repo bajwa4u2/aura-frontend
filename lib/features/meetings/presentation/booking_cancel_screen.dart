@@ -230,7 +230,7 @@ class _BookingCancelScreenState extends ConsumerState<BookingCancelScreen> {
       const SizedBox(height: AuraSpace.s20),
       TextField(
         controller: _reason,
-        maxLines: 3,
+        maxLines: null,
         maxLength: 300,
         enabled: !_working,
         decoration: const InputDecoration(

@@ -387,7 +387,7 @@ class _InstitutionJoinRequestsScreenState
             children: [
               TextFormField(
                 controller: _messageController,
-                maxLines: 3,
+                maxLines: null,
                 style: AuraText.body,
                 enabled: _joinSuccess == null,
                 decoration: const InputDecoration(

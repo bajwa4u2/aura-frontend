@@ -239,7 +239,7 @@ class _FeedInteractionBarState extends ConsumerState<FeedInteractionBar> {
                 title: const Text('Repost'),
                 content: TextField(
                   controller: controller,
-                  maxLines: 4,
+                  maxLines: null,
                   autofocus: true,
                   // Discourse Quality requires added commentary on every
                   // reshare — a silent repost is always rejected server-side

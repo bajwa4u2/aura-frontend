@@ -182,7 +182,7 @@ class _ReportContentSheetState extends ConsumerState<ReportContentSheet> {
               TextField(
                 controller: _details,
                 enabled: !_busy,
-                maxLines: 3,
+                maxLines: null,
                 maxLength: 500,
                 decoration: const InputDecoration(
                   labelText: 'Details (optional)',

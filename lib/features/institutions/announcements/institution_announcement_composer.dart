@@ -835,7 +835,7 @@ class _InstitutionAnnouncementComposerState
                         TextFormField(
                           controller: _summaryController,
                           style: AuraText.body,
-                          maxLines: 2,
+                          maxLines: null,
                           decoration: const InputDecoration(
                             labelText: 'Summary',
                             hintText:
@@ -859,7 +859,7 @@ class _InstitutionAnnouncementComposerState
                               controller: _bodyController,
                               focusNode: _bodyFocus,
                               style: AuraText.body,
-                              maxLines: 12,
+                              maxLines: null,
                               maxLength: ContentLengthPolicy.announcementBody,
                               decoration: const InputDecoration(
                                 labelText: 'Body (Markdown)',

@@ -239,7 +239,7 @@ class _ContactImportScreenState extends ConsumerState<ContactImportScreen> {
               hintText: 'Separate by comma, semicolon, or new line',
               alignLabelWithHint: true,
             ),
-            maxLines: 5,
+            maxLines: null,
             keyboardType: TextInputType.multiline,
           ),
           if (_inputError != null) ...[

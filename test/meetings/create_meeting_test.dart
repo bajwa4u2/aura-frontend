@@ -179,10 +179,13 @@ void main() {
       // The behavioural proof, and the one a wrapper could never pass.
       await open(tester);
       final before = tester.getTopLeft(find.text('When'));
-      await tester.drag(
-        find.text('Agenda or description'),
-        const Offset(0, -400),
-      );
+      // Dragged from the FORM, not from a field's own label. The label belongs
+      // to the agenda field's decoration, so once that field grows with its
+      // content the label is no longer a hit-testable point — and the intent
+      // here was never "drag this particular word", it was "scroll the form".
+      // The sibling test below already anchors on the ListView for the same
+      // reason.
+      await tester.drag(find.byType(ListView).first, const Offset(0, -400));
       await tester.pump();
       expect(
         tester.getTopLeft(find.text('When')),
@@ -233,7 +236,17 @@ void main() {
       await open(tester, size: const Size(700, 900));
       // One column means the review pane is BELOW the form, so a lazy list has
       // not built it yet — scroll to it the way a person would.
-      for (var i = 0; i < 12 && find.text('When').evaluate().isEmpty; i++) {
+      //
+      // Scrolls until the BUTTON is built, not merely until the review pane
+      // appears. The assertion below compares the two positions, so both have
+      // to exist; stopping at the review pane left the button still below the
+      // fold and unbuilt the moment any field above it changed height, which
+      // made this test a hostage to unrelated form layout rather than a check
+      // on ordering.
+      for (var i = 0;
+          i < 20 &&
+              find.widgetWithText(FilledButton, 'Create meeting').evaluate().isEmpty;
+          i++) {
         await tester.drag(find.byType(ListView), const Offset(0, -400));
         await tester.pump();
       }

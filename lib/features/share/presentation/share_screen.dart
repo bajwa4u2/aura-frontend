@@ -321,7 +321,7 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
             const SizedBox(height: AuraSpace.s16),
             TextField(
               controller: _context,
-              maxLines: 3,
+              maxLines: null,
               minLines: 1,
               enabled: !_sending,
               decoration: const InputDecoration(

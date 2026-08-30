@@ -470,7 +470,7 @@ class _MeetingWorkroomState extends ConsumerState<MeetingWorkroom> {
           child: widget.editable
               ? TextField(
                   controller: _summaryCtrl,
-                  maxLines: 6,
+                  maxLines: null,
                   textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(
                     hintText:
