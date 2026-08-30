@@ -1343,7 +1343,10 @@ class _AnnouncementEditorScreenState
                           textDirection: _announcementEditorDirectionFor(text),
                           child: TextField(
                             controller: _summaryController,
-                            maxLines: 3,
+                            // Same rule as the body: no bounded maxLines, so
+                            // a long summary grows instead of becoming a
+                            // second scrollable that eats the wheel.
+                            maxLines: null,
                             minLines: 2,
                             textDirection: _announcementEditorDirectionFor(text),
                             textAlign: _announcementEditorAlignFor(text),
@@ -1362,9 +1365,30 @@ class _AnnouncementEditorScreenState
                         final text = value.text;
                         return Directionality(
                           textDirection: _announcementEditorDirectionFor(text),
+                    // CANONICAL SCROLL OWNER: the editor's own
+                    // SingleChildScrollView, and nothing else on this surface.
+                    //
+                    // `maxLines: 14` made this field a SECOND scrollable. Once
+                    // the text passed fourteen lines Flutter gave the TextField
+                    // its own Scrollable, and a wheel gesture over it was
+                    // consumed there — Flutter does not chain a leftover scroll
+                    // delta from an inner Scrollable to an outer one. At a short
+                    // viewport the field fills most of the screen, so almost any
+                    // natural scroll started over it: Distribution, Pin and
+                    // Publish became unreachable by pointer while Tab still
+                    // reached them, which is exactly the shape of the reported
+                    // defect. Taller viewports hid it because there was room to
+                    // put the pointer somewhere else.
+                    //
+                    // `maxLines: null` removes the second scrollable rather than
+                    // fighting it: the field grows with its content, the outer
+                    // view owns every pixel of scrolling, and there is nothing
+                    // left to trap. `minLines` still gives an empty composer a
+                    // body-shaped field. This is the pattern the personal
+                    // composer already uses.
                           child: TextField(
                             controller: _bodyController,
-                            maxLines: 14,
+                            maxLines: null,
                             minLines: 10,
                             textDirection: _announcementEditorDirectionFor(text),
                             textAlign: _announcementEditorAlignFor(text),
