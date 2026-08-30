@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'device_repository.dart';
 import 'web_push_service.dart';
+import 'windows_push_service.dart';
 
 class DeviceService {
   DeviceService(this._repository, {bool Function()? isAuthed})
@@ -410,9 +411,40 @@ class DeviceService {
         return _fcmPayload(platform: 'ANDROID');
       case TargetPlatform.iOS:
         return _fcmPayload(platform: 'IOS');
+      case TargetPlatform.windows:
+        // THE LEG THAT DID NOT EXIST.
+        //
+        // This switch returned null for Windows, so no Windows device was ever
+        // registered, so `listActiveForUser` could never return one, so the
+        // backend's complete WNS adapter — raw call notifications, channel
+        // expiry handling and all — has never had a device to deliver to.
+        // Windows call arrival worked only while the app was open on the
+        // realtime socket.
+        return _wnsPayload();
       default:
         return null;
     }
+  }
+
+  Future<Map<String, dynamic>?> _wnsPayload() async {
+    final channel = await WindowsPushService.createChannel();
+    if (channel == null) return null;
+    return {
+      'platform': 'WINDOWS',
+      'provider': 'WNS',
+      // The adapter reads `endpoint ?? token`; both are set so neither a
+      // registry lookup nor a send has to know which one this transport uses.
+      'token': channel.uri,
+      'endpoint': channel.uri,
+      'isActive': true,
+      'deviceName': _resolveDeviceName(),
+      'appVersion': const String.fromEnvironment(
+        'APP_VERSION',
+        defaultValue: '1.0.0',
+      ),
+      'locale': _resolveLocale(),
+      'timezone': _resolveTimezone(),
+    };
   }
 
   /// Poll for the APNs device token, bounded. Apple gives no future to await,
