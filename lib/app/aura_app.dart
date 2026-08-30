@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/auth/auth_broadcast.dart';
+import '../core/notifications/ios_call_kit.dart';
 import '../core/notifications/native_call_actions.dart';
 import '../core/auth/auth_providers.dart';
 import '../core/auth/session_bootstrap.dart';
@@ -48,6 +49,14 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     // up without forcing a hard reload.
     AuthBroadcast.start(onMessage: _onRemoteAuthEvent);
 
+    // NATIVE CALL ARRIVAL (iOS). No-op on every other platform.
+    //
+    // Bound before the first frame because a PushKit push can already have put
+    // a CallKit screen on the lock screen while this app was terminated — the
+    // native side buffers those events and releases them the moment `start()`
+    // reports ready. Binding later would answer into nothing.
+    _bindNativeCallArrival();
+
     // Register device if already authed at startup (stored token from prior session)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -70,6 +79,86 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
         // prevent the app from booting.
       }
     });
+  }
+
+  /// Wire the native incoming-call surface to Aura's own authorities.
+  ///
+  /// Everything here is a translation, never a decision: a VoIP token becomes a
+  /// device registration, a CallKit answer becomes a join through the existing
+  /// lifecycle controller, and a CallKit decline becomes the same local removal
+  /// the in-app card performs. The backend stays the authority on whether the
+  /// call exists at all.
+  void _bindNativeCallArrival() {
+    final callKit = IosCallKit.instance;
+    if (!callKit.isSupported) return;
+
+    callKit.onVoipToken = (token) async {
+      try {
+        await ref.read(deviceServiceProvider).registerVoipToken(token);
+      } catch (e) {
+        debugPrint('[callkit] voip token registration failed: $e');
+      }
+    };
+
+    callKit.onVoipTokenInvalidated = () async {
+      try {
+        await ref.read(deviceServiceProvider).deactivateVoipDevice();
+      } catch (_) {}
+    };
+
+    callKit.onAnswer = (sessionId) async {
+      // The system sheet already reads "connecting". If the join fails we must
+      // say so rather than leave it there — a CallKit call connected to nothing
+      // is worse than one that ends honestly.
+      try {
+        final controller = ref.read(threadCallLifecycleProvider.notifier);
+        // Prefer the invite payload the socket already delivered; a cold start
+        // from a VoIP push has none, and the session id is enough to join on.
+        final payload = ref
+            .read(incomingCallBridgeProvider)
+            .cast<Map<String, dynamic>?>()
+            .firstWhere(
+              (item) {
+                final data = item?['data'];
+                return data is Map &&
+                    '${data['sessionId'] ?? ''}'.trim() == sessionId;
+              },
+              orElse: () => null,
+            );
+        if (payload != null) {
+          await controller.acceptIncomingCall(payload);
+        } else {
+          await controller.joinThreadCallSession(sessionId);
+        }
+        await callKit.reportConnected(sessionId);
+      } catch (e) {
+        debugPrint('[callkit] answer join failed: $e');
+        await callKit.reportEnded(sessionId, reason: 'failed');
+      }
+    };
+
+    callKit.onEnd = (sessionId) async {
+      // Local terminal only. This clears Aura's own presentation and state; it
+      // does NOT yet propagate a decline to the backend, because no client-side
+      // decline authority exists to call and inventing one here would put call
+      // state in the wrong place. Tracked, not papered over.
+      try {
+        ref
+            .read(threadCallLifecycleProvider.notifier)
+            .handleTerminal(sessionId, reason: 'declined');
+      } catch (e) {
+        debugPrint('[callkit] local terminal failed: $e');
+      }
+    };
+
+    callKit.onRejectedBySystem = (sessionId, reason) async {
+      // Do Not Disturb, a blocked caller, or an already-dead call. The device
+      // will never ring for this session, so do not leave the invite pending.
+      debugPrint('[callkit] system refused call $sessionId: $reason');
+      ref.read(incomingCallBridgeProvider.notifier).removeBySession(sessionId);
+    };
+
+    unawaited(callKit.start());
   }
 
   @override

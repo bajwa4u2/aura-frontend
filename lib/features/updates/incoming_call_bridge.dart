@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../correspondence/data/correspondence_live_service.dart';
 import '../realtime/application/incoming_call_projection.dart';
 import '../realtime/application/realtime_providers.dart';
+import '../../core/notifications/ios_call_kit.dart';
 
 final incomingCallBridgeProvider =
     StateNotifierProvider<
@@ -114,8 +115,23 @@ class IncomingCallBridgeNotifier
     ];
   }
 
-  void _onSessionTerminated(String sessionId) {
+  /// EVERY AUTHORITATIVE CLEAR PASSES THROUGH HERE, INCLUDING THE NATIVE ONE.
+  ///
+  /// On iOS the ringing surface is not ours — it is a CallKit call the system
+  /// is presenting, and removing our in-app card leaves it up. A phone that
+  /// keeps ringing at a call the backend has already resolved is the worst
+  /// failure this system can have, so the native teardown is wired to the same
+  /// choke point as the Dart one rather than to any individual caller.
+  ///
+  /// [reason] is carried because the system call log is user-visible: a call
+  /// answered on another device must not be recorded as declined, and one that
+  /// simply expired must not be recorded as ended by the caller. Where the
+  /// backend genuinely cannot tell us — caller-withdrew is not distinguishable
+  /// from session-ended today — the honest default is `ended`, and nothing here
+  /// invents the difference.
+  void _onSessionTerminated(String sessionId, {String reason = 'ended'}) {
     _guard.recordClear(sessionId);
+    IosCallKit.instance.reportEnded(sessionId, reason: reason);
     final next = state.where((item) {
       final data = item['data'];
       final sid = data is Map ? _str(data['sessionId']) : '';
@@ -133,7 +149,11 @@ class IncomingCallBridgeNotifier
       if (_str(item['id']) != id) continue;
       final data = item['data'];
       final sid = data is Map ? _str(data['sessionId']) : '';
-      if (sid.isNotEmpty) _guard.recordClear(sid);
+      if (sid.isNotEmpty) {
+        _guard.recordClear(sid);
+        // Local decision — the person dismissed or declined on this device.
+        IosCallKit.instance.reportEnded(sid, reason: 'declined');
+      }
       break;
     }
     state = state.where((item) => _str(item['id']) != id).toList();
@@ -148,10 +168,10 @@ class IncomingCallBridgeNotifier
   /// after a peer device answered, because the socket [call:terminal] was
   /// emitted while this client's socket was disconnected and is not
   /// replayed on reconnect.
-  void removeBySession(String sessionId) {
+  void removeBySession(String sessionId, {String reason = 'ended'}) {
     final trimmed = sessionId.trim();
     if (trimmed.isEmpty) return;
-    _onSessionTerminated(trimmed);
+    _onSessionTerminated(trimmed, reason: reason);
   }
 
   /// Snapshot of the current ringing sessionIds. Used by resume
@@ -188,7 +208,10 @@ class IncomingCallBridgeNotifier
       final stillValid = expiresAt.isAfter(now);
       if (!stillValid) {
         final sid = _str(data['sessionId']);
-        if (sid.isNotEmpty) _guard.recordClear(sid);
+        if (sid.isNotEmpty) {
+          _guard.recordClear(sid);
+          IosCallKit.instance.reportEnded(sid, reason: 'expired');
+        }
       }
       return stillValid;
     }).toList();
