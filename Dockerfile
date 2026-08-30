@@ -242,7 +242,7 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '  # external previews need, closed for the application surface.' \
 '  location = /robots.txt {' \
 '    default_type text/plain;' \
-'    return 200 "User-agent: *\nAllow: /p/\nAllow: /media/\nAllow: /institutions\nAllow: /u/\nDisallow: /admin\nDisallow: /institution/\nDisallow: /messages\nDisallow: /conversations\nDisallow: /activity\nDisallow: /notifications\nDisallow: /saved\nDisallow: /settings\nDisallow: /me\n";' \
+'    return 200 "User-agent: *\nAllow: /p/\nAllow: /media/\nAllow: /institutions\nAllow: /u/\nDisallow: /admin\nDisallow: /institution/\nDisallow: /messages\nDisallow: /conversations\nDisallow: /activity\nDisallow: /notifications\nDisallow: /saved\nDisallow: /settings\nDisallow: /me\nSitemap: https://auraplatform.org/sitemap.xml\n";' \
 '  }' \
 '' \
 '  # Static discovery endpoints must not fall through to the Flutter shell.' \
