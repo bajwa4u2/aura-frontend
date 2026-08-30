@@ -83,6 +83,29 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     });
   }
 
+  /// Send a CallKit presentation outcome to the backend.
+  ///
+  /// Reuses the stage diagnostic channel rather than inventing an endpoint:
+  /// same shape, same authority, and it already carries client-side truth the
+  /// server cannot otherwise see. Best-effort and never awaited — diagnosing a
+  /// call must not delay answering one.
+  void _reportCallKit(String sessionId, String code, String message) {
+    if (sessionId.isEmpty) return;
+    try {
+      unawaited(
+        ref.read(realtimeRepositoryProvider).reportStageDiagnostic(
+              sessionId,
+              phase: 'callkit',
+              code: code,
+              message: message,
+              platform: 'iOS',
+            ),
+      );
+    } catch (_) {
+      // Observability is never worth a crash.
+    }
+  }
+
   /// Wire the native incoming-call surface to Aura's own authorities.
   ///
   /// Everything here is a translation, never a decision: a VoIP token becomes a
@@ -117,6 +140,10 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     // it in the shape every other transport already uses. It dedupes by
     // sessionId, so the socket's `call:incoming` landing a moment later is
     // harmless — whichever arrives first wins and the other is absorbed.
+    callKit.onPushReceived = (sessionId) async {
+      _reportCallKit(sessionId, 'push_received', 'PushKit handler reached report');
+    };
+
     callKit.onIncomingCall = (payload) async {
       final sessionId = '${payload['sessionId'] ?? ''}'.trim();
       if (sessionId.isEmpty) return;
@@ -160,6 +187,16 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       } catch (e) {
         debugPrint('[callkit] bridging native arrival failed: $e');
       }
+
+      // WHAT CALLKIT ACTUALLY DID, WHERE I CAN SEE IT.
+      //
+      // The server can prove a VoIP push was accepted and that the app woke —
+      // the device row updates a second later — and then the trail stops. Every
+      // remaining question about a phone that does not ring lives on the far
+      // side of that gap, and guessing across it has cost real device tests.
+      // `reportNewIncomingCall` succeeded here, so this records that fact; the
+      // refusal path below records the reason iOS gave.
+      _reportCallKit(sessionId, 'presented', 'reportNewIncomingCall succeeded');
     };
 
     callKit.onVoipTokenInvalidated = () async {
@@ -191,6 +228,31 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     }
 
     callKit.onAnswer = (sessionId) async {
+      // ANSWERING IS THE DESTINATION. SET IT NOW, NOT WHEN THE JOIN RETURNS.
+      //
+      // Navigating only after auth restore and the join meant a lock-screen
+      // answer landed on Aura's home screen first and arrived at the call
+      // seconds later — founder, build 33: "took me to aura home then after a
+      // while call surfaced normally". Correct destination, wrong moment.
+      //
+      // Setting the location immediately is safe during a cold start: the
+      // router deliberately stays put while the session is restoring and
+      // BootGate renders the restoring state IN PLACE of the routed child, so
+      // the call screen mounts when auth is known rather than firing requests
+      // before it. The person answers a call and the call is what boots.
+      //
+      // Re-asserted after the join, where the meeting branch is finally
+      // knowable; going to the same location twice costs nothing.
+      if (mounted) {
+        try {
+          ref
+              .read(routerProvider)
+              .go(NavigationAuthority.realtimeSessionJoinRoute(sessionId));
+        } catch (e) {
+          debugPrint('[callkit] early answer navigation failed: $e');
+        }
+      }
+
       // The system sheet already reads "connecting". If the join fails we must
       // say so rather than leave it there — a CallKit call connected to nothing
       // is worse than one that ends honestly.
@@ -276,6 +338,10 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     };
 
     callKit.onRejectedBySystem = (sessionId, reason) async {
+      // The exact CXError text. This is the one fact that separates "the
+      // system refused" from "the report never happened", and without it both
+      // look identical from the server.
+      _reportCallKit(sessionId, 'report_refused', reason);
       // Do Not Disturb, a blocked caller, or an already-dead call. The device
       // will never ring for this session, so do not leave the invite pending.
       debugPrint('[callkit] system refused call $sessionId: $reason');

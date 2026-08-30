@@ -340,6 +340,8 @@ extension AppDelegate: PKPushRegistryDelegate {
     // a refusal, not a precondition for the attempt. A stale call still cannot
     // block a new one — it is cleared the moment it actually blocks something,
     // which is the only moment the clearing was ever needed.
+    var emitAfterReport: (() -> Void)?
+
     let present = { [weak self] (retrying: Bool, error: Error?) -> Bool in
       guard let self = self else { return true }
       if let error = error {
@@ -366,6 +368,15 @@ extension AppDelegate: PKPushRegistryDelegate {
       return true
     }
 
+    // Emitted AFTER the report is issued, never before it — this is a
+    // diagnostic and diagnostics do not get to delay a ring. It marks the
+    // moment the handler reached the report, which is the one fact the server
+    // cannot see: a push accepted by APNs, an app that woke, and then silence
+    // looks identical whether the report was refused or never attempted.
+    emitAfterReport = { [weak self] in
+      self?.emit("voipPushReceived", ["sessionId": reportedSession])
+    }
+
     provider?.reportNewIncomingCall(with: uuid, update: update) { [weak self] error in
       if present(false, error) {
         completion()
@@ -381,6 +392,7 @@ extension AppDelegate: PKPushRegistryDelegate {
         completion()
       }
     }
+    emitAfterReport?()
   }
 }
 

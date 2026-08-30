@@ -70,6 +70,14 @@ class IosCallKit {
   /// said.
   Future<void> Function(Map<String, dynamic> payload)? onIncomingCall;
 
+  /// The PushKit handler reached the point of reporting the call.
+  ///
+  /// Emitted after the report is issued, never before it. It exists because a
+  /// push APNs accepted, an app that demonstrably woke, and then silence looks
+  /// identical from the server whether the report was refused or never
+  /// attempted at all.
+  Future<void> Function(String sessionId)? onPushReceived;
+
   bool get isSupported => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
   /// Bind the channel and drain anything native queued while Dart was still
@@ -139,6 +147,9 @@ class IosCallKit {
         break;
       case 'voipTokenInvalidated':
         await onVoipTokenInvalidated?.call();
+        break;
+      case 'voipPushReceived':
+        if (sessionId.isNotEmpty) await onPushReceived?.call(sessionId);
         break;
       case 'incomingCall':
         await onIncomingCall?.call(args);
