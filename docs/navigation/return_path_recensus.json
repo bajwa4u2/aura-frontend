@@ -1100,6 +1100,17 @@
   "verdict": "COMPLIANT"
  },
  {
+  "route": "/verify-identity",
+  "sample": "/verify-identity",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "deepLinkFallback",
+  "deepLinkDestination": "/home",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
   "route": "/devices",
   "sample": "/devices",
   "renders": true,
@@ -1278,6 +1289,17 @@
  {
   "route": "/admin/users",
   "sample": "/admin/users",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "parentReturn",
+  "deepLinkDestination": "/admin",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
+  "route": "/admin/identity-review",
+  "sample": "/admin/identity-review",
   "renders": true,
   "protected": false,
   "deepLinkSemantic": "parentReturn",
