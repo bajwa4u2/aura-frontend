@@ -19,6 +19,7 @@ import '../domain/realtime_models.dart';
 import '../domain/call_mode.dart';
 import '../domain/realtime_state.dart';
 import '../../../core/diagnostics/call_teardown_diag.dart';
+import '../../../core/notifications/ios_call_kit.dart';
 
 class RealtimeController extends StateNotifier<RealtimeState>
     with WidgetsBindingObserver {
@@ -1765,6 +1766,21 @@ class RealtimeController extends StateNotifier<RealtimeState>
     final session = state.session;
     final sessionId = _managedSessionId;
 
+    // LEAVING THE CALL IS THE OTHER END OF THE CALL.
+    //
+    // Every local teardown funnels through here, and until now none of them
+    // told CallKit. The system therefore kept the call in its active list
+    // after the person had already left, and — with one call group configured
+    // — that stale entry refused the NEXT incoming call outright. The phone
+    // simply stopped ringing, with nothing logged anywhere.
+    //
+    // This is the honest counterpart to clearAccepted(): accepting a call must
+    // not end it, and ending a call must actually end it. Both are required;
+    // build 30 shipped only the first half.
+    if (sessionId.isNotEmpty) {
+      unawaited(IosCallKit.instance.reportEnded(sessionId, reason: 'ended'));
+    }
+
     try {
       if (sessionId.isNotEmpty && keepSocketConnected) {
         try {
@@ -1816,11 +1832,6 @@ class RealtimeController extends StateNotifier<RealtimeState>
     state = state.copyWith(isMediaBusy: true, clearMediaError: true);
 
     try {
-      final configuration = await _resolveRtcConfiguration(
-        sessionId,
-        refreshTurnCredentials: refreshTurnCredentials,
-      );
-
       // LIVE viewer (founder charter 2026-08-17): receive-only is a
       // ROLE fact, never derived from who started the session — in an
       // escalated call EVERY existing participant keeps publishing; only
@@ -1853,11 +1864,64 @@ class RealtimeController extends StateNotifier<RealtimeState>
           state.isVideoMode &&
           (state.policy?.videoAllowed ?? true);
 
+      // THE CAMERA AND THE ICE SERVERS HAVE NOTHING TO SAY TO EACH OTHER.
+      //
+      // These two ran in series: fetch TURN credentials over the network, and
+      // only then open the microphone and camera. getUserMedia does not need
+      // an ICE server and the credential fetch does not need a track, so the
+      // second was simply waiting on the first for no reason.
+      //
+      // Measured on a real answered call (session cmtf7np66, 2026-08-29): the
+      // participant was joined at :18 and the SFU transport did not begin
+      // opening until :20 — two seconds in which the call was established and
+      // completely silent. Everything downstream inherits that delay, because
+      // the stage transport refuses to attach until media is ready:
+      //
+      //     :18  joined, participants=2, attach-skipped no_local_media
+      //     :20  seq=1 OPEN      (1895ms)
+      //     :21  seq=2 SUBSCRIBE (waited 1884ms behind OPEN) -> first video
+      //
+      // Starting capture here lets it run THROUGH the credential fetch and the
+      // two intent emits below instead of after them. The role decision is
+      // unchanged and still happens first, so an OBSERVER is never prompted
+      // for a device it must not open.
+      //
+      // ensureLocalMedia() already coalesces concurrent callers, so anything
+      // else asking for media during the overlap joins this same acquisition
+      // rather than starting a competing getUserMedia.
+      Future<void>? capture;
       if (!state.isMediaReady && !receiveOnly) {
-        await _mediaService.ensureLocalMedia(
+        capture = _mediaService.ensureLocalMedia(
           audio: wantsAudio,
           video: wantsVideo,
         );
+        // If the credential fetch below throws, we never reach the await and
+        // an abandoned failure would surface as an unhandled async error.
+        // Attaching a handler makes it observed; the real await still rethrows
+        // into this method's catch, where it becomes honest mediaError state.
+        unawaited(capture.catchError((Object _) {}));
+      }
+
+      final configuration = await _resolveRtcConfiguration(
+        sessionId,
+        refreshTurnCredentials: refreshTurnCredentials,
+      );
+
+      // These announce INTENT — what this participant will send — which is
+      // already decided above and does not depend on the camera having
+      // opened. Emitting them here rather than after the capture await keeps
+      // two more server round-trips inside the same overlap.
+      await _socketService.emitAck('session:audio.set', <String, dynamic>{
+        'sessionId': sessionId,
+        'enabled': wantsAudio,
+      });
+      await _socketService.emitAck('session:video.set', <String, dynamic>{
+        'sessionId': sessionId,
+        'enabled': wantsVideo,
+      });
+
+      if (capture != null) {
+        await capture;
         // 2026-08-14 — default output routing, applied once when media
         // first becomes ready (not on every reconnect/renegotiation, so a
         // manual toggle mid-call is never silently overridden). Video
@@ -1870,15 +1934,6 @@ class RealtimeController extends StateNotifier<RealtimeState>
           unawaited(_mediaService.setSpeakerphoneEnabled(true));
         }
       }
-
-      await _socketService.emitAck('session:audio.set', <String, dynamic>{
-        'sessionId': sessionId,
-        'enabled': wantsAudio,
-      });
-      await _socketService.emitAck('session:video.set', <String, dynamic>{
-        'sessionId': sessionId,
-        'enabled': wantsVideo,
-      });
 
       state = state.copyWith(
         isMediaBusy: false,

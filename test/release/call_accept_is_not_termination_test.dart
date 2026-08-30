@@ -102,6 +102,46 @@ void main() {
     );
   });
 
+  // ── The other half of the same invariant ────────────────────────────────
+  //
+  // Accepting must not end the call; ending must actually end it. Build 30
+  // shipped only the first half, and the consequence was not a stale banner —
+  // it was a phone that stopped ringing. CallKit is configured for one call
+  // group, so a call left "active" REFUSES the next reportNewIncomingCall
+  // outright and silently. Build 29 never hit it only because its accept bug
+  // was also, accidentally, the thing freeing the slot.
+
+  test('a local teardown tells CallKit the call ended', () {
+    const controllerPath =
+        'lib/features/realtime/application/realtime_controller.dart';
+    final body = _between(
+      _read(controllerPath),
+      'Future<void> _terminateSession(',
+      'try {',
+    );
+    expect(
+      body.contains('reportEnded('),
+      isTrue,
+      reason: 'every local leave funnels through _terminateSession. Without a '
+          'reportEnded here the system keeps the call active after the person '
+          'has left, and that stale call blocks the next incoming one.',
+    );
+  });
+
+  test('a new incoming call frees the single call slot before claiming it', () {
+    final swift = _code(_read('ios/Runner/AppDelegate.swift'));
+    final sweep = swift.indexOf('endStaleCalls(keeping:');
+    final report = swift.indexOf('reportNewIncomingCall(');
+    expect(sweep, greaterThanOrEqualTo(0),
+        reason: 'the stale-call sweep must exist.');
+    expect(
+      sweep,
+      lessThan(report),
+      reason: 'the sweep must run BEFORE reportNewIncomingCall — afterwards is '
+          'too late, the report has already been refused.',
+    );
+  });
+
   test('the in-app accept button does not report the call declined', () {
     // Scoped to the success branch only. The later remove(id) in the
     // invite-expired branch is correct: that call genuinely is over.

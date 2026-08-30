@@ -109,6 +109,36 @@ import UIKit
     }
   }
 
+  /// A CALL THAT IS STILL "ACTIVE" WHEN THE NEXT ONE ARRIVES IS A LEAK.
+  ///
+  /// This provider is configured for exactly one call group of one call, which
+  /// is Aura's own rule: a person is in one call or none. CallKit enforces it
+  /// literally — while a call it believes is active occupies that slot,
+  /// `reportNewIncomingCall` is REFUSED, and a refused report is a phone that
+  /// does not ring. Silently.
+  ///
+  /// Build 29 never hit this because its accept path reported every answered
+  /// call ended immediately. That was a defect — answering a call ended it —
+  /// but it also happened to be the only thing freeing the slot. Fixing the
+  /// defect removed the accidental garbage collector, and build 30 stopped
+  /// ringing after its first call.
+  ///
+  /// Ending them here is not a guess. A VoIP push for a NEW session is proof
+  /// from the backend that any earlier call is over: both cannot be true at
+  /// once under a one-call rule. `callObserver.calls` is used rather than this
+  /// class's own map because the map dies with the process while the system's
+  /// list does not.
+  private func endStaleCalls(keeping current: UUID) {
+    for call in callController.callObserver.calls
+    where call.uuid != current && !call.hasEnded {
+      provider?.reportCall(with: call.uuid, endedAt: Date(), reason: .remoteEnded)
+      if let stale = sessionByUuid[call.uuid] {
+        emit("end", ["sessionId": stale, "reason": "superseded"])
+        forget(stale)
+      }
+    }
+  }
+
   private func emit(_ event: String, _ body: [String: Any]) {
     var payload = body
     payload["event"] = event
@@ -247,6 +277,9 @@ extension AppDelegate: PKPushRegistryDelegate {
     update.supportsUngrouping = false
     update.supportsHolding = false
     update.supportsDTMF = false
+
+    // Free the single call slot before asking for it. See endStaleCalls.
+    endStaleCalls(keeping: uuid)
 
     provider?.reportNewIncomingCall(with: uuid, update: update) { [weak self] error in
       if let error = error {
