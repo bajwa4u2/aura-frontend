@@ -4,14 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth/admin_access_provider.dart';
 import '../ui/aura_radius.dart';
-import '../ui/aura_space.dart';
 import '../ui/aura_surface.dart';
 import '../ui/aura_text.dart';
 import 'compatibility_models.dart';
 import 'compatibility_provider.dart';
 import 'update_actions.dart';
-import '_web_reload_stub.dart' if (dart.library.html) '_web_reload_web.dart';
-import 'web_release_watch.dart';
 import '../../router.dart';
 
 /// Wraps the routed widget tree with release-governance UX. Renders one of
@@ -100,16 +97,21 @@ class _UpdateGateState extends ConsumerState<UpdateGate>
 
     switch (verdict.status) {
       case CompatibilityStatus.compatible:
-        // A NEW RELEASE IS LIVE, but this client is not incompatible — the
-        // backend has no complaint. Nothing is blocked and nothing reloads on
-        // its own: someone may be part-way through composing an article, and a
-        // reload that arrives unannounced is indistinguishable from a crash.
+        // COMPATIBLE MEANS NOTHING IS WRONG, SO SAY NOTHING.
         //
-        // The offer sits above the child rather than replacing it, and taking
-        // it reloads the CURRENT URL, so the release is not navigation either.
-        if (ref.watch(webReleaseAvailableProvider)) {
-          return _ReleaseAvailableBanner(child: widget.child);
-        }
+        // A "a new release is available, reload" bar used to sit over the
+        // header here whenever the deployed web bundle moved ahead of the one
+        // in the tab. The backend has no complaint in this branch — the client
+        // works — so the bar interrupted people to report our deployment
+        // cadence, which is our business and not theirs. On a platform that
+        // deploys several times a day it was permanent furniture above the
+        // product, and dismissing it only lasted until the next deploy.
+        //
+        // Founder decision, 2026-08-30. A genuinely incompatible client is
+        // still stopped by `blocked` below, and a degraded one still warns —
+        // those are the cases where a person actually needs to act. The web
+        // release watcher is a lazy provider, so with nothing watching it, it
+        // stops running rather than polling for a banner that no longer draws.
         return widget.child;
       case CompatibilityStatus.degraded:
         return _SoftWarnBannerOverlay(
@@ -374,79 +376,3 @@ String? _versionHint(CompatibilityVerdict verdict) {
 /// Deliberately non-blocking: the running client still works, and the person
 /// decides when to take the update. Reloading preserves the current URL — the
 /// destination was never the thing being replaced.
-class _ReleaseAvailableBanner extends StatefulWidget {
-  const _ReleaseAvailableBanner({required this.child});
-
-  final Widget child;
-
-  @override
-  State<_ReleaseAvailableBanner> createState() =>
-      _ReleaseAvailableBannerState();
-}
-
-class _ReleaseAvailableBannerState extends State<_ReleaseAvailableBanner> {
-  bool _dismissed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    if (_dismissed) return widget.child;
-    return Column(
-      children: [
-        Material(
-          color: AuraSurface.elevated,
-          child: SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AuraSpace.s16, vertical: AuraSpace.s8),
-              child: Row(
-                children: [
-                  const Icon(Icons.refresh_rounded,
-                      size: 18, color: AuraSurface.muted),
-                  const SizedBox(width: AuraSpace.s8),
-                  Expanded(
-                    child: Semantics(
-                      liveRegion: true,
-                      child: Text(
-                        'A newer version of Aura is available. Reloading keeps '
-                        'you where you are.',
-                        style: AuraText.small.copyWith(color: AuraSurface.ink),
-                      ),
-                    ),
-                  ),
-                  const _ReloadButton(),
-                  // Same reason as the soft-warn banner above: this chrome
-                  // lives above the Navigator, so it has no Overlay and a
-                  // tooltip cannot build. This is the instance the founder
-                  // actually saw fail.
-                  IconButton(
-                    icon: const Icon(
-                      Icons.close,
-                      size: 16,
-                      semanticLabel: 'Dismiss',
-                    ),
-                    color: AuraSurface.muted,
-                    onPressed: () => setState(() => _dismissed = true),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Expanded(child: widget.child),
-      ],
-    );
-  }
-}
-
-/// Split out so the button itself can be const: the reload action is a
-/// top-level function, not a closure over anything.
-class _ReloadButton extends StatelessWidget {
-  const _ReloadButton();
-
-  @override
-  Widget build(BuildContext context) => const TextButton(
-        onPressed: reloadWebPage,
-        child: Text('Reload'),
-      );
-}
