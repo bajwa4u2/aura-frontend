@@ -128,17 +128,36 @@ void main() {
     );
   });
 
-  test('a new incoming call frees the single call slot before claiming it', () {
+  test('nothing runs before the mandatory incoming-call report', () {
+    // Build 31 swept stale calls BEFORE reporting, so the slot was free. The
+    // reasoning was right and the placement was wrong: reading
+    // callObserver.calls inside the PushKit handler on a cold background
+    // launch put a non-essential call in front of the one Apple requires, and
+    // a locked iPhone did not ring — Focus off, push delivered, app awake,
+    // report never made.
+    //
+    // The obligation is unconditional, so it runs first. Reconciliation is a
+    // recovery from refusal, not a precondition for the attempt: a stale call
+    // still cannot block a new one, it is just cleared at the moment it
+    // actually blocks something.
     final swift = _code(_read('ios/Runner/AppDelegate.swift'));
-    final sweep = swift.indexOf('endStaleCalls(keeping:');
     final report = swift.indexOf('reportNewIncomingCall(');
+    final sweep = swift.indexOf('endStaleCalls(keeping:');
+    expect(report, greaterThanOrEqualTo(0));
     expect(sweep, greaterThanOrEqualTo(0),
-        reason: 'the stale-call sweep must exist.');
+        reason: 'the stale-call recovery must still exist.');
     expect(
-      sweep,
-      lessThan(report),
-      reason: 'the sweep must run BEFORE reportNewIncomingCall — afterwards is '
-          'too late, the report has already been refused.',
+      report,
+      lessThan(sweep),
+      reason: 'the report must be attempted before anything else. A sweep in '
+          'front of it can stall the one step iOS requires, and a VoIP push '
+          'that reports no call is a phone that does not ring.',
+    );
+    expect(
+      swift.indexOf('reportNewIncomingCall(', sweep),
+      greaterThan(sweep),
+      reason: 'after freeing the slot the call must actually be re-reported, '
+          'or the recovery clears state and rings nobody.',
     );
   });
 

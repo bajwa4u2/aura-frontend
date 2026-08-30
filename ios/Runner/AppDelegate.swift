@@ -278,27 +278,61 @@ extension AppDelegate: PKPushRegistryDelegate {
     update.supportsHolding = false
     update.supportsDTMF = false
 
-    // Free the single call slot before asking for it. See endStaleCalls.
-    endStaleCalls(keeping: uuid)
-
-    provider?.reportNewIncomingCall(with: uuid, update: update) { [weak self] error in
+    // REPORT FIRST. NOTHING MAY COME BEFORE THIS.
+    //
+    // Build 31 ran the stale-call sweep here, before the report, so that the
+    // single call slot was already free. The reasoning was sound and the
+    // placement was not: reading `callObserver.calls` inside the PushKit
+    // handler on a cold background launch put a non-essential call in front of
+    // the one call Apple requires, and a locked iPhone did not ring. Focus was
+    // off, the push was delivered, and the app woke — the report simply never
+    // reached the system.
+    //
+    // The obligation is unconditional, so it now runs unconditionally, and the
+    // reconciliation becomes what it always should have been: a recovery from
+    // a refusal, not a precondition for the attempt. A stale call still cannot
+    // block a new one — it is cleared the moment it actually blocks something,
+    // which is the only moment the clearing was ever needed.
+    let present = { [weak self] (retrying: Bool, error: Error?) -> Bool in
+      guard let self = self else { return true }
       if let error = error {
-        // Reported and immediately refused (Do Not Disturb, a blocked caller,
-        // an already-ended call). Tell Aura so the invite is not left pending.
-        self?.emit("callRejectedBySystem", [
+        if !retrying {
+          // The refusal may be the occupied slot. Free it and try once more —
+          // once, because a second refusal is a real one (Do Not Disturb, a
+          // blocked caller, a call already over) and retrying it would only
+          // delay telling Aura the truth.
+          return false
+        }
+        self.emit("callRejectedBySystem", [
           "sessionId": reportedSession,
           "reason": error.localizedDescription,
         ])
-        self?.forget(reportedSession)
+        self.forget(reportedSession)
       } else {
-        self?.emit("incomingCall", [
+        self.emit("incomingCall", [
           "sessionId": reportedSession,
           "callerName": callerName,
           "hasVideo": hasVideo,
           "raw": data.compactMapValues { $0 as? String },
         ])
       }
-      completion()
+      return true
+    }
+
+    provider?.reportNewIncomingCall(with: uuid, update: update) { [weak self] error in
+      if present(false, error) {
+        completion()
+        return
+      }
+      guard let self = self else {
+        completion()
+        return
+      }
+      self.endStaleCalls(keeping: uuid)
+      self.provider?.reportNewIncomingCall(with: uuid, update: update) { retryError in
+        _ = present(true, retryError)
+        completion()
+      }
     }
   }
 }
