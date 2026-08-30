@@ -73,8 +73,18 @@ class AvailabilityRepository {
     return BookingConfirmation.fromJson(data);
   }
 
-  Future<void> cancelBookingByToken(String token) async {
-    await _dio.patch<void>('/book/cancel/$token');
+  /// Cancel a booking, optionally saying why.
+  ///
+  /// The reason is the person's own words and is shown back to the host, who
+  /// otherwise learns only THAT a booking vanished. It is optional by design:
+  /// requiring an explanation to leave a meeting would hold someone in a
+  /// decision they have already made, and a forced reason is not information.
+  Future<void> cancelBookingByToken(String token, {String? reason}) async {
+    final text = (reason ?? '').trim();
+    await _dio.patch<void>(
+      '/book/cancel/$token',
+      data: text.isEmpty ? null : <String, dynamic>{'reason': text},
+    );
   }
 
   /// RC8 — what booking does this reschedule link refer to?
