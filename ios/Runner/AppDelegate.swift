@@ -31,6 +31,15 @@ import UIKit
   private var uuidBySession: [String: UUID] = [:]
   private var sessionByUuid: [UUID: String] = [:]
 
+  /// Calls this app answered ITSELF, via CXAnswerCallAction, because the
+  /// person tapped Accept on an Aura surface rather than the CallKit screen.
+  ///
+  /// The answer action still runs through the provider delegate — that is how
+  /// CallKit works — but re-emitting `answer` to Dart from it would ask Aura to
+  /// join a call it is already joining. This remembers which answers we
+  /// originated so the delegate can fulfil them without echoing.
+  private var answeringLocally: Set<UUID> = []
+
   /// A VoIP push can outrun the Flutter engine on a cold start. Anything that
   /// arrives before Dart is listening is held here rather than dropped — the
   /// call is already on screen by then, so losing it would strand the user on a
@@ -125,17 +134,38 @@ import UIKit
   ///
   /// Ending them here is not a guess. A VoIP push for a NEW session is proof
   /// from the backend that any earlier call is over: both cannot be true at
-  /// once under a one-call rule. `callObserver.calls` is used rather than this
-  /// class's own map because the map dies with the process while the system's
-  /// list does not.
+  /// once under a one-call rule.
+  ///
+  /// Both ledgers are swept, in that order, because neither alone is enough:
+  /// this class's map holds what THIS process reported and is reliably
+  /// populated, while `callObserver.calls` can still show a call left behind
+  /// by an earlier launch that the map no longer knows about.
   private func endStaleCalls(keeping current: UUID) {
+    // OUR OWN LEDGER FIRST — it is the one that is actually populated.
+    //
+    // CXCallObserver only reports reliably once it has a delegate, and this
+    // process reported these calls itself, so the map is the authority for
+    // anything it still holds. Sweeping only the observer meant sweeping an
+    // empty list and clearing nothing, which is why the second locked call
+    // still found the slot occupied.
+    //
+    // THE CASE THAT PRODUCES A STALE CALL: the CALLER ends it while this
+    // device is locked and backgrounded. There is no local leave, so
+    // _terminateSession never runs, and `call:terminal` needs a live socket
+    // that a suspended app does not have. The call is genuinely over and only
+    // CallKit still believes otherwise.
+    for (session, uuid) in uuidBySession where uuid != current {
+      provider?.reportCall(with: uuid, endedAt: Date(), reason: .remoteEnded)
+      emit("end", ["sessionId": session, "reason": "superseded"])
+      forget(session)
+    }
+
+    // Then anything the system still shows that this process never reported —
+    // a call left behind by a previous launch.
     for call in callController.callObserver.calls
     where call.uuid != current && !call.hasEnded {
       provider?.reportCall(with: call.uuid, endedAt: Date(), reason: .remoteEnded)
-      if let stale = sessionByUuid[call.uuid] {
-        emit("end", ["sessionId": stale, "reason": "superseded"])
-        forget(stale)
-      }
+      if let stale = sessionByUuid[call.uuid] { forget(stale) }
     }
   }
 
@@ -184,17 +214,34 @@ import UIKit
         result(false)
         return
       }
-      // An INCOMING CallKit call has no "report connected" API: the system
-      // considers it connected the moment CXAnswerCallAction is fulfilled,
-      // which the delegate below already does. reportOutgoingCall() used to
-      // be called here against an incoming call's UUID — an API mismatch
-      // CallKit simply ignores, so it read as a working connection signal
-      // while doing nothing at all.
+      // ANSWERING IN THE APP MUST ANSWER THE SYSTEM CALL TOO.
       //
-      // Kept as an explicit acknowledgement rather than deleted, because
-      // Dart's accept path calls it and the honest answer to "is this call
-      // connected" is yes — established at answer time, not here.
-      _ = uuid
+      // This was a no-op, and that is why accepting from Aura's own surface
+      // left a full-screen CallKit ring on top of the call it had just
+      // joined. The session was live, the media was flowing, and the system
+      // was still asking whether to answer — so the app's call screen was
+      // underneath an incoming-call UI that nothing was ever going to dismiss.
+      // The founder saw it as "accept → full screen ring → call surface
+      // buried", and as a camera that stayed on after the surface vanished.
+      //
+      // CallKit has no "report answered" for an incoming call; the supported
+      // move is to REQUEST the answer action, exactly as the system would if
+      // the person had tapped Answer on the CallKit screen. That dismisses the
+      // incoming UI and moves the call to connected — one call, one state,
+      // however the person chose to accept it.
+      //
+      // It deliberately does NOT end the call. Ending is what build 30 did and
+      // what tore the call down; this is the opposite operation.
+      answeringLocally.insert(uuid)
+      let action = CXAnswerCallAction(call: uuid)
+      callController.request(CXTransaction(action: action)) { [weak self] error in
+        if let error = error {
+          // Already answered, or already gone. Not fatal: the app is in the
+          // call either way, and saying so beats failing silently.
+          self?.answeringLocally.remove(uuid)
+          NSLog("[callkit] local answer request failed: \(error.localizedDescription)")
+        }
+      }
       result(true)
 
     case "voipToken":
@@ -349,6 +396,13 @@ extension AppDelegate: CXProviderDelegate {
   func provider(_ provider: CXProvider, perform action: CXAnswerCallAction) {
     guard let sessionId = sessionByUuid[action.callUUID] else {
       action.fail()
+      return
+    }
+    // We requested this ourselves because the person accepted inside Aura.
+    // Fulfil it so the system call moves to connected and the incoming UI
+    // goes away, but do not tell Dart to join a call it is already joining.
+    if answeringLocally.remove(action.callUUID) != nil {
+      action.fulfill()
       return
     }
     // Fulfilled here, joined in Dart. If the join fails, Dart calls endCall

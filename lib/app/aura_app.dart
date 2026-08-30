@@ -20,12 +20,14 @@ import '../core/notifications/notification_bridge.dart';
 import '../features/correspondence/data/correspondence_live_service.dart';
 import '../features/devices/device_providers.dart';
 import '../features/realtime/application/realtime_providers.dart';
+import '../features/realtime/domain/realtime_enums.dart';
 import '../features/realtime/application/thread_call_lifecycle_controller.dart';
 import '../features/realtime/data/realtime_reconciliation_controller.dart';
 import '../features/realtime/presentation/thread_call_lifecycle_host.dart';
 import '../features/realtime/presentation/widgets/orphaned_session_banner.dart';
 import '../features/updates/incoming_call_bridge.dart';
 import '../router.dart';
+import '../core/navigation/navigation_authority.dart';
 
 class AuraApp extends ConsumerStatefulWidget {
   const AuraApp({super.key});
@@ -147,7 +149,12 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
             'callerDisplayName': pick('callerDisplayName'),
             'callerHandle': pick('callerHandle'),
             'deeplink': pick('deeplink'),
+            // Where the call belongs. Without these the thread projection has
+            // no canonical identifier to match on and a push-delivered call
+            // could only ever be shown as a global event.
+            'correspondenceId': pick('correspondenceId'),
             'threadId': pick('threadId'),
+            'spaceId': pick('spaceId'),
           },
         });
       } catch (e) {
@@ -216,6 +223,38 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
           await controller.joinThreadCallSession(sessionId);
         }
         await callKit.reportConnected(sessionId);
+
+        // A CONNECTED CALL NOBODY CAN SEE IS NOT A CONNECTED CALL.
+        //
+        // Answering from the CallKit screen joined the session and stopped
+        // there. The media was live — the founder proved it by ending the call
+        // and watching the camera light go out — but the app was still on
+        // whatever screen it had been on, so the call was running underneath
+        // the UI with no way to reach it. Every other accept path navigates;
+        // this one never did.
+        //
+        // Same route and same authority the in-app card uses, so answering on
+        // the lock screen and answering in the app arrive at the same place.
+        if (mounted) {
+          try {
+            // Accepting CLEARS the ringing surface — that is correct, nobody
+            // wants a ringing card over a call they are now in. But clearing
+            // it was the only thing happening: the card vanished, the media
+            // stayed live, and there was no call screen underneath it. The
+            // founder's description of the symptom is exact — "join killing
+            // the call surface but kept camera engaged".
+            final session = ref.read(realtimeControllerProvider).session;
+            final meetingId = (session?.surfaceId ?? '').trim();
+            final route =
+                session?.surfaceType == RealtimeSurfaceType.meeting &&
+                        meetingId.isNotEmpty
+                    ? '/meetings/$meetingId/live?sessionId=$sessionId'
+                    : NavigationAuthority.realtimeSessionJoinRoute(sessionId);
+            ref.read(routerProvider).go(route);
+          } catch (e) {
+            debugPrint('[callkit] answer navigation failed: $e');
+          }
+        }
       } catch (e) {
         debugPrint('[callkit] answer join failed: $e');
         await callKit.reportEnded(sessionId, reason: 'failed');
