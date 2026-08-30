@@ -911,7 +911,8 @@ class _AnnouncementEditorScreenState
           data['displayName']?.toString(),
           data['username']?.toString(),
           data['accountLabel']?.toString(),
-          data['platformUserId']?.toString(),
+          // NOT `platformUserId`. It is an opaque open-id, not a name, and
+          // showing it to a person is worse than showing nothing.
         ]);
       });
     } catch (e) {
@@ -967,7 +968,7 @@ class _AnnouncementEditorScreenState
           data['accountLabel']?.toString(),
           data['name']?.toString(),
           data['email']?.toString(),
-          data['linkedinMemberId']?.toString(),
+          // NOT `linkedinMemberId`, for the same reason.
         ]);
       });
     } catch (e) {
@@ -1562,6 +1563,8 @@ class _AnnouncementEditorScreenState
                       linkedinConnected: _linkedinConnected,
                       tiktokConnected: _tiktokConnected,
                       tiktokEnabled: _tiktokConnected,
+                      linkedinAccountName: _linkedinAccountLabel,
+                      tiktokAccountName: _tiktokAccountLabel,
                       initialAura: _publishToAura,
                       initialLinkedin: _publishToLinkedIn,
                       initialTiktok: _publishToTikTok,
@@ -1581,14 +1584,11 @@ class _AnnouncementEditorScreenState
                       const SizedBox(height: 8),
                       const LinearProgressIndicator(minHeight: 2),
                     ],
-                    if (_linkedinAccountLabel.trim().isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text('LinkedIn: $_linkedinAccountLabel'),
-                    ],
-                    if (_tiktokAccountLabel.trim().isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text('TikTok: $_tiktokAccountLabel'),
-                    ],
+                    // The connected-account names used to be printed here as
+                    // "LinkedIn: …" and "TikTok: …" lines beneath the toggles.
+                    // They read as debug output, and the TikTok one routinely
+                    // showed a raw open-id. The name now appears where a person
+                    // is already looking — as the toggle's own subtitle.
                     if ((_linkedinError ?? '').trim().isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Text(

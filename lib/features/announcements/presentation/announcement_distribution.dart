@@ -8,6 +8,8 @@ class AnnouncementDistribution extends StatefulWidget {
     required this.linkedinConnected,
     required this.tiktokConnected,
     required this.tiktokEnabled,
+    this.linkedinAccountName,
+    this.tiktokAccountName,
     required this.initialAura,
     required this.initialLinkedin,
     required this.initialTiktok,
@@ -17,6 +19,18 @@ class AnnouncementDistribution extends StatefulWidget {
   final bool linkedinConnected;
   final bool tiktokConnected;
   final bool tiktokEnabled;
+
+  /// The connected account's HUMAN name, when the provider gave us one.
+  ///
+  /// Null when it did not. Deliberately never an opaque platform identifier:
+  /// the editor previously fell back to a raw TikTok open-id and printed it on
+  /// screen, so a person composing an announcement was shown
+  /// `-000Dmtv3qyF_cHtMRR_jpGQv1lk-Q-gMYXt` and had to work out that it meant
+  /// their own account. An id a person cannot recognise tells them nothing;
+  /// "Connected" at least tells them the truth.
+  final String? linkedinAccountName;
+  final String? tiktokAccountName;
+
   final bool initialAura;
   final bool initialLinkedin;
   final bool initialTiktok;
@@ -96,11 +110,10 @@ class _AnnouncementDistributionState extends State<AnnouncementDistribution> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const AuraTextBlock(
-          'Distribution',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 8),
+        // NO HEADING HERE. The editor already renders "Distribution" as a
+        // section title in the same style as "Writing", "Writing support" and
+        // "Media"; this widget printed a second one immediately beneath it, so
+        // the surface read "Distribution / Distribution".
         _row(
           title: 'Aura',
           subtitle: 'Primary publication',
@@ -120,8 +133,15 @@ class _AnnouncementDistributionState extends State<AnnouncementDistribution> {
           // looked broken rather than unavailable. The connection is made on
           // the profile screen; saying so is the difference between a dead
           // control and a next step.
+          // WHICH account, when we know its name. Someone publishing to a
+          // place their name is attached to should be able to see whose name
+          // it will be, and the subtitle is where they are already looking —
+          // the editor used to print it as a separate "LinkedIn: …" line
+          // underneath, which read like debug output.
           subtitle: widget.linkedinConnected
-              ? 'Connected'
+              ? (widget.linkedinAccountName?.trim().isNotEmpty == true
+                  ? widget.linkedinAccountName!.trim()
+                  : 'Connected')
               : 'Not connected — connect LinkedIn on your profile',
           value: linkedin,
           onChanged: widget.linkedinConnected
@@ -135,7 +155,11 @@ class _AnnouncementDistributionState extends State<AnnouncementDistribution> {
           title: 'TikTok',
           subtitle: !widget.tiktokConnected
               ? 'Not connected'
-              : (widget.tiktokEnabled ? 'Connected' : 'Requires one uploaded video'),
+              : (widget.tiktokEnabled
+                  ? (widget.tiktokAccountName?.trim().isNotEmpty == true
+                      ? widget.tiktokAccountName!.trim()
+                      : 'Connected')
+                  : 'Requires one uploaded video'),
           value: tiktok,
           onChanged: (widget.tiktokConnected && widget.tiktokEnabled)
               ? (v) {
