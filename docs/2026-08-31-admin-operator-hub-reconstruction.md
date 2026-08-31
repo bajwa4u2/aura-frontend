@@ -1,7 +1,8 @@
 # Admin Operator Hub — reconstruction record
 
-**Closed 2026-08-31.** Client `a2290b0`, backend `d12d825`. Both pushed; the
-backend deployed to production through the ordinary Railway path.
+**Closed 2026-08-31.** Client `a2290b0`, backend `437c2fc`. Both pushed; the
+backend deployed to production through the ordinary Railway path, and its new
+routes were probed there rather than assumed.
 
 This is the record of what was rebuilt, what it replaced, what the work found,
 and what is deliberately still open.
@@ -104,6 +105,30 @@ Each of these could never have worked. None was visible to a passing test.
    alphanumerics and a word boundary does not break on an underscore.
 8. **Media retention had no scheduler.** The cleanup job was reference-safe and
    had a dry run from the day it was written; nothing ever ran it.
+9. **Discovery served at an address nothing asks for.** The new controller
+   declared `@Controller('v1/admin/discovery')` while `main.ts` already sets a
+   global prefix of `v1`, so every route answered at `/v1/v1/admin/...`.
+   **Nothing in either route gate caught it** — the path compiles, the route
+   registers, and the endpoint answers correctly, just in the wrong place. A
+   `curl` against the deployed service found it. That curl is now a test:
+   `route-path-compilation.spec.ts` fails by name on any controller carrying
+   the global prefix, verified by reintroducing the bad prefix and watching it
+   fail.
+10. **The Discovery scopes were ungrantable.** `DISCOVERY_READ` and
+    `DISCOVERY_EVIDENCE_READ` existed in the enum and were absent from
+    `ALL_ADMIN_PERMISSIONS`, so nothing could grant them and the whole area was
+    unreachable to every operator including the OWNER. This is the
+    identity-scope defect repeated **in the same file that carries a comment
+    recording it** — a comment is not a guard. `admin-permissions.spec.ts` now
+    fails by name on any enum value missing from the catalogue, verified by
+    removing one.
+11. **An OWNER with an explicit grant list would not have gained them anyway.**
+    `resolveGrantPermissions` uses a non-empty stored list verbatim and only
+    falls back to the catalogue when it is empty, so extending the catalogue
+    reaches role defaults and empty-list grants — and an explicitly-written
+    OWNER not at all. A migration extends ACTIVE OWNER grants that already
+    carry a list: only OWNER, only additive, idempotent, proven against seeded
+    grants of all three shapes and run twice.
 
 ---
 
@@ -143,6 +168,7 @@ a finding for a decision, not acted on.
 | Emails, phones, cards, keys redacted | `redactQuery`, applied server-side |
 | Nothing shown below 5 impressions | `queryIsDisplayable`; the withheld count is reported |
 | `DISCOVERY_READ` ≠ `DISCOVERY_EVIDENCE_READ` | Separate permissions; queries sit behind the second |
+| The evidence scope is never ambient | It is in NO role default and `admin-permissions.spec.ts` holds that. ANALYST gains `DISCOVERY_READ` only |
 
 No provider is load-bearing. Google Search Console is one adapter of six; four
 report "no adapter is configured" today and Discovery works, which is the point.
@@ -170,11 +196,28 @@ than a guess.
 | Gate | Result |
 |---|---|
 | Client suite | 2122 passed, 1 skipped |
-| Backend suite | 3966 passed, 321 suites |
+| Backend suite | 3974 passed, 322 suites |
 | Route path compilation + HTTP route registration | pass — the gap that caused the 2026-08-20 crash loop |
 | Migration replay from empty | all applied; both convergence audit tables survive |
+| Grant backfill | seeded OWNER-with-list, OWNER-with-empty-list and ANALYST rows; only the first changed, and a second run was a no-op |
 | Windows desktop certification (`integration_test`) | 10/10 on the real client |
 | Renders | 49 PNGs, every area at desktop/tablet/phone, in `test/admin/goldens/operator/` |
+
+### Production, probed after deploy
+
+Verified by address, not by HTTP 200 — a route that does not exist returns
+404, one that exists and requires authority returns 401, and that difference
+is the marker:
+
+```
+/v1/admin/discovery/estates    401   exists, gated
+/v1/admin/discovery/coverage   401
+/v1/admin/discovery/objects    401
+/v1/admin/discovery/queries    401
+/v1/admin/discovery/retention  401
+/v1/admin/media-cleanup/status 401
+/v1/v1/admin/discovery/estates 404   the doubled path is gone
+```
 
 ### What is NOT certified
 

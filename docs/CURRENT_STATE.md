@@ -8,12 +8,12 @@
 
 > **2026-08-31 — ADMIN OPERATOR HUB: RECONSTRUCTION COMPLETE.**
 >
-> Client `a2290b0` · backend `d12d825`, both pushed; the backend deployed
-> through the ordinary Railway path.
+> Client `a2290b0` · backend `437c2fc`, both pushed; the backend deployed
+> through the ordinary Railway path and its new routes probed there.
 >
 > `IMPLEMENTATION_COMPLETE = YES` · `RELEASE_CLIENT_CERTIFICATION_COMPLETE = NO`
 >
-> Client 2122 green (1 skipped), backend 321 suites / 3966 green, Windows
+> Client 2122 green (1 skipped), backend 322 suites / 3974 green, Windows
 > desktop certification 10/10 on the real client.
 >
 > Full record: `docs/2026-08-31-admin-operator-hub-reconstruction.md`.
