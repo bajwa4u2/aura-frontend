@@ -20,26 +20,54 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../data/admin_providers.dart';
+import '../data/operator_cache.dart';
 import '../domain/operator_authority_provider.dart';
 import '../domain/operator_capability.dart';
 import '../domain/operator_routes.dart';
 import '../ui/operator_kit.dart';
 
 /// Which kind of subject the directory is showing.
-final subjectKindProvider = StateProvider<_SubjectKind>((_) => _SubjectKind.people);
+///
+/// PUBLIC, unlike the rest of this file's internals: the render harness sets
+/// it to photograph the institution directory, which is otherwise unreachable
+/// in a still image and so was never looked at.
+final subjectKindProvider =
+    StateProvider<SubjectKind>((_) => SubjectKind.people);
 
-enum _SubjectKind { people, institutions }
+enum SubjectKind { people, institutions }
 
 final subjectQueryProvider = StateProvider<String>((_) => '');
 
 final subjectPeopleProvider = FutureProvider.autoDispose((ref) async {
+  cacheOperatorReading(ref);
   final query = ref.watch(subjectQueryProvider);
   return ref.watch(adminRepositoryProvider).fetchUsers(query: query, limit: 50);
 });
 
+/// The directory, across EVERY standing.
+///
+/// The server used to answer an unfiltered request with verified institutions
+/// only, so pending, suspended and rejected subjects were absent from the
+/// console's one institution list without any sign that they had been left
+/// out. Standing is now a facet the operator chooses, not a hidden default.
 final subjectInstitutionsProvider = FutureProvider.autoDispose((ref) async {
+  cacheOperatorReading(ref);
   return ref.watch(adminRepositoryProvider).fetchInstitutions();
 });
+
+/// ONE institution subject, resolved by id.
+///
+/// Independent of the directory and of whatever standing filter is applied to
+/// it: a subject exists, or it does not.
+final institutionSubjectProvider = FutureProvider.autoDispose
+    .family<AdminInstitutionSummary?, String>((ref, institutionId) async {
+  cacheOperatorReading(ref);
+  return ref.watch(adminRepositoryProvider).fetchInstitution(institutionId);
+});
+
+/// Which standing the directory is showing. `null` is every standing — the
+/// operator's default, because a directory that hides subjects is not one.
+final subjectStandingProvider = StateProvider<String?>((_) => null);
 
 class SubjectsArea extends ConsumerWidget {
   const SubjectsArea({super.key});
@@ -63,8 +91,8 @@ class SubjectsArea extends ConsumerWidget {
 
     // The selector never offers a kind the operator cannot read.
     final effective = switch (kind) {
-      _SubjectKind.people when !canPeople => _SubjectKind.institutions,
-      _SubjectKind.institutions when !canInstitutions => _SubjectKind.people,
+      SubjectKind.people when !canPeople => SubjectKind.institutions,
+      SubjectKind.institutions when !canInstitutions => SubjectKind.people,
       _ => kind,
     };
 
@@ -87,28 +115,41 @@ class SubjectsArea extends ConsumerWidget {
                     _KindChip(
                       label: 'People',
                       icon: Icons.person_outline_rounded,
-                      selected: effective == _SubjectKind.people,
+                      selected: effective == SubjectKind.people,
                       onTap: () => ref
                           .read(subjectKindProvider.notifier)
-                          .state = _SubjectKind.people,
+                          .state = SubjectKind.people,
                     ),
                     const SizedBox(width: AuraSpace.s8),
                     _KindChip(
                       label: 'Institutions',
                       icon: Icons.apartment_rounded,
-                      selected: effective == _SubjectKind.institutions,
+                      selected: effective == SubjectKind.institutions,
                       onTap: () => ref
                           .read(subjectKindProvider.notifier)
-                          .state = _SubjectKind.institutions,
+                          .state = SubjectKind.institutions,
                     ),
                     const SizedBox(width: AuraSpace.s16),
                   ],
-                  Expanded(child: _SearchField()),
+                  Expanded(child: _SearchField(kind: effective)),
                 ],
               ),
             ),
+            // STANDING IS A FACET, NOT A HIDDEN DEFAULT. It appears only for
+            // institutions, because people carry standing on the person and
+            // not as a directory-wide slice.
+            if (effective == SubjectKind.institutions)
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  wide ? AuraSpace.s20 : AuraSpace.s12,
+                  0,
+                  wide ? AuraSpace.s20 : AuraSpace.s12,
+                  AuraSpace.s12,
+                ),
+                child: const _StandingFacet(),
+              ),
             Expanded(
-              child: effective == _SubjectKind.people
+              child: effective == SubjectKind.people
                   ? const _PeopleList()
                   : const _InstitutionsList(),
             ),
@@ -120,6 +161,13 @@ class SubjectsArea extends ConsumerWidget {
 }
 
 class _SearchField extends ConsumerStatefulWidget {
+  const _SearchField({required this.kind});
+
+  /// What is being searched. An institution has no email address, and a field
+  /// offering to search one is the console describing a capability it does
+  /// not have.
+  final SubjectKind kind;
+
   @override
   ConsumerState<_SearchField> createState() => _SearchFieldState();
 }
@@ -142,7 +190,9 @@ class _SearchFieldState extends ConsumerState<_SearchField> {
           ref.read(subjectQueryProvider.notifier).state = v.trim(),
       decoration: InputDecoration(
         isDense: true,
-        hintText: 'Search by name or email',
+        hintText: widget.kind == SubjectKind.people
+            ? 'Search by name or email'
+            : 'Search by name, address or domain',
         hintStyle: const TextStyle(color: AuraSurface.faint, fontSize: 13.5),
         prefixIcon:
             const Icon(Icons.search_rounded, size: 18, color: AuraSurface.faint),
@@ -217,6 +267,54 @@ class _KindChip extends StatelessWidget {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Every standing, and each one on its own.
+///
+/// "Everything" leads because it is the honest default for a directory of
+/// subjects. The others are how an operator narrows deliberately — never how
+/// the product narrows silently.
+class _StandingFacet extends ConsumerWidget {
+  const _StandingFacet();
+
+  static const _standings = <(String?, String)>[
+    (null, 'Everything'),
+    ('VERIFIED', 'Verified'),
+    ('PENDING', 'Awaiting review'),
+    ('SUSPENDED', 'Suspended'),
+    ('REJECTED', 'Rejected'),
+  ];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selected = ref.watch(subjectStandingProvider);
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final (value, label) in _standings) ...[
+            _KindChip(
+              label: label,
+              icon: value == null
+                  ? Icons.all_inclusive_rounded
+                  : _standingIcon(value),
+              selected: selected == value,
+              onTap: () =>
+                  ref.read(subjectStandingProvider.notifier).state = value,
+            ),
+            const SizedBox(width: AuraSpace.s8),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static IconData _standingIcon(String standing) => switch (standing) {
+        'VERIFIED' => Icons.verified_outlined,
+        'PENDING' => Icons.hourglass_empty_rounded,
+        'SUSPENDED' => Icons.pause_circle_outline_rounded,
+        _ => Icons.block_outlined,
+      };
+}
+
 class _PeopleList extends ConsumerWidget {
   const _PeopleList();
 
@@ -290,19 +388,31 @@ class _InstitutionsList extends ConsumerWidget {
         ),
       ),
       data: (all) {
-        final list = query.isEmpty
+        final standing = ref.watch(subjectStandingProvider);
+        final byStanding = standing == null
             ? all
-            : all
+            : all.where((i) => i.status == standing).toList();
+        final list = query.isEmpty
+            ? byStanding
+            : byStanding
                 .where((i) =>
                     i.name.toLowerCase().contains(query) ||
                     i.slug.toLowerCase().contains(query) ||
                     (i.domain ?? '').toLowerCase().contains(query))
                 .toList();
         if (list.isEmpty) {
+          // AN EMPTY RESULT NAMES ITS OWN NARROWING. "No institutions yet" over
+          // a filtered directory is a lie about the estate.
           return OperatorClear(
-            title: query.isEmpty
-                ? 'No institutions yet'
-                : 'No institution matches "$query"',
+            title: query.isNotEmpty
+                ? 'No institution matches "$query"'
+                : standing != null
+                    ? 'No institution is ${_standingWord(standing)}'
+                    : 'No institutions yet',
+            detail: standing != null && all.isNotEmpty
+                ? '${all.length} institution${all.length == 1 ? '' : 's'} '
+                    'exist under other standings.'
+                : null,
             icon: Icons.apartment_rounded,
           );
         }
@@ -332,6 +442,14 @@ class _InstitutionsList extends ConsumerWidget {
     );
   }
 }
+
+String _standingWord(String standing) => switch (standing) {
+      'VERIFIED' => 'verified',
+      'PENDING' => 'awaiting review',
+      'SUSPENDED' => 'suspended',
+      'REJECTED' => 'rejected',
+      _ => standing.toLowerCase(),
+    };
 
 class _SubjectRow extends StatelessWidget {
   const _SubjectRow({

@@ -1,0 +1,82 @@
+{
+  "ok": true,
+  "status": null,
+  "items": [
+    {
+      "id": "cmoinst0001rdjzu5f96djh",
+      "name": "Northgate Health Trust",
+      "slug": "northgate-health",
+      "websiteUrl": "https://northgate.example.test",
+      "domain": "northgate.example.test",
+      "jurisdiction": "GB",
+      "description": "Community health provider.",
+      "status": "VERIFIED",
+      "verifiedAt": "2026-04-02T09:00:00.000Z",
+      "suspendedAt": null,
+      "rejectedAt": null,
+      "domainVerifiedAt": "2026-04-02T09:00:00.000Z",
+      "createdAt": "2026-03-18T09:00:00.000Z",
+      "_count": {
+        "members": 5,
+        "verificationRequests": 0
+      }
+    },
+    {
+      "id": "cmoinst0002rdjzu5f96djh",
+      "name": "Fenwick Arts Council",
+      "slug": "fenwick-arts",
+      "websiteUrl": "https://fenwick.example.test",
+      "domain": "fenwick.example.test",
+      "jurisdiction": "GB",
+      "description": "Regional arts funding body.",
+      "status": "SUSPENDED",
+      "verifiedAt": "2026-02-11T09:00:00.000Z",
+      "suspendedAt": "2026-07-30T14:12:00.000Z",
+      "rejectedAt": null,
+      "domainVerifiedAt": "2026-02-11T09:00:00.000Z",
+      "createdAt": "2026-02-01T09:00:00.000Z",
+      "_count": {
+        "members": 0,
+        "verificationRequests": 0
+      }
+    },
+    {
+      "id": "cmoinst0003rdjzu5f96djh",
+      "name": "Halden Water Authority",
+      "slug": "halden-water",
+      "websiteUrl": null,
+      "domain": null,
+      "jurisdiction": "NO",
+      "description": null,
+      "status": "PENDING",
+      "verifiedAt": null,
+      "suspendedAt": null,
+      "rejectedAt": null,
+      "domainVerifiedAt": null,
+      "createdAt": "2026-08-19T07:30:00.000Z",
+      "_count": {
+        "members": 0,
+        "verificationRequests": 0
+      }
+    },
+    {
+      "id": "cmoinst0004rdjzu5f96djh",
+      "name": "Bellrock Media Group",
+      "slug": "bellrock-media",
+      "websiteUrl": "https://bellrock.example.test",
+      "domain": "bellrock.example.test",
+      "jurisdiction": "US",
+      "description": null,
+      "status": "REJECTED",
+      "verifiedAt": null,
+      "suspendedAt": null,
+      "rejectedAt": "2026-06-04T11:00:00.000Z",
+      "domainVerifiedAt": null,
+      "createdAt": "2026-05-28T11:00:00.000Z",
+      "_count": {
+        "members": 0,
+        "verificationRequests": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "ok": true,
+  "institutionPolicy": {
+    "requireEmailVerification": true,
+    "requireDnsVerification": false,
+    "allowProvisionalActive": true,
+    "autoApproveVerified": false,
+    "allowedDomains": [],
+    "blockedDomains": []
+  },
+  "securityPolicy": {
+    "maxLoginAttempts": 5,
+    "sessionTimeoutMinutes": 1440,
+    "requireMfa": false
+  },
+  "communicationsPolicy": {
+    "maxEmailsPerDay": 10,
+    "digestEnabled": true,
+    "digestFrequency": "daily",
+    "unsubscribeEnabled": true,
+    "senderEmail": ""
+  },
+  "featurePolicy": {
+    "betaOptInEnabled": true,
+    "maintenanceMode": true,
+    "publicRegistrationEnabled": true,
+    "inviteOnlyMode": false
+  }
+}

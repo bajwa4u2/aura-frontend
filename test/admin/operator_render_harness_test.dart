@@ -1,6 +1,7 @@
-@Tags(['visual'])
+@Tags(['visual', 'golden'])
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:aura/core/auth/admin_access_provider.dart';
@@ -16,11 +17,9 @@ import 'package:aura/features/admin/areas/subject_person_area.dart';
 import 'package:aura/features/admin/areas/subjects_area.dart';
 import 'package:aura/features/admin/areas/work_area.dart';
 import 'package:aura/features/admin/data/admin_providers.dart';
-import 'package:aura/features/admin/data/operator_work.dart';
 import 'package:aura/features/admin/shell/operator_shell.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -66,10 +65,23 @@ void main() {
     Directory(outDir).createSync(recursive: true);
   });
 
+  /// THE SIX WIDTHS THE FOUNDER NAMED, and one of them is why this list is
+  /// six rather than three.
+  ///
+  /// 1142px — an ordinary laptop viewport — used to fall into the icon-only
+  /// rail, so the frozen IA appeared as seven unlabelled glyphs. Three widths
+  /// could not have shown that: 1440 was fine and 900 was fine, and the whole
+  /// range between them was never looked at.
+  ///
+  /// 360 and 320 are here for the same reason. A layout that holds at 390 and
+  /// breaks at 320 is a layout nobody has seen break.
   final sizes = <String, Size>{
-    'desktop': const Size(1440, 900),
-    'tablet': const Size(900, 1000),
-    'phone': const Size(390, 844),
+    'w1440': const Size(1440, 900),
+    'w1024': const Size(1024, 900),
+    'w768': const Size(768, 1000),
+    'w390': const Size(390, 844),
+    'w360': const Size(360, 800),
+    'w320': const Size(320, 720),
   };
 
   /// The seven areas plus the destinations the worklist addresses. Every one
@@ -132,7 +144,62 @@ void main() {
       '/admin',
       const NowArea(),
       '$outDir/now_clear_desktop.png',
-      workSummary: _clearSummary,
+      workSummaryContract: 'work.summary.clear',
+      workListContract: 'work.list.clear',
+    );
+  });
+
+  // THE INSTITUTION DIRECTORY, which the default People tab never showed. The
+  // standing facet — the fix for a directory that silently listed verified
+  // institutions only — is invisible unless this is rendered.
+  testWidgets('SUBJECTS · institutions, every standing', (tester) async {
+    await _render(
+      tester,
+      const Size(1440, 900),
+      '/admin/subjects',
+      const SubjectsArea(),
+      '$outDir/subjects_institutions_desktop.png',
+      extraOverrides: [
+        subjectKindProvider.overrideWith((ref) => SubjectKind.institutions),
+      ],
+    );
+  });
+
+  testWidgets('SUBJECTS · institutions, narrowed to suspended', (tester) async {
+    await _render(
+      tester,
+      const Size(1440, 900),
+      '/admin/subjects',
+      const SubjectsArea(),
+      '$outDir/subjects_suspended_desktop.png',
+      extraOverrides: [
+        subjectKindProvider.overrideWith((ref) => SubjectKind.institutions),
+        subjectStandingProvider.overrideWith((ref) => 'SUSPENDED'),
+      ],
+    );
+  });
+
+  testWidgets('WORK · one authority down, the rest reporting', (tester) async {
+    await _render(
+      tester,
+      const Size(1440, 900),
+      '/admin/work',
+      const WorkArea(),
+      '$outDir/work_partial_desktop.png',
+      workSummaryContract: 'work.summary.one-source-down',
+      workListContract: 'work.list.one-source-down',
+    );
+  });
+
+  testWidgets('WORK · the authority itself is unreadable', (tester) async {
+    await _render(
+      tester,
+      const Size(1440, 900),
+      '/admin/work',
+      const WorkArea(),
+      '$outDir/work_authority_down_desktop.png',
+      workSummaryContract: 'work.summary.authority-down',
+      workListContract: 'work.summary.authority-down',
     );
   });
 
@@ -143,7 +210,21 @@ void main() {
       '/admin',
       const NowArea(),
       '$outDir/now_degraded_desktop.png',
-      health: _degradedHealth,
+      healthContract: 'health.database-down',
+    );
+  });
+
+  // A THIRD HEALTH CONDITION, because two is not the vocabulary. A down
+  // database and two unconfigured providers are different sentences, and the
+  // console must not draw them the same way.
+  testWidgets('NOW · providers unconfigured', (tester) async {
+    await _render(
+      tester,
+      const Size(1440, 900),
+      '/admin',
+      const NowArea(),
+      '$outDir/now_providers_missing_desktop.png',
+      healthContract: 'health.providers-missing',
     );
   });
 
@@ -154,8 +235,8 @@ void main() {
       '/admin/work',
       const WorkArea(),
       '$outDir/work_empty_desktop.png',
-      workItems: const <OperatorWorkItem>[],
-      workSummary: _clearSummary,
+      workSummaryContract: 'work.summary.clear',
+      workListContract: 'work.list.clear',
     );
   });
 
@@ -178,7 +259,7 @@ void main() {
       const NowArea(),
       '$outDir/moderator_desktop.png',
       adminMe: _moderatorMe,
-      workSummary: _moderatorSummary,
+      workSummaryContract: 'work.summary.moderator',
     );
   });
 
@@ -230,13 +311,27 @@ void main() {
     );
   });
 
+  // THE CONTROL THAT MUST NOT BE OFFERED. Nobody else can act as owner, so
+  // the revoke button is withheld and the RULE is printed where it would have
+  // been — a missing button with no explanation reads as a broken one.
+  testWidgets('SUBJECT · the last owner cannot be revoked', (tester) async {
+    await _render(
+      tester,
+      const Size(1440, 1100),
+      '/admin/subjects/person/u-1',
+      const SubjectPersonArea(userId: 'u-1'),
+      '$outDir/subject_person_last_owner_w1440.png',
+      userDetailContract: 'user.detail.sole-owner',
+    );
+  });
+
   testWidgets('SUBJECT · person, phone, capability-poor', (tester) async {
     await _render(
       tester,
       const Size(390, 844),
       '/admin/subjects/person/u-1',
       const SubjectPersonArea(userId: 'u-1'),
-      '$outDir/subject_person_poor_phone.png',
+      '$outDir/subject_person_poor_w390.png',
       adminMe: _moderatorMe,
     );
   });
@@ -287,9 +382,23 @@ Future<void> _render(
   Widget area,
   String outPath, {
   Map<String, dynamic>? adminMe = _ownerMe,
-  OperatorWorkSummary? workSummary,
-  List<OperatorWorkItem>? workItems,
-  dynamic health,
+  /// Which captured contracts to answer with. Named rather than passed as
+  /// payloads: the harness must exercise the REAL parser against the server's
+  /// own statement of shape, not a map written here.
+  ///
+  /// The worklist is no longer overridden at the provider either. It used to
+  /// be handed a ready-made `OperatorWorkSummary`, which meant the parsing,
+  /// the per-source failure handling and the partial-disclosure path — the
+  /// three things that actually broke in production — were never in the
+  /// picture at all.
+  String healthContract = 'health.healthy',
+  String workSummaryContract = 'work.summary',
+  String workListContract = 'work.list',
+  String userDetailContract = 'user.detail',
+  /// Provider overrides a specific picture needs. Used ONLY for surface state
+  /// the operator sets themselves — a selected tab, a chosen filter — never
+  /// for data, which always arrives through the transport.
+  List<Override> extraOverrides = const [],
 }) async {
   final captureKey = GlobalKey();
   tester.view
@@ -310,7 +419,13 @@ Future<void> _render(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        dioProvider.overrideWithValue(_consoleDio(adminMe)),
+        dioProvider.overrideWithValue(_consoleDio(
+          adminMe,
+          healthContract: healthContract,
+          workSummaryContract: workSummaryContract,
+          workListContract: workListContract,
+          userDetailContract: userDetailContract,
+        )),
         appAdminAccessProvider.overrideWith((ref) async => AppAdminAccess(
               state: adminMe == null ? AppAdminState.none : AppAdminState.admin,
               me: adminMe,
@@ -323,14 +438,7 @@ Future<void> _render(
         // was the harness's own missing session.
         adminMeProvider.overrideWith((ref) async =>
             adminMe == null ? null : AdminAccess.fromJson(adminMe)),
-        operatorWorkSummaryProvider.overrideWith(
-          (ref) async => workSummary ?? _busySummary,
-        ),
-        operatorWorkListProvider.overrideWith(
-          (ref) async => workItems ?? _busyItems,
-        ),
-        if (health != null)
-          adminHealthProvider.overrideWith((ref) async => health),
+        ...extraOverrides,
       ],
       child: RepaintBoundary(
         key: captureKey,
@@ -378,6 +486,41 @@ Future<void> _render(
   await tester.pump(const Duration(seconds: 1));
 }
 
+// ── the contracts the server itself published ───────────────────────────────
+//
+// THE HARNESS NO LONGER WRITES ITS OWN PAYLOADS FOR THE SURFACES THAT HAVE A
+// CONTRACT.
+//
+// Every picture this file produced was previously drawn from fixtures written
+// on this side of the wire. A fixture that mirrors what the client already
+// believes cannot expose a defect: the console rendered "5 of 5 degraded" over
+// a healthy platform, read every grant as inactive, and showed no domain proof
+// for any institution — and the harness drew all three as if they were fine.
+//
+// These are generated from the backend's own mappers by
+// `aura-backend/scripts/capture-admin-contract.ts` and vendored into
+// `test/contracts/admin/`. When the server changes shape, the pictures change,
+// and the change is visible rather than discovered in production.
+//
+// WHERE NO CONTRACT EXISTS YET, the hand-written fixture remains and is marked
+// UNCOVERED below. That is a smaller lie than pretending coverage — but it is
+// still a lie, and the list is the work that is left.
+
+final _contractCache = <String, dynamic>{};
+
+dynamic _contract(String name) {
+  return _contractCache.putIfAbsent(name, () {
+    final file = File('test/contracts/admin/$name.json');
+    if (!file.existsSync()) {
+      throw StateError(
+        'Missing contract $name. Regenerate with:\n'
+        '  cd ../aura-backend && npx ts-node scripts/capture-admin-contract.ts',
+      );
+    }
+    return jsonDecode(file.readAsStringSync());
+  });
+}
+
 // ── the fake console transport ──────────────────────────────────────────────
 //
 // One place that answers everything the console asks for, with data shaped
@@ -393,7 +536,13 @@ Future<void> _render(
 /// gated provider then reported EMPTY: PLATFORM rendered "no health snapshot
 /// was returned" and policy fell back to its defaults, both of which looked
 /// like product defects and were the harness lying.
-Dio _consoleDio(Map<String, dynamic>? adminMe) {
+Dio _consoleDio(
+  Map<String, dynamic>? adminMe, {
+  required String healthContract,
+  required String workSummaryContract,
+  required String workListContract,
+  required String userDetailContract,
+}) {
   final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'));
   dio.interceptors.add(
     InterceptorsWrapper(
@@ -408,16 +557,22 @@ Dio _consoleDio(Map<String, dynamic>? adminMe) {
         // against a fixture that says one did.
         if (p.endsWith('/admin/me')) {
           body = adminMe;
+        } else if (p.contains('/admin/work/summary')) {
+          body = _contract(workSummaryContract);
+        } else if (p.contains('/admin/work')) {
+          body = _contract(workListContract);
         } else if (p.contains('/admin/health')) {
-          body = _healthyHealth;
+          body = _contract(healthContract);
         } else if (p.contains('/admin/metrics')) {
           body = _metrics;
         } else if (p.endsWith('/v1/institutions/admin')) {
-          body = {'items': _institutions};
+          body = _contract('institutions.directory');
+        } else if (p.contains('/v1/institutions/id/')) {
+          body = _contract('institution.detail');
         } else if (p.contains('/authority/ownership-recovery-state')) {
           body = {'ok': true, 'recoveryRequired': false, 'candidates': []};
         } else if (p.contains('/members')) {
-          body = {'members': _members};
+          body = _contract('institution.members');
         } else if (p.contains('/verification')) {
           // BEFORE the person-detail branch. `/v1/admin/users/:id/verification`
           // also contains `/admin/users/`, so the broader match answered it
@@ -425,27 +580,27 @@ Dio _consoleDio(Map<String, dynamic>? adminMe) {
           // verification" for a fixture that has one — a picture that lied.
           body = _verification;
         } else if (p.contains('/admin/users/')) {
-          body = {'user': _personDetail};
+          body = _contract(userDetailContract);
         } else if (p.contains('/admin/users')) {
           body = {'items': _users};
         } else if (p.contains('/admin/grants/permissions')) {
           body = {'permissions': const <String>[]};
         } else if (p.contains('/admin/grants')) {
-          body = {'items': _grants};
+          body = _contract('grants.list');
         } else if (p.contains('/admin/audit-logs')) {
-          body = {'items': _audit};
+          body = _contract('audit.list');
         } else if (p.contains('/admin/settings')) {
-          body = {'items': _settings};
+          body = _contract('settings.list');
         } else if (p.contains('/admin/feature-flags')) {
-          body = {'items': _flags};
+          body = _contract('feature-flags.list');
         } else if (p.contains('/admin/policies')) {
-          body = _policies;
+          body = _contract('policies.document');
         } else if (p.contains('/admin/institution-domains')) {
-          body = {'items': _domains};
+          body = _contract('institution-domains.list');
         } else if (p.contains('/moderation/queue')) {
           body = {'items': _reports};
         } else if (p.contains('/moderation/reports/')) {
-          body = _reports.first;
+          body = _contract('moderation.report');
         } else if (p.contains('/admin/media/appeals')) {
           body = {'items': _appeals};
         } else if (p.contains('/admin/feedback/')) {
@@ -534,198 +689,6 @@ const _discoveryOnlyMe = <String, dynamic>{
   'effectivePermissions': ['DISCOVERY_READ', 'AUDIT_READ'],
 };
 
-final _busySummary = OperatorWorkSummary.fromJson(const {
-  'totalOpen': 34,
-  'degradedSources': ['SUPPORT'],
-  'sources': [
-    {
-      'source': 'MODERATION',
-      'label': 'Conduct reports',
-      'open': 12,
-      'readable': true,
-      'destination': '/admin/integrity',
-      'oldestAgeDays': 19,
-    },
-    {
-      'source': 'IDENTITY_VERIFICATION',
-      'label': 'Identity verification',
-      'open': 8,
-      'readable': true,
-      'destination': '/admin/subjects',
-      'oldestAgeDays': 9,
-    },
-    {
-      'source': 'INSTITUTION_VERIFICATION',
-      'label': 'Institution verification',
-      'open': 6,
-      'readable': true,
-      'destination': '/admin/subjects',
-      'oldestAgeDays': 4,
-    },
-    {
-      'source': 'MEDIA_APPEAL',
-      'label': 'Media appeals',
-      'open': 5,
-      'readable': true,
-      'destination': '/admin/integrity',
-      'oldestAgeDays': 2,
-    },
-    {
-      'source': 'PRODUCT_FEEDBACK',
-      'label': 'Product feedback',
-      'open': 3,
-      'readable': true,
-      'destination': '/admin/integrity',
-      'oldestAgeDays': 1,
-    },
-    {
-      'source': 'SUPPORT',
-      'label': 'Support',
-      'open': 0,
-      'readable': false,
-      'destination': '/admin/integrity',
-    },
-  ],
-});
-
-final _clearSummary = OperatorWorkSummary.fromJson(const {
-  'totalOpen': 0,
-  'degradedSources': <String>[],
-  'sources': [
-    {
-      'source': 'MODERATION',
-      'label': 'Conduct reports',
-      'open': 0,
-      'readable': true,
-      'destination': '/admin/integrity',
-    },
-    {
-      'source': 'IDENTITY_VERIFICATION',
-      'label': 'Identity verification',
-      'open': 0,
-      'readable': true,
-      'destination': '/admin/subjects',
-    },
-  ],
-});
-
-final _moderatorSummary = OperatorWorkSummary.fromJson(const {
-  'totalOpen': 12,
-  'degradedSources': <String>[],
-  'sources': [
-    {
-      'source': 'MODERATION',
-      'label': 'Conduct reports',
-      'open': 12,
-      'readable': true,
-      'destination': '/admin/integrity',
-      'oldestAgeDays': 19,
-    },
-  ],
-});
-
-final _busyItems = [
-  OperatorWorkItem.fromJson(const {
-    'key': 'MODERATION:r-1',
-    'source': 'MODERATION',
-    'sourceLabel': 'Conduct reports',
-    'id': 'r-1',
-    'title': 'Reported post — harassment',
-    'state': 'OPEN',
-    'openedAt': '2026-08-12T09:00:00.000Z',
-    'ageDays': 19,
-    'destination': '/admin/integrity/moderation/r-1',
-    'subjectKind': 'CONTENT',
-    'subjectLabel': 'A post by @rowan',
-    'subjectId': 'p-77',
-    'requiredCapability': 'MODERATION_READ',
-  }),
-  OperatorWorkItem.fromJson(const {
-    'key': 'IDENTITY_VERIFICATION:u-1',
-    'source': 'IDENTITY_VERIFICATION',
-    'sourceLabel': 'Identity verification',
-    'id': 'u-1',
-    'title': 'Identity claim awaiting review',
-    'state': 'PENDING',
-    'openedAt': '2026-08-22T09:00:00.000Z',
-    'ageDays': 9,
-    'destination': '/admin/subjects/person/u-1/identity',
-    'subjectKind': 'PERSON',
-    'subjectLabel': 'Rowan Ellis',
-    'subjectId': 'u-1',
-    'requiredCapability': 'IDENTITY_VERIFICATION_READ',
-  }),
-  OperatorWorkItem.fromJson(const {
-    'key': 'INSTITUTION_VERIFICATION:inst-1',
-    'source': 'INSTITUTION_VERIFICATION',
-    'sourceLabel': 'Institution verification',
-    'id': 'inst-1',
-    'title': 'Civic Institute — verification requested',
-    'state': 'UNDER_REVIEW',
-    'openedAt': '2026-08-27T09:00:00.000Z',
-    'ageDays': 4,
-    'destination': '/admin/subjects/institution/inst-1/verification',
-    'subjectKind': 'INSTITUTION',
-    'subjectLabel': 'Civic Institute',
-    'subjectId': 'inst-1',
-    'requiredCapability': 'VERIFICATION_READ',
-  }),
-  OperatorWorkItem.fromJson(const {
-    'key': 'MEDIA_APPEAL:ap-1',
-    'source': 'MEDIA_APPEAL',
-    'sourceLabel': 'Media appeals',
-    'id': 'ap-1',
-    'title': 'Appeal against a quarantined file',
-    'state': 'SUBMITTED',
-    'openedAt': '2026-08-29T09:00:00.000Z',
-    'ageDays': 2,
-    'destination': '/admin/integrity/appeals/ap-1',
-    'subjectKind': 'MEDIA',
-    'subjectLabel': 'brochure.pdf',
-    'subjectId': 'md-3',
-    'requiredCapability': 'MODERATION_READ',
-  }),
-  OperatorWorkItem.fromJson(const {
-    'key': 'PRODUCT_FEEDBACK:fb-1',
-    'source': 'PRODUCT_FEEDBACK',
-    'sourceLabel': 'Product feedback',
-    'id': 'fb-1',
-    'title': 'AF-7QK2 — calls do not ring on Android',
-    'state': 'RECEIVED',
-    'openedAt': '2026-08-30T09:00:00.000Z',
-    'ageDays': 1,
-    'destination': '/admin/integrity/feedback/fb-1',
-    'subjectKind': 'PERSON',
-    'subjectLabel': 'Rowan Ellis',
-    'subjectId': 'u-1',
-    'requiredCapability': 'PRODUCT_FEEDBACK_READ',
-  }),
-];
-
-const _healthyHealth = {
-  'status': 'ok',
-  'healthy': true,
-  'services': {
-    'api': 'ok',
-    'db': 'ok',
-    'email': 'ok',
-    'push': 'ok',
-    'realtime': 'ok',
-  },
-};
-
-const _degradedHealth = {
-  'status': 'degraded',
-  'healthy': false,
-  'services': {
-    'api': 'ok',
-    'db': 'ok',
-    'email': 'degraded',
-    'push': 'ok',
-    'realtime': 'down',
-  },
-};
-
 const _metrics = {
   'users': 4120,
   'institutions': 38,
@@ -775,46 +738,6 @@ const _fleet = {
   ],
 };
 
-const _institutions = [
-  {
-    'id': 'inst-1',
-    'name': 'Civic Institute',
-    'slug': 'civic-institute',
-    'status': 'VERIFIED',
-    'memberCount': 24,
-    'domain': 'civic.example',
-    'verifiedAt': '2026-02-01T00:00:00.000Z',
-  },
-  {
-    'id': 'inst-2',
-    'name': 'Northgate Trust',
-    'slug': 'northgate-trust',
-    'status': 'PENDING',
-    'memberCount': 3,
-  },
-];
-
-const _members = {
-  'members': [
-    {
-      'id': 'm-ada',
-      'userId': 'u-ada',
-      'role': 'OWNER',
-      'joinedAt': '2026-01-01T00:00:00.000Z',
-      'title': 'Director',
-      'canSpeakOfficially': true,
-      'user': {'displayName': 'Ada Owner', 'handle': 'ada'},
-    },
-    {
-      'id': 'm-bea',
-      'userId': 'u-bea',
-      'role': 'EDITOR',
-      'joinedAt': '2026-01-02T00:00:00.000Z',
-      'user': {'displayName': 'Bea Member', 'handle': 'bea'},
-    },
-  ],
-};
-
 const _users = [
   {
     'id': 'u-1',
@@ -836,54 +759,6 @@ const _users = [
   },
 ];
 
-const _personDetail = {
-  'id': 'u-1',
-  'handle': 'rowan',
-  'displayName': 'Rowan Ellis',
-  'email': 'rowan@example.test',
-  'accountType': 'PERSON',
-  'status': 'ACTIVE',
-  'emailVerifiedAt': '2026-03-02T00:00:00.000Z',
-  'city': 'Detroit',
-  'country': 'US',
-  'createdAt': '2026-03-01T00:00:00.000Z',
-  'admin': {
-    'roles': ['MODERATOR'],
-    'permissions': ['MODERATION_READ', 'MODERATION_WRITE'],
-    'grants': [
-      {
-        'id': 'g-1',
-        'role': 'MODERATOR',
-        'status': 'ACTIVE',
-        'permissions': ['MODERATION_READ', 'MODERATION_WRITE'],
-        'grantedAt': '2026-05-01T00:00:00.000Z',
-        'reason': 'Community moderation for the Detroit chapter.',
-        'userId': 'u-1',
-        'grantedBy': {'id': 'op-1', 'displayName': 'The Owner'},
-      },
-    ],
-  },
-  'devices': [
-    {
-      'id': 'd-1',
-      'platform': 'android',
-      'deviceName': 'Pixel 8',
-      'appVersion': '1.4.0',
-      'isActive': true,
-      'lastSeenAt': '2026-08-30T00:00:00.000Z',
-    },
-    {
-      'id': 'd-2',
-      'platform': 'web',
-      'deviceName': 'Chrome on Windows',
-      'isActive': false,
-      'revokedAt': '2026-07-01T00:00:00.000Z',
-      'lastSeenAt': '2026-06-28T00:00:00.000Z',
-    },
-  ],
-  'counts': {'devices': 2, 'adminGrants': 1, 'moderationReports': 0},
-};
-
 const _verification = {
   'ok': true,
   'user': {'id': 'u-1', 'handle': 'rowan', 'displayName': 'Rowan Ellis'},
@@ -903,100 +778,6 @@ const _verification = {
     },
   ],
 };
-
-const _grants = [
-  {
-    'id': 'g-1',
-    'role': 'MODERATOR',
-    'status': 'ACTIVE',
-    'permissions': ['MODERATION_READ', 'MODERATION_WRITE'],
-    'grantedAt': '2026-05-01T00:00:00.000Z',
-    'userId': 'u-1',
-    'user': {'id': 'u-1', 'handle': 'rowan', 'displayName': 'Rowan Ellis'},
-    'grantedBy': {'id': 'op-1', 'displayName': 'The Owner'},
-  },
-];
-
-const _audit = [
-  {
-    'id': 'a-1',
-    'action': 'admin.grant.revoked',
-    'actorUserId': 'op-1',
-    'targetType': 'ADMIN_GRANT',
-    'targetId': 'g-9',
-    'result': 'SUCCESS',
-    'createdAt': '2026-08-30T11:00:00.000Z',
-    'actor': {'displayName': 'The Owner', 'handle': 'owner'},
-    'reason': 'Left the moderation rota.',
-  },
-  {
-    'id': 'a-2',
-    'action': 'admin.institution_domain.approved',
-    'actorUserId': 'op-1',
-    'targetType': 'INSTITUTION_DOMAIN',
-    'targetId': 'd-2',
-    'result': 'SUCCESS',
-    'createdAt': '2026-08-29T15:20:00.000Z',
-    'actor': {'displayName': 'The Owner', 'handle': 'owner'},
-  },
-];
-
-const _settings = [
-  {'key': 'platform.name', 'value': 'Aura'},
-  {'key': 'media.retention.days', 'value': 365},
-];
-
-const _flags = [
-  {
-    'key': 'compose.link_intelligence',
-    'enabled': true,
-    'description': 'Link previews in the composer.',
-  },
-  {
-    'key': 'realtime.sfu_grid',
-    'enabled': false,
-    'description': 'Grid stage for multi-party calls.',
-  },
-];
-
-const _policies = {
-  'institutionPolicy': {
-    'requireEmailVerification': true,
-    'requireDnsVerification': true,
-    'allowProvisionalActive': false,
-    'autoApproveVerified': false,
-  },
-  'securityPolicy': {
-    'maxLoginAttempts': 5,
-    'sessionTimeoutMinutes': 43200,
-    'requireMfa': false,
-  },
-  'communicationsPolicy': {
-    'maxEmailsPerDay': 2000,
-    'digestEnabled': true,
-    'digestFrequency': 'WEEKLY',
-    'unsubscribeEnabled': true,
-    'senderEmail': 'no-reply@auraplatform.org',
-  },
-  'featurePolicy': {
-    'betaOptInEnabled': true,
-    'maintenanceMode': false,
-    'publicRegistrationEnabled': true,
-    'inviteOnlyMode': false,
-  },
-};
-
-const _domains = [
-  {
-    'id': 'dm-1',
-    'institutionId': 'inst-1',
-    'domain': 'civic.example',
-    'organizationName': 'Civic Institute',
-    'status': 'PENDING',
-    'requestedBy': 'u-ada',
-    'createdAt': '2026-08-20T00:00:00.000Z',
-  },
-];
 
 const _reports = [
   {

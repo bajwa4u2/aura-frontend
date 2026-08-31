@@ -1,14 +1,21 @@
-/// INTEGRITY — moderation, appeals, media custody and communication
-/// governance, as one operator responsibility.
+/// INTEGRITY — Aura's responsibility for what is said and what is held.
 ///
-/// These were four separate front doors, two of them unreachable from
-/// navigation. They are still four authorities and stay that way; what changes
-/// is that an operator meets them as one job.
+/// NOT four old screens under one heading. The operator responsibility here is
+/// a single one: when somebody's conduct, somebody's file, or somebody's words
+/// are in question, a human decides — and the decision is evidenced, bounded
+/// by policy, consequential, and recorded.
 ///
-/// COMMUNICATION IS GOVERNED HERE, NOT PERFORMED HERE. Composition, drafting
-/// and audience belong to the communication authority. Admin approves, sends
-/// where authorised, and surfaces the resulting work. The console will not
-/// become a newsletter tool again.
+/// So the area is organised by WHAT KIND OF JUDGEMENT IS BEING ASKED, not by
+/// which backend owns the row:
+///
+///   CONDUCT      somebody reported somebody. Evidence: what they said.
+///   CUSTODY      Aura is holding a file. Evidence: why, and the appeal.
+///   VOICE        people told us about the product, or asked us for help.
+///   GOVERNANCE   what Aura itself may send, and who approves it.
+///
+/// EACH QUEUE FAILS ALONE. The first version read one summary and blanked the
+/// entire conduct half when it failed. Every queue below carries its own
+/// count, its own reachability and its own sentence when it cannot answer.
 library;
 
 import 'package:flutter/material.dart';
@@ -22,31 +29,57 @@ import '../data/operator_work.dart';
 import '../domain/operator_authority_provider.dart';
 import '../domain/operator_capability.dart';
 import '../ui/operator_kit.dart';
+import '../ui/operator_states.dart';
 
-/// The queue sources that belong to INTEGRITY, in the order an operator would
-/// work them: conduct first, then appeals against it, then what people told us.
-const _integritySources = <String, ({String label, IconData icon, String needs})>{
-  'MODERATION': (
-    label: 'Moderation',
+/// The judgement families, and which queues answer to each.
+///
+/// A GROUPING BY RESPONSIBILITY, not by service. `MODERATION` and
+/// `MEDIA_APPEAL` are different authorities that ask the operator for the same
+/// kind of decision, and an operator working through the morning thinks in
+/// those terms rather than in table names.
+class _Family {
+  const _Family({
+    required this.title,
+    required this.question,
+    required this.sources,
+    required this.needs,
+    required this.icon,
+  });
+
+  final String title;
+
+  /// The judgement, in the operator's words. This is the whole reason the
+  /// grouping exists and it is written on the screen, not just here.
+  final String question;
+
+  final List<String> sources;
+  final OperatorCapability needs;
+  final IconData icon;
+}
+
+const _families = <_Family>[
+  _Family(
+    title: 'Conduct',
+    question: 'Somebody reported somebody. Does Aura act?',
+    sources: ['MODERATION'],
+    needs: OperatorCapability.moderationRead,
     icon: Icons.flag_rounded,
-    needs: 'moderation',
   ),
-  'MEDIA_APPEAL': (
-    label: 'Media appeals',
-    icon: Icons.gavel_rounded,
-    needs: 'moderation',
+  _Family(
+    title: 'Custody',
+    question: 'Aura is holding a file. Should it still be?',
+    sources: ['MEDIA_APPEAL'],
+    needs: OperatorCapability.moderationRead,
+    icon: Icons.lock_rounded,
   ),
-  'PRODUCT_FEEDBACK': (
-    label: 'Product feedback',
-    icon: Icons.rate_review_rounded,
-    needs: 'product feedback',
+  _Family(
+    title: 'What people told us',
+    question: 'Somebody wrote to us. What did we do about it?',
+    sources: ['PRODUCT_FEEDBACK', 'SUPPORT'],
+    needs: OperatorCapability.productFeedbackRead,
+    icon: Icons.forum_rounded,
   ),
-  'SUPPORT': (
-    label: 'Support',
-    icon: Icons.support_agent_rounded,
-    needs: 'support',
-  ),
-};
+];
 
 class IntegrityArea extends ConsumerWidget {
   const IntegrityArea({super.key});
@@ -60,46 +93,63 @@ class IntegrityArea extends ConsumerWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 900;
+        final pad = wide ? AuraSpace.s20 : AuraSpace.s12;
+
         return ListView(
-          padding: EdgeInsets.all(wide ? AuraSpace.s20 : AuraSpace.s12),
+          padding: EdgeInsets.fromLTRB(pad, pad, pad, AuraSpace.s32),
           children: [
-            OperatorSection(
-              title: 'Conduct and custody',
-              subtitle: 'Reports, appeals and what people have told us',
-              child: summary.when(
-                loading: () => const OperatorLoading(lines: 3),
-                error: (e, _) => OperatorFailure(
-                  title: 'Integrity queues could not be read',
-                  onRetry: () =>
-                      ref.invalidate(operatorWorkSummaryProvider),
-                ),
-                data: (s) {
-                  final rows = <Widget>[];
-                  for (final entry in _integritySources.entries) {
-                    final source = s.sources
-                        .where((x) => x.source == entry.key)
-                        .toList();
-                    if (source.isEmpty) continue; // not readable by this operator
-                    rows.add(Padding(
-                      padding: const EdgeInsets.only(bottom: AuraSpace.s8),
-                      child: _QueueTile(
-                        label: entry.value.label,
-                        icon: entry.value.icon,
-                        summary: source.first,
-                      ),
-                    ));
-                  }
-                  if (rows.isEmpty) {
-                    return const OperatorInsufficientCapability(
-                      needs: 'moderation, feedback or support',
-                    );
-                  }
-                  return Column(children: rows);
-                },
+            const Text(
+              'What requires judgement',
+              style: TextStyle(
+                color: AuraSurface.ink,
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.3,
               ),
             ),
-            const SizedBox(height: AuraSpace.s24),
-            _CommunicationGovernance(authority: authority),
+            const SizedBox(height: 4),
+            const Text(
+              'Each of these is a decision only a person can make. Aura holds '
+              'the record; it does not make the call.',
+              style: TextStyle(
+                color: AuraSurface.muted,
+                fontSize: 13,
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: AuraSpace.s20),
+            summary.when(
+              loading: () => const OperatorLoading(lines: 4),
+              error: (_, __) => OperatorFailure(
+                title: 'Integrity queues could not be read',
+                detail: 'This is a read failure. Nothing has been resolved or '
+                    'lost.',
+                onRetry: () => ref.invalidate(operatorWorkSummaryProvider),
+              ),
+              data: (signal) => OperatorSignalView<OperatorWorkSummary>(
+                signal: signal,
+                subject: 'the integrity queues',
+                unauthorizedNeeds: 'moderation',
+                onRetry: () => ref.invalidate(operatorWorkSummaryProvider),
+                loading: const OperatorLoading(lines: 4),
+                builder: (context, work) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final family in _families)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AuraSpace.s16),
+                        child: _FamilyCard(
+                          family: family,
+                          work: work,
+                          authority: authority,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AuraSpace.s8),
+            _Governance(authority: authority),
           ],
         );
       },
@@ -107,150 +157,90 @@ class IntegrityArea extends ConsumerWidget {
   }
 }
 
-class _QueueTile extends StatelessWidget {
-  const _QueueTile({
-    required this.label,
-    required this.icon,
-    required this.summary,
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// One judgement family: the question, then each queue that answers it.
+class _FamilyCard extends StatelessWidget {
+  const _FamilyCard({
+    required this.family,
+    required this.work,
+    required this.authority,
   });
 
-  final String label;
-  final IconData icon;
-  final OperatorWorkSourceSummary summary;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!summary.readable) {
-      return OperatorFailure(
-        title: '$label is unavailable',
-        detail: 'Reported as unavailable rather than as an empty queue.',
-      );
-    }
-
-    final oldest = summary.oldestAgeDays ?? 0;
-    return Material(
-      color: AuraSurface.card,
-      borderRadius: BorderRadius.circular(AuraRadius.card),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        onTap: () => context.go(summary.destination),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AuraRadius.card),
-            border: Border.all(color: AuraSurface.divider),
-          ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s16,
-            vertical: AuraSpace.s14,
-          ),
-          child: Row(
-            children: [
-              Icon(icon, size: 18, color: AuraSurface.muted),
-              const SizedBox(width: AuraSpace.s14),
-              Expanded(
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    color: AuraSurface.ink,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              if (summary.open == 0)
-                const Text(
-                  'clear',
-                  style: TextStyle(color: AuraSurface.goodInk, fontSize: 12.5),
-                )
-              else ...[
-                Text(
-                  '${summary.open}',
-                  style: TextStyle(
-                    fontSize: 18,
-                    height: 1,
-                    fontWeight: FontWeight.w700,
-                    color: oldest >= 14
-                        ? AuraSurface.dangerInk
-                        : oldest >= 7
-                            ? AuraSurface.warnInk
-                            : AuraSurface.ink,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-                const SizedBox(width: AuraSpace.s12),
-                SizedBox(
-                  width: 76,
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: OperatorAge(days: oldest),
-                  ),
-                ),
-              ],
-              const SizedBox(width: AuraSpace.s8),
-              const Icon(Icons.chevron_right_rounded,
-                  size: 18, color: AuraSurface.faint),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CommunicationGovernance extends StatelessWidget {
-  const _CommunicationGovernance({required this.authority});
-
+  final _Family family;
+  final OperatorWorkSummary work;
   final OperatorAuthority authority;
 
   @override
   Widget build(BuildContext context) {
-    final canRead = authority.can(OperatorCapability.communicationsRead);
-    if (!canRead) {
-      return const OperatorSection(
-        title: 'Communication governance',
-        child: OperatorInsufficientCapability(needs: 'communications'),
+    if (!authority.can(family.needs)) {
+      return OperatorSection(
+        title: family.title,
+        child: OperatorInsufficientCapability(needs: family.title.toLowerCase()),
       );
     }
 
-    final canApprove = authority.can(OperatorCapability.communicationsApprove);
-    final canSend = authority.can(OperatorCapability.communicationsSend);
+    final queues = work.sources
+        .where((s) => family.sources.contains(s.source))
+        .toList(growable: false);
+
+    if (queues.isEmpty) {
+      // The operator holds the family's read capability but no queue in it
+      // was returned — a real thing to say, and different from "empty".
+      return OperatorSection(
+        title: family.title,
+        subtitle: family.question,
+        child: const OperatorPanel(
+          child: OperatorClear(
+            title: 'No queue in this family reported',
+            icon: Icons.help_outline_rounded,
+          ),
+        ),
+      );
+    }
+
+    final waiting = queues
+        .where((q) => q.readable)
+        .fold<int>(0, (sum, q) => sum + q.open);
+    final unreadable = queues.where((q) => !q.readable).toList();
 
     return OperatorSection(
-      title: 'Communication governance',
-      subtitle: 'Admin governs outbound communication. It does not compose it.',
-      child: OperatorPanel(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Drafting, audience and delivery belong to the communication '
-              'authority. What lives here is the decision to approve and the '
-              'decision to send — and the record of who made them.',
-              style: TextStyle(
+      title: family.title,
+      subtitle: family.question,
+      trailing: waiting == 0
+          ? null
+          : Text(
+              '$waiting waiting',
+              style: const TextStyle(
                 color: AuraSurface.muted,
-                fontSize: 13,
-                height: 1.45,
+                fontSize: 12.5,
+                fontFeatures: [FontFeature.tabularFigures()],
               ),
             ),
-            const SizedBox(height: AuraSpace.s14),
-            Wrap(
-              spacing: AuraSpace.s8,
-              runSpacing: AuraSpace.s8,
-              children: [
-                _AuthorityChip(
-                  label: 'Read',
-                  held: canRead,
+      child: OperatorPanel(
+        padding: const EdgeInsets.symmetric(vertical: AuraSpace.s4),
+        child: Column(
+          children: [
+            for (final queue in queues) _QueueLine(queue: queue),
+            if (unreadable.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AuraSpace.s12,
+                  AuraSpace.s4,
+                  AuraSpace.s12,
+                  AuraSpace.s10,
                 ),
-                _AuthorityChip(
-                  label: 'Approve',
-                  held: canApprove,
+                child: Text(
+                  // Named, so an operator knows this family's picture is
+                  // incomplete rather than clear.
+                  unreadable.map((q) => q.unavailableSentence).join(' '),
+                  style: const TextStyle(
+                    color: AuraSurface.dangerInk,
+                    fontSize: 11.5,
+                    height: 1.4,
+                  ),
                 ),
-                _AuthorityChip(
-                  label: 'Send',
-                  held: canSend,
-                ),
-              ],
-            ),
+              ),
           ],
         ),
       ),
@@ -258,47 +248,176 @@ class _CommunicationGovernance extends StatelessWidget {
   }
 }
 
-/// Shows which of the four communication scopes this operator holds.
-///
-/// The separation between READ, WRITE, APPROVE and SEND is deliberate — one
-/// person drafting and another sending is the point — so the console states
-/// which of them you are rather than hiding the distinction behind an
-/// enabled or disabled button.
-class _AuthorityChip extends StatelessWidget {
-  const _AuthorityChip({required this.label, required this.held});
+class _QueueLine extends StatelessWidget {
+  const _QueueLine({required this.queue});
 
-  final String label;
-  final bool held;
+  final OperatorWorkSource queue;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
+    if (!queue.readable) {
+      return ListTile(
+        dense: true,
+        enabled: false,
+        leading: const Icon(Icons.cloud_off_rounded,
+            size: 16, color: AuraSurface.faint),
+        title: Text(
+          queue.label,
+          style: const TextStyle(color: AuraSurface.faint, fontSize: 13),
+        ),
+        // An em dash, never 0 — the count is unknown, not zero.
+        trailing: const Text(
+          '—',
+          style: TextStyle(color: AuraSurface.faint, fontSize: 13),
+        ),
+      );
+    }
+
+    final age = queue.oldestAgeDays ?? 0;
+
+    return ListTile(
+      dense: true,
+      onTap: () => context.go(queue.destination),
+      title: Text(
+        queue.label,
+        style: const TextStyle(color: AuraSurface.ink, fontSize: 13),
       ),
-      decoration: BoxDecoration(
-        color: held ? AuraSurface.goodBg : AuraSurface.elevated,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-      ),
-      child: Row(
+      subtitle: queue.open == 0
+          ? const Text(
+              'Nothing waiting',
+              style: TextStyle(color: AuraSurface.faint, fontSize: 11.5),
+            )
+          : null,
+      trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            held ? Icons.check_rounded : Icons.remove_rounded,
-            size: 13,
-            color: held ? AuraSurface.goodInk : AuraSurface.faint,
-          ),
-          const SizedBox(width: AuraSpace.s6),
+          if (age > 0) ...[
+            OperatorAge(days: age, dense: true),
+            const SizedBox(width: AuraSpace.s10),
+          ],
           Text(
-            label,
+            '${queue.open}',
             style: TextStyle(
-              fontSize: 12,
+              color: queue.open == 0 ? AuraSurface.faint : AuraSurface.ink,
+              fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: held ? AuraSurface.goodInk : AuraSurface.faint,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
+          const SizedBox(width: AuraSpace.s6),
+          const Icon(Icons.chevron_right_rounded,
+              size: 18, color: AuraSurface.faint),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// COMMUNICATION IS GOVERNED HERE, NOT PERFORMED HERE.
+///
+/// Composition, audience and delivery belong to the communication authority.
+/// What lives in Admin is the decision to approve and the decision to send —
+/// and the record of who made them. The console will not become a newsletter
+/// tool again.
+class _Governance extends StatelessWidget {
+  const _Governance({required this.authority});
+
+  final OperatorAuthority authority;
+
+  @override
+  Widget build(BuildContext context) {
+    const decisions = <(String, String, OperatorCapability)>[
+      (
+        'Read',
+        'See what Aura is preparing to send.',
+        OperatorCapability.communicationsRead,
+      ),
+      (
+        'Approve',
+        'Say a message may go out.',
+        OperatorCapability.communicationsApprove,
+      ),
+      (
+        'Send',
+        'Release an approved message to its audience.',
+        OperatorCapability.communicationsSend,
+      ),
+    ];
+
+    final held = decisions.where((d) => authority.can(d.$3)).toList();
+    if (held.isEmpty) return const SizedBox.shrink();
+
+    return OperatorSection(
+      title: 'What Aura may say',
+      subtitle: 'Admin governs outbound communication. It does not compose it.',
+      child: OperatorPanel(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final decision in held)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AuraSpace.s10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(top: 2),
+                      child: Icon(Icons.check_rounded,
+                          size: 14, color: AuraSurface.goodInk),
+                    ),
+                    const SizedBox(width: AuraSpace.s10),
+                    SizedBox(
+                      width: 76,
+                      child: Text(
+                        decision.$1,
+                        style: const TextStyle(
+                          color: AuraSurface.ink,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        decision.$2,
+                        style: const TextStyle(
+                          color: AuraSurface.muted,
+                          fontSize: 12.5,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 2),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(
+                AuraSpace.s12,
+                AuraSpace.s10,
+                AuraSpace.s12,
+                AuraSpace.s10,
+              ),
+              decoration: BoxDecoration(
+                color: AuraSurface.page,
+                borderRadius: BorderRadius.circular(AuraRadius.md),
+              ),
+              child: const Text(
+                'Drafting, audience and delivery belong to the communication '
+                'authority. What lives here is the decision to approve, the '
+                'decision to send, and the record of who made them.',
+                style: TextStyle(
+                  color: AuraSurface.muted,
+                  fontSize: 12,
+                  height: 1.45,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

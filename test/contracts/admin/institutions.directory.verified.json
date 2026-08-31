@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "status": "VERIFIED",
+  "items": [
+    {
+      "id": "cmoinst0001rdjzu5f96djh",
+      "name": "Northgate Health Trust",
+      "slug": "northgate-health",
+      "websiteUrl": "https://northgate.example.test",
+      "domain": "northgate.example.test",
+      "jurisdiction": "GB",
+      "description": "Community health provider.",
+      "status": "VERIFIED",
+      "verifiedAt": "2026-04-02T09:00:00.000Z",
+      "suspendedAt": null,
+      "rejectedAt": null,
+      "domainVerifiedAt": "2026-04-02T09:00:00.000Z",
+      "createdAt": "2026-03-18T09:00:00.000Z",
+      "_count": {
+        "members": 5,
+        "verificationRequests": 0
+      }
+    }
+  ]
+}

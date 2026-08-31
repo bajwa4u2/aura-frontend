@@ -1,0 +1,69 @@
+{
+  "ok": true,
+  "items": [
+    {
+      "id": "cmohyq52y0001rdjzu5f96djh",
+      "role": "OWNER",
+      "permissions": [
+        "USERS_READ",
+        "USERS_WRITE",
+        "AUDIT_READ",
+        "DISCOVERY_READ",
+        "DISCOVERY_EVIDENCE_READ"
+      ],
+      "status": "ACTIVE",
+      "grantedAt": "2026-05-01T00:00:00.000Z",
+      "revokedAt": null,
+      "expiresAt": null,
+      "reason": "bootstrap",
+      "notes": null,
+      "userId": "cmm69u97n0000pi01rm3fyglq",
+      "grantedByUserId": "cmm69u97n0000pi01rm3fyglq",
+      "user": {
+        "id": "cmm69u97n0000pi01rm3fyglq",
+        "handle": "rowan",
+        "displayName": "Rowan Ellis",
+        "avatarUrl": null,
+        "email": "rowan@example.test",
+        "disabledAt": null
+      },
+      "grantedBy": {
+        "id": "cmm69u97n0000pi01rm3fyglq",
+        "handle": "rowan",
+        "displayName": "Rowan Ellis",
+        "avatarUrl": null
+      }
+    },
+    {
+      "id": "cmorevoked0001",
+      "role": "MODERATOR",
+      "permissions": [
+        "MODERATION_READ",
+        "MODERATION_WRITE"
+      ],
+      "status": "REVOKED",
+      "grantedAt": "2026-05-01T00:00:00.000Z",
+      "revokedAt": "2026-07-01T00:00:00.000Z",
+      "expiresAt": null,
+      "reason": "Left the moderation rota.",
+      "notes": null,
+      "userId": "cmm69u97n0001pi01rm3fyglq",
+      "grantedByUserId": "cmm69u97n0000pi01rm3fyglq",
+      "user": {
+        "id": "cmm69u97n0001pi01rm3fyglq",
+        "handle": "sam",
+        "displayName": "Sam Iyer",
+        "avatarUrl": null,
+        "email": "sam@example.test",
+        "disabledAt": null
+      },
+      "grantedBy": {
+        "id": "cmm69u97n0000pi01rm3fyglq",
+        "handle": "rowan",
+        "displayName": "Rowan Ellis",
+        "avatarUrl": null
+      }
+    }
+  ],
+  "nextCursor": null
+}

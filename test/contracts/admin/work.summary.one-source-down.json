@@ -1,0 +1,64 @@
+{
+  "sources": [
+    {
+      "source": "MODERATION",
+      "label": "Moderation",
+      "open": -1,
+      "oldestAgeDays": null,
+      "destination": "/admin/work?source=MODERATION",
+      "readable": false,
+      "unavailableReason": "read_failed"
+    },
+    {
+      "source": "MEDIA_APPEAL",
+      "label": "Media appeals",
+      "open": 1,
+      "oldestAgeDays": 2,
+      "destination": "/admin/work?source=MEDIA_APPEAL",
+      "readable": true,
+      "unavailableReason": null
+    },
+    {
+      "source": "IDENTITY_VERIFICATION",
+      "label": "Identity verification",
+      "open": 1,
+      "oldestAgeDays": 9,
+      "destination": "/admin/work?source=IDENTITY_VERIFICATION",
+      "readable": true,
+      "unavailableReason": null
+    },
+    {
+      "source": "INSTITUTION_VERIFICATION",
+      "label": "Institution verification",
+      "open": 1,
+      "oldestAgeDays": 4,
+      "destination": "/admin/work?source=INSTITUTION_VERIFICATION",
+      "readable": true,
+      "unavailableReason": null
+    },
+    {
+      "source": "INSTITUTION_DOMAIN",
+      "label": "Institution domains",
+      "open": 0,
+      "oldestAgeDays": null,
+      "destination": "/admin/work?source=INSTITUTION_DOMAIN",
+      "readable": true,
+      "unavailableReason": null
+    },
+    {
+      "source": "PRODUCT_FEEDBACK",
+      "label": "Product feedback",
+      "open": 1,
+      "oldestAgeDays": 1,
+      "destination": "/admin/work?source=PRODUCT_FEEDBACK",
+      "readable": true,
+      "unavailableReason": null
+    }
+  ],
+  "totalOpen": 4,
+  "degradedSources": [
+    "MODERATION"
+  ],
+  "complete": false,
+  "authorityError": null
+}

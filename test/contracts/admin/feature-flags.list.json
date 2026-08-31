@@ -1,0 +1,27 @@
+{
+  "ok": true,
+  "items": [
+    {
+      "id": "cmoflag0001",
+      "key": "PUBLIC_RECORD_ROUTING_ENABLED",
+      "enabled": true,
+      "scope": null,
+      "environment": null,
+      "description": null,
+      "updatedByUserId": null,
+      "createdAt": "2026-04-01T00:00:00.000Z",
+      "updatedAt": "2026-04-01T00:00:00.000Z"
+    },
+    {
+      "id": "cmoflag0002",
+      "key": "CAN_RAISE_ISSUE_GATE_ENABLED",
+      "enabled": false,
+      "scope": null,
+      "environment": null,
+      "description": null,
+      "updatedByUserId": null,
+      "createdAt": "2026-04-01T00:00:00.000Z",
+      "updatedAt": "2026-04-01T00:00:00.000Z"
+    }
+  ]
+}

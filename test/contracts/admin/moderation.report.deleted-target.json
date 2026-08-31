@@ -1,0 +1,38 @@
+{
+  "ok": true,
+  "report": {
+    "id": "cmoreport0002rdjzu5f96djh",
+    "reporterId": "cmm69u97n0001pi01rm3fyglq",
+    "reporter": {
+      "id": "cmm69u97n0001pi01rm3fyglq",
+      "handle": "sam",
+      "displayName": "Sam Iyer",
+      "avatarUrl": null
+    },
+    "targetType": "POST",
+    "targetId": "cmopost0001rdjzu5f96djh",
+    "reason": "HARASSMENT",
+    "details": "They keep replying to every post I make with the same insult.",
+    "status": "OPEN",
+    "createdAt": "2026-08-28T14:02:00.000Z",
+    "updatedAt": "2026-08-28T14:02:00.000Z",
+    "actions": [],
+    "subject": {
+      "type": "POST",
+      "id": "cmopost0001rdjzu5f96djh",
+      "exists": true,
+      "kind": "CONTENT",
+      "label": null,
+      "author": {
+        "id": "cmm69u97n0002pi01rm3fyglq",
+        "handle": "ada",
+        "displayName": "Ada Okafor",
+        "avatarUrl": null
+      },
+      "excerpt": null,
+      "excerptTruncated": false,
+      "createdAt": "2026-08-28T13:55:00.000Z",
+      "removedAt": "2026-08-28T15:10:00.000Z"
+    }
+  }
+}

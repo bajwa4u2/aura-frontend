@@ -1,13 +1,27 @@
-/// WORK — one list, every queue.
+/// WORK — the operator's workbench.
 ///
-/// Aura had seven queue authorities behind seven front doors, two of which had
-/// no navigation entry at all. An operator's work was whatever screen they
-/// happened to open. This is the single list, oldest first, filtered by what
-/// the operator can actually act on.
+/// Aura has seven authorities that produce human decisions. Before this they
+/// had seven front doors, two of which no navigation entry pointed at, and an
+/// operator's work was whatever screen they happened to open.
 ///
-/// It is OPERATIONAL, not decorative: dense rows, aligned age, a scannable
-/// left edge. Nothing here decides anything — every row hands the item back to
-/// the authority that owns it.
+/// This is not a wrapper around those seven queues. It is one bench: every
+/// item, normalized enough to answer the questions an operator asks before
+/// opening anything —
+///
+///   WHAT IS THIS?          the title, in the authority's own words
+///   WHY IS IT HERE?        the queue it came from
+///   WHO DOES IT CONCERN?   the subject, named
+///   HOW OLD IS IT?         days waited, never a deadline
+///   WHAT STATE IS IT IN?   the record's own state word
+///   WHAT HAPPENS IF I OPEN IT?  the destination, before the tap
+///
+/// PARTIAL IS A FIRST-CLASS RESULT. One authority failing used to blank this
+/// whole screen. Now the items that arrived are shown, the queues that did not
+/// answer are named, and the operator is told the list is incomplete — because
+/// six queues presented as seven is how real work gets missed.
+///
+/// NOTHING HERE DECIDES ANYTHING. Every row hands the item back to the
+/// authority that owns it.
 library;
 
 import 'package:flutter/material.dart';
@@ -18,8 +32,9 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../data/operator_work.dart';
-import '../shell/operator_shell.dart';
+import '../domain/operator_signal.dart';
 import '../ui/operator_kit.dart';
+import '../ui/operator_states.dart';
 
 class WorkArea extends ConsumerWidget {
   const WorkArea({super.key});
@@ -27,59 +42,50 @@ class WorkArea extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(operatorWorkSummaryProvider);
-    final items = ref.watch(operatorWorkListProvider);
-    final filter = ref.watch(operatorWorkFilterProvider);
+    final list = ref.watch(operatorWorkListProvider);
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final wide = constraints.maxWidth >= kOperatorDesktopWidth - 216;
+        final wide = constraints.maxWidth >= 900;
+        final pad = wide ? AuraSpace.s20 : AuraSpace.s12;
 
-        return RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(operatorWorkSummaryProvider);
-            ref.invalidate(operatorWorkListProvider);
-            await ref.read(operatorWorkListProvider.future);
-          },
-          child: ListView(
-            padding: EdgeInsets.all(wide ? AuraSpace.s20 : AuraSpace.s12),
-            children: [
-              summary.when(
-                loading: () => const SizedBox(height: 40),
-                error: (_, __) => const SizedBox.shrink(),
-                data: (s) => _SourceFilter(summary: s, selected: filter),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // THE BENCH'S OWN CHROME. The filter is not scrolled away with the
+            // items: an operator working a long queue needs to change source
+            // without scrolling back to the top.
+            Padding(
+              padding: EdgeInsets.fromLTRB(pad, pad, pad, AuraSpace.s8),
+              child: summary.maybeWhen(
+                orElse: () => const SizedBox(height: 36),
+                data: (signal) => signal.hasValue
+                    ? _SourceBar(summary: signal.value as OperatorWorkSummary)
+                    : const SizedBox(height: 36),
               ),
-              const SizedBox(height: AuraSpace.s16),
-              items.when(
-                loading: () => const OperatorLoading(lines: 5),
-                error: (e, _) => OperatorFailure(
-                  title: 'The worklist could not be loaded',
-                  detail: 'Your work is not lost — this is a read failure.',
+            ),
+            Expanded(
+              child: list.when(
+                loading: () => Padding(
+                  padding: EdgeInsets.all(pad),
+                  child: const OperatorLoading(lines: 5),
+                ),
+                error: (_, __) => Padding(
+                  padding: EdgeInsets.all(pad),
+                  child: OperatorFailure(
+                    title: 'The worklist could not be loaded',
+                    detail: 'Your work is not lost — this is a read failure.',
+                    onRetry: () => ref.invalidate(operatorWorkListProvider),
+                  ),
+                ),
+                data: (signal) => _Bench(
+                  signal: signal,
+                  padding: pad,
                   onRetry: () => ref.invalidate(operatorWorkListProvider),
                 ),
-                data: (list) {
-                  if (list.isEmpty) {
-                    return OperatorClear(
-                      title: filter == null
-                          ? 'Nothing needs your attention'
-                          : 'Nothing open in this queue',
-                      detail: filter == null
-                          ? 'Every queue you hold authority over is clear.'
-                          : null,
-                    );
-                  }
-                  return Column(
-                    children: [
-                      for (final item in list)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: AuraSpace.s8),
-                          child: _WorkRow(item: item, wide: wide),
-                        ),
-                    ],
-                  );
-                },
               ),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );
@@ -88,116 +94,126 @@ class WorkArea extends ConsumerWidget {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _SourceFilter extends ConsumerWidget {
-  const _SourceFilter({required this.summary, required this.selected});
+/// Which queues exist, how much is in each, and which are not answering.
+///
+/// A source that failed is shown DISABLED with its reason, not hidden. Hiding
+/// it would leave an operator believing they had seen everything.
+class _SourceBar extends ConsumerWidget {
+  const _SourceBar({required this.summary});
 
   final OperatorWorkSummary summary;
-  final String? selected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final readable = summary.sources.where((s) => s.readable).toList();
-    final degraded = summary.sources.where((s) => !s.readable).toList();
+    final selected = ref.watch(operatorWorkFilterProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Horizontally scrollable so a phone shows real chips rather than a
-        // squeezed row — the failure the old fourteen-item bottom nav made.
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _Chip(
-                label: 'All',
-                count: summary.totalOpen,
-                selected: selected == null,
-                onTap: () =>
-                    ref.read(operatorWorkFilterProvider.notifier).state = null,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _SourceChip(
+            label: 'All',
+            count: summary.totalOpen,
+            selected: selected == null,
+            onTap: () =>
+                ref.read(operatorWorkFilterProvider.notifier).state = null,
+          ),
+          for (final source in summary.sources)
+            Padding(
+              padding: const EdgeInsets.only(left: AuraSpace.s8),
+              child: _SourceChip(
+                label: source.label,
+                count: source.readable ? source.open : null,
+                selected: selected == source.source,
+                unavailableReason:
+                    source.readable ? null : source.unavailableReason,
+                onTap: source.readable
+                    ? () => ref
+                        .read(operatorWorkFilterProvider.notifier)
+                        .state = source.source
+                    : null,
               ),
-              for (final source in readable)
-                _Chip(
-                  label: source.label,
-                  count: source.open,
-                  selected: selected == source.source,
-                  onTap: () => ref
-                      .read(operatorWorkFilterProvider.notifier)
-                      .state = source.source,
-                ),
-            ],
-          ),
-        ),
-        if (degraded.isNotEmpty) ...[
-          const SizedBox(height: AuraSpace.s10),
-          OperatorFailure(
-            title: '${degraded.length} '
-                'queue${degraded.length == 1 ? '' : 's'} unavailable',
-            detail: '${degraded.map((d) => d.label).join(', ')} could not be '
-                'read. Counts exclude them rather than showing zero.',
-            onRetry: () => ref.invalidate(operatorWorkSummaryProvider),
-          ),
+            ),
         ],
-      ],
+      ),
     );
   }
 }
 
-class _Chip extends StatelessWidget {
-  const _Chip({
+class _SourceChip extends StatelessWidget {
+  const _SourceChip({
     required this.label,
-    required this.count,
     required this.selected,
-    required this.onTap,
+    this.count,
+    this.onTap,
+    this.unavailableReason,
   });
 
   final String label;
-  final int count;
   final bool selected;
-  final VoidCallback onTap;
+
+  /// Null when this source did not answer — the count is then unknown, and an
+  /// unknown count must never be drawn as zero.
+  final int? count;
+
+  final VoidCallback? onTap;
+  final String? unavailableReason;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: AuraSpace.s8),
-      child: Semantics(
-        selected: selected,
-        button: true,
-        label: '$label, $count open',
-        child: Material(
-          color: selected ? AuraSurface.accentSoft : AuraSurface.card,
+    final unavailable = unavailableReason != null;
+
+    return Tooltip(
+      message: unavailable
+          ? '$label ${describeUnavailable(unavailableReason)}'
+          : '',
+      child: Material(
+        color: selected ? AuraSurface.elevated : AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        child: InkWell(
           borderRadius: BorderRadius.circular(AuraRadius.pill),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(AuraRadius.pill),
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AuraSpace.s12,
-                vertical: AuraSpace.s8,
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s14,
+              vertical: AuraSpace.s8,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AuraRadius.pill),
+              border: Border.all(
+                color: selected ? AuraSurface.accent : AuraSurface.divider,
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                      color: selected ? AuraSurface.ink : AuraSurface.muted,
-                    ),
-                  ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (unavailable) ...[
+                  const Icon(Icons.cloud_off_rounded,
+                      size: 13, color: AuraSurface.dangerInk),
                   const SizedBox(width: AuraSpace.s6),
-                  Text(
-                    '$count',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color:
-                          selected ? AuraSurface.accentText : AuraSurface.faint,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
                 ],
-              ),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: unavailable
+                        ? AuraSurface.faint
+                        : (selected ? AuraSurface.ink : AuraSurface.muted),
+                    fontWeight:
+                        selected ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+                const SizedBox(width: AuraSpace.s8),
+                Text(
+                  // An em dash, not 0. The count is not known.
+                  count == null ? '—' : '$count',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: unavailable ? AuraSurface.faint : AuraSurface.faint,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -208,21 +224,100 @@ class _Chip extends StatelessWidget {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _WorkRow extends StatelessWidget {
-  const _WorkRow({required this.item, required this.wide});
+class _Bench extends StatelessWidget {
+  const _Bench({
+    required this.signal,
+    required this.padding,
+    required this.onRetry,
+  });
 
-  final OperatorWorkItem item;
-  final bool wide;
+  final OperatorSignal<OperatorWorklist> signal;
+  final double padding;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    // Age drives the left edge. Scanning a worklist is scanning for what has
-    // waited too long, so that signal belongs where the eye lands first.
-    final edge = item.ageDays >= 14
-        ? AuraSurface.dangerInk
+    if (!signal.hasValue) {
+      return Padding(
+        padding: EdgeInsets.all(padding),
+        child: OperatorSignalView<OperatorWorklist>(
+          signal: signal,
+          subject: 'the worklist',
+          unauthorizedNeeds: 'a queue you can work',
+          onRetry: onRetry,
+          builder: (_, __) => const SizedBox.shrink(),
+        ),
+      );
+    }
+
+    final worklist = signal.value as OperatorWorklist;
+    final disclosure = OperatorDisclosure.forSignal(
+      signal,
+      subject: 'the worklist',
+      onRetry: onRetry,
+    );
+
+    if (worklist.items.isEmpty) {
+      return Padding(
+        padding: EdgeInsets.all(padding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (disclosure != null) ...[
+              disclosure,
+              const SizedBox(height: AuraSpace.s12),
+            ],
+            OperatorPanel(
+              child: OperatorClear(
+                title: worklist.complete
+                    ? 'Nothing is waiting'
+                    : 'Nothing is waiting in the queues that answered',
+                detail: worklist.complete
+                    ? 'Every queue you can work is clear.'
+                    : null,
+                icon: Icons.check_circle_outline_rounded,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: EdgeInsets.fromLTRB(padding, 0, padding, AuraSpace.s32),
+      // One extra row for the disclosure, when there is one.
+      itemCount: worklist.items.length + (disclosure == null ? 0 : 1),
+      itemBuilder: (context, index) {
+        if (disclosure != null && index == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AuraSpace.s12),
+            child: disclosure,
+          );
+        }
+        final item =
+            worklist.items[disclosure == null ? index : index - 1];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AuraSpace.s8),
+          child: _WorkRow(item: item),
+        );
+      },
+    );
+  }
+}
+
+/// One piece of work, answering every question before it is opened.
+class _WorkRow extends StatelessWidget {
+  const _WorkRow({required this.item});
+
+  final OperatorWorkItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final tone = item.ageDays >= 14
+        ? OperatorTone.danger
         : item.ageDays >= 7
-            ? AuraSurface.warnInk
-            : AuraSurface.divider;
+            ? OperatorTone.warn
+            : OperatorTone.neutral;
 
     return Material(
       color: AuraSurface.card,
@@ -230,130 +325,106 @@ class _WorkRow extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(AuraRadius.card),
         onTap: () => context.go(item.destination),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AuraRadius.card),
-            border: Border.all(color: AuraSurface.divider),
-          ),
-          // A crisp age bar, not a gradient. Spread across a 1400px row a
-          // gradient read as a smudge; the point is that it is legible at a
-          // glance while scanning for what has waited too long.
-          //
-          // Positioned rather than a coloured left border: Flutter forbids a
-          // borderRadius on a border whose sides differ in colour, and the
-          // rounded card shape is not negotiable.
-          child: Stack(
-            children: [
+        child: Stack(
+          fit: StackFit.passthrough,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AuraSpace.s16,
+                AuraSpace.s12,
+                AuraSpace.s14,
+                AuraSpace.s12,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      // WHY IT IS HERE, first and quietest: the operator is
+                      // scanning for the kind of judgement being asked of them.
+                      Expanded(
+                        child: Text(
+                          item.sourceLabel,
+                          style: const TextStyle(
+                            color: AuraSurface.faint,
+                            fontSize: 11,
+                            letterSpacing: 0.4,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      OperatorAge(days: item.ageDays, dense: true),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  // WHAT IT IS.
+                  Text(
+                    item.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AuraSurface.ink,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      // WHO IT CONCERNS.
+                      if (item.subjectLabel != null &&
+                          item.subjectLabel!.isNotEmpty) ...[
+                        Icon(
+                          switch (item.subjectKind) {
+                            WorkSubjectKind.person => Icons.person_outline,
+                            WorkSubjectKind.institution =>
+                              Icons.apartment_rounded,
+                            WorkSubjectKind.media => Icons.perm_media_outlined,
+                            WorkSubjectKind.content => Icons.article_outlined,
+                            WorkSubjectKind.unknown => Icons.circle_outlined,
+                          },
+                          size: 13,
+                          color: AuraSurface.faint,
+                        ),
+                        const SizedBox(width: AuraSpace.s6),
+                        Flexible(
+                          child: Text(
+                            item.subjectLabel!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AuraSurface.muted,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AuraSpace.s10),
+                      ],
+                      // WHAT STATE IT IS IN — the authority's own word.
+                      if (item.state.isNotEmpty)
+                        OperatorStatePill(state: item.state, dense: true),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            if (tone != OperatorTone.neutral)
               Positioned(
                 left: 0,
-                top: 0,
-                bottom: 0,
-                width: 3,
-                child: DecoratedBox(
+                top: AuraSpace.s10,
+                bottom: AuraSpace.s10,
+                child: Container(
+                  width: 3,
                   decoration: BoxDecoration(
-                    color: edge,
-                    borderRadius: const BorderRadius.horizontal(
-                      left: Radius.circular(AuraRadius.card),
-                    ),
+                    color: tone.ink,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AuraSpace.s14,
-                  vertical: AuraSpace.s12,
-                ),
-                child: wide ? _wideLayout() : _narrowLayout(),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _wideLayout() {
-    return Row(
-      children: [
-        SizedBox(width: 132, child: _sourceLabel()),
-        Expanded(child: _titleAndSubject()),
-        const SizedBox(width: AuraSpace.s12),
-        OperatorStatePill(state: item.state, tone: OperatorTone.pending),
-        const SizedBox(width: AuraSpace.s16),
-        SizedBox(
-          width: 84,
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: OperatorAge(days: item.ageDays),
-          ),
-        ),
-        const SizedBox(width: AuraSpace.s8),
-        const Icon(Icons.chevron_right_rounded,
-            size: 18, color: AuraSurface.faint),
-      ],
-    );
-  }
-
-  Widget _narrowLayout() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(child: _sourceLabel()),
-            OperatorAge(days: item.ageDays, dense: true),
           ],
         ),
-        const SizedBox(height: AuraSpace.s6),
-        _titleAndSubject(),
-        const SizedBox(height: AuraSpace.s8),
-        OperatorStatePill(
-          state: item.state,
-          tone: OperatorTone.pending,
-          dense: true,
-        ),
-      ],
-    );
-  }
-
-  Widget _sourceLabel() {
-    return Text(
-      item.sourceLabel,
-      overflow: TextOverflow.ellipsis,
-      style: const TextStyle(
-        fontSize: 11.5,
-        letterSpacing: 0.4,
-        fontWeight: FontWeight.w600,
-        color: AuraSurface.faint,
       ),
-    );
-  }
-
-  Widget _titleAndSubject() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          item.title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 13.5,
-            fontWeight: FontWeight.w600,
-            color: AuraSurface.ink,
-          ),
-        ),
-        if (item.subjectLabel != null && item.subjectLabel!.isNotEmpty) ...[
-          const SizedBox(height: 2),
-          Text(
-            item.subjectLabel!,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 12, color: AuraSurface.muted),
-          ),
-        ],
-      ],
     );
   }
 }

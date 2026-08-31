@@ -13,7 +13,10 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../ui/operator_states.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/trust/verification.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -23,6 +26,7 @@ import '../domain/operator_authority_provider.dart';
 import '../domain/operator_capability.dart';
 import '../ui/operator_action.dart';
 import '../ui/operator_kit.dart';
+import 'record_area.dart' show readableReason;
 
 final personVerificationProvider = FutureProvider.autoDispose
     .family<AdminPersonVerification, String>((ref, userId) async {
@@ -371,7 +375,7 @@ class _IdentityBlock extends ConsumerWidget {
       context,
       OperatorAction(
         title: 'Grant verification',
-        subject: '$chosen · person $userId',
+        subject: _verificationSubject(ref, chosen),
         detail: 'The identity authority records this and applies it. It '
             'refuses a second active record for a class, and it requires the '
             'reason you give here.',
@@ -399,6 +403,25 @@ class _IdentityBlock extends ConsumerWidget {
       ref.invalidate(personVerificationProvider(userId));
       ref.invalidate(personDetailProvider(userId));
     }
+  }
+
+  /// How the confirmation names what is about to change.
+  ///
+  /// The taxonomy's word for the class, and the PERSON'S OWN NAME — never
+  /// `ROLE_OR_CREDENTIAL · person cmm69u97n0000pi01rm3fyglq`. The id is the
+  /// fallback only when the person could not be resolved, in which case it is
+  /// the honest answer rather than a decorated one.
+  String _verificationSubject(WidgetRef ref, String verificationClass) {
+    final className =
+        PersonVerificationClass.tryParse(verificationClass)?.label ??
+            verificationClass;
+
+    final person = ref.read(personDetailProvider(userId)).valueOrNull?.person;
+    final name = person?.displayName.trim() ?? '';
+    if (name.isNotEmpty) return '$className · $name';
+    final handle = person?.handle.trim() ?? '';
+    if (handle.isNotEmpty) return '$className · @$handle';
+    return '$className · $userId';
   }
 
   /// Which institution the affiliation is WITH.
@@ -497,7 +520,7 @@ class _IdentityBlock extends ConsumerWidget {
       context,
       OperatorAction(
         title: 'Revoke verification',
-        subject: '$verificationClass · person $userId',
+        subject: _verificationSubject(ref, verificationClass),
         detail: 'The identity authority records this decision and applies it. '
             'Aura Admin invokes that authority; it does not decide here.',
         confirmLabel: 'Revoke',
@@ -539,49 +562,72 @@ class _RelatedWork extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final work = ref.watch(operatorWorkListProvider);
 
-    return work.when(
-      loading: () => const OperatorSection(
-        title: 'Waiting on this subject',
-        child: OperatorLoading(lines: 1),
+    // NEVER `SizedBox.shrink()` ON FAILURE. This section disappeared from a
+    // live subject page when the worklist could not be read, so an operator
+    // saw a subject with apparently nothing waiting on them — the most
+    // dangerous possible reading of a failed dependency.
+    return OperatorSection(
+      title: 'Waiting on this subject',
+      child: work.when(
+        loading: () => const OperatorLoading(lines: 1),
+        error: (_, __) => OperatorFailure(
+          title: 'Open work could not be read',
+          detail: 'This is a read failure. It does not mean nothing is '
+              'waiting on this person.',
+          onRetry: () => ref.invalidate(operatorWorkListProvider),
+        ),
+        data: (signal) => OperatorSignalView<OperatorWorklist>(
+          signal: signal,
+          subject: 'open work',
+          unauthorizedNeeds: 'a queue you can work',
+          onRetry: () => ref.invalidate(operatorWorkListProvider),
+          loading: const OperatorLoading(lines: 1),
+          builder: (context, worklist) {
+            final mine = worklist.items
+                .where((i) => i.subjectId == userId)
+                .toList(growable: false);
+
+            if (mine.isEmpty) {
+              return OperatorPanel(
+                child: OperatorClear(
+                  title: worklist.complete
+                      ? 'Nothing open'
+                      : 'Nothing open in the queues that answered',
+                  icon: Icons.check_circle_outline_rounded,
+                ),
+              );
+            }
+
+            return OperatorPanel(
+              padding: const EdgeInsets.symmetric(vertical: AuraSpace.s4),
+              child: Column(
+                children: [
+                  for (final item in mine)
+                    ListTile(
+                      dense: true,
+                      onTap: () => context.go(item.destination),
+                      title: Text(
+                        item.title,
+                        style: const TextStyle(
+                          color: AuraSurface.ink,
+                          fontSize: 13,
+                        ),
+                      ),
+                      subtitle: Text(
+                        item.sourceLabel,
+                        style: const TextStyle(
+                          color: AuraSurface.muted,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                      trailing: OperatorAge(days: item.ageDays, dense: true),
+                    ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (items) {
-        final mine =
-            items.where((i) => i.subjectId == userId).toList(growable: false);
-        if (mine.isEmpty) {
-          return const OperatorSection(
-            title: 'Waiting on this subject',
-            child: OperatorPanel(
-              child: OperatorClear(title: 'Nothing open'),
-            ),
-          );
-        }
-        return OperatorSection(
-          title: 'Waiting on this subject',
-          child: OperatorPanel(
-            padding: const EdgeInsets.symmetric(vertical: AuraSpace.s4),
-            child: Column(
-              children: [
-                for (final item in mine)
-                  ListTile(
-                    dense: true,
-                    title: Text(
-                      item.title,
-                      style: const TextStyle(
-                          color: AuraSurface.ink, fontSize: 13),
-                    ),
-                    subtitle: Text(
-                      item.sourceLabel,
-                      style: const TextStyle(
-                          color: AuraSurface.muted, fontSize: 11.5),
-                    ),
-                    trailing: OperatorAge(days: item.ageDays, dense: true),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }
@@ -660,7 +706,15 @@ class _PersonHistory extends ConsumerWidget {
                                   ),
                                   const SizedBox(width: AuraSpace.s8),
                                   Text(
-                                    record.verificationClass,
+                                    // THE TAXONOMY'S OWN WORDS, not its
+                                    // column value. An unrecognised class
+                                    // keeps its stored name rather than being
+                                    // renamed into something this build
+                                    // invented.
+                                    PersonVerificationClass.tryParse(
+                                          record.verificationClass,
+                                        )?.label ??
+                                        record.verificationClass,
                                     style: const TextStyle(
                                       color: AuraSurface.ink,
                                       fontSize: 12.5,
@@ -672,7 +726,7 @@ class _PersonHistory extends ConsumerWidget {
                               if (record.reason.isNotEmpty) ...[
                                 const SizedBox(height: 3),
                                 Text(
-                                  record.reason,
+                                  readableReason(record.reason),
                                   style: const TextStyle(
                                     color: AuraSurface.muted,
                                     fontSize: 12,
@@ -1002,6 +1056,12 @@ class _OperatorAuthorityBlock extends ConsumerWidget {
         }
 
         final canWrite = authority.can(OperatorCapability.usersWrite);
+        // SELF-AUTHORITY. Removing your own grant is a legitimate act — an
+        // operator may stand down — but it is not the same act as removing
+        // somebody else's, and the console must not present it as if it were.
+        final isSelf =
+            authority.userId.isNotEmpty && authority.userId == p.id;
+
         return OperatorSection(
           title: 'Operator authority',
           subtitle: p.roles.isEmpty
@@ -1012,11 +1072,24 @@ class _OperatorAuthorityBlock extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (isSelf) ...[
+                  const _SelfAuthorityNotice(),
+                  const SizedBox(height: AuraSpace.s12),
+                ],
                 for (final grant in p.grants) ...[
+                  // THE CONTROL IS WITHHELD, NOT WIRED TO FAIL. The authority
+                  // refuses to remove the last owner; offering a button that
+                  // exists only to be rejected teaches an operator that the
+                  // console does not know its own rules.
                   _GrantRow(
                     grant: grant,
-                    canRevoke: canWrite,
-                    onRevoke: () => _revoke(context, ref, p, grant),
+                    canRevoke: canWrite && !_isLastOwner(p, grant),
+                    withheldReason: canWrite && _isLastOwner(p, grant)
+                        ? 'Nobody else can act as owner. Appoint another '
+                            'owner before withdrawing this one.'
+                        : null,
+                    onRevoke: () =>
+                        _revoke(context, ref, p, grant, isSelf: isSelf),
                   ),
                   if (grant != p.grants.last)
                     const Divider(height: AuraSpace.s20, color: AuraSurface.divider),
@@ -1029,36 +1102,70 @@ class _OperatorAuthorityBlock extends ConsumerWidget {
     );
   }
 
+  /// Would this revocation leave Aura with nobody who can act as owner?
+  ///
+  /// Answered from what the SERVER said (`otherOwnerHolders`), never from a
+  /// client-side recount of a grants list — a second implementation of an
+  /// authority rule is a second answer waiting to disagree. A null count is
+  /// unknown, and unknown never withholds a legitimate control.
+  static bool _isLastOwner(AdminPersonDetail person, AdminGrant grant) =>
+      grant.role.toUpperCase() == 'OWNER' &&
+      grant.derivedStatus == AdminGrantStatus.active &&
+      person.isSoleOwnerHolder;
+
   Future<void> _revoke(
     BuildContext context,
     WidgetRef ref,
     AdminPersonDetail person,
-    AdminGrant grant,
-  ) async {
+    AdminGrant grant, {
+    bool isSelf = false,
+  }) async {
     final done = await runOperatorAction(
       context,
       OperatorAction(
-        title: 'Revoke operator authority',
+        title: isSelf
+            ? 'Withdraw your own operator authority'
+            : 'Revoke operator authority',
         subject: '${grant.role} · ${person.person.displayName.isEmpty ? '@${person.person.handle}' : person.person.displayName}',
         detail: 'The grant is marked revoked. Aura Admin invokes the grant '
             'authority; the authority decides and records.',
-        confirmLabel: 'Revoke',
+        confirmLabel: isSelf ? 'Withdraw my authority' : 'Revoke',
         destructive: true,
         requiresReason: true,
         reasonLabel: 'Why this authority is being withdrawn',
         consequences: [
-          OperatorConsequence(
-            text: 'They immediately lose '
-                '${grant.permissions.length} admin '
-                'permission${grant.permissions.length == 1 ? '' : 's'}.',
-            tone: OperatorTone.danger,
-            icon: Icons.remove_moderator_rounded,
-          ),
-          const OperatorConsequence(
-            text: 'Any admin surface they have open stops answering.',
-            tone: OperatorTone.warn,
-            icon: Icons.desktop_access_disabled_rounded,
-          ),
+          // FIRST PERSON WHEN IT IS THE OPERATOR'S OWN AUTHORITY. Reading
+          // "they immediately lose" about yourself is exactly how a
+          // consequential act gets confirmed without being understood.
+          if (isSelf)
+            OperatorConsequence(
+              text: 'YOU immediately lose ${grant.permissions.length} admin '
+                  'permission${grant.permissions.length == 1 ? '' : 's'}, and '
+                  'this console stops answering for you.',
+              tone: OperatorTone.danger,
+              icon: Icons.logout_rounded,
+            )
+          else
+            OperatorConsequence(
+              text: 'They immediately lose '
+                  '${grant.permissions.length} admin '
+                  'permission${grant.permissions.length == 1 ? '' : 's'}.',
+              tone: OperatorTone.danger,
+              icon: Icons.remove_moderator_rounded,
+            ),
+          if (isSelf)
+            const OperatorConsequence(
+              text: 'You cannot restore it yourself afterwards. Another '
+                  'owner has to grant it back.',
+              tone: OperatorTone.danger,
+              icon: Icons.lock_person_rounded,
+            )
+          else
+            const OperatorConsequence(
+              text: 'Any admin surface they have open stops answering.',
+              tone: OperatorTone.warn,
+              icon: Icons.desktop_access_disabled_rounded,
+            ),
           OperatorConsequence.recorded('This decision and your reason'),
         ],
         perform: (reason) async {
@@ -1073,16 +1180,54 @@ class _OperatorAuthorityBlock extends ConsumerWidget {
   }
 }
 
+/// The operator is looking at their own authority.
+///
+/// Stated once, at the top, rather than repeated on every row: an operator who
+/// does not realise whose grants these are is the one who makes the mistake
+/// this notice exists to prevent.
+class _SelfAuthorityNotice extends StatelessWidget {
+  const _SelfAuthorityNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.person_pin_circle_rounded,
+            size: 16, color: AuraSurface.accent),
+        SizedBox(width: AuraSpace.s8),
+        Expanded(
+          child: Text(
+            'This is your own authority. Anything withdrawn here is withdrawn '
+            'from you, immediately.',
+            style: TextStyle(
+              color: AuraSurface.ink,
+              fontSize: 12.5,
+              height: 1.4,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _GrantRow extends StatelessWidget {
   const _GrantRow({
     required this.grant,
     required this.canRevoke,
     required this.onRevoke,
+    this.withheldReason,
   });
 
   final AdminGrant grant;
   final bool canRevoke;
   final VoidCallback onRevoke;
+
+  /// Why the control is absent, when it is absent for a GOVERNING reason
+  /// rather than for lack of capability. Absence with no explanation reads as
+  /// a bug; absence with one reads as a rule.
+  final String? withheldReason;
 
   @override
   Widget build(BuildContext context) {
@@ -1147,6 +1292,31 @@ class _GrantRow extends StatelessWidget {
             children: [
               for (final permission in grant.permissions)
                 OperatorStatePill(state: permission, dense: true),
+            ],
+          ),
+        ],
+        // THE RULE, WHERE THE CONTROL WOULD HAVE BEEN. A missing button with
+        // no explanation is indistinguishable from a broken one, and an
+        // operator who cannot tell which will try again rather than act on
+        // the actual constraint.
+        if (withheldReason != null && live) ...[
+          const SizedBox(height: AuraSpace.s8),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.gpp_maybe_rounded,
+                  size: 15, color: AuraSurface.warnInk),
+              const SizedBox(width: AuraSpace.s6),
+              Expanded(
+                child: Text(
+                  withheldReason!,
+                  style: const TextStyle(
+                    color: AuraSurface.muted,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+              ),
             ],
           ),
         ],

@@ -8,6 +8,8 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../ui/operator_states.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -47,9 +49,16 @@ class SubjectInstitutionArea extends ConsumerWidget {
       );
     }
 
-    final institutions = ref.watch(subjectInstitutionsProvider);
+    // RESOLVED BY ID, NOT FOUND IN A LIST.
+    //
+    // This used to search `subjectInstitutionsProvider` — the directory —
+    // for a matching row. The directory was status-filtered, so a suspended
+    // or pending institution reported "No such institution" on its own page
+    // while plainly existing. A subject's existence cannot depend on which
+    // slice of a list happens to be loaded beside it.
+    final institution$ = ref.watch(institutionSubjectProvider(institutionId));
 
-    return institutions.when(
+    return institution$.when(
       loading: () => const Padding(
         padding: EdgeInsets.all(AuraSpace.s20),
         child: OperatorLoading(lines: 4),
@@ -58,12 +67,14 @@ class SubjectInstitutionArea extends ConsumerWidget {
         padding: const EdgeInsets.all(AuraSpace.s20),
         child: OperatorFailure(
           title: 'This institution could not be loaded',
-          onRetry: () => ref.invalidate(subjectInstitutionsProvider),
+          detail: 'This is a read failure. It does not mean the institution '
+              'is gone.',
+          onRetry: () =>
+              ref.invalidate(institutionSubjectProvider(institutionId)),
         ),
       ),
-      data: (all) {
-        final match = all.where((i) => i.id == institutionId).toList();
-        if (match.isEmpty) {
+      data: (resolved) {
+        if (resolved == null) {
           // A subject that does not exist is a real answer, not an error.
           return const Padding(
             padding: EdgeInsets.all(AuraSpace.s20),
@@ -74,7 +85,7 @@ class SubjectInstitutionArea extends ConsumerWidget {
             ),
           );
         }
-        final institution = match.first;
+        final institution = resolved;
 
         return LayoutBuilder(
           builder: (context, constraints) {
@@ -406,53 +417,76 @@ class _RelatedWork extends ConsumerWidget {
   const _RelatedWork({required this.institutionId});
 
   final String institutionId;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final work = ref.watch(operatorWorkListProvider);
 
-    return work.when(
-      loading: () => const OperatorSection(
-        title: 'Waiting on this subject',
-        child: OperatorLoading(lines: 1),
+    // NEVER `SizedBox.shrink()` ON FAILURE. This section disappeared from a
+    // live subject page when the worklist could not be read, so an operator
+    // saw a subject with apparently nothing waiting on them — the most
+    // dangerous possible reading of a failed dependency.
+    return OperatorSection(
+      title: 'Waiting on this subject',
+      child: work.when(
+        loading: () => const OperatorLoading(lines: 1),
+        error: (_, __) => OperatorFailure(
+          title: 'Open work could not be read',
+          detail: 'This is a read failure. It does not mean nothing is '
+              'waiting on this institution.',
+          onRetry: () => ref.invalidate(operatorWorkListProvider),
+        ),
+        data: (signal) => OperatorSignalView<OperatorWorklist>(
+          signal: signal,
+          subject: 'open work',
+          unauthorizedNeeds: 'a queue you can work',
+          onRetry: () => ref.invalidate(operatorWorkListProvider),
+          loading: const OperatorLoading(lines: 1),
+          builder: (context, worklist) {
+            final mine = worklist.items
+                .where((i) => i.subjectId == institutionId)
+                .toList(growable: false);
+
+            if (mine.isEmpty) {
+              return OperatorPanel(
+                child: OperatorClear(
+                  title: worklist.complete
+                      ? 'Nothing open'
+                      : 'Nothing open in the queues that answered',
+                  icon: Icons.check_circle_outline_rounded,
+                ),
+              );
+            }
+
+            return OperatorPanel(
+              padding: const EdgeInsets.symmetric(vertical: AuraSpace.s4),
+              child: Column(
+                children: [
+                  for (final item in mine)
+                    ListTile(
+                      dense: true,
+                      onTap: () => context.go(item.destination),
+                      title: Text(
+                        item.title,
+                        style: const TextStyle(
+                          color: AuraSurface.ink,
+                          fontSize: 13,
+                        ),
+                      ),
+                      subtitle: Text(
+                        item.sourceLabel,
+                        style: const TextStyle(
+                          color: AuraSurface.muted,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                      trailing: OperatorAge(days: item.ageDays, dense: true),
+                    ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (items) {
-        final mine = items
-            .where((i) => i.subjectId == institutionId)
-            .toList(growable: false);
-        if (mine.isEmpty) {
-          return const OperatorSection(
-            title: 'Waiting on this subject',
-            child: OperatorPanel(child: OperatorClear(title: 'Nothing open')),
-          );
-        }
-        return OperatorSection(
-          title: 'Waiting on this subject',
-          child: OperatorPanel(
-            padding: const EdgeInsets.symmetric(vertical: AuraSpace.s4),
-            child: Column(
-              children: [
-                for (final item in mine)
-                  ListTile(
-                    dense: true,
-                    title: Text(
-                      item.title,
-                      style: const TextStyle(
-                          color: AuraSurface.ink, fontSize: 13),
-                    ),
-                    subtitle: Text(
-                      item.sourceLabel,
-                      style: const TextStyle(
-                          color: AuraSurface.muted, fontSize: 11.5),
-                    ),
-                    trailing: OperatorAge(days: item.ageDays, dense: true),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }

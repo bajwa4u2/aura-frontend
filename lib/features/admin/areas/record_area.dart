@@ -15,6 +15,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
@@ -22,7 +23,9 @@ import '../../../core/ui/aura_surface.dart';
 import '../data/admin_providers.dart';
 import '../domain/operator_authority_provider.dart';
 import '../domain/operator_capability.dart';
+import '../domain/operator_routes.dart';
 import '../ui/operator_kit.dart';
+import 'now_area.dart' show readableAction;
 
 /// Free-text filter over the record.
 final recordFilterProvider = StateProvider<String>((_) => '');
@@ -85,6 +88,15 @@ class RecordArea extends ConsumerWidget {
                               e.actorLabel.toLowerCase().contains(filter) ||
                               e.reason.toLowerCase().contains(filter) ||
                               e.targetType.toLowerCase().contains(filter) ||
+                              // Searchable BY NAME. An operator looking for
+                              // what was done to a person types the person's
+                              // name, not their cuid.
+                              e.subject.display
+                                  .toLowerCase()
+                                  .contains(filter) ||
+                              (e.subject.handle ?? '')
+                                  .toLowerCase()
+                                  .contains(filter) ||
                               (e.targetId ?? '')
                                   .toLowerCase()
                                   .contains(filter))
@@ -102,8 +114,15 @@ class RecordArea extends ConsumerWidget {
                   return ListView.builder(
                     padding: const EdgeInsets.fromLTRB(
                         AuraSpace.s16, 0, AuraSpace.s16, AuraSpace.s24),
-                    itemCount: entries.length,
-                    itemBuilder: (context, i) {
+                    // +1 for the column header at wide widths. WHO DID IT and
+                    // TO WHOM are both people's names, side by side, and with
+                    // nothing naming the columns an operator cannot tell the
+                    // two apart at a glance — which is the one distinction the
+                    // record exists to make.
+                    itemCount: entries.length + (wide ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (wide && index == 0) return const _RecordColumns();
+                      final i = wide ? index - 1 : index;
                       final entry = entries[i];
                       final previous = i == 0 ? null : entries[i - 1];
                       final newDay = previous == null ||
@@ -217,9 +236,6 @@ class _RecordRow extends StatelessWidget {
     // falls back through handle and email, so a record whose actor relation
     // came back without an email still says who acted.
     final actor = entry.actorLabel;
-    final subject = entry.targetId == null || entry.targetId!.isEmpty
-        ? entry.targetType
-        : '${entry.targetType} · ${entry.targetId}';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AuraSpace.s8),
@@ -253,7 +269,7 @@ class _RecordRow extends StatelessWidget {
                   Expanded(
                     flex: 3,
                     child: Text(
-                      entry.action.replaceAll('.', ' · '),
+                      readableAction(entry.action),
                       style: const TextStyle(
                         color: AuraSurface.ink,
                         fontSize: 13,
@@ -272,12 +288,9 @@ class _RecordRow extends StatelessWidget {
                   ),
                   Expanded(
                     flex: 2,
-                    child: Text(
-                      subject,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                      style: const TextStyle(
-                          color: AuraSurface.faint, fontSize: 12),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: _Subject(entry: entry, alignEnd: true),
                     ),
                   ),
                 ],
@@ -289,7 +302,7 @@ class _RecordRow extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          entry.action.replaceAll('.', ' · '),
+                          readableAction(entry.action),
                           style: const TextStyle(
                             color: AuraSurface.ink,
                             fontSize: 13,
@@ -314,11 +327,7 @@ class _RecordRow extends StatelessWidget {
                         color: AuraSurface.muted, fontSize: 12),
                   ),
                   const SizedBox(height: 1),
-                  Text(
-                    subject,
-                    style: const TextStyle(
-                        color: AuraSurface.faint, fontSize: 11.5),
-                  ),
+                  _Subject(entry: entry, alignEnd: false),
                 ],
               ),
             // WHY. The fourth question the record exists to answer, and the
@@ -328,7 +337,7 @@ class _RecordRow extends StatelessWidget {
             if (entry.reason.isNotEmpty) ...[
               const SizedBox(height: AuraSpace.s8),
               Text(
-                entry.reason,
+                readableReason(entry.reason),
                 style: const TextStyle(
                   color: AuraSurface.muted,
                   fontSize: 12,
@@ -349,4 +358,147 @@ class _RecordRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// TO WHOM — named where the record can name it.
+///
+/// A resolved person or institution is shown by name and opens as a subject,
+/// because "what was done to this person" and "who is this person" are the
+/// same investigation. An unresolvable target stays a plain reference and is
+/// deliberately NOT a link: offering to open something that has no page, or
+/// no longer exists, is a worse answer than showing the id.
+class _Subject extends StatelessWidget {
+  const _Subject({required this.entry, required this.alignEnd});
+
+  final AdminAuditLogEntry entry;
+  final bool alignEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    final subject = entry.subject;
+    final qualifier = subject.qualifier;
+
+    final label = Column(
+      crossAxisAlignment:
+          alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          subject.display,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: alignEnd ? TextAlign.right : TextAlign.left,
+          style: TextStyle(
+            // A NAMED SUBJECT READS AS A SUBJECT. An unresolved reference
+            // stays quiet, so the eye is not drawn to a cuid.
+            color: subject.navigable ? AuraSurface.muted : AuraSurface.faint,
+            fontSize: 12,
+            fontWeight: subject.navigable ? FontWeight.w500 : FontWeight.w400,
+          ),
+        ),
+        if (qualifier != null)
+          Text(
+            qualifier,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: AuraSurface.faint, fontSize: 11),
+          ),
+      ],
+    );
+
+    if (!subject.navigable) return label;
+
+    final route = subject.isPerson
+        ? operatorPersonRoute(subject.id!)
+        : operatorInstitutionRoute(subject.id!);
+
+    return InkWell(
+      onTap: () => context.go(route),
+      borderRadius: BorderRadius.circular(AuraRadius.pill),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: label,
+      ),
+    );
+  }
+}
+
+/// The column header. Wide widths only — the narrow layout already labels
+/// each value by stacking it under the action.
+class _RecordColumns extends StatelessWidget {
+  const _RecordColumns();
+
+  @override
+  Widget build(BuildContext context) {
+    const style = TextStyle(
+      color: AuraSurface.faint,
+      fontSize: 10.5,
+      letterSpacing: 0.8,
+      fontWeight: FontWeight.w700,
+    );
+
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(
+        AuraSpace.s14,
+        0,
+        AuraSpace.s14,
+        AuraSpace.s12,
+      ),
+      child: Row(
+        children: [
+          SizedBox(width: 52, child: Text('WHEN', style: style)),
+          Expanded(flex: 3, child: Text('WHAT HAPPENED', style: style)),
+          Expanded(flex: 2, child: Text('WHO DID IT', style: style)),
+          Expanded(
+            flex: 2,
+            child: Text('TO WHOM', style: style, textAlign: TextAlign.right),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// WHY, in the words of whoever is answering.
+///
+/// Two different things arrive in this field. When an operator acts, they type
+/// a sentence and it is carried verbatim — that is the whole reason a reason
+/// is required. When AURA ITSELF records a refusal, it writes a machine code:
+/// `missing_permission`, `expired_grant`. The record was printing those raw,
+/// so the one line meant to explain a decision read as a log key.
+///
+/// A code is recognisable: it is one token, lowercase, with underscores and no
+/// sentence punctuation. Anything else is a person's writing and is never
+/// touched — rewriting what an operator actually said would be a far worse
+/// failure than showing a code.
+String readableReason(String reason) {
+  final raw = reason.trim();
+  if (raw.isEmpty) return raw;
+
+  const known = <String, String>{
+    'missing_permission': 'The permission this action requires was not held.',
+    'insufficient_permission':
+        'The permission this action requires was not held.',
+    'expired_grant': 'The operator grant had expired.',
+    'revoked_grant': 'The operator grant had been revoked.',
+    'not_owner': 'Only an owner may make this change.',
+    'rate_limited': 'Refused because the same action was repeating too fast.',
+    'unauthenticated': 'Nobody was signed in for this request.',
+    'timed_out': 'The authority did not answer in time.',
+    'unreachable': 'The authority could not be reached.',
+    'read_failed': 'The read failed.',
+  };
+
+  final match = known[raw.toLowerCase()];
+  if (match != null) return match;
+
+  // An unrecognised code still reads better as words than as a key, but it is
+  // only reshaped when it IS a code — never when it is prose.
+  final looksLikeCode = !raw.contains(' ') &&
+      raw.contains('_') &&
+      raw == raw.toLowerCase();
+  if (!looksLikeCode) return raw;
+
+  final words = raw.replaceAll('_', ' ');
+  return words[0].toUpperCase() + words.substring(1);
 }

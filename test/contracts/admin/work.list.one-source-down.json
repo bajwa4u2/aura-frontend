@@ -1,0 +1,70 @@
+{
+  "items": [
+    {
+      "key": "IDENTITY_VERIFICATION:cmoidentity0001",
+      "source": "IDENTITY_VERIFICATION",
+      "sourceLabel": "Identity verification",
+      "id": "cmoidentity0001",
+      "openedAt": "2026-08-22T00:00:00.000Z",
+      "ageDays": 9,
+      "requiredCapability": "IDENTITY_VERIFICATION_WRITE",
+      "title": "Identity verification review",
+      "subjectLabel": null,
+      "subjectKind": "PERSON",
+      "subjectId": "cmm69u97n0000pi01rm3fyglq",
+      "state": "PENDING_REVIEW",
+      "destination": "/admin/subjects/person/cmm69u97n0000pi01rm3fyglq/identity"
+    },
+    {
+      "key": "INSTITUTION_VERIFICATION:cmoinstreq0001",
+      "source": "INSTITUTION_VERIFICATION",
+      "sourceLabel": "Institution verification",
+      "id": "cmoinstreq0001",
+      "openedAt": "2026-08-27T00:00:00.000Z",
+      "ageDays": 4,
+      "requiredCapability": "VERIFICATION_WRITE",
+      "title": "Institution verification request",
+      "subjectLabel": "Aura Platform",
+      "subjectKind": "INSTITUTION",
+      "subjectId": "cmmg1ildu0000k201gtwg60rr",
+      "state": "UNDER_REVIEW",
+      "destination": "/admin/subjects/institution/cmmg1ildu0000k201gtwg60rr/verification"
+    },
+    {
+      "key": "MEDIA_APPEAL:cmoappeal0001",
+      "source": "MEDIA_APPEAL",
+      "sourceLabel": "Media appeals",
+      "id": "cmoappeal0001",
+      "openedAt": "2026-08-29T00:00:00.000Z",
+      "ageDays": 2,
+      "requiredCapability": "MODERATION_WRITE",
+      "title": "Quarantined media appeal",
+      "subjectLabel": "brochure.pdf",
+      "subjectKind": "MEDIA",
+      "subjectId": "cmomedia0001",
+      "state": "SUBMITTED",
+      "destination": "/admin/integrity/appeals/cmoappeal0001"
+    },
+    {
+      "key": "PRODUCT_FEEDBACK:cmofeedback0001",
+      "source": "PRODUCT_FEEDBACK",
+      "sourceLabel": "Product feedback",
+      "id": "cmofeedback0001",
+      "openedAt": "2026-08-30T00:00:00.000Z",
+      "ageDays": 1,
+      "requiredCapability": "PRODUCT_FEEDBACK_WRITE",
+      "title": "Defect reported",
+      "subjectLabel": null,
+      "subjectKind": null,
+      "subjectId": null,
+      "state": "RECEIVED",
+      "destination": "/admin/integrity/feedback/cmofeedback0001"
+    }
+  ],
+  "count": 4,
+  "unavailableSources": [
+    "MODERATION"
+  ],
+  "complete": false,
+  "authorityError": null
+}

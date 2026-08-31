@@ -1,0 +1,38 @@
+{
+  "ok": true,
+  "report": {
+    "id": "cmoreport0003rdjzu5f96djh",
+    "reporterId": "cmm69u97n0001pi01rm3fyglq",
+    "reporter": {
+      "id": "cmm69u97n0001pi01rm3fyglq",
+      "handle": "sam",
+      "displayName": "Sam Iyer",
+      "avatarUrl": null
+    },
+    "targetType": "USER",
+    "targetId": "cmm69u97n0002pi01rm3fyglq",
+    "reason": "IMPERSONATION",
+    "details": "This account is using my employer’s name and logo.",
+    "status": "OPEN",
+    "createdAt": "2026-08-28T14:02:00.000Z",
+    "updatedAt": "2026-08-28T14:02:00.000Z",
+    "actions": [],
+    "subject": {
+      "type": "USER",
+      "id": "cmm69u97n0002pi01rm3fyglq",
+      "exists": true,
+      "kind": "PERSON",
+      "label": "Ada Okafor",
+      "author": {
+        "id": "cmm69u97n0002pi01rm3fyglq",
+        "handle": "ada",
+        "displayName": "Ada Okafor",
+        "avatarUrl": null
+      },
+      "excerpt": null,
+      "excerptTruncated": false,
+      "createdAt": null,
+      "removedAt": null
+    }
+  }
+}

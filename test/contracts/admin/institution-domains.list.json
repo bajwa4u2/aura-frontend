@@ -1,0 +1,24 @@
+{
+  "ok": true,
+  "items": [
+    {
+      "id": "cmodomainrow0001",
+      "institutionId": "cmmg1ildu0000k201gtwg60rr",
+      "domain": "auraplatform.org",
+      "status": "VERIFIED",
+      "requestedByUserId": "cmm69u97n0000pi01rm3fyglq",
+      "createdAt": "2026-02-01T00:00:00.000Z",
+      "updatedAt": "2026-02-02T00:00:00.000Z",
+      "institution": {
+        "id": "cmmg1ildu0000k201gtwg60rr",
+        "name": "Aura Platform",
+        "slug": "aura-platform-llc",
+        "status": "VERIFIED",
+        "domain": "auraplatform.org",
+        "verifiedAt": "2026-02-01T00:00:00.000Z",
+        "domainVerifiedAt": "2026-02-02T00:00:00.000Z"
+      }
+    }
+  ],
+  "nextCursor": null
+}

@@ -1,0 +1,98 @@
+{
+  "ok": true,
+  "members": [
+    {
+      "id": "cmomember0001",
+      "userId": "cmm69u97n0000pi01rm3fyglq",
+      "role": "OWNER",
+      "title": "Chief Executive",
+      "canSpeakOfficially": true,
+      "joinedAt": "2026-03-18T09:05:00.000Z",
+      "user": {
+        "id": "cmm69u97n0000pi01rm3fyglq",
+        "handle": "rowan",
+        "displayName": "Rowan Ellis",
+        "avatarUrl": null,
+        "accountStatus": "ACTIVE",
+        "verification": {
+          "classes": [
+            "IDENTITY"
+          ]
+        }
+      }
+    },
+    {
+      "id": "cmomember0002",
+      "userId": "cmm69u97n0001pi01rm3fyglq",
+      "role": "ADMIN",
+      "title": "Head of Communications",
+      "canSpeakOfficially": true,
+      "joinedAt": "2026-03-19T11:20:00.000Z",
+      "user": {
+        "id": "cmm69u97n0001pi01rm3fyglq",
+        "handle": "sam",
+        "displayName": "Sam Iyer",
+        "avatarUrl": null,
+        "accountStatus": "ACTIVE",
+        "verification": {
+          "classes": []
+        }
+      }
+    },
+    {
+      "id": "cmomember0003",
+      "userId": "cmm69u97n0002pi01rm3fyglq",
+      "role": "MEMBER",
+      "title": null,
+      "canSpeakOfficially": false,
+      "joinedAt": "2026-04-01T08:00:00.000Z",
+      "user": {
+        "id": "cmm69u97n0002pi01rm3fyglq",
+        "handle": "ada",
+        "displayName": "Ada Okafor",
+        "avatarUrl": null,
+        "accountStatus": "ACTIVE",
+        "verification": {
+          "classes": []
+        }
+      }
+    },
+    {
+      "id": "cmomember0004",
+      "userId": "cmm69u97n0003pi01rm3fyglq",
+      "role": "MEMBER",
+      "title": null,
+      "canSpeakOfficially": false,
+      "joinedAt": "2026-04-14T13:45:00.000Z",
+      "user": {
+        "id": "cmm69u97n0003pi01rm3fyglq",
+        "handle": "bea",
+        "displayName": "Bea Lindqvist",
+        "avatarUrl": null,
+        "accountStatus": "DISABLED",
+        "verification": {
+          "classes": []
+        }
+      }
+    },
+    {
+      "id": "cmomember0005",
+      "userId": "cmm69u97n0004pi01rm3fyglq",
+      "role": "MEMBER",
+      "title": null,
+      "canSpeakOfficially": false,
+      "joinedAt": "2026-05-02T16:10:00.000Z",
+      "user": {
+        "id": "cmm69u97n0004pi01rm3fyglq",
+        "handle": "kit",
+        "displayName": "Kit Mensah",
+        "avatarUrl": null,
+        "accountStatus": "ACTIVE",
+        "verification": {
+          "classes": []
+        }
+      }
+    }
+  ],
+  "callerRole": "PLATFORM_ADMIN"
+}

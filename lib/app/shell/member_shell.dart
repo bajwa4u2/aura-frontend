@@ -7,6 +7,8 @@ import '../../core/institutions/institution_access_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../features/admin/domain/operator_entry.dart';
+import '../../features/admin/domain/operator_area.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../router.dart' show kMePreferencesRoute;
@@ -1099,6 +1101,14 @@ class _MemberDrawerSecondary extends ConsumerWidget {
             icon: Icons.fact_check_outlined,
             label: 'Claim audit',
             onTap: () => go('/ai/claim-audit'),
+          ),
+        // THE OPERATOR ENTRANCE, on the surface a phone actually uses.
+        // Capability decides visibility — this is never shown and disabled.
+        if (ref.watch(canEnterOperatorConsoleProvider))
+          _DrawerEntry(
+            icon: Icons.shield_outlined,
+            label: 'Aura Admin',
+            onTap: () => go(OperatorArea.now.path),
           ),
         _DrawerEntry(
           icon: Icons.logout_rounded,

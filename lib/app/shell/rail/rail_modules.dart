@@ -11,6 +11,8 @@ import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/surface/surface_composition.dart';
 import '../../../features/admin/data/admin_providers.dart';
 import '../../../features/admin/domain/operator_area.dart';
+import '../../../features/admin/domain/operator_signal.dart';
+import '../../../features/admin/domain/platform_health.dart';
 import '../../../features/announcements/providers.dart';
 import '../../../features/discourse_intelligence/models.dart';
 import '../../../features/discourse_intelligence/providers.dart';
@@ -889,13 +891,16 @@ class AdminPlatformHealthRailModule extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final metricsAsync = ref.watch(adminMetricsProvider);
-    final healthAsync = ref.watch(adminHealthProvider);
+    final healthAsync = ref.watch(platformHealthProvider);
     final metrics = metricsAsync.maybeWhen(
       data: (m) => m,
       orElse: () => null,
     );
+    // The canonical projection, and only when it actually carries a value.
+    // A signal that could not be read says nothing about Aura's health, so
+    // the dot is simply absent rather than green or red.
     final health = healthAsync.maybeWhen(
-      data: (h) => h,
+      data: (signal) => signal.hasValue ? signal.value : null,
       orElse: () => null,
     );
     if (metrics == null && health == null) return const SizedBox.shrink();
@@ -906,7 +911,9 @@ class AdminPlatformHealthRailModule extends ConsumerWidget {
       tone: AuraRailModuleTone.accent,
       action: health == null
           ? null
-          : _HealthDot(healthy: health.healthy),
+          : _HealthDot(
+              healthy: health.condition == OperatorCondition.healthy,
+            ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,

@@ -1,0 +1,26 @@
+{
+  "sources": [
+    {
+      "source": "MODERATION",
+      "label": "Moderation",
+      "open": 1,
+      "oldestAgeDays": 19,
+      "destination": "/admin/work?source=MODERATION",
+      "readable": true,
+      "unavailableReason": null
+    },
+    {
+      "source": "MEDIA_APPEAL",
+      "label": "Media appeals",
+      "open": 1,
+      "oldestAgeDays": 2,
+      "destination": "/admin/work?source=MEDIA_APPEAL",
+      "readable": true,
+      "unavailableReason": null
+    }
+  ],
+  "totalOpen": 2,
+  "degradedSources": [],
+  "complete": true,
+  "authorityError": null
+}

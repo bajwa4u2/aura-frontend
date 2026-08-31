@@ -1,11 +1,14 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/auth/session_bootstrap.dart';
-import '../../../core/auth/session_providers.dart';
+import '../../../core/auth/admin_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
+import '../domain/operator_signal.dart';
+import '../domain/platform_health.dart';
 import 'admin_repository.dart';
+import 'operator_cache.dart';
 
+export '../domain/platform_health.dart';
 export 'admin_models.dart';
 export 'admin_repository.dart' show AdminRepository;
 
@@ -17,19 +20,30 @@ final adminRepositoryProvider = Provider<AdminRepository>((ref) {
 
 // ── /v1/admin/me ─────────────────────────────────────────────────────────
 
+/// ONE AUTHORITY BOOTSTRAP, NOT TWO.
+///
+/// PERFORMANCE IS PRODUCT (founder, this chapter). This provider used to fire
+/// its own `GET /v1/admin/me` — the SECOND one the console makes, because
+/// `appAdminAccessProvider` has already made that exact request to decide
+/// whether the operator may enter at all.
+///
+/// The cost was not one wasted request. EVERY gated provider in the console
+/// awaits this future before issuing its own read, so the entire data layer
+/// sat behind a round trip whose answer was already in memory. On a cold
+/// Railway connection that is the difference between a console that paints
+/// and a console an operator watches.
+///
+/// It also produced two audit events per entry for one act of entering.
+///
+/// The probe keeps its discipline — it still refuses to fire for a signed-in
+/// non-operator, which is what stopped every route change writing an
+/// `admin.access.denied` entry. This simply stops asking the same question
+/// twice.
 final adminMeProvider = FutureProvider<AdminAccess?>((ref) async {
-  await ref.watch(sessionBootstrapProvider.future);
-
-  final authStatus = ref.watch(authStatusProvider);
-  if (authStatus != AuthStatus.authed) return null;
-
-  try {
-    return await ref.watch(adminRepositoryProvider).fetchMe();
-  } on DioException catch (e) {
-    final code = e.response?.statusCode;
-    if (code == 401 || code == 403 || code == 404) return null;
-    rethrow;
-  }
+  final access = await ref.watch(appAdminAccessProvider.future);
+  final me = access.me;
+  if (me == null) return null;
+  return AdminAccess.fromJson(me);
 });
 
 // ── /v1/admin/metrics/overview ────────────────────────────────────────────
@@ -49,16 +63,28 @@ final adminMetricsProvider = FutureProvider<AdminMetricOverview?>((ref) async {
 
 // ── /v1/admin/health ──────────────────────────────────────────────────────
 
-final adminHealthProvider = FutureProvider<AdminHealthSnapshot?>((ref) async {
-  final me = await ref.watch(adminMeProvider.future);
-  if (me == null) return null;
-
+/// PLATFORM HEALTH — the only place the console learns whether Aura is well.
+///
+/// Returns a signal rather than a nullable value. `null` could not distinguish
+/// "you may not see this", "we could not ask" and "everything is fine and
+/// there is nothing to report", and the surface guessed — which is how a
+/// healthy platform got reported as degraded.
+final platformHealthProvider =
+    FutureProvider.autoDispose<OperatorSignal<PlatformHealth>>((ref) async {
+  // Read by NOW and by PLATFORM. Moving between them re-asked whether Aura
+  // was well, behind a skeleton, when the answer was seconds old.
+  cacheOperatorReading(ref);
   try {
-    return await ref.watch(adminRepositoryProvider).fetchHealth();
+    final health = await ref.watch(adminRepositoryProvider).fetchHealth();
+    return OperatorSignal.complete(health, readAt: DateTime.now());
   } on DioException catch (e) {
     final code = e.response?.statusCode;
-    if (code == 401 || code == 403) return null;
-    rethrow;
+    if (code == 401 || code == 403) {
+      return const OperatorSignal.unauthorized(needs: 'system health');
+    }
+    // A transport failure says nothing about Aura's health. It says we could
+    // not ask — which is a different sentence, and the one the operator gets.
+    return const OperatorSignal.unavailable(detail: 'could not be reached');
   }
 });
 

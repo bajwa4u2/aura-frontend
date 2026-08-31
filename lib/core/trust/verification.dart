@@ -40,6 +40,24 @@ enum PersonVerificationClass {
 
   final String wireName;
 
+  /// What this class is CALLED to a person reading it.
+  ///
+  /// `wireName` is the stored taxonomy word and belongs on the wire. The admin
+  /// verification history was printing it straight onto the screen —
+  /// `ROLE_OR_CREDENTIAL` beside a sentence written by an operator — which is
+  /// the console speaking the schema at somebody trying to read a decision.
+  ///
+  /// Deliberately NOT derived by lowercasing the wire name: "Institution
+  /// affiliation" and "Role or credential" are the taxonomy's own words for
+  /// itself, and a mechanical transformation would drift the moment the
+  /// taxonomy gains a class whose name does not survive it.
+  String get label => switch (this) {
+        PersonVerificationClass.identity => 'Identity',
+        PersonVerificationClass.institutionAffiliation =>
+          'Institution affiliation',
+        PersonVerificationClass.roleOrCredential => 'Role or credential',
+      };
+
   static PersonVerificationClass? tryParse(dynamic value) {
     final name = (value ?? '').toString().trim().toUpperCase();
     for (final c in PersonVerificationClass.values) {

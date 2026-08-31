@@ -145,21 +145,54 @@ class _Coverage extends ConsumerWidget {
         final coverage = report.coverage;
 
         if (coverage.published == 0) {
-          return OperatorSection(
-            title: 'Reach',
-            subtitle: coverage.estate.label,
-            trailing: _CollectButton(authority: authority),
-            child: OperatorPanel(
-              child: OperatorClear(
-                title: 'Nothing is on record for this estate',
-                detail: coverage.estate == DiscoveryEstate.aura ||
-                        coverage.estate == DiscoveryEstate.auraPlatform
-                    ? 'Collect evidence to build the inventory.'
-                    : 'This estate lives outside this database. Aura observes '
-                        'it only through providers that can reach it.',
-                icon: Icons.travel_explore_rounded,
+          // AN EMPTY RESULT IS WHEN PROVENANCE MATTERS MOST.
+          //
+          // The empty state used to be a single sentence with no way to tell
+          // "we looked everywhere and there is nothing" from "nothing that
+          // could look was able to run". Those are opposite conclusions, and
+          // an operator was left to guess which one they were reading.
+          //
+          // So the source panel stays. Zero with every source reporting is a
+          // finding; zero with sources unavailable is not a finding at all.
+          final reporting =
+              report.sources.length - report.unavailable.length;
+          final nothingCanLook =
+              report.sources.isNotEmpty && reporting == 0;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              OperatorSection(
+                title: 'Reach',
+                subtitle: coverage.estate.label,
+                trailing: _CollectButton(authority: authority),
+                child: OperatorPanel(
+                  tone: nothingCanLook ? OperatorTone.warn : null,
+                  child: OperatorClear(
+                    title: nothingCanLook
+                        ? 'Nothing that could look at this estate can run'
+                        : 'Nothing is on record for this estate',
+                    detail: nothingCanLook
+                        ? 'This is not a finding about the estate. Every '
+                            'source below is unavailable, so Discovery has '
+                            'not been able to observe anything either way.'
+                        : coverage.estate == DiscoveryEstate.aura ||
+                                coverage.estate == DiscoveryEstate.auraPlatform
+                            ? 'Every source below reported, and found nothing. '
+                                'Collect evidence to build the inventory.'
+                            : 'This estate lives outside this database. Aura '
+                                'observes it only through the providers below.',
+                    icon: nothingCanLook
+                        ? Icons.cloud_off_rounded
+                        : Icons.travel_explore_rounded,
+                  ),
+                ),
               ),
-            ),
+              if (report.sources.isNotEmpty) ...[
+                const SizedBox(height: AuraSpace.s16),
+                _Sources(report: report),
+              ],
+            ],
           );
         }
 
@@ -316,6 +349,22 @@ class _Count extends StatelessWidget {
 /// Shown beside every number rather than hidden behind an info icon. A
 /// coverage figure read without knowing that four of six sources could not run
 /// is a figure that misleads.
+/// How much of Discovery could actually look.
+///
+/// Stated as a sentence rather than a fraction, because "0 of 4" and "4 of 4"
+/// are opposite conclusions and a bare ratio makes an operator do the reading.
+String _reach(DiscoveryReport report) {
+  final total = report.sources.length;
+  if (total == 0) return 'No source is configured for this estate';
+  final reporting = total - report.unavailable.length;
+  if (reporting == 0) return 'No source can run — nothing was observed';
+  if (reporting == total) {
+    return total == 1 ? 'One source, and it ran' : 'All $total sources ran';
+  }
+  return '$reporting of $total sources ran · '
+      '${report.unavailable.length} could not';
+}
+
 class _Sources extends StatelessWidget {
   const _Sources({required this.report});
 
@@ -325,8 +374,7 @@ class _Sources extends StatelessWidget {
   Widget build(BuildContext context) {
     return OperatorSection(
       title: 'Where this comes from',
-      subtitle: '${report.sources.length - report.unavailable.length} of '
-          '${report.sources.length} sources can run',
+      subtitle: _reach(report),
       child: OperatorPanel(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

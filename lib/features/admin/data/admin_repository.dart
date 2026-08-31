@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../domain/platform_health.dart';
 import 'admin_models.dart';
 
 export 'admin_models.dart';
@@ -49,9 +50,15 @@ class AdminRepository {
     return AdminMetricOverview.fromJson(_asMap(res.data));
   }
 
-  Future<AdminHealthSnapshot> fetchHealth() async {
+  /// Platform health, normalized before it leaves the data layer.
+  ///
+  /// The operator surface must never reason from the payload. It did once —
+  /// looking for a `services` map the server has never sent — and rendered
+  /// `{STATUS: OK, MESSAGE: API PROCESS IS RUNNING}` as a status pill while
+  /// announcing five degraded services over a healthy platform.
+  Future<PlatformHealth> fetchHealth() async {
     final res = await _dio.get('/v1/admin/health');
-    return AdminHealthSnapshot.fromJson(_asMap(res.data));
+    return PlatformHealth.fromJson(_asMap(res.data));
   }
 
   Future<List<AdminUserSummary>> fetchUsers({
@@ -315,6 +322,26 @@ class AdminRepository {
       },
     );
     return _parseList(res.data, AdminInstitutionSummary.fromJson);
+  }
+
+  /// ONE institution, resolved by id and NOT by searching the directory.
+  ///
+  /// The subject screen used to look its institution up inside the directory
+  /// list. That list was status-filtered, so a suspended or pending
+  /// institution — precisely the subject an operator is sent to review —
+  /// resolved to "No such institution". A subject exists independently of
+  /// whichever slice of the directory happens to be loaded.
+  Future<AdminInstitutionSummary?> fetchInstitution(String institutionId) async {
+    final res = await _dio.get('/v1/institutions/id/$institutionId');
+    final body = res.data;
+    final envelope = body is Map<String, dynamic>
+        ? (body['data'] is Map<String, dynamic>
+            ? body['data'] as Map<String, dynamic>
+            : body)
+        : const <String, dynamic>{};
+    final institution = envelope['institution'];
+    if (institution is! Map<String, dynamic>) return null;
+    return AdminInstitutionSummary.fromJson(institution);
   }
 
   Future<List<AdminVerificationRequest>> fetchVerificationRequests({String? status}) async {

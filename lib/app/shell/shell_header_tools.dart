@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import '../../router.dart' show kMePreferencesRoute;
 
 import '../../core/auth/admin_access_provider.dart';
+import '../../features/admin/domain/operator_area.dart';
+import '../../features/admin/domain/operator_entry.dart';
 import '../../core/auth/auth_providers.dart';
 import '../../core/auth/session_providers.dart';
 import '../../core/institutions/institution_access_provider.dart';
@@ -94,6 +96,11 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
         // from any surface; gated on the display-only admin signal.
         context.go('/ai/claim-audit');
         return;
+      case 'admin':
+        // Enters NOW — the situation view — never a deep route. An operator
+        // arriving should see what needs them before anything else.
+        context.go(OperatorArea.now.path);
+        return;
       case 'logout':
         await _logout();
         return;
@@ -136,6 +143,12 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
     // Display-only admin signal (no probe) — gates the admin-only Claim audit
     // entry in the account menu.
     final isAdmin = ref.watch(appAdminCachedDisplayProvider);
+    // THE OPERATOR ENTRANCE. Deliberately NOT `appAdminCachedDisplay`:
+    // that cache is only populated by a probe that fires on entering
+    // /admin, so an operator could not see the door until they had
+    // already found it by typing the address. This asks a small,
+    // audit-safe question instead.
+    final canOperate = ref.watch(canEnterOperatorConsoleProvider);
     // Lifecycle signal for the institution-acquisition action: does the
     // member already participate in any institution?
     final hasInstitution = ref.watch(myAffiliationsProvider).isNotEmpty;
@@ -264,6 +277,7 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
           busy: _busyLogout,
           me: me,
           isAdmin: isAdmin,
+          canOperate: canOperate,
           onSelected: (v) => unawaited(_handleAccountAction(v)),
         ),
       ],
@@ -669,12 +683,18 @@ class _HeaderAccountBtn extends StatelessWidget {
     required this.busy,
     required this.me,
     required this.isAdmin,
+    required this.canOperate,
     required this.onSelected,
   });
 
   final bool busy;
   final Map<String, dynamic> me;
   final bool isAdmin;
+
+  /// Whether this person holds ANY operator capability. Capability decides
+  /// visibility: an entrance shown to somebody who cannot enter is a door
+  /// into a refusal.
+  final bool canOperate;
   final ValueChanged<String> onSelected;
 
   @override
@@ -694,6 +714,12 @@ class _HeaderAccountBtn extends StatelessWidget {
           _menuItem('preferences', Icons.tune_outlined, 'Preferences'),
           if (isAdmin)
             _menuItem('claim_audit', Icons.fact_check_outlined, 'Claim audit'),
+          if (canOperate) ...[
+            const PopupMenuDivider(),
+            // Named for what it is. "Admin" is the department; "Aura Admin" is
+            // the product an operator opens, and it enters NOW.
+            _menuItem('admin', Icons.shield_outlined, 'Aura Admin'),
+          ],
           const PopupMenuDivider(),
           _menuItem(
             'logout',

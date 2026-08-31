@@ -15,6 +15,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/product/temporal.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -180,9 +181,16 @@ class ModerationReportDetail extends ConsumerWidget {
 
         return _DetailFrame(
           children: [
+            // EVIDENCE FIRST, COMPLAINT SECOND.
+            //
+            // The old order asked the operator to accept a characterisation
+            // before showing them the thing characterised. What was actually
+            // written now leads; the reporter's account of it follows.
+            _Evidence(report: r),
+            const SizedBox(height: AuraSpace.s20),
             OperatorSection(
-              title: 'Reported ${r.targetType.toLowerCase()}',
-              subtitle: r.reason,
+              title: 'What the report says',
+              subtitle: _readableReason(r.reason),
               trailing: OperatorStatePill(
                 state: r.status,
                 tone: open ? OperatorTone.pending : OperatorTone.neutral,
@@ -199,11 +207,14 @@ class ModerationReportDetail extends ConsumerWidget {
                               : '@${r.reporter.handle}')
                           : r.reporter.displayName,
                     ),
-                    _Meta(label: 'Target', value: r.targetId),
+                    _Meta(
+                      label: 'Reported',
+                      value: _when(r.createdAt, TimeEvent.received),
+                    ),
                     if (r.details != null && r.details!.isNotEmpty) ...[
                       const SizedBox(height: AuraSpace.s8),
                       const Text(
-                        'WHAT THEY SAID',
+                        'IN THEIR WORDS',
                         style: TextStyle(
                           color: AuraSurface.faint,
                           fontSize: 11,
@@ -387,7 +398,10 @@ class ModerationReportDetail extends ConsumerWidget {
       context,
       OperatorAction(
         title: _actionLabel(action),
-        subject: '${report.targetType} · ${report.targetId}',
+        // THE CONSEQUENCE NAMES ITS SUBJECT. An operator confirming a
+        // suspension should be reading a person's name, not a cuid — the
+        // confirmation is the last moment a mistake can be caught.
+        subject: _consequenceSubject(report),
         detail: 'The moderation authority applies this and records it against '
             'the target. What you write is what the reporter is shown; it is '
             'not your private reasoning.',
@@ -1128,4 +1142,129 @@ class SupportCaseDetail extends ConsumerWidget {
       ref.invalidate(operatorWorkListProvider);
     }
   }
+}
+
+/// WHAT WAS REPORTED — the evidence panel.
+///
+/// This is the whole reason the operator is on this screen. It leads, and it
+/// is honest in both directions: it shows the words when there are words, and
+/// it says plainly why there are none when there are not. It never renders an
+/// empty quotation block, which reads as "they wrote nothing" rather than
+/// "nothing was served".
+class _Evidence extends StatelessWidget {
+  const _Evidence({required this.report});
+
+  final ModerationReport report;
+
+  @override
+  Widget build(BuildContext context) {
+    final subject = report.subject;
+    final absence = subject.absenceSentence;
+
+    return OperatorSection(
+      title: _title(subject),
+      subtitle: subject.label,
+      child: OperatorPanel(
+        tone: subject.exists ? null : OperatorTone.warn,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (subject.author != null)
+              _Meta(
+                label: subject.isPerson ? 'Who' : 'Written by',
+                value: subject.author!.displayName.isEmpty
+                    ? (subject.author!.handle.isEmpty
+                        ? 'Somebody who has since left'
+                        : '@${subject.author!.handle}')
+                    : subject.author!.displayName,
+              ),
+            if (subject.createdAt != null)
+              _Meta(
+                label: 'Written',
+                value: _when(subject.createdAt!, TimeEvent.posted),
+              ),
+            if (subject.wasRemoved)
+              _Meta(
+                label: 'Removed',
+                value: _when(subject.removedAt!, TimeEvent.occurred),
+              ),
+            if (subject.hasEvidence) ...[
+              const SizedBox(height: AuraSpace.s8),
+              _Quoted(subject.excerpt!),
+              if (subject.excerptTruncated) ...[
+                const SizedBox(height: AuraSpace.s6),
+                const Text(
+                  'Shown to the first 600 characters.',
+                  style: TextStyle(color: AuraSurface.faint, fontSize: 11.5),
+                ),
+              ],
+            ] else if (absence != null) ...[
+              const SizedBox(height: AuraSpace.s8),
+              Text(
+                absence,
+                style: const TextStyle(
+                  color: AuraSurface.muted,
+                  fontSize: 12.5,
+                  height: 1.45,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _title(ModerationSubject subject) => switch (subject.kind) {
+        'PERSON' => 'The person reported',
+        'PLACE' => 'The place reported',
+        'INSTITUTION' => 'The institution reported',
+        _ => 'What was reported',
+      };
+}
+
+/// Report reasons are stored as enum words. An operator reads sentences.
+String _readableReason(String reason) {
+  final r = reason.trim();
+  if (r.isEmpty) return 'No reason was given';
+  final words = r.replaceAll('_', ' ').toLowerCase();
+  return words[0].toUpperCase() + words.substring(1);
+}
+
+/// Through the temporal authority, not a local formatter.
+///
+/// The event travels with the instant: a report was FILED, content was
+/// POSTED, and a removal OCCURRED. Those are three different sentences and
+/// the authority is what keeps them from collapsing into "3d ago".
+String _when(DateTime when, [TimeEvent event = TimeEvent.occurred]) =>
+    AuraTemporal.humanize(ProductTime(when, event));
+
+/// How the confirmation names what is about to be acted on.
+///
+/// Prefers the resolved identity, then a title, and only falls back to the
+/// stored reference when the server could name nothing — in which case the
+/// reference is the honest answer, not a decorated one.
+String _consequenceSubject(ModerationReport report) {
+  final subject = report.subject;
+  final author = subject.author;
+
+  if (subject.isPerson && author != null) {
+    final name = author.displayName.trim();
+    if (name.isNotEmpty) return name;
+    if (author.handle.trim().isNotEmpty) return '@${author.handle.trim()}';
+  }
+
+  final label = (subject.label ?? '').trim();
+  final noun = subject.type.replaceAll('_', ' ').toLowerCase();
+
+  if (label.isNotEmpty) return '$noun · $label';
+
+  if (author != null) {
+    final name = author.displayName.trim().isNotEmpty
+        ? author.displayName.trim()
+        : (author.handle.trim().isNotEmpty ? '@${author.handle.trim()}' : '');
+    if (name.isNotEmpty) return '$noun by $name';
+  }
+
+  return '${report.targetType} · ${report.targetId}';
 }

@@ -257,6 +257,97 @@ class AdminUserSummary {
   }
 }
 
+/// WHAT THE ACTION WAS TAKEN AGAINST, as the record can name it.
+///
+/// The audit row stores a type word and a cuid. Rendered raw, the record read
+/// `USER · cmm69u97n0000pi01rm3fyglq` — which answers "to whom" only for
+/// somebody who recognises database ids, and the record exists precisely for
+/// the people who were not there.
+///
+/// The server resolves the two subject classes the console navigates to. This
+/// carries the answer WITHOUT ever manufacturing one: [resolvable] false is a
+/// real answer for a target class that is not a subject, and for a subject
+/// that has since been deleted.
+class AdminAuditSubject {
+  const AdminAuditSubject({
+    required this.kind,
+    required this.type,
+    this.id,
+    this.label,
+    this.handle,
+    this.resolvable = false,
+  });
+
+  /// PERSON, INSTITUTION, or REFERENCE.
+  final String kind;
+
+  /// The stored type word, verbatim — the record is not rewritten.
+  final String type;
+
+  final String? id;
+  final String? label;
+  final String? handle;
+  final bool resolvable;
+
+  bool get isPerson => kind == 'PERSON';
+  bool get isInstitution => kind == 'INSTITUTION';
+
+  /// True when this subject has a page an operator can open.
+  bool get navigable => resolvable && (id ?? '').isNotEmpty;
+
+  /// How the row names it. Never an id when a name exists; never a name
+  /// when one does not.
+  String get display {
+    final named = (label ?? '').trim();
+    if (named.isNotEmpty) return named;
+    final reference = (id ?? '').trim();
+    if (reference.isEmpty) return _humanType(type);
+    return '${_humanType(type)} · $reference';
+  }
+
+  /// A qualifier the operator reads under the name — never instead of it.
+  String? get qualifier {
+    final h = (handle ?? '').trim();
+    if (h.isEmpty) return null;
+    return isPerson ? '@$h' : h;
+  }
+
+  static String _humanType(String type) {
+    final t = type.trim();
+    if (t.isEmpty) return 'Subject';
+    // `INSTITUTION_VERIFICATION_REQUEST` is a schema word, not a sentence.
+    final words = t.replaceAll('_', ' ').toLowerCase();
+    return words[0].toUpperCase() + words.substring(1);
+  }
+
+  static AdminAuditSubject fromJson(dynamic value, {required String fallbackType, String? fallbackId}) {
+    if (value is Map<String, dynamic>) {
+      String? str(String key) {
+        final v = value[key];
+        if (v == null) return null;
+        final s = v.toString().trim();
+        return s.isEmpty ? null : s;
+      }
+
+      return AdminAuditSubject(
+        kind: str('kind') ?? 'REFERENCE',
+        type: str('type') ?? fallbackType,
+        id: str('id') ?? fallbackId,
+        label: str('label'),
+        handle: str('handle'),
+        resolvable: value['resolvable'] == true,
+      );
+    }
+    // A BUILD TALKING TO AN OLDER SERVER still shows the reference rather
+    // than nothing. It never claims a name it was not given.
+    return AdminAuditSubject(
+      kind: 'REFERENCE',
+      type: fallbackType,
+      id: fallbackId,
+    );
+  }
+}
+
 class AdminAuditLogEntry {
   const AdminAuditLogEntry({
     required this.id,
@@ -265,6 +356,7 @@ class AdminAuditLogEntry {
     required this.actorEmail,
     required this.targetType,
     required this.createdAt,
+    required this.subject,
     this.actorName = '',
     this.actorHandle = '',
     this.result = '',
@@ -297,6 +389,9 @@ class AdminAuditLogEntry {
 
   final String? targetId;
   final Map<String, dynamic>? metadata;
+
+  /// The affected subject, named where the server could name it.
+  final AdminAuditSubject subject;
 
   /// WHO, as a person is named. An audit row that identifies an operator only
   /// by an email address makes the record harder to read than it needs to be,
@@ -335,6 +430,12 @@ class AdminAuditLogEntry {
       metadata: json['metadata'] is Map<String, dynamic>
           ? json['metadata'] as Map<String, dynamic>
           : null,
+      subject: AdminAuditSubject.fromJson(
+        json['subject'],
+        fallbackType: _str(json['targetType'] ?? json['resourceType']),
+        fallbackId: _str(json['targetId'] ?? json['resourceId'])
+            .let((s) => s.isEmpty ? null : s),
+      ),
     );
   }
 
@@ -646,7 +747,18 @@ class AdminInstitutionSummary {
       slug: _str(json['slug']),
       status: _str(json['status'] ?? 'PENDING'),
       createdAt: _parseDate(json['createdAt']) ?? DateTime.now(),
-      memberCount: _int(count['members']),
+      // TWO ENDPOINTS, TWO SHAPES, ONE SUBJECT.
+      //
+      // The directory sends `_count.members` (the raw Prisma aggregate); the
+      // by-id read sends `memberCount` (through `formatInstitution`). Reading
+      // only one of them made an institution opened directly report zero
+      // members while the same institution in the list reported five.
+      //
+      // Both are read, and neither is preferred over a present value — the
+      // absent one is what is skipped, not the smaller one.
+      memberCount: json['memberCount'] != null
+          ? _int(json['memberCount'])
+          : _int(count['members']),
       domain: _str(json['domain']).let((s) => s.isEmpty ? null : s),
       websiteUrl: _str(json['websiteUrl']).let((s) => s.isEmpty ? null : s),
       verifiedAt: _parseDate(json['verifiedAt']),
@@ -1323,6 +1435,119 @@ class ModerationReportAction {
   }
 }
 
+/// THE THING UNDER JUDGEMENT.
+///
+/// A report used to reach the operator as "Reported post" plus a cuid. The
+/// operator was asked whether Aura should act against content they had never
+/// been shown. This carries the evidence the server resolved — and, just as
+/// importantly, its absence, honestly:
+///
+///   * [exists] false — the target is gone. The reference is all there is.
+///   * [removedAt] set — it existed and was removed. NO excerpt is served:
+///     re-showing deleted words to the one audience that can act on them
+///     would quietly undo the deletion.
+///   * [excerpt] null on a person or a place — there is nothing to quote, and
+///     an empty quotation block would imply there was.
+class ModerationSubject {
+  const ModerationSubject({
+    required this.type,
+    required this.id,
+    required this.kind,
+    required this.exists,
+    this.label,
+    this.author,
+    this.excerpt,
+    this.excerptTruncated = false,
+    this.createdAt,
+    this.removedAt,
+  });
+
+  final String type;
+  final String id;
+
+  /// PERSON, CONTENT, PLACE or INSTITUTION — what an operator calls it.
+  final String kind;
+
+  final bool exists;
+  final String? label;
+
+  /// Who is answerable. For a reported person, themselves.
+  final AuraPersonIdentity? author;
+
+  final String? excerpt;
+  final bool excerptTruncated;
+  final DateTime? createdAt;
+  final DateTime? removedAt;
+
+  bool get isPerson => kind == 'PERSON';
+  bool get isContent => kind == 'CONTENT';
+  bool get wasRemoved => removedAt != null;
+
+  /// True when there is something to read. Distinct from [exists]: a place
+  /// exists and has no text, and a removed post exists and withholds it.
+  bool get hasEvidence => (excerpt ?? '').trim().isNotEmpty;
+
+  /// The single sentence that explains an empty evidence panel. Null when
+  /// there is evidence — the panel then speaks for itself.
+  String? get absenceSentence {
+    if (hasEvidence) return null;
+    if (!exists) {
+      return 'The reported $_noun no longer exists. Nothing can be shown, and '
+          'nothing has been reconstructed.';
+    }
+    if (wasRemoved) {
+      return 'This was removed before the report was judged. Aura does not '
+          're-serve deleted content, including here.';
+    }
+    if (isPerson) {
+      return 'A person was reported, not something they wrote. The judgement '
+          'is about the account itself.';
+    }
+    return 'This $_noun carries no text to quote.';
+  }
+
+  String get _noun => switch (kind) {
+        'PERSON' => 'person',
+        'PLACE' => 'place',
+        'INSTITUTION' => 'institution',
+        _ => 'content',
+      };
+
+  static String _str(dynamic v) => (v ?? '').toString().trim();
+
+  static ModerationSubject fromJson(
+    dynamic value, {
+    required String fallbackType,
+    required String fallbackId,
+  }) {
+    if (value is! Map) {
+      // AN OLDER SERVER. The reference is shown; evidence is never invented.
+      return ModerationSubject(
+        type: fallbackType,
+        id: fallbackId,
+        kind: 'CONTENT',
+        exists: false,
+      );
+    }
+    final map = Map<String, dynamic>.from(value);
+    final author = map['author'];
+    return ModerationSubject(
+      type: _str(map['type']).isEmpty ? fallbackType : _str(map['type']),
+      id: _str(map['id']).isEmpty ? fallbackId : _str(map['id']),
+      kind: _str(map['kind']).isEmpty ? 'CONTENT' : _str(map['kind']),
+      exists: map['exists'] == true,
+      label: _str(map['label']).let((s) => s.isEmpty ? null : s),
+      author: author is Map
+          ? AuraPersonIdentity.fromJson(Map<String, dynamic>.from(author))
+          : null,
+      excerpt: _str(map['excerpt']).let((s) => s.isEmpty ? null : s),
+      excerptTruncated: map['excerptTruncated'] == true,
+      createdAt: DateTime.tryParse(_str(map['createdAt'])),
+      removedAt: DateTime.tryParse(_str(map['removedAt'])),
+    );
+  }
+}
+
 class ModerationReport {
   const ModerationReport({
     required this.id,
@@ -1334,6 +1559,7 @@ class ModerationReport {
     required this.createdAt,
     required this.updatedAt,
     required this.actions,
+    required this.subject,
     this.details,
     this.outcomeSummary,
     this.privateNote,
@@ -1348,6 +1574,10 @@ class ModerationReport {
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<ModerationReportAction> actions;
+
+  /// What was reported, resolved into evidence.
+  final ModerationSubject subject;
+
   final String? details;
   final String? outcomeSummary;
   final String? privateNote;
@@ -1375,6 +1605,11 @@ class ModerationReport {
               .map((e) => ModerationReportAction.fromJson(Map<String, dynamic>.from(e)))
               .toList()
           : const [],
+      subject: ModerationSubject.fromJson(
+        json['subject'],
+        fallbackType: _str(json['targetType']),
+        fallbackId: _str(json['targetId']),
+      ),
       details: json['details'] as String?,
       outcomeSummary: json['outcomeSummary'] as String?,
       privateNote: json['privateNote'] as String?,
@@ -1558,6 +1793,7 @@ class AdminPersonDetail {
     required this.permissions,
     required this.devices,
     required this.counts,
+    this.otherOwnerHolders,
     this.emailVerifiedAt,
     this.disabledAt,
     this.city,
@@ -1589,6 +1825,17 @@ class AdminPersonDetail {
 
   final List<AdminPersonDevice> devices;
   final Map<String, int> counts;
+
+  /// How many OTHER people could still act as owner if this person's owner
+  /// authority were removed.
+  ///
+  /// Null when the server did not say — which is NOT the same as zero. An
+  /// unknown answer must not be read as "nobody else", or the console starts
+  /// withholding legitimate controls on a guess.
+  final int? otherOwnerHolders;
+
+  /// True only when the server said, positively, that nobody else can.
+  bool get isSoleOwnerHolder => otherOwnerHolders == 0;
 
   String get id => person.userId;
 
@@ -1653,6 +1900,9 @@ class AdminPersonDetail {
         for (final e in rawCounts.entries)
           if (e.value is num) e.key: (e.value as num).toInt(),
       },
+      otherOwnerHolders: body['otherOwnerHolders'] is num
+          ? (body['otherOwnerHolders'] as num).toInt()
+          : null,
     );
   }
 }

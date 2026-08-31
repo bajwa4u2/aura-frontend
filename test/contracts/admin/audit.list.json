@@ -1,0 +1,156 @@
+{
+  "ok": true,
+  "items": [
+    {
+      "id": "cmoauditrow0001",
+      "action": "admin.grant.updated",
+      "actorUserId": "cmm69u97n0000pi01rm3fyglq",
+      "actor": {
+        "id": "cmm69u97n0000pi01rm3fyglq",
+        "handle": "rowan",
+        "displayName": "Rowan Ellis",
+        "avatarUrl": null,
+        "email": "rowan@example.test"
+      },
+      "targetType": "ADMIN_GRANT",
+      "targetId": "cmohyq52y0001rdjzu5f96djh",
+      "result": "SUCCESS",
+      "reason": null,
+      "metadata": {
+        "role": "OWNER"
+      },
+      "ip": null,
+      "userAgent": null,
+      "createdAt": "2026-08-31T09:48:00.000Z",
+      "subject": {
+        "kind": "REFERENCE",
+        "id": "cmohyq52y0001rdjzu5f96djh",
+        "label": null,
+        "handle": null,
+        "resolvable": false,
+        "type": "ADMIN_GRANT"
+      }
+    },
+    {
+      "id": "cmoauditrow0002",
+      "action": "admin.access.denied",
+      "actorUserId": "cmm69u97n0001pi01rm3fyglq",
+      "actor": {
+        "id": "cmm69u97n0001pi01rm3fyglq",
+        "handle": "sam",
+        "displayName": "Sam Iyer",
+        "avatarUrl": null,
+        "email": "sam@example.test"
+      },
+      "targetType": "ROUTE",
+      "targetId": "GET /v1/admin/feedback",
+      "result": "FAILED",
+      "reason": "missing_permission",
+      "metadata": {
+        "role": "OWNER"
+      },
+      "ip": null,
+      "userAgent": null,
+      "createdAt": "2026-08-31T09:48:00.000Z",
+      "subject": {
+        "kind": "REFERENCE",
+        "id": "GET /v1/admin/feedback",
+        "label": null,
+        "handle": null,
+        "resolvable": false,
+        "type": "ROUTE"
+      }
+    },
+    {
+      "id": "cmoauditrow0003",
+      "action": "admin.user.disabled",
+      "actorUserId": "cmm69u97n0000pi01rm3fyglq",
+      "actor": {
+        "id": "cmm69u97n0000pi01rm3fyglq",
+        "handle": "rowan",
+        "displayName": "Rowan Ellis",
+        "avatarUrl": null,
+        "email": "rowan@example.test"
+      },
+      "targetType": "User",
+      "targetId": "cmm69u97n0002pi01rm3fyglq",
+      "result": "SUCCESS",
+      "reason": "Repeated harassment after a final warning.",
+      "metadata": {
+        "role": "OWNER"
+      },
+      "ip": null,
+      "userAgent": null,
+      "createdAt": "2026-08-31T09:48:00.000Z",
+      "subject": {
+        "kind": "PERSON",
+        "id": "cmm69u97n0002pi01rm3fyglq",
+        "label": "Ada Okafor",
+        "handle": "ada",
+        "resolvable": true,
+        "type": "User"
+      }
+    },
+    {
+      "id": "cmoauditrow0004",
+      "action": "institution.verification.approved",
+      "actorUserId": "cmm69u97n0000pi01rm3fyglq",
+      "actor": {
+        "id": "cmm69u97n0000pi01rm3fyglq",
+        "handle": "rowan",
+        "displayName": "Rowan Ellis",
+        "avatarUrl": null,
+        "email": "rowan@example.test"
+      },
+      "targetType": "INSTITUTION",
+      "targetId": "cmoinst0001rdjzu5f96djh",
+      "result": "SUCCESS",
+      "reason": "Domain proof and registry entry both check out.",
+      "metadata": {
+        "role": "OWNER"
+      },
+      "ip": null,
+      "userAgent": null,
+      "createdAt": "2026-08-31T09:48:00.000Z",
+      "subject": {
+        "kind": "INSTITUTION",
+        "id": "cmoinst0001rdjzu5f96djh",
+        "label": "Northgate Health Trust",
+        "handle": "northgate-health",
+        "resolvable": true,
+        "type": "INSTITUTION"
+      }
+    },
+    {
+      "id": "cmoauditrow0005",
+      "action": "admin.user.disabled",
+      "actorUserId": "cmm69u97n0000pi01rm3fyglq",
+      "actor": {
+        "id": "cmm69u97n0000pi01rm3fyglq",
+        "handle": "rowan",
+        "displayName": "Rowan Ellis",
+        "avatarUrl": null,
+        "email": "rowan@example.test"
+      },
+      "targetType": "USER",
+      "targetId": "cmm69u97n0008pi01rm3fyglq",
+      "result": "SUCCESS",
+      "reason": "Account closed at the account holder request.",
+      "metadata": {
+        "role": "OWNER"
+      },
+      "ip": null,
+      "userAgent": null,
+      "createdAt": "2026-08-31T09:48:00.000Z",
+      "subject": {
+        "kind": "REFERENCE",
+        "id": "cmm69u97n0008pi01rm3fyglq",
+        "label": null,
+        "handle": null,
+        "resolvable": false,
+        "type": "USER"
+      }
+    }
+  ],
+  "nextCursor": null
+}

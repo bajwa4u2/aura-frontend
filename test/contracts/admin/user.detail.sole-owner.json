@@ -1,0 +1,109 @@
+{
+  "ok": true,
+  "user": {
+    "id": "cmm69u97n0000pi01rm3fyglq",
+    "email": "rowan@example.test",
+    "handle": "rowan",
+    "displayName": "Rowan Ellis",
+    "firstName": "Rowan",
+    "lastName": "Ellis",
+    "bio": null,
+    "avatarUrl": null,
+    "coverUrl": null,
+    "accountType": "PUBLIC",
+    "emailVerifiedAt": "2026-03-02T00:00:00.000Z",
+    "disabledAt": null,
+    "status": "ACTIVE",
+    "city": "Canton",
+    "country": "United States",
+    "websiteUrl": null,
+    "links": null,
+    "publications": null,
+    "createdAt": "2026-03-01T00:00:00.000Z",
+    "updatedAt": "2026-08-30T00:00:00.000Z",
+    "counts": {
+      "devices": 2,
+      "pushDeliveryAttempts": 0,
+      "communications": 0,
+      "adminGrants": 1,
+      "moderationReports": 0,
+      "moderationActions": 0
+    },
+    "admin": {
+      "roles": [
+        "OWNER"
+      ],
+      "permissions": [
+        "USERS_READ",
+        "USERS_WRITE",
+        "AUDIT_READ",
+        "DISCOVERY_READ",
+        "DISCOVERY_EVIDENCE_READ"
+      ],
+      "grants": [
+        {
+          "id": "cmohyq52y0001rdjzu5f96djh",
+          "role": "OWNER",
+          "permissions": [
+            "USERS_READ",
+            "USERS_WRITE",
+            "AUDIT_READ",
+            "DISCOVERY_READ",
+            "DISCOVERY_EVIDENCE_READ"
+          ],
+          "status": "ACTIVE",
+          "grantedAt": "2026-05-01T00:00:00.000Z",
+          "revokedAt": null,
+          "expiresAt": null,
+          "reason": "bootstrap",
+          "notes": null,
+          "userId": null,
+          "grantedByUserId": "cmm69u97n0000pi01rm3fyglq",
+          "user": null,
+          "grantedBy": {
+            "id": "cmm69u97n0000pi01rm3fyglq",
+            "handle": "rowan",
+            "displayName": "Rowan Ellis",
+            "avatarUrl": null
+          }
+        }
+      ]
+    },
+    "devices": [
+      {
+        "id": "cmodevice0001",
+        "platform": "contract",
+        "provider": "FCM",
+        "token": "NEVER-RENDERED",
+        "deviceName": "Pixel 9a",
+        "appVersion": "1.4.0",
+        "userAgent": null,
+        "locale": "en-US",
+        "timezone": "America/Detroit",
+        "isActive": true,
+        "lastSeenAt": "2026-08-30T00:00:00.000Z",
+        "revokedAt": null,
+        "createdAt": "2026-03-01T00:00:00.000Z",
+        "updatedAt": "2026-08-30T00:00:00.000Z"
+      },
+      {
+        "id": "cmodevice0002",
+        "platform": "contract",
+        "provider": "WEB_PUSH",
+        "token": "NEVER-RENDERED",
+        "deviceName": null,
+        "appVersion": "1.4.0",
+        "userAgent": "Mozilla/5.0",
+        "locale": "en-US",
+        "timezone": "America/Detroit",
+        "isActive": false,
+        "lastSeenAt": "2026-06-28T00:00:00.000Z",
+        "revokedAt": "2026-07-01T00:00:00.000Z",
+        "createdAt": "2026-02-01T00:00:00.000Z",
+        "updatedAt": "2026-07-01T00:00:00.000Z"
+      }
+    ],
+    "pushDeliveryAttempts": [],
+    "otherOwnerHolders": 0
+  }
+}

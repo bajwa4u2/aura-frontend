@@ -225,6 +225,29 @@ Dio _adminDio({
         final path = options.path;
         final method = options.method;
 
+        // A SUBJECT IS RESOLVED BY ID, not found inside the directory. The
+        // subject screen used to search the (status-filtered) directory list,
+        // so a suspended or pending institution reported "No such institution"
+        // on its own page. This is the endpoint it reads now.
+        if (method == 'GET' && path == '/v1/institutions/id/inst-1') {
+          return handler.resolve(
+            Response(
+              requestOptions: options,
+              statusCode: 200,
+              data: {
+                'institution': {
+                  'id': 'inst-1',
+                  'name': 'Civic Institute',
+                  'slug': 'civic-institute',
+                  'status': 'VERIFIED',
+                  'memberCount': 2,
+                  'verifiedAt': '2026-01-01T00:00:00.000Z',
+                },
+              },
+            ),
+          );
+        }
+
         if (method == 'GET' && path == '/v1/institutions/admin') {
           return handler.resolve(
             Response(

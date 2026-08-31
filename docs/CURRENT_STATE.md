@@ -6,6 +6,81 @@
 
 ## Status
 
+> **2026-08-31 — OPERATOR CONTROL PLANE: RECONSTRUCTED.**
+>
+> Management REJECTED the hub result below and the framing that came with it
+> ("four bounded causes, not a reconstruction gap"), and ruled that the seven
+> areas were a PRODUCT MODEL rather than a filing system for seventeen legacy
+> routes. This entry supersedes the hub entry that follows it; the hub entry is
+> kept because the migration register it records is still true.
+>
+> Full record: `docs/2026-08-31-operator-control-plane-reconstruction.md`.
+>
+> `OPERATOR_CONTROL_PLANE_RECONSTRUCTED = YES`
+> `PRODUCTION_OBSERVATION_WITH_A_REAL_GRANT = PENDING`
+>
+> Client 2131 green (`--exclude-tags golden`), `dart analyze lib` 0 issues;
+> backend 324 suites / 4047 green, `tsc --noEmit` clean.
+>
+> **THE PROOF METHOD CHANGED FIRST.** The console had been proved against
+> fixtures written on the client side, which encode what the client already
+> believes and therefore cannot fail — three shipped defects passed every green
+> test. `aura-backend/src/admin/contract/` now builds 26 fixtures from the
+> SERVER's own mappers and vendors them into `aura_final/test/contracts/admin/`.
+> 63 backend conformance tests, 46 client ones, and the render harness draws
+> from the same files.
+>
+> **DEFECTS FOUND AND FIXED BY THAT METHOD**
+>
+> * `listInstitutions` counted `_count: { members: true }` — every membership
+>   row, removed ones included. The operator directory was the ONE surface in
+>   Aura that counted people who had been removed: "6 members" beside a roster
+>   of 5.
+> * The same endpoint defaulted to VERIFIED, so every pending, suspended and
+>   rejected institution was absent from the console's only institution list,
+>   with nothing on screen to say so.
+> * An institution subject was found by searching that filtered list, so a
+>   suspended institution reported "No such institution" on its own page.
+> * The work contracts were captured from the SERVICE, whose return value has no
+>   `totalOpen`; the CONTROLLER adds it. The client defaulted the missing key to
+>   zero and WORK read "All 0" above four open items.
+> * `countActiveOwnerGrants` counted ROWS, so owner continuity was satisfiable
+>   by two grants held by one person, or by a grant on a disabled account.
+>   `countActiveOwnerHolders` counts people who can act.
+> * Two authority bootstraps: `appAdminAccessProvider` and `adminMeProvider`
+>   each fired `GET /v1/admin/me`, and the whole gated data layer waited behind
+>   the second.
+> * `kOperatorDesktopWidth` was 1180, so 1142 — an ordinary laptop viewport —
+>   fell into an icon-only rail: the frozen IA as seven unlabelled glyphs.
+>
+> **WHAT WAS REMOVED, NOT RE-FACED.** PLATFORM's policy document (seven
+> switches, including a maintenance switch reading ON while Aura served every
+> request) and its Configuration dump of member ids and avatar URLs are GONE.
+> A grep across the backend settles it: not one of those values is read by any
+> runtime path. Nothing was wired up to preserve them.
+>
+> **INTEGRITY NOW CARRIES EVIDENCE.** A report showed "Reported post" and a
+> cuid — an operator asked to act against content they had never been shown.
+> `resolveReportSubject` serves what was written, who is answerable and when,
+> and refuses to invent any of it: deleted content is withheld with its removal
+> stated, a reported person carries no excerpt, a vanished target stays a
+> reference.
+>
+> **RECORD NAMES ITS SUBJECT.** Person and institution targets resolve to
+> canonical identity in one batched query per class. Everything else stays a
+> reference — a record that invents a name for a deleted subject is worse than
+> one showing an id.
+>
+> **SIX WIDTHS RENDERED**: 1440 / 1024 / 768 / 390 / 360 / 320, 94 pictures in
+> `test/admin/goldens/operator/`.
+>
+> **OPEN**: production observation with a real grant; Android and iOS
+> certification lanes; eight surfaces still without a captured contract (listed
+> at the end of the reconstruction record).
+
+<details>
+<summary>Superseded — 2026-08-31, the hub migration this replaced</summary>
+
 > **2026-08-31 — ADMIN OPERATOR HUB: RECONSTRUCTION COMPLETE.**
 >
 > Client `a2290b0` · backend `437c2fc`, both pushed; the backend deployed
@@ -215,6 +290,8 @@
 > The next chapter is **AUDIO / VIDEO CALL SYSTEM RECONSTRUCTION**, against the
 > Meetings-facing contract this chapter produced. Live Broadcast follows it.
 
+</details>
+
 > **2026-08-24 — DISCOVER RECONSTRUCTION CLOSED (founder-directed chapter).**
 > Discover is a live, curated, actionable discovery dashboard across exactly
 > four domains — People, Spaces, Institutions, Articles — with search operating
@@ -299,6 +376,7 @@ no handle cannot be followed at all. The control is not offered rather than
 offered-and-broken. Recorded, not worked around.
 
 ---
+
 
 ## Previously
 

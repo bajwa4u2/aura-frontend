@@ -38,7 +38,16 @@ import 'operator_unavailable.dart';
 
 /// Width at and above which the rail carries labels and areas may use the
 /// full multi-pane composition.
-const double kOperatorDesktopWidth = 1180;
+/// Width at and above which the rail carries LABELS.
+///
+/// Was 1180, which made 1142 — an ordinary laptop viewport, and the one the
+/// founder actually reviewed on — fall into an icon-only rail: seven
+/// unlabelled glyphs with no way to tell Integrity from Platform from Record.
+///
+/// The frozen IA is seven NAMED areas. A width where the names disappear is a
+/// width where the IA does not exist, so the threshold now sits below the
+/// common laptop range and the compact rail below it carries names too.
+const double kOperatorDesktopWidth = 1000;
 
 /// Width at and above which a persistent icon rail is shown instead of the
 /// bottom bar.
@@ -241,8 +250,11 @@ class _OperatorRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // THREE RAIL FORMS, NOT TWO. Between the full rail and the bottom bar
+    // there is a compact one that still names every area — because an icon
+    // an operator cannot name is not navigation, it is a guess.
     return Container(
-      width: expanded ? 216 : 72,
+      width: expanded ? 216 : 92,
       decoration: const BoxDecoration(
         color: AuraSurface.card,
         border: Border(right: BorderSide(color: AuraSurface.divider)),
@@ -278,31 +290,54 @@ class _RailItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final content = Row(
-      mainAxisAlignment:
-          expanded ? MainAxisAlignment.start : MainAxisAlignment.center,
-      children: [
-        Icon(
-          area.icon,
-          size: 20,
-          color: selected ? AuraSurface.accent : AuraSurface.muted,
-        ),
-        if (expanded) ...[
-          const SizedBox(width: AuraSpace.s12),
-          Expanded(
-            child: Text(
-              area.label,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: selected ? AuraSurface.ink : AuraSurface.muted,
-                fontSize: 14,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+    final Widget content = expanded
+        ? Row(
+            children: [
+              Icon(
+                area.icon,
+                size: 20,
+                color: selected ? AuraSurface.accent : AuraSurface.muted,
               ),
-            ),
-          ),
-        ],
-      ],
-    );
+              const SizedBox(width: AuraSpace.s12),
+              Expanded(
+                child: Text(
+                  area.label,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: selected ? AuraSurface.ink : AuraSurface.muted,
+                    fontSize: 14,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          )
+        // COMPACT STILL CARRIES THE NAME. Stacked rather than dropped: the
+        // seven areas are the product's vocabulary, and an operator should
+        // never have to hover to learn where they are.
+        : Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                area.icon,
+                size: 20,
+                color: selected ? AuraSurface.accent : AuraSurface.muted,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                area.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: selected ? AuraSurface.ink : AuraSurface.muted,
+                  fontSize: 10.5,
+                  height: 1.1,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ],
+          );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AuraSpace.s4),
@@ -318,8 +353,8 @@ class _RailItem extends StatelessWidget {
             onTap: () => context.go(area.path),
             child: Padding(
               padding: EdgeInsets.symmetric(
-                horizontal: expanded ? AuraSpace.s12 : AuraSpace.s8,
-                vertical: AuraSpace.s12,
+                horizontal: expanded ? AuraSpace.s12 : AuraSpace.s4,
+                vertical: expanded ? AuraSpace.s12 : AuraSpace.s10,
               ),
               child: content,
             ),

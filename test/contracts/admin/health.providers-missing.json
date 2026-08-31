@@ -1,0 +1,59 @@
+{
+  "ok": false,
+  "snapshotAt": "2026-01-01T00:00:00.000Z",
+  "api": {
+    "status": "OK",
+    "message": "API process is running"
+  },
+  "db": {
+    "provider": "platform",
+    "key": "db",
+    "status": "OK",
+    "message": "Database connectivity verified",
+    "checkedAt": "2026-01-01T00:00:00.000Z"
+  },
+  "prisma": {
+    "provider": "platform",
+    "key": "db",
+    "status": "OK",
+    "message": "Database connectivity verified",
+    "checkedAt": "2026-01-01T00:00:00.000Z"
+  },
+  "emailProvider": {
+    "provider": "platform",
+    "key": "email",
+    "status": "DEGRADED",
+    "message": "Email provider not configured",
+    "metadata": {
+      "configured": false
+    },
+    "checkedAt": "2026-01-01T00:00:00.000Z"
+  },
+  "pushProvider": {
+    "provider": "platform",
+    "key": "push",
+    "status": "DEGRADED",
+    "message": "No push provider credentials configured",
+    "metadata": {
+      "configured": false
+    },
+    "checkedAt": "2026-01-01T00:00:00.000Z"
+  },
+  "realtimeGateway": {
+    "provider": "platform",
+    "key": "realtime",
+    "status": "OK",
+    "message": "Realtime gateway module loaded",
+    "metadata": {
+      "configured": true
+    },
+    "checkedAt": "2026-01-01T00:00:00.000Z"
+  },
+  "runtime": {
+    "nodeVersion": "vX",
+    "platform": "contract",
+    "uptimeSeconds": 0,
+    "pid": 1
+  },
+  "persisted": false
+}

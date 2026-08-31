@@ -1,7 +1,43 @@
 # Aura Release Client — Next Work
 
-**As of 2026-08-31.** The **Admin Operator Hub** is reconstructed and closed;
-the A/V chapter below is unchanged and still open.
+**As of 2026-08-31.** The **Operator Control Plane** is reconstructed; the A/V
+chapter below is unchanged and still open.
+
+## Operator Control Plane — delivered
+
+Record: `docs/2026-08-31-operator-control-plane-reconstruction.md`.
+
+Management rejected the hub result as a filing system and directed a
+reconstruction from OPERATOR RESPONSIBILITY outward. Delivered: a contract
+pipeline that captures fixtures from the server's own mappers (the console had
+been proved against fixtures written on the client side, which cannot fail); the
+`OperatorSignal` state vocabulary; a canonical health projection; per-source
+worklist resilience; NOW / WORK / SUBJECTS / INTEGRITY / PLATFORM / RECORD /
+DISCOVERY rebuilt around what an operator is responsible for; the admin front
+door as architecture; owner-continuity counted in people rather than rows; two
+diagnosed performance causes fixed rather than masked; six rendered widths.
+
+## Operator Control Plane — open, and honestly bounded
+
+1. **Production observation with a real grant.** The console has been judged
+   from 94 renders driven by the server's own contracts, and from the full
+   client and backend suites. It has NOT been operated in production since this
+   reconstruction. Nothing is claimed about it there.
+2. **`ANDROID_CERTIFICATION` / `IOS_CERTIFICATION`** — neither handset lane was
+   run: Android needs an AVD, iOS needs macOS.
+3. **Eight surfaces have no captured contract** and still render from fixtures
+   written on the client side: `/admin/metrics`, `/admin/discovery/*`,
+   `/admin/clients/overview`, `/admin/media-cleanup/status`,
+   `/admin/media/appeals`, `/admin/feedback`, `/admin/support/cases`, and the
+   `/admin/users` LIST (its detail is covered). A shape defect in any of them
+   would not be caught today.
+4. **The sitemap finding** — unchanged, and deliberately not touched in this
+   workstream. Aura publishes thousands of canonical URLs and advertises none.
+   Generating a sitemap would be CONTROL, and DISCOVERY is frozen as
+   observation. A finding awaiting a ruling.
+
+<details>
+<summary>Superseded — the hub migration this replaced</summary>
 
 ## Admin Operator Hub — delivered
 
@@ -26,6 +62,8 @@ media retention scheduled rather than remembered.
    advertises none of them. Generating a sitemap from the published inventory
    would be CONTROL, and DISCOVERY is frozen as observation. It is a finding
    awaiting a ruling, not a task waiting to be picked up.
+
+</details>
 
 ## A/V — chapter unchanged
 
