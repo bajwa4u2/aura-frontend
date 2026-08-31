@@ -234,18 +234,39 @@ class _WorkRow extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AuraRadius.card),
             border: Border.all(color: AuraSurface.divider),
-            gradient: LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [edge.withValues(alpha: 0.18), Colors.transparent],
-              stops: const [0, 0.012],
-            ),
           ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s14,
-            vertical: AuraSpace.s12,
+          // A crisp age bar, not a gradient. Spread across a 1400px row a
+          // gradient read as a smudge; the point is that it is legible at a
+          // glance while scanning for what has waited too long.
+          //
+          // Positioned rather than a coloured left border: Flutter forbids a
+          // borderRadius on a border whose sides differ in colour, and the
+          // rounded card shape is not negotiable.
+          child: Stack(
+            children: [
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: 3,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: edge,
+                    borderRadius: const BorderRadius.horizontal(
+                      left: Radius.circular(AuraRadius.card),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AuraSpace.s14,
+                  vertical: AuraSpace.s12,
+                ),
+                child: wide ? _wideLayout() : _narrowLayout(),
+              ),
+            ],
           ),
-          child: wide ? _wideLayout() : _narrowLayout(),
         ),
       ),
     );

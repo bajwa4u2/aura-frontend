@@ -2,7 +2,6 @@
 library;
 
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:aura/core/auth/admin_access_provider.dart';
 import 'package:aura/features/admin/areas/now_area.dart';
@@ -31,7 +30,7 @@ import 'package:go_router/go_router.dart';
 /// Run: flutter test test/admin/operator_render_harness_test.dart
 /// Output: build/operator-render/*.png
 void main() {
-  const outDir = 'build/operator-render';
+  const outDir = 'goldens/operator';
 
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -214,24 +213,17 @@ Future<void> _render(
     ),
   );
 
-  // Two pumps: one to mount, one to settle the async providers.
+  // Pumps WITHOUT a duration. Advancing the clock drives RefreshIndicator's
+  // animation and the autoDispose futures into a rebuild cycle that made each
+  // render take minutes; frame-only pumps settle the providers and stop.
   await tester.pump();
-  await tester.pump(const Duration(milliseconds: 300));
+  await tester.pump();
+  await tester.pump();
 
-  await _capture(tester, captureKey, outPath);
-}
-
-Future<void> _capture(
-  WidgetTester tester,
-  GlobalKey key,
-  String outPath,
-) async {
-  final boundary =
-      key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
-  final image = await boundary.toImage(pixelRatio: 1.0);
-  final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-  if (bytes == null) return;
-  File(outPath).writeAsBytesSync(bytes.buffer.asUint8List());
+  await expectLater(
+    find.byKey(captureKey),
+    matchesGoldenFile(outPath),
+  );
 }
 
 // ── fixtures ────────────────────────────────────────────────────────────────

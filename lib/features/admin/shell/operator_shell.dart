@@ -58,25 +58,31 @@ class OperatorShell extends ConsumerStatefulWidget {
 }
 
 class _OperatorShellState extends ConsumerState<OperatorShell> {
+  /// Held from mount so `dispose` never has to look it up.
+  ///
+  /// The shell this replaces called `ProviderScope.containerOf(context)` in
+  /// `dispose`, which is an ancestor lookup on an already-deactivated widget.
+  /// It throws — and because it throws BEFORE `markShellUnmounted`, the
+  /// coordinator's polling timer was never cancelled. A leaked timer on the
+  /// one surface whose entire job is to stop polling when it goes away.
+  AdminRuntimeCoordinator? _coordinator;
+
   @override
   void initState() {
     super.initState();
     // Admin polling is gated on the shell being mounted AND the app being
-    // foregrounded, so a backgrounded tab does zero admin work. Carried over
-    // from the shell this replaces — losing it would have quietly reintroduced
-    // background polling for every operator.
+    // foregrounded, so a backgrounded tab does zero admin work.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ref.read(adminRuntimeCoordinatorProvider.notifier).markShellMounted();
+      final coordinator = ref.read(adminRuntimeCoordinatorProvider.notifier);
+      _coordinator = coordinator;
+      coordinator.markShellMounted();
     });
   }
 
   @override
   void dispose() {
-    final container = ProviderScope.containerOf(context, listen: false);
-    container
-        .read(adminRuntimeCoordinatorProvider.notifier)
-        .markShellUnmounted();
+    _coordinator?.markShellUnmounted();
     super.dispose();
   }
 
