@@ -14,6 +14,9 @@ void main() {
   test('Aura uses the canonical web URL as its Android continuation target', () {
     expect(auraPublicAppAcquisitionConfig.canonicalHost, 'auraplatform.org');
     expect(auraPublicAppAcquisitionConfig.androidOpenSupported, isTrue);
-    expect(auraPublicAppAcquisitionConfig.androidStoreUrl, isNull);
+    expect(
+      auraPublicAppAcquisitionConfig.androidStoreUrl.toString(),
+      'https://play.google.com/store/apps/details?id=org.auraplatform.app',
+    );
   });
 }
