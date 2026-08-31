@@ -292,7 +292,14 @@ class _QueueRow extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (age > 0) ...[
+                  // AGE IS SHOWN WHENEVER THERE IS WORK, INCLUDING AT ZERO.
+                  //
+                  // This was gated on `age > 0`, so a queue whose oldest item
+                  // arrived TODAY rendered with a blank where every other row
+                  // carried an age. Live, that read as missing data on the one
+                  // queue that was completely up to date. `OperatorAge` already
+                  // says "today"; it was simply never asked.
+                  if (source.open > 0) ...[
                     // A GAP THAT SURVIVES 320px. Without it the queue name ran
                     // straight into "oldest" on a narrow phone — two unrelated
                     // facts reading as one string.

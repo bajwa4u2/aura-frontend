@@ -17,10 +17,10 @@
       "expiresAt": null,
       "reason": "bootstrap",
       "notes": null,
-      "userId": "cmm69u97n0000pi01rm3fyglq",
-      "grantedByUserId": "cmm69u97n0000pi01rm3fyglq",
+      "userId": "cmfixture0pr00pi01rm3fyglq",
+      "grantedByUserId": "cmfixture0pr00pi01rm3fyglq",
       "user": {
-        "id": "cmm69u97n0000pi01rm3fyglq",
+        "id": "cmfixture0pr00pi01rm3fyglq",
         "handle": "rowan",
         "displayName": "Rowan Ellis",
         "avatarUrl": null,
@@ -28,7 +28,7 @@
         "disabledAt": null
       },
       "grantedBy": {
-        "id": "cmm69u97n0000pi01rm3fyglq",
+        "id": "cmfixture0pr00pi01rm3fyglq",
         "handle": "rowan",
         "displayName": "Rowan Ellis",
         "avatarUrl": null
@@ -47,10 +47,10 @@
       "expiresAt": null,
       "reason": "Left the moderation rota.",
       "notes": null,
-      "userId": "cmm69u97n0001pi01rm3fyglq",
-      "grantedByUserId": "cmm69u97n0000pi01rm3fyglq",
+      "userId": "cmfixture0pr01pi01rm3fyglq",
+      "grantedByUserId": "cmfixture0pr00pi01rm3fyglq",
       "user": {
-        "id": "cmm69u97n0001pi01rm3fyglq",
+        "id": "cmfixture0pr01pi01rm3fyglq",
         "handle": "sam",
         "displayName": "Sam Iyer",
         "avatarUrl": null,
@@ -58,7 +58,7 @@
         "disabledAt": null
       },
       "grantedBy": {
-        "id": "cmm69u97n0000pi01rm3fyglq",
+        "id": "cmfixture0pr00pi01rm3fyglq",
         "handle": "rowan",
         "displayName": "Rowan Ellis",
         "avatarUrl": null

@@ -2,7 +2,7 @@
   "ok": true,
   "items": [
     {
-      "id": "cmm69u97n0000pi01rm3fyglq",
+      "id": "cmfixture0pr00pi01rm3fyglq",
       "email": "rowan@example.test",
       "handle": "rowan",
       "displayName": "Rowan Ellis",
@@ -45,9 +45,9 @@
           "expiresAt": null,
           "reason": "bootstrap",
           "notes": null,
-          "grantedByUserId": "cmm69u97n0000pi01rm3fyglq",
+          "grantedByUserId": "cmfixture0pr00pi01rm3fyglq",
           "grantedBy": {
-            "id": "cmm69u97n0000pi01rm3fyglq",
+            "id": "cmfixture0pr00pi01rm3fyglq",
             "handle": "rowan",
             "displayName": "Rowan Ellis",
             "avatarUrl": null
@@ -56,7 +56,7 @@
       }
     },
     {
-      "id": "cmm69u97n0001pi01rm3fyglq",
+      "id": "cmfixture0pr01pi01rm3fyglq",
       "email": "sam@example.test",
       "handle": "sam",
       "displayName": "Sam Iyer",
@@ -79,7 +79,7 @@
       }
     },
     {
-      "id": "cmm69u97n0002pi01rm3fyglq",
+      "id": "cmfixture0pr02pi01rm3fyglq",
       "email": "ada@example.test",
       "handle": "ada",
       "displayName": "Ada Okafor",

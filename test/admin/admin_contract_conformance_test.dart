@@ -339,7 +339,7 @@ void main() {
   });
 
   group('the record names who it happened to', () {
-    // The live console rendered `USER · cmm69u97n0000pi01rm3fyglq`. The
+    // The live console rendered `USER · cmfixture0pr00pi01rm3fyglq`. The
     // record exists for people who were NOT there, and a database key does
     // not tell them anything.
     List<AdminAuditLogEntry> entries() =>

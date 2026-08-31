@@ -11,9 +11,9 @@
       "title": "Identity verification review",
       "subjectLabel": null,
       "subjectKind": "PERSON",
-      "subjectId": "cmm69u97n0000pi01rm3fyglq",
+      "subjectId": "cmfixture0pr00pi01rm3fyglq",
       "state": "PENDING_REVIEW",
-      "destination": "/admin/subjects/person/cmm69u97n0000pi01rm3fyglq/identity"
+      "destination": "/admin/subjects/person/cmfixture0pr00pi01rm3fyglq/identity"
     },
     {
       "key": "INSTITUTION_VERIFICATION:cmoinstreq0001",

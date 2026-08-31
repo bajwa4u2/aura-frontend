@@ -408,7 +408,7 @@ class _IdentityBlock extends ConsumerWidget {
   /// How the confirmation names what is about to change.
   ///
   /// The taxonomy's word for the class, and the PERSON'S OWN NAME — never
-  /// `ROLE_OR_CREDENTIAL · person cmm69u97n0000pi01rm3fyglq`. The id is the
+  /// `ROLE_OR_CREDENTIAL · person cmfixture0pr00pi01rm3fyglq`. The id is the
   /// fallback only when the person could not be resolved, in which case it is
   /// the honest answer rather than a decorated one.
   String _verificationSubject(WidgetRef ref, String verificationClass) {

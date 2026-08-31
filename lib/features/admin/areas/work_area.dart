@@ -107,35 +107,39 @@ class _SourceBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(operatorWorkFilterProvider);
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
+    // WRAPS, NEVER CLIPS.
+    //
+    // This was a horizontal scroller. Live at 1440 with seven queues the last
+    // chip was sliced off at the right edge with nothing to say it was there —
+    // an operator cannot filter by a queue they cannot see, and a hidden
+    // horizontal scroller is not an affordance anybody looks for in a filter
+    // bar. Wrapping costs one extra row at the widths where it happens and
+    // shows every queue at every width.
+    return Wrap(
+      spacing: AuraSpace.s8,
+      runSpacing: AuraSpace.s8,
+      children: [
+        _SourceChip(
+          label: 'All',
+          count: summary.totalOpen,
+          selected: selected == null,
+          onTap: () =>
+              ref.read(operatorWorkFilterProvider.notifier).state = null,
+        ),
+        for (final source in summary.sources)
           _SourceChip(
-            label: 'All',
-            count: summary.totalOpen,
-            selected: selected == null,
-            onTap: () =>
-                ref.read(operatorWorkFilterProvider.notifier).state = null,
+            label: source.label,
+            count: source.readable ? source.open : null,
+            selected: selected == source.source,
+            unavailableReason:
+                source.readable ? null : source.unavailableReason,
+            onTap: source.readable
+                ? () => ref
+                    .read(operatorWorkFilterProvider.notifier)
+                    .state = source.source
+                : null,
           ),
-          for (final source in summary.sources)
-            Padding(
-              padding: const EdgeInsets.only(left: AuraSpace.s8),
-              child: _SourceChip(
-                label: source.label,
-                count: source.readable ? source.open : null,
-                selected: selected == source.source,
-                unavailableReason:
-                    source.readable ? null : source.unavailableReason,
-                onTap: source.readable
-                    ? () => ref
-                        .read(operatorWorkFilterProvider.notifier)
-                        .state = source.source
-                    : null,
-              ),
-            ),
-        ],
-      ),
+      ],
     );
   }
 }

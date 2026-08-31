@@ -2,9 +2,9 @@
   "ok": true,
   "report": {
     "id": "cmoreport0002rdjzu5f96djh",
-    "reporterId": "cmm69u97n0001pi01rm3fyglq",
+    "reporterId": "cmfixture0pr01pi01rm3fyglq",
     "reporter": {
-      "id": "cmm69u97n0001pi01rm3fyglq",
+      "id": "cmfixture0pr01pi01rm3fyglq",
       "handle": "sam",
       "displayName": "Sam Iyer",
       "avatarUrl": null
@@ -24,7 +24,7 @@
       "kind": "CONTENT",
       "label": null,
       "author": {
-        "id": "cmm69u97n0002pi01rm3fyglq",
+        "id": "cmfixture0pr02pi01rm3fyglq",
         "handle": "ada",
         "displayName": "Ada Okafor",
         "avatarUrl": null

@@ -301,7 +301,7 @@ class AdminUserSummary {
 /// WHAT THE ACTION WAS TAKEN AGAINST, as the record can name it.
 ///
 /// The audit row stores a type word and a cuid. Rendered raw, the record read
-/// `USER · cmm69u97n0000pi01rm3fyglq` — which answers "to whom" only for
+/// `USER · cmfixture0pr00pi01rm3fyglq` — which answers "to whom" only for
 /// somebody who recognises database ids, and the record exists precisely for
 /// the people who were not there.
 ///

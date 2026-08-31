@@ -4,9 +4,9 @@
     {
       "id": "cmoauditrow0001",
       "action": "admin.grant.updated",
-      "actorUserId": "cmm69u97n0000pi01rm3fyglq",
+      "actorUserId": "cmfixture0pr00pi01rm3fyglq",
       "actor": {
-        "id": "cmm69u97n0000pi01rm3fyglq",
+        "id": "cmfixture0pr00pi01rm3fyglq",
         "handle": "rowan",
         "displayName": "Rowan Ellis",
         "avatarUrl": null,
@@ -34,9 +34,9 @@
     {
       "id": "cmoauditrow0002",
       "action": "admin.access.denied",
-      "actorUserId": "cmm69u97n0001pi01rm3fyglq",
+      "actorUserId": "cmfixture0pr01pi01rm3fyglq",
       "actor": {
-        "id": "cmm69u97n0001pi01rm3fyglq",
+        "id": "cmfixture0pr01pi01rm3fyglq",
         "handle": "sam",
         "displayName": "Sam Iyer",
         "avatarUrl": null,
@@ -64,16 +64,16 @@
     {
       "id": "cmoauditrow0003",
       "action": "admin.user.disabled",
-      "actorUserId": "cmm69u97n0000pi01rm3fyglq",
+      "actorUserId": "cmfixture0pr00pi01rm3fyglq",
       "actor": {
-        "id": "cmm69u97n0000pi01rm3fyglq",
+        "id": "cmfixture0pr00pi01rm3fyglq",
         "handle": "rowan",
         "displayName": "Rowan Ellis",
         "avatarUrl": null,
         "email": "rowan@example.test"
       },
       "targetType": "User",
-      "targetId": "cmm69u97n0002pi01rm3fyglq",
+      "targetId": "cmfixture0pr02pi01rm3fyglq",
       "result": "SUCCESS",
       "reason": "Repeated harassment after a final warning.",
       "metadata": {
@@ -84,7 +84,7 @@
       "createdAt": "2026-08-31T09:48:00.000Z",
       "subject": {
         "kind": "PERSON",
-        "id": "cmm69u97n0002pi01rm3fyglq",
+        "id": "cmfixture0pr02pi01rm3fyglq",
         "label": "Ada Okafor",
         "handle": "ada",
         "resolvable": true,
@@ -94,9 +94,9 @@
     {
       "id": "cmoauditrow0004",
       "action": "institution.verification.approved",
-      "actorUserId": "cmm69u97n0000pi01rm3fyglq",
+      "actorUserId": "cmfixture0pr00pi01rm3fyglq",
       "actor": {
-        "id": "cmm69u97n0000pi01rm3fyglq",
+        "id": "cmfixture0pr00pi01rm3fyglq",
         "handle": "rowan",
         "displayName": "Rowan Ellis",
         "avatarUrl": null,
@@ -124,16 +124,16 @@
     {
       "id": "cmoauditrow0005",
       "action": "admin.user.disabled",
-      "actorUserId": "cmm69u97n0000pi01rm3fyglq",
+      "actorUserId": "cmfixture0pr00pi01rm3fyglq",
       "actor": {
-        "id": "cmm69u97n0000pi01rm3fyglq",
+        "id": "cmfixture0pr00pi01rm3fyglq",
         "handle": "rowan",
         "displayName": "Rowan Ellis",
         "avatarUrl": null,
         "email": "rowan@example.test"
       },
       "targetType": "USER",
-      "targetId": "cmm69u97n0008pi01rm3fyglq",
+      "targetId": "cmfixture0pr08pi01rm3fyglq",
       "result": "SUCCESS",
       "reason": "Account closed at the account holder request.",
       "metadata": {
@@ -144,7 +144,7 @@
       "createdAt": "2026-08-31T09:48:00.000Z",
       "subject": {
         "kind": "REFERENCE",
-        "id": "cmm69u97n0008pi01rm3fyglq",
+        "id": "cmfixture0pr08pi01rm3fyglq",
         "label": null,
         "handle": null,
         "resolvable": false,

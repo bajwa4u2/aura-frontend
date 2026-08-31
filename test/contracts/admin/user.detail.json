@@ -1,7 +1,7 @@
 {
   "ok": true,
   "user": {
-    "id": "cmm69u97n0000pi01rm3fyglq",
+    "id": "cmfixture0pr00pi01rm3fyglq",
     "email": "rowan@example.test",
     "handle": "rowan",
     "displayName": "Rowan Ellis",
@@ -58,10 +58,10 @@
           "reason": "bootstrap",
           "notes": null,
           "userId": null,
-          "grantedByUserId": "cmm69u97n0000pi01rm3fyglq",
+          "grantedByUserId": "cmfixture0pr00pi01rm3fyglq",
           "user": null,
           "grantedBy": {
-            "id": "cmm69u97n0000pi01rm3fyglq",
+            "id": "cmfixture0pr00pi01rm3fyglq",
             "handle": "rowan",
             "displayName": "Rowan Ellis",
             "avatarUrl": null
