@@ -1138,6 +1138,30 @@
   "parent": ""
  },
  {
+  "path": "/feedback",
+  "segments": 1,
+  "params": [],
+  "renders": true,
+  "hasRedirect": false,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
+  "path": "/feedback/mine",
+  "segments": 2,
+  "params": [],
+  "renders": true,
+  "hasRedirect": false,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
   "path": "/articles/:slug",
   "segments": 2,
   "params": [
@@ -1517,6 +1541,18 @@
  },
  {
   "path": "/admin/identity-review",
+  "segments": 2,
+  "params": [],
+  "renders": true,
+  "hasRedirect": false,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
+  "path": "/admin/feedback",
   "segments": 2,
   "params": [],
   "renders": true,
