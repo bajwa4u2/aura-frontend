@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 
 import 'app/app_shell.dart';
 import 'app/route_classification.dart';
+import 'features/admin/areas/now_area.dart';
+import 'features/admin/areas/work_area.dart';
 import 'core/continuation/native_continuation.dart';
 import 'core/continuation/windows_activation.dart';
 import 'app/route_targets.dart';
@@ -76,7 +78,6 @@ import 'features/institutions/presentation/institution_standing_screen.dart';
 import 'features/institutions/presentation/institution_members_screen.dart';
 import 'features/institutions/presentation/institution_invites_screen.dart';
 import 'features/institutions/presentation/institution_join_requests_screen.dart';
-import 'features/institutions/presentation/admin_workspace_screen.dart';
 import 'features/institutions/wizard/institution_onboarding_wizard.dart';
 import 'features/admin/presentation/admin_institutions_screen.dart';
 import 'features/admin/presentation/admin_institution_members_screen.dart';
@@ -1768,9 +1769,18 @@ final routerProvider = Provider<GoRouter>((ref) {
               institutionId: state.uri.queryParameters['institutionId'],
             ),
           ),
+          // ── THE RECONSTRUCTED OPERATOR HUB ──────────────────────────
+          // Seven areas named for operator responsibilities. The launcher
+          // grid that used to occupy `/admin` — and which lived under
+          // features/institutions/ because platform admin had borrowed
+          // institution admin's screen — is gone.
           GoRoute(
             path: kAdminWorkspaceRoute,
-            builder: (_, __) => const AdminWorkspaceScreen(),
+            builder: (_, __) => const NowArea(),
+          ),
+          GoRoute(
+            path: '/admin/work',
+            builder: (_, __) => const WorkArea(),
           ),
           GoRoute(
             path: kAdminCommunicationsRoute,

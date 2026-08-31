@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../features/admin/shell/operator_shell.dart';
 import '../core/navigation/navigation_authority.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,12 +8,11 @@ import '../core/auth/auth_providers.dart';
 import '../core/auth/session_providers.dart';
 import '../core/diagnostics/runtime_trace.dart';
 import '../core/navigation/return_path_frame.dart';
-import 'shell/admin_shell.dart';
 import 'shell/member_shell.dart';
 import 'shell/public_shell.dart';
 import '../core/diagnostics/call_teardown_diag.dart';
 
-export 'shell/admin_shell.dart' show AdminShell;
+export '../features/admin/shell/operator_shell.dart' show OperatorShell;
 export 'shell/member_shell.dart' show MemberShell, InstitutionShell;
 export 'shell/public_shell.dart' show PublicShell;
 
@@ -93,8 +93,11 @@ class AppShell extends ConsumerWidget {
       shell = PublicShell(child: framed);
       chose = 'PublicShell(guest)';
     } else if (ctx == ShellContext.admin) {
-      shell = AdminShell(child: framed);
-      chose = 'AdminShell';
+      // The reconstructed operator hub. One shell across web, Android, iOS
+      // and Windows, with navigation derived from the operator's actual
+      // capabilities rather than a hardcoded fourteen-item list.
+      shell = OperatorShell(child: framed);
+      chose = 'OperatorShell';
     } else if (ctx == ShellContext.institution) {
       shell = InstitutionShell(child: framed);
       chose = 'InstitutionShell';
