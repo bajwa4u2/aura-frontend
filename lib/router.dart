@@ -166,6 +166,9 @@ import 'features/media_governance/presentation/restricted_media_screen.dart';
 import 'features/admin/presentation/admin_media_appeals_screen.dart';
 import 'features/identity/presentation/identity_verification_screen.dart';
 import 'features/admin/presentation/identity_review_screen.dart';
+import 'features/feedback/presentation/feedback_screen.dart';
+import 'features/feedback/presentation/my_feedback_screen.dart';
+import 'features/feedback/presentation/feedback_console_screen.dart';
 
 const String kInstitutionDashboardRoute = '/institution/dashboard';
 const String kInstitutionCreateRoute = '/institution/create';
@@ -1597,6 +1600,17 @@ final routerProvider = Provider<GoRouter>((ref) {
               articleId: state.pathParameters['articleId'],
             ),
           ),
+          // Product feedback. Authed but otherwise ungated: someone who cannot
+          // yet do anything in Aura is often exactly the person with something
+          // worth hearing about why.
+          GoRoute(
+            path: '/feedback',
+            builder: (context, state) => const FeedbackScreen(),
+          ),
+          GoRoute(
+            path: '/feedback/mine',
+            builder: (context, state) => const MyFeedbackScreen(),
+          ),
           GoRoute(
             path: '/articles/:slug',
             builder: (context, state) =>
@@ -1751,6 +1765,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/admin/identity-review',
             builder: (_, __) => const IdentityReviewScreen(),
+          ),
+          // Product feedback triage lives in the SAME admin console family as
+          // identity review and moderation — not a second administration
+          // universe with its own navigation and its own idea of authority.
+          GoRoute(
+            path: '/admin/feedback',
+            builder: (_, __) => const FeedbackConsoleScreen(),
           ),
           GoRoute(
             path: '/admin/grants',

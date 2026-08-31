@@ -1,0 +1,118 @@
+{
+  "contract": "product-feedback",
+  "version": "1.0.0",
+  "owner": "Aura Platform LLC",
+  "summary": "One canonical semantic contract for first-party product feedback across Aura Platform products. Products implement and deploy independently; the vocabulary and the boundaries below are not theirs to vary.",
+  "intents": [
+    {
+      "key": "PROBLEM",
+      "label": "Report a problem",
+      "meaning": "Something is not working. The person is describing a defect."
+    },
+    {
+      "key": "FEEDBACK",
+      "label": "Share feedback",
+      "meaning": "An observation about the product. Neither a defect report nor a request."
+    },
+    {
+      "key": "IDEA",
+      "label": "Suggest an idea",
+      "meaning": "A request for something the product does not do."
+    }
+  ],
+  "lifecycle": {
+    "states": [
+      "RECEIVED",
+      "REVIEWED",
+      "ACTIONED",
+      "CLOSED"
+    ],
+    "initial": "RECEIVED",
+    "terminal": [
+      "CLOSED"
+    ],
+    "transitions": {
+      "RECEIVED": [
+        "REVIEWED",
+        "CLOSED"
+      ],
+      "REVIEWED": [
+        "ACTIONED",
+        "CLOSED"
+      ],
+      "ACTIONED": [
+        "CLOSED"
+      ],
+      "CLOSED": []
+    },
+    "note": "Four states, not a CRM. REVIEWED means a person read it. ACTIONED means product work exists because of it. CLOSED means nothing further is owed."
+  },
+  "diagnosticContext": {
+    "principle": "Bounded and disclosed. Everything here is about the SOFTWARE, never about what the person was doing in it.",
+    "allowed": [
+      "product",
+      "platform",
+      "appVersion",
+      "buildNumber",
+      "osVersion",
+      "surface",
+      "locale",
+      "submittedAt",
+      "releaseChannel",
+      "correlationId"
+    ],
+    "forbidden": [
+      "messageContents",
+      "conversationContents",
+      "documents",
+      "identityEvidence",
+      "media",
+      "clipboard",
+      "credentials",
+      "tokens",
+      "paymentInformation",
+      "customerRecords",
+      "screenshotAuto",
+      "applicationState"
+    ],
+    "surfaceRule": "`surface` is a route PATTERN, never a populated path: /messages/c/:id, never /messages/c/<real id>. A real path can name a real conversation."
+  },
+  "attachments": {
+    "optional": true,
+    "rules": [
+      "explicit user selection only \u2014 never captured silently",
+      "preview before submit",
+      "removable before submit",
+      "private custody, never public",
+      "bounded type and size",
+      "must not block the basic lifecycle"
+    ]
+  },
+  "acknowledgement": {
+    "required": true,
+    "meaning": "The person is told their feedback arrived, and told plainly whether a reply may follow."
+  },
+  "followUp": {
+    "allowed": [
+      "ACTIONED",
+      "CLOSED"
+    ],
+    "rule": "Follow-up travels through the product's existing attention authority. No second inbox, and no notification for ordinary state churn."
+  },
+  "security": {
+    "userText": "UNTRUSTED. Never rendered as markup, never interpolated into HTML or email without escaping.",
+    "ownership": "A person may read only their own submissions. A foreign id answers NOT FOUND, never FORBIDDEN \u2014 FORBIDDEN discloses existence.",
+    "operatorAuthority": "Reading feedback and acting on it are separate permissions.",
+    "rateLimit": "Required. Submission is unauthenticated-adjacent in effect: a signed-in person can still flood it.",
+    "accountDeletion": "Submissions are retained as product evidence but MUST be dissociated from the deleted person."
+  },
+  "conformance": [
+    "the three intents exist, with exactly these keys",
+    "the four lifecycle states exist, with exactly these keys and transitions",
+    "every allowed context field is permitted; no forbidden field is collected",
+    "surface is a route pattern",
+    "a foreign submission answers NOT FOUND",
+    "operator read and write are distinct permissions",
+    "user text is never treated as markup"
+  ]
+}

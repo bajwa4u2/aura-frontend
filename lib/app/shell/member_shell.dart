@@ -1085,6 +1085,15 @@ class _MemberDrawerSecondary extends ConsumerWidget {
           label: 'Preferences',
           onTap: () => go(kMePreferencesRoute),
         ),
+        // ONE entry, in the account menu, reachable from every screen.
+        // Deliberately not a button scattered onto surfaces: a feedback
+        // affordance that follows people around reads as a request for
+        // praise, and stops being where you look when something is wrong.
+        _DrawerEntry(
+          icon: Icons.rate_review_outlined,
+          label: 'Send feedback',
+          onTap: () => go('/feedback'),
+        ),
         if (isAdmin)
           _DrawerEntry(
             icon: Icons.fact_check_outlined,

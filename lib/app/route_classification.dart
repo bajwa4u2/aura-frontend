@@ -276,6 +276,11 @@ bool isMemberShellPath(String path) {
       // an empty shell inviting them to hand over a passport, so a cold entry
       // must be sent to sign in with the destination preserved.
       path == '/verify-identity' ||
+      // Feedback. MEMBER: the screen reads this account's own submissions and
+      // what came of them, so an unauthenticated visitor reaching it would get
+      // an empty shell rather than a sign-in with the destination kept.
+      path == '/feedback' ||
+      path == '/feedback/mine' ||
       path == '/me/follow-requests' ||
       path == '/me/invitations' ||
       path == '/invite' ||

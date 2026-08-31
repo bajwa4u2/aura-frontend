@@ -91,8 +91,13 @@ class ProductNoun {
   static const post = ProductNoun._('post', 'Post', 'Posts');
   static const announcement =
       ProductNoun._('announcement', 'Announcement', 'Announcements');
+  /// What a person tells the people building the product. Its own noun, not
+  /// "message": a message is addressed to someone in Aura, this is addressed
+  /// to us about Aura.
+  static const feedback = ProductNoun._('feedback', 'Feedback', 'Feedback');
 
   static const all = <ProductNoun>[
+    feedback,
     conversation,
     person, institution, member, participant, thread, space, meeting,
     room, live, message, correspondence, post, announcement,

@@ -217,6 +217,18 @@ class NavigationAuthority {
   /// and permission-gated, because being verified and deciding who is verified
   /// are different capabilities.
   static const String identityVerificationRoute = '/verify-identity';
+  /// FEEDBACK — telling the people who build Aura something about it.
+  ///
+  /// A member destination and deliberately ungated beyond that: someone who
+  /// cannot yet do much in Aura is often exactly the person worth hearing.
+  static const String feedbackRoute = '/feedback';
+  static const String myFeedbackRoute = '/feedback/mine';
+
+  /// The operator's queue. Permission-gated, and separate from the member
+  /// surface for the same reason identity review is: telling us something and
+  /// deciding what we do about it are different capabilities.
+  static const String adminFeedbackRoute = '/admin/feedback';
+
   static const String securityRoute = '/security';
   static const String devicesRoute = '/devices';
   static const String changePasswordRoute = '/change-password';

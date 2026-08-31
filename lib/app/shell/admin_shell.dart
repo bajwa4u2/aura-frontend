@@ -106,6 +106,12 @@ class _AdminShellLayout extends StatelessWidget {
       path: '/admin/media-appeals',
     ),
     _NavItem(
+      label: 'Feedback',
+      icon: Icons.rate_review_outlined,
+      selectedIcon: Icons.rate_review_rounded,
+      path: '/admin/feedback',
+    ),
+    _NavItem(
       label: 'Users',
       icon: Icons.group_outlined,
       selectedIcon: Icons.group_rounded,
