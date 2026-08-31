@@ -171,16 +171,69 @@ void main() {
     }
   });
 
-  test('the generation authority reads the vector master, not a redrawn mark',
-      () {
-    // Orchestrate's mark drifted because its generator drew a logo in code
-    // instead of resampling the master, so every asset it wrote was wrong and
-    // nothing failed. Aura's generator reads the SVG; this keeps it that way.
+  group('the master is the only place the identity is defined', () {
     final tool = File('tool/generate_store_assets.dart');
-    expect(tool.existsSync(), isTrue);
-    expect(tool.readAsStringSync(), contains('AURA_logo_master.svg'),
-        reason: 'the generator must derive assets from the vector master');
-    expect(File('assets/brand/AURA_logo_master.svg').existsSync(), isTrue,
-        reason: 'the vector master is the source of the identity');
+    final masterFile = File('assets/brand/AURA_logo_master.svg');
+
+    test('the generator PARSES the master rather than restating it', () {
+      // Orchestrate's mark drifted because its generator drew a logo in code.
+      // Aura's had a subtler version of the same fault: it declared the ring
+      // radius, stroke widths and all eight tick coordinates as Dart constants
+      // "to match" the SVG. Editing the master changed nothing downstream and
+      // no test failed. Reading the file is what makes the master the master.
+      expect(tool.existsSync(), isTrue);
+      expect(masterFile.existsSync(), isTrue);
+      final source = tool.readAsStringSync();
+
+      expect(source, contains('_parseMaster'),
+          reason: 'the generator must parse the master');
+      expect(source, contains('AURA_logo_master.svg'));
+
+      for (final restated in const [
+        'const _ringRadiusRef',
+        'const _ringStrokeRef',
+        'const _tickStrokeRef',
+        'const _ticksRef',
+        'const _gold',
+        'const _navy',
+        'const _inkLight',
+      ]) {
+        expect(source, isNot(contains(restated)),
+            reason: '$restated re-declares identity the master already owns');
+      }
+    });
+
+    test('the master carries no font dependency', () {
+      // font-family="Times New Roman" renders in a fallback face on any
+      // machine without it -- a silent identity change, and not reproducible
+      // off Windows at all. The wordmark is outlined instead.
+      final svg = masterFile.readAsStringSync();
+      expect(svg.contains('<text'), isFalse,
+          reason: 'the wordmark must be outlined, not set in a live font');
+      expect(svg, contains('id="wordmark"'));
+      expect(svg, contains('id="ring"'));
+      expect(svg, contains('id="ticks"'));
+    });
+
+    test('the master declares both surface variants of the tick colour', () {
+      // The generator used to draw light ticks while the master said #2E2E2E,
+      // an undeclared override that only a human reading both files would
+      // catch.
+      final svg = masterFile.readAsStringSync();
+      expect(svg, contains('data-on-dark-stroke'),
+          reason: 'the on-dark tick colour must come from the master');
+      expect(svg, contains('data-surface-dark'),
+          reason: 'the dark surface colour must come from the master');
+    });
+
+    test('the eight ticks in the master are what the icons carry', () {
+      final svg = masterFile.readAsStringSync();
+      final group = RegExp(r'<g id="ticks"[^>]*>(.*?)</g>', dotAll: true)
+          .firstMatch(svg);
+      expect(group, isNotNull);
+      final lines = RegExp(r'<line\b').allMatches(group!.group(1)!).length;
+      expect(lines, expectedTicks,
+          reason: 'the master must declare exactly $expectedTicks ticks');
+    });
   });
 }

@@ -32,29 +32,114 @@ import 'dart:math' as math;
 
 import 'package:image/image.dart' as img;
 
-// ── Brand tokens ────────────────────────────────────────────────────────────
-const _gold = (0xC7, 0xA9, 0x6B);
-const _inkLight = (0xD8, 0xD8, 0xD8); // ticks + wordmark on dark
-const _navy = (0x1A, 0x1A, 0x2E); // Aura primary background
+// ── The master, parsed ──────────────────────────────────────────────────────
+//
+// Nothing about the mark is restated here. This generator used to declare the
+// ring radius, stroke widths, tick coordinates and every colour as Dart
+// constants "to match" the SVG, with a comment admitting it did not parse it.
+// That is a silent divergence waiting to happen: edit the master and nothing
+// downstream changes, and no test fails. Orchestrate's mark drifted for
+// exactly this reason -- a generator holding its own copy of the identity.
+//
+// So the master is READ. If it changes, every generated asset changes.
 
-// Mark geometry in 200×200 reference units (mirror of the SVG's left
-// half: a circle at (100, 100) r=60 plus 8 short ticks).
-const _markRef = 200.0;
-const _ringRadiusRef = 60.0;
-const _ringStrokeRef = 8.0;
-const _tickStrokeRef = 6.0;
+class _Master {
+  const _Master({
+    required this.markRef,
+    required this.ringCx,
+    required this.ringCy,
+    required this.ringRadius,
+    required this.ringStroke,
+    required this.gold,
+    required this.ticks,
+    required this.tickStroke,
+    required this.tickOnDark,
+    required this.navy,
+  });
 
-// Cardinal + diagonal tick endpoints, exactly as written in the SVG.
-const _ticksRef = <(double, double, double, double)>[
-  (100, 20, 100, 10), // top
-  (100, 180, 100, 190), // bottom
-  (20, 100, 10, 100), // left
-  (180, 100, 190, 100), // right
-  (45, 45, 35, 35), // top-left
-  (155, 45, 165, 35), // top-right
-  (45, 155, 35, 165), // bottom-left
-  (155, 155, 165, 165), // bottom-right
-];
+  final double markRef;
+  final double ringCx;
+  final double ringCy;
+  final double ringRadius;
+  final double ringStroke;
+  final (int, int, int) gold;
+  final List<(double, double, double, double)> ticks;
+  final double tickStroke;
+  final (int, int, int) tickOnDark;
+  final (int, int, int) navy;
+}
+
+late _Master _master;
+
+(int, int, int) _hex(String value) {
+  final h = value.replaceAll('#', '').trim();
+  return (
+    int.parse(h.substring(0, 2), radix: 16),
+    int.parse(h.substring(2, 4), radix: 16),
+    int.parse(h.substring(4, 6), radix: 16),
+  );
+}
+
+String _attr(String source, String name) {
+  final m = RegExp('$name="([^"]*)"').firstMatch(source);
+  if (m == null) {
+    stderr.writeln('FATAL: master is missing $name');
+    exit(2);
+  }
+  return m.group(1)!;
+}
+
+_Master _parseMaster(String svg) {
+  // The mark occupies the leading square of the viewBox; the wordmark follows
+  // it. Height is therefore the mark's reference box.
+  final viewBox = _attr(svg, 'viewBox').split(RegExp(r'\s+'));
+  final markRef = double.parse(viewBox[3]);
+
+  final circle = RegExp(r'<circle[^>]*>', dotAll: true).firstMatch(svg);
+  if (circle == null) {
+    stderr.writeln('FATAL: master has no <circle> ring');
+    exit(2);
+  }
+  final ring = circle.group(0)!;
+
+  final tickGroup =
+      RegExp(r'<g id="ticks"[^>]*>(.*?)</g>', dotAll: true).firstMatch(svg);
+  if (tickGroup == null) {
+    stderr.writeln('FATAL: master has no <g id="ticks">');
+    exit(2);
+  }
+  final tickOpen = RegExp(r'<g id="ticks"[^>]*>').firstMatch(svg)!.group(0)!;
+
+  final ticks = <(double, double, double, double)>[];
+  for (final line in RegExp(r'<line[^>]*/>').allMatches(tickGroup.group(1)!)) {
+    final l = line.group(0)!;
+    ticks.add((
+      double.parse(_attr(l, 'x1')),
+      double.parse(_attr(l, 'y1')),
+      double.parse(_attr(l, 'x2')),
+      double.parse(_attr(l, 'y2')),
+    ));
+  }
+  if (ticks.isEmpty) {
+    stderr.writeln('FATAL: master declares no ticks');
+    exit(2);
+  }
+
+  return _Master(
+    markRef: markRef,
+    ringCx: double.parse(_attr(ring, 'cx')),
+    ringCy: double.parse(_attr(ring, 'cy')),
+    ringRadius: double.parse(_attr(ring, 'r')),
+    ringStroke: double.parse(_attr(ring, 'stroke-width')),
+    gold: _hex(_attr(ring, 'stroke')),
+    ticks: ticks,
+    tickStroke: double.parse(_attr(tickOpen, 'stroke-width')),
+    // The mark sits on two surfaces and the master names both, so the dark
+    // variant is no longer an undeclared override living in this file.
+    tickOnDark: _hex(_attr(tickOpen, 'data-on-dark-stroke')),
+    navy: _hex(_attr(svg, 'data-surface-dark')),
+  );
+}
 
 const _projectRoot = '.';
 const _storeRoot = 'assets/store';
@@ -65,14 +150,15 @@ Future<void> main(List<String> args) async {
   print('Aura — store asset generator');
   print('Source: assets/brand/AURA_logo_master.svg');
 
-  // Sanity-check the master SVG exists; the rasterizer doesn't *parse*
-  // it (the mark is hand-coded above to match), but we refuse to run
-  // when the source of truth is missing.
+  // The master is parsed, not mirrored: these values ARE the identity.
   final master = File('$_projectRoot/assets/brand/AURA_logo_master.svg');
   if (!master.existsSync()) {
     stderr.writeln('FATAL: master SVG not found at ${master.path}');
     exit(2);
   }
+  _master = _parseMaster(master.readAsStringSync());
+  print('Parsed master: ring r=${_master.ringRadius} '
+      'stroke=${_master.ringStroke} ticks=${_master.ticks.length}');
 
   // Ensure clean output directory tree.
   final outDirs = [
@@ -185,7 +271,7 @@ List<_Out> _writeAndroid() {
   _writePng(adaptiveFg, 'android/adaptive_foreground.png');
   outs.add(const _Out('android/adaptive_foreground.png', 432, 432));
 
-  final adaptiveBg = _solid(432, _navy);
+  final adaptiveBg = _solid(432, _master.navy);
   _writePng(adaptiveBg, 'android/adaptive_background.png');
   outs.add(const _Out('android/adaptive_background.png', 432, 432));
 
@@ -193,9 +279,9 @@ List<_Out> _writeAndroid() {
   // navy field. We don't render the wordmark text in this generator
   // pass (no font dependency); the mark on the navy field is the
   // submission-ready hero.
-  final feature = _renderFeatureGraphic(1024, 500);
-  _writePng(feature, 'android/feature_graphic_1024x500.png');
-  outs.add(const _Out('android/feature_graphic_1024x500.png', 1024, 500));
+  // The feature graphic is NOT written here. It is the one asset that sets
+  // type, so tool/generate_feature_graphic.py owns it -- and two generators
+  // writing one file is the same ambiguity this rewrite exists to remove.
 
   return outs;
 }
@@ -337,7 +423,7 @@ img.Image _solidRect(int width, int height, (int, int, int) rgb) {
 /// [padPercent] is the safe area on each side as a fraction of [size]
 /// — the mark is drawn into the inner square `(size − 2*pad)`.
 img.Image _renderIconOnNavy(int size, {required double padPercent}) {
-  return _renderMark(size, padPercent: padPercent, backgroundRgb: _navy);
+  return _renderMark(size, padPercent: padPercent, backgroundRgb: _master.navy);
 }
 
 img.Image _renderMark(
@@ -360,28 +446,28 @@ img.Image _renderMark(
   // Inner box for mark drawing after applying the safe-area padding.
   final pad = size * padPercent;
   final innerSize = size - 2 * pad;
-  final scale = innerSize / _markRef;
-  final cx = pad + 100.0 * scale;
-  final cy = pad + 100.0 * scale;
+  final scale = innerSize / _master.markRef;
+  final cx = pad + _master.ringCx * scale;
+  final cy = pad + _master.ringCx * scale;
 
   // Gold ring.
-  final ringR = (_ringRadiusRef * scale).round();
-  final ringStroke = math.max(1, (_ringStrokeRef * scale).round());
+  final ringR = (_master.ringRadius * scale).round();
+  final ringStroke = math.max(1, (_master.ringStroke * scale).round());
   _drawCircleStroked(
     image,
     cx: cx.round(),
     cy: cy.round(),
     radius: ringR,
     strokeWidth: ringStroke,
-    color: img.ColorUint8.rgba(_gold.$1, _gold.$2, _gold.$3, 0xff),
+    color: img.ColorUint8.rgba(_master.gold.$1, _master.gold.$2, _master.gold.$3, 0xff),
   );
 
   // Ticks (light variant for legibility on dark surfaces — geometry
   // and stroke width preserved from the master).
-  final tickStroke = math.max(1, (_tickStrokeRef * scale).round());
+  final tickStroke = math.max(1, (_master.tickStroke * scale).round());
   final tickColor =
-      img.ColorUint8.rgba(_inkLight.$1, _inkLight.$2, _inkLight.$3, 0xff);
-  for (final t in _ticksRef) {
+      img.ColorUint8.rgba(_master.tickOnDark.$1, _master.tickOnDark.$2, _master.tickOnDark.$3, 0xff);
+  for (final t in _master.ticks) {
     final x1 = pad + t.$1 * scale;
     final y1 = pad + t.$2 * scale;
     final x2 = pad + t.$3 * scale;
@@ -474,17 +560,6 @@ void _drawCircleStroked(
 /// Feature graphic — 1024×500 navy field with the mark anchored to the
 /// vertical center, occupying ~70% of the height. No wordmark in this
 /// pass (no font dependency); a follow-up render can place the AURA
-/// wordmark from a TTF if desired.
-img.Image _renderFeatureGraphic(int width, int height) {
-  final image = _solidRect(width, height, _navy);
-  final markSize = (height * 0.70).round();
-  final overlay = _renderMark(markSize, padPercent: 0.0, backgroundRgb: null);
-  // Compose mark onto navy field, horizontally centered.
-  final left = (width - markSize) ~/ 2;
-  final top = (height - markSize) ~/ 2;
-  img.compositeImage(image, overlay, dstX: left, dstY: top);
-  return image;
-}
 
 // ── IO + types ─────────────────────────────────────────────────────────────
 
