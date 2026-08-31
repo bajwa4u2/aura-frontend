@@ -73,6 +73,17 @@ const _families = <_Family>[
     icon: Icons.lock_rounded,
   ),
   _Family(
+    // A PERSON ASKED AURA TO SAY WHO THEY ARE, and attached a government
+    // document and a photograph to the request. That is evidence, judgement,
+    // consequence and record — the same shape as every other family here, and
+    // it had no operator surface at all until this pass.
+    title: 'Identity',
+    question: 'Somebody says this is who they are. Does the evidence show it?',
+    sources: ['IDENTITY_VERIFICATION'],
+    needs: OperatorCapability.identityVerificationRead,
+    icon: Icons.badge_outlined,
+  ),
+  _Family(
     title: 'What people told us',
     question: 'Somebody wrote to us. What did we do about it?',
     sources: ['PRODUCT_FEEDBACK', 'SUPPORT'],

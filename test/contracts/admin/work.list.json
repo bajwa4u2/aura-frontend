@@ -28,7 +28,7 @@
       "subjectKind": "PERSON",
       "subjectId": "cmfixture0pr00pi01rm3fyglq",
       "state": "PENDING_REVIEW",
-      "destination": "/admin/subjects/person/cmfixture0pr00pi01rm3fyglq/identity"
+      "destination": "/admin/integrity/identity/cmoidentity0001"
     },
     {
       "key": "INSTITUTION_VERIFICATION:cmoinstreq0001",

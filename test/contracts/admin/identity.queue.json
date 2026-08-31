@@ -1,0 +1,32 @@
+[
+  {
+    "id": "cmoidsub0001rdjzu5f96djh",
+    "userId": "cmfixture0pr02pi01rm3fyglq",
+    "subject": {
+      "id": "cmfixture0pr02pi01rm3fyglq",
+      "handle": "ada",
+      "displayName": "Ada Okafor",
+      "avatarUrl": null
+    },
+    "state": "PENDING_REVIEW",
+    "tier": "BASE",
+    "documentType": "Passport",
+    "submittedAt": "2026-08-22T09:12:00.000Z",
+    "evidenceCount": 2
+  },
+  {
+    "id": "cmoidsub0002rdjzu5f96djh",
+    "userId": "cmfixture0pr03pi01rm3fyglq",
+    "subject": {
+      "id": "cmfixture0pr03pi01rm3fyglq",
+      "handle": "bea",
+      "displayName": "Bea Lindqvist",
+      "avatarUrl": null
+    },
+    "state": "NEEDS_MORE_INFO",
+    "tier": "BASE",
+    "documentType": null,
+    "submittedAt": "2026-08-10T11:00:00.000Z",
+    "evidenceCount": 1
+  }
+]

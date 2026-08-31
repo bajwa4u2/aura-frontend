@@ -795,6 +795,64 @@ class FeedbackDetail extends ConsumerWidget {
               ),
               const SizedBox(height: AuraSpace.s20),
             ],
+            // WHERE THIS STANDS, AND WHETHER ANYONE HAS ANSWERED.
+            //
+            // "It still appears unread" was reported about a feedback whose
+            // state HAD moved to REVIEWED and persisted. The move was real and
+            // invisible: the item sat in the queue looking identical, and
+            // nothing said whether the person had heard anything back. Those
+            // are the two facts an operator needs before deciding what to do,
+            // so they are stated before the buttons.
+            OperatorSection(
+              title: 'Where this stands',
+              child: OperatorPanel(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      f.owed,
+                      style: const TextStyle(
+                        color: AuraSurface.ink,
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          f.submitterHeardBack
+                              ? Icons.mark_email_read_outlined
+                              : Icons.mail_outline_rounded,
+                          size: 15,
+                          color: f.submitterHeardBack
+                              ? AuraSurface.goodInk
+                              : AuraSurface.faint,
+                        ),
+                        const SizedBox(width: AuraSpace.s8),
+                        Expanded(
+                          child: Text(
+                            f.submitterHeardBack
+                                ? 'The person who sent this has been told what '
+                                    'was done.'
+                                : 'The person who sent this has not heard '
+                                    'anything back. Reading it does not tell '
+                                    'them anything.',
+                            style: const TextStyle(
+                              color: AuraSurface.muted,
+                              fontSize: 12.5,
+                              height: 1.45,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: AuraSpace.s20),
             if (!canWrite)
               const OperatorPanel(
                 child: Text(
@@ -803,27 +861,90 @@ class FeedbackDetail extends ConsumerWidget {
                   style: TextStyle(color: AuraSurface.faint, fontSize: 12.5),
                 ),
               )
-            else if (!f.isOpen)
-              const OperatorPanel(
-                child: Text(
-                  'This is closed. Nothing further moves it.',
-                  style: TextStyle(color: AuraSurface.faint, fontSize: 12.5),
-                ),
-              )
             else
-              Wrap(
-                spacing: AuraSpace.s8,
-                runSpacing: AuraSpace.s8,
+              // TWO VERBS, TWO CONSEQUENCES, SAID OUT LOUD.
+              //
+              // The founder could not tell where Admin replies to the person.
+              // It has always been possible — `outcome` is published and the
+              // authority notifies on it — but the console offered "Say what
+              // was done" beside "Mark as read" and "Close it" with nothing to
+              // say which of them reaches a human. And the internal note the
+              // authority supports had no surface at all, so there was nowhere
+              // to write something private even though the field existed.
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  for (final next in f.availableStates)
-                    OutlinedButton(
-                      onPressed: () => _triage(context, ref, f, next),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AuraSurface.ink,
-                        side: const BorderSide(color: AuraSurface.divider),
+                  _ActionGroup(
+                    title: 'Between operators',
+                    detail: 'Nobody outside Aura sees this, and nothing is '
+                        'sent. It does not move the feedback along.',
+                    icon: Icons.sticky_note_2_outlined,
+                    children: [
+                      OutlinedButton(
+                        onPressed: () => _note(context, ref, f),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AuraSurface.ink,
+                          side: const BorderSide(color: AuraSurface.divider),
+                        ),
+                        child: Text(
+                          f.operatorNote == null
+                              ? 'Add an internal note'
+                              : 'Replace the internal note',
+                        ),
                       ),
-                      child: Text(_stateLabel(next)),
+                    ],
+                  ),
+                  if (f.isOpen) ...[
+                    const SizedBox(height: AuraSpace.s16),
+                    _ActionGroup(
+                      title: 'To the person who sent it',
+                      detail: 'What you write is delivered to them through '
+                          'Aura and becomes part of what they can see.',
+                      icon: Icons.campaign_rounded,
+                      children: [
+                        for (final next in f.availableStates)
+                          if (_reaches(next))
+                            OutlinedButton(
+                              onPressed: () => _triage(context, ref, f, next),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AuraSurface.ink,
+                                side: const BorderSide(
+                                    color: AuraSurface.divider),
+                              ),
+                              child: Text(_stateLabel(next)),
+                            ),
+                      ],
                     ),
+                    const SizedBox(height: AuraSpace.s16),
+                    _ActionGroup(
+                      title: 'Just move it along',
+                      detail: 'Changes where this sits in the queue. The '
+                          'person is not told.',
+                      icon: Icons.low_priority_rounded,
+                      children: [
+                        for (final next in f.availableStates)
+                          if (!_reaches(next))
+                            OutlinedButton(
+                              onPressed: () => _triage(context, ref, f, next),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AuraSurface.muted,
+                                side: const BorderSide(
+                                    color: AuraSurface.divider),
+                              ),
+                              child: Text(_stateLabel(next)),
+                            ),
+                      ],
+                    ),
+                  ] else ...[
+                    const SizedBox(height: AuraSpace.s16),
+                    const OperatorPanel(
+                      child: Text(
+                        'This is closed. Nothing further moves it.',
+                        style: TextStyle(
+                            color: AuraSurface.faint, fontSize: 12.5),
+                      ),
+                    ),
+                  ],
                 ],
               ),
           ],
@@ -834,10 +955,57 @@ class FeedbackDetail extends ConsumerWidget {
 
   static String _stateLabel(String state) => switch (state.toUpperCase()) {
         'REVIEWED' => 'Mark as read',
-        'ACTIONED' => 'Say what was done',
-        'CLOSED' => 'Close it',
+        'ACTIONED' => 'Tell them what was done',
+        'CLOSED' => 'Close it, and tell them',
         _ => state,
       };
+
+  /// Whether this move REACHES THE PERSON who sent the feedback.
+  ///
+  /// Not a presentation choice — it mirrors the authority, which notifies on
+  /// ACTIONED and CLOSED and deliberately stays silent on REVIEWED because
+  /// "somebody read it" is not news. Getting this wrong in either direction is
+  /// the failure the grouping exists to prevent.
+  static bool _reaches(String state) =>
+      state.toUpperCase() == 'ACTIONED' || state.toUpperCase() == 'CLOSED';
+
+  Future<void> _note(
+    BuildContext context,
+    WidgetRef ref,
+    OperatorFeedback feedback,
+  ) async {
+    final done = await runOperatorAction(
+      context,
+      OperatorAction(
+        title: 'Add an internal note',
+        subject: feedback.ref.isEmpty ? feedback.id : feedback.ref,
+        detail: 'For operators. The person who sent this feedback never sees '
+            'it and is never told it was written.',
+        confirmLabel: 'Save the note',
+        requiresReason: true,
+        reasonLabel: 'The note',
+        consequences: [
+          const OperatorConsequence(
+            text: 'Nothing is sent. Nobody is notified.',
+            icon: Icons.lock_outline_rounded,
+          ),
+          const OperatorConsequence(
+            text: 'The feedback does not move. It stays exactly where it is '
+                'in the queue.',
+            icon: Icons.pause_circle_outline_rounded,
+          ),
+          OperatorConsequence.recorded('The note, with your name and the time'),
+        ],
+        perform: (note) async {
+          await ref
+              .read(operatorFeedbackRepositoryProvider)
+              .note(feedback.id, note ?? '');
+          return 'Noted. Nothing was sent.';
+        },
+      ),
+    );
+    if (done) ref.invalidate(operatorFeedbackProvider(feedbackId));
+  }
 
   Future<void> _triage(
     BuildContext context,
@@ -1267,4 +1435,70 @@ String _consequenceSubject(ModerationReport report) {
   }
 
   return '${report.targetType} · ${report.targetId}';
+}
+
+/// A set of actions that share ONE consequence, stated once above them.
+///
+/// The feedback screen offered "Mark as read", "Say what was done" and "Close
+/// it" as three equal buttons. Two of them notify a human being and one does
+/// not, and nothing on screen said which. Grouping by consequence is the only
+/// arrangement where an operator cannot be surprised by what they just did.
+class _ActionGroup extends StatelessWidget {
+  const _ActionGroup({
+    required this.title,
+    required this.detail,
+    required this.icon,
+    required this.children,
+  });
+
+  final String title;
+  final String detail;
+  final IconData icon;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    if (children.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 15, color: AuraSurface.faint),
+            const SizedBox(width: AuraSpace.s8),
+            Text(
+              title,
+              style: const TextStyle(
+                color: AuraSurface.ink,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 3),
+        Padding(
+          padding: const EdgeInsets.only(left: 23),
+          child: Text(
+            detail,
+            style: const TextStyle(
+              color: AuraSurface.muted,
+              fontSize: 12,
+              height: 1.45,
+            ),
+          ),
+        ),
+        const SizedBox(height: AuraSpace.s10),
+        Padding(
+          padding: const EdgeInsets.only(left: 23),
+          child: Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
+            children: children,
+          ),
+        ),
+      ],
+    );
+  }
 }

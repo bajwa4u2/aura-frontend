@@ -22,8 +22,10 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../data/admin_providers.dart';
 import '../data/operator_work.dart';
+import '../data/operator_identity.dart';
 import '../domain/operator_authority_provider.dart';
 import '../domain/operator_capability.dart';
+import '../domain/operator_routes.dart';
 import '../ui/operator_action.dart';
 import '../ui/operator_kit.dart';
 import 'record_area.dart' show readableReason;
@@ -210,6 +212,18 @@ class _IdentityBlock extends ConsumerWidget {
       data: (v) {
         final canWrite =
             authority.can(OperatorCapability.identityVerificationWrite);
+        // A GOVERNED DECISION MAY BE WAITING ON THIS PERSON.
+        //
+        // The classes below are written by a DIFFERENT authority from the one
+        // that reviews a submitted document. `Grant a class` records a
+        // verification directly — no evidence, no completeness check, no
+        // submission to resolve. When somebody has actually submitted a
+        // document and is waiting, granting the class here would skip the
+        // evidence and leave their submission open forever.
+        //
+        // So the console says so, and sends the operator to the review.
+        final waiting =
+            ref.watch(openIdentitySubmissionForPersonProvider(userId));
         return OperatorSection(
           title: 'Identity',
           subtitle: v.activeClasses.isEmpty
@@ -220,6 +234,10 @@ class _IdentityBlock extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (waiting != null) ...[
+                  _WaitingOnEvidence(submissionId: waiting.id),
+                  const SizedBox(height: AuraSpace.s14),
+                ],
                 if (v.activeClasses.isEmpty)
                   const Text(
                     'This person holds no verified identity class.',
@@ -1410,6 +1428,72 @@ class _PersonDevices extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// An identity submission is open for this person, with evidence attached.
+///
+/// Shown inside the Identity block rather than beside it: the operator is
+/// looking at the place they would otherwise grant a class from, and this is
+/// the moment they need to know there is a governed path with evidence behind
+/// it.
+class _WaitingOnEvidence extends StatelessWidget {
+  const _WaitingOnEvidence({required this.submissionId});
+
+  final String submissionId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AuraSurface.page,
+        borderRadius: BorderRadius.circular(AuraRadius.md),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      padding: const EdgeInsets.all(AuraSpace.s12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.badge_outlined, size: 16, color: AuraSurface.accent),
+          const SizedBox(width: AuraSpace.s10),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'This person submitted identity evidence and is waiting.',
+                  style: TextStyle(
+                    color: AuraSurface.ink,
+                    fontSize: 12.5,
+                    height: 1.4,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Decide it on the evidence. Granting a class here leaves '
+                  'their submission open and skips the document.',
+                  style: TextStyle(
+                    color: AuraSurface.muted,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AuraSpace.s8),
+          TextButton(
+            onPressed: () =>
+                context.go(operatorIdentityReviewRoute(submissionId)),
+            style: TextButton.styleFrom(
+              foregroundColor: AuraSurface.accent,
+              visualDensity: VisualDensity.compact,
+            ),
+            child: const Text('Review it'),
+          ),
+        ],
+      ),
     );
   }
 }

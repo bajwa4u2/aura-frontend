@@ -131,6 +131,31 @@ class OperatorFeedback {
 
   bool get isOpen => availableStates.isNotEmpty;
 
+  /// WHAT IS OWED, in the operator's words.
+  ///
+  /// The founder marked a feedback read and reported that it "still appears
+  /// unread". It did not: the state moved to REVIEWED and persisted. But
+  /// REVIEWED is still OPEN WORK, so the item stayed in the queue looking
+  /// exactly as it had, and nothing on screen distinguished "nobody has read
+  /// this" from "read, and nothing has been done about it yet".
+  ///
+  /// Those are different obligations, so they are different sentences.
+  String get owed => switch (state.toUpperCase()) {
+        'RECEIVED' => 'Nobody has read this yet',
+        'REVIEWED' => 'Read. Nothing has been done about it yet',
+        'ACTIONED' => 'Something was done, and the person was told',
+        'CLOSED' => 'Closed. Nothing further is owed',
+        _ => state,
+      };
+
+  /// Whether the person who submitted this has been told anything.
+  ///
+  /// The authority notifies on ACTIONED and CLOSED only — deliberately, since
+  /// "somebody read it" is not news. So this is the honest answer to "has
+  /// anyone replied to them?", which is what the operator actually wants.
+  bool get submitterHeardBack =>
+      state.toUpperCase() == 'ACTIONED' || state.toUpperCase() == 'CLOSED';
+
   static String _s(dynamic v) => (v ?? '').toString().trim();
 
   static String? _opt(dynamic v) {
@@ -202,6 +227,13 @@ class OperatorFeedbackRepository {
     return OperatorFeedback.fromJson(
       body is Map ? Map<String, dynamic>.from(body) : const {},
     );
+  }
+
+  /// An INTERNAL note. Never shown to the person, never notified, and it
+  /// moves nothing — writing a note is not progress on the feedback and must
+  /// not look like progress in the queue.
+  Future<void> note(String id, String note) async {
+    await _dio.post('/admin/feedback/$id/note', data: {'note': note});
   }
 
   /// Move it along, and record why.

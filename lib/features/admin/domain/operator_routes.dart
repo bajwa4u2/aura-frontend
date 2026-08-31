@@ -39,3 +39,13 @@ String operatorFeedbackRoute(String feedbackId) =>
 
 String operatorSupportRoute(String caseId) =>
     '$kOperatorSupportRoot/${Uri.encodeComponent(caseId)}';
+
+/// Where an identity submission is reviewed.
+///
+/// NOT the person's subject page. The worklist used to send an identity item
+/// to `/admin/subjects/person/:id/identity`, which offers `Grant a class` — a
+/// different authority that writes a verification record with no evidence and
+/// no submission to resolve. An operator summoned by the queue could grant
+/// somebody's identity without looking at what they submitted.
+String operatorIdentityReviewRoute(String submissionId) =>
+    '/admin/integrity/identity/$submissionId';

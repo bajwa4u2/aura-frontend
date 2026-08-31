@@ -55,6 +55,21 @@ class IosCallKit {
   /// invite is not left pending in the UI on a device that will never ring.
   Future<void> Function(String sessionId, String reason)? onRejectedBySystem;
 
+  /// THE SYSTEM CALL SCREEN IS GONE, AND AURA DID NOT ASK FOR THAT.
+  ///
+  /// iOS gives no callback for "the incoming-call UI stopped being visible",
+  /// but it does report the call ENDING through CXCallObserver — and the
+  /// system's own ring window is shorter than Aura's 90s invitation TTL and is
+  /// not ours to set. So a call can stop being visible while the backend still
+  /// considers it answerable, which is precisely the state that left build 35's
+  /// locked iPhone with nowhere to go but "open Aura".
+  ///
+  /// This is NOT a terminal event and must never be treated as one: the
+  /// invitation's lifecycle belongs to the backend. It says only that the
+  /// SYSTEM surface has retired, so Aura's own in-app card — still live, still
+  /// correct — is now the surface.
+  Future<void> Function(String sessionId)? onSystemPresentationLapsed;
+
   /// A VoIP push arrived and a call screen is now up.
   ///
   /// THIS IS THE RECONCILIATION SEAM, AND IT WAS NEVER CONNECTED. Presentation
@@ -125,6 +140,28 @@ class IosCallKit {
     }
   }
 
+  /// Remove any iOS notification still on screen for [sessionId].
+  ///
+  /// THE RING HAS TWO HALVES ON iOS AND ONLY ONE RETIRED ITSELF. CallKit goes
+  /// away when the call is reported ended; the ordinary APNs banner does not,
+  /// and nothing ever removed it — so a call that was accepted, declined,
+  /// cancelled, expired or answered elsewhere left "Incoming call…" sitting in
+  /// Notification Center, still looking actionable. `cancelNativeCallNotifications`
+  /// did exactly this for Android and returned early on every other platform.
+  ///
+  /// Addressed by the canonical call identity, so it can only ever clear the
+  /// call it is given — two simultaneous calls have two session ids.
+  Future<void> clearCallNotifications(String sessionId) async {
+    if (!isSupported || sessionId.trim().isEmpty) return;
+    try {
+      await _channel.invokeMethod<bool>('clearCallNotifications', {
+        'sessionId': sessionId.trim(),
+      });
+    } catch (e) {
+      debugPrint('[callkit] clearCallNotifications failed: $e');
+    }
+  }
+
   Future<String?> currentVoipToken() async {
     if (!isSupported) return null;
     try {
@@ -159,6 +196,11 @@ class IosCallKit {
         break;
       case 'end':
         await onEnd?.call(sessionId);
+        break;
+      case 'systemPresentationLapsed':
+        if (sessionId.isNotEmpty) {
+          await onSystemPresentationLapsed?.call(sessionId);
+        }
         break;
       case 'callRejectedBySystem':
         await onRejectedBySystem?.call(

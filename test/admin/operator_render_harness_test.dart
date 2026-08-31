@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:aura/core/auth/admin_access_provider.dart';
 import 'package:aura/core/net/dio_provider.dart';
 import 'package:aura/features/admin/areas/discovery_area.dart';
+import 'package:aura/features/admin/areas/identity_review.dart';
 import 'package:aura/features/admin/areas/integrity_area.dart';
 import 'package:aura/features/admin/areas/integrity_detail.dart';
 import 'package:aura/features/admin/areas/now_area.dart';
@@ -103,6 +104,13 @@ void main() {
     'integrity_report': (
       path: '/admin/integrity/moderation/r-1',
       widget: const ModerationReportDetail(reportId: 'r-1'),
+    ),
+    // THE REVIEW THE CONSOLE NEVER HAD. Rendered at every width like every
+    // other destination, because an identity decision is not a desktop-only
+    // act.
+    'integrity_identity': (
+      path: '/admin/integrity/identity/idsub-1',
+      widget: const IdentityReviewDetail(submissionId: 'idsub-1'),
     ),
     'integrity_appeal': (
       path: '/admin/integrity/appeals/ap-1',
@@ -314,6 +322,29 @@ void main() {
   // THE CONTROL THAT MUST NOT BE OFFERED. Nobody else can act as owner, so
   // the revoke button is withheld and the RULE is printed where it would have
   // been — a missing button with no explanation reads as a broken one.
+  // THE TWO IDENTITY STATES THAT ARE EASY TO DRAW WRONG.
+  testWidgets('IDENTITY · evidence destroyed on schedule', (tester) async {
+    await _render(
+      tester,
+      const Size(1440, 1200),
+      '/admin/integrity/identity/idsub-1',
+      const IdentityReviewDetail(submissionId: 'idsub-1'),
+      '$outDir/identity_discarded_w1440.png',
+      identityContract: 'identity.detail.discarded',
+    );
+  });
+
+  testWidgets('IDENTITY · already decided', (tester) async {
+    await _render(
+      tester,
+      const Size(1440, 1200),
+      '/admin/integrity/identity/idsub-1',
+      const IdentityReviewDetail(submissionId: 'idsub-1'),
+      '$outDir/identity_decided_w1440.png',
+      identityContract: 'identity.detail.decided',
+    );
+  });
+
   testWidgets('SUBJECT · the last owner cannot be revoked', (tester) async {
     await _render(
       tester,
@@ -395,6 +426,7 @@ Future<void> _render(
   String workSummaryContract = 'work.summary',
   String workListContract = 'work.list',
   String userDetailContract = 'user.detail',
+  String identityContract = 'identity.detail',
   /// Provider overrides a specific picture needs. Used ONLY for surface state
   /// the operator sets themselves — a selected tab, a chosen filter — never
   /// for data, which always arrives through the transport.
@@ -425,6 +457,7 @@ Future<void> _render(
           workSummaryContract: workSummaryContract,
           workListContract: workListContract,
           userDetailContract: userDetailContract,
+          identityContract: identityContract,
         )),
         appAdminAccessProvider.overrideWith((ref) async => AppAdminAccess(
               state: adminMe == null ? AppAdminState.none : AppAdminState.admin,
@@ -542,6 +575,7 @@ Dio _consoleDio(
   required String workSummaryContract,
   required String workListContract,
   required String userDetailContract,
+  required String identityContract,
 }) {
   final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'));
   dio.interceptors.add(
@@ -599,6 +633,10 @@ Dio _consoleDio(
           body = _contract('institution-domains.list');
         } else if (p.contains('/moderation/queue')) {
           body = {'items': _reports};
+        } else if (p.contains('/admin/identity-verification/queue')) {
+          body = _contract('identity.queue');
+        } else if (p.contains('/admin/identity-verification/')) {
+          body = _contract(identityContract);
         } else if (p.contains('/moderation/reports/')) {
           body = _contract('moderation.report');
         } else if (p.contains('/admin/media/appeals')) {

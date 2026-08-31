@@ -1,0 +1,38 @@
+{
+  "id": "cmoidsub0001rdjzu5f96djh",
+  "state": "PENDING_REVIEW",
+  "tier": "BASE",
+  "documentType": "Passport",
+  "documentExpiresAt": "2031-04-30T00:00:00.000Z",
+  "submittedAt": "2026-08-22T09:12:00.000Z",
+  "reviewedAt": null,
+  "decisionReason": null,
+  "evidenceDiscardedAt": null,
+  "subject": {
+    "id": "cmfixture0pr02pi01rm3fyglq",
+    "handle": "ada",
+    "displayName": "Ada Okafor"
+  },
+  "reviewedBy": null,
+  "evidence": [
+    {
+      "id": "cmoidev0001",
+      "kind": "GOVERNMENT_ID",
+      "discarded": false
+    },
+    {
+      "id": "cmoidev0002",
+      "kind": "SELFIE_COMPARISON",
+      "discarded": false
+    }
+  ],
+  "history": [
+    {
+      "id": "cmoidsub0000priorxxxxxxx",
+      "state": "REJECTED",
+      "submittedAt": "2026-05-02T08:00:00.000Z",
+      "reviewedAt": "2026-05-03T14:20:00.000Z",
+      "decisionReason": "The document was expired at the time of submission."
+    }
+  ]
+}

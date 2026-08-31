@@ -492,6 +492,43 @@ class RealtimeRepository {
   static const int _diagnosticQueueCap = 40;
   bool _flushingDiagnostics = false;
 
+  /// TELL THE SERVER WHETHER THIS PHONE ACTUALLY RANG.
+  ///
+  /// The one fact the backend cannot observe. A push provider accepting a VoIP
+  /// push proves delivery was accepted, not that CallKit presented anything —
+  /// it can refuse for Do Not Disturb, a blocked caller, or a call slot still
+  /// occupied. Aura suppresses a phone's ordinary fallback banner on the
+  /// expectation that CallKit will present; this is what makes that
+  /// expectation checkable instead of assumed.
+  ///
+  /// Fire-and-forget by design. A failure here must never delay or break a
+  /// ringing call — the server's own grace period already treats silence as
+  /// "did not ring", so a lost report degrades toward showing the fallback,
+  /// which is the safe direction.
+  ///
+  /// The installation is taken from the request's client identity headers, not
+  /// sent in the body: a client does not get to claim which phone it is.
+  Future<void> reportCallPresentation(
+    String sessionId, {
+    required String state,
+    String? platform,
+    String? detail,
+  }) async {
+    if (sessionId.trim().isEmpty) return;
+    try {
+      await _dio.post<dynamic>(
+        '/realtime/sessions/${sessionId.trim()}/presentation',
+        data: <String, dynamic>{
+          'state': state,
+          if (platform != null && platform.isNotEmpty) 'platform': platform,
+          if (detail != null && detail.isNotEmpty) 'detail': detail,
+        },
+      );
+    } catch (_) {
+      // Deliberately swallowed. See above.
+    }
+  }
+
   Future<void> reportStageDiagnostic(
     String sessionId, {
     required String phase,

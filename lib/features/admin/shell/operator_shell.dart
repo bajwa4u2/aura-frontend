@@ -30,6 +30,7 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../runtime/admin_runtime_coordinator.dart';
+import '../../../core/auth/admin_access_provider.dart';
 import '../domain/operator_area.dart';
 import '../domain/operator_authority_provider.dart';
 import '../domain/operator_capability.dart';
@@ -79,6 +80,47 @@ class _OperatorShellState extends ConsumerState<OperatorShell> {
   @override
   void initState() {
     super.initState();
+
+    // THE CONSOLE GRANTS ITS OWN PROBE.
+    //
+    // `appAdminAccessProvider` refuses to fire `GET /v1/admin/me` until some
+    // callsite latches `appAdminProbeAllowedProvider` — the discipline that
+    // stopped every signed-in non-operator writing an `admin.access.denied`
+    // row on every route change. Correct, and it must stay.
+    //
+    // But the ONLY place that latched it was a side effect inside the router's
+    // `redirect`, which runs on navigation and on `refreshListenable` — both
+    // driven by the widget pipeline. On a cold load the first `redirect` runs
+    // before `/auth/refresh` has returned, so `authStatus` is not yet `authed`
+    // and the latch is not set; the console then waits for a LATER redirect
+    // that nothing is guaranteed to cause.
+    //
+    // Measured in production: a tab left in the background sat on
+    // "Establishing authority" for 213 seconds with `/admin/me` never
+    // requested once, while presence and notification timers kept firing
+    // normally. Flutter web throttles its frame loop when a tab is hidden, so
+    // the redirect→latch→probe chain simply stopped advancing — and there is
+    // no timeout behind it, so the console waits forever rather than failing.
+    //
+    // THIS SHELL IS THE HONEST PLACE FOR THE GRANT. Its existence IS the fact
+    // the latch was trying to establish: an operator surface is on screen, so
+    // asking what they may operate is exactly what should happen next. It is
+    // set synchronously in `initState` rather than after a frame, because
+    // waiting for a frame is the failure being fixed.
+    //
+    // The router keeps its own grant. Two callsites setting the same latch to
+    // the same value is not duplication worth removing — it is the difference
+    // between one path having to work and either path being enough.
+    // A MICROTASK, NOT A FRAME. Riverpod refuses a provider mutation while the
+    // tree is building, and `initState` here runs inside the router's build.
+    // A microtask drains on the event loop the moment that build returns — it
+    // does not wait for a frame, which is the whole point: frame starvation is
+    // the failure being fixed.
+    Future.microtask(() {
+      if (!mounted) return;
+      ref.read(appAdminProbeAllowedProvider.notifier).state = true;
+    });
+
     // Admin polling is gated on the shell being mounted AND the app being
     // foregrounded, so a backgrounded tab does zero admin work.
     WidgetsBinding.instance.addPostFrameCallback((_) {

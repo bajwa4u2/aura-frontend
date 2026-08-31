@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:aura/features/admin/data/admin_models.dart';
+import 'package:aura/features/admin/data/operator_identity.dart';
 import 'package:aura/features/admin/data/operator_work.dart';
 import 'package:aura/features/admin/domain/operator_signal.dart';
 import 'package:aura/features/admin/domain/platform_health.dart';
@@ -33,6 +34,21 @@ void main() {
     return jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
   }
 
+  /// Some endpoints answer with a bare list — `reviewQueue` is one. Reading it
+  /// through the map helper would be the client deciding the server's shape.
+  List<Map<String, dynamic>> contractList(String name) {
+    final file = File('${dir.path}/$name.json');
+    final raw = jsonDecode(file.readAsStringSync());
+    if (raw is List) {
+      return raw.cast<Map<String, dynamic>>();
+    }
+    final map = raw as Map<String, dynamic>;
+    return (map['items'] as List).cast<Map<String, dynamic>>();
+  }
+
+  String contractRaw(String name) =>
+      File('${dir.path}/$name.json').readAsStringSync();
+
   group('the contract corpus exists and is the server\'s', () {
     test('every captured surface is present', () {
       final names = dir
@@ -48,6 +64,10 @@ void main() {
         'health.database-down',
         'health.healthy',
         'health.providers-missing',
+        'identity.detail',
+        'identity.detail.decided',
+        'identity.detail.discarded',
+        'identity.queue',
         'institution-domains.list',
         'institution.detail',
         'institution.members',
@@ -301,6 +321,99 @@ void main() {
           expect(subject, isNot(startsWith('Media cm')));
         }
       }
+    });
+  });
+
+  group('identity verification is operable, and its custody is not', () {
+    // The authority was complete and the console had never called it. These
+    // assert the SHAPE the review is built on and — more importantly — the
+    // limits, because the limits are the part a convenient console erodes.
+    List<IdentityQueueItem> queue() =>
+        contractList('identity.queue').map(IdentityQueueItem.fromJson).toList();
+
+    IdentitySubmission detail(String name) =>
+        IdentitySubmission.fromJson(contract(name));
+
+    test('the queue names who is waiting, not their id', () {
+      final first = queue().first;
+      expect(first.subject.displayName, isNotEmpty);
+      expect(first.state, IdentitySubmissionState.pendingReview);
+      // A COUNT of evidence, never the evidence. Opening the queue must not
+      // be a bulk disclosure of identity documents.
+      expect(first.evidenceCount, 2);
+    });
+
+    test('no queue row carries an image, a url or a document number', () {
+      final raw = contractRaw('identity.queue').toLowerCase();
+      expect(raw, isNot(contains('http')));
+      expect(raw, isNot(contains('mediaid')));
+    });
+
+    test('the detail gives evidence as a ROLE and an id, never bytes', () {
+      final s = detail('identity.detail');
+      expect(s.evidence, hasLength(2));
+      expect(
+        s.evidence.map((e) => e.kind),
+        containsAll([
+          IdentityEvidenceKind.governmentId,
+          IdentityEvidenceKind.selfieComparison,
+        ]),
+      );
+      final raw = contractRaw('identity.detail').toLowerCase();
+      expect(raw, isNot(contains('http')));
+      expect(raw, isNot(contains('mediaid')));
+    });
+
+    test('SELFIE_COMPARISON is never described as liveness', () {
+      // The schema is explicit: a static image proves no such thing, and
+      // renaming it would claim an assurance the manual path does not give.
+      const kind = IdentityEvidenceKind.selfieComparison;
+      expect(kind.label.toLowerCase(), isNot(contains('liveness')));
+      expect(kind.purpose.toLowerCase(), contains('not a liveness check'));
+    });
+
+    test('approval is refused on incomplete evidence, before the request', () {
+      final s = detail('identity.detail');
+      expect(s.canApproveOnEvidence, isTrue);
+      expect(s.missingForApproval, isEmpty);
+    });
+
+    test('destroyed evidence survives as a fact and cannot be opened', () {
+      final s = detail('identity.detail.discarded');
+      // It EXISTED — that is part of the record — and the bytes are gone.
+      expect(s.evidence, hasLength(2));
+      expect(s.evidence.every((e) => e.discarded), isTrue);
+      expect(s.readable, isEmpty);
+      expect(s.evidenceDiscardedAt, isNotNull);
+      // And it can no longer be approved on evidence nobody can look at.
+      expect(s.canApproveOnEvidence, isFalse);
+    });
+
+    test('an already-decided submission offers no second verdict', () {
+      final s = detail('identity.detail.decided');
+      expect(s.state, IdentitySubmissionState.rejected);
+      expect(s.awaitsDecision, isFalse);
+      expect(s.reviewerName, isNotNull);
+      expect(s.decisionReason, isNotNull);
+    });
+
+    test('prior submissions travel with the review', () {
+      // Deciding the same claim two different ways is what this prevents.
+      final s = detail('identity.detail');
+      expect(s.history, isNotEmpty);
+      expect(s.history.first.decisionReason, isNotNull);
+    });
+
+    test('the console models exactly the verdicts the authority has', () {
+      // Three. Not a fourth invented because a modern console usually has one.
+      expect(
+        IdentitySubmissionState.values
+            .where((s) => s != IdentitySubmissionState.unknown)
+            .map((s) => s.wire)
+            .toSet(),
+        {'PENDING_REVIEW', 'NEEDS_MORE_INFO', 'REJECTED', 'APPROVED',
+          'WITHDRAWN'},
+      );
     });
   });
 

@@ -1,0 +1,33 @@
+{
+  "id": "cmoidsub0001rdjzu5f96djh",
+  "state": "REJECTED",
+  "tier": "BASE",
+  "documentType": "Passport",
+  "documentExpiresAt": "2031-04-30T00:00:00.000Z",
+  "submittedAt": "2026-08-22T09:12:00.000Z",
+  "reviewedAt": "2026-08-23T16:45:00.000Z",
+  "decisionReason": "The photograph and the document are not the same person.",
+  "evidenceDiscardedAt": null,
+  "subject": {
+    "id": "cmfixture0pr02pi01rm3fyglq",
+    "handle": "ada",
+    "displayName": "Ada Okafor"
+  },
+  "reviewedBy": {
+    "id": "cmfixture0pr00pi01rm3fyglq",
+    "displayName": "Rowan Ellis"
+  },
+  "evidence": [
+    {
+      "id": "cmoidev0001",
+      "kind": "GOVERNMENT_ID",
+      "discarded": false
+    },
+    {
+      "id": "cmoidev0002",
+      "kind": "SELFIE_COMPARISON",
+      "discarded": false
+    }
+  ],
+  "history": []
+}

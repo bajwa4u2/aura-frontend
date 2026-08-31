@@ -106,6 +106,31 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     }
   }
 
+  /// WHETHER THIS PHONE ACTUALLY RANG — reported to the one authority that
+  /// decides whether the fallback banner is still owed.
+  ///
+  /// The server suppresses this phone's ordinary notification on the
+  /// expectation that CallKit will present, then waits a bounded moment for
+  /// this report. Saying ESTABLISHED keeps the fallback silent; saying
+  /// REJECTED brings it immediately; saying nothing at all lets the grace
+  /// period bring it. Every direction degrades toward the phone ringing.
+  void _reportPresentation(String sessionId, String state, [String? detail]) {
+    if (sessionId.isEmpty) return;
+    try {
+      unawaited(
+        ref.read(realtimeRepositoryProvider).reportCallPresentation(
+              sessionId,
+              state: state,
+              platform: 'iOS',
+              detail: detail,
+            ),
+      );
+    } catch (_) {
+      // Observability is never worth a crash — and the server's grace period
+      // already treats silence as "did not ring".
+    }
+  }
+
   /// Wire the native incoming-call surface to Aura's own authorities.
   ///
   /// Everything here is a translation, never a decision: a VoIP token becomes a
@@ -197,6 +222,40 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       // `reportNewIncomingCall` succeeded here, so this records that fact; the
       // refusal path below records the reason iOS gave.
       _reportCallKit(sessionId, 'presented', 'reportNewIncomingCall succeeded');
+      // The phone rang. The fallback is not owed.
+      _reportPresentation(sessionId, 'ESTABLISHED');
+    };
+
+    // THE SYSTEM STOPPED SHOWING THE CALL. THE CALL MAY STILL BE LIVE.
+    //
+    // iOS retires an unanswered CallKit call on its own schedule, which is
+    // shorter than Aura's 90s invitation TTL and not ours to configure. When
+    // that happens the invitation is often still answerable — and build 35 had
+    // no answer for that state, which is why a locked iPhone's call "became
+    // buried" and the only recovery was opening the app.
+    //
+    // The recovery is deliberately small, because the correct state already
+    // exists: the in-app card is in the bridge, the backend still owns the
+    // invitation, and native has already retracted the notification so nothing
+    // stale competes. All that is needed is to drop the card if the invite has
+    // since expired, and to say the lapse happened so it stops being invisible.
+    //
+    // Nothing here fabricates a terminal state. A lapsed SYSTEM presentation is
+    // not a declined, cancelled or ended CALL, and treating it as one would
+    // hang up a call the person can still answer.
+    callKit.onSystemPresentationLapsed = (sessionId) async {
+      _reportCallKit(
+        sessionId,
+        'presentation_lapsed',
+        'system call UI retired while the invitation may still be live',
+      );
+      _reportPresentation(sessionId, 'LAPSED');
+      if (!mounted) return;
+      try {
+        ref.read(incomingCallBridgeProvider.notifier).evictExpired();
+      } catch (e) {
+        debugPrint('[callkit] lapse reconciliation failed: $e');
+      }
     };
 
     callKit.onVoipTokenInvalidated = () async {
@@ -353,6 +412,14 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       // system refused" from "the report never happened", and without it both
       // look identical from the server.
       _reportCallKit(sessionId, 'report_refused', reason);
+      // THE SILENT-CALL PATH, CLOSED.
+      //
+      // CallKit refused to present — Do Not Disturb, a blocked caller, a call
+      // slot still occupied — and this phone's ordinary banner was suppressed
+      // in the expectation that it would present. Saying so brings the
+      // fallback immediately instead of leaving the person with a call that
+      // rang nowhere.
+      _reportPresentation(sessionId, 'REJECTED', reason);
       // Do Not Disturb, a blocked caller, or an already-dead call. The device
       // will never ring for this session, so do not leave the invite pending.
       debugPrint('[callkit] system refused call $sessionId: $reason');

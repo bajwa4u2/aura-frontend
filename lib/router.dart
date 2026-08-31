@@ -9,6 +9,7 @@ import 'app/app_shell.dart';
 import 'app/route_classification.dart';
 import 'features/admin/areas/discovery_area.dart';
 import 'features/admin/areas/integrity_detail.dart';
+import 'features/admin/areas/identity_review.dart';
 import 'features/admin/areas/integrity_area.dart';
 import 'features/admin/areas/now_area.dart';
 import 'features/admin/areas/platform_area.dart';
@@ -1838,6 +1839,17 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (_, state) => _operatorPage(SubjectInstitutionArea(
               institutionId: state.pathParameters['id'] ?? '',
               focus: state.pathParameters['focus']),
+            ),
+          ),
+          // IDENTITY REVIEW. In INTEGRITY for the same reason a moderation
+          // report is: a human is being asked to look at evidence and make a
+          // consequential decision about a person.
+          GoRoute(
+            path: '/admin/integrity/identity/:id',
+            pageBuilder: (_, state) => _operatorPage(
+              IdentityReviewDetail(
+                submissionId: state.pathParameters['id'] ?? '',
+              ),
             ),
           ),
           GoRoute(

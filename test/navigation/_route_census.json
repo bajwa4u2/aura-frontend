@@ -1608,6 +1608,20 @@
   "parent": ""
  },
  {
+  "path": "/admin/integrity/identity/:id",
+  "segments": 4,
+  "params": [
+   "id"
+  ],
+  "renders": true,
+  "hasRedirect": false,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
   "path": "/admin/integrity/moderation/:id",
   "segments": 4,
   "params": [

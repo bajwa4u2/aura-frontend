@@ -132,6 +132,13 @@ class IncomingCallBridgeNotifier
   void _onSessionTerminated(String sessionId, {String reason = 'ended'}) {
     _guard.recordClear(sessionId);
     IosCallKit.instance.reportEnded(sessionId, reason: reason);
+    // AND THE OTHER HALF OF THE RING. Reporting the CallKit call ended retires
+    // the system call; it does nothing to the ordinary APNs banner delivered
+    // beside it, which is why an iPhone kept showing "Incoming call…" for a
+    // call that was over. Every terminal state reaches this choke point —
+    // declined, cancelled, expired, answered elsewhere, superseded — so
+    // clearing here clears them all, once, in one place.
+    IosCallKit.instance.clearCallNotifications(sessionId);
     final next = state.where((item) {
       final data = item['data'];
       final sid = data is Map ? _str(data['sessionId']) : '';
@@ -171,6 +178,13 @@ class IncomingCallBridgeNotifier
     _guard.recordClear(trimmed);
     // Deliberately NOT reportEnded. See above.
     IosCallKit.instance.reportConnected(trimmed);
+    // Accepting resolves the call as surely as ending it does, and the banner
+    // must go either way: nobody wants a ringing notification for the call
+    // they are now in. This is the accept-side half of the same cleanup, and
+    // it is why it is NOT folded into _onSessionTerminated — that path would
+    // also report the call ended, which is the one thing an accept must never
+    // do.
+    IosCallKit.instance.clearCallNotifications(trimmed);
     final next = state.where((item) {
       final data = item['data'];
       final sid = data is Map ? _str(data['sessionId']) : '';

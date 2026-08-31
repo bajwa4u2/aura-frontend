@@ -1375,6 +1375,17 @@
   "verdict": "COMPLIANT"
  },
  {
+  "route": "/admin/integrity/identity/:id",
+  "sample": "/admin/integrity/identity/x-id",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "parentReturn",
+  "deepLinkDestination": "/admin/integrity",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
   "route": "/admin/integrity/moderation/:id",
   "sample": "/admin/integrity/moderation/x-id",
   "renders": true,

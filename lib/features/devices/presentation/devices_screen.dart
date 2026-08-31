@@ -10,6 +10,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../device_model.dart';
+import '../physical_device.dart';
 import '../device_providers.dart';
 
 /// Advanced Device Preference / Transfer — item 12.
@@ -40,12 +41,14 @@ class DevicesScreen extends ConsumerStatefulWidget {
 class _DevicesScreenState extends ConsumerState<DevicesScreen> {
   String? _busyDeviceId;
 
-  Future<void> _setPreferred(UserDevice device) async {
-    setState(() => _busyDeviceId = device.id);
+  Future<void> _setPreferred(PhysicalDevice phone) async {
+    setState(() => _busyDeviceId = phone.key);
     try {
+      // One call is enough: the backend scopes preference to the physical
+      // installation, so marking any endpoint marks the phone.
       await ref
           .read(deviceRepositoryProvider)
-          .updateDevice(device.id, {'isPreferred': true});
+          .updateDevice(phone.primary.id, {'isPreferred': true});
       ref.invalidate(_myDevicesProvider);
     } catch (e) {
       if (!mounted) return;
@@ -57,15 +60,15 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
     }
   }
 
-  Future<void> _revoke(UserDevice device) async {
+  Future<void> _revoke(PhysicalDevice phone) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AuraSurface.card,
         title: const Text('Remove this device?'),
         content: Text(
-          '${_deviceLabel(device)} will stop receiving notifications and '
-          "calls. You can register it again by signing in on it.",
+          '${physicalDeviceLabel(phone)} will stop receiving notifications '
+          "and calls. You can register it again by signing in on it.",
         ),
         actions: [
           TextButton(
@@ -81,9 +84,16 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
     );
     if (confirmed != true) return;
 
-    setState(() => _busyDeviceId = device.id);
+    setState(() => _busyDeviceId = phone.key);
     try {
-      await ref.read(deviceRepositoryProvider).revokeDevice(device.id);
+      // EVERY REGISTRATION, OR THE PHONE IS NOT REMOVED.
+      //
+      // Revoking one endpoint would leave the other half registered and still
+      // receiving — a phone the person believes they removed, still ringing.
+      final repo = ref.read(deviceRepositoryProvider);
+      for (final id in phone.revocableIds) {
+        await repo.revokeDevice(id);
+      }
       ref.invalidate(_myDevicesProvider);
     } catch (e) {
       if (!mounted) return;
@@ -93,13 +103,6 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
     } finally {
       if (mounted) setState(() => _busyDeviceId = null);
     }
-  }
-
-  String _deviceLabel(UserDevice device) {
-    final name = (device.deviceName ?? '').trim();
-    if (name.isNotEmpty) return name;
-    final platform = (device.platform).trim();
-    return platform.isNotEmpty ? platform : 'Unknown device';
   }
 
   IconData _platformIcon(String platform) {
@@ -152,12 +155,16 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
           ),
         ),
         data: (devices) {
-          final active = devices.where((d) => d.isActive).toList()
-            ..sort((a, b) {
+          // ONE PHONE, ONE ENTRY. An iPhone holds two registrations and used to
+          // appear twice — "iPhone" and "iPhone (calls)" — which is an
+          // implementation detail wearing the clothes of a second device.
+          final active = groupIntoPhysicalDevices(
+            devices.where((d) => d.isActive).toList(),
+          )..sort((a, b) {
               if (a.isPreferred != b.isPreferred) {
                 return a.isPreferred ? -1 : 1;
               }
-              return (b.lastSeenAt ?? '').compareTo(a.lastSeenAt ?? '');
+              return b.lastSeenAt.compareTo(a.lastSeenAt);
             });
 
           if (active.isEmpty) {
@@ -185,19 +192,19 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
                   style: AuraText.muted,
                 ),
               ),
-              for (final device in active)
+              for (final phone in active)
                 Padding(
                   padding: const EdgeInsets.only(bottom: AuraSpace.s10),
                   child: _DeviceCard(
-                    device: device,
-                    icon: _platformIcon(device.platform),
-                    label: _deviceLabel(device),
-                    subtitle: _lastSeenLabel(device),
-                    busy: _busyDeviceId == device.id,
-                    onSetPreferred: device.isPreferred
+                    device: phone.primary,
+                    icon: _platformIcon(phone.primary.platform),
+                    label: physicalDeviceLabel(phone),
+                    subtitle: _lastSeenLabel(phone.primary),
+                    busy: _busyDeviceId == phone.key,
+                    onSetPreferred: phone.isPreferred
                         ? null
-                        : () => _setPreferred(device),
-                    onRevoke: () => _revoke(device),
+                        : () => _setPreferred(phone),
+                    onRevoke: () => _revoke(phone),
                   ),
                 ),
             ],

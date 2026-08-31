@@ -124,6 +124,7 @@ route,sample,renders,protected,deeplink_semantic,deeplink_destination,in_app_sem
 /admin/subjects/institution/:id,/admin/subjects/institution/x-id,true,false,parentReturn,/admin/subjects,stackReturn,true,COMPLIANT
 /admin/subjects/person/:id/:focus,/admin/subjects/person/x-id/x-focus,true,false,parentReturn,/admin/subjects/person/x-id,stackReturn,true,COMPLIANT
 /admin/subjects/institution/:id/:focus,/admin/subjects/institution/x-id/x-focus,true,false,parentReturn,/admin/subjects/institution/x-id,stackReturn,true,COMPLIANT
+/admin/integrity/identity/:id,/admin/integrity/identity/x-id,true,false,parentReturn,/admin/integrity,stackReturn,true,COMPLIANT
 /admin/integrity/moderation/:id,/admin/integrity/moderation/x-id,true,false,parentReturn,/admin/integrity,stackReturn,true,COMPLIANT
 /admin/integrity/appeals/:id,/admin/integrity/appeals/x-id,true,false,parentReturn,/admin/integrity,stackReturn,true,COMPLIANT
 /admin/integrity/feedback/:id,/admin/integrity/feedback/x-id,true,false,parentReturn,/admin/integrity,stackReturn,true,COMPLIANT
