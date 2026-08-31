@@ -1,0 +1,239 @@
+{
+  "contract": "native-continuation",
+  "version": "1.0.0",
+  "frozen": "2026-08-31",
+  "doctrine": [
+    "Every ELIGIBLE PUBLIC product URL is also a native-app acquisition and continuation surface.",
+    "The canonical public URL is the identity. There is no separate SEO, share or app identity.",
+    "Native acquisition must never become a forced interstitial. Public web stays usable.",
+    "Opening from a public object must reach THAT destination, never merely app home.",
+    "Knowledge of a URL is not authorization. Continuation never widens what a visitor may see.",
+    "Platforms do not independently invent eligibility. This file is the only source."
+  ],
+  "objectFamilies": [
+    {
+      "type": "USER_POST",
+      "canonicalPattern": "/p/:id",
+      "appPath": "/posts/:id",
+      "matchOrder": 99,
+      "note": "Bare /p/:id is the catch-all. It MUST be matched last or it swallows every prefixed family below."
+    },
+    {
+      "type": "INSTITUTION_POST",
+      "canonicalPattern": "/p/i/:institutionId/:postId",
+      "appPath": "/institutions/:institutionId/posts/:postId",
+      "matchOrder": 10
+    },
+    {
+      "type": "ANNOUNCEMENT",
+      "canonicalPattern": "/p/a/:slug",
+      "appPath": "/announcements/:slug",
+      "matchOrder": 20
+    },
+    {
+      "type": "ARTICLE",
+      "canonicalPattern": "/p/art/:slug",
+      "appPath": "/articles/:slug",
+      "matchOrder": 15,
+      "note": "Must be tried before ANNOUNCEMENT: 'a' is a prefix of 'art' only if matching is done on characters rather than whole segments. Whole-segment matching is required."
+    },
+    {
+      "type": "PERSON_PROFILE",
+      "canonicalPattern": "/p/u/:handle",
+      "appPath": "/u/:handle",
+      "matchOrder": 30
+    },
+    {
+      "type": "INSTITUTION_PROFILE",
+      "canonicalPattern": "/p/org/:slug",
+      "appPath": "/institutions/:slug",
+      "matchOrder": 40
+    },
+    {
+      "type": "MEETING",
+      "canonicalPattern": "/p/m/:code",
+      "appPath": "/meetings/join/:code",
+      "matchOrder": 50,
+      "entryModel": "GUEST_REACHABLE",
+      "note": "Meeting admission is decided by the meeting's own authority. Reaching the join surface is not admission."
+    }
+  ],
+  "associationScope": {
+    "hosts": [
+      "auraplatform.org",
+      "app.auraplatform.org"
+    ],
+    "include": [
+      {
+        "prefix": "/p/",
+        "why": "The canonical public share family. This is the identity people actually send."
+      },
+      {
+        "prefix": "/posts/",
+        "why": "Public post reading; the destination /p/:id resolves to."
+      },
+      {
+        "prefix": "/announcements/",
+        "why": "Public announcement reading."
+      },
+      {
+        "prefix": "/articles/",
+        "why": "Public article reading."
+      },
+      {
+        "prefix": "/u/",
+        "why": "Public person profiles."
+      },
+      {
+        "prefix": "/author/",
+        "why": "Public authorship surface."
+      },
+      {
+        "prefix": "/institutions/",
+        "why": "Public institution directory and detail."
+      },
+      {
+        "prefix": "/spaces/",
+        "why": "Public subject Spaces."
+      },
+      {
+        "prefix": "/meetings/join/",
+        "why": "Guest-reachable meeting entry. NOT /join/ -- that path is declared by no router and fails closed to MEMBER, which put a login wall in front of invited guests."
+      },
+      {
+        "prefix": "/invite/",
+        "why": "Invitation acceptance; continuation depends on it."
+      },
+      {
+        "prefix": "/auth/",
+        "why": "Auth ceremonies that complete a preserved destination."
+      },
+      {
+        "path": "/verify-email",
+        "why": "Auth ceremony."
+      },
+      {
+        "path": "/reset-password",
+        "why": "Auth ceremony."
+      },
+      {
+        "path": "/forgot-password",
+        "why": "Auth ceremony."
+      },
+      {
+        "path": "/account-deletion",
+        "why": "Store-required entry point."
+      }
+    ],
+    "exclude": [
+      {
+        "pattern": "/posts/*/edit",
+        "why": "Authoring, not reading. A public sibling never implies its editor is public."
+      },
+      {
+        "pattern": "/articles/write*",
+        "why": "Authoring."
+      },
+      {
+        "pattern": "/announcements/create",
+        "why": "Authoring."
+      },
+      {
+        "pattern": "/institutions/get-started",
+        "why": "Onboarding wizard is member-gated."
+      },
+      {
+        "pattern": "/home*",
+        "why": "Member surface."
+      },
+      {
+        "pattern": "/messages*",
+        "why": "Private correspondence."
+      },
+      {
+        "pattern": "/me*",
+        "why": "Private self surfaces."
+      },
+      {
+        "pattern": "/admin*",
+        "why": "Operator surfaces."
+      },
+      {
+        "pattern": "/settings*",
+        "why": "Member surfaces."
+      }
+    ],
+    "platformLimits": {
+      "android": "Intent filters express pathPrefix, never negation. Excludes are enforced in-app by the resolver and by route classification, not by the manifest.",
+      "ios": "AASA supports explicit exclusion, so the excludes above are expressed there directly.",
+      "windows": "App URI Handlers associate a HOST, not a path. All path scoping is enforced in-app."
+    }
+  },
+  "storeDestinations": {
+    "android": "https://play.google.com/store/apps/details?id=org.auraplatform.app",
+    "ios": "https://apps.apple.com/us/app/aura-platform/id6772071135",
+    "windows": "https://apps.microsoft.com/detail/9N6CZR88F4NT"
+  },
+  "acquisition": {
+    "openWhenAssociationCanWork": true,
+    "neverShowFakeOpenState": true,
+    "neverForceInterstitial": true,
+    "publicWebRemainsUsable": true,
+    "androidDistributionNote": "Play production access has NOT been granted; the app is in closed testing. A general visitor cannot obtain it from that link, so Android must not be advertised as generally available."
+  },
+  "destinationPreservation": {
+    "queryParam": "redirect",
+    "rule": "A destination is preserved ACROSS the auth boundary and resumed after it. It is never discarded, and never widened: resuming only re-attempts the destination under the visitor's real authority.",
+    "sameAccountOnly": true,
+    "clearOnLogout": true
+  },
+  "review": {
+    "distinctFrom": "product-feedback",
+    "note": "PRODUCT FEEDBACK is first-party governed Aura feedback. RATE/REVIEW is the platform-owned mechanism. They are never merged.",
+    "mechanism": {
+      "android": "Google Play In-App Review",
+      "ios": "SKStoreReviewController / requestReview",
+      "windows": "Microsoft Store review destination"
+    },
+    "prohibited": [
+      "custom star UI",
+      "rewards or gating",
+      "any manipulation of rating outcome"
+    ],
+    "neverPromptAt": [
+      "first launch",
+      "signup",
+      "error",
+      "failed payment",
+      "call",
+      "composition",
+      "identity verification",
+      "any consequential workflow"
+    ],
+    "eligibility": "Follows meaningful successful use. Subordinate to acquisition, never the primary call to action."
+  },
+  "platformContinuation": {
+    "_note": "associationConfigured describes THIS SOURCE TREE. shippedInClient describes the client a visitor actually has installed. They are separate because the web surface deploys before the native clients do, and an \"Open in Aura\" shown against a client that cannot route the destination is a fake Open state -- it opens the old app at home and loses the very thing the person tapped. Flip shippedInClient only when a released client carries the continuation capability.",
+    "android": {
+      "associationConfigured": true,
+      "mechanism": "App Links (scoped intent filters) + flutter_deeplinking_enabled",
+      "shippedInClient": false
+    },
+    "ios": {
+      "associationConfigured": true,
+      "mechanism": "Universal Links (AASA components) + FlutterDeepLinkingEnabled",
+      "shippedInClient": false
+    },
+    "windows": {
+      "associationConfigured": true,
+      "mechanism": "App URI Handlers + aura:// protocol activation, resolved from launch arguments",
+      "shippedInClient": false
+    }
+  },
+  "webAcquisition": {
+    "eligibilitySource": "associationScope.include",
+    "_note": "Eligibility is the association scope, not a second hand-kept list. The previous surface listed exact static paths only, so marketing pages offered the app and the object pages people actually share offered nothing -- precisely backwards.",
+    "dismissible": true,
+    "blocking": false
+  }
+}

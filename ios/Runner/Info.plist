@@ -156,6 +156,15 @@
 	  in Runner.entitlements + apple-app-site-association at the
 	  backend domain root).
 	-->
+	<!--
+	  Without this, Flutter does NOT hand a Universal Link to the Dart router:
+	  iOS activates the app via continueUserActivity and the framework drops it,
+	  so the app opens at its default route. Every associated url in the AASA
+	  would resolve to home. This is the difference between an association that
+	  validates and a continuation that works.
+	-->
+	<key>FlutterDeepLinkingEnabled</key>
+	<true/>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

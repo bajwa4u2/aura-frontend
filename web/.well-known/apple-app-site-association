@@ -8,28 +8,84 @@
         ],
         "components": [
           {
-            "/": "/auth/*",
-            "comment": "Email-verification + password-reset deep links"
+            "/": "/posts/*/edit",
+            "exclude": true,
+            "comment": "EXCLUSIONS FIRST - components are evaluated in order, so a later include would otherwise claim these. Authoring is not reading."
           },
           {
-            "/": "/invite/*",
-            "comment": "Institution + direct invitation links"
+            "/": "/articles/write*",
+            "exclude": true,
+            "comment": "Authoring."
           },
           {
-            "/": "/threads/*",
-            "comment": "Direct thread deep link"
+            "/": "/announcements/create",
+            "exclude": true,
+            "comment": "Authoring."
           },
           {
-            "/": "/spaces/*",
-            "comment": "Public space deep link"
+            "/": "/institutions/get-started",
+            "exclude": true,
+            "comment": "Member-gated onboarding wizard."
+          },
+          {
+            "/": "/p/*",
+            "comment": "THE CANONICAL PUBLIC SHARE FAMILY - the url people actually send. It was absent from this file entirely, so every shared Aura link stayed in Safari."
+          },
+          {
+            "/": "/posts/*",
+            "comment": "Public post reading; where /p/:id resolves."
           },
           {
             "/": "/announcements/*",
-            "comment": "Announcement deep link"
+            "comment": "Public announcement reading."
+          },
+          {
+            "/": "/articles/*",
+            "comment": "Public article reading."
+          },
+          {
+            "/": "/u/*",
+            "comment": "Public person profiles."
+          },
+          {
+            "/": "/author/*",
+            "comment": "Public authorship surface."
+          },
+          {
+            "/": "/institutions/*",
+            "comment": "Public institution directory and detail."
+          },
+          {
+            "/": "/spaces/*",
+            "comment": "Public subject Spaces."
+          },
+          {
+            "/": "/meetings/join/*",
+            "comment": "Guest-reachable meeting entry. NOT /join/* - that path is declared by no router."
+          },
+          {
+            "/": "/invite/*",
+            "comment": "Invitation acceptance."
+          },
+          {
+            "/": "/auth/*",
+            "comment": "Auth ceremonies that complete a preserved destination."
+          },
+          {
+            "/": "/verify-email",
+            "comment": "Auth ceremony."
+          },
+          {
+            "/": "/reset-password",
+            "comment": "Auth ceremony."
+          },
+          {
+            "/": "/forgot-password",
+            "comment": "Auth ceremony."
           },
           {
             "/": "/account-deletion",
-            "comment": "In-app account deletion entry point"
+            "comment": "Store-required entry point."
           }
         ]
       }

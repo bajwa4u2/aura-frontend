@@ -1,0 +1,31 @@
+{
+  "packageFamilyName": "AuraPlatformLLC.AURAPLATFORM_4rrd19jbkq83a",
+  "paths": [
+    "/p/*",
+    "/posts/*",
+    "/announcements/*",
+    "/articles/*",
+    "/u/*",
+    "/author/*",
+    "/institutions/*",
+    "/spaces/*",
+    "/meetings/join/*",
+    "/invite/*",
+    "/auth/*",
+    "/verify-email",
+    "/reset-password",
+    "/forgot-password",
+    "/account-deletion"
+  ],
+  "excludePaths": [
+    "/posts/*/edit",
+    "/articles/write*",
+    "/announcements/create",
+    "/institutions/get-started",
+    "/home*",
+    "/messages*",
+    "/me*",
+    "/admin*",
+    "/settings*"
+  ]
+}

@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 
 import 'app/app_shell.dart';
 import 'app/route_classification.dart';
+import 'core/continuation/native_continuation.dart';
+import 'core/continuation/windows_activation.dart';
 import 'app/route_targets.dart';
 import 'core/auth/admin_access_provider.dart';
 import 'core/auth/auth_providers.dart';
@@ -578,6 +580,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       <String>{}; // sessionIds confirmed non-meeting
 
   return GoRouter(
+    // Windows hands its activation URL to main() as an argument rather than to
+    // the framework, so it becomes the router's starting point here. Null
+    // everywhere else, which leaves go_router's own default untouched.
+    initialLocation: kWindowsActivationPath,
     refreshListenable: refresh,
     errorBuilder: (context, state) => Scaffold(
       body: Center(
@@ -602,6 +608,29 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final path = state.uri.path;
       final currentLocation = state.uri.toString();
+
+      // CANONICAL SHARE URL -> IN-APP DESTINATION.
+      //
+      // `/p/...` is the URL people actually share, and it is rendered by the
+      // backend, not by this router. On native, the OS hands that exact path
+      // to the app, which had no route for it -- so every shared link opened
+      // Aura at home with the thing that was tapped gone. Resolving it here
+      // covers cold start, warm resume and in-app navigation alike, because
+      // they all pass through this redirect.
+      //
+      // This maps a NAME to a destination. It grants nothing: the resolved
+      // path is classified and gated below exactly like any other.
+      if (isCanonicalSharePath(path)) {
+        final target = resolveCanonicalShare(path);
+        if (target != null) {
+          final query = state.uri.query;
+          return query.isEmpty ? target.appPath : '${target.appPath}?$query';
+        }
+        // A share URL this build cannot resolve is a real object, just a newer
+        // family than this client knows. Sending it to home would silently
+        // lose it; the public surface is the honest place to land.
+        return '/public';
+      }
 
       final bootstrap = ref.read(sessionBootstrapProvider);
       final authStatus = ref.read(authStatusProvider);

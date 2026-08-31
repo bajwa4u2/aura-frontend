@@ -60,9 +60,7 @@ class PublicShell extends StatelessWidget {
                 if (!isMeetingFocus &&
                     shouldShowAuraPublicAppAcquisition(
                         GoRouterState.of(context).uri.path))
-                  PublicAppAcquisition(
-                    config: auraPublicAppAcquisitionConfig,
-                  ),
+                  const PublicAppAcquisition(),
                 Expanded(child: child),
               ],
             ),

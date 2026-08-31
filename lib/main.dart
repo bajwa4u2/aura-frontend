@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'core/continuation/windows_activation.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -21,8 +22,16 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // the app is foregrounded via onMessageOpenedApp or getInitialMessage.
 }
 
-Future<void> main() async {
+Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // WINDOWS CONTINUATION. An App URI Handler or `aura://` activation launches
+  // this process with the URL as a command-line argument. Android and iOS hand
+  // links to the framework; Windows hands them here and nowhere else, so if
+  // this is not read the destination is simply lost. Captured before the first
+  // frame so the router can open AT the destination rather than navigating to
+  // it afterwards, which would flash home first.
+  kWindowsActivationPath = initialPathFromActivationArgs(args);
 
 
   // Prevent Flutter framework errors from surfacing as uncaught browser errors.

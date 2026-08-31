@@ -101,7 +101,15 @@ bool _isEditingPath(String path) {
   final segments = path.split('?').first.split('/')
     ..removeWhere((s) => s.isEmpty);
   return segments.isNotEmpty &&
-      (segments.last == 'edit' || segments.last == 'write');
+      (segments.last == 'edit' ||
+          segments.last == 'write' ||
+          // 2026-08-31: `/announcements/create` was PUBLIC. The broad
+          // `/announcements/` prefix classified the COMPOSER as open reading,
+          // exactly the RC6 fault this helper was written for -- caught only
+          // when association scope was reconciled against this classifier,
+          // because associating that prefix would have claimed the composer
+          // as a public continuation surface.
+          segments.last == 'create');
 }
 
 bool isPublicPath(String path) {
@@ -154,7 +162,8 @@ bool isPublicPath(String path) {
   }
 
   if (path == '/announcements') return true;
-  if (path.startsWith('/announcements/')) return true;
+  // READING an announcement is public; composing one is not.
+  if (path.startsWith('/announcements/') && !_isEditingPath(path)) return true;
 
   // Articles are durable public thought — READING is public; the authoring
   // paths are member-gated (see isMemberShellPath).

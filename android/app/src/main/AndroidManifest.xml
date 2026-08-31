@@ -117,12 +117,56 @@
               upload+release certificate fingerprints before submitting
               to Play Store.
             -->
+            <!--
+              APP LINKS - SCOPED TO PUBLIC ELIGIBILITY.
+
+              This filter used to declare the two hosts with NO path data,
+              which claims EVERY url on them. Two consequences, both live:
+              private member surfaces were associated to the app, and because
+              Flutter deep linking was not enabled either, every claimed link
+              opened Aura at home. Association validated perfectly while the
+              product lost the destination on every share.
+
+              The paths below are the eligible set from
+              contracts/native_continuation_contract.json - the same authority
+              the AASA and the in-app resolver read. Android has no negative
+              matching, so the contract's exclusions (post editors, authoring
+              paths, member shells) are enforced in-app by route
+              classification, which fails closed.
+
+              Multiple <data> elements combine as a cross product: every
+              scheme x host x path listed here matches.
+            -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="auraplatform.org" />
-                <data android:scheme="https" android:host="app.auraplatform.org" />
+                <data android:scheme="https" />
+                <data android:host="auraplatform.org" />
+                <data android:host="app.auraplatform.org" />
+
+                <!-- The canonical public share family. -->
+                <data android:pathPrefix="/p/" />
+
+                <!-- Public destinations those share urls resolve to. -->
+                <data android:pathPrefix="/posts/" />
+                <data android:pathPrefix="/announcements/" />
+                <data android:pathPrefix="/articles/" />
+                <data android:pathPrefix="/u/" />
+                <data android:pathPrefix="/author/" />
+                <data android:pathPrefix="/institutions/" />
+                <data android:pathPrefix="/spaces/" />
+
+                <!-- Guest-reachable meeting entry. -->
+                <data android:pathPrefix="/meetings/join/" />
+
+                <!-- Invitation + auth ceremonies that complete a destination. -->
+                <data android:pathPrefix="/invite/" />
+                <data android:pathPrefix="/auth/" />
+                <data android:path="/verify-email" />
+                <data android:path="/reset-password" />
+                <data android:path="/forgot-password" />
+                <data android:path="/account-deletion" />
             </intent-filter>
 
         </activity>
@@ -153,6 +197,17 @@
             <intent-filter android:priority="999">
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
             </intent-filter>
+
+            <!--
+              Without this, Flutter does NOT hand the launch intent's URL to
+              the Dart router: the activity starts and the app opens at its
+              default route. Every App Link above would resolve to home. This
+              single line is the difference between "association works" and
+              "continuation works".
+            -->
+            <meta-data
+                android:name="flutter_deeplinking_enabled"
+                android:value="true" />
         </receiver>
 
         <!-- Default FCM channel for incoming-call ringing. Channel itself is

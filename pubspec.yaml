@@ -211,6 +211,29 @@ msix_config:
   msix_version: 1.4.0.0
   description: "Aura — a platform for purposeful public and personal communication, where conversations keep their context and people and institutions speak under clear, accountable identity."
   publisher: CN=3E4027A7-4D4D-4492-B8DE-BBE425E307E5
+
+  # WINDOWS CONTINUATION.
+  #
+  # Aura's released client family includes Windows, so a public Aura url must
+  # reach the installed Windows client too. Two mechanisms, both declared:
+  #
+  # protocol_activation - the aura:// custom scheme. Always available, works
+  #   for an unsigned/sideloaded install, and is the fallback the web surface
+  #   uses when it cannot know whether App URI Handlers are registered.
+  #
+  # app_uri_handler_hosts - Windows App URI Handlers, the STRONGEST supported
+  #   mechanism: it lets an https://auraplatform.org/... url open the
+  #   installed app directly, the Windows equivalent of App Links / Universal
+  #   Links. It requires BOTH this declaration AND
+  #   https://<host>/.well-known/windows-app-web-link naming the package
+  #   family, which is served from web/.well-known/.
+  #
+  # PLATFORM LIMIT, recorded precisely: App URI Handlers associate a HOST and
+  # cannot express path scope. Android has pathPrefix, iOS has AASA
+  # components, Windows has neither. Every path rule from the contract is
+  # therefore enforced in-app by route classification, which fails closed.
+  protocol_activation: aura
+  app_uri_handler_hosts: auraplatform.org, app.auraplatform.org
   logo_path: assets\aura_icon.png
   icons_background_color: "#1A1A2E"
   capabilities: internetClient
