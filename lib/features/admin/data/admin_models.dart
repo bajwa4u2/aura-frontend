@@ -100,6 +100,10 @@ class AdminGrant {
     required this.grantedBy,
     required this.createdAt,
     this.expiresAt,
+    this.userId = '',
+    this.granteeHandle = '',
+    this.granteeDisplayName = '',
+    this.reason = '',
   });
 
   final String id;
@@ -109,6 +113,25 @@ class AdminGrant {
   final String grantedBy;
   final DateTime createdAt;
   final DateTime? expiresAt;
+
+  /// WHO HOLDS THIS. The server has always sent it — `mapGrant` returns
+  /// `userId` and the whole `user` record — and this model dropped it, which
+  /// is why a grant could only ever be shown in one undifferentiated list and
+  /// never on the person it is about.
+  final String userId;
+  final String granteeHandle;
+  final String granteeDisplayName;
+
+  /// Why it was issued. Recorded at grant time and never shown until now.
+  final String reason;
+
+  /// How to name the holder. Falls back through what the server sent rather
+  /// than printing an opaque id at someone.
+  String get granteeLabel {
+    if (granteeDisplayName.isNotEmpty) return granteeDisplayName;
+    if (granteeHandle.isNotEmpty) return '@$granteeHandle';
+    return userId.isEmpty ? 'Unknown holder' : userId;
+  }
 
   /// Derived from (active, expiresAt, grantedBy). Computed at read time so
   /// the value always reflects the current wall clock — an "active" grant
@@ -146,11 +169,37 @@ class AdminGrant {
       id: _str(json['id']),
       role: _str(json['role']),
       permissions: _strList(json['permissions']),
-      active: json['active'] == true || _str(json['status']) == 'active',
-      grantedBy: _str(json['grantedBy'] ?? json['ownerId']),
-      createdAt: _parseDate(json['createdAt']) ?? DateTime.now(),
+      active: json['active'] == true ||
+          _str(json['status']).toUpperCase() == 'ACTIVE',
+      // `grantedBy` is an OBJECT on the wire (id/handle/displayName) with
+      // `grantedByUserId` beside it. Stringifying the map produced the
+      // unreadable `{id: ..., handle: ...}` this now avoids.
+      grantedBy: _grantedByLabel(json),
+      createdAt: _parseDate(json['grantedAt'] ?? json['createdAt']) ??
+          DateTime.now(),
       expiresAt: _parseDate(json['expiresAt']),
+      userId: _str(json['userId'] ?? (json['user'] is Map
+          ? (json['user'] as Map)['id']
+          : null)),
+      granteeHandle: _personField(json['user'], 'handle'),
+      granteeDisplayName: _personField(json['user'], 'displayName'),
+      reason: _str(json['reason']),
     );
+  }
+
+  static String _personField(dynamic person, String field) =>
+      person is Map ? _str(person[field]) : '';
+
+  static String _grantedByLabel(Map<String, dynamic> json) {
+    final by = json['grantedBy'];
+    if (by is Map) {
+      final name = _str(by['displayName']);
+      if (name.isNotEmpty) return name;
+      final handle = _str(by['handle']);
+      if (handle.isNotEmpty) return '@$handle';
+      return _str(by['id']);
+    }
+    return _str(by ?? json['grantedByUserId'] ?? json['ownerId']);
   }
 
   static DateTime? _parseDate(dynamic v) {
@@ -216,29 +265,72 @@ class AdminAuditLogEntry {
     required this.actorEmail,
     required this.targetType,
     required this.createdAt,
+    this.actorName = '',
+    this.actorHandle = '',
+    this.result = '',
+    this.reason = '',
     this.targetId,
     this.metadata,
   });
 
   final String id;
   final String action;
+
+  /// The acting operator's id. Read from `actorUserId` as well as `actorId`:
+  /// the endpoint returns the Prisma row, whose column is `actorUserId`, and
+  /// reading only the latter meant this was ALWAYS empty — so a record with no
+  /// actor email showed no actor at all.
   final String actorId;
+
   final String actorEmail;
+  final String actorName;
+  final String actorHandle;
   final String targetType;
   final DateTime createdAt;
+
+  /// SUCCESS or FAILED. A record that shows only attempts is not a record of
+  /// what happened.
+  final String result;
+
+  /// Why the operator said they did it, when the act required one.
+  final String reason;
+
   final String? targetId;
   final Map<String, dynamic>? metadata;
 
+  /// WHO, as a person is named. An audit row that identifies an operator only
+  /// by an email address makes the record harder to read than it needs to be,
+  /// and shows nothing at all when the relation is absent.
+  String get actorLabel {
+    if (actorName.isNotEmpty) return actorName;
+    if (actorHandle.isNotEmpty) return '@$actorHandle';
+    if (actorEmail.isNotEmpty) return actorEmail;
+    return actorId.isEmpty ? 'Aura itself' : actorId;
+  }
+
+  bool get failed => result.toUpperCase() == 'FAILED';
+
   static String _str(dynamic v) => (v ?? '').toString().trim();
+
+  static String _actor(Map<String, dynamic> json, String field) {
+    final actor = json['actor'];
+    return actor is Map ? _str(actor[field]) : '';
+  }
 
   factory AdminAuditLogEntry.fromJson(Map<String, dynamic> json) {
     return AdminAuditLogEntry(
       id: _str(json['id']),
       action: _str(json['action']),
-      actorId: _str(json['actorId']),
-      actorEmail: _str(json['actorEmail'] ?? json['actor']?['email']),
+      actorId: _str(json['actorUserId'] ?? json['actorId']),
+      actorEmail: _str(json['actorEmail']).isEmpty
+          ? _actor(json, 'email')
+          : _str(json['actorEmail']),
+      actorName: _actor(json, 'displayName'),
+      actorHandle: _actor(json, 'handle'),
       targetType: _str(json['targetType'] ?? json['resourceType']),
       targetId: _str(json['targetId'] ?? json['resourceId']).let((s) => s.isEmpty ? null : s),
+      result: _str(json['result']),
+      reason: _str(json['reason']),
       createdAt: _parseDate(json['createdAt']) ?? DateTime.now(),
       metadata: json['metadata'] is Map<String, dynamic>
           ? json['metadata'] as Map<String, dynamic>
@@ -455,20 +547,36 @@ class AdminInstitutionDomain {
     required this.status,
     required this.requestedBy,
     required this.createdAt,
+    this.institutionId = '',
   });
 
+  /// The DOMAIN RECORD's id — what the approve and reject endpoints address.
   final String id;
+
+  /// WHICH INSTITUTION this proof belongs to. The server has always sent it
+  /// (`institutionId`, plus the whole `institution` object) and this model
+  /// dropped it, so nothing could ask which institution a proof was for.
+  final String institutionId;
+
   final String domain;
   final String organizationName;
   final String status;
   final String requestedBy;
   final DateTime createdAt;
 
+  bool get isPending => status.toUpperCase() == 'PENDING';
+
   static String _str(dynamic v) => (v ?? '').toString().trim();
 
   factory AdminInstitutionDomain.fromJson(Map<String, dynamic> json) {
     return AdminInstitutionDomain(
       id: _str(json['id']),
+      institutionId: _str(
+        json['institutionId'] ??
+            (json['institution'] is Map
+                ? (json['institution'] as Map)['id']
+                : null),
+      ),
       domain: _str(json['domain']),
       organizationName: _str(
         json['organizationName'] ?? json['institution']?['name'] ?? json['name'],
@@ -882,6 +990,26 @@ class AdminPolicy {
     communications: CommunicationsPolicy.defaults,
     feature: FeaturePolicy.defaults,
   );
+
+  /// The whole document with one family replaced.
+  ///
+  /// `PUT /v1/admin/policies` takes the WHOLE policy, so changing one switch
+  /// means sending the other three families back exactly as they were. A
+  /// partial body would silently reset its siblings to their defaults, which
+  /// is the kind of change nobody notices until something it governs stops
+  /// happening.
+  AdminPolicy copyWith({
+    InstitutionPolicy? institution,
+    SecurityPolicy? security,
+    CommunicationsPolicy? communications,
+    FeaturePolicy? feature,
+  }) =>
+      AdminPolicy(
+        institution: institution ?? this.institution,
+        security: security ?? this.security,
+        communications: communications ?? this.communications,
+        feature: feature ?? this.feature,
+      );
 
   factory AdminPolicy.fromJson(Map<String, dynamic> json) {
     Map<String, dynamic> sub(String key) {
@@ -1407,6 +1535,173 @@ class AdminConvergenceReport {
           finished == null || finished.isEmpty ? null : DateTime.tryParse(finished),
       legacyMessagesNotConverged: i('legacyMessagesNotConverged'),
       legacyCursorsMovedSinceMigration: i('legacyCursorsMovedSinceMigration'),
+    );
+  }
+}
+
+/// ONE PERSON, WHOLE.
+///
+/// `GET /v1/admin/users/:id` has always returned identity, account standing,
+/// every admin grant, the device fleet and the recent push record in a single
+/// response. Nothing in the client called it: the old console understood a
+/// person only as a row in `/admin/users`, so account standing, operator
+/// authority and delivery trouble were three screens that never met.
+class AdminPersonDetail {
+  const AdminPersonDetail({
+    required this.person,
+    required this.email,
+    required this.status,
+    required this.accountType,
+    required this.createdAt,
+    required this.grants,
+    required this.roles,
+    required this.permissions,
+    required this.devices,
+    required this.counts,
+    this.emailVerifiedAt,
+    this.disabledAt,
+    this.city,
+    this.country,
+  });
+
+  final AuraPersonIdentity person;
+  final String email;
+
+  /// The server's own word: ACTIVE or DISABLED. Never recomputed here — a
+  /// second opinion about whether an account is disabled is a second answer.
+  final String status;
+
+  final String accountType;
+  final DateTime createdAt;
+  final DateTime? emailVerifiedAt;
+  final DateTime? disabledAt;
+  final String? city;
+  final String? country;
+
+  /// Every grant, including revoked and expired ones. History is the point:
+  /// authority that was held and then taken away is exactly what an operator
+  /// investigating someone needs to see.
+  final List<AdminGrant> grants;
+
+  /// Derived by the SERVER from the active grants alone.
+  final List<String> roles;
+  final List<String> permissions;
+
+  final List<AdminPersonDevice> devices;
+  final Map<String, int> counts;
+
+  String get id => person.userId;
+
+  bool get isDisabled => status.toUpperCase() == 'DISABLED';
+
+  Iterable<AdminGrant> get activeGrants => grants.where(
+        (g) =>
+            g.derivedStatus == AdminGrantStatus.active ||
+            g.derivedStatus == AdminGrantStatus.bootstrap,
+      );
+
+  static String _s(dynamic v) => (v ?? '').toString().trim();
+
+  static DateTime? _date(dynamic v) {
+    if (v == null) return null;
+    if (v is DateTime) return v;
+    final s = v.toString().trim();
+    return s.isEmpty ? null : DateTime.tryParse(s);
+  }
+
+  static List<String> _sList(dynamic v) => v is List
+      ? v.map(_s).where((e) => e.isNotEmpty).toList(growable: false)
+      : const <String>[];
+
+  factory AdminPersonDetail.fromJson(Map<String, dynamic> json) {
+    final body = json['user'] is Map
+        ? Map<String, dynamic>.from(json['user'] as Map)
+        : json;
+    final admin = body['admin'] is Map
+        ? Map<String, dynamic>.from(body['admin'] as Map)
+        : const <String, dynamic>{};
+    final rawCounts = body['counts'] is Map
+        ? Map<String, dynamic>.from(body['counts'] as Map)
+        : const <String, dynamic>{};
+
+    return AdminPersonDetail(
+      person: AuraPersonIdentity.fromJson(body),
+      email: _s(body['email']),
+      status: _s(body['status']).isEmpty ? 'ACTIVE' : _s(body['status']),
+      accountType: _s(body['accountType']),
+      createdAt: _date(body['createdAt']) ?? DateTime.now(),
+      emailVerifiedAt: _date(body['emailVerifiedAt']),
+      disabledAt: _date(body['disabledAt']),
+      city: _s(body['city']).isEmpty ? null : _s(body['city']),
+      country: _s(body['country']).isEmpty ? null : _s(body['country']),
+      grants: admin['grants'] is List
+          ? (admin['grants'] as List)
+              .whereType<Map>()
+              .map((e) => AdminGrant.fromJson(Map<String, dynamic>.from(e)))
+              .toList(growable: false)
+          : const <AdminGrant>[],
+      roles: _sList(admin['roles']),
+      permissions: _sList(admin['permissions']),
+      devices: body['devices'] is List
+          ? (body['devices'] as List)
+              .whereType<Map>()
+              .map((e) =>
+                  AdminPersonDevice.fromJson(Map<String, dynamic>.from(e)))
+              .toList(growable: false)
+          : const <AdminPersonDevice>[],
+      counts: {
+        for (final e in rawCounts.entries)
+          if (e.value is num) e.key: (e.value as num).toInt(),
+      },
+    );
+  }
+}
+
+/// A device this person receives Aura on.
+///
+/// The push token is DELIBERATELY not modelled. An operator diagnosing why
+/// someone stopped receiving calls needs to know a device exists, what it is,
+/// and whether it is still active — never the credential that can send to it.
+class AdminPersonDevice {
+  const AdminPersonDevice({
+    required this.id,
+    required this.platform,
+    required this.isActive,
+    required this.lastSeenAt,
+    this.deviceName,
+    this.appVersion,
+    this.revokedAt,
+  });
+
+  final String id;
+  final String platform;
+  final bool isActive;
+  final DateTime lastSeenAt;
+  final String? deviceName;
+  final String? appVersion;
+  final DateTime? revokedAt;
+
+  /// What to call it on screen. A platform alone ("android") names a class of
+  /// device, not the one in someone's hand.
+  String get label {
+    final name = deviceName?.trim() ?? '';
+    if (name.isNotEmpty) return name;
+    return platform.isEmpty ? 'Unknown device' : platform;
+  }
+
+  factory AdminPersonDevice.fromJson(Map<String, dynamic> json) {
+    String s(dynamic v) => (v ?? '').toString().trim();
+    DateTime? d(dynamic v) =>
+        v == null ? null : DateTime.tryParse(v.toString().trim());
+    return AdminPersonDevice(
+      id: s(json['id']),
+      platform: s(json['platform']),
+      isActive: json['isActive'] == true && json['revokedAt'] == null,
+      lastSeenAt:
+          d(json['lastSeenAt']) ?? d(json['updatedAt']) ?? DateTime.now(),
+      deviceName: s(json['deviceName']).isEmpty ? null : s(json['deviceName']),
+      appVersion: s(json['appVersion']).isEmpty ? null : s(json['appVersion']),
+      revokedAt: d(json['revokedAt']),
     );
   }
 }

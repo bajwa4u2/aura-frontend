@@ -102,10 +102,20 @@ void main() {
     // A shell is the one place a fix could reach every screen it frames. None
     // of the five draws a back control today; the only pops in them close the
     // drawer.
+    //
+    // CENSUS AMENDED 2026-08-31 by the Admin Operator Hub reconstruction:
+    // `lib/app/shell/admin_shell.dart` was deleted and its job taken by
+    // `lib/features/admin/shell/operator_shell.dart`. The successor is named
+    // here rather than the entry being dropped, because dropping it would
+    // shrink the census silently and let the new shell grow the exact control
+    // this rule exists to catch. It draws none: the operator hub wraps the
+    // SHARED `ReturnPathFrame` (app_shell.dart:99 composes OperatorShell
+    // around the framed child), so admin destinations get the governed answer
+    // and not a second one of the shell's own.
     const shells = [
       'lib/app/app_shell.dart',
       'lib/app/shell/member_shell.dart',
-      'lib/app/shell/admin_shell.dart',
+      'lib/features/admin/shell/operator_shell.dart',
       'lib/app/shell/public_shell.dart',
       'lib/app/shell/global_platform_shell.dart',
     ];

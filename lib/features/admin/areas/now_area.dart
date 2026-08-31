@@ -25,6 +25,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../data/admin_providers.dart';
 import '../data/operator_work.dart';
+import '../domain/operator_area.dart';
 import '../domain/operator_authority_provider.dart';
 import '../domain/operator_capability.dart';
 import '../ui/operator_kit.dart';
@@ -148,7 +149,7 @@ class _AttentionBlock extends ConsumerWidget {
           subtitle: '${s.totalOpen} open across '
               '${active.length} queue${active.length == 1 ? '' : 's'}',
           trailing: TextButton(
-            onPressed: () => context.go('/admin/work'),
+            onPressed: () => context.go(OperatorArea.work.path),
             child: const Text('Open worklist'),
           ),
           child: Column(
@@ -234,9 +235,9 @@ class _QueueRow extends StatelessWidget {
                 ),
               ),
               if (source.oldestAgeDays != null) ...[
-                Text(
+                const Text(
                   'oldest',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
                     color: AuraSurface.faint,
                   ),
@@ -346,7 +347,7 @@ class _HealthBlock extends ConsumerWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () => context.go('/admin/platform'),
+                    onPressed: () => context.go(OperatorArea.platform.path),
                     child: const Text('Open'),
                   ),
                 ],
@@ -360,7 +361,7 @@ class _HealthBlock extends ConsumerWidget {
           subtitle: '${degraded.length} service'
               '${degraded.length == 1 ? '' : 's'} degraded',
           trailing: TextButton(
-            onPressed: () => context.go('/admin/platform'),
+            onPressed: () => context.go(OperatorArea.platform.path),
             child: const Text('Open'),
           ),
           child: OperatorPanel(
@@ -438,7 +439,7 @@ class _ChangedBlock extends ConsumerWidget {
         return OperatorSection(
           title: 'What changed',
           trailing: TextButton(
-            onPressed: () => context.go('/admin/record'),
+            onPressed: () => context.go(OperatorArea.record.path),
             child: const Text('Record'),
           ),
           child: OperatorPanel(
@@ -460,11 +461,24 @@ class _ChangedBlock extends ConsumerWidget {
                     subtitle: Text(
                       // Actor and authority are the point of a record. A row
                       // that says only what happened is a log line, not audit.
-                      entry.actorEmail.isEmpty ? entry.actorId : entry.actorEmail,
+                      entry.reason.isEmpty
+                          ? entry.actorLabel
+                          : '${entry.actorLabel} — ${entry.reason}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                           fontSize: 11.5, color: AuraSurface.muted),
                     ),
-                    onTap: () => context.go('/admin/record'),
+                    // A failed attempt is a different fact from a completed
+                    // act, and the record must not read them the same way.
+                    trailing: entry.failed
+                        ? const OperatorStatePill(
+                            state: 'FAILED',
+                            tone: OperatorTone.danger,
+                            dense: true,
+                          )
+                        : null,
+                    onTap: () => context.go(OperatorArea.record.path),
                   ),
               ],
             ),

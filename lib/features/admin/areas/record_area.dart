@@ -82,7 +82,8 @@ class RecordArea extends ConsumerWidget {
                       : all
                           .where((e) =>
                               e.action.toLowerCase().contains(filter) ||
-                              e.actorEmail.toLowerCase().contains(filter) ||
+                              e.actorLabel.toLowerCase().contains(filter) ||
+                              e.reason.toLowerCase().contains(filter) ||
                               e.targetType.toLowerCase().contains(filter) ||
                               (e.targetId ?? '')
                                   .toLowerCase()
@@ -212,7 +213,10 @@ class _RecordRow extends StatelessWidget {
     // The action, the actor, and the subject — in that order, because
     // "what happened" is what an operator scans for and "who did it" is what
     // they check next.
-    final actor = entry.actorEmail.isEmpty ? entry.actorId : entry.actorEmail;
+    // Named, not addressed. `actorLabel` prefers the person's own name and
+    // falls back through handle and email, so a record whose actor relation
+    // came back without an email still says who acted.
+    final actor = entry.actorLabel;
     final subject = entry.targetId == null || entry.targetId!.isEmpty
         ? entry.targetType
         : '${entry.targetType} · ${entry.targetId}';
@@ -229,7 +233,10 @@ class _RecordRow extends StatelessWidget {
           horizontal: AuraSpace.s14,
           vertical: AuraSpace.s12,
         ),
-        child: wide
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+        wide
             ? Row(
                 children: [
                   SizedBox(
@@ -314,6 +321,31 @@ class _RecordRow extends StatelessWidget {
                   ),
                 ],
               ),
+            // WHY. The fourth question the record exists to answer, and the
+            // one an operator reading someone else's decision came for. It
+            // gets its own line at every width rather than being squeezed
+            // into a column that would truncate it to nothing.
+            if (entry.reason.isNotEmpty) ...[
+              const SizedBox(height: AuraSpace.s8),
+              Text(
+                entry.reason,
+                style: const TextStyle(
+                  color: AuraSurface.muted,
+                  fontSize: 12,
+                  height: 1.4,
+                ),
+              ),
+            ],
+            if (entry.failed) ...[
+              const SizedBox(height: AuraSpace.s8),
+              const OperatorStatePill(
+                state: 'FAILED',
+                tone: OperatorTone.danger,
+                dense: true,
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

@@ -69,9 +69,11 @@ class OperatorWorkItem {
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? 'Work item',
       state: json['state']?.toString() ?? '',
-      openedAt:
-          DateTime.tryParse(json['openedAt']?.toString() ?? '')?.toLocal() ??
-              DateTime.now(),
+      // Deliberately NOT converted to local time. Age is computed on the
+      // server in whole days, and a local conversion here would only create a
+      // second, disagreeing notion of when something opened.
+      openedAt: DateTime.tryParse(json['openedAt']?.toString() ?? '') ??
+          DateTime.now(),
       ageDays: (json['ageDays'] as num?)?.toInt() ?? 0,
       destination: json['destination']?.toString() ?? '',
       subjectKind: _subjectKind(json['subjectKind']?.toString()),

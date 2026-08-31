@@ -11,14 +11,16 @@
 # were three questions sharing one constant.
 3 lib/app/shell/member_shell.dart
 3 lib/app/shell/public_shell.dart
-13 lib/app/shell/rail/rail_modules.dart
+# rail_modules 13 -> 11, 2026-08-31: two rail cards pointed at
+#   /admin/review-queue and /admin/users, both retired. They now name
+#   OperatorArea.work and OperatorArea.subjects instead of a literal.
+11 lib/app/shell/rail/rail_modules.dart
 2 lib/app/shell/shell_header_tools.dart
 1 lib/app/shell/shell_shared.dart
 1 lib/core/translation/communication_translate_action.dart
 1 lib/core/ui/aura_identity_surface.dart
 1 lib/features/accountability/widgets/open_commitments_board.dart
 5 lib/features/activity/presentation/activity_screen.dart
-9 lib/features/admin/presentation/admin_institutions_screen.dart
 3 lib/features/announcements/presentation/announcement_editor_screen.dart
 7 lib/features/announcements/presentation/announcements_screen.dart
 1 lib/features/auth/presentation/auth_screen.dart
@@ -47,7 +49,7 @@
 1 lib/features/institutions/live_rooms/live_now_card.dart
 1 lib/features/institutions/messaging/institution_messaging_screen.dart
 1 lib/features/institutions/posts/institution_post_detail_screen.dart
-14 lib/features/institutions/presentation/admin_workspace_screen.dart
+# admin_workspace_screen 14 -> 0: screen deleted; the operator hub replaces it
 3 lib/features/institutions/presentation/institution_detail_screen.dart
 1 lib/features/institutions/presentation/institution_members_screen.dart
 2 lib/features/institutions/profile/institution_profile_screen.dart
@@ -135,3 +137,7 @@
 # introduced by the cancel-with-reason work itself — the screen had assembled
 # `/meet/:slug/book` inline and repeated `context.go('/')` three times.
 0 lib/features/meetings/presentation/booking_cancel_screen.dart
+
+# RETIRED 2026-08-31 by the Admin Operator Hub reconstruction — the screen is deleted,
+#   so its frozen debt is gone with it, not merely reduced:
+#   9 lib/features/admin/presentation/admin_institutions_screen.dart

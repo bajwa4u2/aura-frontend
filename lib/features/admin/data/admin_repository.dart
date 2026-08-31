@@ -72,8 +72,47 @@ class AdminRepository {
     return _parseList(res.data, AdminUserSummary.fromJson);
   }
 
-  Future<void> updateUserStatus(String userId, String status) async {
-    await _dio.patch('/v1/admin/users/$userId/status', data: {'status': status});
+  /// ONE person, whole. See [AdminPersonDetail] — the endpoint always returned
+  /// this and nothing ever asked for it, so account standing, operator
+  /// authority and delivery trouble stayed three screens that never met.
+  Future<AdminPersonDetail> fetchUser(String userId) async {
+    final res = await _dio.get('/v1/admin/users/$userId');
+    return AdminPersonDetail.fromJson(_asMap(res.data));
+  }
+
+  /// Change account standing. The reason travels with it because the endpoint
+  /// records one in the audit entry; sending none left every disablement in
+  /// the record unexplained.
+  Future<void> updateUserStatus(
+    String userId,
+    String status, {
+    String? reason,
+  }) async {
+    await _dio.patch('/v1/admin/users/$userId/status', data: {
+      'status': status,
+      if (reason != null && reason.isNotEmpty) 'reason': reason,
+    });
+  }
+
+  /// Grant a verified identity class. IDENTITY_VERIFICATION_WRITE.
+  ///
+  /// The authority requires a reason and refuses a second active record for
+  /// the same class. Both rules live there, not here.
+  Future<void> grantPersonVerificationClass(
+    String userId, {
+    required String verificationClass,
+    required String reason,
+    String? issuingAuthority,
+    String? issuingInstitutionId,
+  }) async {
+    await _dio.post('/v1/admin/users/$userId/verification/grant', data: {
+      'verificationClass': verificationClass,
+      'reason': reason,
+      if (issuingAuthority != null && issuingAuthority.isNotEmpty)
+        'issuingAuthority': issuingAuthority,
+      if (issuingInstitutionId != null && issuingInstitutionId.isNotEmpty)
+        'issuingInstitutionId': issuingInstitutionId,
+    });
   }
 
   // C2 — Person Verification administration. Thin wire client over the
@@ -121,13 +160,44 @@ class AdminRepository {
     );
   }
 
-  Future<List<AdminGrant>> fetchGrants() async {
-    final res = await _dio.get('/v1/admin/grants');
+  /// Operator grants. [userId] narrows to ONE person's authority — the filter
+  /// the endpoint has always accepted and nothing ever sent, which is why a
+  /// grant could only be found by scrolling the estate-wide list.
+  Future<List<AdminGrant>> fetchGrants({String? userId, String? status}) async {
+    final res = await _dio.get('/v1/admin/grants', queryParameters: {
+      if (userId != null && userId.isNotEmpty) 'userId': userId,
+      if (status != null && status.isNotEmpty) 'status': status,
+      'limit': 100,
+    });
     return _parseList(res.data, AdminGrant.fromJson);
   }
 
-  Future<void> revokeGrant(String grantId) async {
-    await _dio.post('/v1/admin/grants/$grantId/revoke');
+  /// Revoking is a governed act, so the reason travels with it. The endpoint
+  /// records `reason` and `notes` in the audit entry; sending nothing left
+  /// every revocation in the record with no explanation attached.
+  Future<void> revokeGrant(String grantId, {String? reason}) async {
+    await _dio.post(
+      '/v1/admin/grants/$grantId/revoke',
+      data: {if (reason != null && reason.isNotEmpty) 'reason': reason},
+    );
+  }
+
+  /// Issue authority to a person. USERS_WRITE; audited as
+  /// `admin.grant.created`.
+  Future<void> createGrant({
+    required String userId,
+    required String role,
+    List<String> permissions = const [],
+    String? reason,
+    DateTime? expiresAt,
+  }) async {
+    await _dio.post('/v1/admin/grants', data: {
+      'userId': userId,
+      'role': role,
+      if (permissions.isNotEmpty) 'permissions': permissions,
+      if (reason != null && reason.isNotEmpty) 'reason': reason,
+      if (expiresAt != null) 'expiresAt': expiresAt.toUtc().toIso8601String(),
+    });
   }
 
   /// The catalogue, from the server that defines it.
@@ -193,24 +263,46 @@ class AdminRepository {
     await _dio.patch('/v1/admin/feature-flags/$key', data: {'enabled': enabled});
   }
 
+  /// Domain proof. [institutionId] narrows to ONE institution — a filter the
+  /// endpoint has always accepted and nothing ever sent.
   Future<List<AdminInstitutionDomain>> fetchInstitutionDomains({
     String? status,
+    String? institutionId,
   }) async {
     final res = await _dio.get(
       '/v1/admin/institution-domains',
       queryParameters: {
         if (status != null) 'status': status,
+        if (institutionId != null && institutionId.isNotEmpty)
+          'institutionId': institutionId,
+        'limit': 100,
       },
     );
     return _parseList(res.data, AdminInstitutionDomain.fromJson);
   }
 
-  Future<void> approveDomain(String id) async {
-    await _dio.post('/v1/admin/institution-domains/$id/approve');
+  /// `action` is REQUIRED by the DTO even though the route already decides it:
+  /// validation runs before the controller substitutes its own value, so a
+  /// body without it is rejected as 400 before reaching any of that. The
+  /// previous empty-body call could therefore never have approved anything.
+  Future<void> approveDomain(String id, {String? reason}) async {
+    await _dio.post(
+      '/v1/admin/institution-domains/$id/approve',
+      data: {
+        'action': 'APPROVE',
+        if (reason != null && reason.isNotEmpty) 'reason': reason,
+      },
+    );
   }
 
-  Future<void> rejectDomain(String id) async {
-    await _dio.post('/v1/admin/institution-domains/$id/reject');
+  Future<void> rejectDomain(String id, {String? reason}) async {
+    await _dio.post(
+      '/v1/admin/institution-domains/$id/reject',
+      data: {
+        'action': 'REJECT',
+        if (reason != null && reason.isNotEmpty) 'reason': reason,
+      },
+    );
   }
 
   // ── Institutions ────────────────────────────────────────────────────────

@@ -37,7 +37,7 @@ R1 2 lib/features/create/presentation/create_hub_screen.dart
 R1 2 lib/features/institutions/activity/institution_activity_screen.dart
 R1 9 lib/features/institutions/correspondence/institution_correspondence_screen.dart
 # live_rooms 4 -> 0: startLive gate converged onto C1 capability projection (C2 closeout, 2026-08-16)
-R1 1 lib/features/institutions/presentation/admin_workspace_screen.dart
+# admin_workspace_screen R1 1 -> 0: screen deleted; the operator hub replaces it
 R1 3 lib/features/institutions/presentation/institution_invites_screen.dart
 R1 1 lib/features/institutions/presentation/institution_join_requests_screen.dart
 R1 3 lib/features/me/presentation/me_screen.dart
@@ -50,7 +50,6 @@ R1 13 lib/features/realtime/presentation/widgets/floating_call_widget.dart
 R1 4 lib/router.dart
 
 # -- R2 -- 3 files / 6 sites
-R2 3 lib/features/admin/presentation/admin_institution_members_screen.dart
 R2 2 lib/features/posts/presentation/widgets/communication_continuity_view.dart
 
 # -- A1 -- route-derived acting identity: 0 files / 0 sites
@@ -68,3 +67,7 @@ R2 2 lib/features/posts/presentation/widgets/communication_continuity_view.dart
 # GOVERNANCE act the backend enforces as an admin check, not a capability
 # question about a member. Recorded rather than burned down.
 R1 3 lib/features/announcements/presentation/announcement_detail_screen.dart
+
+# RETIRED 2026-08-31 by the Admin Operator Hub reconstruction — the screen is deleted,
+#   so its frozen debt is gone with it, not merely reduced:
+#   R2 3 lib/features/admin/presentation/admin_institution_members_screen.dart

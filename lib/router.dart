@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 
 import 'app/app_shell.dart';
 import 'app/route_classification.dart';
+import 'features/admin/areas/discovery_area.dart';
+import 'features/admin/areas/integrity_detail.dart';
 import 'features/admin/areas/integrity_area.dart';
 import 'features/admin/areas/now_area.dart';
 import 'features/admin/areas/platform_area.dart';
@@ -85,19 +87,6 @@ import 'features/institutions/presentation/institution_members_screen.dart';
 import 'features/institutions/presentation/institution_invites_screen.dart';
 import 'features/institutions/presentation/institution_join_requests_screen.dart';
 import 'features/institutions/wizard/institution_onboarding_wizard.dart';
-import 'features/admin/presentation/admin_institutions_screen.dart';
-import 'features/admin/presentation/admin_institution_members_screen.dart';
-import 'features/admin/presentation/admin_users_screen.dart';
-import 'features/admin/presentation/admin_grants_screen.dart';
-import 'features/admin/presentation/admin_audit_logs_screen.dart';
-import 'features/admin/presentation/admin_settings_screen.dart';
-import 'features/admin/presentation/admin_feature_flags_screen.dart';
-import 'features/admin/presentation/admin_communications_screen.dart';
-import 'features/admin/presentation/admin_institution_domains_screen.dart';
-import 'features/admin/presentation/admin_review_queue_screen.dart';
-import 'features/admin/presentation/admin_migrations_screen.dart';
-import 'features/admin/presentation/admin_policies_screen.dart';
-import 'features/admin/presentation/admin_moderation_screen.dart';
 import 'features/institutions/domain/institution_domains_screen.dart';
 import 'features/institutions/units/institution_unit_context_screen.dart';
 import 'features/institutions/units/institution_units_screen.dart';
@@ -170,14 +159,10 @@ import 'screens/account_deletion_screen.dart';
 import 'screens/child_safety_screen.dart';
 import 'screens/terms_screen.dart';
 import 'features/support/presentation/support_agent_screen.dart';
-import 'features/support/presentation/admin_support_console_screen.dart';
 import 'features/media_governance/presentation/restricted_media_screen.dart';
-import 'features/admin/presentation/admin_media_appeals_screen.dart';
 import 'features/identity/presentation/identity_verification_screen.dart';
-import 'features/admin/presentation/identity_review_screen.dart';
 import 'features/feedback/presentation/feedback_screen.dart';
 import 'features/feedback/presentation/my_feedback_screen.dart';
-import 'features/feedback/presentation/feedback_console_screen.dart';
 
 const String kInstitutionDashboardRoute = '/institution/dashboard';
 const String kInstitutionCreateRoute = '/institution/create';
@@ -194,7 +179,6 @@ const String kEnterInstitutionRoute = '/enter-institution';
 // Identity Foundation Phase 1 — required identity baseline (Date of Birth).
 const String kCompleteIdentityRoute = '/complete-identity';
 const String kAdminWorkspaceRoute = '/admin';
-const String kAdminCommunicationsRoute = '/admin/communications';
 const String kMeCommunicationsRoute = '/me/settings/communications';
 const String kMePreferencesRoute = '/me/preferences';
 const String kMeBlockedRoute = '/me/blocked';
@@ -1815,82 +1799,57 @@ final routerProvider = Provider<GoRouter>((ref) {
               institutionId: state.pathParameters['id'] ?? '',
             ),
           ),
+          // THE WORKLIST'S OWN DESTINATIONS.
+          //
+          // `operator-work.service.ts` publishes a destination for every row
+          // it produces. Two of the seven point INTO a subject rather than at
+          // a screen of their own — an identity decision belongs on the person
+          // and a verification decision on the institution, not on a queue
+          // page that shows a decision with no subject around it. They resolve
+          // to the same subject area, which then leads with the section the
+          // work is about.
           GoRoute(
-            path: kAdminCommunicationsRoute,
-            builder: (_, __) => const AdminCommunicationsScreen(),
-          ),
-          GoRoute(
-            path: '/admin/institutions',
-            builder: (_, __) => const AdminInstitutionsScreen(),
-          ),
-          GoRoute(
-            path: '/admin/institutions/:id/members',
-            builder: (_, state) => AdminInstitutionMembersScreen(
-              institutionId: state.pathParameters['id']!,
-              institutionName: state.uri.queryParameters['name'],
+            path: '/admin/subjects/person/:id/:focus',
+            builder: (_, state) => SubjectPersonArea(
+              userId: state.pathParameters['id'] ?? '',
+              focus: state.pathParameters['focus'],
             ),
           ),
           GoRoute(
-            path: '/admin/users',
-            builder: (_, __) => const AdminUsersScreen(),
+            path: '/admin/subjects/institution/:id/:focus',
+            builder: (_, state) => SubjectInstitutionArea(
+              institutionId: state.pathParameters['id'] ?? '',
+              focus: state.pathParameters['focus'],
+            ),
           ),
           GoRoute(
-            path: '/admin/identity-review',
-            builder: (_, __) => const IdentityReviewScreen(),
-          ),
-          // Product feedback triage lives in the SAME admin console family as
-          // identity review and moderation — not a second administration
-          // universe with its own navigation and its own idea of authority.
-          GoRoute(
-            path: '/admin/feedback',
-            builder: (_, __) => const FeedbackConsoleScreen(),
+            path: '/admin/integrity/moderation/:id',
+            builder: (_, state) => ModerationReportDetail(
+              reportId: state.pathParameters['id'] ?? '',
+            ),
           ),
           GoRoute(
-            path: '/admin/grants',
-            builder: (_, __) => const AdminGrantsScreen(),
+            path: '/admin/integrity/appeals/:id',
+            builder: (_, state) => MediaAppealDetail(
+              appealId: state.pathParameters['id'] ?? '',
+            ),
           ),
           GoRoute(
-            path: '/admin/audit-logs',
-            builder: (_, __) => const AdminAuditLogsScreen(),
+            path: '/admin/integrity/feedback/:id',
+            builder: (_, state) => FeedbackDetail(
+              feedbackId: state.pathParameters['id'] ?? '',
+            ),
           ),
           GoRoute(
-            path: '/admin/settings',
-            builder: (_, __) => const AdminSettingsScreen(),
+            path: '/admin/integrity/support/:id',
+            builder: (_, state) => SupportCaseDetail(
+              caseId: state.pathParameters['id'] ?? '',
+            ),
           ),
+          // DISCOVERY. Observation of five estates; it changes none of them.
           GoRoute(
-            path: '/admin/feature-flags',
-            builder: (_, __) => const AdminFeatureFlagsScreen(),
-          ),
-          GoRoute(
-            path: '/admin/institution-domains',
-            builder: (_, __) => const AdminInstitutionDomainsScreen(),
-          ),
-          GoRoute(
-            path: '/admin/review-queue',
-            builder: (_, __) => const AdminReviewQueueScreen(),
-          ),
-          GoRoute(
-            path: '/admin/migrations',
-            builder: (_, __) => const AdminMigrationsScreen(),
-          ),
-          GoRoute(
-            path: '/admin/policies',
-            builder: (_, __) => const AdminPoliciesScreen(),
-          ),
-          GoRoute(
-            path: '/admin/moderation',
-            builder: (_, __) => const AdminModerationScreen(),
-          ),
-          // CH-12 E6 — the reviewer's side of the governed route back. Sits in
-          // the existing admin shell under the same MODERATION_READ /
-          // MODERATION_WRITE authority the moderation queue already uses.
-          GoRoute(
-            path: '/admin/media-appeals',
-            builder: (_, __) => const AdminMediaAppealsScreen(),
-          ),
-          GoRoute(
-            path: '/admin/support',
-            builder: (_, __) => const AdminSupportConsoleScreen(),
+            path: '/admin/discovery',
+            builder: (_, __) => const DiscoveryArea(),
           ),
 
           // CO-RC-C7-005 PHASE 5 (2026-08-20): the personal correspondence

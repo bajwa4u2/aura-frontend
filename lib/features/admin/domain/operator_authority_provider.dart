@@ -19,8 +19,13 @@ import 'operator_capability.dart';
 final operatorAuthorityProvider = Provider<AsyncValue<OperatorAuthority>>((ref) {
   final access = ref.watch(appAdminAccessProvider);
   return access.whenData((value) {
+    // Deliberately NOT gated on a role boolean. `me` is populated only by a
+    // successful `/v1/admin/me`, and what an operator holds is then decided by
+    // the permissions in that payload — never by the fact that a role exists.
+    // An operator whose grant has been narrowed to nothing must come back as
+    // holding nothing, not as an admin with an empty console.
     final me = value.me;
-    if (!value.isAdmin || me == null) return const OperatorAuthority.none();
+    if (me == null) return const OperatorAuthority.none();
     return OperatorAuthority.fromMe(me);
   });
 });

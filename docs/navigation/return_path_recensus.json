@@ -957,6 +957,28 @@
   "verdict": "COMPLIANT"
  },
  {
+  "route": "/feedback",
+  "sample": "/feedback",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "deepLinkFallback",
+  "deepLinkDestination": "/home",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
+  "route": "/feedback/mine",
+  "sample": "/feedback/mine",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "parentReturn",
+  "deepLinkDestination": "/feedback",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
   "route": "/articles/:slug",
   "sample": "/articles/x-slug",
   "renders": true,
@@ -1254,8 +1276,8 @@
   "verdict": "COMPLIANT"
  },
  {
-  "route": "/admin/communications",
-  "sample": "/admin/communications",
+  "route": "/admin/work",
+  "sample": "/admin/work",
   "renders": true,
   "protected": false,
   "deepLinkSemantic": "parentReturn",
@@ -1265,8 +1287,8 @@
   "verdict": "COMPLIANT"
  },
  {
-  "route": "/admin/institutions",
-  "sample": "/admin/institutions",
+  "route": "/admin/integrity",
+  "sample": "/admin/integrity",
   "renders": true,
   "protected": false,
   "deepLinkSemantic": "parentReturn",
@@ -1276,19 +1298,8 @@
   "verdict": "COMPLIANT"
  },
  {
-  "route": "/admin/institutions/:id/members",
-  "sample": "/admin/institutions/x-id/members",
-  "renders": true,
-  "protected": false,
-  "deepLinkSemantic": "parentReturn",
-  "deepLinkDestination": "/admin/institutions",
-  "inAppSemantic": "stackReturn",
-  "affordance": true,
-  "verdict": "COMPLIANT"
- },
- {
-  "route": "/admin/users",
-  "sample": "/admin/users",
+  "route": "/admin/platform",
+  "sample": "/admin/platform",
   "renders": true,
   "protected": false,
   "deepLinkSemantic": "parentReturn",
@@ -1298,8 +1309,8 @@
   "verdict": "COMPLIANT"
  },
  {
-  "route": "/admin/identity-review",
-  "sample": "/admin/identity-review",
+  "route": "/admin/record",
+  "sample": "/admin/record",
   "renders": true,
   "protected": false,
   "deepLinkSemantic": "parentReturn",
@@ -1309,8 +1320,8 @@
   "verdict": "COMPLIANT"
  },
  {
-  "route": "/admin/grants",
-  "sample": "/admin/grants",
+  "route": "/admin/subjects",
+  "sample": "/admin/subjects",
   "renders": true,
   "protected": false,
   "deepLinkSemantic": "parentReturn",
@@ -1320,107 +1331,96 @@
   "verdict": "COMPLIANT"
  },
  {
-  "route": "/admin/audit-logs",
-  "sample": "/admin/audit-logs",
+  "route": "/admin/subjects/person/:id",
+  "sample": "/admin/subjects/person/x-id",
   "renders": true,
   "protected": false,
   "deepLinkSemantic": "parentReturn",
-  "deepLinkDestination": "/admin",
+  "deepLinkDestination": "/admin/subjects",
   "inAppSemantic": "stackReturn",
   "affordance": true,
   "verdict": "COMPLIANT"
  },
  {
-  "route": "/admin/settings",
-  "sample": "/admin/settings",
+  "route": "/admin/subjects/institution/:id",
+  "sample": "/admin/subjects/institution/x-id",
   "renders": true,
   "protected": false,
   "deepLinkSemantic": "parentReturn",
-  "deepLinkDestination": "/admin",
+  "deepLinkDestination": "/admin/subjects",
   "inAppSemantic": "stackReturn",
   "affordance": true,
   "verdict": "COMPLIANT"
  },
  {
-  "route": "/admin/feature-flags",
-  "sample": "/admin/feature-flags",
+  "route": "/admin/subjects/person/:id/:focus",
+  "sample": "/admin/subjects/person/x-id/x-focus",
   "renders": true,
   "protected": false,
   "deepLinkSemantic": "parentReturn",
-  "deepLinkDestination": "/admin",
+  "deepLinkDestination": "/admin/subjects/person/x-id",
   "inAppSemantic": "stackReturn",
   "affordance": true,
   "verdict": "COMPLIANT"
  },
  {
-  "route": "/admin/institution-domains",
-  "sample": "/admin/institution-domains",
+  "route": "/admin/subjects/institution/:id/:focus",
+  "sample": "/admin/subjects/institution/x-id/x-focus",
   "renders": true,
   "protected": false,
   "deepLinkSemantic": "parentReturn",
-  "deepLinkDestination": "/admin",
+  "deepLinkDestination": "/admin/subjects/institution/x-id",
   "inAppSemantic": "stackReturn",
   "affordance": true,
   "verdict": "COMPLIANT"
  },
  {
-  "route": "/admin/review-queue",
-  "sample": "/admin/review-queue",
+  "route": "/admin/integrity/moderation/:id",
+  "sample": "/admin/integrity/moderation/x-id",
   "renders": true,
   "protected": false,
   "deepLinkSemantic": "parentReturn",
-  "deepLinkDestination": "/admin",
+  "deepLinkDestination": "/admin/integrity",
   "inAppSemantic": "stackReturn",
   "affordance": true,
   "verdict": "COMPLIANT"
  },
  {
-  "route": "/admin/migrations",
-  "sample": "/admin/migrations",
+  "route": "/admin/integrity/appeals/:id",
+  "sample": "/admin/integrity/appeals/x-id",
   "renders": true,
   "protected": false,
   "deepLinkSemantic": "parentReturn",
-  "deepLinkDestination": "/admin",
+  "deepLinkDestination": "/admin/integrity",
   "inAppSemantic": "stackReturn",
   "affordance": true,
   "verdict": "COMPLIANT"
  },
  {
-  "route": "/admin/policies",
-  "sample": "/admin/policies",
+  "route": "/admin/integrity/feedback/:id",
+  "sample": "/admin/integrity/feedback/x-id",
   "renders": true,
   "protected": false,
   "deepLinkSemantic": "parentReturn",
-  "deepLinkDestination": "/admin",
+  "deepLinkDestination": "/admin/integrity",
   "inAppSemantic": "stackReturn",
   "affordance": true,
   "verdict": "COMPLIANT"
  },
  {
-  "route": "/admin/moderation",
-  "sample": "/admin/moderation",
+  "route": "/admin/integrity/support/:id",
+  "sample": "/admin/integrity/support/x-id",
   "renders": true,
   "protected": false,
   "deepLinkSemantic": "parentReturn",
-  "deepLinkDestination": "/admin",
+  "deepLinkDestination": "/admin/integrity",
   "inAppSemantic": "stackReturn",
   "affordance": true,
   "verdict": "COMPLIANT"
  },
  {
-  "route": "/admin/media-appeals",
-  "sample": "/admin/media-appeals",
-  "renders": true,
-  "protected": false,
-  "deepLinkSemantic": "parentReturn",
-  "deepLinkDestination": "/admin",
-  "inAppSemantic": "stackReturn",
-  "affordance": true,
-  "verdict": "COMPLIANT"
- },
- {
-  "route": "/admin/support",
-  "sample": "/admin/support",
+  "route": "/admin/discovery",
+  "sample": "/admin/discovery",
   "renders": true,
   "protected": false,
   "deepLinkSemantic": "parentReturn",

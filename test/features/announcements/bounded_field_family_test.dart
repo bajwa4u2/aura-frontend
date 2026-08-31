@@ -41,8 +41,11 @@ void main() {
   /// field IS the dialog body, so it is the only scrollable in the hit-test
   /// path and nothing is stranded behind it.
   const soleDialogContent = <String, String>{
-    'lib/features/admin/presentation/admin_institutions_screen.dart':
-        '_promptText — the field is the entire dialog body, no scroll view',
+    // admin_institutions_screen REMOVED 2026-08-31: the screen was deleted by
+    // the Admin Operator Hub reconstruction, so its exception went with it.
+    // The console's one bounded field now lives in the governed action
+    // ceremony and adopts AuraBoundedEditor rather than claiming an
+    // exception, because that sheet DOES scroll behind the field.
     'lib/features/articles/presentation/article_screen.dart':
         'reshare commentary — the field is the entire dialog body',
     'lib/features/posts/presentation/widgets/communication_continuity_view.dart':

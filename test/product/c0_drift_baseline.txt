@@ -25,8 +25,6 @@
 #   own chapters and are burnt down there, not here.
 
 # ── G2 — local humanized elapsed time ────────────────────────────────────────
-G2 3 lib/features/admin/presentation/admin_grants_screen.dart
-G2 3 lib/features/admin/presentation/admin_review_queue_screen.dart
 # devices_screen G2 3 -> 0: converged onto AuraTemporal
 # (Preferences reconstruction, 2026-08-27)
 G2 3 lib/features/institutions/presentation/institution_dashboard_screen.dart
@@ -35,9 +33,6 @@ G2 3 lib/features/me/presentation/security_screen.dart
 
 # ── G3 — local timezone conversion ───────────────────────────────────────────
 G3 1 lib/features/activity/presentation/activity_screen.dart
-G3 1 lib/features/admin/presentation/admin_audit_logs_screen.dart
-G3 1 lib/features/admin/presentation/admin_moderation_screen.dart
-G3 1 lib/features/admin/presentation/admin_review_queue_screen.dart
 G3 1 lib/features/announcements/presentation/announcement_detail_screen.dart
 G3 1 lib/features/announcements/presentation/announcements_screen.dart
 G3 1 lib/features/devices/presentation/devices_screen.dart
@@ -66,7 +61,6 @@ G3 1 lib/features/posts/presentation/compose_screen.dart
 G3 1 lib/features/realtime/domain/realtime_models.dart
 
 # ── G4 — full-surface loading spinner ────────────────────────────────────────
-G4 1 lib/features/admin/presentation/admin_institution_members_screen.dart
 G4 1 lib/features/devices/presentation/devices_screen.dart
 G4 1 lib/features/institutions/announcements/integrity/announcement_integrity_review_sheet.dart
 G4 1 lib/features/institutions/posts/institution_post_composer_screen.dart
@@ -80,16 +74,10 @@ G4 2 lib/features/meetings/presentation/institution_availability_screen.dart
 G4 1 lib/features/meetings/presentation/meeting_live_room_screen.dart
 G4 2 lib/features/meetings/presentation/public_booking_screen.dart
 G4 2 lib/features/monetization/presentation/institution_billing_screen.dart
-G4 2 lib/features/support/presentation/admin_support_console_screen.dart
 G4 1 lib/screens/contact_screen.dart
 
 # ── G7 — time formatter declared on a screen ─────────────────────────────────
 G7 2 lib/app/shell/rail/rail_modules.dart
-G7 1 lib/features/admin/presentation/admin_audit_logs_screen.dart
-G7 2 lib/features/admin/presentation/admin_grants_screen.dart
-G7 1 lib/features/admin/presentation/admin_institution_domains_screen.dart
-G7 2 lib/features/admin/presentation/admin_institutions_screen.dart
-G7 1 lib/features/admin/presentation/admin_review_queue_screen.dart
 G7 1 lib/features/announcements/presentation/announcements_screen.dart
 G7 1 lib/features/institutions/activity/institution_activity_screen.dart
 G7 1 lib/features/meetings/presentation/meeting_lifecycle_presenter.dart
@@ -109,17 +97,6 @@ G7 1 lib/widgets/note_card.dart
 # Search is Discover's primary affordance, so its empty/loading/unavailable
 # answers now come from the product-state authority like every other surface.
 G5 1 lib/features/activity/presentation/activity_screen.dart
-G5 4 lib/features/admin/presentation/admin_audit_logs_screen.dart
-G5 3 lib/features/admin/presentation/admin_feature_flags_screen.dart
-G5 3 lib/features/admin/presentation/admin_grants_screen.dart
-G5 3 lib/features/admin/presentation/admin_institution_domains_screen.dart
-G5 3 lib/features/admin/presentation/admin_institution_members_screen.dart
-G5 6 lib/features/admin/presentation/admin_institutions_screen.dart
-G5 2 lib/features/admin/presentation/admin_moderation_screen.dart
-G5 2 lib/features/admin/presentation/admin_policies_screen.dart
-G5 3 lib/features/admin/presentation/admin_review_queue_screen.dart
-G5 2 lib/features/admin/presentation/admin_settings_screen.dart
-G5 4 lib/features/admin/presentation/admin_users_screen.dart
 G5 1 lib/features/announcements/presentation/announcement_detail_screen.dart
 G5 6 lib/features/announcements/presentation/announcements_screen.dart
 G5 2 lib/features/auth/presentation/auth_screen.dart
@@ -143,7 +120,7 @@ G5 2 lib/features/institutions/messaging/institution_messaging_screen.dart
 G5 2 lib/features/institutions/participation/participation_screen.dart
 G5 1 lib/features/institutions/posts/institution_post_composer_screen.dart
 G5 4 lib/features/institutions/posts/institution_post_detail_screen.dart
-G5 4 lib/features/institutions/presentation/admin_workspace_screen.dart
+# admin_workspace_screen G5 4 -> 0: screen deleted; the operator hub replaces it
 G5 2 lib/features/institutions/presentation/institution_dashboard_screen.dart
 G5 2 lib/features/institutions/presentation/institution_detail_screen.dart
 G5 2 lib/features/institutions/presentation/institution_invites_screen.dart
@@ -164,3 +141,29 @@ G5 3 lib/features/public/presentation/thread_screen.dart
 G5 3 lib/features/saves/presentation/saved_screen.dart
 G5 3 lib/features/updates/presentation/updates_screen.dart
 G5 2 lib/shared/media/profile_media_editor.dart
+
+# RETIRED 2026-08-31 by the Admin Operator Hub reconstruction — the screen is deleted,
+#   so its frozen debt is gone with it, not merely reduced:
+#   G2 3 lib/features/admin/presentation/admin_grants_screen.dart
+#   G2 3 lib/features/admin/presentation/admin_review_queue_screen.dart
+#   G3 1 lib/features/admin/presentation/admin_audit_logs_screen.dart
+#   G3 1 lib/features/admin/presentation/admin_moderation_screen.dart
+#   G3 1 lib/features/admin/presentation/admin_review_queue_screen.dart
+#   G4 1 lib/features/admin/presentation/admin_institution_members_screen.dart
+#   G4 2 lib/features/support/presentation/admin_support_console_screen.dart
+#   G7 1 lib/features/admin/presentation/admin_audit_logs_screen.dart
+#   G7 2 lib/features/admin/presentation/admin_grants_screen.dart
+#   G7 1 lib/features/admin/presentation/admin_institution_domains_screen.dart
+#   G7 2 lib/features/admin/presentation/admin_institutions_screen.dart
+#   G7 1 lib/features/admin/presentation/admin_review_queue_screen.dart
+#   G5 4 lib/features/admin/presentation/admin_audit_logs_screen.dart
+#   G5 3 lib/features/admin/presentation/admin_feature_flags_screen.dart
+#   G5 3 lib/features/admin/presentation/admin_grants_screen.dart
+#   G5 3 lib/features/admin/presentation/admin_institution_domains_screen.dart
+#   G5 3 lib/features/admin/presentation/admin_institution_members_screen.dart
+#   G5 6 lib/features/admin/presentation/admin_institutions_screen.dart
+#   G5 2 lib/features/admin/presentation/admin_moderation_screen.dart
+#   G5 2 lib/features/admin/presentation/admin_policies_screen.dart
+#   G5 3 lib/features/admin/presentation/admin_review_queue_screen.dart
+#   G5 2 lib/features/admin/presentation/admin_settings_screen.dart
+#   G5 4 lib/features/admin/presentation/admin_users_screen.dart

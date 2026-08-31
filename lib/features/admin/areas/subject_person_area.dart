@@ -14,6 +14,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../data/admin_providers.dart';
@@ -28,10 +29,29 @@ final personVerificationProvider = FutureProvider.autoDispose
   return ref.watch(adminRepositoryProvider).fetchPersonVerification(userId);
 });
 
+/// The whole person in one request. Deliberately NOT routed through the
+/// providers that swallow 401/403 into an empty list: an operator who is
+/// refused must be told so, not shown a person with nothing about them.
+final personDetailProvider = FutureProvider.autoDispose
+    .family<AdminPersonDetail, String>((ref, userId) async {
+  return ref.watch(adminRepositoryProvider).fetchUser(userId);
+});
+
 class SubjectPersonArea extends ConsumerWidget {
-  const SubjectPersonArea({super.key, required this.userId});
+  const SubjectPersonArea({super.key, required this.userId, this.focus});
 
   final String userId;
+
+  /// Which part of the subject the operator was sent here for.
+  ///
+  /// The worklist's identity rows address `/admin/subjects/person/:id/identity`
+  /// because an identity decision belongs ON the person, not on a queue page
+  /// showing a decision with no subject around it. The focus does not hide
+  /// anything — every section stays present and in the same order; it only
+  /// decides what leads.
+  final String? focus;
+
+  bool get _identityFirst => (focus ?? '').toLowerCase() == 'identity';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -48,19 +68,66 @@ class SubjectPersonArea extends ConsumerWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 980;
+
+        // THE THREE DECISIONS, HELD APART. Identity (who they are), standing
+        // (whether the account may be used) and operator authority (what they
+        // may do to Aura) are three authorities. They are shown together and
+        // never merged into one "status", which is the collapse the old
+        // console's single `status` column invited.
         final identity = _IdentityBlock(userId: userId, authority: authority);
+        final standing = _StandingBlock(userId: userId, authority: authority);
+        final grants =
+            _OperatorAuthorityBlock(userId: userId, authority: authority);
         final work = _RelatedWork(userId: userId);
         final history = _PersonHistory(userId: userId, authority: authority);
+        final devices = _PersonDevices(userId: userId);
 
         return ListView(
           padding: EdgeInsets.all(wide ? AuraSpace.s20 : AuraSpace.s12),
           children: [
+            _SubjectHeader(userId: userId),
+            const SizedBox(height: AuraSpace.s20),
+            if (_identityFirst) ...[
+              const OperatorPanel(
+                child: Row(
+                  children: [
+                    Icon(Icons.badge_outlined,
+                        size: 16, color: AuraSurface.accent),
+                    SizedBox(width: AuraSpace.s10),
+                    Expanded(
+                      child: Text(
+                        'You were sent here by an identity decision waiting on '
+                        'this person.',
+                        style: TextStyle(
+                          color: AuraSurface.ink,
+                          fontSize: 12.5,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AuraSpace.s20),
+            ],
             if (wide)
               // Desktop investigates with evidence and history side by side.
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(flex: 3, child: identity),
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        identity,
+                        const SizedBox(height: AuraSpace.s20),
+                        standing,
+                        const SizedBox(height: AuraSpace.s20),
+                        grants,
+                      ],
+                    ),
+                  ),
                   const SizedBox(width: AuraSpace.s20),
                   Expanded(
                     flex: 2,
@@ -70,6 +137,8 @@ class SubjectPersonArea extends ConsumerWidget {
                         work,
                         const SizedBox(height: AuraSpace.s20),
                         history,
+                        const SizedBox(height: AuraSpace.s20),
+                        devices,
                       ],
                     ),
                   ),
@@ -77,12 +146,19 @@ class SubjectPersonArea extends ConsumerWidget {
               )
             else ...[
               // Mobile drills in: the subject first, then what is waiting on
-              // it, then what has happened. Same capability, staged.
+              // it, then what has happened. Same capability, staged — never a
+              // reduced set of decisions.
               identity,
+              const SizedBox(height: AuraSpace.s20),
+              standing,
+              const SizedBox(height: AuraSpace.s20),
+              grants,
               const SizedBox(height: AuraSpace.s20),
               work,
               const SizedBox(height: AuraSpace.s20),
               history,
+              const SizedBox(height: AuraSpace.s20),
+              devices,
             ],
           ],
         );
@@ -160,18 +236,31 @@ class _IdentityBlock extends ConsumerWidget {
                   ),
                 if (canWrite) ...[
                   const SizedBox(height: AuraSpace.s16),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      icon: const Icon(Icons.gpp_bad_rounded, size: 16),
-                      label: const Text('Revoke verification'),
-                      style: TextButton.styleFrom(
-                        foregroundColor: AuraSurface.dangerInk,
+                  // BOTH halves of the decision. The console could only ever
+                  // revoke: the grant endpoint existed, the authority enforced
+                  // every rule behind it, and no surface could reach it — so a
+                  // verified class could be taken away in Aura and only ever
+                  // given somewhere else.
+                  Wrap(
+                    spacing: AuraSpace.s8,
+                    children: [
+                      TextButton.icon(
+                        icon: const Icon(Icons.verified_rounded, size: 16),
+                        label: const Text('Grant a class'),
+                        onPressed: () => _grant(context, ref, v),
                       ),
-                      onPressed: v.activeClasses.isEmpty
-                          ? null
-                          : () => _revoke(context, ref, v.activeClasses.first),
-                    ),
+                      TextButton.icon(
+                        icon: const Icon(Icons.gpp_bad_rounded, size: 16),
+                        label: const Text('Revoke verification'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AuraSurface.dangerInk,
+                        ),
+                        onPressed: v.activeClasses.isEmpty
+                            ? null
+                            : () =>
+                                _revoke(context, ref, v.activeClasses.first),
+                      ),
+                    ],
                   ),
                 ] else ...[
                   const SizedBox(height: AuraSpace.s12),
@@ -186,6 +275,216 @@ class _IdentityBlock extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+
+  /// The three classes `PersonVerificationClass` defines, and no others.
+  ///
+  /// Held here rather than typed by an operator: a class the enum does not
+  /// carry is a class the authority refuses, and finding that out at the API
+  /// is finding it out after the operator has already written their reasoning.
+  static const _grantableClasses = <String, String>{
+    'IDENTITY': 'Identity — this is really them',
+    'INSTITUTION_AFFILIATION':
+        'Institution affiliation — a verified relationship with an institution',
+    'ROLE_OR_CREDENTIAL':
+        'Role or credential — a substantiated office, standing or qualification',
+  };
+
+  Future<void> _grant(
+    BuildContext context,
+    WidgetRef ref,
+    AdminPersonVerification current,
+  ) async {
+    final held = current.activeClasses.map((c) => c.toUpperCase()).toSet();
+    final available = _grantableClasses.entries
+        .where((e) => !held.contains(e.key))
+        .toList(growable: false);
+
+    if (available.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This person already holds every class.'),
+        ),
+      );
+      return;
+    }
+
+    final chosen = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AuraSurface.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AuraRadius.xl)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(
+                AuraSpace.s20,
+                AuraSpace.s20,
+                AuraSpace.s20,
+                AuraSpace.s8,
+              ),
+              child: Text(
+                'Which class',
+                style: TextStyle(
+                  color: AuraSurface.ink,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            for (final entry in available)
+              ListTile(
+                title: Text(
+                  entry.value,
+                  style: const TextStyle(
+                    color: AuraSurface.ink,
+                    fontSize: 13.5,
+                  ),
+                ),
+                onTap: () => Navigator.of(sheetContext).pop(entry.key),
+              ),
+            const SizedBox(height: AuraSpace.s12),
+          ],
+        ),
+      ),
+    );
+
+    if (chosen == null || !context.mounted) return;
+
+    // An affiliation ASSERTS a relationship with an institution, so naming it
+    // is part of the claim. The authority refuses the grant without one —
+    // offering the class with no way to answer that would be offering an act
+    // that always fails.
+    String? institutionId;
+    if (chosen == 'INSTITUTION_AFFILIATION') {
+      institutionId = await _pickInstitution(context, ref);
+      if (institutionId == null || !context.mounted) return;
+    }
+
+    final done = await runOperatorAction(
+      context,
+      OperatorAction(
+        title: 'Grant verification',
+        subject: '$chosen · person $userId',
+        detail: 'The identity authority records this and applies it. It '
+            'refuses a second active record for a class, and it requires the '
+            'reason you give here.',
+        confirmLabel: 'Grant',
+        requiresReason: true,
+        reasonLabel: 'The evidence this rests on',
+        consequences: [
+          OperatorConsequence.becomesPublic('This verified class'),
+          OperatorConsequence.notifies('The person'),
+          OperatorConsequence.recorded('This decision and your reason'),
+        ],
+        perform: (reason) async {
+          await ref.read(adminRepositoryProvider).grantPersonVerificationClass(
+                userId,
+                verificationClass: chosen,
+                reason: reason ?? '',
+                issuingInstitutionId: institutionId,
+              );
+          return 'Verified. The class is now public and the decision is '
+              'recorded.';
+        },
+      ),
+    );
+    if (done) {
+      ref.invalidate(personVerificationProvider(userId));
+      ref.invalidate(personDetailProvider(userId));
+    }
+  }
+
+  /// Which institution the affiliation is WITH.
+  ///
+  /// Reads the institution directory rather than asking for an id: an operator
+  /// knows the institution by its name, and an id typed from memory is an id
+  /// typed wrong.
+  Future<String?> _pickInstitution(BuildContext context, WidgetRef ref) async {
+    final institutions = await ref
+        .read(adminRepositoryProvider)
+        .fetchInstitutions()
+        .catchError((_) => <AdminInstitutionSummary>[]);
+
+    if (!context.mounted) return null;
+    if (institutions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No institution could be read, so an affiliation cannot be named.',
+          ),
+        ),
+      );
+      return null;
+    }
+
+    return showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AuraSurface.card,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AuraRadius.xl)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(
+                AuraSpace.s20,
+                AuraSpace.s20,
+                AuraSpace.s20,
+                AuraSpace.s8,
+              ),
+              child: Text(
+                'Affiliated with',
+                style: TextStyle(
+                  color: AuraSurface.ink,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: institutions.length,
+                itemBuilder: (_, i) {
+                  final institution = institutions[i];
+                  return ListTile(
+                    dense: true,
+                    title: Text(
+                      institution.name,
+                      style: const TextStyle(
+                        color: AuraSurface.ink,
+                        fontSize: 13.5,
+                      ),
+                    ),
+                    subtitle: Text(
+                      institution.status,
+                      style: const TextStyle(
+                        color: AuraSurface.muted,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                    onTap: () =>
+                        Navigator.of(sheetContext).pop(institution.id),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: AuraSpace.s12),
+          ],
+        ),
+      ),
     );
   }
 
@@ -384,6 +683,552 @@ class _PersonHistory extends ConsumerWidget {
                             ],
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// WHO THIS IS — the header the old console never had.
+///
+/// `/admin/users` showed a row; opening a person showed the row again. Nothing
+/// named them, so an operator revoking authority read an id and hoped.
+class _SubjectHeader extends ConsumerWidget {
+  const _SubjectHeader({required this.userId});
+
+  final String userId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final detail = ref.watch(personDetailProvider(userId));
+
+    return detail.when(
+      loading: () => const OperatorPanel(child: OperatorLoading(lines: 1)),
+      // Deliberately quiet: the sections below each report their own failure,
+      // and three copies of the same message is not three pieces of news.
+      error: (_, __) => const SizedBox.shrink(),
+      data: (p) => OperatorPanel(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    p.person.displayName.isEmpty
+                        ? '@${p.person.handle}'
+                        : p.person.displayName,
+                    style: const TextStyle(
+                      color: AuraSurface.ink,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    p.person.handle.isEmpty
+                        ? p.email
+                        : '@${p.person.handle} · ${p.email}',
+                    style: const TextStyle(
+                      color: AuraSurface.muted,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AuraSpace.s12),
+            OperatorStatePill(
+              state: p.status,
+              tone: p.isDisabled ? OperatorTone.danger : OperatorTone.good,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// ACCOUNT STANDING — a different decision from identity, kept apart from it.
+///
+/// Whether an account may be used is not whether a person is who they say they
+/// are. Aura holds these as two authorities and the console shows them as two
+/// sections, side by side, never merged into one "status".
+class _StandingBlock extends ConsumerWidget {
+  const _StandingBlock({required this.userId, required this.authority});
+
+  final String userId;
+  final OperatorAuthority authority;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final detail = ref.watch(personDetailProvider(userId));
+
+    return detail.when(
+      loading: () => const OperatorSection(
+        title: 'Standing',
+        child: OperatorLoading(lines: 2),
+      ),
+      error: (e, _) => OperatorSection(
+        title: 'Standing',
+        child: OperatorFailure(
+          title: 'This person could not be read',
+          detail: '$e',
+          onRetry: () => ref.invalidate(personDetailProvider(userId)),
+        ),
+      ),
+      data: (p) {
+        final canWrite = authority.can(OperatorCapability.usersWrite);
+        return OperatorSection(
+          title: 'Standing',
+          subtitle: p.isDisabled
+              ? 'This account cannot be used'
+              : 'This account is in good standing',
+          child: OperatorPanel(
+            tone: p.isDisabled ? OperatorTone.danger : null,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _Fact(
+                  label: 'Email',
+                  value: p.emailVerifiedAt == null
+                      ? 'Not verified'
+                      : 'Verified',
+                  tone: p.emailVerifiedAt == null
+                      ? OperatorTone.warn
+                      : OperatorTone.good,
+                ),
+                _Fact(label: 'Account type', value: p.accountType),
+                if (p.city != null || p.country != null)
+                  _Fact(
+                    label: 'Location',
+                    value: [p.city, p.country]
+                        .whereType<String>()
+                        .join(', '),
+                  ),
+                _Fact(
+                  label: 'Devices',
+                  value: '${p.devices.where((d) => d.isActive).length} active '
+                      'of ${p.devices.length}',
+                ),
+                if (canWrite) ...[
+                  const SizedBox(height: AuraSpace.s16),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: p.isDisabled
+                        ? TextButton.icon(
+                            icon: const Icon(Icons.lock_open_rounded, size: 16),
+                            label: const Text('Restore this account'),
+                            onPressed: () => _setStanding(context, ref, p, true),
+                          )
+                        : TextButton.icon(
+                            icon: const Icon(Icons.block_rounded, size: 16),
+                            label: const Text('Disable this account'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AuraSurface.dangerInk,
+                            ),
+                            onPressed: () =>
+                                _setStanding(context, ref, p, false),
+                          ),
+                  ),
+                ] else ...[
+                  const SizedBox(height: AuraSpace.s12),
+                  const Text(
+                    'You may read this, but not decide it.',
+                    style: TextStyle(color: AuraSurface.faint, fontSize: 12),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _setStanding(
+    BuildContext context,
+    WidgetRef ref,
+    AdminPersonDetail person,
+    bool restore,
+  ) async {
+    final done = await runOperatorAction(
+      context,
+      OperatorAction(
+        title: restore ? 'Restore this account' : 'Disable this account',
+        subject: person.person.displayName.isEmpty
+            ? '@${person.person.handle}'
+            : '${person.person.displayName} · @${person.person.handle}',
+        detail: restore
+            ? 'The person can sign in again and their content becomes '
+                'reachable on the terms it was already published under.'
+            : 'The person cannot sign in. This does not delete anything and '
+                'does not decide anything about their identity.',
+        confirmLabel: restore ? 'Restore' : 'Disable',
+        destructive: !restore,
+        requiresReason: true,
+        reasonLabel: restore ? 'Why this is being restored' : 'Why',
+        consequences: [
+          if (restore)
+            const OperatorConsequence(
+              text: 'The person can sign in again.',
+              tone: OperatorTone.good,
+              icon: Icons.lock_open_rounded,
+            )
+          else ...[
+            const OperatorConsequence(
+              text: 'The person can no longer sign in.',
+              tone: OperatorTone.danger,
+              icon: Icons.block_rounded,
+            ),
+            const OperatorConsequence(
+              text: 'Their sessions on every device stop working.',
+              tone: OperatorTone.warn,
+              icon: Icons.devices_rounded,
+            ),
+          ],
+          OperatorConsequence.recorded('This decision and your reason'),
+        ],
+        perform: (reason) async {
+          await ref.read(adminRepositoryProvider).updateUserStatus(
+                person.id,
+                restore ? 'ACTIVE' : 'DISABLED',
+                reason: reason,
+              );
+          return restore
+              ? 'The account is active again. The decision is recorded.'
+              : 'The account is disabled. The decision is recorded.';
+        },
+      ),
+    );
+    if (done) ref.invalidate(personDetailProvider(userId));
+  }
+}
+
+/// One labelled fact. Deliberately not a table: a table implies the rows are
+/// the same kind of thing, and these are not.
+class _Fact extends StatelessWidget {
+  const _Fact({required this.label, required this.value, this.tone});
+
+  final String label;
+  final String value;
+  final OperatorTone? tone;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 108,
+            child: Text(
+              label,
+              style: const TextStyle(color: AuraSurface.faint, fontSize: 12),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value.isEmpty ? '—' : value,
+              style: TextStyle(
+                color: tone?.ink ?? AuraSurface.ink,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// OPERATOR AUTHORITY — what this person may do to Aura.
+///
+/// A third decision, separate again from identity and standing. `/admin/grants`
+/// listed every grant in the estate with no way to reach the person it was
+/// about; this is the same authority, asked about one subject.
+class _OperatorAuthorityBlock extends ConsumerWidget {
+  const _OperatorAuthorityBlock({required this.userId, required this.authority});
+
+  final String userId;
+  final OperatorAuthority authority;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // AUDIT_READ is what the grants endpoint requires. Asking the same
+    // question the server will ask keeps a visible section and a working
+    // request from disagreeing.
+    if (!authority.can(OperatorCapability.auditRead)) {
+      return const OperatorSection(
+        title: 'Operator authority',
+        child: OperatorInsufficientCapability(needs: 'audit'),
+      );
+    }
+
+    final detail = ref.watch(personDetailProvider(userId));
+
+    return detail.when(
+      loading: () => const OperatorSection(
+        title: 'Operator authority',
+        child: OperatorLoading(lines: 2),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (p) {
+        if (p.grants.isEmpty) {
+          return const OperatorSection(
+            title: 'Operator authority',
+            child: OperatorPanel(
+              child: OperatorClear(
+                title: 'Holds no operator authority',
+                icon: Icons.shield_outlined,
+              ),
+            ),
+          );
+        }
+
+        final canWrite = authority.can(OperatorCapability.usersWrite);
+        return OperatorSection(
+          title: 'Operator authority',
+          subtitle: p.roles.isEmpty
+              ? 'No active role'
+              : '${p.roles.join(', ')} · ${p.permissions.length} '
+                  'permission${p.permissions.length == 1 ? '' : 's'}',
+          child: OperatorPanel(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final grant in p.grants) ...[
+                  _GrantRow(
+                    grant: grant,
+                    canRevoke: canWrite,
+                    onRevoke: () => _revoke(context, ref, p, grant),
+                  ),
+                  if (grant != p.grants.last)
+                    const Divider(height: AuraSpace.s20, color: AuraSurface.divider),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _revoke(
+    BuildContext context,
+    WidgetRef ref,
+    AdminPersonDetail person,
+    AdminGrant grant,
+  ) async {
+    final done = await runOperatorAction(
+      context,
+      OperatorAction(
+        title: 'Revoke operator authority',
+        subject: '${grant.role} · ${person.person.displayName.isEmpty ? '@${person.person.handle}' : person.person.displayName}',
+        detail: 'The grant is marked revoked. Aura Admin invokes the grant '
+            'authority; the authority decides and records.',
+        confirmLabel: 'Revoke',
+        destructive: true,
+        requiresReason: true,
+        reasonLabel: 'Why this authority is being withdrawn',
+        consequences: [
+          OperatorConsequence(
+            text: 'They immediately lose '
+                '${grant.permissions.length} admin '
+                'permission${grant.permissions.length == 1 ? '' : 's'}.',
+            tone: OperatorTone.danger,
+            icon: Icons.remove_moderator_rounded,
+          ),
+          const OperatorConsequence(
+            text: 'Any admin surface they have open stops answering.',
+            tone: OperatorTone.warn,
+            icon: Icons.desktop_access_disabled_rounded,
+          ),
+          OperatorConsequence.recorded('This decision and your reason'),
+        ],
+        perform: (reason) async {
+          await ref
+              .read(adminRepositoryProvider)
+              .revokeGrant(grant.id, reason: reason);
+          return 'Authority revoked. The decision is recorded.';
+        },
+      ),
+    );
+    if (done) ref.invalidate(personDetailProvider(userId));
+  }
+}
+
+class _GrantRow extends StatelessWidget {
+  const _GrantRow({
+    required this.grant,
+    required this.canRevoke,
+    required this.onRevoke,
+  });
+
+  final AdminGrant grant;
+  final bool canRevoke;
+  final VoidCallback onRevoke;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = grant.derivedStatus;
+    final live = status == AdminGrantStatus.active ||
+        status == AdminGrantStatus.bootstrap;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              grant.role,
+              style: const TextStyle(
+                color: AuraSurface.ink,
+                fontSize: 13.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: AuraSpace.s8),
+            OperatorStatePill(
+              state: status.name,
+              dense: true,
+              tone: live ? OperatorTone.good : OperatorTone.neutral,
+            ),
+            const Spacer(),
+            // Only a LIVE grant can be withdrawn. Offering to revoke one that
+            // is already revoked is offering an act with no consequence.
+            if (canRevoke && live)
+              TextButton(
+                onPressed: onRevoke,
+                style: TextButton.styleFrom(
+                  foregroundColor: AuraSurface.dangerInk,
+                  visualDensity: VisualDensity.compact,
+                ),
+                child: const Text('Revoke'),
+              ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Granted by ${grant.grantedBy.isEmpty ? 'the system' : grant.grantedBy}',
+          style: const TextStyle(color: AuraSurface.muted, fontSize: 12),
+        ),
+        if (grant.reason.isNotEmpty) ...[
+          const SizedBox(height: 3),
+          Text(
+            grant.reason,
+            style: const TextStyle(
+              color: AuraSurface.muted,
+              fontSize: 12,
+              height: 1.35,
+            ),
+          ),
+        ],
+        if (grant.permissions.isNotEmpty) ...[
+          const SizedBox(height: AuraSpace.s8),
+          Wrap(
+            spacing: AuraSpace.s4,
+            runSpacing: AuraSpace.s4,
+            children: [
+              for (final permission in grant.permissions)
+                OperatorStatePill(state: permission, dense: true),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// WHERE AURA REACHES THEM.
+///
+/// Present because a support case that begins "I stopped getting calls" is
+/// answered here and nowhere else. Read-only by design: revoking someone's
+/// device is not an act this console owns.
+class _PersonDevices extends ConsumerWidget {
+  const _PersonDevices({required this.userId});
+
+  final String userId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final detail = ref.watch(personDetailProvider(userId));
+
+    return detail.maybeWhen(
+      orElse: () => const SizedBox.shrink(),
+      data: (p) {
+        if (p.devices.isEmpty) {
+          return const OperatorSection(
+            title: 'Devices',
+            child: OperatorPanel(
+              child: OperatorClear(
+                title: 'No registered device',
+                detail: 'Aura has nowhere to deliver a call or a notification.',
+                icon: Icons.phonelink_erase_rounded,
+              ),
+            ),
+          );
+        }
+        final active = p.devices.where((d) => d.isActive).toList();
+        final retired = p.devices.where((d) => !d.isActive).toList();
+        return OperatorSection(
+          title: 'Devices',
+          subtitle: '${active.length} active of ${p.devices.length}',
+          child: OperatorPanel(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final device in [...active, ...retired])
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AuraSpace.s8),
+                    child: Row(
+                      children: [
+                        Icon(
+                          device.isActive
+                              ? Icons.smartphone_rounded
+                              : Icons.phonelink_erase_rounded,
+                          size: 15,
+                          color: device.isActive
+                              ? AuraSurface.goodInk
+                              : AuraSurface.faint,
+                        ),
+                        const SizedBox(width: AuraSpace.s8),
+                        Expanded(
+                          child: Text(
+                            device.label,
+                            style: TextStyle(
+                              color: device.isActive
+                                  ? AuraSurface.ink
+                                  : AuraSurface.faint,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ),
+                        if (device.appVersion != null)
+                          Text(
+                            device.appVersion!,
+                            style: const TextStyle(
+                              color: AuraSurface.muted,
+                              fontSize: 11.5,
+                            ),
+                          ),
                       ],
                     ),
                   ),

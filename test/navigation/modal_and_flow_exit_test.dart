@@ -122,7 +122,21 @@ void main() {
     // surface holding it. A country confirmation also has no addressable
     // identity — a URL that reopened it would be asking a question with no
     // refused act behind it.
-    expect(full, 19,
+    // 20th member added 2026-08-31 by the Admin Operator Hub reconstruction:
+    // `features/admin/ui/operator_action.dart` — the governed-action ceremony
+    // (INTENT → CONSEQUENCE PREVIEW → CONFIRM → ACTION → OUTCOME). Reclassified
+    // against §6 rather than having the number bumped: it BEHAVES as a sheet —
+    // transient, returns a bool to its caller, and traps nothing. It is
+    // deliberately not a route because a pending decision has no addressable
+    // identity: a URL that reopened it would be offering to revoke a grant or
+    // uphold an appeal with no operator intent behind the request, which is
+    // precisely the ceremony's subject.
+    //
+    // It does hold the barrier during ONE phase, and only that one: while the
+    // action is in flight. An operator who dismissed mid-flight would never
+    // learn whether the decision landed, and a decision believed not to have
+    // landed gets taken twice. That is a consequence of the act, not a trap.
+    expect(full, 20,
         reason: 'the full-height sheet population changed — reclassify it '
             'against §6 (behaviour, not dimensions) rather than adjusting '
             'this number');

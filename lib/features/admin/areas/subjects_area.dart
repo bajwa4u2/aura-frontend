@@ -22,6 +22,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../data/admin_providers.dart';
 import '../domain/operator_authority_provider.dart';
 import '../domain/operator_capability.dart';
+import '../domain/operator_routes.dart';
 import '../ui/operator_kit.dart';
 
 /// Which kind of subject the directory is showing.
@@ -258,8 +259,7 @@ class _PeopleList extends ConsumerWidget {
                 subtitle: person.email,
                 state: person.status,
                 trailing: person.role,
-                onTap: () => context.go(
-                    '/admin/subjects/person/${person.person.userId}'),
+                onTap: () => context.go(operatorPersonRoute(person.person.userId)),
               ),
             );
           },
@@ -323,7 +323,7 @@ class _InstitutionsList extends ConsumerWidget {
                 trailing: '${institution.memberCount} '
                     'member${institution.memberCount == 1 ? '' : 's'}',
                 onTap: () => context
-                    .go('/admin/subjects/institution/${institution.id}'),
+                    .go(operatorInstitutionRoute(institution.id)),
               ),
             );
           },

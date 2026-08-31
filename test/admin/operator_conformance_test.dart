@@ -203,25 +203,24 @@ void main() {
     // front doors. These paths are the ones still awaiting migration into an
     // area. Every migration removes one line. When the list is empty the
     // completion gate below turns green on its own.
-    const pendingMigration = <String>{
-      '/admin/institutions',
-      '/admin/institutions/:id/members',
-      '/admin/users',
-      '/admin/identity-review',
-      '/admin/feedback',
-      '/admin/grants',
-      '/admin/audit-logs',
-      '/admin/settings',
-      '/admin/feature-flags',
-      '/admin/institution-domains',
-      '/admin/review-queue',
-      '/admin/migrations',
-      '/admin/policies',
-      '/admin/moderation',
-      '/admin/media-appeals',
-      '/admin/support',
-      '/admin/communications',
-    };
+    //
+    // EMPTY, 2026-08-31. All seventeen migrated, and every one of their
+    // screens deleted rather than left unrouted:
+    //
+    //   users, institutions, institutions/:id/members, grants,
+    //   identity-review          -> SUBJECTS (and the subject pages)
+    //   review-queue, institution-domains
+    //                            -> WORK, decided on the subject
+    //   moderation, media-appeals, feedback, support, communications
+    //                            -> INTEGRITY
+    //   settings, feature-flags, policies
+    //                            -> PLATFORM
+    //   audit-logs               -> RECORD
+    //   migrations               -> RETIRED. It was engineering evidence for
+    //                               a one-off sign-off, never an operator
+    //                               destination. The convergence audit TABLES
+    //                               survive untouched; only the door is gone.
+    const pendingMigration = <String>{};
 
     test('every /admin route is either migrated or on the register', () {
       final unaccounted = <String>[];
@@ -261,6 +260,38 @@ void main() {
       ]);
       final paths = OperatorArea.values.map((a) => a.path).toSet();
       expect(paths.length, OperatorArea.values.length);
+    });
+
+    test('every destination the worklist publishes is a route that exists', () {
+      // THE DEFECT THIS PREVENTS HAS ALREADY HAPPENED TWICE.
+      //
+      // The backend published `/join/:code` as a share destination that no
+      // router declared, and the retired console had five admin routes no
+      // navigation entry pointed at. Both were addresses nobody could compare
+      // against anything.
+      //
+      // `admin/operator-work/operator-work.service.ts` emits one destination
+      // per row it produces. These are those seven, written down so a rename
+      // on either side fails here rather than in an operator's hands.
+      const published = <String>[
+        '/admin/integrity/moderation/:id',
+        '/admin/integrity/appeals/:id',
+        '/admin/integrity/feedback/:id',
+        '/admin/integrity/support/:id',
+        '/admin/subjects/person/:id/:focus',
+        '/admin/subjects/institution/:id/:focus',
+        // The two source-summary destinations, which address the worklist
+        // itself filtered to one source.
+        '/admin/work',
+      ];
+
+      final declared = declaredAdminPaths().toSet();
+      final missing =
+          published.where((p) => !declared.contains(p)).toList()..sort();
+
+      expect(missing, isEmpty,
+          reason: 'the worklist sends operators to addresses the router does '
+              'not declare: $missing');
     });
 
     test('the longest path wins so nested routes do not resolve to NOW', () {

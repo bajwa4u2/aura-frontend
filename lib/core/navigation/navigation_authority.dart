@@ -224,10 +224,14 @@ class NavigationAuthority {
   static const String feedbackRoute = '/feedback';
   static const String myFeedbackRoute = '/feedback/mine';
 
-  /// The operator's queue. Permission-gated, and separate from the member
-  /// surface for the same reason identity review is: telling us something and
-  /// deciding what we do about it are different capabilities.
-  static const String adminFeedbackRoute = '/admin/feedback';
+  /// The operator's side of feedback. Permission-gated, and separate from the
+  /// member surface for the same reason identity review is: telling us
+  /// something and deciding what we do about it are different capabilities.
+  ///
+  /// The queue itself is INTEGRITY. This addresses one piece of feedback,
+  /// which is the unit an operator actually works — the console it replaces
+  /// was a list with the reading of it bolted on.
+  static const String adminFeedbackRoute = '/admin/integrity/feedback';
 
   static const String securityRoute = '/security';
   static const String devicesRoute = '/devices';

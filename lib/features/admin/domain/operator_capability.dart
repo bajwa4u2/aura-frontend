@@ -111,7 +111,6 @@ class OperatorAuthority {
     required this.userId,
     required this.roles,
     required this.capabilities,
-    required this.isOwner,
     required this.unknownCapabilities,
     this.primaryRole,
     this.expiresAt,
@@ -121,7 +120,6 @@ class OperatorAuthority {
       : userId = '',
         roles = const {},
         capabilities = const {},
-        isOwner = false,
         unknownCapabilities = const {},
         primaryRole = null,
         expiresAt = null;
@@ -135,8 +133,6 @@ class OperatorAuthority {
   /// exactly that bug on the other side of the wire.
   final Set<OperatorCapability> capabilities;
 
-  final bool isOwner;
-
   /// Permission strings this build does not recognise. Kept rather than
   /// discarded so a newer server's scopes are visible as a fact instead of
   /// looking like the operator holds nothing.
@@ -145,7 +141,16 @@ class OperatorAuthority {
   final OperatorRole? primaryRole;
   final DateTime? expiresAt;
 
-  bool get isOperator => capabilities.isNotEmpty || isOwner;
+  /// Operator-ness is a CAPABILITY fact, never a role one. This used to read
+  /// `capabilities.isNotEmpty || isOwner`, which answered a capability
+  /// question with a role boolean — the exact drift the C1 ratchet exists to
+  /// stop, and it would have admitted an OWNER whose grant had been narrowed
+  /// to nothing.
+  bool get isOperator => capabilities.isNotEmpty;
+
+  /// Whether this operator holds the OWNER role. For DISPLAY and governance
+  /// acts only — never to answer "may they do X".
+  bool get holdsOwnerRole => roles.contains(OperatorRole.owner);
 
   bool can(OperatorCapability capability) =>
       capabilities.contains(capability);
@@ -199,7 +204,6 @@ class OperatorAuthority {
       userId: json['userId']?.toString() ?? '',
       roles: roles,
       capabilities: known,
-      isOwner: json['isOwner'] == true,
       unknownCapabilities: unknown,
       primaryRole: primaryRole ?? (roles.isNotEmpty ? roles.first : null),
       expiresAt: expires,

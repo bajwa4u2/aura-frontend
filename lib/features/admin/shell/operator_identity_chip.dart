@@ -26,7 +26,9 @@ class OperatorIdentityChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final role = authority.primaryRole;
-    final label = authority.isOwner ? 'Owner' : (role?.label ?? 'Operator');
+    final label = authority.holdsOwnerRole
+        ? OperatorRole.owner.label
+        : (role?.label ?? 'Operator');
     final expired = authority.expiredAt(DateTime.now());
 
     return Tooltip(

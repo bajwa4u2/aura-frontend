@@ -17,6 +17,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../../core/product/product_language.dart';
+import '../../../core/ui/aura_bounded_editor.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -38,29 +40,29 @@ class OperatorConsequence {
   /// Something becomes visible outside Aura. Called out separately because it
   /// is the consequence operators most regret discovering late.
   factory OperatorConsequence.becomesPublic(String what) => OperatorConsequence(
-        text: '$what becomes publicly visible.',
-        tone: OperatorTone.warn,
-        icon: Icons.public_rounded,
-      );
+    text: '$what becomes publicly visible.',
+    tone: OperatorTone.warn,
+    icon: Icons.public_rounded,
+  );
 
   /// Someone is told. Notification is a consequence, not an implementation
   /// detail.
   factory OperatorConsequence.notifies(String who) => OperatorConsequence(
-        text: '$who is notified.',
-        tone: OperatorTone.pending,
-        icon: Icons.notifications_active_rounded,
-      );
+    text: '$who is notified.',
+    tone: OperatorTone.pending,
+    icon: Icons.notifications_active_rounded,
+  );
 
   factory OperatorConsequence.irreversible(String what) => OperatorConsequence(
-        text: '$what cannot be undone.',
-        tone: OperatorTone.danger,
-        icon: Icons.report_gmailerrorred_rounded,
-      );
+    text: '$what cannot be undone.',
+    tone: OperatorTone.danger,
+    icon: Icons.report_gmailerrorred_rounded,
+  );
 
   factory OperatorConsequence.recorded(String what) => OperatorConsequence(
-        text: '$what is recorded against your authority.',
-        icon: Icons.history_edu_rounded,
-      );
+    text: '$what is recorded against your authority.',
+    icon: Icons.history_edu_rounded,
+  );
 }
 
 /// The definition of a governed action.
@@ -172,58 +174,67 @@ class _ActionSheetState extends State<_ActionSheet> {
     final action = widget.action;
     final bottom = MediaQuery.of(context).viewInsets.bottom;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottom),
-      child: Container(
-        decoration: const BoxDecoration(
-          color: AuraSurface.card,
-          border: Border(top: BorderSide(color: AuraSurface.divider)),
-          borderRadius:
-              BorderRadius.vertical(top: Radius.circular(AuraRadius.xl)),
-        ),
-        padding: const EdgeInsets.fromLTRB(
-          AuraSpace.s20,
-          AuraSpace.s12,
-          AuraSpace.s20,
-          AuraSpace.s20,
-        ),
-        child: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: AuraSpace.s16),
-                    decoration: BoxDecoration(
-                      color: AuraSurface.divider,
-                      borderRadius: BorderRadius.circular(2),
+    return PopScope(
+      // The barrier holds for exactly one phase. An operator who dismissed
+      // while the action was in flight would never learn whether the decision
+      // landed — and a decision believed not to have landed gets taken twice.
+      // Every other phase dismisses freely: a preview that cannot be abandoned
+      // is a trap, and an outcome already recorded loses nothing by closing.
+      canPop: _phase != _Phase.running,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottom),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: AuraSurface.card,
+            border: Border(top: BorderSide(color: AuraSurface.divider)),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(AuraRadius.xl),
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(
+            AuraSpace.s20,
+            AuraSpace.s12,
+            AuraSpace.s20,
+            AuraSpace.s20,
+          ),
+          child: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: AuraSpace.s16),
+                      decoration: BoxDecoration(
+                        color: AuraSurface.divider,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
                   ),
-                ),
-                Text(
-                  action.title,
-                  style: const TextStyle(
-                    color: AuraSurface.ink,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
+                  Text(
+                    action.title,
+                    style: const TextStyle(
+                      color: AuraSurface.ink,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  action.subject,
-                  style: const TextStyle(
-                    color: AuraSurface.muted,
-                    fontSize: 13,
+                  const SizedBox(height: 2),
+                  Text(
+                    action.subject,
+                    style: const TextStyle(
+                      color: AuraSurface.muted,
+                      fontSize: 13,
+                    ),
                   ),
-                ),
-                const SizedBox(height: AuraSpace.s16),
-                ..._body(action),
-              ],
+                  const SizedBox(height: AuraSpace.s16),
+                  ..._body(action),
+                ],
+              ),
             ),
           ),
         ),
@@ -283,19 +294,26 @@ class _ActionSheetState extends State<_ActionSheet> {
             ),
           if (action.requiresReason) ...[
             const SizedBox(height: AuraSpace.s8),
-            TextField(
-              controller: _reason,
-              onChanged: (_) => setState(() {}),
-              maxLines: 3,
-              minLines: 2,
-              style: const TextStyle(color: AuraSurface.ink, fontSize: 13),
-              decoration: InputDecoration(
-                labelText: action.reasonLabel,
-                helperText: 'Recorded with this decision.',
-                filled: true,
-                fillColor: AuraSurface.page,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AuraRadius.md),
+            // A bounded multi-line field otherwise claims the wheel and
+            // strands the sheet scrolling behind it. AuraBoundedEditor hands
+            // the scrolling back; the field must adopt BOTH pieces it gives.
+            AuraBoundedEditor(
+              builder: (context, scrollController, physics) => TextField(
+                controller: _reason,
+                onChanged: (_) => setState(() {}),
+                maxLines: 3,
+                minLines: 2,
+                scrollController: scrollController,
+                scrollPhysics: physics,
+                style: const TextStyle(color: AuraSurface.ink, fontSize: 13),
+                decoration: InputDecoration(
+                  labelText: action.reasonLabel,
+                  helperText: 'Recorded with this decision.',
+                  filled: true,
+                  fillColor: AuraSurface.page,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AuraRadius.md),
+                  ),
                 ),
               ),
             ),
@@ -319,8 +337,9 @@ class _ActionSheetState extends State<_ActionSheet> {
                         ? AuraSurface.dangerInk
                         : AuraSurface.accent,
                     foregroundColor: Colors.white,
-                    padding:
-                        const EdgeInsets.symmetric(vertical: AuraSpace.s14),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AuraSpace.s14,
+                    ),
                   ),
                   child: Text(action.confirmLabel),
                 ),
@@ -352,14 +371,20 @@ class _ActionSheetState extends State<_ActionSheet> {
             tone: OperatorTone.good,
             child: Row(
               children: [
-                const Icon(Icons.check_circle_rounded,
-                    size: 18, color: AuraSurface.goodInk),
+                const Icon(
+                  Icons.check_circle_rounded,
+                  size: 18,
+                  color: AuraSurface.goodInk,
+                ),
                 const SizedBox(width: AuraSpace.s12),
                 Expanded(
                   child: Text(
                     _outcome ?? 'Done.',
                     style: const TextStyle(
-                        color: AuraSurface.ink, fontSize: 13, height: 1.4),
+                      color: AuraSurface.ink,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
                   ),
                 ),
               ],
@@ -379,10 +404,7 @@ class _ActionSheetState extends State<_ActionSheet> {
 
       case _Phase.failed:
         return [
-          OperatorFailure(
-            title: 'The action did not complete',
-            detail: _error,
-          ),
+          OperatorFailure(title: 'The action did not complete', detail: _error),
           const SizedBox(height: AuraSpace.s16),
           Row(
             children: [
@@ -403,10 +425,11 @@ class _ActionSheetState extends State<_ActionSheet> {
                   style: FilledButton.styleFrom(
                     backgroundColor: AuraSurface.accent,
                     foregroundColor: Colors.white,
-                    padding:
-                        const EdgeInsets.symmetric(vertical: AuraSpace.s14),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AuraSpace.s14,
+                    ),
                   ),
-                  child: const Text('Try again'),
+                  child: Text(ProductLabels.of(ProductAction.retry)),
                 ),
               ),
             ],

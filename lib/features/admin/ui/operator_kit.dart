@@ -219,13 +219,18 @@ class OperatorPanel extends StatelessWidget {
   final Widget child;
   final EdgeInsets padding;
 
-  /// Tints the border only. A panel that fills with colour shouts; a panel
-  /// with a coloured edge points.
+  /// Marks the EDGE, not the field. A panel that fills with colour shouts; a
+  /// panel with a coloured edge points.
+  ///
+  /// The edge is a solid rail down the left rather than a tinted outline. A
+  /// 35%-alpha border on a dark card was invisible in the render — a
+  /// "needs attention now" panel that looked exactly like every other panel,
+  /// which is a signal that does not signal.
   final OperatorTone? tone;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final panel = Container(
       padding: padding,
       decoration: BoxDecoration(
         color: AuraSurface.card,
@@ -233,10 +238,38 @@ class OperatorPanel extends StatelessWidget {
         border: Border.all(
           color: tone == null
               ? AuraSurface.divider
-              : tone!.ink.withValues(alpha: 0.35),
+              : tone!.ink.withValues(alpha: 0.45),
         ),
       ),
       child: child,
+    );
+
+    if (tone == null) return panel;
+
+    // A Stack, not a non-uniform Border. Flutter forbids per-side colours
+    // together with a borderRadius, and this exact pairing has already been
+    // hit once in this reconstruction.
+    // PASSTHROUGH, not the default loose fit. A loose Stack hands its child
+    // unbounded-width constraints, so the panel shrank to its text the moment
+    // a tone was set — the "needs attention now" panel became the narrowest
+    // thing on the page.
+    return Stack(
+      fit: StackFit.passthrough,
+      children: [
+        panel,
+        Positioned(
+          left: 0,
+          top: AuraSpace.s8,
+          bottom: AuraSpace.s8,
+          child: Container(
+            width: 3,
+            decoration: BoxDecoration(
+              color: tone!.ink,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1490,7 +1490,7 @@
   "parent": ""
  },
  {
-  "path": "/admin/communications",
+  "path": "/admin/work",
   "segments": 2,
   "params": [],
   "renders": true,
@@ -1502,7 +1502,7 @@
   "parent": ""
  },
  {
-  "path": "/admin/institutions",
+  "path": "/admin/integrity",
   "segments": 2,
   "params": [],
   "renders": true,
@@ -1514,7 +1514,43 @@
   "parent": ""
  },
  {
-  "path": "/admin/institutions/:id/members",
+  "path": "/admin/platform",
+  "segments": 2,
+  "params": [],
+  "renders": true,
+  "hasRedirect": false,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
+  "path": "/admin/record",
+  "segments": 2,
+  "params": [],
+  "renders": true,
+  "hasRedirect": false,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
+  "path": "/admin/subjects",
+  "segments": 2,
+  "params": [],
+  "renders": true,
+  "hasRedirect": false,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
+  "path": "/admin/subjects/person/:id",
   "segments": 4,
   "params": [
    "id"
@@ -1528,9 +1564,11 @@
   "parent": ""
  },
  {
-  "path": "/admin/users",
-  "segments": 2,
-  "params": [],
+  "path": "/admin/subjects/institution/:id",
+  "segments": 4,
+  "params": [
+   "id"
+  ],
   "renders": true,
   "hasRedirect": false,
   "childCount": 0,
@@ -1540,9 +1578,12 @@
   "parent": ""
  },
  {
-  "path": "/admin/identity-review",
-  "segments": 2,
-  "params": [],
+  "path": "/admin/subjects/person/:id/:focus",
+  "segments": 5,
+  "params": [
+   "id",
+   "focus"
+  ],
   "renders": true,
   "hasRedirect": false,
   "childCount": 0,
@@ -1552,9 +1593,12 @@
   "parent": ""
  },
  {
-  "path": "/admin/feedback",
-  "segments": 2,
-  "params": [],
+  "path": "/admin/subjects/institution/:id/:focus",
+  "segments": 5,
+  "params": [
+   "id",
+   "focus"
+  ],
   "renders": true,
   "hasRedirect": false,
   "childCount": 0,
@@ -1564,9 +1608,11 @@
   "parent": ""
  },
  {
-  "path": "/admin/grants",
-  "segments": 2,
-  "params": [],
+  "path": "/admin/integrity/moderation/:id",
+  "segments": 4,
+  "params": [
+   "id"
+  ],
   "renders": true,
   "hasRedirect": false,
   "childCount": 0,
@@ -1576,9 +1622,11 @@
   "parent": ""
  },
  {
-  "path": "/admin/audit-logs",
-  "segments": 2,
-  "params": [],
+  "path": "/admin/integrity/appeals/:id",
+  "segments": 4,
+  "params": [
+   "id"
+  ],
   "renders": true,
   "hasRedirect": false,
   "childCount": 0,
@@ -1588,9 +1636,11 @@
   "parent": ""
  },
  {
-  "path": "/admin/settings",
-  "segments": 2,
-  "params": [],
+  "path": "/admin/integrity/feedback/:id",
+  "segments": 4,
+  "params": [
+   "id"
+  ],
   "renders": true,
   "hasRedirect": false,
   "childCount": 0,
@@ -1600,9 +1650,11 @@
   "parent": ""
  },
  {
-  "path": "/admin/feature-flags",
-  "segments": 2,
-  "params": [],
+  "path": "/admin/integrity/support/:id",
+  "segments": 4,
+  "params": [
+   "id"
+  ],
   "renders": true,
   "hasRedirect": false,
   "childCount": 0,
@@ -1612,79 +1664,7 @@
   "parent": ""
  },
  {
-  "path": "/admin/institution-domains",
-  "segments": 2,
-  "params": [],
-  "renders": true,
-  "hasRedirect": false,
-  "childCount": 0,
-  "shellChain": [
-   "ShellRoute#0"
-  ],
-  "parent": ""
- },
- {
-  "path": "/admin/review-queue",
-  "segments": 2,
-  "params": [],
-  "renders": true,
-  "hasRedirect": false,
-  "childCount": 0,
-  "shellChain": [
-   "ShellRoute#0"
-  ],
-  "parent": ""
- },
- {
-  "path": "/admin/migrations",
-  "segments": 2,
-  "params": [],
-  "renders": true,
-  "hasRedirect": false,
-  "childCount": 0,
-  "shellChain": [
-   "ShellRoute#0"
-  ],
-  "parent": ""
- },
- {
-  "path": "/admin/policies",
-  "segments": 2,
-  "params": [],
-  "renders": true,
-  "hasRedirect": false,
-  "childCount": 0,
-  "shellChain": [
-   "ShellRoute#0"
-  ],
-  "parent": ""
- },
- {
-  "path": "/admin/moderation",
-  "segments": 2,
-  "params": [],
-  "renders": true,
-  "hasRedirect": false,
-  "childCount": 0,
-  "shellChain": [
-   "ShellRoute#0"
-  ],
-  "parent": ""
- },
- {
-  "path": "/admin/media-appeals",
-  "segments": 2,
-  "params": [],
-  "renders": true,
-  "hasRedirect": false,
-  "childCount": 0,
-  "shellChain": [
-   "ShellRoute#0"
-  ],
-  "parent": ""
- },
- {
-  "path": "/admin/support",
+  "path": "/admin/discovery",
   "segments": 2,
   "params": [],
   "renders": true,

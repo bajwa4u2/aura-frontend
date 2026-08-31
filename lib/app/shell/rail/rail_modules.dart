@@ -10,6 +10,7 @@ import '../../../core/trust/trust_marks.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/surface/surface_composition.dart';
 import '../../../features/admin/data/admin_providers.dart';
+import '../../../features/admin/domain/operator_area.dart';
 import '../../../features/announcements/providers.dart';
 import '../../../features/discourse_intelligence/models.dart';
 import '../../../features/discourse_intelligence/providers.dart';
@@ -1029,7 +1030,10 @@ class AdminReviewQueueRailModule extends ConsumerWidget {
           const SizedBox(height: AuraSpace.s8),
           InkWell(
             borderRadius: BorderRadius.circular(AuraRadius.r10),
-            onTap: () => context.go('/admin/review-queue'),
+            // `/admin/review-queue` was one of seven queue front doors. There
+            // is one worklist now, and it already filters to what this
+            // operator can act on.
+            onTap: () => context.go(OperatorArea.work.path),
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: AuraSpace.s4,
@@ -1119,7 +1123,10 @@ class AdminPendingInstitutionsRailModule extends ConsumerWidget {
       ),
       body: InkWell(
         borderRadius: BorderRadius.circular(AuraRadius.r10),
-        onTap: () => context.go('/admin/users'),
+        // Institutions awaiting a decision are INSTITUTIONS, and this went to
+        // the people directory. The subject directory is where an institution
+        // is actually met.
+        onTap: () => context.go(OperatorArea.subjects.path),
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AuraSpace.s4,
