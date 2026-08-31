@@ -58,6 +58,7 @@ import '../../../core/media/media_origin_disclosure.dart';
 import '../../../core/tagging/governed_tag_field.dart';
 import '../../../core/tagging/mention_scope.dart';
 import '../../../core/tagging/tag_entities.dart';
+import '../../../core/ui/aura_bounded_editor.dart';
 
 /// Durable ringing/active-call truth for a conversation (founder charter
 /// 2026-08-17). A call must never be reachable ONLY through an ephemeral
@@ -67,15 +68,15 @@ import '../../../core/tagging/tag_entities.dart';
 /// ribbon appears/clears without a manual reload.
 final conversationActiveLiveProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>?, String>((ref, conversationId) async {
-  ref.watch(realtimeControllerProvider.select((s) => s.isJoined));
-  try {
-    return await ref
-        .read(conversationsRepositoryProvider)
-        .activeLiveSession(conversationId);
-  } catch (_) {
-    return null; // never let a transient failure fake "no call"
-  }
-});
+      ref.watch(realtimeControllerProvider.select((s) => s.isJoined));
+      try {
+        return await ref
+            .read(conversationsRepositoryProvider)
+            .activeLiveSession(conversationId);
+      } catch (_) {
+        return null; // never let a transient failure fake "no call"
+      }
+    });
 
 /// ONE Conversation screen (canon): talk immediately; CAPABILITIES ATTACH
 /// when intention reaches them — photos, videos, voice notes, and
@@ -133,10 +134,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   /// trusting a socket to carry message content.
   void _listenForIncoming() {
     _incomingSub?.cancel();
-    _incomingSub = ref
-        .read(correspondenceLiveServiceProvider)
-        .events
-        .listen((event) {
+    _incomingSub = ref.read(correspondenceLiveServiceProvider).events.listen((
+      event,
+    ) {
       // A MESSAGE ARRIVED, OR ONE CHANGED.
       //
       // Both are triggers and both are answered the same way: re-read the
@@ -221,19 +221,22 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
   void _onComposerChanged(String text, Conversation c) {
     final sel = _composer.selection;
-    final caret =
-        sel.isValid ? sel.baseOffset.clamp(0, text.length) : text.length;
+    final caret = sel.isValid
+        ? sel.baseOffset.clamp(0, text.length)
+        : text.length;
     final upto = text.substring(0, caret);
     final token = RegExp(r'@([^\s@]*)$').firstMatch(upto);
     List<ConversationParty> matches = const [];
     if (token != null) {
       final q = token.group(1)!.toLowerCase();
       matches = c.parties
-          .where((p) =>
-              p.isPerson &&
-              p.isActive &&
-              (p.displayName ?? '').isNotEmpty &&
-              p.displayName!.toLowerCase().contains(q))
+          .where(
+            (p) =>
+                p.isPerson &&
+                p.isActive &&
+                (p.displayName ?? '').isNotEmpty &&
+                p.displayName!.toLowerCase().contains(q),
+          )
           .take(4)
           .toList();
     }
@@ -245,7 +248,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
     _linkDebounce?.cancel();
     _linkDebounce = Timer(
-        const Duration(milliseconds: 600), () => _resolveDraftLink(text));
+      const Duration(milliseconds: 600),
+      () => _resolveDraftLink(text),
+    );
   }
 
   Future<void> _resolveDraftLink(String text) async {
@@ -282,16 +287,18 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     if (name.isEmpty) return;
     final text = _composer.text;
     final sel = _composer.selection;
-    final caret =
-        sel.isValid ? sel.baseOffset.clamp(0, text.length) : text.length;
+    final caret = sel.isValid
+        ? sel.baseOffset.clamp(0, text.length)
+        : text.length;
     final upto = text.substring(0, caret);
     final token = RegExp(r'@([^\s@]*)$').firstMatch(upto);
     if (token == null) return;
     final next =
         '${upto.substring(0, token.start)}@$name ${text.substring(caret)}';
     _composer.text = next;
-    _composer.selection =
-        TextSelection.collapsed(offset: token.start + name.length + 2);
+    _composer.selection = TextSelection.collapsed(
+      offset: token.start + name.length + 2,
+    );
     setState(() => _mentionMatches = const []);
   }
 
@@ -403,12 +410,14 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     try {
       final bytes = await Pasteboard.image;
       if (bytes != null && bytes.isNotEmpty) {
-        await _admit(await ContentIntake.resolveAndPrepareBytes(
-          path: IntakePath.paste,
-          bytes: bytes,
-          fileName: 'pasted-image.png',
-          declaredMimeType: 'image/png',
-        ));
+        await _admit(
+          await ContentIntake.resolveAndPrepareBytes(
+            path: IntakePath.paste,
+            bytes: bytes,
+            fileName: 'pasted-image.png',
+            declaredMimeType: 'image/png',
+          ),
+        );
       }
     } catch (_) {
       // No image on the clipboard — the native text paste proceeds.
@@ -454,8 +463,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () =>
-                Navigator.of(context).pop(controller.text.trim()),
+            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
             child: const Text('Save'),
           ),
         ],
@@ -463,8 +471,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     );
     controller.dispose();
     if (next == null || next.isEmpty || next == msg.body) return;
-    await MessageActions(ref, widget.conversationId)
-        .edit(context, msg, next);
+    await MessageActions(ref, widget.conversationId).edit(context, msg, next);
     _reloadMessages();
   }
 
@@ -475,15 +482,12 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   /// in would produce a control that fails.
   Future<void> _forward(ConversationMessage msg) async {
     final all = await ref.read(conversationsRepositoryProvider).list();
-    final options =
-        all.where((c) => c.id != widget.conversationId).toList();
+    final options = all.where((c) => c.id != widget.conversationId).toList();
     if (!mounted) return;
 
     if (options.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('There is nowhere to forward this yet.'),
-        ),
+        const SnackBar(content: Text('There is nowhere to forward this yet.')),
       );
       return;
     }
@@ -500,9 +504,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               padding: const EdgeInsets.all(AuraSpace.s16),
               child: Row(
                 children: [
-                  Expanded(
-                    child: Text('Forward to', style: AuraText.title),
-                  ),
+                  Expanded(child: Text('Forward to', style: AuraText.title)),
                 ],
               ),
             ),
@@ -528,8 +530,10 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       ),
     );
     if (destination == null || !mounted) return;
-    await MessageActions(ref, widget.conversationId)
-        .forward(context, msg, destination);
+    await MessageActions(
+      ref,
+      widget.conversationId,
+    ).forward(context, msg, destination);
   }
 
   Future<void> _messageAction(String action, ConversationMessage msg) async {
@@ -544,13 +548,14 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         await _startEdit(msg);
         return;
       case 'retract':
-        await MessageActions(ref, widget.conversationId)
-            .retract(context, msg);
+        await MessageActions(ref, widget.conversationId).retract(context, msg);
         _reloadMessages();
         return;
       case 'removeForMe':
-        await MessageActions(ref, widget.conversationId)
-            .removeForMe(context, msg);
+        await MessageActions(
+          ref,
+          widget.conversationId,
+        ).removeForMe(context, msg);
         _reloadMessages();
         return;
       case 'forward':
@@ -563,13 +568,19 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               .read(conversationsRepositoryProvider)
               .translateMessage(msg.id, msg.body, target);
           if (mounted) {
-            setState(() => _translations[msg.id] =
-                t.trim() == msg.body.trim() ? 'Already in your language' : t);
+            setState(
+              () => _translations[msg.id] = t.trim() == msg.body.trim()
+                  ? 'Already in your language'
+                  : t,
+            );
           }
         } catch (_) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text('Translation is not available right now.')));
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Translation is not available right now.'),
+              ),
+            );
           }
         }
         return;
@@ -606,9 +617,11 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       _refuse(resolution.rejection!);
       return;
     }
-    setState(() => _composition = _composition.copyWith(
-          attachments: [..._composition.attachments, attachment],
-        ));
+    setState(
+      () => _composition = _composition.copyWith(
+        attachments: [..._composition.attachments, attachment],
+      ),
+    );
     await _upload(attachment);
   }
 
@@ -665,8 +678,11 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         // that used to drop it silently.
         attachment.error = 'upload-failed';
       });
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Attachment failed — remove it and try again.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Attachment failed — remove it and try again.'),
+        ),
+      );
     }
   }
 
@@ -691,8 +707,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     // five chosen photographs is the exact class of silence this removes.
     final message = acquisitionLimitMessage(acquired.droppedForLimit);
     if (message != null && mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -814,17 +831,16 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         kind: wireKind(attachment.kind, collapseDocumentToImage: false),
         source: wireSource(attachment.source),
       );
-      await ref.read(conversationsRepositoryProvider).send(
-            widget.conversationId,
-            '…',
-            mediaIds: [result.mediaId],
-          );
+      await ref
+          .read(conversationsRepositoryProvider)
+          .send(widget.conversationId, '…', mediaIds: [result.mediaId]);
       ref.invalidate(conversationMessagesProvider(widget.conversationId));
       ref.invalidate(conversationsListProvider);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Could not send — try again.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not send — try again.')),
+        );
       }
     }
   }
@@ -837,17 +853,21 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   // panel), where it escalates the CURRENT session's lifecycle state.
 
   Future<void> _attachDocument() async {
-    final result = await FilePicker.platform
-        .pickFiles(type: FileType.any, withData: true);
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.any,
+      withData: true,
+    );
     final file = result?.files.firstOrNull;
     final bytes = file?.bytes;
     if (file == null || bytes == null) return;
-    await _admit(await ContentIntake.resolveAndPrepareBytes(
-      path: IntakePath.picker,
-      bytes: bytes,
-      fileName: file.name,
-      source: AttachmentSource.upload,
-    ));
+    await _admit(
+      await ContentIntake.resolveAndPrepareBytes(
+        path: IntakePath.picker,
+        bytes: bytes,
+        fileName: file.name,
+        source: AttachmentSource.upload,
+      ),
+    );
   }
 
   // `_ingestBytes` used to live here. It resolved mime and kind itself and,
@@ -873,30 +893,40 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         if (bytes.isEmpty) throw Exception('empty recording');
         // Messenger ergonomics (founder): a voice MESSAGE sends itself —
         // stop recording IS the send.
-        await _uploadAndSendImmediately(await ContentIntake.resolveAndPrepareBytes(
-          path: IntakePath.picker,
-          bytes: bytes,
-          fileName: 'voice-note.webm',
-          declaredMimeType: 'audio/webm',
-          source: AttachmentSource.recording,
-        ));
+        await _uploadAndSendImmediately(
+          await ContentIntake.resolveAndPrepareBytes(
+            path: IntakePath.picker,
+            bytes: bytes,
+            fileName: 'voice-note.webm',
+            declaredMimeType: 'audio/webm',
+            source: AttachmentSource.recording,
+          ),
+        );
       } catch (_) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Could not capture the recording — try again.')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not capture the recording — try again.'),
+            ),
+          );
         }
       }
       return;
     }
     if (!await _recorder.hasPermission()) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Microphone permission is needed for voice notes.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Microphone permission is needed for voice notes.'),
+          ),
+        );
       }
       return;
     }
-    await _recorder.start(const RecordConfig(encoder: AudioEncoder.opus),
-        path: 'voice-note.webm');
+    await _recorder.start(
+      const RecordConfig(encoder: AudioEncoder.opus),
+      path: 'voice-note.webm',
+    );
     setState(() => _recording = true);
   }
 
@@ -916,7 +946,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       final previewId = _previewDismissed
           ? null
           : _pendingPreview?['linkPreviewId'] as String?;
-      await ref.read(conversationsRepositoryProvider).send(
+      await ref
+          .read(conversationsRepositoryProvider)
+          .send(
             widget.conversationId,
             text.isEmpty ? '…' : text,
             mediaIds: mediaIds,
@@ -946,8 +978,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       }
     } finally {
       if (mounted) {
-        setState(() =>
-            _composition = _composition.copyWith(isSubmitting: false));
+        setState(
+          () => _composition = _composition.copyWith(isSubmitting: false),
+        );
       }
     }
   }
@@ -966,8 +999,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     // a working microphone. The ask now happens first, in front of the call,
     // and the session is not created unless the person proceeds.
     final video = kind == 'VIDEO';
-    final conversation =
-        ref.read(conversationProvider(widget.conversationId)).valueOrNull;
+    final conversation = ref
+        .read(conversationProvider(widget.conversationId))
+        .valueOrNull;
     final myUserId = ref.read(myUserIdProvider);
     final who = conversation == null
         ? null
@@ -1003,8 +1037,11 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Could not start the call — try again.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not start the call — try again.'),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _startingCall = false);
@@ -1036,11 +1073,13 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             content: TextField(controller: controller, autofocus: true),
             actions: [
               TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(),
-                  child: const Text('Cancel')),
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('Cancel'),
+              ),
               TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(controller.text),
-                  child: const Text('Save')),
+                onPressed: () => Navigator.of(ctx).pop(controller.text),
+                child: const Text('Save'),
+              ),
             ],
           ),
         );
@@ -1069,10 +1108,12 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final conversationAsync =
-        ref.watch(conversationProvider(widget.conversationId));
-    final messagesAsync =
-        ref.watch(conversationMessagesProvider(widget.conversationId));
+    final conversationAsync = ref.watch(
+      conversationProvider(widget.conversationId),
+    );
+    final messagesAsync = ref.watch(
+      conversationMessagesProvider(widget.conversationId),
+    );
     final myUserId = ref.watch(myUserIdProvider);
 
     // READING ADVANCES THE CANONICAL CURSOR, AND EVERY UNREAD CONSUMER IS
@@ -1090,8 +1131,10 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     //   rows linked to this conversation as a CONSEQUENCE of the read. It is
     //   synchronised, never substituted: it no longer answers "are there
     //   unread messages".
-    ref.listen(conversationMessagesProvider(widget.conversationId),
-        (prev, next) {
+    ref.listen(conversationMessagesProvider(widget.conversationId), (
+      prev,
+      next,
+    ) {
       next.whenData((_) {
         // READ IS NOT INFERRED FROM DELIVERY (founder ruling §4).
         //
@@ -1116,389 +1159,463 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
     return conversationAsync.when(
       loading: () => AuraScaffold(
-          body: const AuraProductState(
-              state: ProductState.loading,
-              subject: ProductNoun.conversation)),
+        body: const AuraProductState(
+          state: ProductState.loading,
+          subject: ProductNoun.conversation,
+        ),
+      ),
       error: (e, _) => AuraScaffold(
         body: AuraProductState(
           state: ProductState.unavailable,
           subject: ProductNoun.conversation,
           detail: 'It may have been removed, or you may have left it.',
           action: AuraSecondaryButton(
-              label: 'Back to Messages', onPressed: () => context.pop()),
+            label: 'Back to Messages',
+            onPressed: () => context.pop(),
+          ),
         ),
       ),
       data: (c) => _DropIntake(
         onFiles: (files) async {
           for (final f in files) {
-            await _admit(await ContentIntake.resolveAndPrepareBytes(
-              path: IntakePath.drop,
-              bytes: await f.readAsBytes(),
-              fileName: f.name,
-              declaredMimeType: f.mimeType,
-              source: AttachmentSource.upload,
-            ));
+            await _admit(
+              await ContentIntake.resolveAndPrepareBytes(
+                path: IntakePath.drop,
+                bytes: await f.readAsBytes(),
+                fileName: f.name,
+                declaredMimeType: f.mimeType,
+                source: AttachmentSource.upload,
+              ),
+            );
           }
         },
         child: AuraScaffold(
-        showHeader: false,
-        body: Column(
-          children: [
-            // VISIBLE conversation header — AuraScaffold renders no chrome
-            // of its own (the live "calls nowhere / add buried" defect), so
-            // the conversation owns its bar: identity left, capabilities
-            // right, messenger-grade.
-            Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AuraSpace.s8, vertical: AuraSpace.s6),
-              decoration: const BoxDecoration(
-                color: AuraSurface.card,
-                border:
-                    Border(bottom: BorderSide(color: AuraSurface.divider)),
-              ),
-              child: Row(
-                children: [
-                  // RETIRED 2026-08-25 — the way out is governed now.
-                  //
-                  // This control did exactly what ReturnPathAuthority now
-                  // resolves: pop if there is history, otherwise Messages —
-                  // and inside a Space, the Space's own `onBack`, which was
-                  // itself `go('/institution/:id/spaces')`, the same answer
-                  // the authority derives. Keeping it put two arrows on one
-                  // screen, which is what the shared control exists to end.
-                  //
-                  // The governed one is also strictly better in a Space: it
-                  // unwinds the real journey when there is one, where this
-                  // replaced it unconditionally.
-                  // F056: counterpart avatar for 1:1, bounded composite of
-                  // canonical participant identities for a group.
-                  ConversationAvatar(
-                      conversation: c, myUserId: myUserId, size: 34),
-                  const SizedBox(width: AuraSpace.s10),
-                  Expanded(
-                    // In a Space, the SPACE names the surface. The
-                    // conversation's own name is a mirror of the Space title,
-                    // and reading it here instead would let a rename drift
-                    // into two answers for one question.
-                    child: widget.spaceContext != null
-                        ? _SpaceHeading(context: widget.spaceContext!)
-                        : Text(
-                            conversationDisplayName(c, myUserId),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AuraText.body.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: AuraSurface.ink),
-                          ),
+          showHeader: false,
+          body: Column(
+            children: [
+              // VISIBLE conversation header — AuraScaffold renders no chrome
+              // of its own (the live "calls nowhere / add buried" defect), so
+              // the conversation owns its bar: identity left, capabilities
+              // right, messenger-grade.
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AuraSpace.s8,
+                  vertical: AuraSpace.s6,
+                ),
+                decoration: const BoxDecoration(
+                  color: AuraSurface.card,
+                  border: Border(
+                    bottom: BorderSide(color: AuraSurface.divider),
                   ),
-                  if (widget.spaceContext?.onOpenMembers != null)
-                    IconButton(
-                      tooltip: 'Members',
-                      icon: const Icon(Icons.group_outlined),
-                      onPressed: widget.spaceContext!.onOpenMembers,
+                ),
+                child: Row(
+                  children: [
+                    // RETIRED 2026-08-25 — the way out is governed now.
+                    //
+                    // This control did exactly what ReturnPathAuthority now
+                    // resolves: pop if there is history, otherwise Messages —
+                    // and inside a Space, the Space's own `onBack`, which was
+                    // itself `go('/institution/:id/spaces')`, the same answer
+                    // the authority derives. Keeping it put two arrows on one
+                    // screen, which is what the shared control exists to end.
+                    //
+                    // The governed one is also strictly better in a Space: it
+                    // unwinds the real journey when there is one, where this
+                    // replaced it unconditionally.
+                    // F056: counterpart avatar for 1:1, bounded composite of
+                    // canonical participant identities for a group.
+                    ConversationAvatar(
+                      conversation: c,
+                      myUserId: myUserId,
+                      size: 34,
                     ),
-                  IconButton(
-                    tooltip: 'Call',
-                    icon: const Icon(Icons.call_rounded),
-                    onPressed:
-                        _startingCall ? null : () => _startCall('AUDIO'),
-                  ),
-                  IconButton(
-                    tooltip: 'Video',
-                    icon: const Icon(Icons.videocam_rounded),
-                    onPressed:
-                        _startingCall ? null : () => _startCall('VIDEO'),
-                  ),
-                  IconButton(
-                    tooltip: 'Add people',
-                    icon: const Icon(Icons.person_add_alt_1_rounded),
-                    onPressed: () => showAddPeopleSheet(
-                        context, ref, widget.conversationId),
-                  ),
-                  PopupMenuButton<String>(
-                    onSelected: (a) => _menu(a, c),
-                    itemBuilder: (_) => [
-                      const PopupMenuItem(
-                          value: 'rename', child: Text('Name')),
-                      PopupMenuItem(
+                    const SizedBox(width: AuraSpace.s10),
+                    Expanded(
+                      // In a Space, the SPACE names the surface. The
+                      // conversation's own name is a mirror of the Space title,
+                      // and reading it here instead would let a rename drift
+                      // into two answers for one question.
+                      child: widget.spaceContext != null
+                          ? _SpaceHeading(context: widget.spaceContext!)
+                          : Text(
+                              conversationDisplayName(c, myUserId),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AuraText.body.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: AuraSurface.ink,
+                              ),
+                            ),
+                    ),
+                    if (widget.spaceContext?.onOpenMembers != null)
+                      IconButton(
+                        tooltip: 'Members',
+                        icon: const Icon(Icons.group_outlined),
+                        onPressed: widget.spaceContext!.onOpenMembers,
+                      ),
+                    IconButton(
+                      tooltip: 'Call',
+                      icon: const Icon(Icons.call_rounded),
+                      onPressed: _startingCall
+                          ? null
+                          : () => _startCall('AUDIO'),
+                    ),
+                    IconButton(
+                      tooltip: 'Video',
+                      icon: const Icon(Icons.videocam_rounded),
+                      onPressed: _startingCall
+                          ? null
+                          : () => _startCall('VIDEO'),
+                    ),
+                    IconButton(
+                      tooltip: 'Add people',
+                      icon: const Icon(Icons.person_add_alt_1_rounded),
+                      onPressed: () => showAddPeopleSheet(
+                        context,
+                        ref,
+                        widget.conversationId,
+                      ),
+                    ),
+                    PopupMenuButton<String>(
+                      onSelected: (a) => _menu(a, c),
+                      itemBuilder: (_) => [
+                        const PopupMenuItem(
+                          value: 'rename',
+                          child: Text('Name'),
+                        ),
+                        PopupMenuItem(
                           value: 'mute',
-                          child: Text(c.muted ? 'Unmute' : 'Mute')),
-                      PopupMenuItem(
+                          child: Text(c.muted ? 'Unmute' : 'Mute'),
+                        ),
+                        PopupMenuItem(
                           value: 'archive',
-                          child:
-                              Text(c.archived ? 'Unarchive' : 'Archive')),
-                      const PopupMenuItem(
-                          value: 'leave', child: Text('Leave')),
-                    ],
-                  ),
-                ],
+                          child: Text(c.archived ? 'Unarchive' : 'Archive'),
+                        ),
+                        const PopupMenuItem(
+                          value: 'leave',
+                          child: Text('Leave'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            // DURABLE CALL AFFORDANCE (founder charter 2026-08-17): a
-            // ringing/active call is server truth, so the thread can always
-            // offer it — after a refresh, a dismissed card, a missed
-            // notification, or a frozen accept. Never "gone to never come
-            // back".
-            ConversationIncomingCall(conversationId: widget.conversationId),
-            _ConversationLiveRibbon(conversationId: widget.conversationId),
-            Expanded(
-              child: messagesAsync.when(
-                loading: () => const AuraProductState(
+              // DURABLE CALL AFFORDANCE (founder charter 2026-08-17): a
+              // ringing/active call is server truth, so the thread can always
+              // offer it — after a refresh, a dismissed card, a missed
+              // notification, or a frozen accept. Never "gone to never come
+              // back".
+              ConversationIncomingCall(conversationId: widget.conversationId),
+              _ConversationLiveRibbon(conversationId: widget.conversationId),
+              Expanded(
+                child: messagesAsync.when(
+                  loading: () => const AuraProductState(
                     state: ProductState.loading,
-                    subject: ProductNoun.message),
-                error: (e, _) => AuraProductState(
+                    subject: ProductNoun.message,
+                  ),
+                  error: (e, _) => AuraProductState(
                     state: ProductState.retryableError,
                     subject: ProductNoun.message,
                     onRecover: () => ref.invalidate(
-                        conversationMessagesProvider(widget.conversationId))),
-                data: (messages) => ListView.builder(
-                  reverse: true,
-                  padding: const EdgeInsets.all(AuraSpace.s12),
-                  itemCount: messages.length,
-                  itemBuilder: (_, i) {
-                    final m = messages[i];
-                    // The list is REVERSED, so index + 1 is the message
-                    // BEFORE this one in time.
-                    final previous =
-                        i + 1 < messages.length ? messages[i + 1] : null;
-                    return _MessageBubble(
-                      message: m,
-                      mine: m.senderUserId == myUserId,
-                      conversation: c,
-                      // WHO SAID THIS.
-                      //
-                      // Seen in a live institution Space, 2026-08-24: a
-                      // three-party correspondence rendered an incoming
-                      // message as a bare bubble with no author. In a
-                      // conversation with more than two sides that is
-                      // unreadable — the same defect as a participation
-                      // event without its actor, one layer down.
-                      //
-                      // Only where it adds something: a direct
-                      // correspondence already names the other party in
-                      // the header, and a run of messages from one person
-                      // is attributed by its first.
-                      showSender: shouldNameSender(
-                        conversation: c,
+                      conversationMessagesProvider(widget.conversationId),
+                    ),
+                  ),
+                  data: (messages) => ListView.builder(
+                    reverse: true,
+                    padding: const EdgeInsets.all(AuraSpace.s12),
+                    itemCount: messages.length,
+                    itemBuilder: (_, i) {
+                      final m = messages[i];
+                      // The list is REVERSED, so index + 1 is the message
+                      // BEFORE this one in time.
+                      final previous = i + 1 < messages.length
+                          ? messages[i + 1]
+                          : null;
+                      return _MessageBubble(
                         message: m,
-                        previous: previous,
-                        myUserId: myUserId,
-                      ),
-                      translation: _translations[m.id],
-                      onAction: (a) => _messageAction(a, m),
-                      onReact: (type) => _react(m, type),
-                    );
-                  },
+                        mine: m.senderUserId == myUserId,
+                        conversation: c,
+                        // WHO SAID THIS.
+                        //
+                        // Seen in a live institution Space, 2026-08-24: a
+                        // three-party correspondence rendered an incoming
+                        // message as a bare bubble with no author. In a
+                        // conversation with more than two sides that is
+                        // unreadable — the same defect as a participation
+                        // event without its actor, one layer down.
+                        //
+                        // Only where it adds something: a direct
+                        // correspondence already names the other party in
+                        // the header, and a run of messages from one person
+                        // is attributed by its first.
+                        showSender: shouldNameSender(
+                          conversation: c,
+                          message: m,
+                          previous: previous,
+                          myUserId: myUserId,
+                        ),
+                        translation: _translations[m.id],
+                        onAction: (a) => _messageAction(a, m),
+                        onReact: (type) => _react(m, type),
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
-            // THE CANONICAL COMPOSITION STRIP.
-            //
-            // The hand-rolled Wrap it replaces removed items by filtering the
-            // list directly, which left no record that the author had
-            // withdrawn them — an upload still in flight could complete
-            // afterwards and put the item back. Removal now goes through the
-            // authority, which records the cancellation so a late success
-            // cannot resurrect it.
-            // Shown only when there is visual media to describe. Asking about
-            // the origin of a voice note or a document would be noise.
-            MediaOriginDisclosureControl(
-              value: _originDeclaration,
-              visible: _attachments.any(
-                (a) => a.kind == AttachmentKind.image || a.kind == AttachmentKind.video,
+              // THE CANONICAL COMPOSITION STRIP.
+              //
+              // The hand-rolled Wrap it replaces removed items by filtering the
+              // list directly, which left no record that the author had
+              // withdrawn them — an upload still in flight could complete
+              // afterwards and put the item back. Removal now goes through the
+              // authority, which records the cancellation so a late success
+              // cannot resurrect it.
+              // Shown only when there is visual media to describe. Asking about
+              // the origin of a voice note or a document would be noise.
+              MediaOriginDisclosureControl(
+                value: _originDeclaration,
+                visible: _attachments.any(
+                  (a) =>
+                      a.kind == AttachmentKind.image ||
+                      a.kind == AttachmentKind.video,
+                ),
+                onChanged: (v) => setState(() => _originDeclaration = v),
               ),
-              onChanged: (v) => setState(() => _originDeclaration = v),
-            ),
-            if (_attachments.isNotEmpty)
-              AuraCompositionStrip(
-                attachments: _attachments,
-                phaseOf: _composition.phaseOf,
-                onRemove: _removeAttachment,
-                onReorder: _reorderAttachment,
-                onRetry: _retryAttachment,
-              ),
-            if (_mentionMatches.isNotEmpty)
-              Container(
-                width: double.infinity,
-                color: AuraSurface.card,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AuraSpace.s12, vertical: AuraSpace.s6),
-                child: Wrap(
-                  spacing: AuraSpace.s6,
-                  children: [
-                    for (final p in _mentionMatches)
-                      ActionChip(
-                        avatar: AuraAvatar(
+              if (_attachments.isNotEmpty)
+                AuraCompositionStrip(
+                  attachments: _attachments,
+                  phaseOf: _composition.phaseOf,
+                  onRemove: _removeAttachment,
+                  onReorder: _reorderAttachment,
+                  onRetry: _retryAttachment,
+                ),
+              if (_mentionMatches.isNotEmpty)
+                Container(
+                  width: double.infinity,
+                  color: AuraSurface.card,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AuraSpace.s12,
+                    vertical: AuraSpace.s6,
+                  ),
+                  child: Wrap(
+                    spacing: AuraSpace.s6,
+                    children: [
+                      for (final p in _mentionMatches)
+                        ActionChip(
+                          avatar: AuraAvatar(
                             name: p.displayName ?? '',
                             imageUrl: p.avatarUrl,
-                            size: 20),
-                        label: Text(p.displayName ?? ''),
-                        onPressed: () => _insertMention(p),
-                      ),
-                  ],
+                            size: 20,
+                          ),
+                          label: Text(p.displayName ?? ''),
+                          onPressed: () => _insertMention(p),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            if (_replyTo != null)
-              Container(
-                color: AuraSurface.card,
-                padding: const EdgeInsets.fromLTRB(
-                    AuraSpace.s12, AuraSpace.s6, AuraSpace.s4, AuraSpace.s6),
-                child: Row(
-                  children: [
-                    const Icon(Icons.reply_rounded,
-                        size: 16, color: AuraSurface.muted),
-                    const SizedBox(width: AuraSpace.s8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(_partyName(c, _replyTo!.senderUserId),
+              if (_replyTo != null)
+                Container(
+                  color: AuraSurface.card,
+                  padding: const EdgeInsets.fromLTRB(
+                    AuraSpace.s12,
+                    AuraSpace.s6,
+                    AuraSpace.s4,
+                    AuraSpace.s6,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.reply_rounded,
+                        size: 16,
+                        color: AuraSurface.muted,
+                      ),
+                      const SizedBox(width: AuraSpace.s8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _partyName(c, _replyTo!.senderUserId),
                               style: AuraText.micro.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  color: AuraSurface.accentText)),
-                          Text(_replyTo!.body,
+                                fontWeight: FontWeight.w800,
+                                color: AuraSurface.accentText,
+                              ),
+                            ),
+                            Text(
+                              _replyTo!.body,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: AuraText.micro
-                                  .copyWith(color: AuraSurface.muted)),
-                        ],
+                              style: AuraText.micro.copyWith(
+                                color: AuraSurface.muted,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 16),
-                      onPressed: () => setState(() => _replyTo = null),
-                    ),
-                  ],
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 16),
+                        onPressed: () => setState(() => _replyTo = null),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            if (_pendingPreview != null &&
-                !_previewDismissed &&
-                (_pendingPreview!['status'] == 'READY' ||
-                    _pendingPreview!['status'] == 'INTERNAL'))
-              Container(
-                color: AuraSurface.card,
-                padding: const EdgeInsets.fromLTRB(
-                    AuraSpace.s12, AuraSpace.s6, AuraSpace.s4, AuraSpace.s6),
-                child: Row(
-                  children: [
-                    Icon(
+              if (_pendingPreview != null &&
+                  !_previewDismissed &&
+                  (_pendingPreview!['status'] == 'READY' ||
+                      _pendingPreview!['status'] == 'INTERNAL'))
+                Container(
+                  color: AuraSurface.card,
+                  padding: const EdgeInsets.fromLTRB(
+                    AuraSpace.s12,
+                    AuraSpace.s6,
+                    AuraSpace.s4,
+                    AuraSpace.s6,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
                         _pendingPreview!['status'] == 'INTERNAL'
                             ? Icons.link_rounded
                             : Icons.public_rounded,
                         size: 16,
-                        color: AuraSurface.muted),
-                    const SizedBox(width: AuraSpace.s8),
-                    Expanded(
-                      child: Text(
-                        _draftPreviewLabel(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AuraText.micro
-                            .copyWith(color: AuraSurface.muted),
+                        color: AuraSurface.muted,
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 16),
-                      onPressed: () =>
-                          setState(() => _previewDismissed = true),
-                    ),
-                  ],
+                      const SizedBox(width: AuraSpace.s8),
+                      Expanded(
+                        child: Text(
+                          _draftPreviewLabel(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AuraText.micro.copyWith(
+                            color: AuraSurface.muted,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 16),
+                        onPressed: () =>
+                            setState(() => _previewDismissed = true),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                    AuraSpace.s12, AuraSpace.s6, AuraSpace.s12, AuraSpace.s12),
-                child: Row(
-                  children: [
-                    IconButton(
-                      tooltip: 'Attach',
-                      icon: const Icon(Icons.attach_file_rounded),
-                      onPressed: _showAttachMenu,
-                    ),
-                    IconButton(
-                      tooltip:
-                          _recording ? 'Stop recording' : 'Voice note',
-                      icon: Icon(
-                        _recording
-                            ? Icons.stop_circle_rounded
-                            : Icons.mic_none_rounded,
-                        color: _recording ? AuraSurface.dangerInk : null,
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AuraSpace.s12,
+                    AuraSpace.s6,
+                    AuraSpace.s12,
+                    AuraSpace.s12,
+                  ),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        tooltip: 'Attach',
+                        icon: const Icon(Icons.attach_file_rounded),
+                        onPressed: _showAttachMenu,
                       ),
-                      onPressed: _toggleVoiceNote,
-                    ),
-                    Expanded(
-                      child: Focus(
-                        onKeyEvent: _composerKeyEvent,
-                        // TAGS ARE AUTHORED THROUGH THE ONE CANONICAL
-                        // COMPOSER. This surface could render migrated tag
-                        // references and had no way to create one -- the
-                        // convergence must not leave Conversation less capable
-                        // than the DirectMessage lineage it replaces.
-                        //
-                        // Bounded scope, like every other bounded surface:
-                        // the candidates are this conversation's own parties,
-                        // which is also exactly what the server will accept.
-                        child: GovernedTagAutocomplete(
-                          controller: _composer,
-                          focusNode: _composerFocus,
-                          onTagSelected: _rememberSelectedTag,
-                          mentionScope: MentionScope.bounded(
-                            _eligibleTagSuggestions(c),
-                          ),
-                          child: TextField(
-                          controller: _composer,
-                          minLines: 1,
-                          maxLines: 5,
-                          textInputAction: TextInputAction.send,
-                          onSubmitted: (_) => _send(),
-                          onChanged: (t) => _onComposerChanged(t, c),
-                          contentInsertionConfiguration:
-                              ContentInsertionConfiguration(
-                            onContentInserted: (content) async {
-                              final data = content.data;
-                              if (data != null && data.isNotEmpty) {
-                                await _admit(await ContentIntake.resolveAndPrepareBytes(
-                                  path: IntakePath.paste,
-                                  bytes: Uint8List.fromList(data),
-                                  fileName: 'pasted-image.png',
-                                  declaredMimeType: content.mimeType,
-                                ));
-                              }
-                            },
-                          ),
-                          decoration: InputDecoration(
-                            hintText:
-                                _recording ? 'Recording…' : 'Message…',
-                            filled: true,
-                            fillColor: AuraSurface.card,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(24),
-                              borderSide: BorderSide.none,
+                      IconButton(
+                        tooltip: _recording ? 'Stop recording' : 'Voice note',
+                        icon: Icon(
+                          _recording
+                              ? Icons.stop_circle_rounded
+                              : Icons.mic_none_rounded,
+                          color: _recording ? AuraSurface.dangerInk : null,
+                        ),
+                        onPressed: _toggleVoiceNote,
+                      ),
+                      Expanded(
+                        child: Focus(
+                          onKeyEvent: _composerKeyEvent,
+                          // TAGS ARE AUTHORED THROUGH THE ONE CANONICAL
+                          // COMPOSER. This surface could render migrated tag
+                          // references and had no way to create one -- the
+                          // convergence must not leave Conversation less capable
+                          // than the DirectMessage lineage it replaces.
+                          //
+                          // Bounded scope, like every other bounded surface:
+                          // the candidates are this conversation's own parties,
+                          // which is also exactly what the server will accept.
+                          child: GovernedTagAutocomplete(
+                            controller: _composer,
+                            focusNode: _composerFocus,
+                            onTagSelected: _rememberSelectedTag,
+                            mentionScope: MentionScope.bounded(
+                              _eligibleTagSuggestions(c),
                             ),
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: AuraSpace.s16,
-                                vertical: AuraSpace.s10),
+                            // Bounded on purpose — the composer sits below a
+                            // conversation that scrolls past it, so unbounded
+                            // growth would swallow the thread. AuraBoundedEditor
+                            // keeps the bound without trapping the page: the
+                            // composer scrolls its own text while it can, and
+                            // releases the wheel at its top and bottom.
+                            child: AuraBoundedEditor(
+                              builder: (context, scrollController, physics) =>
+                                  TextField(
+                                    scrollController: scrollController,
+                                    scrollPhysics: physics,
+                                    controller: _composer,
+                                    minLines: 1,
+                                    maxLines: 5,
+                                    textInputAction: TextInputAction.send,
+                                    onSubmitted: (_) => _send(),
+                                    onChanged: (t) => _onComposerChanged(t, c),
+                                    contentInsertionConfiguration:
+                                        ContentInsertionConfiguration(
+                                          onContentInserted: (content) async {
+                                            final data = content.data;
+                                            if (data != null &&
+                                                data.isNotEmpty) {
+                                              await _admit(
+                                                await ContentIntake.resolveAndPrepareBytes(
+                                                  path: IntakePath.paste,
+                                                  bytes: Uint8List.fromList(
+                                                    data,
+                                                  ),
+                                                  fileName: 'pasted-image.png',
+                                                  declaredMimeType:
+                                                      content.mimeType,
+                                                ),
+                                              );
+                                            }
+                                          },
+                                        ),
+                                    decoration: InputDecoration(
+                                      hintText: _recording
+                                          ? 'Recording…'
+                                          : 'Message…',
+                                      filled: true,
+                                      fillColor: AuraSurface.card,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(24),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: AuraSpace.s16,
+                                            vertical: AuraSpace.s10,
+                                          ),
+                                    ),
+                                  ),
+                            ),
                           ),
                         ),
-                        ),
                       ),
-                    ),
-                    const SizedBox(width: AuraSpace.s8),
-                    IconButton.filled(
-                      // The control reflects readiness now, instead of
-                      // offering a send it would silently refuse.
-                      onPressed: _composition.canSubmit ? _send : null,
-                      icon: const Icon(Icons.arrow_upward_rounded),
-                    ),
-                  ],
+                      const SizedBox(width: AuraSpace.s8),
+                      IconButton.filled(
+                        // The control reflects readiness now, instead of
+                        // offering a send it would silently refuse.
+                        onPressed: _composition.canSubmit ? _send : null,
+                        icon: const Icon(Icons.arrow_upward_rounded),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -1540,15 +1657,20 @@ class _DropIntakeState extends State<_DropIntake> {
                   child: Center(
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 12),
+                        horizontal: 20,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xE6111827),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Text('Drop to attach',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700)),
+                      child: const Text(
+                        'Drop to attach',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -1700,8 +1822,10 @@ class _MessageBubble extends ConsumerWidget {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: AuraSpace.s6),
         child: Center(
-          child: Text(label,
-              style: AuraText.micro.copyWith(color: AuraSurface.faint)),
+          child: Text(
+            label,
+            style: AuraText.micro.copyWith(color: AuraSurface.faint),
+          ),
         ),
       );
     }
@@ -1711,9 +1835,9 @@ class _MessageBubble extends ConsumerWidget {
     final institutionName = speakingFor == null
         ? null
         : conversation.parties
-            .where((p) => p.institutionId == speakingFor)
-            .map((p) => p.displayName)
-            .firstWhere((n) => n != null && n.isNotEmpty, orElse: () => null);
+              .where((p) => p.institutionId == speakingFor)
+              .map((p) => p.displayName)
+              .firstWhere((n) => n != null && n.isNotEmpty, orElse: () => null);
 
     // Dual attribution already names the visible speaker, so a second name
     // above it would state the same fact twice.
@@ -1747,7 +1871,9 @@ class _MessageBubble extends ConsumerWidget {
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 3),
           padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s14, vertical: AuraSpace.s10),
+            horizontal: AuraSpace.s14,
+            vertical: AuraSpace.s10,
+          ),
           constraints: const BoxConstraints(maxWidth: 520),
           decoration: BoxDecoration(
             color: mine ? AuraSurface.accentSoft : AuraSurface.card,
@@ -1757,46 +1883,59 @@ class _MessageBubble extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (senderName != null) ...[
-                Text(senderName,
-                    style: AuraText.micro.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: AuraSurface.accentText)),
+                Text(
+                  senderName,
+                  style: AuraText.micro.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AuraSurface.accentText,
+                  ),
+                ),
                 const SizedBox(height: 2),
               ],
               if (institutionName != null) ...[
-                Text(institutionName,
-                    style: AuraText.micro.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: AuraSurface.accentText)),
+                Text(
+                  institutionName,
+                  style: AuraText.micro.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: AuraSurface.accentText,
+                  ),
+                ),
                 const SizedBox(height: 2),
               ],
               if (message.replyTo != null) ...[
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AuraSpace.s10, vertical: AuraSpace.s6),
+                    horizontal: AuraSpace.s10,
+                    vertical: AuraSpace.s6,
+                  ),
                   decoration: const BoxDecoration(
                     color: AuraSurface.subtle,
                     border: Border(
-                        left: BorderSide(
-                            color: AuraSurface.accentText, width: 3)),
+                      left: BorderSide(color: AuraSurface.accentText, width: 3),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                          _conversationSenderName(
-                              conversation, message.replyTo!.senderUserId),
-                          style: AuraText.micro.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: AuraSurface.accentText)),
+                        _conversationSenderName(
+                          conversation,
+                          message.replyTo!.senderUserId,
+                        ),
+                        style: AuraText.micro.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: AuraSurface.accentText,
+                        ),
+                      ),
                       Text(
                         message.replyTo!.deleted
                             ? 'Message removed'
                             : message.replyTo!.body,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: AuraText.micro
-                            .copyWith(color: AuraSurface.muted),
+                        style: AuraText.micro.copyWith(
+                          color: AuraSurface.muted,
+                        ),
                       ),
                     ],
                   ),
@@ -1809,14 +1948,16 @@ class _MessageBubble extends ConsumerWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.forward_rounded,
-                        size: 11, color: AuraSurface.faint),
+                    const Icon(
+                      Icons.forward_rounded,
+                      size: 11,
+                      color: AuraSurface.faint,
+                    ),
                     const SizedBox(width: 3),
                     Text(
                       'Forwarded from '
                       '${_conversationSenderName(conversation, message.forwardedFromSenderUserId!)}',
-                      style:
-                          AuraText.micro.copyWith(color: AuraSurface.faint),
+                      style: AuraText.micro.copyWith(color: AuraSurface.faint),
                     ),
                   ],
                 ),
@@ -1829,8 +1970,11 @@ class _MessageBubble extends ConsumerWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.block_rounded,
-                        size: 13, color: AuraSurface.faint),
+                    const Icon(
+                      Icons.block_rounded,
+                      size: 13,
+                      color: AuraSurface.faint,
+                    ),
                     const SizedBox(width: AuraSpace.s6),
                     Text(
                       mine
@@ -1850,7 +1994,8 @@ class _MessageBubble extends ConsumerWidget {
                 ],
                 if (message.body.trim() != '…' || message.media.isEmpty)
                   SelectableText.rich(
-                      _conversationRichBody(context, message.body, conversation)),
+                    _conversationRichBody(context, message.body, conversation),
+                  ),
               ],
               if (message.linkPreview != null) ...[
                 const SizedBox(height: AuraSpace.s6),
@@ -1862,10 +2007,13 @@ class _MessageBubble extends ConsumerWidget {
               ],
               if (translation != null) ...[
                 const SizedBox(height: AuraSpace.s4),
-                Text(translation!,
-                    style: AuraText.micro.copyWith(
-                        color: AuraSurface.muted,
-                        fontStyle: FontStyle.italic)),
+                Text(
+                  translation!,
+                  style: AuraText.micro.copyWith(
+                    color: AuraSurface.muted,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
               ],
               // EDITED — said plainly, and only where it is true. A silently
               // rewritten message is a record nobody can rely on. Prior
@@ -1939,10 +2087,12 @@ class _ConversationAttachment extends ConsumerWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Center(
-            child: SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2))),
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        ),
       ),
       error: (e, _) => _unavailable(),
       data: (url) {
@@ -2029,33 +2179,33 @@ class _ConversationAttachment extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisSize: MainAxisSize.min,
               children: [
-            AuraStoredMedia(
-              media: StoredMedia.fromParts(
-                mediaId: media.mediaId,
-                mimeType: media.mimeType,
-                declaredKind: media.kind,
-                sourceUrl: url,
-                fileName: media.fileName,
-                durationMs: media.durationMs,
-                sizeBytes: media.fileSizeBytes,
-              ),
-              context: StoredMediaContext.message,
-              borderRadius: BorderRadius.circular(12),
-              onOpenViewer: () => showAuraMediaViewer(
-                context,
-                items: [
-                  AuraViewerItem(
-                    originalUrl: url,
+                AuraStoredMedia(
+                  media: StoredMedia.fromParts(
                     mediaId: media.mediaId,
-                    isPublic: false,
-                    isVideo: true,
-                    caption: media.fileName,
-                    trace: media.trace,
-                    downloadContext: 'conversation-attachment',
+                    mimeType: media.mimeType,
+                    declaredKind: media.kind,
+                    sourceUrl: url,
+                    fileName: media.fileName,
+                    durationMs: media.durationMs,
+                    sizeBytes: media.fileSizeBytes,
                   ),
-                ],
-              ),
-            ),
+                  context: StoredMediaContext.message,
+                  borderRadius: BorderRadius.circular(12),
+                  onOpenViewer: () => showAuraMediaViewer(
+                    context,
+                    items: [
+                      AuraViewerItem(
+                        originalUrl: url,
+                        mediaId: media.mediaId,
+                        isPublic: false,
+                        isVideo: true,
+                        caption: media.fileName,
+                        trace: media.trace,
+                        downloadContext: 'conversation-attachment',
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           );
@@ -2098,11 +2248,12 @@ class _ConversationAttachment extends ConsumerWidget {
 // authority, which every other surface also consumes — see §20's convergence
 // target. Voice and audio already had their canonical player.
 
-final _deliveryUrlProvider =
-    FutureProvider.family<String?, String>((ref, mediaId) async {
+final _deliveryUrlProvider = FutureProvider.family<String?, String>((
+  ref,
+  mediaId,
+) async {
   return ref.watch(conversationsRepositoryProvider).mediaDeliveryUrl(mediaId);
 });
-
 
 /// Message action sheet: the shared per-message capability surface.
 // The old four-action sheet is retired. The full set — reactions, reply,
@@ -2155,14 +2306,18 @@ String _trimUrlToken(String u) {
 /// Body text with live links (internal Aura links stay inside the product,
 /// external links open outside) and @mention highlighting.
 TextSpan _conversationRichBody(
-    BuildContext context, String body, Conversation conversation) {
+  BuildContext context,
+  String body,
+  Conversation conversation,
+) {
   final base = AuraText.body.copyWith(color: AuraSurface.ink);
   final spans = <InlineSpan>[];
-  final mentionNames = conversation.parties
-      .where((p) => p.isPerson && (p.displayName ?? '').isNotEmpty)
-      .map((p) => p.displayName!)
-      .toList()
-    ..sort((a, b) => b.length.compareTo(a.length));
+  final mentionNames =
+      conversation.parties
+          .where((p) => p.isPerson && (p.displayName ?? '').isNotEmpty)
+          .map((p) => p.displayName!)
+          .toList()
+        ..sort((a, b) => b.length.compareTo(a.length));
 
   void addTextWithMentions(String t) {
     var i = 0;
@@ -2181,11 +2336,15 @@ TextSpan _conversationRichBody(
         }
       }
       if (hit != null) {
-        spans.add(TextSpan(
+        spans.add(
+          TextSpan(
             text: '@$hit',
             style: base.copyWith(
-                fontWeight: FontWeight.w800,
-                color: AuraSurface.accentText)));
+              fontWeight: FontWeight.w800,
+              color: AuraSurface.accentText,
+            ),
+          ),
+        );
         i = at + hit.length + 1;
       } else {
         spans.add(const TextSpan(text: '@'));
@@ -2198,14 +2357,17 @@ TextSpan _conversationRichBody(
   for (final m in RegExp(r'https?://[^\s]+').allMatches(body)) {
     if (m.start > idx) addTextWithMentions(body.substring(idx, m.start));
     final url = _trimUrlToken(m.group(0)!);
-    spans.add(TextSpan(
-      text: url,
-      style: base.copyWith(
+    spans.add(
+      TextSpan(
+        text: url,
+        style: base.copyWith(
           color: AuraSurface.accentText,
-          decoration: TextDecoration.underline),
-      recognizer: TapGestureRecognizer()
-        ..onTap = () => _openConversationUrl(context, url),
-    ));
+          decoration: TextDecoration.underline,
+        ),
+        recognizer: TapGestureRecognizer()
+          ..onTap = () => _openConversationUrl(context, url),
+      ),
+    );
     final tail = m.group(0)!.substring(url.length);
     if (tail.isNotEmpty) spans.add(TextSpan(text: tail));
     idx = m.end;
@@ -2223,8 +2385,7 @@ void _openConversationUrl(BuildContext context, String url) {
   if (internal && uri.path.isNotEmpty && uri.path != '/') {
     // Internal Aura link: stay inside the product — the destination's
     // own authority decides what this viewer may see.
-    GoRouter.of(context)
-        .push(uri.path + (uri.hasQuery ? '?${uri.query}' : ''));
+    GoRouter.of(context).push(uri.path + (uri.hasQuery ? '?${uri.query}' : ''));
     return;
   }
   launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -2264,22 +2425,27 @@ class _LinkPreviewCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (preview.siteName != null)
-                    Text(preview.siteName!,
-                        style: AuraText.micro
-                            .copyWith(color: AuraSurface.faint)),
+                    Text(
+                      preview.siteName!,
+                      style: AuraText.micro.copyWith(color: AuraSurface.faint),
+                    ),
                   if (preview.title != null)
-                    Text(preview.title!,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AuraText.micro.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: AuraSurface.ink)),
+                    Text(
+                      preview.title!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AuraText.micro.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: AuraSurface.ink,
+                      ),
+                    ),
                   if (preview.description != null)
-                    Text(preview.description!,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AuraText.micro
-                            .copyWith(color: AuraSurface.muted)),
+                    Text(
+                      preview.description!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AuraText.micro.copyWith(color: AuraSurface.muted),
+                    ),
                 ],
               ),
             ),
@@ -2289,7 +2455,6 @@ class _LinkPreviewCard extends StatelessWidget {
     );
   }
 }
-
 
 /// The direct counterpart's real identity image (person avatar or
 /// institution logo) for header/list presentation.
@@ -2360,27 +2525,34 @@ class _InternalRefCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: AuraSpace.s6),
-                      Text('Aura \u00b7 $label',
-                          style: AuraText.micro
-                              .copyWith(color: AuraSurface.faint)),
+                      Text(
+                        'Aura \u00b7 $label',
+                        style: AuraText.micro.copyWith(
+                          color: AuraSurface.faint,
+                        ),
+                      ),
                     ],
                   ),
                   if (reference.title != null) ...[
                     const SizedBox(height: AuraSpace.s4),
-                    Text(reference.title!,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AuraText.micro.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: AuraSurface.ink)),
+                    Text(
+                      reference.title!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AuraText.micro.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: AuraSurface.ink,
+                      ),
+                    ),
                   ],
                   if (reference.subtitle != null) ...[
                     const SizedBox(height: 2),
-                    Text(reference.subtitle!,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AuraText.micro
-                            .copyWith(color: AuraSurface.muted)),
+                    Text(
+                      reference.subtitle!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AuraText.micro.copyWith(color: AuraSurface.muted),
+                    ),
                   ],
                 ],
               ),
@@ -2411,8 +2583,10 @@ class _SpaceHeading extends StatelessWidget {
           context.title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: AuraText.body
-              .copyWith(fontWeight: FontWeight.w800, color: AuraSurface.ink),
+          style: AuraText.body.copyWith(
+            fontWeight: FontWeight.w800,
+            color: AuraSurface.ink,
+          ),
         ),
         if (purpose.isNotEmpty)
           Text(

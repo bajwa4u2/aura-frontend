@@ -10,6 +10,7 @@ import '../../../core/ui/aura_text.dart';
 import '../providers.dart';
 import 'widgets/support_chat_bubble.dart';
 import 'widgets/support_quick_chips.dart';
+import '../../../core/ui/aura_bounded_editor.dart';
 
 class SupportAgentScreen extends ConsumerStatefulWidget {
   const SupportAgentScreen({super.key});
@@ -46,8 +47,7 @@ class _SupportAgentScreenState extends ConsumerState<SupportAgentScreen> {
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollCtrl.hasClients &&
-          _scrollCtrl.position.hasContentDimensions) {
+      if (_scrollCtrl.hasClients && _scrollCtrl.position.hasContentDimensions) {
         _scrollCtrl.animateTo(
           _scrollCtrl.position.maxScrollExtent,
           duration: const Duration(milliseconds: 300),
@@ -108,9 +108,7 @@ class _SupportAgentScreenState extends ConsumerState<SupportAgentScreen> {
             ),
 
           // ── Main content area ──────────────────────────────────────────────
-          Expanded(
-            child: _buildContent(state),
-          ),
+          Expanded(child: _buildContent(state)),
 
           // ── Escalate-success banner ────────────────────────────────────────
           if (_escalated && state.caseRef != null)
@@ -133,7 +131,8 @@ class _SupportAgentScreenState extends ConsumerState<SupportAgentScreen> {
               sending: state.sending,
               disabled: state.loading,
               onSend: _send,
-              onEscalate: (state.messages.any((m) => m.role == 'user') &&
+              onEscalate:
+                  (state.messages.any((m) => m.role == 'user') &&
                       !_showEscalateForm)
                   ? () => setState(() => _showEscalateForm = true)
                   : null,
@@ -152,10 +151,7 @@ class _SupportAgentScreenState extends ConsumerState<SupportAgentScreen> {
 
     // Fatal error — failed to start and no messages
     if (state.error != null && state.messages.isEmpty) {
-      return _ErrorState(
-        error: state.error!,
-        onRetry: _restart,
-      );
+      return _ErrorState(error: state.error!, onRetry: _restart);
     }
 
     // Empty — conversation started but no messages yet
@@ -191,11 +187,14 @@ class _SupportPageHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(
-          AuraSpace.s20, AuraSpace.s16, AuraSpace.s20, AuraSpace.s14),
+        AuraSpace.s20,
+        AuraSpace.s16,
+        AuraSpace.s20,
+        AuraSpace.s14,
+      ),
       decoration: const BoxDecoration(
         color: AuraSurface.subtle,
-        border:
-            Border(bottom: BorderSide(color: AuraSurface.divider)),
+        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
       ),
       child: Row(
         children: [
@@ -223,8 +222,7 @@ class _SupportPageHeader extends StatelessWidget {
                 const Text('Aura Support', style: AuraText.subtitle),
                 Text(
                   'Powered by AI · Responses may take a moment',
-                  style:
-                      AuraText.micro.copyWith(color: AuraSurface.muted),
+                  style: AuraText.micro.copyWith(color: AuraSurface.muted),
                 ),
               ],
             ),
@@ -232,18 +230,24 @@ class _SupportPageHeader extends StatelessWidget {
           if (caseRef != null)
             Container(
               padding: const EdgeInsets.symmetric(
-                  horizontal: AuraSpace.s10, vertical: AuraSpace.s4),
+                horizontal: AuraSpace.s10,
+                vertical: AuraSpace.s4,
+              ),
               decoration: BoxDecoration(
                 color: AuraSurface.accentSoft,
                 borderRadius: BorderRadius.circular(AuraRadius.pill),
                 border: Border.all(
-                    color: AuraSurface.accent.withValues(alpha: 0.4)),
+                  color: AuraSurface.accent.withValues(alpha: 0.4),
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.label_outline_rounded,
-                      size: 13, color: AuraSurface.accentText),
+                  const Icon(
+                    Icons.label_outline_rounded,
+                    size: 13,
+                    color: AuraSurface.accentText,
+                  ),
                   const SizedBox(width: AuraSpace.s4),
                   Text(
                     caseRef!,
@@ -283,10 +287,7 @@ class _LoadingState extends StatelessWidget {
             ),
           ),
           SizedBox(height: AuraSpace.s12),
-          Text(
-            'Starting your support session…',
-            style: AuraText.body,
-          ),
+          Text('Starting your support session…', style: AuraText.body),
         ],
       ),
     );
@@ -314,7 +315,8 @@ class _ErrorState extends StatelessWidget {
                 color: AuraSurface.coRose.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(AuraRadius.pill),
                 border: Border.all(
-                    color: AuraSurface.coRose.withValues(alpha: 0.3)),
+                  color: AuraSurface.coRose.withValues(alpha: 0.3),
+                ),
               ),
               child: const Icon(
                 Icons.error_outline_rounded,
@@ -323,7 +325,10 @@ class _ErrorState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AuraSpace.s16),
-            const Text('Could not connect to support', style: AuraText.subtitle),
+            const Text(
+              'Could not connect to support',
+              style: AuraText.subtitle,
+            ),
             const SizedBox(height: AuraSpace.s8),
             Text(
               'The support service is temporarily unavailable.\nYour conversation will start automatically when it\'s back.',
@@ -344,10 +349,7 @@ class _ErrorState extends StatelessWidget {
 }
 
 class _EmptyStartState extends StatelessWidget {
-  const _EmptyStartState({
-    required this.sending,
-    required this.onChipSelected,
-  });
+  const _EmptyStartState({required this.sending, required this.onChipSelected});
 
   final bool sending;
   final void Function(String) onChipSelected;
@@ -356,7 +358,11 @@ class _EmptyStartState extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(
-          AuraSpace.s20, AuraSpace.s24, AuraSpace.s20, AuraSpace.s16),
+        AuraSpace.s20,
+        AuraSpace.s24,
+        AuraSpace.s20,
+        AuraSpace.s16,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -377,10 +383,7 @@ class _EmptyStartState extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AuraSpace.s10),
-          SupportQuickChips(
-            enabled: !sending,
-            onSelected: onChipSelected,
-          ),
+          SupportQuickChips(enabled: !sending, onSelected: onChipSelected),
         ],
       ),
     );
@@ -403,7 +406,11 @@ class _ChatArea extends StatelessWidget {
     return ListView.builder(
       controller: scrollCtrl,
       padding: const EdgeInsets.fromLTRB(
-          AuraSpace.s20, AuraSpace.s12, AuraSpace.s20, AuraSpace.s12),
+        AuraSpace.s20,
+        AuraSpace.s12,
+        AuraSpace.s20,
+        AuraSpace.s12,
+      ),
       itemCount: messages.length + 1,
       itemBuilder: (_, i) {
         // Trailing AI disclosure — visible once the conversation has
@@ -427,9 +434,7 @@ class _AiDisclosureFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        4, AuraSpace.s10, 4, AuraSpace.s4,
-      ),
+      padding: const EdgeInsets.fromLTRB(4, AuraSpace.s10, 4, AuraSpace.s4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -468,19 +473,27 @@ class _ErrorBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.fromLTRB(
-          AuraSpace.s16, AuraSpace.s10, AuraSpace.s16, 0),
+        AuraSpace.s16,
+        AuraSpace.s10,
+        AuraSpace.s16,
+        0,
+      ),
       padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s14, vertical: AuraSpace.s10),
+        horizontal: AuraSpace.s14,
+        vertical: AuraSpace.s10,
+      ),
       decoration: BoxDecoration(
         color: AuraSurface.coRose.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(AuraRadius.md),
-        border:
-            Border.all(color: AuraSurface.coRose.withValues(alpha: 0.3)),
+        border: Border.all(color: AuraSurface.coRose.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded,
-              size: 16, color: AuraSurface.coRose),
+          const Icon(
+            Icons.warning_amber_rounded,
+            size: 16,
+            color: AuraSurface.coRose,
+          ),
           const SizedBox(width: AuraSpace.s8),
           Expanded(
             child: Text(
@@ -503,25 +516,34 @@ class _EscalateSuccessBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.fromLTRB(
-          AuraSpace.s16, AuraSpace.s10, AuraSpace.s16, 0),
+        AuraSpace.s16,
+        AuraSpace.s10,
+        AuraSpace.s16,
+        0,
+      ),
       padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s14, vertical: AuraSpace.s12),
+        horizontal: AuraSpace.s14,
+        vertical: AuraSpace.s12,
+      ),
       decoration: BoxDecoration(
         color: AuraSurface.coVerdant.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(AuraRadius.md),
         border: Border.all(
-            color: AuraSurface.coVerdant.withValues(alpha: 0.35)),
+          color: AuraSurface.coVerdant.withValues(alpha: 0.35),
+        ),
       ),
       child: Row(
         children: [
-          const Icon(Icons.check_circle_outline_rounded,
-              size: 16, color: AuraSurface.coVerdant),
+          const Icon(
+            Icons.check_circle_outline_rounded,
+            size: 16,
+            color: AuraSurface.coVerdant,
+          ),
           const SizedBox(width: AuraSpace.s8),
           Expanded(
             child: Text(
               'Case $caseRef submitted. The Aura team will follow up by email.',
-              style:
-                  AuraText.small.copyWith(color: AuraSurface.coVerdant),
+              style: AuraText.small.copyWith(color: AuraSurface.coVerdant),
             ),
           ),
         ],
@@ -553,7 +575,11 @@ class _ComposerBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(
-          AuraSpace.s16, AuraSpace.s10, AuraSpace.s16, AuraSpace.s12),
+        AuraSpace.s16,
+        AuraSpace.s10,
+        AuraSpace.s16,
+        AuraSpace.s12,
+      ),
       color: AuraSurface.subtle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -569,22 +595,32 @@ class _ComposerBar extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AuraRadius.r14),
                     border: Border.all(color: AuraSurface.divider),
                   ),
-                  child: TextField(
-                    controller: ctrl,
-                    style: AuraText.body,
-                    decoration: InputDecoration(
-                      hintText: 'Describe your issue…',
-                      hintStyle:
-                          AuraText.body.copyWith(color: AuraSurface.muted),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: AuraSpace.s14, vertical: AuraSpace.s10),
+                  // Bounded on purpose. AuraBoundedEditor keeps the bound
+                  // without trapping the page: the editor scrolls its own text
+                  // while it can, and releases the wheel at its top and bottom.
+                  child: AuraBoundedEditor(
+                    builder: (context, scrollController, physics) => TextField(
+                      scrollController: scrollController,
+                      scrollPhysics: physics,
+                      controller: ctrl,
+                      style: AuraText.body,
+                      decoration: InputDecoration(
+                        hintText: 'Describe your issue…',
+                        hintStyle: AuraText.body.copyWith(
+                          color: AuraSurface.muted,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: AuraSpace.s14,
+                          vertical: AuraSpace.s10,
+                        ),
+                      ),
+                      minLines: 1,
+                      maxLines: 4,
+                      enabled: !sending && !disabled,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => onSend(),
                     ),
-                    minLines: 1,
-                    maxLines: 4,
-                    enabled: !sending && !disabled,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => onSend(),
                   ),
                 ),
               ),
@@ -599,8 +635,11 @@ class _ComposerBar extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.person_outline_rounded,
-                      size: 14, color: AuraSurface.muted),
+                  const Icon(
+                    Icons.person_outline_rounded,
+                    size: 14,
+                    color: AuraSurface.muted,
+                  ),
                   const SizedBox(width: AuraSpace.s4),
                   Text(
                     'Talk to the Aura team',
@@ -690,7 +729,11 @@ class _EscalateForm extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.fromLTRB(
-          AuraSpace.s16, AuraSpace.s10, AuraSpace.s16, 0),
+        AuraSpace.s16,
+        AuraSpace.s10,
+        AuraSpace.s16,
+        0,
+      ),
       padding: const EdgeInsets.all(AuraSpace.s16),
       decoration: BoxDecoration(
         color: AuraSurface.overlay,
@@ -718,15 +761,13 @@ class _EscalateForm extends StatelessWidget {
           const SizedBox(height: AuraSpace.s12),
           Row(
             children: [
-              _AuraFilledButton(
-                  label: 'Submit case', onPressed: onSubmit),
+              _AuraFilledButton(label: 'Submit case', onPressed: onSubmit),
               const SizedBox(width: AuraSpace.s8),
               GestureDetector(
                 onTap: onCancel,
                 child: Text(
                   'Cancel',
-                  style:
-                      AuraText.small.copyWith(color: AuraSurface.muted),
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
                 ),
               ),
             ],
@@ -766,11 +807,12 @@ class _AuraTextField extends StatelessWidget {
         keyboardType: keyboardType,
         decoration: InputDecoration(
           labelText: label,
-          labelStyle:
-              AuraText.small.copyWith(color: AuraSurface.muted),
+          labelStyle: AuraText.small.copyWith(color: AuraSurface.muted),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s14, vertical: AuraSpace.s10),
+            horizontal: AuraSpace.s14,
+            vertical: AuraSpace.s10,
+          ),
         ),
       ),
     );
@@ -794,7 +836,9 @@ class _AuraFilledButton extends StatelessWidget {
       onTap: onPressed,
       child: Container(
         padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s16, vertical: AuraSpace.s10),
+          horizontal: AuraSpace.s16,
+          vertical: AuraSpace.s10,
+        ),
         decoration: BoxDecoration(
           color: AuraSurface.accent,
           borderRadius: BorderRadius.circular(AuraRadius.pill),

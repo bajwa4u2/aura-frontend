@@ -4,24 +4,46 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../providers.dart';
 import 'widgets/support_case_list_tile.dart';
+import '../../../core/ui/aura_bounded_editor.dart';
 
 class AdminSupportConsoleScreen extends ConsumerStatefulWidget {
   const AdminSupportConsoleScreen({super.key});
 
   @override
-  ConsumerState<AdminSupportConsoleScreen> createState() => _AdminSupportConsoleScreenState();
+  ConsumerState<AdminSupportConsoleScreen> createState() =>
+      _AdminSupportConsoleScreenState();
 }
 
-class _AdminSupportConsoleScreenState extends ConsumerState<AdminSupportConsoleScreen> {
+class _AdminSupportConsoleScreenState
+    extends ConsumerState<AdminSupportConsoleScreen> {
   final _searchCtrl = TextEditingController();
   String? _statusFilter;
   String? _categoryFilter;
   String? _selectedCaseId;
 
-  static const _statuses = ['NEW', 'OPEN', 'WAITING_ON_USER', 'WAITING_ON_AURA', 'RESOLVED', 'CLOSED'];
+  static const _statuses = [
+    'NEW',
+    'OPEN',
+    'WAITING_ON_USER',
+    'WAITING_ON_AURA',
+    'RESOLVED',
+    'CLOSED',
+  ];
   static const _categories = [
-    'AUTH', 'ACCOUNT', 'MESSAGES', 'CALLS', 'NOTIFICATIONS', 'PROFILE',
-    'INSTITUTION', 'SAFETY', 'PRIVACY', 'LEGAL', 'BILLING', 'BUG', 'FEATURE', 'OTHER',
+    'AUTH',
+    'ACCOUNT',
+    'MESSAGES',
+    'CALLS',
+    'NOTIFICATIONS',
+    'PROFILE',
+    'INSTITUTION',
+    'SAFETY',
+    'PRIVACY',
+    'LEGAL',
+    'BILLING',
+    'BUG',
+    'FEATURE',
+    'OTHER',
   ];
 
   @override
@@ -39,10 +61,14 @@ class _AdminSupportConsoleScreenState extends ConsumerState<AdminSupportConsoleS
   }
 
   void _applyFilters() {
-    ref.read(adminSupportCasesProvider.notifier).load(
+    ref
+        .read(adminSupportCasesProvider.notifier)
+        .load(
           status: _statusFilter,
           category: _categoryFilter,
-          search: _searchCtrl.text.trim().isEmpty ? null : _searchCtrl.text.trim(),
+          search: _searchCtrl.text.trim().isEmpty
+              ? null
+              : _searchCtrl.text.trim(),
         );
   }
 
@@ -93,11 +119,17 @@ class _AdminSupportConsoleScreenState extends ConsumerState<AdminSupportConsoleS
                                 isDense: true,
                               ),
                               items: [
-                                const DropdownMenuItem(value: null, child: Text('All')),
+                                const DropdownMenuItem(
+                                  value: null,
+                                  child: Text('All'),
+                                ),
                                 ..._statuses.map(
                                   (s) => DropdownMenuItem(
                                     value: s,
-                                    child: Text(s.replaceAll('_', ' '), overflow: TextOverflow.ellipsis),
+                                    child: Text(
+                                      s.replaceAll('_', ' '),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -118,9 +150,15 @@ class _AdminSupportConsoleScreenState extends ConsumerState<AdminSupportConsoleS
                                 isDense: true,
                               ),
                               items: [
-                                const DropdownMenuItem(value: null, child: Text('All')),
+                                const DropdownMenuItem(
+                                  value: null,
+                                  child: Text('All'),
+                                ),
                                 ..._categories.map(
-                                  (c) => DropdownMenuItem(value: c, child: Text(c)),
+                                  (c) => DropdownMenuItem(
+                                    value: c,
+                                    child: Text(c),
+                                  ),
                                 ),
                               ],
                               onChanged: (v) {
@@ -136,10 +174,15 @@ class _AdminSupportConsoleScreenState extends ConsumerState<AdminSupportConsoleS
                 ),
                 // Stats row
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                   child: Text(
                     '${state.total} case${state.total == 1 ? '' : 's'}',
-                    style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.outline),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
                   ),
                 ),
                 // List
@@ -147,34 +190,43 @@ class _AdminSupportConsoleScreenState extends ConsumerState<AdminSupportConsoleS
                   child: state.loading
                       ? const Center(child: CircularProgressIndicator())
                       : state.error != null
-                          ? Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text('Failed to load cases', style: theme.textTheme.bodyMedium),
-                                  const SizedBox(height: 8),
-                                  TextButton(
-                                    onPressed: () => ref.read(adminSupportCasesProvider.notifier).refresh(),
-                                    child: const Text('Retry'),
-                                  ),
-                                ],
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Failed to load cases',
+                                style: theme.textTheme.bodyMedium,
                               ),
-                            )
-                          : state.cases.isEmpty
-                              ? Center(
-                                  child: Text('No cases', style: theme.textTheme.bodyMedium),
-                                )
-                              : ListView.separated(
-                                  itemCount: state.cases.length,
-                                  separatorBuilder: (_, __) => const Divider(height: 1),
-                                  itemBuilder: (context, i) {
-                                    final c = state.cases[i];
-                                    return SupportCaseListTile(
-                                      supportCase: c,
-                                      onTap: () => setState(() => _selectedCaseId = c.id),
-                                    );
-                                  },
-                                ),
+                              const SizedBox(height: 8),
+                              TextButton(
+                                onPressed: () => ref
+                                    .read(adminSupportCasesProvider.notifier)
+                                    .refresh(),
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : state.cases.isEmpty
+                      ? Center(
+                          child: Text(
+                            'No cases',
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                        )
+                      : ListView.separated(
+                          itemCount: state.cases.length,
+                          separatorBuilder: (_, __) => const Divider(height: 1),
+                          itemBuilder: (context, i) {
+                            final c = state.cases[i];
+                            return SupportCaseListTile(
+                              supportCase: c,
+                              onTap: () =>
+                                  setState(() => _selectedCaseId = c.id),
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -189,15 +241,23 @@ class _AdminSupportConsoleScreenState extends ConsumerState<AdminSupportConsoleS
                     caseId: _selectedCaseId!,
                     key: ValueKey(_selectedCaseId),
                     onClose: () => setState(() => _selectedCaseId = null),
-                    onRefresh: () => ref.read(adminSupportCasesProvider.notifier).refresh(),
+                    onRefresh: () =>
+                        ref.read(adminSupportCasesProvider.notifier).refresh(),
                   )
                 : Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.support_agent_outlined, size: 48, color: theme.colorScheme.outlineVariant),
+                        Icon(
+                          Icons.support_agent_outlined,
+                          size: 48,
+                          color: theme.colorScheme.outlineVariant,
+                        ),
                         const SizedBox(height: 12),
-                        Text('Select a case to view details', style: theme.textTheme.bodyMedium),
+                        Text(
+                          'Select a case to view details',
+                          style: theme.textTheme.bodyMedium,
+                        ),
                       ],
                     ),
                   ),
@@ -248,13 +308,24 @@ class _CaseDetailPanelState extends ConsumerState<_CaseDetailPanel> {
   }
 
   Future<void> _load() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final repo = ref.read(supportRepositoryProvider);
       final data = await repo.adminGetCase(widget.caseId);
-      if (mounted) setState(() { _caseData = data; _loading = false; });
+      if (mounted)
+        setState(() {
+          _caseData = data;
+          _loading = false;
+        });
     } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+      if (mounted)
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
     }
   }
 
@@ -270,9 +341,9 @@ class _CaseDetailPanelState extends ConsumerState<_CaseDetailPanel> {
       widget.onRefresh();
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to send reply')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Failed to send reply')));
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -334,7 +405,8 @@ class _CaseDetailPanelState extends ConsumerState<_CaseDetailPanel> {
     final severity = data['severity'] as String? ?? 'MEDIUM';
     final aiSummary = data['aiSummary'] as String?;
     final requesterEmail = data['requesterEmail'] as String?;
-    final messages = (data['conversation']?['messages'] as List<dynamic>?) ?? [];
+    final messages =
+        (data['conversation']?['messages'] as List<dynamic>?) ?? [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -343,7 +415,9 @@ class _CaseDetailPanelState extends ConsumerState<_CaseDetailPanel> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: theme.colorScheme.outlineVariant)),
+            border: Border(
+              bottom: BorderSide(color: theme.colorScheme.outlineVariant),
+            ),
           ),
           child: Row(
             children: [
@@ -351,24 +425,57 @@ class _CaseDetailPanelState extends ConsumerState<_CaseDetailPanel> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(ref_, style: theme.textTheme.titleMedium?.copyWith(fontFamily: 'monospace')),
+                    Text(
+                      ref_,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontFamily: 'monospace',
+                      ),
+                    ),
                     if (aiSummary != null)
-                      Text(aiSummary, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline)),
+                      Text(
+                        aiSummary,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.outline,
+                        ),
+                      ),
                     const SizedBox(height: 4),
                     Wrap(
                       spacing: 6,
                       children: [
-                        Chip(label: Text(category, style: theme.textTheme.labelSmall)),
-                        Chip(label: Text(severity, style: theme.textTheme.labelSmall)),
-                        Chip(label: Text(status.replaceAll('_', ' '), style: theme.textTheme.labelSmall)),
+                        Chip(
+                          label: Text(
+                            category,
+                            style: theme.textTheme.labelSmall,
+                          ),
+                        ),
+                        Chip(
+                          label: Text(
+                            severity,
+                            style: theme.textTheme.labelSmall,
+                          ),
+                        ),
+                        Chip(
+                          label: Text(
+                            status.replaceAll('_', ' '),
+                            style: theme.textTheme.labelSmall,
+                          ),
+                        ),
                         if (requesterEmail != null)
-                          Chip(label: Text(requesterEmail, style: theme.textTheme.labelSmall)),
+                          Chip(
+                            label: Text(
+                              requesterEmail,
+                              style: theme.textTheme.labelSmall,
+                            ),
+                          ),
                       ],
                     ),
                   ],
                 ),
               ),
-              IconButton(icon: const Icon(Icons.close), onPressed: widget.onClose),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: widget.onClose,
+              ),
             ],
           ),
         ),
@@ -379,10 +486,26 @@ class _CaseDetailPanelState extends ConsumerState<_CaseDetailPanel> {
           child: Wrap(
             spacing: 8,
             children: [
-              if (status != 'OPEN') _ActionChip(label: 'Mark open', onTap: () => _changeStatus('OPEN')),
-              if (status != 'WAITING_ON_USER') _ActionChip(label: 'Waiting on user', onTap: () => _changeStatus('WAITING_ON_USER')),
-              if (status != 'RESOLVED') _ActionChip(label: 'Resolve', onTap: () => _changeStatus('RESOLVED')),
-              if (status != 'CLOSED') _ActionChip(label: 'Close', onTap: () => _changeStatus('CLOSED')),
+              if (status != 'OPEN')
+                _ActionChip(
+                  label: 'Mark open',
+                  onTap: () => _changeStatus('OPEN'),
+                ),
+              if (status != 'WAITING_ON_USER')
+                _ActionChip(
+                  label: 'Waiting on user',
+                  onTap: () => _changeStatus('WAITING_ON_USER'),
+                ),
+              if (status != 'RESOLVED')
+                _ActionChip(
+                  label: 'Resolve',
+                  onTap: () => _changeStatus('RESOLVED'),
+                ),
+              if (status != 'CLOSED')
+                _ActionChip(
+                  label: 'Close',
+                  onTap: () => _changeStatus('CLOSED'),
+                ),
             ],
           ),
         ),
@@ -405,9 +528,15 @@ class _CaseDetailPanelState extends ConsumerState<_CaseDetailPanel> {
                     SizedBox(
                       width: 60,
                       child: Text(
-                        role == 'user' ? 'User' : role == 'admin' ? 'Admin' : 'AI',
+                        role == 'user'
+                            ? 'User'
+                            : role == 'admin'
+                            ? 'Admin'
+                            : 'AI',
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: isUser ? theme.colorScheme.primary : theme.colorScheme.outline,
+                          color: isUser
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.outline,
                           fontWeight: FontWeight.w600,
                         ),
                         textAlign: TextAlign.right,
@@ -428,7 +557,9 @@ class _CaseDetailPanelState extends ConsumerState<_CaseDetailPanel> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
+            border: Border(
+              top: BorderSide(color: theme.colorScheme.outlineVariant),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -439,28 +570,49 @@ class _CaseDetailPanelState extends ConsumerState<_CaseDetailPanel> {
                   const Spacer(),
                   TextButton.icon(
                     icon: _loadingDraft
-                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : const Icon(Icons.auto_awesome, size: 14),
-                    label: const Text('AI draft', style: TextStyle(fontSize: 12)),
+                    label: const Text(
+                      'AI draft',
+                      style: TextStyle(fontSize: 12),
+                    ),
                     onPressed: _loadingDraft ? null : _loadAiDraft,
                   ),
                 ],
               ),
               const SizedBox(height: 6),
-              TextField(
-                controller: _replyCtrl,
-                decoration: const InputDecoration(
-                  hintText: 'Write a reply…',
-                  border: OutlineInputBorder(),
-                  isDense: true,
+              // Bounded on purpose. AuraBoundedEditor keeps the bound without
+              // trapping the page: the editor scrolls its own text while it can,
+              // and releases the wheel at its top and bottom.
+              AuraBoundedEditor(
+                builder: (context, scrollController, physics) => TextField(
+                  scrollController: scrollController,
+                  scrollPhysics: physics,
+                  controller: _replyCtrl,
+                  decoration: const InputDecoration(
+                    hintText: 'Write a reply…',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  minLines: 3,
+                  maxLines: 6,
                 ),
-                minLines: 3,
-                maxLines: 6,
               ),
               const SizedBox(height: 8),
               FilledButton.icon(
                 icon: _sending
-                    ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
                     : const Icon(Icons.send, size: 16),
                 label: const Text('Send reply'),
                 onPressed: _sending ? null : _reply,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/ui/aura_surface.dart';
 import '../../domain/meeting_conversation_message.dart';
+import '../../../../core/ui/aura_bounded_editor.dart';
 
 /// Phase 4 — Meeting Conversation Stream panel (live room, right side).
 ///
@@ -22,7 +23,7 @@ class MeetingConversationPanel extends StatefulWidget {
   /// Phase 4.5 — host-only: lift a message into a MeetingOutcome. The live
   /// room owns the REST call and the local promoted-state update.
   final Future<bool> Function(String messageId, MeetingMessageType type)?
-      onPromote;
+  onPromote;
 
   const MeetingConversationPanel({
     super.key,
@@ -132,7 +133,8 @@ class _MeetingConversationPanelState extends State<MeetingConversationPanel> {
                         onDelete: widget.isHost && widget.onDelete != null
                             ? () => widget.onDelete!(msg.id)
                             : null,
-                        onPromote: widget.isHost &&
+                        onPromote:
+                            widget.isHost &&
                                 widget.onPromote != null &&
                                 !msg.isPromoted
                             ? (type) => _promote(msg.id, type)
@@ -164,9 +166,8 @@ class _MeetingConversationPanelState extends State<MeetingConversationPanel> {
                         padding: const EdgeInsets.only(bottom: 6),
                         child: _TypeChip(
                           type: _type,
-                          onClear: () => setState(
-                            () => _type = MeetingMessageType.chat,
-                          ),
+                          onClear: () =>
+                              setState(() => _type = MeetingMessageType.chat),
                         ),
                       ),
                     Row(
@@ -222,24 +223,36 @@ class _MeetingConversationPanelState extends State<MeetingConversationPanel> {
                           ],
                         ),
                         Expanded(
-                          child: TextField(
-                            controller: _ctrl,
-                            minLines: 1,
-                            maxLines: 4,
-                            maxLength: 2000,
-                            textCapitalization: TextCapitalization.sentences,
-                            style: const TextStyle(
-                              color: AuraSurface.ink,
-                              fontSize: 13,
-                            ),
-                            decoration: const InputDecoration(
-                              hintText: 'Message the meeting…',
-                              hintStyle: TextStyle(color: AuraSurface.faint),
-                              border: InputBorder.none,
-                              counterText: '',
-                              isDense: true,
-                            ),
-                            onSubmitted: (_) => _send(),
+                          // Bounded on purpose. AuraBoundedEditor keeps the
+                          // bound without trapping the page: the editor scrolls
+                          // its own text while it can, and releases the wheel at
+                          // its top and bottom.
+                          child: AuraBoundedEditor(
+                            builder: (context, scrollController, physics) =>
+                                TextField(
+                                  scrollController: scrollController,
+                                  scrollPhysics: physics,
+                                  controller: _ctrl,
+                                  minLines: 1,
+                                  maxLines: 4,
+                                  maxLength: 2000,
+                                  textCapitalization:
+                                      TextCapitalization.sentences,
+                                  style: const TextStyle(
+                                    color: AuraSurface.ink,
+                                    fontSize: 13,
+                                  ),
+                                  decoration: const InputDecoration(
+                                    hintText: 'Message the meeting…',
+                                    hintStyle: TextStyle(
+                                      color: AuraSurface.faint,
+                                    ),
+                                    border: InputBorder.none,
+                                    counterText: '',
+                                    isDense: true,
+                                  ),
+                                  onSubmitted: (_) => _send(),
+                                ),
                           ),
                         ),
                         IconButton(
@@ -360,9 +373,7 @@ class _ConversationTile extends StatelessWidget {
                   message.senderName,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: isOwn
-                        ? AuraSurface.accent
-                        : AuraSurface.ink,
+                    color: isOwn ? AuraSurface.accent : AuraSurface.ink,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),

@@ -91,3 +91,6 @@ Thumbs.db
 # Golden-test failure artefacts
 /test/failures/
 /nav_gopush.json
+
+# Python bytecode from repo tooling scripts
+__pycache__/

@@ -8,6 +8,7 @@ import '../ui/aura_text.dart';
 import '../ui/aura_platform_components.dart';
 import 'engagement_model.dart';
 import 'publication_discussion_repository.dart';
+import '../ui/aura_bounded_editor.dart';
 
 /// Discussion for any eligible publication class.
 ///
@@ -62,8 +63,9 @@ class _AuraPublicationDiscussionState
       // objectionable-content gate. Those refusals are the product working, so
       // they are surfaced as written rather than flattened into "try again".
       final err = AppErrorMapper.from(e, feature: 'post that reply');
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(err.message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(err.message)));
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -80,9 +82,7 @@ class _AuraPublicationDiscussionState
         Semantics(
           header: true,
           child: Text(
-            replies.isEmpty
-                ? 'Discussion'
-                : 'Discussion · ${replies.length}',
+            replies.isEmpty ? 'Discussion' : 'Discussion · ${replies.length}',
             style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
           ),
         ),
@@ -95,28 +95,37 @@ class _AuraPublicationDiscussionState
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Expanded(
-              child: TextField(
-                controller: _controller,
-                minLines: 1,
-                maxLines: 6,
-                textInputAction: TextInputAction.newline,
-                // A hint disappears the moment typing starts, so on its own it
-                // is not a label — a screen-reader user returning to a
-                // part-written reply had nothing naming the field.
-                decoration: const InputDecoration(
-                  labelText: 'Add to the discussion',
-                  hintText: 'Add to the discussion',
-                  filled: true,
-                  fillColor: AuraSurface.elevated,
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(color: AuraSurface.divider),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: AuraSurface.divider),
-                  ),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: AuraSpace.s12,
-                    vertical: AuraSpace.s10,
+              // Bounded on purpose — this box sits beside a discussion that
+              // scrolls past it, and letting it grow without limit would eat
+              // the article. AuraBoundedEditor is what stops that bound from
+              // also trapping the page: the editor scrolls its own text while
+              // it can, and hands the wheel back at its top and bottom.
+              child: AuraBoundedEditor(
+                builder: (context, scrollController, physics) => TextField(
+                  scrollController: scrollController,
+                  scrollPhysics: physics,
+                  controller: _controller,
+                  minLines: 1,
+                  maxLines: 6,
+                  textInputAction: TextInputAction.newline,
+                  // A hint disappears the moment typing starts, so on its own it
+                  // is not a label — a screen-reader user returning to a
+                  // part-written reply had nothing naming the field.
+                  decoration: const InputDecoration(
+                    labelText: 'Add to the discussion',
+                    hintText: 'Add to the discussion',
+                    filled: true,
+                    fillColor: AuraSurface.elevated,
+                    border: OutlineInputBorder(
+                      borderSide: BorderSide(color: AuraSurface.divider),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: AuraSurface.divider),
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: AuraSpace.s12,
+                      vertical: AuraSpace.s10,
+                    ),
                   ),
                 ),
               ),
