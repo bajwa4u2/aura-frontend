@@ -9,6 +9,8 @@ import 'app/app_shell.dart';
 import 'app/route_classification.dart';
 import 'features/admin/areas/integrity_area.dart';
 import 'features/admin/areas/now_area.dart';
+import 'features/admin/areas/platform_area.dart';
+import 'features/admin/areas/record_area.dart';
 import 'features/admin/areas/subject_institution_area.dart';
 import 'features/admin/areas/subject_person_area.dart';
 import 'features/admin/areas/subjects_area.dart';
@@ -1789,6 +1791,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/admin/integrity',
             builder: (_, __) => const IntegrityArea(),
+          ),
+          GoRoute(
+            path: '/admin/platform',
+            builder: (_, __) => const PlatformArea(),
+          ),
+          GoRoute(
+            path: '/admin/record',
+            builder: (_, __) => const RecordArea(),
           ),
           GoRoute(
             path: '/admin/subjects',
