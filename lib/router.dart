@@ -7,7 +7,11 @@ import 'package:go_router/go_router.dart';
 
 import 'app/app_shell.dart';
 import 'app/route_classification.dart';
+import 'features/admin/areas/integrity_area.dart';
 import 'features/admin/areas/now_area.dart';
+import 'features/admin/areas/subject_institution_area.dart';
+import 'features/admin/areas/subject_person_area.dart';
+import 'features/admin/areas/subjects_area.dart';
 import 'features/admin/areas/work_area.dart';
 import 'core/continuation/native_continuation.dart';
 import 'core/continuation/windows_activation.dart';
@@ -1781,6 +1785,25 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/admin/work',
             builder: (_, __) => const WorkArea(),
+          ),
+          GoRoute(
+            path: '/admin/integrity',
+            builder: (_, __) => const IntegrityArea(),
+          ),
+          GoRoute(
+            path: '/admin/subjects',
+            builder: (_, __) => const SubjectsArea(),
+          ),
+          GoRoute(
+            path: '/admin/subjects/person/:id',
+            builder: (_, state) =>
+                SubjectPersonArea(userId: state.pathParameters['id'] ?? ''),
+          ),
+          GoRoute(
+            path: '/admin/subjects/institution/:id',
+            builder: (_, state) => SubjectInstitutionArea(
+              institutionId: state.pathParameters['id'] ?? '',
+            ),
           ),
           GoRoute(
             path: kAdminCommunicationsRoute,
