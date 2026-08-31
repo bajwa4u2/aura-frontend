@@ -106,6 +106,21 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '    default_type application/json;' \
 '  }' \
 '' \
+'  # Apple and Windows verify against the tapped host too, and neither one' \
+'  # follows redirects. The entitlements declare applinks:app.auraplatform.org' \
+'  # and the App URI Handler declares the same host, so with only assetlinks' \
+'  # served here, iOS and Windows association on this domain could never' \
+'  # verify -- the identical failure Android already had, one platform later.' \
+'  location = /.well-known/apple-app-site-association {' \
+'    root /usr/share/nginx/html;' \
+'    default_type application/json;' \
+'  }' \
+'' \
+'  location = /.well-known/windows-app-web-link {' \
+'    root /usr/share/nginx/html;' \
+'    default_type application/json;' \
+'  }' \
+'' \
 '  location / {' \
 '    return 301 https://auraplatform.org$request_uri;' \
 '  }' \
@@ -240,6 +255,17 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '  # policy used to receive index.html, which is not a policy -- it is an' \
 '  # HTML page a parser has to guess about. Permissive for exactly what' \
 '  # external previews need, closed for the application surface.' \
+'  # Extensionless association files fall through to nginx default_type, so' \
+'  # the AASA was served as application/octet-stream. Apple documents' \
+'  # application/json; stated here rather than relying on a tolerant fetcher.' \
+'  location = /.well-known/apple-app-site-association {' \
+'    default_type application/json;' \
+'  }' \
+'' \
+'  location = /.well-known/windows-app-web-link {' \
+'    default_type application/json;' \
+'  }' \
+'' \
 '  location = /robots.txt {' \
 '    default_type text/plain;' \
 '    return 200 "User-agent: *\nAllow: /p/\nAllow: /media/\nAllow: /institutions\nAllow: /u/\nDisallow: /admin\nDisallow: /institution/\nDisallow: /messages\nDisallow: /conversations\nDisallow: /activity\nDisallow: /notifications\nDisallow: /saved\nDisallow: /settings\nDisallow: /me\nSitemap: https://auraplatform.org/sitemap.xml\n";' \

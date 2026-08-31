@@ -6,8 +6,25 @@ String normalizeMemberFacingRoute(
   if (value.isEmpty) return fallback;
   if (!value.startsWith('/')) return fallback;
 
+  // A backslash is not a path separator in the URI grammar, but browsers
+  // normalise it to one -- so `/\evil.com/x` becomes `//evil.com/x` and leaves
+  // the site. Rejected before parsing, because Uri keeps it in the path and
+  // every check below would then pass.
+  if (value.contains('\\')) return fallback;
+
   final uri = Uri.tryParse(value);
   if (uri == null) return fallback;
+
+  // OPEN REDIRECT. A preserved destination is always SITE-RELATIVE. Requiring
+  // a leading '/' is not enough: `//evil.com/path` starts with '/' and is a
+  // protocol-relative URL, so a browser sends the person to evil.com. It was
+  // reachable as `?redirect=//evil.com/...` on the auth screens -- a genuine
+  // Aura link that logs someone in and then hands them to another site, which
+  // is the shape every credential-phishing chain wants.
+  //
+  // The authority also survived `uri.replace(path: ...)` below, so even the
+  // normalisation branches carried it through intact.
+  if (uri.hasScheme || uri.hasAuthority) return fallback;
 
   final path = uri.path.trim();
   if (path.isEmpty || path == '/') return fallback;

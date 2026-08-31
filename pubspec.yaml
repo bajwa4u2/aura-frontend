@@ -47,6 +47,12 @@ dependencies:
 
   # External links
   url_launcher: ^6.3.0
+  # Platform-owned store review. Android uses Google Play In-App Review and
+  # iOS uses SKStoreReviewController -- the OS decides whether a prompt is
+  # actually shown, and it deliberately gives no result back. That is the
+  # point: an app that could observe the outcome could act on it, and acting
+  # on it is rating manipulation.
+  in_app_review: ^2.0.9
 
   # Media + file picking
   image_picker: ^1.1.2
