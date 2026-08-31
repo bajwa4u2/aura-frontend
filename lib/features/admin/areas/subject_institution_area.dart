@@ -438,7 +438,10 @@ class _RelatedWork extends ConsumerWidget {
         data: (signal) => OperatorSignalView<OperatorWorklist>(
           signal: signal,
           subject: 'open work',
-          unauthorizedNeeds: 'a queue you can work',
+          // A CLAUSE CANNOT FILL A NOUN SLOT. This produced, live:
+          // "You do not hold a queue you can work authority."
+          unauthorizedSentence: 'You do not hold any queue you can work. '
+              'An operator who does can act on this.',
           onRetry: () => ref.invalidate(operatorWorkListProvider),
           loading: const OperatorLoading(lines: 1),
           builder: (context, worklist) {

@@ -407,10 +407,28 @@ class OperatorLoading extends StatelessWidget {
 /// The operator holds no authority for this surface. Never a dead end: it says
 /// what is missing so the person knows what to ask for.
 class OperatorInsufficientCapability extends StatelessWidget {
-  const OperatorInsufficientCapability({super.key, required this.needs});
+  const OperatorInsufficientCapability({
+    super.key,
+    required this.needs,
+    this.sentence,
+  });
 
-  /// Human-readable capability name, e.g. "moderation".
+  /// Human-readable capability NAME — "moderation", "audit", "system health".
+  ///
+  /// A NOUN, because it fills the slot in "You do not hold ___ authority".
+  /// Passing a clause here produced, live on the founder's console:
+  ///
+  ///   "You do not hold a queue you can work authority."
+  ///
+  /// A slot that only accepts one shape must not silently accept another, so
+  /// anything that is not a plain capability name uses [sentence] instead.
   final String needs;
+
+  /// The whole sentence, for cases the noun slot cannot express.
+  ///
+  /// Written as a complete statement about what the operator holds — never a
+  /// fragment assembled around a variable.
+  final String? sentence;
 
   @override
   Widget build(BuildContext context) {
@@ -422,8 +440,9 @@ class OperatorInsufficientCapability extends StatelessWidget {
           const SizedBox(width: AuraSpace.s12),
           Expanded(
             child: Text(
-              'You do not hold $needs authority. An operator who does can act '
-              'on this.',
+              sentence ??
+                  'You do not hold $needs authority. An operator who does can '
+                      'act on this.',
               style: const TextStyle(
                   color: AuraSurface.muted, fontSize: 13, height: 1.4),
             ),

@@ -86,7 +86,10 @@ class _Attention extends ConsumerWidget {
         data: (work) => OperatorSignalView<OperatorWorkSummary>(
           signal: work,
           subject: 'the worklist',
-          unauthorizedNeeds: 'a queue you can work',
+          // A CLAUSE CANNOT FILL A NOUN SLOT. This produced, live:
+          // "You do not hold a queue you can work authority."
+          unauthorizedSentence: 'You do not hold any queue you can work. '
+              'An operator who does can act on this.',
           onRetry: () => ref.invalidate(operatorWorkSummaryProvider),
           loading: const OperatorLoading(lines: 3),
           builder: (context, summary) => _AttentionBody(summary: summary),

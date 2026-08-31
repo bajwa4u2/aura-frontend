@@ -1,0 +1,106 @@
+{
+  "ok": true,
+  "items": [
+    {
+      "id": "cmm69u97n0000pi01rm3fyglq",
+      "email": "rowan@example.test",
+      "handle": "rowan",
+      "displayName": "Rowan Ellis",
+      "accountType": "PUBLIC",
+      "emailVerifiedAt": "2026-03-02T00:00:00.000Z",
+      "disabledAt": null,
+      "status": "ACTIVE",
+      "createdAt": "2026-03-01T00:00:00.000Z",
+      "updatedAt": "2026-08-30T00:00:00.000Z",
+      "counts": {
+        "devices": 2,
+        "pushAttempts": 0,
+        "communications": 0
+      },
+      "admin": {
+        "grantCount": 1,
+        "roles": [
+          "OWNER"
+        ],
+        "permissions": [
+          "USERS_READ",
+          "USERS_WRITE",
+          "AUDIT_READ",
+          "DISCOVERY_READ",
+          "DISCOVERY_EVIDENCE_READ"
+        ],
+        "primaryGrant": {
+          "id": "cmohyq52y0001rdjzu5f96djh",
+          "role": "OWNER",
+          "permissions": [
+            "USERS_READ",
+            "USERS_WRITE",
+            "AUDIT_READ",
+            "DISCOVERY_READ",
+            "DISCOVERY_EVIDENCE_READ"
+          ],
+          "status": "ACTIVE",
+          "grantedAt": "2026-05-01T00:00:00.000Z",
+          "revokedAt": null,
+          "expiresAt": null,
+          "reason": "bootstrap",
+          "notes": null,
+          "grantedByUserId": "cmm69u97n0000pi01rm3fyglq",
+          "grantedBy": {
+            "id": "cmm69u97n0000pi01rm3fyglq",
+            "handle": "rowan",
+            "displayName": "Rowan Ellis",
+            "avatarUrl": null
+          }
+        }
+      }
+    },
+    {
+      "id": "cmm69u97n0001pi01rm3fyglq",
+      "email": "sam@example.test",
+      "handle": "sam",
+      "displayName": "Sam Iyer",
+      "accountType": "PUBLIC",
+      "emailVerifiedAt": "2026-03-02T00:00:00.000Z",
+      "disabledAt": null,
+      "status": "ACTIVE",
+      "createdAt": "2026-03-01T00:00:00.000Z",
+      "updatedAt": "2026-08-30T00:00:00.000Z",
+      "counts": {
+        "devices": 2,
+        "pushAttempts": 0,
+        "communications": 0
+      },
+      "admin": {
+        "grantCount": 0,
+        "roles": [],
+        "permissions": [],
+        "primaryGrant": null
+      }
+    },
+    {
+      "id": "cmm69u97n0002pi01rm3fyglq",
+      "email": "ada@example.test",
+      "handle": "ada",
+      "displayName": "Ada Okafor",
+      "accountType": "PUBLIC",
+      "emailVerifiedAt": "2026-03-02T00:00:00.000Z",
+      "disabledAt": "2026-08-20T00:00:00.000Z",
+      "status": "DISABLED",
+      "createdAt": "2026-03-01T00:00:00.000Z",
+      "updatedAt": "2026-08-30T00:00:00.000Z",
+      "counts": {
+        "devices": 2,
+        "pushAttempts": 0,
+        "communications": 0
+      },
+      "admin": {
+        "grantCount": 0,
+        "roles": [],
+        "permissions": [],
+        "primaryGrant": null
+      }
+    }
+  ],
+  "nextCursor": null
+}

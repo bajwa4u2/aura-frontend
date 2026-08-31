@@ -159,6 +159,7 @@ class OperatorSignalView<T> extends StatelessWidget {
     this.loading,
     this.onRetry,
     this.unauthorizedNeeds,
+    this.unauthorizedSentence,
   });
 
   final OperatorSignal<T> signal;
@@ -170,7 +171,12 @@ class OperatorSignalView<T> extends StatelessWidget {
   final Widget Function(BuildContext context, T value) builder;
   final Widget? loading;
   final VoidCallback? onRetry;
+  /// The capability NAME — a noun that fills "You do not hold ___ authority".
   final String? unauthorizedNeeds;
+
+  /// The whole sentence, where the noun slot cannot say it. See
+  /// [OperatorInsufficientCapability.sentence].
+  final String? unauthorizedSentence;
 
   @override
   Widget build(BuildContext context) {
@@ -181,6 +187,7 @@ class OperatorSignalView<T> extends StatelessWidget {
       case OperatorReach.unauthorized:
         return OperatorInsufficientCapability(
           needs: unauthorizedNeeds ?? signal.detail ?? subject,
+          sentence: unauthorizedSentence,
         );
 
       case OperatorReach.unavailable:

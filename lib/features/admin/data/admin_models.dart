@@ -230,19 +230,60 @@ class AdminUserSummary {
   String get handle => person.handle;
   String get displayName => person.displayName;
 
+  /// The OPERATOR authority this person holds over Aura, or empty.
+  ///
+  /// FOUND BY THE CONTRACT, NOT BY READING THE CODE. This was parsed from a
+  /// top-level `role` key the server has never sent — it sends
+  /// `admin.roles: ['OWNER']` — so the directory's authority column was ALWAYS
+  /// empty in production. The hand-written fixture that proved this screen
+  /// carried a `role` of `MEMBER`, which made the column look populated AND
+  /// invented a platform role that does not exist: OWNER, ADMIN and MODERATOR
+  /// are Aura's operator roles, and MEMBER belongs to institution membership,
+  /// a different authority entirely.
+  ///
+  /// Empty is the correct answer for almost everybody, and the directory says
+  /// nothing rather than inventing a rank.
   final String role;
+
   final String status;
   final DateTime createdAt;
   final DateTime? lastActiveAt;
 
+  /// True when this person can act on Aura itself.
+  bool get isOperator => role.isNotEmpty;
+
+  bool get isDisabled => status.toUpperCase() == 'DISABLED';
+
   static String _str(dynamic v) => (v ?? '').toString().trim();
+
+  /// The highest operator role held, from the server's own list.
+  ///
+  /// Ordered by authority rather than alphabetically: a person holding both
+  /// MODERATOR and OWNER is an owner, and a directory that showed the other
+  /// one would understate what they may do.
+  static String _operatorRole(dynamic adminBlock) {
+    if (adminBlock is! Map) return '';
+    final roles = adminBlock['roles'];
+    if (roles is! List || roles.isEmpty) return '';
+    final held = roles.map((r) => _str(r).toUpperCase()).toSet();
+    for (final rank in const ['OWNER', 'ADMIN', 'MODERATOR']) {
+      if (held.contains(rank)) return rank;
+    }
+    // A role this build does not rank is still real. Shown as sent rather
+    // than dropped, because an unrecognised authority is not no authority.
+    return _str(roles.first).toUpperCase();
+  }
 
   factory AdminUserSummary.fromJson(Map<String, dynamic> json) {
     return AdminUserSummary(
       person: AuraPersonIdentity.fromJson(json),
       email: _str(json['email']),
-      role: _str(json['role']),
-      status: _str(json['status'] ?? 'active'),
+      role: _operatorRole(json['admin']),
+      // The server's word, uppercase. The old default was lowercase 'active',
+      // which never matched anything it was compared against.
+      status: _str(json['status']).isEmpty
+          ? 'ACTIVE'
+          : _str(json['status']).toUpperCase(),
       createdAt: _parseDate(json['createdAt']) ?? DateTime.now(),
       lastActiveAt: _parseDate(json['lastActiveAt'] ?? json['lastActive']),
     );

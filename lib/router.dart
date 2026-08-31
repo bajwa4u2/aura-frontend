@@ -397,6 +397,24 @@ String? _enforceCanonicalIdMatch(
 //
 // Set once, at the canonical navigation boundary, rather than per route —
 // the divergence was never specific to the call route.
+/// NO CROSS-FADE BETWEEN OPERATOR AREAS.
+///
+/// Found live, on the founder's console: moving between areas painted the
+/// PREVIOUS area over the next one — the person subject's cards sitting on top
+/// of the incoming list's skeletons, legible and wrong, for the whole
+/// transition.
+///
+/// The cause is not a missing background. `builder:` gives go_router a
+/// platform-default page, which on web cross-fades: two pages are alive and
+/// stacked for the duration, and neither operator area paints an opaque
+/// ground, so the outgoing one simply shows through.
+///
+/// Opacity would hide it. Removing the transition removes it, and is the
+/// better answer for this product anyway: switching areas is a MODE CHANGE,
+/// not a journey, and a console that fades every time an operator changes
+/// their mind is a console that feels slower than it is.
+Page<void> _operatorPage(Widget child) => NoTransitionPage<void>(child: child);
+
 final routerProvider = Provider<GoRouter>((ref) {
   GoRouter.optionURLReflectsImperativeAPIs = true;
   final refresh = ValueNotifier<int>(0);
@@ -1766,37 +1784,37 @@ final routerProvider = Provider<GoRouter>((ref) {
           // institution admin's screen — is gone.
           GoRoute(
             path: kAdminWorkspaceRoute,
-            builder: (_, __) => const NowArea(),
+            pageBuilder: (_, __) => _operatorPage(const NowArea()),
           ),
           GoRoute(
             path: '/admin/work',
-            builder: (_, __) => const WorkArea(),
+            pageBuilder: (_, __) => _operatorPage(const WorkArea()),
           ),
           GoRoute(
             path: '/admin/integrity',
-            builder: (_, __) => const IntegrityArea(),
+            pageBuilder: (_, __) => _operatorPage(const IntegrityArea()),
           ),
           GoRoute(
             path: '/admin/platform',
-            builder: (_, __) => const PlatformArea(),
+            pageBuilder: (_, __) => _operatorPage(const PlatformArea()),
           ),
           GoRoute(
             path: '/admin/record',
-            builder: (_, __) => const RecordArea(),
+            pageBuilder: (_, __) => _operatorPage(const RecordArea()),
           ),
           GoRoute(
             path: '/admin/subjects',
-            builder: (_, __) => const SubjectsArea(),
+            pageBuilder: (_, __) => _operatorPage(const SubjectsArea()),
           ),
           GoRoute(
             path: '/admin/subjects/person/:id',
-            builder: (_, state) =>
-                SubjectPersonArea(userId: state.pathParameters['id'] ?? ''),
+            pageBuilder: (_, state) => _operatorPage(
+                SubjectPersonArea(userId: state.pathParameters['id'] ?? '')),
           ),
           GoRoute(
             path: '/admin/subjects/institution/:id',
-            builder: (_, state) => SubjectInstitutionArea(
-              institutionId: state.pathParameters['id'] ?? '',
+            pageBuilder: (_, state) => _operatorPage(SubjectInstitutionArea(
+              institutionId: state.pathParameters['id'] ?? ''),
             ),
           ),
           // THE WORKLIST'S OWN DESTINATIONS.
@@ -1810,46 +1828,46 @@ final routerProvider = Provider<GoRouter>((ref) {
           // work is about.
           GoRoute(
             path: '/admin/subjects/person/:id/:focus',
-            builder: (_, state) => SubjectPersonArea(
+            pageBuilder: (_, state) => _operatorPage(SubjectPersonArea(
               userId: state.pathParameters['id'] ?? '',
-              focus: state.pathParameters['focus'],
+              focus: state.pathParameters['focus']),
             ),
           ),
           GoRoute(
             path: '/admin/subjects/institution/:id/:focus',
-            builder: (_, state) => SubjectInstitutionArea(
+            pageBuilder: (_, state) => _operatorPage(SubjectInstitutionArea(
               institutionId: state.pathParameters['id'] ?? '',
-              focus: state.pathParameters['focus'],
+              focus: state.pathParameters['focus']),
             ),
           ),
           GoRoute(
             path: '/admin/integrity/moderation/:id',
-            builder: (_, state) => ModerationReportDetail(
-              reportId: state.pathParameters['id'] ?? '',
+            pageBuilder: (_, state) => _operatorPage(ModerationReportDetail(
+              reportId: state.pathParameters['id'] ?? ''),
             ),
           ),
           GoRoute(
             path: '/admin/integrity/appeals/:id',
-            builder: (_, state) => MediaAppealDetail(
-              appealId: state.pathParameters['id'] ?? '',
+            pageBuilder: (_, state) => _operatorPage(MediaAppealDetail(
+              appealId: state.pathParameters['id'] ?? ''),
             ),
           ),
           GoRoute(
             path: '/admin/integrity/feedback/:id',
-            builder: (_, state) => FeedbackDetail(
-              feedbackId: state.pathParameters['id'] ?? '',
+            pageBuilder: (_, state) => _operatorPage(FeedbackDetail(
+              feedbackId: state.pathParameters['id'] ?? ''),
             ),
           ),
           GoRoute(
             path: '/admin/integrity/support/:id',
-            builder: (_, state) => SupportCaseDetail(
-              caseId: state.pathParameters['id'] ?? '',
+            pageBuilder: (_, state) => _operatorPage(SupportCaseDetail(
+              caseId: state.pathParameters['id'] ?? ''),
             ),
           ),
           // DISCOVERY. Observation of five estates; it changes none of them.
           GoRoute(
             path: '/admin/discovery',
-            builder: (_, __) => const DiscoveryArea(),
+            pageBuilder: (_, __) => _operatorPage(const DiscoveryArea()),
           ),
 
           // CO-RC-C7-005 PHASE 5 (2026-08-20): the personal correspondence

@@ -61,6 +61,7 @@ void main() {
         'settings.list',
         'user.detail',
         'user.detail.sole-owner',
+        'users.list',
         'work.list',
         'work.list.clear',
         'work.list.one-source-down',
@@ -300,6 +301,40 @@ void main() {
           expect(subject, isNot(startsWith('Media cm')));
         }
       }
+    });
+  });
+
+  group('the people directory shows operator authority truthfully', () {
+    List<AdminUserSummary> people() =>
+        (contract('users.list')['items'] as List)
+            .cast<Map<String, dynamic>>()
+            .map(AdminUserSummary.fromJson)
+            .toList();
+
+    test('an operator role is read from where the server puts it', () {
+      // Parsed from a top-level `role` key the server has never sent. The
+      // column was ALWAYS empty in production, and the hand-written fixture
+      // that proved this screen filled it with `MEMBER`.
+      final owner = people().first;
+      expect(owner.role, 'OWNER');
+      expect(owner.isOperator, isTrue);
+    });
+
+    test('somebody with no grant holds no operator role', () {
+      // Empty, not "MEMBER". MEMBER is an INSTITUTION role — a different
+      // authority — and printing it here invented a platform rank.
+      final ordinary = people()[1];
+      expect(ordinary.role, isEmpty);
+      expect(ordinary.isOperator, isFalse);
+    });
+
+    test('a disabled account reads as disabled, in the server word', () {
+      final disabled = people().last;
+      expect(disabled.status, 'DISABLED');
+      expect(disabled.isDisabled, isTrue);
+      // The old default was lowercase 'active', which matched nothing it was
+      // ever compared against.
+      expect(people().first.status, 'ACTIVE');
     });
   });
 

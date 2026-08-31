@@ -356,7 +356,10 @@ class _PeopleList extends ConsumerWidget {
                     : person.person.displayName,
                 subtitle: person.email,
                 state: person.status,
-                trailing: person.role,
+                // OPERATOR AUTHORITY, or nothing. Almost nobody holds one,
+                // and the directory says nothing rather than inventing a rank
+                // for everybody else.
+                trailing: person.isOperator ? person.role : null,
                 onTap: () => context.go(operatorPersonRoute(person.person.userId)),
               ),
             );

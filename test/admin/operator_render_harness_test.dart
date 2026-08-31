@@ -582,7 +582,7 @@ Dio _consoleDio(
         } else if (p.contains('/admin/users/')) {
           body = _contract(userDetailContract);
         } else if (p.contains('/admin/users')) {
-          body = {'items': _users};
+          body = _contract('users.list');
         } else if (p.contains('/admin/grants/permissions')) {
           body = {'permissions': const <String>[]};
         } else if (p.contains('/admin/grants')) {
@@ -737,27 +737,6 @@ const _fleet = {
     {'distribution': 'app_store', 'percentage': 15.9},
   ],
 };
-
-const _users = [
-  {
-    'id': 'u-1',
-    'handle': 'rowan',
-    'displayName': 'Rowan Ellis',
-    'email': 'rowan@example.test',
-    'role': 'MEMBER',
-    'status': 'active',
-    'createdAt': '2026-03-01T00:00:00.000Z',
-  },
-  {
-    'id': 'u-2',
-    'handle': 'sam',
-    'displayName': 'Sam Iyer',
-    'email': 'sam@example.test',
-    'role': 'MEMBER',
-    'status': 'disabled',
-    'createdAt': '2026-04-01T00:00:00.000Z',
-  },
-];
 
 const _verification = {
   'ok': true,
