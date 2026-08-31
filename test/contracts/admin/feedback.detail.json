@@ -1,0 +1,52 @@
+{
+  "id": "cmofeedback0001rdjzu5f96",
+  "ref": "AF-7QK2",
+  "intent": "PROBLEM",
+  "state": "ACTIONED",
+  "userId": "cmfixture0pr01pi01rm3fyglq",
+  "message": "Calls never ring on my Pixel unless the app is already open.",
+  "product": "Aura",
+  "platform": "contract",
+  "appVersion": "1.4.0",
+  "buildNumber": "412",
+  "osVersion": "15",
+  "surface": "/messages/c/:id",
+  "locale": "en-US",
+  "releaseChannel": "production",
+  "correlationId": null,
+  "submittedAt": "2026-08-30T08:15:00.000Z",
+  "reviewedByUserId": "cmfixture0pr00pi01rm3fyglq",
+  "reviewedAt": "2026-08-30T10:00:00.000Z",
+  "operatorNote": "Reproduced on a Pixel 9a. Root cause is the push priority, not the ring path.",
+  "outcome": "Fixed — calls now ring with the app closed.",
+  "releaseRef": "1.4.1",
+  "closedAt": null,
+  "user": {
+    "id": "cmfixture0pr01pi01rm3fyglq",
+    "handle": "sam",
+    "displayName": "Sam Iyer"
+  },
+  "reviewedBy": {
+    "id": "cmfixture0pr00pi01rm3fyglq",
+    "handle": "rowan",
+    "displayName": "Rowan Ellis"
+  },
+  "events": [
+    {
+      "id": "cmofbevent0001",
+      "feedbackId": "cmofeedback0001rdjzu5f96",
+      "actorId": "cmfixture0pr00pi01rm3fyglq",
+      "type": "state:REVIEWED",
+      "note": null,
+      "createdAt": "2026-08-30T10:00:00.000Z"
+    },
+    {
+      "id": "cmofbevent0002",
+      "feedbackId": "cmofeedback0001rdjzu5f96",
+      "actorId": "cmfixture0pr00pi01rm3fyglq",
+      "type": "note",
+      "note": "Reproduced on a Pixel 9a.",
+      "createdAt": "2026-08-30T11:00:00.000Z"
+    }
+  ]
+}

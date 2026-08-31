@@ -207,22 +207,39 @@ class _Standing extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                OperatorStatePill(
-                  state: institution.status,
-                  tone: institution.verifiedAt != null
-                      ? OperatorTone.good
-                      : OperatorTone.pending,
-                ),
-                const SizedBox(width: AuraSpace.s10),
-                Text(
-                  '${institution.memberCount} '
+            // TWO AUTHORITIES, TWO LINES.
+            //
+            // This drew ONE pill: the institution's `status`, tinted by
+            // whether `verifiedAt` was set. That collapses two independent
+            // facts into a single word, and the collapse is what made a
+            // refused domain proof look like it should have changed the
+            // institution's standing.
+            //
+            // They are genuinely independent. A suspended institution keeps
+            // the verification evidence it earned; a verified institution can
+            // be suspended tomorrow. "Its identity was verified, and it is not
+            // currently admitted" is a coherent sentence Aura's model can
+            // express and this screen could not.
+            _Fact(
+              label: 'Standing',
+              value: _standingWords(institution),
+              tone: _standingTone(institution),
+            ),
+            const SizedBox(height: AuraSpace.s8),
+            _Fact(
+              label: 'Verification',
+              value: institution.verifiedAt == null
+                  ? 'No verification on record'
+                  : 'Verified${institution.domain?.isNotEmpty == true ? ' · domain proven' : ''}',
+              tone: institution.verifiedAt == null
+                  ? null
+                  : OperatorTone.good,
+            ),
+            const SizedBox(height: AuraSpace.s8),
+            _Fact(
+              label: 'Membership',
+              value: '${institution.memberCount} '
                   'member${institution.memberCount == 1 ? '' : 's'}',
-                  style: const TextStyle(
-                      color: AuraSurface.muted, fontSize: 12.5),
-                ),
-              ],
             ),
             if (institution.domain?.isNotEmpty == true) ...[
               const SizedBox(height: AuraSpace.s12),
@@ -239,14 +256,7 @@ class _Standing extends ConsumerWidget {
                 ],
               ),
             ],
-            if (institution.suspendedAt != null) ...[
-              const SizedBox(height: AuraSpace.s12),
-              const Text(
-                'This institution is suspended.',
-                style:
-                    TextStyle(color: AuraSurface.dangerInk, fontSize: 12.5),
-              ),
-            ],
+
             if (!canWrite) ...[
               const SizedBox(height: AuraSpace.s12),
               const Text(
@@ -365,12 +375,22 @@ class _Domains extends ConsumerWidget {
     final done = await runOperatorAction(
       context,
       OperatorAction(
-        title: approve ? 'Approve domain proof' : 'Reject domain proof',
+        // NAMES THE DOMAIN, NOT THE INSTITUTION.
+        //
+        // The founder refused a domain proof on this screen and then reported
+        // that the institution "still appears VERIFIED". It does, and that is
+        // correct: refusing a domain proof decides one claim about one
+        // hostname. But the button said "Reject" on a page headed by the
+        // institution's name and standing, and nothing said what was NOT being
+        // decided. The action was read as rejecting the institution.
+        title: approve
+            ? 'Accept this domain proof'
+            : 'Refuse this domain proof',
         subject: proof.domain,
-        detail: 'The verification authority applies this decision. Domain '
-            'proof is a statement about institutional legitimacy, not about '
-            'any individual person.',
-        confirmLabel: approve ? 'Approve' : 'Reject',
+        detail: 'This decides ONE claim: whether ${proof.domain} belongs to '
+            'this institution. It is not a decision about the institution '
+            'itself.',
+        confirmLabel: approve ? 'Accept the proof' : 'Refuse the proof',
         destructive: !approve,
         // The authority records a reason on either decision, so both ask for
         // one. A rejection an institution cannot understand is a rejection it
@@ -391,6 +411,14 @@ class _Domains extends ConsumerWidget {
               tone: OperatorTone.danger,
               icon: Icons.gpp_bad_rounded,
             ),
+          // WHAT THIS DOES NOT TOUCH, said out loud on both paths. An operator
+          // must not have to infer the blast radius of a governed act from the
+          // absence of a sentence about it.
+          const OperatorConsequence(
+            text: 'The institution keeps its current standing and its '
+                'verification. Neither is changed by this.',
+            icon: Icons.account_balance_outlined,
+          ),
           OperatorConsequence.notifies('The requesting institution'),
           OperatorConsequence.recorded('This decision and your reason'),
         ],
@@ -887,5 +915,65 @@ class _OwnershipRecovery extends ConsumerWidget {
       ref.invalidate(institutionRecoveryProvider(institutionId));
       ref.invalidate(institutionMembersProvider(institutionId));
     }
+  }
+}
+
+/// STANDING — whether the institution is admitted and operating.
+///
+/// Derived from the single `status` field Aura actually holds, read as the
+/// lifecycle it is rather than reprinted as an enum. Deliberately says nothing
+/// about verification: that is the other authority, and conflating them is the
+/// defect this separation exists to fix.
+String _standingWords(AdminInstitutionSummary institution) =>
+    switch (institution.status.toUpperCase()) {
+      'PENDING' => 'Awaiting review — not yet admitted',
+      'VERIFIED' => 'Admitted and operating',
+      'SUSPENDED' => 'Suspended — not currently operating',
+      'REJECTED' => 'Refused admission',
+      _ => institution.status,
+    };
+
+OperatorTone? _standingTone(AdminInstitutionSummary institution) =>
+    switch (institution.status.toUpperCase()) {
+      'VERIFIED' => OperatorTone.good,
+      'PENDING' => OperatorTone.pending,
+      'SUSPENDED' => OperatorTone.danger,
+      'REJECTED' => OperatorTone.danger,
+      _ => null,
+    };
+
+/// One labelled fact. Deliberately not a pill: a pill invites the eye to read
+/// one word as the whole state, which is how these two got collapsed.
+class _Fact extends StatelessWidget {
+  const _Fact({required this.label, required this.value, this.tone});
+
+  final String label;
+  final String value;
+  final OperatorTone? tone;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 104,
+          child: Text(
+            label,
+            style: const TextStyle(color: AuraSurface.faint, fontSize: 12.5),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(
+              color: tone == null ? AuraSurface.ink : tone!.ink,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

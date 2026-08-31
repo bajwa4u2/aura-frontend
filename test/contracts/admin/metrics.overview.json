@@ -1,0 +1,54 @@
+{
+  "ok": true,
+  "snapshotAt": "2026-01-01T00:00:00.000Z",
+  "windowStart": "2026-01-01T00:00:00.000Z",
+  "users": {
+    "total": 3,
+    "active": 3,
+    "disabled": 3
+  },
+  "institutions": {
+    "total": 3,
+    "verified": 3,
+    "suspended": 3,
+    "rejected": 3,
+    "verificationRequests": 3,
+    "verificationRequestsOpen": 3
+  },
+  "posts": {
+    "total": 3,
+    "published": 3
+  },
+  "reports": {
+    "total": 3,
+    "open": 3,
+    "reviewing": 3,
+    "resolved": 3,
+    "dismissed": 3
+  },
+  "communications": {
+    "total": 3,
+    "unread": 3,
+    "digests": 3,
+    "drafts": 3,
+    "campaigns": 3
+  },
+  "realtime": {
+    "sessions": 3,
+    "activeSessions": 3,
+    "participants": 3,
+    "invites": 3,
+    "recordings": 3
+  },
+  "devices": {
+    "registered": 3,
+    "active": 3
+  },
+  "push": {
+    "attempts": 3,
+    "sent": 3,
+    "failed": 3,
+    "skipped": 3
+  },
+  "persisted": false
+}

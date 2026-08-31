@@ -1,0 +1,12 @@
+{
+  "ok": true,
+  "items": [
+    {
+      "query": "aura platform",
+      "impressions": 940,
+      "clicks": 61
+    }
+  ],
+  "withheldBelowImpressions": 5,
+  "withheld": 1
+}

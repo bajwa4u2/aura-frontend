@@ -122,6 +122,36 @@
       }
     },
     {
+      "id": "cmoauditrow0006",
+      "action": "institution.domain.rejected",
+      "actorUserId": "cmfixture0pr00pi01rm3fyglq",
+      "actor": {
+        "id": "cmfixture0pr00pi01rm3fyglq",
+        "handle": "rowan",
+        "displayName": "Rowan Ellis",
+        "avatarUrl": null,
+        "email": "rowan@example.test"
+      },
+      "targetType": "INSTITUTION_DOMAIN",
+      "targetId": "cmodomain0001",
+      "result": "SUCCESS",
+      "reason": "The DNS record was never published.",
+      "metadata": {
+        "role": "OWNER"
+      },
+      "ip": null,
+      "userAgent": null,
+      "createdAt": "2026-08-31T09:48:00.000Z",
+      "subject": {
+        "kind": "INSTITUTION",
+        "id": "cmoinst0001rdjzu5f96djh",
+        "label": "northgate.example.test",
+        "handle": "Northgate Health Trust",
+        "resolvable": true,
+        "type": "INSTITUTION_DOMAIN"
+      }
+    },
+    {
       "id": "cmoauditrow0005",
       "action": "admin.user.disabled",
       "actorUserId": "cmfixture0pr00pi01rm3fyglq",

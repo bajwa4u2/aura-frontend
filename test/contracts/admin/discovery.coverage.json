@@ -1,0 +1,62 @@
+{
+  "ok": true,
+  "coverage": {
+    "estate": "AURA",
+    "published": 148,
+    "advertisedFromInventory": 0,
+    "observed": 12,
+    "indexed": 9,
+    "families": [
+      {
+        "family": "ARTICLE",
+        "published": 96,
+        "advertised": 0
+      },
+      {
+        "family": "INSTITUTION",
+        "published": 31,
+        "advertised": 0
+      },
+      {
+        "family": "PERSON",
+        "published": 21,
+        "advertised": 0
+      }
+    ]
+  },
+  "sources": [
+    {
+      "source": "SITEMAP",
+      "available": true,
+      "lastFetchedAt": "2026-08-31T01:00:00.000Z"
+    },
+    {
+      "source": "CRAWLER_FETCH",
+      "available": true,
+      "lastFetchedAt": "2026-08-31T01:00:00.000Z"
+    },
+    {
+      "source": "AURA_REFERRAL",
+      "available": true,
+      "lastFetchedAt": "2026-08-31T01:00:00.000Z"
+    },
+    {
+      "source": "GOOGLE_SEARCH_CONSOLE",
+      "available": false,
+      "reason": "Aura holds no credential for this provider on this estate.",
+      "lastFetchedAt": null
+    },
+    {
+      "source": "BING_WEBMASTER",
+      "available": false,
+      "reason": "Aura holds no credential for this provider on this estate.",
+      "lastFetchedAt": null
+    },
+    {
+      "source": "INDEXNOW",
+      "available": false,
+      "reason": "A submission protocol, not an evidence source. Discovery observes; it does not publish.",
+      "lastFetchedAt": null
+    }
+  ]
+}

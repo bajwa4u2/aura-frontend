@@ -1,0 +1,12 @@
+{
+  "hasRun": true,
+  "orphaned": 4,
+  "pendingDeletion": 4,
+  "lastRun": {
+    "finishedAt": "2026-08-31T02:00:00.000Z",
+    "removed": 31,
+    "stillReferenced": 9,
+    "unresolved": 2,
+    "recordedAt": "2026-08-31T02:00:00.000Z"
+  }
+}

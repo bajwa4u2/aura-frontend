@@ -1,0 +1,14 @@
+{
+  "windowStart": "2026-01-01T00:00:00.000Z",
+  "windowEnd": "2026-01-01T00:00:00.000Z",
+  "windowHours": 168,
+  "totalObservations": null,
+  "uniqueClientFingerprints": 0,
+  "byDistribution": [],
+  "byChannel": [],
+  "byVersion": [],
+  "byProtocol": [],
+  "byCapability": [],
+  "incompatibleAttempts": [],
+  "stalePercentageByDistribution": []
+}

@@ -1,0 +1,19 @@
+[
+  {
+    "id": "cmoappeal0001rdjzu5f96dj",
+    "mediaId": "cmomedia0001",
+    "status": "SUBMITTED",
+    "reason": "This is a product brochure, not malware.",
+    "submittedAt": "2026-08-29T09:00:00.000Z",
+    "appellantUserId": "cmfixture0pr01pi01rm3fyglq",
+    "decidedAt": null,
+    "decidedByUserId": null,
+    "decisionReason": null,
+    "media": {
+      "id": "cmomedia0001",
+      "fileName": "brochure.pdf",
+      "mimeType": "application/pdf",
+      "sizeBytes": 284213
+    }
+  }
+]

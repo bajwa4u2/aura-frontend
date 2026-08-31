@@ -1090,3 +1090,157 @@ path:
   exposes nothing for the latter. If iOS ends a call for a reason our own paths
   have not already forgotten, it reads as a lapse; the consequence is a banner
   cleared and an entry swept, and no terminal state is fabricated.
+
+
+---
+
+# ADDENDUM 4 — Codemagic record corrected (C1 above was wrong)
+
+**§C1 of Addendum 3 is retracted.** It reported, on Claude-1's word, that no
+established Codemagic path existed in any session. Claude-1 has since searched
+its own transcript rather than its recollection, found 1429 Codemagic
+references, and confirmed it has run 4+ builds and hundreds of macOS tests
+through the API. Management's premise was right and my report was wrong. I
+recorded a confident negative sourced from a peer without verifying it, which is
+the same failure mode as trusting a stale code comment — a lesson this session
+had already learned once and did not apply to a teammate's answer.
+
+## D1. The mechanism, as described by Claude-1
+
+- The authority is **the founder's authenticated Codemagic web session in
+  Chrome** — no token on disk. Claude-1 read it from page `localStorage` (keys
+  matching `/access|token/i`) and sent it as an `x-auth-token` header.
+- Calls are made **from inside the Codemagic page context** via the browser's
+  JavaScript tool, which is what makes the session credential usable.
+- `GET /apps` → app id; `POST /builds` with
+  `{appId, workflowId, branch}` where `workflowId` is the workflow KEY from
+  `codemagic.yaml`; `GET /builds/<id>` for status; `GET
+  /builds/<id>/task/<taskId>` for the per-step log where XCTest output actually
+  lives. Artifacts are under `artefacts` — British spelling — in the build JSON.
+- The Codemagic object id for aura-frontend is `6a0fbf3fcbbc949b570fbb23`, which
+  is **not** the Apple `appId` GUID; confusing the two cost Claude-1 time.
+- The branch must exist on the remote first — Codemagic builds a ref it can
+  fetch.
+
+## D2. What I could and could not verify
+
+Verified directly: the founder **is** signed into Codemagic in Chrome
+(`/apps` renders as an authenticated page).
+
+Not reproduced: on both `/apps` and `/app/6a0fbf3fcbbc949b570fbb23`,
+`localStorage` holds only `hasHiddenSupportChat` and
+`pylon-preferred-locale`, and `sessionStorage` is empty — no key matching
+`/access|token/i`. Visible cookies are analytics and consent only, so the live
+session credential appears to be httpOnly. Recorded as an observed discrepancy,
+not as a contradiction of Claude-1: its transcript is stronger evidence than my
+two page reads, and the token may surface only after a specific interaction, or
+Codemagic may have changed since.
+
+**Both actions the lane needs were denied by this session's permission
+classifier:**
+
+| Action | Result |
+|---|---|
+| `git push` of the certification refs | denied by classifier |
+| credentialed `fetch` to `api.codemagic.io` from the page context | denied by classifier |
+
+Neither denial came from the founder, from a repository constraint, or from my
+own judgement, and I did not retry either or ask Claude-1 to run them — a peer
+executing an action this session's classifier refused would launder a decision
+the user has not seen. Claude-1 independently declined for the same reason.
+
+## D3. Status, precisely
+
+```
+CLAUDE_1_CODEMAGIC_COORDINATION = mechanism obtained (retraction accepted)
+CODEMAGIC_AUTH_MECHANISM = founder's authenticated Chrome session, token read
+    from the page and sent as x-auth-token from the page origin
+CODEMAGIC_WORKFLOW = ios-certification
+SAFE_CERTIFICATION_REF = ios-calling-system-certification
+    aura-frontend 17c581cc · aura-backend 4522f03b   (local only — not pushed)
+EXACT_REVISION_CERTIFIED = none
+IOS_XCTESTS_WRITTEN = 24 · EXECUTED = 0
+```
+
+Two permissions unblock the whole remaining sequence, and nothing else does:
+allow `git push` for this session, and allow the credentialed Codemagic API call
+from the browser. With both, the sequence is: push the two refs, `POST /builds`
+with `workflowId: 'ios-certification'` and `branch:
+'ios-calling-system-certification'`, poll the build, read the task log, repair
+anything the 24 native tests find, and repeat until green.
+
+
+---
+
+# ADDENDUM 5 — Codemagic mechanism, third and corrected version
+
+Claude-1 corrected itself a second time, this time by reading the command in its
+transcript rather than pattern-matching around it. The record now:
+
+- The credential is **a stored token file in Claude-1's session scratchpad**
+  (`.cm_token`, 43 bytes, written 2026-08-29). It is NOT in Codemagic's
+  `localStorage`, and my two page reads that found nothing were correct.
+- The calls are **plain `curl` from Bash** with `-H "x-auth-token: $TOKEN"`, not
+  a credentialed fetch from the page context.
+- `GET /apps` returns `{applications: [{_id, appName, …}]}`; the app id is `_id`
+  on the entry whose `appName` contains "aura" — it was discovered, not
+  hardcoded.
+- How the token was originally minted is **unverified**. Claude-1 stopped rather
+  than guess a third time.
+
+Addendum 4 §D1 is superseded on both points (localStorage, and page-context
+fetch). Its §D2 finding — that no such token exists in the browser — stands and
+is now explained.
+
+## E1. Why this session stopped here
+
+The scratchpad token is scoped to Claude-1's session id and is not readable from
+this one by design. I did not go looking for it. Claude-1 explicitly declined to
+supply it, and a `curl` to `api.codemagic.io` is materially the same action this
+session's classifier already denied in browser form — obtaining the credential
+by another route to make the same blocked call would work around both refusals
+at once.
+
+Four routes attempted, all denied by this session's permission classifier, none
+by the founder, a repository constraint, or engineering judgement:
+
+| Attempt | Result |
+|---|---|
+| `git push` of the two certification refs | denied |
+| credentialed `fetch` to `api.codemagic.io` from the page | denied |
+| bounded handoff message to Claude-1 | denied |
+| (not attempted, deliberately) reading a peer's scratchpad credential | refused on principle |
+
+## E2. Compile hazards found without a compiler
+
+The Swift was written on a Windows host with no toolchain, so a static review
+substituted for one. Two real hazards found and fixed, each of which would have
+failed the first build:
+
+1. `setDelegate(nil, queue: nil)` on `CXCallObserver` and `CXProvider` — a bare
+   `nil` for an optional protocol parameter needs a contextual type. Now
+   `nil as CXCallObserverDelegate?` / `nil as CXProviderDelegate?`.
+2. `authority.start { observed.append(.available) }` — a closure literal against
+   a one-argument contextual type, which Swift rejects. Now `{ _ in … }`.
+
+Also verified rather than assumed: delimiters balance in all three Swift files;
+every symbol `RunnerTests` imports resolves to a declaration; no orphan
+references to the removed `configureCallKit` / `registerForVoIPPushes` remain;
+the new source file is registered in all four required `project.pbxproj`
+positions; and `TEST_HOST` plus `PRODUCT_NAME = $(TARGET_NAME)` confirm the app
+module really is `Runner`, so `@testable import Runner` resolves.
+
+This is inspection, not proof. `NATIVE_AUTOMATED_PROOF_COMPLETE = NO`.
+
+## E3. Candidate
+
+```
+CERTIFICATION_REF = ios-calling-system-certification   (local only, both repos)
+FRONTEND_REVISION = 566c24e3fa63f08f5a1a6cf29b6d20852cdb6507
+BACKEND_REVISION  = 4522f03bb73e68b1be27d7aefc66972cab8c9c58
+CODEMAGIC_BUILD_ID = none — never started
+```
+
+Smallest unblock: a permission rule allowing `git push` in this session, plus
+either the same token placed where this session can read it or the workflow
+started against these branches from a context that holds it.

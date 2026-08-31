@@ -1,0 +1,20 @@
+{
+  "id": "cmosupport0001rdjzu5f96d",
+  "subject": "I cannot get back into my account",
+  "status": "NEW",
+  "priority": "NORMAL",
+  "userId": "cmfixture0pr01pi01rm3fyglq",
+  "createdAt": "2026-08-29T14:00:00.000Z",
+  "updatedAt": "2026-08-29T14:00:00.000Z",
+  "conversation": {
+    "id": "cmosupconv0001",
+    "messages": [
+      {
+        "id": "cmosupmsg0001",
+        "body": "I changed my phone and now I cannot sign in.",
+        "authorType": "USER",
+        "createdAt": "2026-08-29T14:00:00.000Z"
+      }
+    ]
+  }
+}

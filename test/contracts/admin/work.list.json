@@ -9,9 +9,9 @@
       "ageDays": 19,
       "requiredCapability": "MODERATION_WRITE",
       "title": "Reported for harassment",
-      "subjectLabel": "Post",
-      "subjectKind": "CONTENT",
-      "subjectId": "cmopost0001",
+      "subjectLabel": "Ada Okafor",
+      "subjectKind": "PERSON",
+      "subjectId": "cmfixture0pr02pi01rm3fyglq",
       "state": "OPEN",
       "destination": "/admin/integrity/moderation/cmomodreport0001"
     },

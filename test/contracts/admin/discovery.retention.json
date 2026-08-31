@@ -1,0 +1,8 @@
+{
+  "ok": true,
+  "rawRows": 412,
+  "observations": 1290,
+  "oldestRawFetchedAt": "2026-06-03T00:00:00.000Z",
+  "rawRetentionDays": 90,
+  "observationRetentionMonths": 24
+}
