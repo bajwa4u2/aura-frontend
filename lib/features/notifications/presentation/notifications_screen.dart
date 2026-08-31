@@ -117,6 +117,12 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       if (destination != null) return destination;
     }
 
+    // Identity verification resolves by TYPE, before the stored shortcut, for
+    // the same reason media restriction does: the destination must be minted
+    // where the route actually exists. See identityVerificationDestination.
+    final identityDestination = identityVerificationDestination(n.type);
+    if (identityDestination != null) return identityDestination;
+
     // Phase 3 — backend stores a canonical deeplink in payload.deeplink
     // for every notification kind that has a target. Honor it first; every
     // resolver below is the legacy fallback for rows written before it.

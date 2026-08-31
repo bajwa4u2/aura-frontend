@@ -65,6 +65,28 @@ String? restrictedMediaDestination(String? mediaId) {
   return id == null ? null : '/media/$id/restricted';
 }
 
+/// Where an identity verification notice belongs, derived from its TYPE.
+///
+/// Deliberately NOT read out of a stored path. The released clients
+/// (`1.4.0+27`, client commit `b73e8a1`) return a payload deeplink verbatim
+/// and their router has no `/verify-identity` — so a decision notice carrying
+/// that path takes a member who verified from a mobile browser to a red
+/// "Route not found: /verify-identity" screen inside the installed app.
+///
+/// Deriving it here means the destination exists exactly where the route
+/// does. A build that lacks the screen resolves nothing and the tap is inert,
+/// which is a disappointment; the alternative is a developer error page shown
+/// to someone who just submitted their passport.
+String? identityVerificationDestination(String? notificationType) {
+  final t = _clean(notificationType)?.toUpperCase();
+  if (t == null || !t.startsWith('IDENTITY_VERIFICATION')) return null;
+  // The reviewer's queue notice and the subject's decision notices are the
+  // same family and must not resolve to the same place.
+  return t == 'IDENTITY_VERIFICATION_SUBMITTED'
+      ? '/admin/identity-review'
+      : '/verify-identity';
+}
+
 /// The media id carried by a quarantine or quarantine-lifted notice.
 ///
 /// Tolerates BOTH governed shapes on purpose: the quarantine notice nests it

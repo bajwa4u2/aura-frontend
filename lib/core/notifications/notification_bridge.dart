@@ -325,6 +325,16 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
     final kind = _resolveNotificationKind(payload).toUpperCase();
     final isCall = kind == 'LIVE' || kind == 'CALL' || kind == 'REALTIME';
 
+    // Identity verification resolves by TYPE, ahead of any stored path. The
+    // released clients return a payload deeplink verbatim and have no
+    // `/verify-identity` route, so the destination is minted where the route
+    // exists rather than travelling in a payload that outlives the build it
+    // was written for. See identityVerificationDestination.
+    final identityDestination = identityVerificationDestination(
+      _stringOf(payload['type']),
+    );
+    if (identityDestination != null) return identityDestination;
+
     // Prefer explicit deeplink/route from backend, except call payloads must
     // not auto-navigate straight into /realtime — a still-ringing call is
     // handled by the incoming-call bridge registration in `_onFcmTap`
