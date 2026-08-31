@@ -1,10 +1,63 @@
 # Aura Release Client — Current State
 
-**Last updated: 2026-08-27**
+**Last updated: 2026-08-31**
 
 ---
 
 ## Status
+
+> **2026-08-31 — ADMIN OPERATOR HUB: RECONSTRUCTION COMPLETE.**
+>
+> Client `a2290b0` · backend `d12d825`, both pushed; the backend deployed
+> through the ordinary Railway path.
+>
+> `IMPLEMENTATION_COMPLETE = YES` · `RELEASE_CLIENT_CERTIFICATION_COMPLETE = NO`
+>
+> Client 2122 green (1 skipped), backend 321 suites / 3966 green, Windows
+> desktop certification 10/10 on the real client.
+>
+> Full record: `docs/2026-08-31-admin-operator-hub-reconstruction.md`.
+>
+> **THE MIGRATION REGISTER IS EMPTY.** All seventeen legacy admin routes are
+> migrated into the frozen IA — NOW → WORK → SUBJECTS → INTEGRITY → PLATFORM →
+> RECORD → DISCOVERY — and every screen behind them is DELETED, not left
+> unrouted. `/admin/migrations` is retired as a destination; the convergence
+> audit TABLES survive untouched.
+>
+> **AUTHORITIES INTRODUCED**
+>
+> * `features/admin/domain/operator_capability.dart` — capability truth, read
+>   from the fields the server actually sends. The previous model read `role`
+>   and `permissions` while the server sends `roles` and
+>   `effectivePermissions`, so the permission list was ALWAYS empty. That is
+>   very likely why nobody ever built gating on it, and why a MODERATOR holding
+>   4 permissions saw the same fourteen destinations as an OWNER holding 25.
+> * `features/admin/domain/operator_area.dart` — navigation DERIVED from
+>   capability. An area an operator cannot enter is not drawn.
+> * `features/admin/ui/operator_action.dart` — the governed ceremony:
+>   INTENT → CONSEQUENCE PREVIEW → CONFIRM → ACTION → OUTCOME → RECORD. The
+>   preview is the part that was missing everywhere.
+> * `features/admin/areas/discovery_area.dart` + backend
+>   `src/discovery-intelligence/` — the seventh area. OBSERVATION ≠ CONTROL:
+>   no path publishes, retires or submits anything.
+> * backend `src/media/media-retention.service.ts` — media retention finally
+>   RUNS. The cleanup job was reference-safe and had a dry run from the day it
+>   was written, and nothing ever scheduled it.
+>
+> **THE DISCOVERY FINDING (verified against production 2026-08-31)**
+>
+> Aura's sitemap advertises 19 URLs, all static marketing pages, and ZERO
+> canonical `/p/` share URLs — while those same canonical URLs are
+> demonstrably crawler-reachable and serve real cards. Every article, profile,
+> institution page and announcement is findable and never advertised. Surfaced
+> as a finding awaiting a ruling; fixing it would be control, which this area
+> is frozen against.
+>
+> **NOT CERTIFIED:** Android and iOS were not exercised (the Windows lane runs
+> headlessly; Android needs an AVD and iOS needs macOS). Production observation
+> of the console with a real grant is owed.
+
+---
 
 > **2026-08-27 — RICH CONTENT MEDIA: IMPLEMENTATION COMPLETE, RELEASE
 > CERTIFICATION PARTIAL.** These are different claims and are recorded

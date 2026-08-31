@@ -1,5 +1,34 @@
 # Aura Release Client — Next Work
 
+**As of 2026-08-31.** The **Admin Operator Hub** is reconstructed and closed;
+the A/V chapter below is unchanged and still open.
+
+## Admin Operator Hub — delivered
+
+Record: `docs/2026-08-31-admin-operator-hub-reconstruction.md`.
+
+Seventeen legacy routes migrated, every screen behind them deleted, the
+migration register empty and enforced by
+`test/admin/operator_conformance_test.dart`. Seven areas, navigation derived
+from capability, one governed action ceremony, DISCOVERY as observation-only,
+media retention scheduled rather than remembered.
+
+## Admin Operator Hub — open, and honestly bounded
+
+1. **`ANDROID_CERTIFICATION` / `IOS_CERTIFICATION`** — the console was
+   certified on the real Windows client (10/10) and rendered at desktop,
+   tablet and phone. Neither handset lane was run: Android needs an AVD, iOS
+   needs macOS. Nothing is claimed about either.
+2. **Production observation with a real grant** — the backend is deployed and
+   its routes answer; the operator surfaces have been judged from renders and
+   from the Windows client, not from production.
+3. **The sitemap finding** — Aura publishes thousands of canonical URLs and
+   advertises none of them. Generating a sitemap from the published inventory
+   would be CONTROL, and DISCOVERY is frozen as observation. It is a finding
+   awaiting a ruling, not a task waiting to be picked up.
+
+## A/V — chapter unchanged
+
 **As of 2026-08-25.** Meetings is CLOSED and founder-accepted. The **Audio /
 Video Call System** chapter is open and its first executable batch is
 delivered, committed and pushed.
