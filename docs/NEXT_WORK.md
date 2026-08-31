@@ -19,18 +19,24 @@ diagnosed performance causes fixed rather than masked; six rendered widths.
 
 ## Operator Control Plane — open, and honestly bounded
 
-1. **Production observation with a real grant.** The console has been judged
-   from 94 renders driven by the server's own contracts, and from the full
-   client and backend suites. It has NOT been operated in production since this
-   reconstruction. Nothing is claimed about it there.
+1. **Performance, past the two structural causes.** Duplicate authority
+   bootstrap and disposed-on-every-transition readings are fixed. A full page
+   load still spends 25-40s on "Establishing authority", and a first visit to an
+   area still waits on the API behind a skeleton. That remaining latency has NOT
+   been measured per-endpoint against production; it is named, not diagnosed.
 2. **`ANDROID_CERTIFICATION` / `IOS_CERTIFICATION`** — neither handset lane was
    run: Android needs an AVD, iOS needs macOS.
-3. **Eight surfaces have no captured contract** and still render from fixtures
+3. **Seven surfaces have no captured contract** and still render from fixtures
    written on the client side: `/admin/metrics`, `/admin/discovery/*`,
    `/admin/clients/overview`, `/admin/media-cleanup/status`,
-   `/admin/media/appeals`, `/admin/feedback`, `/admin/support/cases`, and the
-   `/admin/users` LIST (its detail is covered). A shape defect in any of them
-   would not be caught today.
+   `/admin/media/appeals`, `/admin/feedback` and `/admin/support/cases`. A shape
+   defect in any of them would not be caught today. `/admin/users` came off this
+   list during the pass and immediately exposed a defect that had been live the
+   whole time, which is the argument for closing the rest.
+
+4. **The worklist names a moderation subject by TYPE, not by person** — "User"
+   rather than who was reported. Resolving it costs a lookup per row; RECORD
+   resolves the same class because it is a detail read. Disclosed, not fixed.
 4. **The sitemap finding** — unchanged, and deliberately not touched in this
    workstream. Aura publishes thousands of canonical URLs and advertises none.
    Generating a sitemap would be CONTROL, and DISCOVERY is frozen as

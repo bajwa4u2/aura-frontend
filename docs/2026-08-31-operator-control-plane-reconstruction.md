@@ -207,14 +207,99 @@ person to look at.
 
 ---
 
+## What operating the real console found
+
+Deployed, then opened as the operator against production. Everything below was
+invisible to 2148 client tests, 4054 backend tests and 94 renders, and showed up
+within minutes of using the thing.
+
+### The worklist had never answered in production
+
+`OperatorWorkController` carried no `@RequireAdminPermission`, deliberately: a
+single permission gate would lock out a MODERATOR, and per-source filtering
+already happens inside the service. That reasoning was right about the semantics
+and wrong about the mechanism. `AdminGuard` **is** `AdminPermissionGuard`, whose
+first statement is:
+
+```ts
+if (!required || !required.length) {
+  throw new ForbiddenException('Admin permission not configured')
+}
+```
+
+Declaring nothing did not mean "any operator". It meant **403 for everyone**,
+owner included, on every load, with an `admin.access.denied` audit row written
+each time. Live, an OWNER holding 25 permissions was told across four surfaces
+at once that they held no queue they could work.
+
+`hasPermission` is a `.some()`, so listing every queue's READ permission states
+the rule exactly: hold one queue and you are admitted; the service filters to
+what you can read. `admin-route-authority.spec.ts` now asserts the declaration
+exists, that no admin-guarded controller declares nothing anywhere, and that the
+guard really does refuse an undeclared route — the behaviour that made this
+silent. It looks at the seam between the decorator and the guard, because that
+is the one place nothing else was looking: the service was tested directly, the
+contracts were captured from the controller class rather than through the guard,
+and the render harness supplied its own data.
+
+### The rest
+
+| finding | cause |
+|---|---|
+| "You do not hold **a queue you can work** authority." | a clause passed into a noun slot that fills "You do not hold ___ authority" |
+| the previous area painted over the next, legibly, for the whole transition | `builder:` gives go_router a cross-fading page; two transparent operator areas are alive and stacked. They use `NoTransitionPage` now — an area switch is a mode change, not a journey |
+| the people directory's authority column was always empty | it read a top-level `role`; the server sends `admin.roles`. The hand-written fixture filled it with `MEMBER` — an INSTITUTION role, a platform rank that does not exist |
+| a queue whose oldest item arrived today showed a blank age | gated on `age > 0`; `OperatorAge` already says "today" and was never asked. Two places: NOW's queue rows and INTEGRITY's family rows |
+| the queue filter clipped its last chip at 1440 | a horizontal scroller with no affordance. It wraps now |
+| a "synthetic" fixture id resolved to a real account | `personRef` generated a pattern that collided with a live cuid |
+
+### Confirmed working in production
+
+* NOW: "4 waiting across 3 queues", oldest 171 days, queues ordered oldest-first
+  with age rails, health collapsed to "All services healthy" — the canonical
+  projection that used to report "5 of 5 degraded" over a healthy platform.
+* WORK: the bench, live, for the first time. Real domain proofs at 171 and 75
+  days, a moderation report, product feedback. `All 4` agreeing with the list.
+* SUBJECTS: the founder's own subject page carrying "This is your own authority.
+  Anything withdrawn here is withdrawn from you, immediately." and — because
+  they are genuinely the only owner — "Nobody else can act as owner. Appoint
+  another owner before withdrawing this one." with the Revoke control absent.
+* INTEGRITY: three judgement families, each carrying its question in the
+  operator's words and its own real counts — "1 waiting", "Nothing waiting",
+  "3 days".
+* PLATFORM: the canonical health projection with all five checks; the policy
+  document and the Configuration dump confirmed GONE; the three flags the code
+  really reads, in operator language; real retention figures. The fleet says
+  "No client has reported in this window — that is not the same as a healthy
+  fleet" rather than implying health from silence.
+* DISCOVERY: an empty result that keeps its provenance — "Every source below
+  reported, and found nothing", then "2 of 6 sources ran · 4 could not" with
+  each source's own reason.
+* RECORD: real decisions with actors and reasons.
+* The area transition is now instant and clean: a screenshot taken at the
+  moment of the click already shows the incoming area alone, with nothing of
+  the outgoing one left on screen.
+
+### Still open after this pass
+
+* **Cold bootstrap is 25–40s** on a full page load and a first visit to an area
+  still waits on the API behind a skeleton. The two structural causes named
+  above are fixed; what remains is API latency, and it has not been measured
+  per-endpoint against production. Not diagnosed, not claimed.
+* The moderation row in the worklist names its subject `User` — the target TYPE,
+  not the person. Resolving it would cost a lookup per row; RECORD resolves the
+  same class because it is a detail read. Disclosed, not fixed.
+
+---
+
 ## Verification state
 
 | | |
 |---|---|
 | `dart analyze lib` | 0 issues |
-| client suite | 2131 passing (`--exclude-tags golden`) |
+| client suite | 2148 passing (`--exclude-tags golden`) |
 | backend `tsc --noEmit` | clean |
-| backend suite | 4047 passing, 324 suites |
+| backend suite | 4054 passing, 325 suites |
 | C0 anti-drift gate | passing (two violations introduced and fixed: a "Try again" label, a local time formatter) |
 
 ---
@@ -227,4 +312,8 @@ caught:
 
 `/admin/metrics`, `/admin/discovery/*`, `/admin/clients/overview`,
 `/admin/media-cleanup/status`, `/admin/media/appeals`, `/admin/feedback`,
-`/admin/support/cases`, `/admin/users` (the list; the DETAIL is covered).
+`/admin/support/cases`.
+
+`/admin/users` came off this list during the pass, and immediately exposed a
+defect that had been live the whole time — which is the argument for closing the
+rest of it.

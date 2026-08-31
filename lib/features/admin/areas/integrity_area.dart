@@ -291,7 +291,11 @@ class _QueueLine extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (age > 0) ...[
+          // AGE WHENEVER THERE IS WORK, INCLUDING AT ZERO. Gated on `age > 0`
+          // this left a blank beside a queue whose oldest item arrived TODAY,
+          // next to sibling queues that carried an age — which reads as
+          // missing data on the queue that is most up to date.
+          if (queue.open > 0) ...[
             OperatorAge(days: age, dense: true),
             const SizedBox(width: AuraSpace.s10),
           ],

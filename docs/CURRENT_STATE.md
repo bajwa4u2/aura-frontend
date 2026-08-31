@@ -74,9 +74,32 @@
 > **SIX WIDTHS RENDERED**: 1440 / 1024 / 768 / 390 / 360 / 320, 94 pictures in
 > `test/admin/goldens/operator/`.
 >
-> **OPEN**: production observation with a real grant; Android and iOS
-> certification lanes; eight surfaces still without a captured contract (listed
-> at the end of the reconstruction record).
+> **THEN OPERATED IN PRODUCTION**, which found the largest defect of the pass:
+> `/v1/admin/work` and `/v1/admin/work/summary` had NEVER ONCE ANSWERED. The
+> controller declared no `@RequireAdminPermission` deliberately, but `AdminGuard`
+> IS `AdminPermissionGuard` and its first statement throws when nothing is
+> declared — so both routes 403'd for everyone, owner included, on every load,
+> writing an `admin.access.denied` audit row each time. Four surfaces reported
+> that an OWNER holding 25 permissions held no queue they could work.
+>
+> Also found only by using it: a clause passed into a noun slot ("You do not
+> hold a queue you can work authority"); area transitions painting the previous
+> area over the next; a people directory whose authority column was always empty
+> because it read a top-level `role` the server never sends; a blank where a
+> queue's age should be when its oldest item arrived today; a queue filter that
+> clipped its last chip at 1440; and a "synthetic" fixture id that resolved to a
+> real account.
+>
+> All fixed, deployed, and re-verified live: NOW, WORK, SUBJECTS, the subject
+> detail, INTEGRITY, PLATFORM, RECORD and DISCOVERY all read correctly against
+> production data.
+>
+> **OPEN**: cold bootstrap is still 25-40s on a full page load and a first visit
+> to an area waits on the API behind a skeleton — the two structural causes are
+> fixed, the remaining API latency is NOT measured per-endpoint and nothing is
+> claimed about it. Android and iOS certification lanes unrun. Seven surfaces
+> still without a captured contract (listed at the end of the reconstruction
+> record).
 
 <details>
 <summary>Superseded — 2026-08-31, the hub migration this replaced</summary>
