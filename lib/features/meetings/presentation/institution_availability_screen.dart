@@ -11,6 +11,7 @@ import '../../institutions/data/institutions_repository.dart';
 import '../application/meetings_provider.dart';
 import '../domain/availability_profile.dart';
 import '../../../core/identity/person_identity_model.dart';
+import '../../../core/ui/aura_bounded_editor.dart';
 
 Future<void> _refreshInstitutionProfiles(WidgetRef ref, String institutionId) {
   return ref.refresh(institutionProfilesProvider(institutionId).future);
@@ -999,12 +1000,18 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
               ),
             ),
             const SizedBox(height: 12),
-            TextField(
-              controller: _descCtrl,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: 'Description',
-                border: OutlineInputBorder(),
+            // Bounded so the dialog stays usable, wrapped so the bound does
+            // not trap the dialog's own scroll view behind it.
+            AuraBoundedEditor(
+              builder: (context, scrollController, physics) => TextField(
+                scrollController: scrollController,
+                scrollPhysics: physics,
+                controller: _descCtrl,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  border: OutlineInputBorder(),
+                ),
               ),
             ),
             // J2: Host assignment from real institution member list.

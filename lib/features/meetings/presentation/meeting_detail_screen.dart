@@ -26,6 +26,7 @@ import 'widgets/meeting_surfaces.dart';
 import 'widgets/meeting_continuity_section.dart';
 import 'widgets/meeting_section.dart';
 import 'widgets/meeting_workroom.dart';
+import '../../../core/ui/aura_bounded_editor.dart';
 
 /// THE MEETING RECORD — one page that IS the meeting, before, during, and
 /// after. Sections compose by lifecycle state:
@@ -338,13 +339,21 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
                         ),
                       ),
                       const SizedBox(height: AuraSpace.s12),
-                      TextField(
-                        controller: descCtrl,
-                        maxLines: 3,
-                        decoration: const InputDecoration(
-                          labelText: 'Description',
-                          border: OutlineInputBorder(),
-                        ),
+                      // Bounded so a long description cannot push the dialog
+                      // buttons out of reach, and wrapped so that bound does
+                      // not trap the dialog's own scroll view behind it.
+                      AuraBoundedEditor(
+                        builder: (context, scrollController, physics) =>
+                            TextField(
+                              scrollController: scrollController,
+                              scrollPhysics: physics,
+                              controller: descCtrl,
+                              maxLines: 3,
+                              decoration: const InputDecoration(
+                                labelText: 'Description',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
                       ),
                       const SizedBox(height: AuraSpace.s12),
                       OutlinedButton.icon(
