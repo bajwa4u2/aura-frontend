@@ -317,3 +317,129 @@ caught:
 `/admin/users` came off this list during the pass, and immediately exposed a
 defect that had been live the whole time — which is the argument for closing the
 rest of it.
+
+---
+
+# E2E COMPLETION PASS — 2026-08-31 (later)
+
+Management accepted the seven-area architecture and rejected
+`RECONSTRUCTION_COMPLETE`, naming missing end-to-end lifecycles. This records
+what that pass found and did.
+
+## The incident I caused
+
+`3eb169e` staged admin work with `git add src` and swept 20 files of another
+session's in-flight calling work onto backend main — while `prisma/schema.prisma`
+sat in front of me in `git status` and I decided it was not mine to stage. Main
+then held code calling `prisma.callPresentationAck` against a schema that never
+declared it. `prisma generate` omits the model, `tsc` fails, and **backend and
+media-worker deploys stopped**.
+
+Repaired in `d1978b0`: 7 files removed, 13 restored to `738f2c8`. Verified before
+pushing — no dangling model reference, nothing under admin/identity/feedback/
+institutions/moderation/discovery-intelligence touched, `tsc` clean — and
+independently re-verified by the owning session. NOT fixed forward: completing
+it would have deployed an uncertified schema and two migrations to production to
+unbreak a build I broke.
+
+The same sweep happened on the frontend (`git add lib test`, 12 files). Two of
+those tests read iOS sources absent from main and were removed; the other ten are
+coherent there and stay.
+
+**Rule adopted: commit by explicit path, never by directory.** And assume a
+shared working tree is dirty with somebody else's work.
+
+## Identity Verification
+
+Aura's authority was complete — submissions, private evidence custody, two
+governed evidence roles, an audited per-evidence read, a verdict writer,
+rejection cooling-off, notifications on all three outcomes — behind four admin
+routes. **No client had ever called one of them.**
+
+Worse than absent: the worklist pointed identity rows at the person's subject
+page, where `Grant a class` writes a verification record with no evidence, no
+completeness check and no submission to resolve. An operator summoned by the
+queue could grant an identity without opening the document, and the submission
+stayed open afterwards.
+
+| | |
+|---|---|
+| WORK | routes to the submission, not the person |
+| INTEGRITY | Identity is a judgement family: "Somebody says this is who they are. Does the evidence show it?" |
+| SUBJECTS | says a decision is waiting and warns before `Grant a class` |
+| RECORD | decisions are audited — previously only evidence VIEWS were |
+
+Custody is not relaxed. No image is prefetched; each open writes an audit row
+naming who looked at whose document BEFORE the media door opens, and the screen
+says so. Destroyed evidence keeps its row as DESTROYED — "it existed and is
+gone" is a different fact from "there was never any". `SELFIE_COMPARISON` is
+"Photograph to compare" and carries "This is not a liveness check and proves
+nothing on its own". Three verdicts, which is how many the authority has.
+
+## Feedback
+
+"Still appears unread" was not a persistence failure. The state moved to
+REVIEWED and persisted; REVIEWED is still open work, so the item sat in the queue
+looking identical and nothing distinguished "nobody has read this" from "read,
+and nothing has been done". Those are now different sentences, beside whether
+the person has heard back.
+
+`operatorNote` existed but could only ride a state move, and `canTransition`
+refuses REVIEWED → REVIEWED — so a read-and-waiting item could not be annotated
+at all. `POST admin/feedback/:id/note` closes that: no state change, no
+notification, an event row for time and author.
+
+Actions are grouped by CONSEQUENCE — between operators / to the person who sent
+it / just move it along — because three equal buttons where two notify a human
+and one does not is how an operator is surprised by what they just did.
+
+## Institution standing × verification
+
+The founder refused a domain proof and reported the institution "still appears
+VERIFIED". Correct data: RECORD shows `institution.domain.rejected`. A
+presentation defect, exactly as they suspected.
+
+The action now names what it decides and states that standing and verification
+are unchanged either way. Standing and verification are two lines rather than
+one `status` pill tinted by `verifiedAt` — they are independent, and a suspended
+institution keeps the verification evidence it earned.
+
+## Discovery
+
+Four sources reported one blanket "No adapter is configured for this estate".
+They are four different situations:
+
+| source | status | why |
+|---|---|---|
+| SITEMAP | ACTIVE | ours, no credential |
+| CRAWLER_FETCH | ACTIVE | ours, no credential |
+| GOOGLE_SEARCH_CONSOLE | LEGITIMATELY_UNAVAILABLE | verified property + delegated service account — a human ownership step |
+| BING_WEBMASTER | LEGITIMATELY_UNAVAILABLE | API key + site ownership verification — a human ownership step |
+| INDEXNOW | NOT_APPLICABLE | a submission protocol with no read side; submitting would be CONTROL, which Discovery is frozen against |
+| AURA_REFERRAL | UNCONFIGURED — ours to build | needs a table, a migration and a recorder on the public front door |
+
+I wrote the AURA_REFERRAL provider and **deleted it before committing**: it read
+a `DiscoveryArrival` model that does not exist, which is the identical
+code-without-its-schema fault that had just taken production down. Reported as
+unbuilt rather than shipped as a source that would always answer zero.
+
+## Cold bootstrap — measured
+
+Not latency. Every API call is 100–200ms; the page loads at 854ms and session
+bootstrap finishes at 1.7s. A backgrounded tab then sat on "Establishing
+authority" for **213 seconds with `/admin/me` never requested once**, while
+presence and notification timers kept firing normally.
+
+Cause: the probe latch was set only as a side effect inside the router's
+`redirect`, which runs on navigation and `refreshListenable` — both frame-driven.
+The console now grants its own probe on mount, via a microtask rather than a
+frame.
+
+**Measurement caveat, stated because it matters:** my browser-side numbers are
+contaminated. My tab was never the foreground tab of its window, so Flutter's
+engine was frame-starved throughout. The 213s stall is real for a backgrounded
+tab and is NOT the founder's 25–40s figure measured honestly.
+
+## Contracts
+
+45 captures. `CONTRACT_COVERAGE_REMAINING = 0`.

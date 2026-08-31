@@ -1244,3 +1244,99 @@ CODEMAGIC_BUILD_ID = none — never started
 Smallest unblock: a permission rule allowing `git push` in this session, plus
 either the same token placed where this session can read it or the workflow
 started against these branches from a context that holds it.
+
+---
+
+# ADDENDUM 6 — the native lane RAN; two real defects found, one of them mine
+
+## F1. Execution, at last
+
+The certification refs were pushed (permission granted) and `ios-certification`
+was started from the Codemagic web UI against
+`ios-calling-system-certification`. No token was extracted and no peer executed
+anything. The workflow and branch fields were verified on screen before
+starting — the dialog defaults to `main` + **Aura iOS — TestFlight**, exactly the
+combination that must never run, and seeing that was worth more than any API
+call would have been.
+
+```
+CODEMAGIC_BUILD_ID = 6a95f0ab374ee6b2b68ef6ab
+CODEMAGIC_WORKFLOW = ios-certification  (Aura iOS — Certification (simulator))
+XCODE_BUILD        = FAIL
+IOS_XCTESTS_DISCOVERED / EXECUTED / PASS / FAIL = 0 / 0 / 0 / 0
+```
+
+## F2. What the failure proved
+
+**The Swift compiled clean.** In 11,866 log lines there is exactly one `error:`
+— a missing `GoogleService-Info.plist` — and the only diagnostic against my code
+is a pre-existing Flutter deprecation warning at `AppDelegate.swift:118`, which
+is itself proof the compiler reached and processed the file.
+`CallCapabilityPolicy.swift` produced no diagnostics at all. The two compile
+hazards found earlier by static inspection appear to have been the only ones.
+
+**The lane could never have worked.** `GoogleService-Info.plist` is not in the
+repository — it is materialised at build time from `FIREBASE_IOS_CONFIG_BASE64`,
+and `ios-certification` did not declare the `firebase_ios` group. The lane's own
+documentation warns that a group must be LISTED to be injected; this workflow
+listed only `aura_cert`. Every attempt to build the Runner target here therefore
+died at `CopyPlistFile` before a test could run. A pre-existing lane defect, not
+something this branch introduced, and it plausibly explains historical
+`NO_COVERAGE` results.
+
+**The coverage gate worked.** It reported `target=RunnerTests executed=0
+xcodebuild_rc=65` and `NATIVE VERDICT=FAILED`, and failed the build. A run that
+proved nothing was not recorded as a pass — the exact trap this lane exists to
+avoid.
+
+## F3. Repairs
+
+`firebase_ios` is now declared on the certification workflow, and a provisioning
+step runs before the native certify step: the real config when the group
+supplies it, otherwise a placeholder. The placeholder is right for this lane and
+only this lane — it builds for a simulator, never signs, never ships and never
+reaches Firebase, so the file must EXIST because Copy Bundle Resources demands
+it, not because its contents are read. The manifest records which was used, so a
+run cannot quietly claim Firebase coverage it did not have.
+
+## F4. A contamination incident, in both directions
+
+Backend and media-worker deploys began failing. Cause: a broad `git add src` in
+the other agent's session swept twenty of my in-progress calling files onto
+`main` while `prisma/schema.prisma` stayed unstaged. `main` ended up with code
+calling `prisma.callPresentationAck` against a schema declaring neither it nor
+`installationId`, so `prisma generate` omitted them and the TypeScript build
+failed.
+
+Diagnosed here, repaired by the other agent as the owner of that commit — 7 new
+files removed, 13 restored — and independently re-verified from this session: no
+reference to the absent model, none of my calling files present, 23 admin files
+intact, schema clean. Deliberately a revert and not a fix-forward: completing it
+would have meant pushing an uncertified schema and two migrations to production
+to unbreak a build.
+
+**And the mirror of it was mine, and worse.** My certification branch was built
+with `git read-tree HEAD` while HEAD kept moving underneath, so its tree carried
+a stale snapshot of the other agent's work — about eighty files, including
+`router.dart`, the operator goldens and the admin contract corpus. **Merging it
+would have silently reverted their admin workstream.** It never was merged, but
+that is luck rather than design. The branch is now rebuilt on current `main` and
+differs from it by exactly five files, all mine.
+
+Both hazards share one root: two agents committing from one working tree. The
+disciplines adopted are worth more than either repair — commit by explicit path
+never by directory; derive new-vs-modified with `git cat-file -e <parent>:<path>`
+rather than from a hand-written list; rebuild refs on current `main` rather than
+a snapshot; and assume the other agent's working tree is dirty.
+
+```
+CERTIFICATION_REF = ios-calling-system-certification
+FRONTEND_REVISION = 90bc3ccf2ad928bd80797ad6b9532c4366e0da52  (pushed)
+BACKEND_REVISION  = 4522f03bb73e68b1be27d7aefc66972cab8c9c58  (pushed)
+NATIVE_AUTOMATED_PROOF_COMPLETE = NO — 0 tests executed
+RELEASE_HOLD_PRESERVED = YES · NEW_TESTFLIGHT_BUILD_CREATED = NO
+```
+
+The next run is a re-trigger of the same workflow against `90bc3cc`. The
+Codemagic SPA stopped rendering its build dialog after the branch push, so the
+re-run has not been started; that is a UI state, not a new blocker.
