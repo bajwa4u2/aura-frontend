@@ -11,6 +11,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/admin_providers.dart';
 import 'admin_error.dart';
+import '../../../core/errors/app_error_mapper.dart';
 
 class AdminGrantsScreen extends ConsumerWidget {
   const AdminGrantsScreen({super.key});
@@ -99,7 +100,7 @@ class AdminGrantsScreen extends ConsumerWidget {
   }
 }
 
-class _GrantRow extends StatelessWidget {
+class _GrantRow extends ConsumerWidget {
   const _GrantRow({required this.grant});
 
   final AdminGrant grant;
@@ -123,7 +124,7 @@ class _GrantRow extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final status = grant.derivedStatus;
     final isLive = status == AdminGrantStatus.active ||
         status == AdminGrantStatus.bootstrap;
@@ -214,6 +215,24 @@ class _GrantRow extends StatelessWidget {
                         .toList(),
                   ),
                 ],
+                // WHY THIS EXISTS.
+                //
+                // A grant carrying an explicit permission list overrides role
+                // defaults entirely — so a newly added scope never reaches it,
+                // and until now the only way to hand one over was to edit the
+                // production database. That happened twice: once for the
+                // identity scopes, once for feedback. A capability the product
+                // cannot grant is a capability nobody can safely grant.
+                if (isLive) ...[
+                  const SizedBox(height: AuraSpace.s8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      onPressed: () => _editCapabilities(context, ref, grant),
+                      child: const Text('Capabilities'),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -263,6 +282,104 @@ class _PermissionChip extends StatelessWidget {
         style: AuraText.micro.copyWith(
           color: AuraSurface.muted,
           fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+
+
+/// Set what a grant may do.
+///
+/// The catalogue comes from the server, never from a list held here: the two
+/// would drift the first time a scope is added, which is exactly how scopes
+/// have previously shipped ungrantable.
+Future<void> _editCapabilities(
+  BuildContext context,
+  WidgetRef ref,
+  AdminGrant grant,
+) async {
+  List<String> catalogue;
+  try {
+    catalogue =
+        await ref.read(adminRepositoryProvider).fetchPermissionCatalogue();
+  } catch (e) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          AppErrorMapper.from(e, feature: 'load the capability list').message,
+        ),
+      ),
+    );
+    return;
+  }
+  if (!context.mounted) return;
+
+  final selected = grant.permissions.toSet();
+
+  final save = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setDialogState) => AlertDialog(
+        backgroundColor: AuraSurface.card,
+        title: const Text('Capabilities'),
+        content: SizedBox(
+          width: 520,
+          height: 460,
+          child: ListView(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: AuraSpace.s12),
+                child: Text(
+                  'Everything this grant may do. Unchecking removes authority '
+                  'immediately — revoke the whole grant instead if that is '
+                  'what you mean.',
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                ),
+              ),
+              for (final permission in catalogue)
+                CheckboxListTile(
+                  dense: true,
+                  value: selected.contains(permission),
+                  title: Text(permission, style: AuraText.small),
+                  onChanged: (on) => setDialogState(() {
+                    if (on == true) {
+                      selected.add(permission);
+                    } else {
+                      selected.remove(permission);
+                    }
+                  }),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  if (save != true || !context.mounted) return;
+  try {
+    await ref
+        .read(adminRepositoryProvider)
+        .setGrantPermissions(grant.id, selected.toList()..sort());
+    ref.invalidate(adminGrantsProvider);
+  } catch (e) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          AppErrorMapper.from(e, feature: 'save those capabilities').message,
         ),
       ),
     );

@@ -130,6 +130,31 @@ class AdminRepository {
     await _dio.post('/v1/admin/grants/$grantId/revoke');
   }
 
+  /// The catalogue, from the server that defines it.
+  ///
+  /// Never a list held on this side: the two would drift the first time a
+  /// scope is added, which is how the identity scopes came to be ungrantable.
+  Future<List<String>> fetchPermissionCatalogue() async {
+    final res = await _dio.get('/v1/admin/grants/permissions');
+    final data = res.data;
+    final body = data is Map<String, dynamic> ? (data['data'] ?? data) : data;
+    final list = body is Map<String, dynamic> ? body['permissions'] : body;
+    return list is List
+        ? list.map((e) => e.toString()).toList(growable: false)
+        : const [];
+  }
+
+  /// Set a grant's permissions.
+  ///
+  /// The whole set, not a delta, because that is what the endpoint means and a
+  /// delta would quietly disagree with what the operator saw on screen.
+  Future<void> setGrantPermissions(String grantId, List<String> permissions) async {
+    await _dio.patch(
+      '/v1/admin/grants/$grantId',
+      data: {'permissions': permissions},
+    );
+  }
+
   Future<List<AdminAuditLogEntry>> fetchAuditLogs({
     int page = 1,
     int limit = 50,
