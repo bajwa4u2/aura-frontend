@@ -10,6 +10,7 @@ import '../../core/ui/aura_responsive.dart';
 import '../../core/ui/aura_space.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
+import '../../features/public/widgets/public_app_acquisition.dart';
 import 'shell_shared.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -56,6 +57,12 @@ class PublicShell extends StatelessWidget {
               children: [
                 if (!isMeetingFocus)
                   _PublicHeader(isDesktop: isDesktop, isTablet: isTablet),
+                if (!isMeetingFocus &&
+                    shouldShowAuraPublicAppAcquisition(
+                        GoRouterState.of(context).uri.path))
+                  PublicAppAcquisition(
+                    config: auraPublicAppAcquisitionConfig,
+                  ),
                 Expanded(child: child),
               ],
             ),

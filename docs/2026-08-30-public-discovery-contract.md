@@ -30,4 +30,33 @@ when its public-object authority establishes: `INDEXABLE`, `SHAREABLE`,
 `NATIVE_CONTINUATION_ELIGIBLE`, `RELEASED_NATIVE_APP_EXISTS`,
 `DESTINATION_IDENTITY_PRESERVABLE`, `AUTH_REQUIRED_AFTER_OPEN`, and
 `RETURN_DESTINATION_REQUIRED`. Media remains an asset, not an object index.
-No native routes or app behavior are implemented by this contract.
+The public web implementation exposes a quiet continuation affordance only on
+the approved static public routes and only for a platform with verified native
+continuation authority. It launches the same canonical HTTPS URL through the
+platform external-link boundary; it does not perform installed-app detection,
+store redirection, or native route handling. Dismissal is local-only and
+non-repeating.
+
+## Native handoff boundary
+
+The shared web capability is product-configured, not route-reinvented. A
+product configuration declares its canonical host, eligible public paths,
+released platform capability, verified store destinations (when available),
+and whether the web URL can be handed to the operating system. The resolver
+never derives acquisition eligibility from arbitrary query parameters or from
+public reachability alone.
+
+For Aura today:
+
+- Android public web entry is eligible on the static route inventory because
+  the released Android application and `assetlinks.json` authority exist.
+- iOS and Windows remain web-only in the public surface until their public
+  association and acquisition destinations are verified.
+- Dynamic `/p/*`, `/institutions/*`, and `/u/*` objects remain ineligible until
+  the object authority establishes a stable, canonical, non-sensitive,
+  native-continuation destination.
+
+The native implementation owner must consume the same canonical URL and
+destination identity for Android App Links, iOS Universal Links, Windows
+association, authentication return, and install return. No duplicate app URL
+system is permitted.
