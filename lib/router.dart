@@ -22,6 +22,8 @@ import 'core/continuation/native_continuation.dart';
 import 'core/continuation/windows_activation.dart';
 import 'app/route_targets.dart';
 import 'core/auth/admin_access_provider.dart';
+import 'core/discovery/arrival_report.dart';
+import 'core/discovery/document_referrer.dart';
 import 'core/auth/auth_providers.dart';
 import 'core/auth/session_bootstrap.dart';
 import 'core/product/product_state.dart';
@@ -630,6 +632,23 @@ final routerProvider = Provider<GoRouter>((ref) {
       //
       // This maps a NAME to a destination. It grants nothing: the resolved
       // path is classified and gated below exactly like any other.
+      // AURA_REFERRAL — observe that a published page was reached.
+      //
+      // Here because this redirect is the ONE place every arrival passes
+      // through: cold start, warm resume, in-app navigation and share-link
+      // entry alike. Putting it on a screen would miss the entries that
+      // matter most, which are the ones from outside.
+      //
+      // Fire-and-forget and web-only. The reporter reduces `document.referrer`
+      // to an ORIGIN before anything leaves the browser, ignores arrivals that
+      // came from Aura itself, and never sends a user, a session or a moment.
+      if (isCanonicalSharePath(path)) {
+        ref.read(arrivalReporterProvider).report(
+              path: path,
+              referrer: currentDocumentReferrer(),
+            );
+      }
+
       if (isCanonicalSharePath(path)) {
         final target = resolveCanonicalShare(path);
         if (target != null) {
