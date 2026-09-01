@@ -480,7 +480,22 @@ workflows:
           echo "" >> certification/run-manifest.txt
           echo "SUITE RESULTS" >> certification/run-manifest.txt
 
-          for f in integration_test/*.dart; do
+          # OPERATOR HUB FIRST, DELIBERATELY.
+          #
+          # The device dies at a reproducible point: the app reaches
+          # shell.build selecting PublicShell for /terms and the emulator goes
+          # with it, under two different renderers. What that does not yet
+          # separate is whether ANY suite kills this device or only one that
+          # mounts the full application with its native plugins.
+          #
+          # operator_hub_certification_test answers that. It needs no backend,
+          # and it is also the Admin workstream's own outstanding Android
+          # proof, so running it first costs nothing and settles two questions
+          # at once: if it passes and the next suite still kills the device,
+          # the failure belongs to what the app loads at startup rather than to
+          # the emulator's ability to run a Flutter app at all.
+          ORDERED="integration_test/operator_hub_certification_test.dart"
+          for f in $ORDERED $(ls integration_test/*.dart | grep -v operator_hub_certification); do
             base=$(basename "$f" .dart)
             if echo "$base" | grep -qE "$EXCLUDE"; then
               echo "  SKIPPED_PLATFORM $base (asserts another platform's semantics)"                 | tee -a certification/run-manifest.txt
