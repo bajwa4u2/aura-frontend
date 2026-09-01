@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/admin_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
+import '../domain/operator_freshness.dart';
 import '../domain/operator_signal.dart';
 import '../domain/platform_health.dart';
 import 'admin_repository.dart';
@@ -61,6 +62,13 @@ final adminMetricsProvider = FutureProvider<AdminMetricOverview?>((ref) async {
   }
 });
 
+/// Per-container memory of the last good reading for each authority.
+///
+/// A plain `Provider`, so it lives and dies with the container: a test starts
+/// with no memory, and one test cannot leak a reading into the next.
+final operatorReadingMemoryProvider =
+    Provider<OperatorReadingMemory>((ref) => OperatorReadingMemory());
+
 // ── /v1/admin/health ──────────────────────────────────────────────────────
 
 /// PLATFORM HEALTH — the only place the console learns whether Aura is well.
@@ -74,16 +82,34 @@ final platformHealthProvider =
   // Read by NOW and by PLATFORM. Moving between them re-asked whether Aura
   // was well, behind a skeleton, when the answer was seconds old.
   cacheOperatorReading(ref);
+  final memory = ref.watch(operatorReadingMemoryProvider);
   try {
     final health = await ref.watch(adminRepositoryProvider).fetchHealth();
-    return OperatorSignal.complete(health, readAt: DateTime.now());
+    final readAt = DateTime.now();
+    memory.remember(OperatorReadingKey.health, health, readAt);
+    return OperatorSignal.complete(health, readAt: readAt);
   } on DioException catch (e) {
     final code = e.response?.statusCode;
     if (code == 401 || code == 403) {
+      // AN AUTHORITY CHANGE INVALIDATES WHAT WE HELD.
+      //
+      // A reading taken as one operator must never be shown to another, and
+      // "stale" would be exactly that: last-known state from a session that no
+      // longer applies. Forget it before refusing.
+      memory.forget();
       return const OperatorSignal.unauthorized(needs: 'system health');
     }
-    // A transport failure says nothing about Aura's health. It says we could
-    // not ask — which is a different sentence, and the one the operator gets.
+    // A REFRESH THAT FAILED IS NOT A READING THAT NEVER HAPPENED.
+    //
+    // This used to discard the health we already held and report a read
+    // failure, so an operator watching a live console lost the last known
+    // state at the moment the network got worse. If a good reading exists it
+    // is shown as what it is — old, with its age, and refreshable.
+    final held = memory.recall<PlatformHealth>(OperatorReadingKey.health);
+    if (held != null) {
+      return OperatorSignal.stale(held.value, readAt: held.readAt);
+    }
+    // Cold into a failure: nothing old to show, so say we could not ask.
     return const OperatorSignal.unavailable(detail: 'could not be reached');
   }
 });

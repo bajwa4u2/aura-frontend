@@ -24,7 +24,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/net/dio_provider.dart';
 import '../domain/operator_capability.dart';
+import '../domain/operator_freshness.dart';
 import '../domain/operator_signal.dart';
+import 'admin_providers.dart';
 import 'operator_cache.dart';
 
 enum WorkSubjectKind { person, institution, media, content, unknown }
@@ -345,27 +347,52 @@ final operatorWorkSummaryProvider =
   // areas all watch this; without a survival window, every move between them
   // disposed it and re-asked for the same answer behind a skeleton.
   cacheOperatorReading(ref);
+  final memory = ref.watch(operatorReadingMemoryProvider);
   try {
     final summary = await ref.watch(operatorWorkRepositoryProvider).summary();
     final readAt = DateTime.now();
 
     return switch (summary.reach) {
-      OperatorReach.partial => OperatorSignal.partial(
-          summary,
-          missing: summary.unavailable.map((s) => s.label).toList(),
-          readAt: readAt,
-        ),
+      OperatorReach.partial => () {
+          // A PARTIAL ANSWER IS STILL AN ANSWER WORTH KEEPING.
+          //
+          // Remembered so that if the next refresh cannot reach the authority
+          // at all, the operator keeps the counts they had rather than losing
+          // the worklist entirely. It is remembered as what it was: partial.
+          memory.remember(OperatorReadingKey.work, summary, readAt);
+          return OperatorSignal.partial(
+            summary,
+            missing: summary.unavailable.map((s) => s.label).toList(),
+            readAt: readAt,
+          );
+        }(),
       OperatorReach.unavailable => OperatorSignal.unavailable(
           detail: describeUnavailable(summary.authorityError),
         ),
       OperatorReach.unauthorized =>
         const OperatorSignal.unauthorized(needs: 'any operator queue'),
-      _ => OperatorSignal.complete(summary, readAt: readAt),
+      _ => () {
+          memory.remember(OperatorReadingKey.work, summary, readAt);
+          return OperatorSignal.complete(summary, readAt: readAt);
+        }(),
     };
   } on DioException catch (e) {
     final code = e.response?.statusCode;
     if (code == 401 || code == 403) {
+      // The worklist an operator may see is a function of who they are, so a
+      // refusal invalidates what was held rather than ageing it.
+      memory.forget();
       return const OperatorSignal.unauthorized(needs: 'operator work');
+    }
+    // THE WORKLIST IS THE MOST EXPENSIVE THING TO LOSE.
+    //
+    // NOW, WORK, INTEGRITY and both subject areas read this. Discarding it on
+    // a transport failure emptied all five at once and told the operator
+    // nothing about what was waiting — while the answer from a minute ago was
+    // still perfectly usable for deciding what to look at next.
+    final held = memory.recall<OperatorWorkSummary>(OperatorReadingKey.work);
+    if (held != null) {
+      return OperatorSignal.stale(held.value, readAt: held.readAt);
     }
     return const OperatorSignal.unavailable(detail: 'could not be read');
   }

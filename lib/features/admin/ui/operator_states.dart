@@ -18,12 +18,14 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../../core/product/product_language.dart';
+import '../../../core/product/temporal.dart';
 
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../domain/operator_signal.dart';
 import 'operator_kit.dart';
+
 
 /// A one-line admission, sized to sit inside a section without taking it over.
 ///
@@ -65,10 +67,33 @@ class OperatorDisclosure extends StatelessWidget {
           icon: Icons.report_gmailerrorred_rounded,
         );
       case OperatorReach.stale:
+        // STALE MUST CARRY ITS AGE.
+        //
+        // "This is the last reading" tells an operator the value is old. It
+        // does not tell them whether old means four minutes or four days, and
+        // those lead to opposite decisions. The signal already carries
+        // `readAt` precisely so the age can be stated instead of implied; not
+        // stating it left the most useful half of the fact in the object.
+        //
+        // When no reading time was recorded the sentence stays as it was
+        // rather than inventing an age — an unknown age is not "just now".
+        // THE CANONICAL FORMATTER, NOT A LOCAL ONE.
+        //
+        // The C0 anti-drift gate forbids new local elapsed-time formatting and
+        // it is right to: a console that invents its own "7 minutes ago" drifts
+        // from every other surface in Aura. AuraTemporal carries the event
+        // semantics with the instant, and `occurred` is what a reading is.
+        final readAt = signal.readAt;
+        final age = readAt == null
+            ? null
+            : AuraTemporal.humanize(ProductTime(readAt, TimeEvent.occurred));
         return OperatorDisclosure(
           sentence: signal.detail ??
-              'This is the last reading of $subject. It could not be '
-                  'refreshed.',
+              (age == null
+                  ? 'This is the last reading of $subject. It could not be '
+                      'refreshed.'
+                  : 'This is the last reading of $subject, taken $age. It '
+                      'could not be refreshed.'),
           tone: OperatorTone.pending,
           onRetry: onRetry,
           icon: Icons.history_rounded,

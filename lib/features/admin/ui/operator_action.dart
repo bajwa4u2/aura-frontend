@@ -18,6 +18,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../../core/product/product_language.dart';
+import '../domain/operator_action_failure.dart';
 import '../../../core/ui/aura_bounded_editor.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
@@ -130,7 +131,7 @@ class _ActionSheetState extends State<_ActionSheet> {
   final _reason = TextEditingController();
   _Phase _phase = _Phase.preview;
   String? _outcome;
-  String? _error;
+  OperatorActionFailure? _failure;
 
   @override
   void dispose() {
@@ -159,12 +160,16 @@ class _ActionSheetState extends State<_ActionSheet> {
       });
     } catch (e) {
       if (!mounted) return;
-      // The action failed. Saying so plainly matters more than a tidy sheet:
-      // an operator who thinks a decision landed when it did not will not
-      // retry it.
+      // The action failed, and HOW it failed decides what may be offered.
+      //
+      // This used to record `e.toString()` and offer Retry for everything. A
+      // timeout or a dropped connection may already have been committed by the
+      // server, so Retry there is the console inviting a duplicate governed
+      // act against a real person. Only an explicit refusal is known not to
+      // have happened.
       setState(() {
         _phase = _Phase.failed;
-        _error = e.toString();
+        _failure = classifyActionFailure(e);
       });
     }
   }
@@ -403,8 +408,17 @@ class _ActionSheetState extends State<_ActionSheet> {
         ];
 
       case _Phase.failed:
+        final failure = _failure ?? OperatorActionFailure.ambiguous;
         return [
-          OperatorFailure(title: 'The action did not complete', detail: _error),
+          OperatorFailure(
+            title: failure.mayRetry
+                ? 'The action did not complete'
+                : 'Aura could not confirm this action',
+            detail: operatorActionFailureSentence(
+              failure,
+              actionLabel: action.title,
+            ),
+          ),
           const SizedBox(height: AuraSpace.s16),
           Row(
             children: [
@@ -421,7 +435,16 @@ class _ActionSheetState extends State<_ActionSheet> {
               Expanded(
                 flex: 2,
                 child: FilledButton(
-                  onPressed: () => setState(() => _phase = _Phase.preview),
+                  // REFUSED MAY RETRY. AMBIGUOUS MUST GO AND LOOK.
+                  //
+                  // Popping true on the ambiguous path does not claim the
+                  // action succeeded — it asks the caller to re-read authority,
+                  // which is the only way to find out. That is the whole point:
+                  // an operator whose response was ambiguous is sent to the
+                  // current state, never to a second attempt.
+                  onPressed: failure.mayRetry
+                      ? () => setState(() => _phase = _Phase.preview)
+                      : () => Navigator.of(context).pop(true),
                   style: FilledButton.styleFrom(
                     backgroundColor: AuraSurface.accent,
                     foregroundColor: Colors.white,
@@ -429,7 +452,11 @@ class _ActionSheetState extends State<_ActionSheet> {
                       vertical: AuraSpace.s14,
                     ),
                   ),
-                  child: Text(ProductLabels.of(ProductAction.retry)),
+                  child: Text(
+                    failure.mayRetry
+                        ? ProductLabels.of(ProductAction.retry)
+                        : 'Check current state',
+                  ),
                 ),
               ),
             ],
