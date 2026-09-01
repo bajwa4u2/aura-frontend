@@ -621,6 +621,21 @@ workflows:
 
           echo no | "$AVDMANAGER" create avd -n aura_cert -k "system-images;android-34;google_apis;x86_64" --force
 
+          # GUEST-SIDE RENDERING, ON EVIDENCE.
+          #
+          # The raw event stream from the last run shows the app BOOTING on the
+          # device — router.refresh #1-#5, shell.build selecting PublicShell for
+          # /terms — and then the emulator disappearing, with zero assertion
+          # errors emitted. Route construction, parsing, navigation, lifecycle
+          # and auth restoration are all visibly working in those prints; what
+          # dies is the emulator process, moments after the app starts drawing.
+          #
+          # That points at the renderer rather than at Aura. `swiftshader_indirect`
+          # rasterises on the host and is the usual headless choice, but it is
+          # also the usual suspect when a GL-heavy app takes the emulator down
+          # with it. `guest` renders inside the guest instead, which is slower
+          # and far less likely to fault the host process.
+          #
           # CAMERAS OFF, DELIBERATELY.
           #
           # The previous run executed its first suite on the device and then
@@ -633,7 +648,7 @@ workflows:
           # It also means a camera-dependent assertion, if one exists, now fails
           # honestly instead of taking the whole device down with it.
           "$SDK/emulator/emulator" -avd aura_cert -no-window -no-audio -no-boot-anim \
-            -no-snapshot -wipe-data -gpu swiftshader_indirect -memory 4096 -partition-size 8192 \
+            -no-snapshot -wipe-data -gpu guest -memory 4096 -partition-size 8192 \
             -camera-back none -camera-front none -accel auto \
             > /tmp/emulator.log 2>&1 &
           EMU_PID=$!
