@@ -55,7 +55,7 @@
     {
       "source": "INDEXNOW",
       "available": false,
-      "reason": "A submission protocol, not an evidence source. Discovery observes; it does not publish.",
+      "reason": "Not an evidence source. IndexNow is a submission protocol with no read side, and submitting would be control rather than observation. It will never report here.",
       "lastFetchedAt": null
     }
   ]
