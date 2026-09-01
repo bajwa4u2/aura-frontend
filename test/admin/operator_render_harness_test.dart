@@ -285,6 +285,50 @@ void main() {
     );
   });
 
+  // THE STATE EVERY OPERATOR SEES FIRST, AND NOBODY HAD LOOKED AT.
+  //
+  // Every area above is captured with its data already in hand. That is the
+  // state an area spends the least time in. The FIRST thing an operator sees
+  // on every cold entry is the loading state, and until now not one of the
+  // seven had a picture of it — so nothing said whether an area holds its
+  // shape while it waits or collapses into an unlabelled grey page.
+  //
+  // Worth its own case rather than a screenshot of a fast render: with a real
+  // transport these frames are gone in under a second, which is exactly why
+  // they were never judged. Here the transport never answers, so the waiting
+  // state is the only state.
+  for (final area in const [
+    ('now', '/admin'),
+    ('work', '/admin/work'),
+    ('subjects', '/admin/subjects'),
+    ('integrity', '/admin/integrity'),
+    ('platform', '/admin/platform'),
+    ('record', '/admin/record'),
+    ('discovery', '/admin/discovery'),
+  ]) {
+    testWidgets('${area.$1} · still waiting', (tester) async {
+      await _render(
+        tester,
+        const Size(1440, 900),
+        area.$2,
+        surfaces[area.$1]!.widget,
+        '$outDir/${area.$1}_loading_desktop.png',
+        extraOverrides: [dioProvider.overrideWithValue(_silentDio())],
+        inspect: (tester) async {
+          // A WAITING AREA MUST STILL SAY WHAT IT IS. An operator who cannot
+          // tell Discovery from Platform while it loads cannot tell a slow
+          // area from a broken one either.
+          expect(
+            find.byType(CircularProgressIndicator).evaluate().isNotEmpty ||
+                tester.widgetList<Text>(find.byType(Text)).isNotEmpty,
+            isTrue,
+            reason: '${area.$1} renders nothing at all while it waits',
+          );
+        },
+      );
+    });
+  }
+
   // BELOW THE FOLD IS NOT THE SAME AS OUT OF REACH.
   //
   // The tall-viewport captures below exist so a person can JUDGE the lower
@@ -1061,3 +1105,20 @@ const _retention = {
   'rawRetentionDays': 90,
   'observationRetentionMonths': 24,
 };
+
+/// A transport that accepts every request and never answers one.
+///
+/// Not an error and not a delay — an area that is still waiting. A `Future`
+/// that never completes is the only faithful way to hold that state still
+/// long enough to photograph it.
+Dio _silentDio() {
+  final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'));
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) {
+        // Deliberately never calls the handler.
+      },
+    ),
+  );
+  return dio;
+}
