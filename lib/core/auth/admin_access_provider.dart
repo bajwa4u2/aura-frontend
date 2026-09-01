@@ -96,14 +96,37 @@ class _AdminAuthorityCache extends StateNotifier<bool?> {
 final cachedAdminAuthorityProvider =
     StateNotifierProvider<_AdminAuthorityCache, bool?>((ref) {
   final cache = _AdminAuthorityCache();
-  // Sign-out resets cache + the latch so a different user signing in on the
-  // same device starts cold (no inherited admin trust).
-  ref.listen<bool>(isAuthedProvider, (prev, next) {
-    if (prev == true && next == false) {
-      cache.reset();
-      ref.read(appAdminProbeAllowedProvider.notifier).state = false;
-    }
+
+  var disposed = false;
+  ref.onDispose(() => disposed = true);
+
+  // ATTACHED AFTER THIS BUILD, DELIBERATELY.
+  //
+  // `ref.listen` reads its source once to take a baseline, and reading
+  // `isAuthedProvider` for the FIRST time from inside another provider's
+  // initialisation cascades into whatever else listens to it. Riverpod
+  // forbids a provider mutating another while it is building, so whichever
+  // surface happens to touch this provider first decides whether that
+  // happens — which is not a thing correctness should depend on.
+  //
+  // It never surfaced in the browser: notifications initialise long before
+  // any admin route is entered there, and a release build strips the
+  // assertion anyway. It fires immediately when `/admin` is the FIRST route
+  // opened, which is exactly what a returning operator with a bookmark does.
+  // A microtask drains before the next frame, so the sign-out reset below is
+  // in place well before any sign-out can happen.
+  Future.microtask(() {
+    if (disposed) return;
+    // Sign-out resets cache + the latch so a different user signing in on the
+    // same device starts cold (no inherited admin trust).
+    ref.listen<bool>(isAuthedProvider, (prev, next) {
+      if (prev == true && next == false) {
+        cache.reset();
+        ref.read(appAdminProbeAllowedProvider.notifier).state = false;
+      }
+    });
   });
+
   return cache;
 });
 
