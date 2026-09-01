@@ -202,29 +202,6 @@ workflows:
     name: Aura iOS — Certification (simulator)
     instance_type: mac_mini_m2
     max_build_duration: 60
-    triggering:
-      # WHY THIS EXISTS, AND WHY IT IS ONLY HERE.
-      #
-      # This file deliberately carried no `triggering:` block at all, so that
-      # pushing a non-release branch could never start a build. That safety
-      # property is recorded in IOS_INCOMING_CALL_SYSTEM_CLOSURE_2026-08-31.md,
-      # Addendum 2 — "A non-release branch is safe on both" — and it survives
-      # intact here:
-      #
-      #   * the pattern matches RELEASE branches only, so ordinary feature and
-      #     certification branches still start nothing;
-      #   * it is attached to the CERTIFICATION workflow, which carries no
-      #     `publishing:` block and therefore cannot reach TestFlight or the
-      #     App Store no matter how it is started.
-      #
-      # `ios-testflight` deliberately keeps NO trigger. It publishes, so it
-      # stays manual-start only for as long as the release hold stands.
-      events:
-        - push
-      branch_patterns:
-        - pattern: 'release/*'
-          include: true
-          source: true
     environment:
       flutter: stable
       xcode: latest
