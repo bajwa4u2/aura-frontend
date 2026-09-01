@@ -649,6 +649,63 @@ Future<void> _render(
 
 final _contractCache = <String, dynamic>{};
 
+
+/// RECORD's day heading is relative, so its golden cannot be.
+///
+/// `RecordArea._dayLabel` answers TODAY, YESTERDAY, or an absolute date by
+/// comparing an entry against `DateTime.now()`. The audit contract is captured
+/// with a PINNED clock — every row in `audit.list.json` carries the capture
+/// instant — so the two clocks agree only on the day the golden was taken.
+///
+/// That is exactly what happened: the golden was captured on 2026-08-31 with
+/// the heading reading TODAY, and from the next day onward the identical rows
+/// rendered YESTERDAY. Same fixed region, different glyphs, which is why the
+/// diff was a constant 412px at every one of the six widths while the
+/// percentage moved only because the canvas did. Left alone it would have
+/// drifted again to an absolute date and changed the diff a second time.
+///
+/// Anchoring the rows to the render moment is the fix that matches how the
+/// contract clock was already pinned server-side: pin the RELATIONSHIP, do not
+/// freeze a field. An earlier attempt elsewhere froze `openedAt` and broke
+/// fourteen renders, because a record that is both dated 2026-01-01 and
+/// twenty days old is not renderable. The vendored contract file is not
+/// touched — only the answer this transport gives.
+dynamic _auditAnchoredToToday() {
+  final source = _contract('audit.list');
+  final now = DateTime.now().toUtc();
+
+  dynamic anchor(dynamic node) {
+    if (node is Map) {
+      final out = <String, dynamic>{};
+      node.forEach((k, v) {
+        if (k == 'createdAt' && v is String) {
+          final parsed = DateTime.tryParse(v);
+          // Keep each row's time of day; only the DATE is moved onto today, so
+          // the rendered clock column still reads what it always read.
+          out[k] = parsed == null
+              ? v
+              : DateTime.utc(
+                  now.year,
+                  now.month,
+                  now.day,
+                  parsed.hour,
+                  parsed.minute,
+                  parsed.second,
+                  parsed.millisecond,
+                ).toIso8601String();
+        } else {
+          out[k] = anchor(v);
+        }
+      });
+      return out;
+    }
+    if (node is List) return node.map(anchor).toList();
+    return node;
+  }
+
+  return anchor(source);
+}
+
 dynamic _contract(String name) {
   return _contractCache.putIfAbsent(name, () {
     final file = File('test/contracts/admin/$name.json');
@@ -730,7 +787,7 @@ Dio _consoleDio(
         } else if (p.contains('/admin/grants')) {
           body = _contract('grants.list');
         } else if (p.contains('/admin/audit-logs')) {
-          body = _contract('audit.list');
+          body = _auditAnchoredToToday();
         } else if (p.contains('/admin/settings')) {
           body = _contract('settings.list');
         } else if (p.contains('/admin/feature-flags')) {
