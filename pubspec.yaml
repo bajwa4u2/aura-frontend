@@ -10,7 +10,7 @@ publish_to: "none"
 # X.Y.Z parts of `version` and zero out the build component to satisfy
 # the store rule. A pre-build script could enforce this automatically;
 # for now it's a manual sync.
-version: 1.4.0+35
+version: 1.4.1+36
 
 environment:
   sdk: ^3.10.8
@@ -214,7 +214,7 @@ msix_config:
   # Continuity/Accountability views, governed topic relationships,
   # communication translation, reshare commentary, severity-aware
   # moderation labels, notification routing repairs.
-  msix_version: 1.4.0.0
+  msix_version: 1.4.1.0
   description: "Aura — a platform for purposeful public and personal communication, where conversations keep their context and people and institutions speak under clear, accountable identity."
   publisher: CN=3E4027A7-4D4D-4492-B8DE-BBE425E307E5
 

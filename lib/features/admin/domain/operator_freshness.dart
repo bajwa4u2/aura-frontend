@@ -91,4 +91,14 @@ abstract final class OperatorReadingKey {
   static const work = 'work';
   static const discoveryCoverage = 'discovery.coverage';
   static const mediaRetention = 'media.retention';
+
+  /// The worklist is FILTERED, so its memory is keyed by the filter.
+  ///
+  /// Without this, a failed refresh while looking at Moderation would be
+  /// answered with the last good reading of *everything* — items from queues
+  /// the operator had deliberately filtered out, presented as the filtered
+  /// view. A stale answer must only ever come from the same question that was
+  /// asked.
+  static String workList(String? source) =>
+      'work.list:${source ?? '*all*'}';
 }
