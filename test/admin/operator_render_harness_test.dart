@@ -706,6 +706,54 @@ dynamic _auditAnchoredToToday() {
   return anchor(source);
 }
 
+
+/// A FIXED AGE, NOT A FIXED INSTANT.
+///
+/// Discovery shows each source's own `lastFetchedAt`, and PLATFORM shows when
+/// the last retention pass finished. Both are rendered as an elapsed phrase, so
+/// a golden holding a fixed timestamp says "5 hours ago" on the day it was
+/// captured and something else every day after — the exact clock-dependency
+/// that made the six RECORD goldens fail every morning.
+///
+/// Anchoring to the render moment fixes the RELATIONSHIP instead. The source
+/// is always three hours old and the retention pass always eight, whatever day
+/// the suite runs, so the phrase is deterministic while still being a real
+/// elapsed time rather than a frozen field.
+///
+/// Note this is the opposite operation to `_auditAnchoredToToday`, and for the
+/// same reason: RECORD renders a DAY label, so its rows are anchored onto
+/// today's date; these render an ELAPSED phrase, so theirs are anchored to a
+/// fixed distance behind now.
+String _agedBy(Duration age) =>
+    DateTime.now().toUtc().subtract(age).toIso8601String();
+
+List<Map<String, dynamic>> _sourcesAtFixedAge() {
+  return [
+    for (final source in _sources)
+      {
+        ...source,
+        if (source['lastFetchedAt'] != null)
+          'lastFetchedAt': _agedBy(const Duration(hours: 3)),
+      },
+  ];
+}
+
+Map<String, dynamic> _retentionStatusAtFixedAge() {
+  final status = Map<String, dynamic>.from(_retentionStatus);
+  final last = status['lastRun'];
+  if (last is Map) {
+    final run = Map<String, dynamic>.from(last);
+    if (run['finishedAt'] != null) {
+      run['finishedAt'] = _agedBy(const Duration(hours: 8));
+    }
+    if (run['recordedAt'] != null) {
+      run['recordedAt'] = _agedBy(const Duration(hours: 8));
+    }
+    status['lastRun'] = run;
+  }
+  return status;
+}
+
 dynamic _contract(String name) {
   return _contractCache.putIfAbsent(name, () {
     final file = File('test/contracts/admin/$name.json');
@@ -815,7 +863,7 @@ Dio _consoleDio(
         } else if (p.contains('/admin/support/cases')) {
           body = {'cases': [_supportCase], 'total': 1};
         } else if (p.contains('/admin/discovery/coverage')) {
-          body = {'coverage': _coverage, 'sources': _sources};
+          body = {'coverage': _coverage, 'sources': _sourcesAtFixedAge()};
         } else if (p.contains('/admin/discovery/objects')) {
           body = {'items': _discoveryObjects};
         } else if (p.contains('/admin/discovery/queries')) {
@@ -827,7 +875,7 @@ Dio _consoleDio(
         } else if (p.contains('/admin/discovery/retention')) {
           body = _retention;
         } else if (p.contains('/admin/media-cleanup/status')) {
-          body = _retentionStatus;
+          body = _retentionStatusAtFixedAge();
         } else if (p.contains('/admin/clients/overview')) {
           body = _fleet;
         } else {

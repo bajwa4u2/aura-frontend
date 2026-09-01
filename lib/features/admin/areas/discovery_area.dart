@@ -15,6 +15,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../../core/product/temporal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/ui/aura_space.dart';
@@ -411,6 +412,30 @@ class _Sources extends StatelessWidget {
                           if (source.reason != null)
                             Text(
                               source.reason!,
+                              style: const TextStyle(
+                                color: AuraSurface.faint,
+                                fontSize: 11.5,
+                                height: 1.35,
+                              ),
+                            ),
+                          // WHEN THIS SOURCE LAST SPOKE — A FACT, NOT A VERDICT.
+                          //
+                          // The payload has carried `lastFetchedAt` all along
+                          // and nothing showed it, so an operator reading a
+                          // coverage number could not tell whether the evidence
+                          // behind it was from an hour ago or from last week.
+                          //
+                          // Said as the source's own reported fetch time and
+                          // NOTHING MORE. This is deliberately not staleness:
+                          // a provider that answered and reported nothing has
+                          // reported a result, and calling that reading old
+                          // would turn Bing's verified legitimate zero into a
+                          // suspicion. A source with no credential has no fetch
+                          // time at all and keeps only its reason.
+                          if (source.lastFetchedAt != null)
+                            Text(
+                              'Last fetched '
+                              '${AuraTemporal.humanize(ProductTime(source.lastFetchedAt!, TimeEvent.occurred))}',
                               style: const TextStyle(
                                 color: AuraSurface.faint,
                                 fontSize: 11.5,

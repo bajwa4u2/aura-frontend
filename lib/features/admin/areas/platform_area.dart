@@ -35,6 +35,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../../core/product/temporal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/net/dio_provider.dart';
@@ -704,9 +705,19 @@ class _Retention extends ConsumerWidget {
 
         return OperatorSection(
           title: 'What Aura is collecting',
+          // WHEN THE LAST PASS RAN, NOT ONLY THAT ONE DID.
+          //
+          // `lastFinishedAt` was parsed and never shown, so "Last pass ran on
+          // schedule" read identically whether that pass finished last night or
+          // three weeks ago — and those are opposite answers to "is the
+          // orphaned count I am looking at worth acting on".
+          //
+          // Never-run keeps its own sentence. A pass that has never happened is
+          // not an old pass, and giving it an age would be inventing one.
           subtitle: r.hasRun
               ? 'Media retention runs nightly. Last pass '
-                  "${r.trigger == 'operator' ? 'was run by an operator' : 'ran on schedule'}."
+                  "${r.trigger == 'operator' ? 'was run by an operator' : 'ran on schedule'}"
+                  '${r.lastFinishedAt == null ? '.' : ', ${AuraTemporal.humanize(ProductTime(r.lastFinishedAt!, TimeEvent.ended))}.'}'
               : 'Media retention runs nightly. No pass has completed yet.',
           child: OperatorPanel(
             tone: r.needsAttention ? OperatorTone.danger : null,
