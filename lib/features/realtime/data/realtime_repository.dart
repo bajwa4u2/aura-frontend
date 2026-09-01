@@ -501,31 +501,71 @@ class RealtimeRepository {
   /// expectation that CallKit will present; this is what makes that
   /// expectation checkable instead of assumed.
   ///
-  /// Fire-and-forget by design. A failure here must never delay or break a
-  /// ringing call — the server's own grace period already treats silence as
-  /// "did not ring", so a lost report degrades toward showing the fallback,
-  /// which is the safe direction.
+  /// Never blocking, but no longer single-shot.
+  ///
+  /// A failure here must still never delay or break a ringing call, so this
+  /// stays unawaited by its callers. What changed is the assumption underneath
+  /// it. The old comment said a lost report "degrades toward showing the
+  /// fallback, which is the safe direction" — that is true only when the phone
+  /// did not ring. Production on 2026-09-01 showed the other case: a locked
+  /// iPhone woke, CallKit presented, and the server received nothing at all —
+  /// no ack and no diagnostic — for the ~28 seconds the app was alive. The
+  /// fallback then presented a second time on a phone that was already ringing.
+  ///
+  /// The cause is structural rather than incidental. A just-woken app can
+  /// receive pushes long before its own outbound HTTPS is usable: Apple's
+  /// connection delivers the push, but this request has to open its own. One
+  /// attempt fired in that window is simply lost, and silence is then read by
+  /// the server as proof the phone stayed quiet.
+  ///
+  /// So it retries, briefly and bounded. The delays are chosen against the
+  /// server's own deadline — CallPresentationService.FALLBACK_GRACE_MS is 12s —
+  /// so every attempt lands before the fallback can decide, and the last one
+  /// still leaves margin. Retrying after that point would be pointless: the
+  /// decision it exists to inform has already been taken.
+  ///
+  /// A 4xx is never retried. The server understood and refused, and repeating
+  /// a refusal is noise.
   ///
   /// The installation is taken from the request's client identity headers, not
   /// sent in the body: a client does not get to claim which phone it is.
+  static const List<Duration> _presentationRetryDelays = <Duration>[
+    Duration(milliseconds: 800),
+    Duration(seconds: 2),
+    Duration(seconds: 4),
+  ];
+
   Future<void> reportCallPresentation(
     String sessionId, {
     required String state,
     String? platform,
     String? detail,
   }) async {
-    if (sessionId.trim().isEmpty) return;
-    try {
-      await _dio.post<dynamic>(
-        '/realtime/sessions/${sessionId.trim()}/presentation',
-        data: <String, dynamic>{
-          'state': state,
-          if (platform != null && platform.isNotEmpty) 'platform': platform,
-          if (detail != null && detail.isNotEmpty) 'detail': detail,
-        },
-      );
-    } catch (_) {
-      // Deliberately swallowed. See above.
+    final id = sessionId.trim();
+    if (id.isEmpty) return;
+
+    final body = <String, dynamic>{
+      'state': state,
+      if (platform != null && platform.isNotEmpty) 'platform': platform,
+      if (detail != null && detail.isNotEmpty) 'detail': detail,
+    };
+
+    for (var attempt = 0; ; attempt++) {
+      try {
+        await _dio.post<dynamic>(
+          '/realtime/sessions/$id/presentation',
+          data: body,
+        );
+        return;
+      } on DioException catch (e) {
+        final code = e.response?.statusCode;
+        if (code != null && code >= 400 && code < 500) return;
+      } catch (_) {
+        // Fall through to the retry decision below.
+      }
+
+      if (attempt >= _presentationRetryDelays.length) return;
+      await Future<void>.delayed(_presentationRetryDelays[attempt]);
     }
   }
 
