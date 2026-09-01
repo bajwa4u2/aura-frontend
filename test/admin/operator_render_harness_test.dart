@@ -285,6 +285,63 @@ void main() {
     );
   });
 
+  // BELOW THE FOLD IS NOT THE SAME AS OUT OF REACH.
+  //
+  // The tall-viewport captures below exist so a person can JUDGE the lower
+  // half of these areas. They say nothing about whether an operator at an
+  // ordinary laptop can GET there, which is a different failure: a console
+  // whose last section cannot be scrolled to is a console whose last section
+  // does not exist.
+  //
+  // Worth asserting because it is genuinely hard to see. A live check of this
+  // was attempted in a browser and produced a confident false negative — the
+  // window was occluded, the engine had stopped producing frames, and nothing
+  // moved for reasons that had nothing to do with the layout. This runs where
+  // that cannot happen.
+  for (final area in const ['discovery', 'platform']) {
+    testWidgets('$area · the last section is reachable at 1440x765',
+        (tester) async {
+      final surface = area == 'discovery'
+          ? (path: '/admin/discovery', widget: const DiscoveryArea())
+          : (path: '/admin/platform', widget: const PlatformArea());
+
+      await _render(
+        tester,
+        const Size(1440, 765),
+        surface.path,
+        surface.widget,
+        '$outDir/${area}_reachability.png',
+        inspect: (tester) async {
+          final positions = tester
+              .widgetList<Scrollable>(find.byType(Scrollable))
+              .map((w) => w.controller?.position)
+              .whereType<ScrollPosition>()
+              .where((p) => p.axis == Axis.vertical && p.maxScrollExtent > 0)
+              .toList();
+
+          expect(
+            positions,
+            isNotEmpty,
+            reason:
+                '$area has content below 765px and nothing that scrolls to it',
+          );
+
+          // Reporting a scrollable is not the same as moving. A ListView
+          // pinned at its start is the failure being guarded against.
+          final position = positions.first;
+          final before = position.pixels;
+          position.jumpTo(position.maxScrollExtent);
+          await tester.pump();
+          expect(
+            position.pixels,
+            greaterThan(before),
+            reason: '$area did not move when scrolled to its end',
+          );
+        },
+      );
+    });
+  }
+
   // A TALL viewport for the two longest areas. At 900px the lower half of
   // PLATFORM and DISCOVERY is below the fold, and a section nobody has looked
   // at is a section nobody has judged.
@@ -431,6 +488,11 @@ Future<void> _render(
   /// the operator sets themselves — a selected tab, a chosen filter — never
   /// for data, which always arrives through the transport.
   List<Override> extraOverrides = const [],
+  /// Run against the LIVE tree, after the picture is taken and before the
+  /// unmount below. Anything asserted after `_render` returns would be
+  /// asserted against an empty tree, which reads as a product defect and is
+  /// really the harness having already tidied up.
+  Future<void> Function(WidgetTester tester)? inspect,
 }) async {
   final captureKey = GlobalKey();
   tester.view
@@ -505,6 +567,8 @@ Future<void> _render(
   }
 
   await expectLater(find.byKey(captureKey), matchesGoldenFile(outPath));
+
+  await inspect?.call(tester);
 
   // Unmount so the ProviderScope disposes. The shell's runtime coordinator
   // holds a periodic timer, and a test that ends with the tree still mounted
