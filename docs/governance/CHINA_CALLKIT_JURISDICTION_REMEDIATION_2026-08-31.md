@@ -48,12 +48,18 @@ Launch no longer builds the CallKit stack. It starts the authority and waits.
 
 `SKPaymentQueue.default().storefront?.countryCode`.
 
-This is the correct API *for this deployment target*, not merely an available
-one. Aura's `IPHONEOS_DEPLOYMENT_TARGET` is **13.0**. `SKPaymentQueue.storefront`
-is the App Store storefront API from iOS 13.0. StoreKit 2's `Storefront.current`
-is iOS 15.0+ — above Aura's floor — so making it the authority would leave iOS 13
-and 14 devices with no storefront at all, which under this policy means no
-CallKit for them either. StoreKit 1 covers the whole supported range.
+**CORRECTED 2026-08-31.** This said the choice followed from a 13.0 deployment
+target. It does not: the real floor is **15.0**. `project.pbxproj` claimed 13.0,
+but the Flutter toolchain raises it and rewrites the project files on every
+build — the CI log reads "Updating minimum iOS deployment target to 15.0.
+Upgrading project.pbxproj / AppFrameworkInfo.plist / Podfile" — so StoreKit 2's
+`Storefront.current` WOULD have been reachable.
+
+StoreKit 1 is kept, for the reason that actually holds rather than the one first
+given: `SKPaymentQueue.storefront` is synchronous, needs no `@available` guard
+and no Swift concurrency, and this value is read on the launch path where a
+legally consequential gate must resolve without awaiting anything. An async hop
+in a jurisdiction check would widen the `withheld` window that costs rings.
 
 `SKStorefront.countryCode` is ISO 3166-1 **alpha-3**, which is why the
 identifier is `CHN` and not `CN`.
@@ -116,7 +122,7 @@ Re-read on `UIApplication.didBecomeActiveNotification`, and re-retried from
 there. Changing an Apple Account's country or region happens in Settings or the
 App Store, so the app is always backgrounded across the change and foregrounded
 after it — `didBecomeActive` catches every real transition using only API that
-exists on the 13.0 floor.
+exists without Swift concurrency.
 
 **Never persisted.** No `UserDefaults`, no Keychain, no backend write, no
 attachment to a person. It is a runtime distribution fact re-established from
@@ -330,3 +336,273 @@ lifted. Before that build ships, two things should be done that this instruction
 did not authorize: run the iOS test target so the 19 Swift tests execute, and
 exercise a real device or simulator on a China-mainland storefront account to
 confirm behaviour, since no unit test can prove CallKit did not appear.
+
+---
+
+# ADDENDUM 8 — the gate re-run green, the lane repaired, and every remaining failure placed
+
+## H1. The corrected gate, run three times
+
+```
+6a9622e1 (aadc63b)   XCODE_BUILD PASS   executed=24 passed=24 failed=0 rc=0   NATIVE VERDICT=PASSED
+6a96268b (603aad3)   XCODE_BUILD PASS   executed=24 passed=24 failed=0 rc=0   NATIVE VERDICT=PASSED
+6a963328 (47d3d78)   XCODE_BUILD PASS   executed=24 passed=24 failed=0 rc=0   NATIVE VERDICT=PASSED
+```
+
+Read from the lane's own manifest each time, never inferred from a previous run.
+Every trigger was verified field-by-field in the DOM first; the dialog defaulted
+to `main` + *Aura iOS — TestFlight* on all three occasions, and once also offered
+a third option silently pinned to the previous commit.
+
+## H2. A second lane defect: booted is not the same fact as visible
+
+Build `6a9622e1` passed all 24 native tests and then reported `NO_COVERAGE` for
+every integration suite. The suites were not at fault. `flutter test -d $UDID`
+answered *"No supported devices found"* and listed only macOS and Chrome —
+**Flutter could see no iOS simulator at all** — because the XCTests had run on
+*"Clone 1 of iPhone …"*, the clone Xcode makes for testing, and the boot
+performed two steps earlier was no longer in force.
+
+The step now re-asserts the boot and waits for Flutter to admit the device
+exists, failing once and loudly with both device lists if it never does. The
+distinction matters more than the repair: the previous output read like sixteen
+broken suites when the truth was one absent device.
+
+## H3. The same false-green family, found in my own tests
+
+Seven seams in `ios_incoming_call_presentation_test.dart` assert against the
+**backend repository** through a hardcoded sibling path, guarded by a bare
+`return` when absent. In any client-only checkout — CI included — that reported
+them **PASSED while asserting nothing**. It is the coverage counter's failure
+again in a different costume: a gate that cannot distinguish "did not run" from
+"verified".
+
+The pair is now resolved deterministically — `AURA_BACKEND_ROOT`, then the
+worktree pairing with an isolated client checkout, then the ordinary sibling —
+and never by searching for a directory whose contents match, since a resolver
+that shops for a passing tree can always satisfy itself. An unresolved pair calls
+`markTestSkipped` with a reason beginning `SKIPPED, NOT PASSED`. Mutation-proven:
+forcing the resolver to null converts **8 silent passes into 8 reported skips**.
+
+`FALSE_GREEN_FAMILY_AUDIT` — 11 further bare-return sites exist across
+`integration_test`. **None is in the calling path.** Every calling suite
+(`relay_certification_test` and all six `sfu_*`) already calls `markTestSkipped`
+and therefore reports `NO_COVERAGE` honestly; `av_certification_test` has no
+conditional gate at all. The remaining 11 sit in Meetings (protected),
+create/landing, institution-return, a legitimate platform gate in media, and the
+Android AV suite. Left alone deliberately: the family is closed where it can
+affect this certification, and closing it elsewhere would be an unbounded
+rewrite of another workstream's tests.
+
+## H4. Three stale-base catches, in three different directions
+
+Isolation caught what discipline had not, three times, and each failure would
+have been silent:
+
+| Candidate | What merging it would have done |
+|---|---|
+| frontend `b298d2a` | deleted `lib/core/discovery/`, the arrival privacy test and the router change |
+| backend `3af37fa` | removed `DiscoveryArrival` and its migration |
+| frontend `603aad3` | **resurrected** the discovery files the other workstream had just deliberately deleted |
+| backend `264f552` | reverted seven commits, including the fix admitting the public arrival route to the fail-closed inventory |
+
+Final candidates, both rebuilt on current `main` and verified path-by-path:
+
+```
+FRONTEND_REVISION = 47d3d78   10 owned paths   UNEXPECTED = 0   ADMIN/DISCOVERY = 0
+BACKEND_REVISION  = 4b175af   23 owned paths   UNEXPECTED = 0   ADMIN/DISCOVERY = 0
+CROSS_AGENT_MUTABLE_PATH_OVERLAP = 0
+```
+
+The check before every certification is not ceremony. It has now caught a
+different silent revert on three separate occasions inside one workstream.
+
+## H5. Where each remaining failure actually belongs
+
+The lane's own record settles most of it. `docs/2026-08-27-ios-certification-lane.md`
+already documents build **#7** (`2ed6f94`, 2026-08-29 — before this workstream
+existed) with an identical outcome:
+
+```
+FAIL  relay_certification_test   4 executed, 2 passed, 2 FAILED
+FAIL  sfu_certification_test     1 executed, 1 FAILED
+NO_COVERAGE  the five sfu_* suites
+RESULT: failures=1 no_coverage=1  →  VERDICT=FAILED
+```
+
+**relay / SFU — PRE-EXISTING, and not evidence of a calling defect.** The control
+plane passes: credentials issue, and the set carries TURN/TLS on 443. Transport
+fails on this host. The recorded analysis holds, and its central argument
+re-verified: the ORDINARY-call case creates two peer connections **in one process
+on one host** with no transport policy — needing no TURN, no camera and no
+external network — and it fails too, so whatever stops the relay case is upstream
+of Cloudflare entirely. `bf7c54a` records the same suite passing on Windows and
+on a physical Pixel 9a with `localType=relay, remoteType=relay,
+relayProtocol=tls`. Classification: **infrastructure limit of the CI simulator
+host**, not a product defect, and not a regression from this candidate.
+
+**The five `sfu_*` NO_COVERAGE — missing CI configuration, already documented.**
+They require `AURA_SFU_CERT_EMAILS` and `AURA_SFU_CERT_PASSWORD`, which the
+`aura_cert` group does not carry; only `AURA_CERT_EMAIL` / `AURA_CERT_PASSWORD`
+are forwarded. Supplying them means real Aura accounts and their passwords, so it
+is a founder-only step. Until then these suites correctly report `NO_COVERAGE`
+rather than a false pass — the behaviour this lane exists to produce.
+
+**Meetings §XXIV — the one genuine delta from the recorded baseline, and it is
+not calling-owned.** Build #7 recorded `meetings_certification_test` at
+**14/14**; build `6a96268b`, on candidate `603aad3`, reported 13/14, failing
+*"no Meetings route renders a blank shell cold"*. It did not survive the base
+moving forward — see H9, where the final candidate is 14/14 again — but the
+causal work is kept here because the classification, not the outcome, is what
+had to be right. Established causally rather than by file ownership:
+
+- the candidate's `lib/` delta against `main` is **zero paths**, so the app code
+  under test is `main`'s and never this workstream's;
+- run locally on Windows the suite is **14/14**, §XXIV included — and it also
+  passes with the exact router the failing build carried, so it is not that
+  router change either;
+- it therefore reproduces only on the iOS simulator, and its cause is **not
+  established**.
+
+Classification: **PRE-EXISTING / OTHER WORKSTREAM**, Meetings-owned, untouched
+per instruction. Recorded rather than dismissed, because cold entry into a
+Meetings route is adjacent to accepting a call from a terminated app. The routes
+it covers are `/meetings/*` and `/meet/*`, not the call route, but the shape is
+close enough to name plainly.
+
+`GATE_DIAGNOSTIC_GAP` — the runner prints `FAILED : <test name>` without the
+assertion's reason, so the failing route could not be identified from CI output
+alone. Recorded and deliberately not changed here: altering the runner during a
+certification would invalidate the evidence this addendum rests on.
+
+## H6. Migration ordering, answered rather than assumed
+
+The calling migrations are dated `20261014`/`20261015` and sort **before** a
+migration already applied in production (`20261101`). Replayed on a disposable
+Postgres — main's migrations first to reproduce production, then the candidate's
+on top:
+
+```
+Applying 20261014000000_user_device_installation_id
+Applying 20261015000000_call_presentation_ack
+All migrations have been successfully applied.  ·  Database schema is up to date!
+```
+
+`_prisma_migrations` records the pair as applied *after* the later-named
+discovery migration, which is exactly what production will record.
+`MIGRATION_OUT_OF_ORDER_RISK = none observed`.
+
+A separate drift — removed `User` indexes, altered `updatedAt` defaults on
+`TrustedDevice` and `UserContactDiscoveryConsent` — reproduces on clean `main`
+with no calling work present. Not calling-owned; recorded, not fixed here.
+
+## H7. A production-risk finding handed to its owner
+
+`discovery-intelligence/arrival.controller.ts` was committed with `@Public`,
+absent from the reviewed inventory and carrying no recognised reason, failing the
+fail-closed public-route authority suite on clean `main` — an unauthenticated
+surface on the branch that auto-deploys. Reported to the owning workstream and
+not touched. It has since been fixed there (`3cb3a41`), which is why the backend
+candidate is now fully green.
+
+## H8. The iOS floor
+
+`CANONICAL_IOS_MINIMUM_VERSION = 15.0`, consistent across all five authorities.
+Confirmed by the toolchain rather than by inspection: Flutter no longer emits
+*"Updating minimum iOS deployment target to 15.0"*, because it no longer needs to
+rewrite anything. iOS 13/14 support is not reopened by this workstream.
+
+The correction to the earlier reasoning is repeated here so no future work
+inherits the old assumption: **the floor was never 13.0 in practice**, and
+StoreKit 2's `Storefront.current` would in fact have been available at 15.0.
+StoreKit 1 is kept because it needs no availability guard and no async — not
+because the alternative was out of reach.
+
+## H9. The final integration run, and the Meetings delta closing itself
+
+Build `6a963328` on candidate `47d3d78`, 28m55s:
+
+| Verdict | Suite | Detail |
+|---|---|---|
+| PASS | `av_certification_test` | 8/8 |
+| PASS | `create_landing_test` | 5/5 |
+| PASS | `create_meeting_certification_test` | 8/8 |
+| PASS | `media_certification_test` | 26/26 |
+| **PASS** | **`meetings_certification_test`** | **14/14** |
+| PASS | `operator_hub_certification_test` | 10/10 |
+| PASS | `preferences_certification_test` | 6/6 |
+| PASS | `signed_in_institution_return_test` | 2/2 |
+| PASS | `trace_lifecycle_test` | 7/7 |
+| FAIL | `relay_certification_test` | 4 executed, 2 passed, 2 failed |
+| FAIL | `sfu_certification_test` | 1 executed, 1 failed |
+| NO_COVERAGE | five `sfu_*` suites | identities not supplied |
+| SKIPPED_PLATFORM | 3 suites | assert another platform's semantics |
+
+```
+RESULT: failures=1 no_coverage=1  →  VERDICT=FAILED
+```
+
+**§XXIV closed itself.** The Meetings suite is back to 14/14 on current `main`,
+so the single failure seen at candidate `603aad3` did not survive the base
+moving forward. It was never reproducible off the iOS simulator — Windows gave
+14/14 with both the old router and the new — and it is now not reproducible on
+the simulator either. Recorded as **resolved, cause never established**, which
+is the honest description; it is not claimed as fixed by this workstream,
+because nothing in this workstream touched it.
+
+With that, the run reproduces the documented build-#7 baseline **exactly**.
+Every remaining failure is one the lane already recorded on 2026-08-29, before
+this workstream existed.
+
+`CALLING_OWNED_INTEGRATION_FAILURES = 0`
+`PREEXISTING_OTHER_WORKSTREAM_FAILURES = 0`  (the Meetings delta resolved)
+`INFRASTRUCTURE_FAILURES = 3 assertions across 2 suites` — relay transport and
+SFU media loopback on the CI simulator host
+`NO_COVERAGE_SUITES = 5` — awaiting `AURA_SFU_CERT_EMAILS` /
+`AURA_SFU_CERT_PASSWORD`, a founder-only step because it means real accounts
+
+One correction to an earlier statement of mine: I described these integration
+suites as executing "for the first time in this lane's history". That was wrong.
+Build #7 ran them on 2026-08-29; what the simulator-visibility repair restored
+was the ability to run them **again**, after a regression that made Flutter
+unable to see the device. The baseline existed, and it is what made this
+classification possible at all.
+
+## H10. Status
+
+```
+CERTIFICATION_REF = ios-calling-system-certification
+FRONTEND_REVISION = 47d3d78    BACKEND_REVISION = 4b175af
+CODEMAGIC_NATIVE_BUILD_IDS = 6a9622e1, 6a96268b, 6a963328
+
+XCODE_BUILD = PASS (x3)   DISCOVERED = 24   EXECUTED = 24   PASS = 24   FAIL = 0
+CERTIFICATION_GATE_VERDICT = PASS
+
+CANONICAL_IOS_MINIMUM_VERSION = 15.0
+UNEXPECTED_FRONTEND_PATHS = 0 · UNEXPECTED_BACKEND_PATHS = 0
+CROSS_AGENT_MUTABLE_PATH_OVERLAP = 0
+
+KNOWN_DOUBLE_RING_PATHS = 0
+KNOWN_SILENT_RING_PATHS = 0
+KNOWN_STALE_ACTIONABLE_RING_PATHS = 0
+
+NATIVE_AUTOMATED_PROOF_COMPLETE = YES
+CALLING_AUTOMATED_CERTIFICATION_COMPLETE = YES
+READY_FOR_ONE_CONSOLIDATED_PHYSICAL_DEVICE_PROOF = YES
+
+NEW_TESTFLIGHT_BUILD_CREATED = NO · APP_STORE_BINARY_UPLOADED = NO
+APPLE_SUBMISSION_CHANGED = NO · TERRITORY_CHANGED = NO · ROLLOUT_STARTED = NO
+RELEASE_HOLD_PRESERVED = YES
+```
+
+The lane verdict remains `FAILED`, and that is correct behaviour rather than an
+outstanding calling defect: it fails on a relay transport limit of the CI host
+and on five suites whose identities are deliberately not in CI. **The calling
+system and its own dependencies are green**, which is the standard this gate was
+asked to hold to.
+
+What a physical iPhone must still prove is exactly what a simulator structurally
+cannot: that CallKit presents on a locked device, that a real storefront returns
+`CHN` or does not, that PushKit delivers to a terminated app, and that media
+traverses a real network. Those are the four things the matrix should be built
+from — and nothing else, because everything else is now proven off-device.

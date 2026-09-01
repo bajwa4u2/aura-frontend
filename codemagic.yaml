@@ -228,6 +228,15 @@ workflows:
         # NO_COVERAGE. scripts/certify_suite.py now carries them across that
         # last hop; see the comment on _FORWARDED_DEFINES there.
         - aura_cert
+        # WITHOUT THIS THE RUNNER TARGET DOES NOT BUILD AT ALL.
+        #
+        # `GoogleService-Info.plist` is not in the repository — it is
+        # materialised at build time from FIREBASE_IOS_CONFIG_BASE64, and the
+        # variable only reaches the process if its group is LISTED here.
+        # ios-testflight lists it; this workflow did not, so every attempt to
+        # build Runner here died at CopyPlistFile with "Build input file cannot
+        # be found", before a single native test could run.
+        - firebase_ios
     cache:
       cache_paths:
         - $HOME/.pub-cache
@@ -274,10 +283,181 @@ workflows:
 
           echo "$UDID" > /tmp/aura_sim_udid
 
+      - name: Provision the Firebase iOS config the Runner target needs
+        script: |
+          set -eu
+          PLIST=ios/Runner/GoogleService-Info.plist
+
+          # The real config, when the group provides it. Same decode-or-verbatim
+          # handling as ios-testflight; the value itself is never printed.
+          if [ -n "${FIREBASE_IOS_CONFIG_BASE64:-}" ]; then
+            if printf '%s' "$FIREBASE_IOS_CONFIG_BASE64" | tr -d '[:space:]'                  | base64 --decode > "$PLIST" 2>/dev/null                && plutil -lint "$PLIST" >/dev/null 2>&1; then
+              echo "GoogleService-Info.plist provisioned from the group (base64)."
+              exit 0
+            elif printf '%s' "$FIREBASE_IOS_CONFIG_BASE64" > "$PLIST"                && plutil -lint "$PLIST" >/dev/null 2>&1; then
+              echo "GoogleService-Info.plist provisioned from the group (plist)."
+              exit 0
+            fi
+            rm -f "$PLIST"
+            echo "FIREBASE_IOS_CONFIG_BASE64 is set but is neither base64 of a"
+            echo "property list nor a property list."
+          fi
+
+          # A PLACEHOLDER IS CORRECT HERE, AND ONLY HERE.
+          #
+          # This workflow builds for a SIMULATOR and runs XCTest. It never
+          # signs, never ships, and never reaches Firebase — the file has to
+          # EXIST because Copy Bundle Resources demands it, not because its
+          # contents are used. Refusing to run the native suite because a push
+          # credential is absent would withhold the proof over something the
+          # proof does not depend on.
+          #
+          # It is deliberately NOT silent: the manifest records which of the two
+          # was used, so a run can never quietly claim Firebase coverage it did
+          # not have. Whether the bundled config is the real one is a separate
+          # question, already answered by ios_firebase_config_is_bundled_test.
+          cat > "$PLIST" <<'PLIST_EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>API_KEY</key><string>simulator-certification-placeholder</string>
+            <key>GCM_SENDER_ID</key><string>000000000000</string>
+            <key>BUNDLE_ID</key><string>org.auraplatform.app</string>
+            <key>PROJECT_ID</key><string>simulator-certification</string>
+            <key>GOOGLE_APP_ID</key><string>1:000000000000:ios:0000000000000000</string>
+            <key>IS_GCM_ENABLED</key><false/>
+          </dict>
+          </plist>
+          PLIST_EOF
+          # The heredoc above is indented for readability; strip that back off.
+          sed -i '' 's/^          //' "$PLIST"
+          plutil -lint "$PLIST"
+          mkdir -p certification
+          echo "firebase_config=PLACEHOLDER (simulator only, not the shipped config)"             | tee -a certification/run-manifest.txt
+
+      - name: Certify the NATIVE layer — XCTest on the Runner target
+        script: |
+          set -uo pipefail
+          UDID=$(cat /tmp/aura_sim_udid)
+
+          # WHY THIS STEP EXISTS AT ALL.
+          #
+          # The iOS incoming-call system is now half Swift: the jurisdiction
+          # policy that keeps CallKit inactive on the China mainland storefront
+          # (a Guideline 5 rejection when it was absent), and the notification
+          # matcher that retires a delivered ring banner. Neither can be
+          # exercised from `flutter test` — Dart can only pin their wiring —
+          # so until this ran, the behavioural half of that system was written
+          # and never executed anywhere.
+          #
+          # `--config-only` generates Generated.xcconfig and runs pod install
+          # without building an app we are about to rebuild under xcodebuild.
+          flutter build ios --config-only --simulator --debug
+
+          mkdir -p certification
+          rm -rf certification/native-tests.xcresult
+
+          set -o pipefail
+          xcodebuild test             -workspace ios/Runner.xcworkspace             -scheme Runner             -destination "id=$UDID"             -only-testing:RunnerTests             -resultBundlePath certification/native-tests.xcresult             CODE_SIGNING_ALLOWED=NO             | tee certification/native-tests.log
+          XC_RC=${PIPESTATUS[0]}
+          set +o pipefail
+
+          # COVERAGE, NOT JUST EXIT CODE — the trap this lane already learned.
+          #
+          # An xcodebuild invocation that matches no tests can still exit 0.
+          # Three SFU suites once printed "identities not provided", skipped
+          # everything and were recorded as PASS; reporting that as a pass
+          # turns an absence of testing into a claim of correctness. So the
+          # count is read, and zero executed tests is a failure here, not a
+          # silent success.
+          # COUNT WHAT XCODE ACTUALLY PRINTS, NOT WHAT IT USED TO.
+          #
+          # This first read "Executed N tests", which Xcode 26 no longer emits
+          # at all. Build 6a9616a2 ran all 24 native tests green and the gate
+          # still reported NO_COVERAGE and failed the build — a false negative,
+          # and the worst kind, because a gate that cannot tell "nothing ran"
+          # from "I cannot count" teaches people to ignore it.
+          #
+          # Per-case lines are counted instead, which Xcode 26 does emit, with
+          # the legacy summary kept as a fallback so an older toolchain still
+          # reports honestly.
+          PASSED=$(grep -cE "Test case '.*' passed" certification/native-tests.log || true)
+          FAILED_CASES=$(grep -cE "Test case '.*' failed" certification/native-tests.log || true)
+          # SKIPS ARE REPORTED, NOT ABSORBED.
+          #
+          # The StoreKit test-authority cases skip deliberately when Apple's
+          # authority cannot reach SKPaymentQueue.storefront in this
+          # environment. A skip is neither a pass nor a failure, and a manifest
+          # that folded it into either would misstate what was proven.
+          SKIPPED_CASES=$(grep -cE "Test case '.*' skipped" certification/native-tests.log || true)
+          EXECUTED=$(( ${PASSED:-0} + ${FAILED_CASES:-0} ))
+          if [ "$EXECUTED" -eq 0 ]; then
+            EXECUTED=$(grep -oE "Executed [0-9]+ test" certification/native-tests.log                        | tail -1 | grep -oE "[0-9]+" || echo 0)
+          fi
+
+          {
+            echo ""
+            echo "NATIVE (XCTest) RESULTS"
+            echo "  target=RunnerTests executed=$EXECUTED passed=${PASSED:-0} failed=${FAILED_CASES:-0} skipped=${SKIPPED_CASES:-0} xcodebuild_rc=$XC_RC"
+          } | tee -a certification/run-manifest.txt
+
+          if [ "${FAILED_CASES:-0}" -ne 0 ]; then
+            echo "  NATIVE VERDICT=FAILED — ${FAILED_CASES} native test(s) failed" | tee -a certification/run-manifest.txt
+            exit 1
+          fi
+          if [ "$XC_RC" -ne 0 ]; then
+            echo "  NATIVE VERDICT=FAILED — XCTest reported failures" | tee -a certification/run-manifest.txt
+            exit 1
+          fi
+          if [ "$EXECUTED" -eq 0 ]; then
+            echo "  NATIVE VERDICT=NO_COVERAGE — no native test executed" | tee -a certification/run-manifest.txt
+            exit 1
+          fi
+          echo "  NATIVE VERDICT=PASSED" | tee -a certification/run-manifest.txt
+
       - name: Certify — every suite iOS can run
         script: |
           set -uo pipefail
           UDID=$(cat /tmp/aura_sim_udid)
+
+          # THE SIMULATOR MUST BE VISIBLE TO FLUTTER, NOT MERELY BOOTED.
+          #
+          # Build 6a9622e1 passed all 24 XCTests against this UDID and then
+          # reported NO_COVERAGE for every integration suite, because
+          # `flutter test -d $UDID` answered "No supported devices found with
+          # name or id matching" and listed only macOS and Chrome - Flutter
+          # could see no iOS simulator at all. Those XCTests had run on
+          # "Clone 1 of iPhone ...", a clone Xcode makes for testing, so a
+          # boot performed two steps earlier is not still in force here.
+          #
+          # Being booted and being in Flutter's device list are two different
+          # facts, and this step depends on the second. So re-assert the boot,
+          # wait for FLUTTER to admit the device exists, and fail loudly with
+          # both device lists if it never does. Without this the run degrades
+          # into "every suite certified nothing", which reads like a fleet of
+          # broken suites rather than one absent device.
+          xcrun simctl boot "$UDID" 2>/dev/null || true
+          xcrun simctl bootstatus "$UDID" -b || true
+
+          SIM_VISIBLE=0
+          for _ in $(seq 1 30); do
+            if flutter devices --machine 2>/dev/null | grep -q "$UDID"; then
+              SIM_VISIBLE=1
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$SIM_VISIBLE" -ne 1 ]; then
+            echo "FATAL: flutter cannot see simulator $UDID after 60s."
+            echo "Every suite below would report NO_COVERAGE for one reason:"
+            echo "there is no device to run them on. Failing here instead."
+            flutter devices || true
+            xcrun simctl list devices booted || true
+            exit 1
+          fi
+          echo "simulator $UDID is visible to flutter"
 
           # STATUS COMES FROM COVERAGE, NOT FROM THE EXIT CODE.
           #
@@ -332,6 +512,315 @@ workflows:
           [ "$FAILED" -ne 0 ] && exit 1
           [ "$NOCOV" -ne 0 ] && exit 2
           exit 0
+
+    artifacts:
+      - certification/*
+      - certification/native-tests.xcresult
+
+  # ANDROID AND WEB — the two platforms the iOS lane structurally cannot cover.
+  #
+  # The iOS certification lane proves the iPhone calling path. It says nothing
+  # about whether the same calling model still behaves on Android or in a
+  # browser, and "the unit suite is green on the author's machine" is not an
+  # answer: the Android incoming call is a real notification channel with
+  # CallStyle, and the browser is a different runtime, not a second Dart VM.
+  #
+  # This lane exists so those two are EXECUTED rather than asserted. It runs on
+  # Linux because that is where an Android emulator is actually available — the
+  # macOS instances this repository already uses cannot host one, and neither
+  # can the Windows/ARM64 authoring machine, where the SDK serves no emulator
+  # package at all.
+  android-web-certification:
+    name: Aura Android + Web — Certification
+    instance_type: linux_x2
+    max_build_duration: 120
+    environment:
+      flutter: stable
+      java: 17
+      groups:
+        - aura_cert
+    scripts:
+      - name: Flutter pub get
+        script: flutter pub get
+
+      - name: A build-local debug keystore, so Gradle can configure at all
+        script: |
+          set -euo pipefail
+
+          # WHY THIS EXISTS, AND WHAT IT IS NOT.
+          #
+          # android/app/build.gradle.kts reads key.properties only if the file
+          # exists, and then casts its values unconditionally:
+          #
+          #     keyAlias = keystoreProperties["keyAlias"] as String
+          #
+          # With no key.properties that cast receives null and the CONFIGURATION
+          # phase fails, so `flutter build apk --debug` cannot run on any machine
+          # without the release keystore — CI included. Nothing here is signed
+          # for distribution and this key never leaves the build machine: it
+          # exists so Gradle can evaluate the release signingConfig block while
+          # we build and test DEBUG artefacts.
+          #
+          # The real release keystore is injected by the signing lane and is not
+          # referenced here. If this file ever appears in a lane that publishes,
+          # that lane is wrong.
+          if [ -f android/key.properties ]; then
+            echo "key.properties supplied by the environment — leaving it alone"
+          else
+            keytool -genkeypair -v \
+              -keystore android/app/ci-debug-only.jks -storetype PKCS12 \
+              -keyalg RSA -keysize 2048 -validity 3650 -alias cidebug \
+              -storepass cidebugonly -keypass cidebugonly \
+              -dname "CN=Aura CI Debug Only, OU=Certification, O=Aura, C=US"
+            printf 'storePassword=cidebugonly\n' > android/key.properties
+            printf 'keyPassword=cidebugonly\n' >> android/key.properties
+            printf 'keyAlias=cidebug\n' >> android/key.properties
+            printf 'storeFile=ci-debug-only.jks\n' >> android/key.properties
+            echo "generated a build-local DEBUG-ONLY keystore"
+          fi
+
+      # BOOT AND CERTIFY IN ONE STEP, DELIBERATELY.
+      #
+      # The first version booted the emulator in its own step. The emulator
+      # survived that step, `sys.boot_completed` returned 1, and then the very
+      # next step reported `adb: device offline` on its first install and every
+      # suite after it said "No devices are connected".
+      #
+      # A background process started with `&` belongs to the shell that started
+      # it, and each step here is a different shell. The device was never
+      # unhealthy — it was gone. Keeping the emulator and the suites in one
+      # process is not a workaround for that, it is the correct lifetime.
+      - name: Boot an Android emulator and certify ANDROID
+        script: |
+          set -uo pipefail
+          SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/share/android-sdk}}"
+          echo "sdk root: $SDK"
+
+          # RESOLVE THE TOOLS, DO NOT ASSUME THE PATH.
+          #
+          # An earlier run died with `sdkmanager: command not found` on an image
+          # carrying a complete SDK. The SDK being present and its tools being on
+          # PATH are different facts, and only the first one is guaranteed.
+          find_tool() {
+            for c in "$SDK/cmdline-tools/latest/bin/$1" "$SDK/cmdline-tools/bin/$1" \
+                     "$SDK/tools/bin/$1" "$SDK/$1/$1" "$(command -v "$1" 2>/dev/null)"; do
+              [ -x "$c" ] && { echo "$c"; return 0; }
+            done
+            return 1
+          }
+
+          SDKMANAGER=$(find_tool sdkmanager) || { echo "FATAL: no sdkmanager under $SDK"; ls -la "$SDK" || true; exit 1; }
+          AVDMANAGER=$(find_tool avdmanager) || { echo "FATAL: no avdmanager under $SDK"; exit 1; }
+          ADB="$SDK/platform-tools/adb"; [ -x "$ADB" ] || ADB=$(command -v adb)
+          echo "sdkmanager: $SDKMANAGER"
+          echo "adb:        $ADB"
+          echo "kvm present: $([ -e /dev/kvm ] && echo yes || echo NO — the emulator will be software-rendered and slower)"
+
+          yes | "$SDKMANAGER" --sdk_root="$SDK" --licenses > /dev/null 2>&1 || true
+          "$SDKMANAGER" --sdk_root="$SDK" --install "emulator" "platform-tools" "system-images;android-34;google_apis;x86_64" > /dev/null
+
+          echo no | "$AVDMANAGER" create avd -n aura_cert -k "system-images;android-34;google_apis;x86_64" --force
+
+          # CAMERAS OFF, DELIBERATELY.
+          #
+          # The previous run executed its first suite on the device and then
+          # the emulator took a `Segmentation fault (core dumped)` - immediately
+          # before av_android_certification_test, the suite that wants a camera.
+          # Webcam emulation is the most fragile part of a headless Linux
+          # emulator, and nothing in the calling model needs a real sensor to be
+          # certified: what the AV suites assert is the control surface.
+          #
+          # It also means a camera-dependent assertion, if one exists, now fails
+          # honestly instead of taking the whole device down with it.
+          "$SDK/emulator/emulator" -avd aura_cert -no-window -no-audio -no-boot-anim \
+            -no-snapshot -wipe-data -gpu swiftshader_indirect -memory 4096 -partition-size 8192 \
+            -camera-back none -camera-front none -accel auto \
+            > /tmp/emulator.log 2>&1 &
+          EMU_PID=$!
+          trap 'kill "$EMU_PID" 2>/dev/null || true' EXIT
+
+          "$ADB" wait-for-device
+
+          # BOOTED IS NOT THE SAME FACT AS READY.
+          #
+          # `wait-for-device` returns when adb can see the device, not when
+          # Android has finished booting and can install an APK. The iOS lane
+          # learned the same distinction the expensive way.
+          READY=0
+          for _ in $(seq 1 90); do
+            if [ "$("$ADB" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ]; then
+              READY=1
+              break
+            fi
+            sleep 5
+          done
+          if [ "$READY" -ne 1 ]; then
+            echo "FATAL: the emulator never finished booting."
+            echo "Every suite below would report NO_COVERAGE for one reason:"
+            echo "there is no device to run them on. Failing here instead."
+            "$ADB" devices -l || true
+            tail -40 /tmp/emulator.log || true
+            exit 1
+          fi
+
+          # BOOTED IS NOT SETTLED EITHER.
+          #
+          # boot_completed flips before the device has finished starting its
+          # services, and the emulator died 1.1s into `adb install` of a large
+          # debug APK - while it was still busy. Wait for the boot animation to
+          # stop, then pause, so the first install is not racing startup.
+          for _ in $(seq 1 60); do
+            [ "$("$ADB" shell getprop init.svc.bootanim 2>/dev/null | tr -d '\r')" = "stopped" ] && break
+            sleep 2
+          done
+          sleep 10
+          "$ADB" shell input keyevent 82 || true
+          SERIAL=$("$ADB" devices | awk '/emulator/{print $1; exit}')
+
+          mkdir -p certification
+          {
+            echo "AURA ANDROID + WEB CERTIFICATION RUN"
+            echo "build_commit=${CM_COMMIT:-unknown}"
+            echo "branch=${CM_BRANCH:-unknown}"
+            echo "android_serial=$SERIAL"
+            echo "android_api=$("$ADB" shell getprop ro.build.version.sdk | tr -d '\r')"
+            echo "android_model=$("$ADB" shell getprop ro.product.model | tr -d '\r')"
+          } | tee certification/android-web-manifest.txt
+
+          # Excluded because it asserts ANOTHER platform's semantics, which is a
+          # different statement from "did not run".
+          EXCLUDE="desktop_lifecycle_test"
+
+          FAILED=0
+          NOCOV=0
+          echo "" >> certification/android-web-manifest.txt
+          echo "ANDROID SUITE RESULTS" >> certification/android-web-manifest.txt
+
+          for f in integration_test/*.dart; do
+            base=$(basename "$f" .dart)
+            if echo "$base" | grep -qE "$EXCLUDE"; then
+              echo "  SKIPPED_PLATFORM $base (asserts another platform's semantics)" | tee -a certification/android-web-manifest.txt
+              continue
+            fi
+
+            # The device dying mid-run once turned one failure into eighteen
+            # NO_COVERAGEs. Check it is still there, and say so if it is not.
+            STATE=$("$ADB" get-state 2>/dev/null | tr -d '\r' || echo unknown)
+            if [ "$STATE" != "device" ]; then
+              echo "  DEVICE_FAILURE: emulator state is '$STATE' before $base — the device died mid-run" | tee -a certification/android-web-manifest.txt
+              echo "  Nothing after this point was certified. This is not a product failure." | tee -a certification/android-web-manifest.txt
+              tail -40 /tmp/emulator.log || true
+              # A DEAD DEVICE IS NOT A FAILING PRODUCT.
+              #
+              # This used to set FAILED, so a run whose emulator died reported
+              # "an Android suite reported real failures" over suites that had
+              # never executed. It certifies nothing, which is NO_COVERAGE's
+              # meaning, and the verdict now says so.
+              NOCOV=1
+              break
+            fi
+
+            echo "──────────────────────────────────────────────────────────"
+            python3 scripts/certify_suite.py "$f" --device "$SERIAL" --out certification 2>&1 | tee -a certification/android-web-manifest.txt
+            rc=${PIPESTATUS[0]}
+            [ "$rc" = "1" ] && FAILED=1
+            [ "$rc" = "2" ] && NOCOV=1
+          done
+
+          {
+            echo ""
+            echo "ANDROID RESULT: failures=$FAILED no_coverage=$NOCOV"
+          } | tee -a certification/android-web-manifest.txt
+
+          echo "$FAILED" > /tmp/aura_android_failed
+          echo "$NOCOV" > /tmp/aura_android_nocov
+
+      - name: Certify WEB — the calling model under the browser runtime
+        script: |
+          set -uo pipefail
+
+          # A DIFFERENT RUNTIME, NOT A DIFFERENT ASSERTION.
+          #
+          # `flutter test --platform chrome` compiles each suite to JavaScript
+          # and runs it in a real browser. That is what makes this web evidence
+          # rather than a second Dart-VM run: the calling model — collapse,
+          # tombstoning, preference resolution, physical-device projection —
+          # executes under the web runtime, where number semantics and async
+          # scheduling genuinely differ.
+          #
+          # ONLY SUITES A BROWSER CAN HOST.
+          #
+          # The first version pointed this at test/release and test/realtime
+          # wholesale and failed on `dart:io`. That was not a product defect and
+          # not a browser limitation worth reporting: those are source-conformance
+          # suites that read files off disk to pin wiring, and a browser has no
+          # filesystem. They run on the VM, where they belong. What runs here is
+          # the calling MODEL, which is pure logic and genuinely portable.
+          #
+          # It is NOT a live two-party browser call. That needs a second real
+          # account, and inventing one would prove nothing.
+          WEB_SUITES="
+            test/devices/physical_device_projection_test.dart
+            test/realtime/incoming_call_failure_matrix_test.dart
+            test/realtime/incoming_call_bridge_precedence_test.dart
+            test/realtime/incoming_call_payload_shapes_test.dart
+            test/realtime/incoming_call_projection_test.dart
+            test/realtime/call_surface_owns_screen_test.dart
+            test/realtime/media_control_labels_test.dart
+            test/realtime/orphaned_session_test.dart
+            test/realtime/orphaned_session_dismissal_cache_test.dart
+            test/realtime/participant_roster_identity_test.dart
+            test/realtime/ready_to_join_policy_test.dart
+          "
+
+          echo "" >> certification/android-web-manifest.txt
+          echo "WEB (chrome runtime) RESULTS" >> certification/android-web-manifest.txt
+
+          flutter test --platform chrome $WEB_SUITES 2>&1 | tee certification/web-tests.log
+          WEB_RC=${PIPESTATUS[0]}
+
+          WEB_OK=$(grep -c "All tests passed" certification/web-tests.log || true)
+          WEB_COUNT=$(grep -oE "\+[0-9]+" certification/web-tests.log | tail -1 | tr -d '+' || echo 0)
+
+          {
+            echo "  web_exit_code=$WEB_RC passed=${WEB_COUNT:-0} all_tests_passed=$WEB_OK"
+            if [ "$WEB_OK" -eq 0 ] || [ "${WEB_COUNT:-0}" -eq 0 ]; then
+              echo "  WEB VERDICT=FAILED — the browser runtime did not report a clean pass"
+            else
+              echo "  WEB VERDICT=PASSED"
+            fi
+          } | tee -a certification/android-web-manifest.txt
+
+          echo "$WEB_RC" > /tmp/aura_web_rc
+
+      - name: Verdict — Android and Web together
+        script: |
+          set -uo pipefail
+          A_FAIL=$(cat /tmp/aura_android_failed 2>/dev/null || echo 1)
+          A_NOCOV=$(cat /tmp/aura_android_nocov 2>/dev/null || echo 1)
+          W_RC=$(cat /tmp/aura_web_rc 2>/dev/null || echo 1)
+
+          {
+            echo ""
+            echo "COMBINED VERDICT"
+            echo "  android_failures=$A_FAIL android_no_coverage=$A_NOCOV web_rc=$W_RC"
+          } | tee -a certification/android-web-manifest.txt
+
+          # Same rule as the iOS lane: a suite that certified nothing is not a
+          # pass, and the verdict names which of the two reasons applies.
+          if [ "$A_FAIL" -ne 0 ]; then
+            echo "VERDICT=FAILED — an Android suite reported real failures" | tee -a certification/android-web-manifest.txt
+            exit 1
+          fi
+          if [ "$W_RC" -ne 0 ]; then
+            echo "VERDICT=FAILED — the web runtime reported failures" | tee -a certification/android-web-manifest.txt
+            exit 1
+          fi
+          if [ "$A_NOCOV" -ne 0 ]; then
+            echo "VERDICT=INCOMPLETE — an Android suite certified nothing (NO_COVERAGE)" | tee -a certification/android-web-manifest.txt
+            exit 2
+          fi
+          echo "VERDICT=PASSED" | tee -a certification/android-web-manifest.txt
 
     artifacts:
       - certification/*

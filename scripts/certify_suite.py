@@ -97,7 +97,7 @@ def forwarded_names() -> list[str]:
     return [name for name in _FORWARDED_DEFINES if os.environ.get(name)]
 
 
-def run(suite: str, device: str | None) -> tuple[list[dict], int]:
+def run(suite: str, device: str | None) -> tuple[list[dict], int, list[str]]:
     cmd = [flutter_executable(), "test", suite, "--reporter", "json"]
     if device:
         cmd += ["-d", device]
@@ -110,6 +110,7 @@ def run(suite: str, device: str | None) -> tuple[list[dict], int]:
     )
 
     events: list[dict] = []
+    markers: list[str] = []
     proc = subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
         encoding="utf-8", errors="replace",
@@ -122,12 +123,26 @@ def run(suite: str, device: str | None) -> tuple[list[dict], int]:
         if not line.startswith("{"):
             if line:
                 print(line, flush=True)
+                # A SUITE THAT NEVER REACHED THE DEVICE HAS NOT FAILED ITS
+                # ASSERTIONS.
+                #
+                # When the runner cannot run a suite on the device it still
+                # emits testStart/testDone for every declared test and marks
+                # them failed. On an Android emulator that died during
+                # `adb install` that produced "discovered 9, executed 9,
+                # failed 9" beside the line "No tests were found." - and it was
+                # read, for three runs, as nine Android assertions failing.
+                # Not one assertion had been evaluated.
+                if "No tests were found" in line:
+                    markers.append("no-tests-found")
+                elif "device offline" in line or "Device disconnected" in line:
+                    markers.append("device-offline")
             continue
         try:
             events.append(json.loads(line))
         except json.JSONDecodeError:
             pass
-    return events, proc.wait()
+    return events, proc.wait(), markers
 
 
 def classify(events: list[dict]) -> dict:
@@ -138,7 +153,25 @@ def classify(events: list[dict]) -> dict:
             t = e.get("test", {})
             meta[t.get("id")] = t
 
-    discovered = passed = failed = skipped = 0
+    # WHY A FAILURE FAILED, NOT JUST THAT IT DID.
+    #
+    # This runner used to report `FAILED : <test name>` and nothing else, so a
+    # red suite in CI could not be diagnosed from CI output at all - the iOS
+    # lane could not name which Meetings route broke, and the Android lane could
+    # not say why nine assertions that pass on desktop fail on an emulator.
+    # The reason is already in the JSON stream; it was simply being discarded.
+    errors: dict[object, str] = {}
+    for e in events:
+        if e.get("type") != "error":
+            continue
+        tid = e.get("testID")
+        if tid is None or tid in errors:
+            continue
+        first = (e.get("error") or "").strip().splitlines()
+        if first:
+            errors[tid] = first[0][:200]
+
+    discovered = passed = failed = skipped = unexplained = 0
     skip_reasons: list[str] = []
     failures: list[str] = []
 
@@ -162,7 +195,18 @@ def classify(events: list[dict]) -> dict:
             passed += 1
         else:
             failed += 1
-            failures.append(name)
+            detail = errors.get(e.get("testID"), "")
+            # A FAILURE WITH NO ERROR IS NOT AN ASSERTION.
+            #
+            # When a test genuinely fails an expectation the JSON stream
+            # carries an `error` event for it. A run that lost its device
+            # mid-flight produces testDone(result != success) for every
+            # enumerated test with NO error beside it. Those two look identical
+            # in a count and mean opposite things, so the distinction is
+            # recorded rather than inferred later from a build log.
+            if not detail:
+                unexplained += 1
+            failures.append(f"{name} -- {detail}" if detail else name)
 
     executed = passed + failed
 
@@ -184,6 +228,10 @@ def classify(events: list[dict]) -> dict:
         "skipped": skipped,
         "skip_reasons": skip_reasons[:10],
         "failures": failures[:10],
+        # How many of the failures arrived without any assertion error at all.
+        # failed == unexplained is the signature of a run that was aborted,
+        # not of a product that is broken.
+        "unexplained_failures": unexplained,
     }
 
 
@@ -195,10 +243,35 @@ def main() -> int:
     args = ap.parse_args()
 
     name = os.path.splitext(os.path.basename(args.suite))[0]
-    events, exit_code = run(args.suite, args.device)
+    events, exit_code, markers = run(args.suite, args.device)
     r = classify(events)
     r["suite"] = name
     r["process_exit_code"] = exit_code
+
+    # THE SUITE NEVER REACHED THE DEVICE.
+    #
+    # `flutter test` marks every declared test failed when it cannot run them,
+    # so a device that dies during `adb install` produces a full set of
+    # "failures" that no assertion ever evaluated. Reporting that as FAIL says
+    # the product is broken; reporting it as DEVICE_FAILURE says the run did
+    # not happen, which is what actually occurred. It is the same rule the rest
+    # of this file exists for, applied one layer lower: not-run is not a
+    # verdict about the code.
+    if r["failed"] and r["failed"] == r.get("unexplained_failures"):
+        r["note"] = (
+            f"all {r['failed']} failures arrived with NO assertion error, which "
+            "is the signature of a run aborted mid-flight rather than of "
+            "expectations that were evaluated and failed"
+        )
+
+    if markers:
+        r["device_markers"] = sorted(set(markers))
+        r["status"] = "DEVICE_FAILURE"
+        r["note"] = (
+            "the suite never ran on the device (" + ", ".join(sorted(set(markers)))
+            + ") — the recorded failures are the runner marking declared tests "
+            "unrunnable, NOT assertions that were evaluated"
+        )
 
     # THE DISAGREEMENT WORTH SEEING. When the exit code says success and the
     # coverage says otherwise, that gap is the defect this file was written
@@ -213,6 +286,13 @@ def main() -> int:
     with open(os.path.join(args.out, f"{name}.json"), "w", encoding="utf-8") as f:
         json.dump(r, f, indent=2)
 
+    # THE RAW STREAM, KEPT. Three Android runs were spent re-deriving what the
+    # events already said, because only the summary survived as an artifact.
+    with open(
+        os.path.join(args.out, f"{name}.events.json"), "w", encoding="utf-8"
+    ) as f:
+        json.dump(events, f)
+
     print(
         f"  {r['status']:<16} {name}  "
         f"(discovered {r['discovered']}, executed {r['executed']}, "
@@ -224,7 +304,13 @@ def main() -> int:
     for fail in r["failures"]:
         print(f"      FAILED : {fail}", flush=True)
 
-    return {"PASS": 0, "FAIL": 1, "NO_COVERAGE": 2}[r["status"]]
+    if r.get("note") and r["status"] == "DEVICE_FAILURE":
+        print(f"      {r['note']}", flush=True)
+
+    # DEVICE_FAILURE certifies nothing, so it shares NO_COVERAGE's exit code
+    # rather than FAIL's. A lane must not read "the emulator died" as "the
+    # product is broken".
+    return {"PASS": 0, "FAIL": 1, "NO_COVERAGE": 2, "DEVICE_FAILURE": 2}[r["status"]]
 
 
 if __name__ == "__main__":
