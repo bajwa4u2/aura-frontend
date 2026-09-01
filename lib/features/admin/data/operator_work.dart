@@ -405,6 +405,8 @@ final operatorWorkListProvider =
     FutureProvider.autoDispose<OperatorSignal<OperatorWorklist>>((ref) async {
   cacheOperatorReading(ref);
   final source = ref.watch(operatorWorkFilterProvider);
+  final memory = ref.watch(operatorReadingMemoryProvider);
+  final slot = OperatorReadingKey.workList(source);
   try {
     final list =
         await ref.watch(operatorWorkRepositoryProvider).list(source: source);
@@ -421,6 +423,11 @@ final operatorWorkListProvider =
     // the disclosure, so no extra request is made to resolve them.
     final summary = ref.read(operatorWorkSummaryProvider).valueOrNull?.value;
 
+    // Remembered whether complete OR partial. Half a worklist is still a real
+    // answer, and it is a better thing to hold than nothing when the next
+    // refresh cannot reach the authority at all.
+    memory.remember(slot, list, readAt);
+
     return list.complete
         ? OperatorSignal.complete(list, readAt: readAt)
         : OperatorSignal.partial(
@@ -433,7 +440,23 @@ final operatorWorkListProvider =
   } on DioException catch (e) {
     final code = e.response?.statusCode;
     if (code == 401 || code == 403) {
+      // Which queues an operator may read is a function of who they are, so a
+      // refusal invalidates every held reading rather than ageing it.
+      memory.forget();
       return const OperatorSignal.unauthorized(needs: 'operator work');
+    }
+    // THE LIST MUST NOT DISAGREE WITH THE SUMMARY.
+    //
+    // The summary already survives a failed refresh as a stale reading. Left
+    // as it was, the list beneath it went blank at the same moment — so WORK
+    // showed counts from a minute ago above an empty list, which reads as
+    // "the queues emptied" rather than "we could not re-ask".
+    //
+    // The held reading is recalled for THIS filter only, so a failed refresh
+    // while looking at one queue can never answer with another's items.
+    final held = memory.recall<OperatorWorklist>(slot);
+    if (held != null) {
+      return OperatorSignal.stale(held.value, readAt: held.readAt);
     }
     return const OperatorSignal.unavailable(detail: 'could not be read');
   }
