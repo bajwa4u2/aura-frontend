@@ -1,5 +1,27 @@
 # AGENTS.md — Aura Flutter Frontend
 
+<!-- foundational-product-direction-pointer -->
+## Foundational product direction (added 2026-09-03) — read once, before planning
+
+`docs/governance/FOUNDATIONAL_PRODUCT_DIRECTION.md` states what this product is for and what it may never be reduced to.
+Read it **before** planning, architecture, naming, route design or client
+reconstruction — so the product's purpose is in view before its code is.
+It is a mirror; the canonical source is
+`representation/inventory/FOUNDATIONAL_PRODUCT_DIRECTION.md`. Never edit the
+mirror in place — edit the source, advance its stamp, resync.
+
+**It is a directional authority, not a replacement authority.** It does not
+supersede, dilute or reinterpret this repository's established governance. Where
+a more specific established authority controls a matter, **that authority
+continues to govern** — here, this file's guardrails and the backend's capability authorities.
+
+**Do not cite it during routine implementation.** A governance layer invoked for
+ordinary work stops being read. Its §5 states the precedence rule and the four
+conflict classes; any narrowing of a specific authority must be classified and
+recorded in `representation/inventory/FOUNDATIONAL_DIRECTION_SUPERSESSION.md`,
+with the original wording preserved. Never supersede silently.
+
+
 Operating law for agents working in `aura_final/`. The umbrella scope file is `../AGENTS.md`; this file overrides for frontend work.
 
 ## Repo identity
