@@ -42,17 +42,24 @@ class _RouteMeta {
     required this.title,
     required this.description,
     this.image = 'og-default.png',
-    String? imageAlt,
+    this.imageAlt,
     this.crawlerVisibleHeading,
     this.crawlerVisibleBodyParagraphs = const <String>[],
     this.crawlerVisibleContactEmail,
-  }) : imageAlt = imageAlt ?? 'Aura Platform — institution operating infrastructure';
+  });
 
   final String path; // e.g. '/investors' — must start with '/' and not end with '/'
   final String title;
   final String description;
   final String image; // file under /social/
-  final String imageAlt;
+
+  /// Route-specific image alt text. NULL MEANS INHERIT: the substitution
+  /// map omits the key, `_applySubstitutions` leaves the tag untouched, and
+  /// the route keeps whatever `web/index.html` declares. This file must not
+  /// carry its own general default — a second default is a second authority,
+  /// and that is exactly how institution-first alt text survived the
+  /// 2026-08-15 public-first reconciliation on every route.
+  final String? imageAlt;
 
   /// Optional crawler-visible heading rendered inside a `<noscript>`
   /// block (and as a visible fallback for clients that disable JS).
@@ -78,7 +85,16 @@ class _RouteMeta {
       (crawlerVisibleHeading ?? '').trim().isNotEmpty;
 }
 
-/// Canonical positioning copy. Sourced from:
+/// Canonical positioning copy.
+///
+/// IDENTITY AUTHORITY — `representation/inventory/PRODUCT_IDENTITY_CANON.md`
+/// (Aura section, founder-approved public-first correction 2026-08-15) and
+/// `representation/inventory/AURA_PUBLIC_FIRST_CAUSAL_DOCTRINE.md`. No route
+/// description below may restate Aura's general identity as institution-first;
+/// institution-SPECIFIC routes stay institutional, which is a different thing.
+/// Enforced by `test/doctrine/public_first_causal_gate_test.dart`.
+///
+/// Screen copy consulted for register and length:
 /// - aura_final/lib/screens/mission_screen.dart
 /// - aura_final/lib/screens/investors_hub_screen.dart
 /// - aura_final/lib/screens/founder_message_screen.dart
@@ -98,7 +114,7 @@ const _routes = <_RouteMeta>[
     path: '/investors',
     title: 'Investors & Partners — Aura Platform LLC',
     description:
-        'Aura Platform LLC builds continuity infrastructure for institutions: Aura (institution operating infrastructure), Orchestrate (commercial execution infrastructure), and Bajwa Writes (continuity & preservation). One identity, one record, one accountable surface.',
+        'Aura Platform LLC builds continuity infrastructure: Aura (public-first civic discourse and accountable communication), Orchestrate (commercial execution infrastructure), and Bajwa Writes (continuity & preservation). One identity, one record, one accountable surface.',
     image: 'og-investors.png',
     imageAlt: 'Aura Platform LLC — investors and partners',
   ),
@@ -106,7 +122,7 @@ const _routes = <_RouteMeta>[
     path: '/founder',
     title: 'Founder — Aura Platform LLC',
     description:
-        'Aura Platform LLC is being built by an operator-builder focused on institution operating infrastructure, commercial execution, and durable systems.',
+        'Aura Platform LLC is being built by an operator-builder focused on public communication and discourse, commercial execution, and durable systems.',
     image: 'og-founder.png',
     imageAlt: 'Aura Platform LLC — founder',
   ),
@@ -120,19 +136,19 @@ const _routes = <_RouteMeta>[
     path: '/patrons',
     title: 'Patrons — Aura Platform LLC',
     description:
-        'Patrons provide ongoing support for the development of durable institution operating and execution infrastructure.',
+        'Patrons provide ongoing support for the development of durable communication and execution infrastructure.',
   ),
   _RouteMeta(
     path: '/institutions',
     title: 'Institutions — Aura Platform',
     description:
-        'Verified institutions on Aura — organizations running their public and member-facing life on institution operating infrastructure, under identity-bound, accountable record.',
+        'Verified institutions on Aura — organizations taking part in public discourse and running their member-facing life under identity-bound, accountable record.',
   ),
   _RouteMeta(
     path: '/white-paper',
     title: 'White Paper — Aura Platform',
     description:
-        'How Aura, as institution operating infrastructure, keeps identity, authority, and outcomes connected on one accountable record.',
+        'How Aura keeps identity, authority, and outcomes connected on one accountable record, for the people who take part and the institutions accountable to them.',
   ),
   _RouteMeta(
     path: '/contact',
@@ -149,7 +165,7 @@ const _routes = <_RouteMeta>[
         'user-controlled deletion.',
     crawlerVisibleHeading: 'Privacy Policy',
     crawlerVisibleBodyParagraphs: [
-      'Aura Platform LLC operates Aura, its institution operating infrastructure, '
+      'Aura Platform LLC operates Aura, its public communication platform, '
           'and the Orchestrate operational-execution platform. This page summarizes '
           'how the platform collects, uses, retains, and deletes personal '
           'information.',
@@ -188,8 +204,8 @@ const _routes = <_RouteMeta>[
         'Acceptable use, accountability requirements, and dispute resolution.',
     crawlerVisibleHeading: 'Terms of Use',
     crawlerVisibleBodyParagraphs: [
-      'These Terms of Use govern access to Aura, the institution operating '
-          'infrastructure, and the Orchestrate operational-execution platform, '
+      'These Terms of Use govern access to Aura, the public communication '
+          'platform, and the Orchestrate operational-execution platform, '
           'both operated by Aura Platform LLC.',
       'Identity: accounts on Aura are tied to verified real-person or '
           'verified-institution identity. Accountability is a core platform '
@@ -286,11 +302,12 @@ Map<String, String> _substitutions(_RouteMeta r) {
     'og:url': r.canonicalUrl,
     'og:image': r.imageUrl,
     'og:image:secure_url': r.imageUrl,
-    'og:image:alt': r.imageAlt,
     'twitter:title': r.title,
     'twitter:description': r.description,
     'twitter:image': r.imageUrl,
-    'twitter:image:alt': r.imageAlt,
+    // Alt text is inherited from the shell unless the route overrides it.
+    if (r.imageAlt != null) 'og:image:alt': r.imageAlt!,
+    if (r.imageAlt != null) 'twitter:image:alt': r.imageAlt!,
   };
 }
 

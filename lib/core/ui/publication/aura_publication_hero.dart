@@ -33,8 +33,13 @@ class AuraPublicationHero extends StatelessWidget {
   final String eyebrow;
 
   /// Display title — short, declarative, capital case. Examples:
-  ///   "Institution operating infrastructure."
+  ///   "Public–institutional alignment."
   ///   "Mission."
+  ///
+  /// Aura's GENERAL identity is authored in
+  /// `representation/inventory/PRODUCT_IDENTITY_CANON.md` and is public-first.
+  /// A title here must not restate it as institution-first; the examples above
+  /// are held to that by `test/doctrine/public_first_causal_gate_test.dart`.
   final String title;
 
   /// Optional one-paragraph subtitle below the title. Use for a

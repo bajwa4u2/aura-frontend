@@ -36,6 +36,29 @@ const _generalSurfaces = <String>[
   'lib/screens/founder_message_screen.dart',
   'lib/screens/supporters_hub_screen.dart',
   'pubspec.yaml',
+
+  // Publication and company surfaces speak for Aura itself just as loudly as
+  // the entry surfaces do, and they were outside the 2026-08-15 boundary. The
+  // white paper hero and the investors architecture block both still asserted
+  // the institution-first identity on 2026-09-04, three weeks after the app
+  // had been corrected around them.
+  'lib/screens/white_paper_screen.dart',
+  'lib/screens/investors_hub_screen.dart',
+  'lib/screens/mission_screen.dart',
+  'lib/screens/patrons_hub_screen.dart',
+
+  // A shared publication component teaches the next author by example. Its doc
+  // comment cited the institution-first white-paper title as the exemplar.
+  'lib/core/ui/publication/aura_publication_hero.dart',
+
+  // The web metadata layer speaks for Aura to every crawler, every social
+  // preview and every PWA install prompt — before a single Flutter frame
+  // renders. The 2026-08-15 reconciliation corrected the Dart surfaces and
+  // pubspec but never reached here, so institution-first framing survived on
+  // the shell defaults that EVERY public route inherits. Scoped in so the
+  // same layer cannot drift again.
+  'web/index.html',
+  'web/manifest.json',
 ];
 
 /// Phrases that assert the prohibited reverse causal model, or claim a
@@ -104,11 +127,78 @@ void main() {
 
     test('the scope list stays honest', () {
       // A surface silently dropped from the list would silently drop the rule.
-      expect(_generalSurfaces.length, greaterThanOrEqualTo(6));
+      expect(_generalSurfaces.length, greaterThanOrEqualTo(15));
       expect(_generalSurfaces, contains('pubspec.yaml'),
           reason: 'pubspec carries source-level product identity metadata');
       expect(_generalSurfaces,
           contains('lib/features/auth/presentation/register_screen.dart'));
+      expect(_generalSurfaces, contains('web/index.html'),
+          reason: 'the web shell carries the general metadata every public '
+              'route inherits');
+      expect(_generalSurfaces, contains('web/manifest.json'),
+          reason: 'the PWA install description is a general surface');
+      expect(_generalSurfaces, contains('lib/screens/white_paper_screen.dart'),
+          reason: 'a publication hero states Aura general identity');
+      expect(_generalSurfaces, contains('lib/screens/investors_hub_screen.dart'),
+          reason: 'the investors architecture block states Aura general '
+              'identity to the audience most likely to repeat it');
+    });
+
+    test('the route generator declares no general default of its own', () {
+      // `tool/web/generate_route_metadata.dart` is deliberately NOT scanned as
+      // a general surface: it legitimately carries institution-SPECIFIC route
+      // copy for '/institutions'. What it must never carry is a *general*
+      // fallback, because a second default is a second authority — and that is
+      // precisely how 'Aura Platform — institution operating infrastructure'
+      // stayed on every route's social card after the 2026-08-15 pass.
+      // The shell (`web/index.html`) owns the general defaults; the generator
+      // inherits by omitting the key.
+      final gen = File('tool/web/generate_route_metadata.dart');
+      expect(gen.existsSync(), isTrue);
+      final src = gen.readAsStringSync();
+
+      expect(
+        RegExp(r'imageAlt\s*\?\?').hasMatch(src),
+        isFalse,
+        reason: 'The generator reintroduced a hardcoded general imageAlt '
+            'default. Route alt text must inherit from web/index.html; make '
+            'imageAlt nullable and omit the substitution key instead.',
+      );
+      expect(
+        src.contains("if (r.imageAlt != null) 'og:image:alt'"),
+        isTrue,
+        reason: 'The inherit-when-null substitution was removed; general alt '
+            'text would stop inheriting from the shell.',
+      );
+    });
+
+    test('deck source cannot reseed the superseded identity', () {
+      // `docs/business_deck/` is deck SOURCE, not an identity source, and it
+      // carried the institution-first Aura identity for three weeks after the
+      // canon was corrected. It is not phrase-scanned, because its supersession
+      // notice must quote the retired wording to retire it. What is enforced is
+      // that the notice is there and still points at the canon.
+      const deckSources = <String>[
+        'docs/business_deck/README.md',
+        'docs/business_deck/source/aura_platform_business_deck_master.md',
+      ];
+      for (final path in deckSources) {
+        final file = File(path);
+        expect(file.existsSync(), isTrue, reason: 'missing deck source: \$path');
+        final text = file.readAsStringSync();
+        expect(
+          text.contains('IDENTITY IS NOT AUTHORED HERE'),
+          isTrue,
+          reason: '\$path lost its identity-supersession notice. Deck source '
+              'must never read as positioning authority: Identity is authored '
+              'only in representation/inventory/PRODUCT_IDENTITY_CANON.md.',
+        );
+        expect(
+          text.contains('PRODUCT_IDENTITY_CANON.md'),
+          isTrue,
+          reason: '\$path no longer names the canon it defers to.',
+        );
+      }
     });
 
     test('institution-owned surfaces are deliberately out of scope', () {

@@ -1,10 +1,22 @@
 # Aura Platform LLC Business Deck Master Source
 
+> **IDENTITY IS NOT AUTHORED HERE — SUPERSEDED 2026-09-04.**
+> Identity, Purpose, Governing Philosophy and Scope for Aura, Orchestrate, Bajwa Writes and
+> Aura Studio are authored **only** in `representation/inventory/PRODUCT_IDENTITY_CANON.md`,
+> with `representation/inventory/AURA_PUBLIC_FIRST_CAUSAL_DOCTRINE.md` governing Aura's causal
+> order. This folder is **deck source**, not an identity source.
+>
+> The institution-first Aura identity this file carried until 2026-09-04 ("institution operating
+> infrastructure — the system an institution runs its public and member-facing life on") is
+> **superseded**. It was written before the canon's public-first correction of 2026-08-15, and it
+> reseeded that framing into investor and public material months after the product surfaces had
+> been corrected. Do not reintroduce it, and do not quote this folder as positioning authority.
+
 ## Positioning
 
-Aura Platform LLC builds continuity infrastructure for institutions — three products on one shared substrate: Aura (institution operating infrastructure), Orchestrate (commercial execution infrastructure), and Bajwa Writes (continuity & preservation infrastructure). One conviction: the substrate outlasts the moment.
+Aura Platform LLC builds continuity infrastructure — three products on one shared substrate: Aura (public-first civic discourse and accountable communication), Orchestrate (commercial execution infrastructure), and Bajwa Writes (continuity & preservation infrastructure). One conviction: the substrate outlasts the moment.
 
-Aura is institution operating infrastructure — the system an institution runs its public and member-facing life on. It is built around verified institutional presence, public discussion, spaces, correspondence, realtime/live communication, and governance-aware interaction between the public and institutions, on one accountable record. Supporting short label: accountable institutional communication.
+Aura is a public-first platform for civic discourse and accountable communication — the environment through which people participate in meaningful communication and discourse, and institutions enter under clear identity to build a credible, accountable relationship with the public. It is built around public discussion, spaces, correspondence, realtime/live communication, verified institutional presence, and governance-aware interaction between the public and institutions, on one accountable record. Supporting short label: accountable public and institutional communication.
 
 Orchestrate is an AI-assisted revenue automation and operational execution platform. Its core path is outreach -> follow-ups -> meetings -> workflow execution -> billing. It should not be described as generic workflow software, generic productivity tooling, or just CRM.
 
@@ -23,7 +35,7 @@ Aura Platform LLC connects these needs through shared infrastructure ideas:
 
 ## Product 1: Aura
 
-Aura provides institution operating infrastructure — the system an institution runs its public and member-facing life on.
+Aura provides a public-first environment for civic discourse and accountable communication: people participate in purposeful communication that keeps its context, and institutions enter under clear identity, accountable for what they say officially.
 
 Core surfaces represented in the app:
 
@@ -40,7 +52,7 @@ Core surfaces represented in the app:
 
 Investor framing:
 
-Aura should be presented as institution operating infrastructure, not a consumer social media app.
+Aura should be presented as public-first civic infrastructure — a governed environment for purposeful public communication that institutions enter under accountable identity. **The original guardrail stands: it is not a consumer social media app.** Public-first describes who the product originates from, not a change of category; engagement-driven consumer social framing remains wrong for Aura.
 
 ## Product 2: Orchestrate
 

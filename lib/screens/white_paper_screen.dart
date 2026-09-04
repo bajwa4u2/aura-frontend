@@ -113,11 +113,11 @@ class _WhitePaperScreenState extends State<WhitePaperScreen> {
     final metaItems = <AuraPublicationMetaItem>[
       const AuraPublicationMetaItem(
         icon: Icons.description_outlined,
-        label: 'Version 1.0',
+        label: 'Version 1.2',
       ),
       const AuraPublicationMetaItem(
         icon: Icons.event_outlined,
-        label: 'Updated May 2026',
+        label: 'Updated September 2026',
       ),
       if (readingMinutes != null)
         AuraPublicationMetaItem(
@@ -128,11 +128,11 @@ class _WhitePaperScreenState extends State<WhitePaperScreen> {
 
     final hero = AuraPublicationHero(
       eyebrow: 'White Paper',
-      title: 'Institution operating infrastructure.',
+      title: 'Public–institutional alignment.',
       subtitle:
           'How Aura keeps identity, authority, and outcomes connected '
-          'on one accountable record — the system an institution runs '
-          'its public and member-facing life on.',
+          'on one accountable record, so public reality and institutional '
+          'responsibility stay aligned in both directions.',
       metaItems: metaItems,
       actions: [
         AuraPrimaryButton(
@@ -160,8 +160,8 @@ class _WhitePaperScreenState extends State<WhitePaperScreen> {
           const AuraPublicationDivider(),
           const AuraPublicationColophon(
             publisher: 'Aura Platform LLC',
-            version: 'White Paper · Version 1.0',
-            updatedLabel: 'May 2026',
+            version: 'White Paper · Version 1.2',
+            updatedLabel: 'September 2026',
           ),
         ],
       ],
