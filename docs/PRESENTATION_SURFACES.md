@@ -8,7 +8,7 @@ and nothing on them should be edited to suit one.
 
 | Path | File | What it is |
 |---|---|---|
-| `/deck` | `web/deck/index.html` | Product brief: what Aura is, in the order it was built |
+| `/deck` | `web/deck/index.html` | **Business and investment case**: the condition, the market, who pays, the monetization architecture, and the current commercial stage |
 | `/demo` | `web/demo/index.html` | The product's own surfaces, rendered at real density |
 | — | `web/shared/aura.css` | Page frame, tokens, the causal spine, typed chips |
 | — | `web/shared/aura-surfaces.css` | The publication card and the other product surfaces |
@@ -48,6 +48,42 @@ Nothing here was invented.
   identity statement is compressed from `representation/inventory/PRODUCT_IDENTITY_CANON.md`.
 - **Register** — `company/visuals/visual-language/presentation-registers.md`: dark, mixed type,
   reveal-only motion, medium density. Product-level, so Aura's own accent, not company `co/teal`.
+
+## /deck is the business case, not a second demo
+
+It was a product brief until 2026-09-04, and the founder caught the flaw: five of its seven
+sections restated `/demo` in prose. The two now do different jobs — **`/demo` is the product proof,
+`/deck` is the commercial argument** — and nothing should push the deck back toward describing
+capabilities.
+
+**Everything commercial on it is audited, not asserted.** Sources, all first-hand:
+
+- `aura-backend/src/monetization/` — the plan and credit architecture, four payment providers
+  (Stripe, Apple IAP, Google Play, Microsoft Store) behind one internal product-code layer.
+- `monetization-config.service.ts` — the **FREE + PRO taxonomy frozen 2026-08-16**, with `PRO`
+  carrying exactly one capability, `canSpeakOfficially`, plus member capacity. The comment there
+  also records that the final Free/Pro boundary is **not decided** and enforcement is not to be
+  activated before founder adjudication.
+- `monetization.types.ts` — the credit-metered features (AI composition, translation, realtime by
+  the minute), and the deletion of `hasAiEditor` / `hasTranslation` / `hasRealtime` from the plan
+  capability map so that "dead booleans" could never become accidental pricing doctrine.
+- `monetization-verification-boundary.spec.ts` — the founder ruling that **verification is not
+  purchasable and trust is not for sale**, pinned by a test that fails the build.
+- `representation/inventory/COMMERCIAL_MARKET_SIZING_EVIDENCE.md` — the only numbers on the page:
+  1,313 Michigan / 46,082 U.S. core, 73,065 U.S. expanded, all NAICS 813410 + 813910 + 813920
+  (+ 813319 + 813990 expanded), 2023 County Business Patterns. That document also forbids calling
+  73,065 a TAM without saying it is an expanded proxy, which the page does.
+- `representation/inventory/COMMERCIALIZATION_AUDIENCE_BENEFIT_DOCTRINE.md` — the buyer definition
+  and the canonical governing purpose, quoted verbatim.
+- Production database and Railway configuration, read directly: `AURA_MONETIZATION_MODE` unset so
+  the mode defaults to **disabled**, no payment-provider credential of any kind present, and zero
+  rows in `InstitutionSubscription`, `PaymentTransaction`, `CreditTransaction` and
+  `ProcessedWebhookEvent`. Three institutions, all `FREE`, all verified.
+
+**No price appears anywhere on the deck**, and none should be added until the Free/Pro boundary is
+adjudicated. The `$5` and `$20` tiers on `/support/:handle` are the person-side support surface,
+whose own code says payments are a later integration; the deck describes it as a placed surface
+rather than revenue, which is what it is.
 
 ## Rules these pages hold
 

@@ -562,3 +562,84 @@ section:last-of-type { border-bottom: 0; }
   .fact__s { text-align: left; white-space: normal; }
   .frozen { padding-left: var(--s20); }
 }
+
+/* ── the enforcement ladder ────────────────────────────────────────────────
+   `MonetizationMode` is a four-step ladder in the backend — disabled,
+   visible, soft_enforce, enforce — and production sits on the first rung.
+   Drawn as a ladder because that is what it is: a staged activation with a
+   current position, not a roadmap promise. */
+
+.ladder {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin-top: var(--s24);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  overflow: hidden;
+}
+
+.rung {
+  padding: var(--s16) var(--s12);
+  border-right: 1px solid var(--divider);
+  background: rgba(255, 255, 255, 0.015);
+}
+.rung:last-child { border-right: 0; }
+
+.rung__k {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.rung__t { margin-top: 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.rung__d { margin-top: 3px; font-size: 12.5px; color: var(--faint); line-height: 1.45; }
+
+.rung[data-now] {
+  background: linear-gradient(180deg, rgba(91, 108, 255, 0.10), transparent);
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+.rung[data-now] .rung__k { color: var(--accent-text); }
+.rung[data-now] .rung__t { color: var(--ink); }
+
+/* ── a measured figure, with the source under it ─────────────────────────── */
+
+.figures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s12);
+  margin-top: var(--s24);
+}
+
+.figure {
+  background: var(--g-card);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  padding: var(--s20);
+}
+.figure__n {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  font-variant-numeric: tabular-nums;
+}
+.figure__t { margin-top: 4px; font-size: 13.5px; color: var(--muted); line-height: 1.45; }
+.figure__s {
+  margin-top: var(--s12);
+  padding-top: var(--s8);
+  border-top: 1px solid var(--divider);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+}
+
+@media (max-width: 860px) {
+  .ladder { grid-template-columns: 1fr 1fr; }
+  .rung:nth-child(2) { border-right: 0; }
+  .rung:nth-child(-n+2) { border-bottom: 1px solid var(--divider); }
+  .figures { grid-template-columns: 1fr; }
+}
+
