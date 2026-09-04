@@ -19,6 +19,7 @@ import '../../../core/media/aura_attachment_card.dart';
 import '../../../core/media/aura_stored_media.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/media/aura_voice_player.dart';
+import '../../../core/notifications/ios_call_kit.dart';
 import '../../../core/media/voice_note_capture.dart';
 import '../../../core/media/stored_media.dart';
 import '../../../core/media/aura_media_viewer.dart';
@@ -1062,6 +1063,27 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           .read(conversationsRepositoryProvider)
           .startLive(widget.conversationId, kind: kind);
       if (sessionId.isEmpty) throw Exception('no session');
+
+      // TELL THE SYSTEM ABOUT A CALL AURA IS PLACING.
+      //
+      // The session exists and is Aura's; this only asks the OS to represent
+      // it, which is what puts an outgoing call in the phone's call register
+      // and lets it participate in audio routing and cellular-call
+      // interaction. Deliberately after `startLive`, because the session id is
+      // the identity both sides map by — and deliberately unawaited-on-failure:
+      // the return value says whether the OS will show the call, never whether
+      // the call happened. Where CallKit is prohibited by storefront or simply
+      // absent, this is a no-op and the call proceeds unchanged.
+      unawaited(
+        IosCallKit.instance
+            .reportOutgoingStarted(
+              sessionId,
+              displayName: (who ?? '').trim().isEmpty ? 'Aura call' : who!,
+              video: video,
+            )
+            .catchError((_) => false),
+      );
+
       if (mounted) {
         // Pressing Call IS the intent. Navigating to the bare session
         // address made the room ask the caller to join the call they had

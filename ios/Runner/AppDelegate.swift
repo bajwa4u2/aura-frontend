@@ -102,6 +102,23 @@ func notificationBelongsToCall(
   /// originated so the delegate can fulfil them without echoing.
   private var answeringLocally: Set<UUID> = []
 
+  /// THE OUTGOING TWIN OF `answeringLocally`.
+  ///
+  /// `CXStartCallAction` comes back to this delegate whether the system
+  /// originated it (a person tapping Aura in Recents or asking Siri) or Aura
+  /// requested it because someone pressed Call in a conversation. Only the
+  /// first is an instruction to place a call; treating our own request as one
+  /// would start a second session for the call already being started.
+  ///
+  /// Same discipline, same reason, opposite direction.
+  private var startingLocally: Set<UUID> = []
+
+  /// Which calls Aura PLACED. `reportOutgoingCall(with:connectedAt:)` is only
+  /// meaningful for an outgoing call, and Dart cannot be asked to know the
+  /// direction — the media layer that observes "the far side is here" is the
+  /// same code for both. Native knows, so native decides.
+  private var outgoingCalls: Set<UUID> = []
+
   /// A VoIP push can outrun the Flutter engine on a cold start. Anything that
   /// arrives before Dart is listening is held here rather than dropped — the
   /// call is already on screen by then, so losing it would strand the user on a
@@ -242,6 +259,8 @@ func notificationBelongsToCall(
     uuidBySession.removeAll()
     sessionByUuid.removeAll()
     answeringLocally.removeAll()
+    startingLocally.removeAll()
+    outgoingCalls.removeAll()
   }
 
   // MARK: - CallKit call identity
@@ -265,6 +284,8 @@ func notificationBelongsToCall(
   private func forget(_ sessionId: String) {
     if let uuid = uuidBySession.removeValue(forKey: sessionId) {
       sessionByUuid.removeValue(forKey: uuid)
+      startingLocally.remove(uuid)
+      outgoingCalls.remove(uuid)
     }
   }
 
@@ -419,6 +440,94 @@ func notificationBelongsToCall(
           NSLog("[callkit] local answer request failed: \(error.localizedDescription)")
         }
       }
+      result(true)
+
+    case "startOutgoingCall":
+      // THE MISSING HALF OF CALLKIT PARTICIPATION.
+      //
+      // Incoming calls have been reported since 1.4.0, so iOS knows about a
+      // call Aura received. It has never known about one Aura placed, because
+      // nothing requested `CXStartCallAction` — and with no start action there
+      // is nothing for the system to log, no entry in Recents, and no system
+      // call for audio routing or a cellular call to interact with.
+      //
+      // Refusing here is NOT a failure. Where CallKit is prohibited by
+      // storefront, or has not been activated, the Aura call proceeds exactly
+      // as it does today and simply goes unreported. Dart treats `false` as
+      // "not reported", never as "not called".
+      guard callKitAllowed, let provider = provider else {
+        result(false)
+        return
+      }
+      guard let args = call.arguments as? [String: Any],
+            let sessionId = args["sessionId"] as? String,
+            !sessionId.isEmpty
+      else {
+        result(false)
+        return
+      }
+      let calleeName = (args["displayName"] as? String).flatMap {
+        $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0
+      } ?? "Aura call"
+      let isVideo = (args["video"] as? Bool) ?? false
+
+      // Deterministic from the session id, exactly as the incoming path mints
+      // it — so one session is one call UUID whichever direction it began in,
+      // and a retry cannot produce a second call for the same session.
+      let uuid = callUuid(for: sessionId)
+
+      // Generic, never .phoneNumber. The incoming path refuses that already
+      // because "mislabelling it puts a fake phone number in the system call
+      // log", and an outgoing entry is written into the same log.
+      let handle = CXHandle(type: .generic, value: calleeName)
+      let action = CXStartCallAction(call: uuid, handle: handle)
+      action.isVideo = isVideo
+      action.contactIdentifier = calleeName
+
+      startingLocally.insert(uuid)
+      callController.request(CXTransaction(action: action)) { [weak self] error in
+        guard let self = self else { return }
+        if let error = error {
+          // The call itself is unaffected — only its system representation is.
+          // Drop the guard so a later system-originated start is not mistaken
+          // for this one.
+          self.startingLocally.remove(uuid)
+          self.forget(sessionId)
+          NSLog("[callkit] outgoing start request failed: \(error.localizedDescription)")
+          result(false)
+          return
+        }
+        // Ringing at the far end, as far as this device can know. Recents
+        // needs this to distinguish a call that connected from one that did
+        // not, and a duration from a zero.
+        self.outgoingCalls.insert(uuid)
+        provider.reportOutgoingCall(with: uuid, startedConnectingAt: Date())
+        result(true)
+      }
+
+    case "callOutgoingConnected":
+      // Deliberately NOT folded into `callConnected`. That case requests
+      // `CXAnswerCallAction` to dismiss an incoming sheet, which is the
+      // opposite operation and is certified working; an outgoing call has no
+      // sheet to dismiss and needs a connected timestamp instead.
+      guard callKitAllowed, let provider = provider else {
+        result(false)
+        return
+      }
+      guard let args = call.arguments as? [String: Any],
+            let sessionId = args["sessionId"] as? String,
+            let uuid = uuidBySession[sessionId],
+            // Only a call Aura placed. Dart calls this from the media layer,
+            // which is shared with incoming calls; reporting an outgoing
+            // connect for a call that came IN is meaningless to CallKit and
+            // would be a lie about direction in the system log.
+            outgoingCalls.contains(uuid)
+      else {
+        result(false)
+        return
+      }
+      provider.reportOutgoingCall(with: uuid, connectedAt: Date())
+      outgoingCalls.remove(uuid)
       result(true)
 
     case "clearCallNotifications":
@@ -765,6 +874,29 @@ extension AppDelegate: CXProviderDelegate {
     // with reason "failed" — the sheet never hangs waiting on the network.
     emit("answer", ["sessionId": sessionId])
     action.fulfill()
+  }
+
+  func provider(_ provider: CXProvider, perform action: CXStartCallAction) {
+    // Reached in two ways, and they mean opposite things.
+    //
+    // Aura requested it, because someone pressed Call: the session already
+    // exists and is being joined. Fulfil so the system call becomes real, and
+    // say nothing to Dart — telling it to start a call here would start a
+    // second one for the session it is already in.
+    if startingLocally.remove(action.callUUID) != nil {
+      action.fulfill()
+      return
+    }
+
+    // The SYSTEM originated it — Recents, Siri, a car. Aura has no session for
+    // this yet and cannot invent one, because a call needs a conversation, an
+    // acting identity and an invitation that only Aura can author.
+    //
+    // Failing is the honest answer: it tells the system the call did not
+    // start, rather than showing a connected call that exists nowhere. When
+    // system-originated calling is wanted it needs its own path, not a
+    // silent reinterpretation of this one.
+    action.fail()
   }
 
   func provider(_ provider: CXProvider, perform action: CXEndCallAction) {

@@ -1131,6 +1131,9 @@ class RealtimeController extends StateNotifier<RealtimeState>
   }
 
   Future<void> leave() async {
+    // One call, one report. Leaving retires the latch so the next placed
+    // call reports its own connect rather than inheriting this one's.
+    _reportedOutgoingConnected = false;
     if (_terminating) return;
     final sessionId = (state.sessionId ?? '').trim();
     if (sessionId.isEmpty) return;
@@ -2327,6 +2330,15 @@ class RealtimeController extends StateNotifier<RealtimeState>
     _rtcConfigurationSessionId = null;
   }
 
+  /// One-shot: the far side's media arrived on a call this device placed.
+  ///
+  /// CallKit needs a connected timestamp or the call register shows an
+  /// outgoing entry with no duration. Native decides whether this session was
+  /// outgoing at all and ignores it otherwise, so this hook does not need to
+  /// know the direction — which matters, because the media layer below is the
+  /// same code for a call received and a call placed.
+  bool _reportedOutgoingConnected = false;
+
   void _handleMediaSnapshot(RealtimeMediaSnapshot snapshot) {
     state = state.copyWith(
       isMediaReady: snapshot.ready,
@@ -2342,6 +2354,21 @@ class RealtimeController extends StateNotifier<RealtimeState>
 
     if (snapshot.ready && state.isJoined) {
       unawaited(_reconcileRtcPeers('media-ready'));
+    }
+
+    // Purely additive: nothing above branches on this, and a failure here
+    // cannot affect the call. Remote media present is the honest moment a
+    // placed call became a conversation.
+    if (!_reportedOutgoingConnected && snapshot.remoteRenderers.isNotEmpty) {
+      final sessionId = _managedSessionId;
+      if (sessionId.isNotEmpty) {
+        _reportedOutgoingConnected = true;
+        unawaited(
+          IosCallKit.instance
+              .reportOutgoingConnected(sessionId)
+              .catchError((_) {}),
+        );
+      }
     }
   }
 

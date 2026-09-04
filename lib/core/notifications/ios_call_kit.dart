@@ -140,6 +140,53 @@ class IosCallKit {
     }
   }
 
+  /// Report a call Aura is PLACING, so the system knows about it.
+  ///
+  /// Returns whether the system accepted the report. `false` is an ordinary
+  /// outcome, not an error: CallKit is refused in a prohibited storefront and
+  /// absent on every platform but iOS, and the Aura call is unaffected either
+  /// way. Nothing may branch product behaviour on this result — it says only
+  /// whether the OS will show the call in its own surfaces.
+  ///
+  /// Without this, iOS has no record of a call Aura placed, so an outgoing
+  /// call appears in no call register, participates in no audio-routing
+  /// decision, and has no relationship to a cellular call arriving during it.
+  Future<bool> reportOutgoingStarted(
+    String sessionId, {
+    required String displayName,
+    required bool video,
+  }) async {
+    if (!isSupported || sessionId.isEmpty) return false;
+    try {
+      final ok = await _channel.invokeMethod<bool>('startOutgoingCall', {
+        'sessionId': sessionId,
+        'displayName': displayName,
+        'video': video,
+      });
+      return ok ?? false;
+    } catch (e) {
+      debugPrint('[callkit] startOutgoingCall failed: $e');
+      return false;
+    }
+  }
+
+  /// The far end answered and media is up on a call Aura placed.
+  ///
+  /// Separate from [reportConnected], which answers an INCOMING system call to
+  /// dismiss its sheet. An outgoing call has no sheet; it needs a connected
+  /// timestamp, or the call register shows an entry with no duration.
+  Future<void> reportOutgoingConnected(String sessionId) async {
+    if (!isSupported || sessionId.isEmpty) return;
+    try {
+      await _channel.invokeMethod<bool>(
+        'callOutgoingConnected',
+        {'sessionId': sessionId},
+      );
+    } catch (e) {
+      debugPrint('[callkit] callOutgoingConnected failed: $e');
+    }
+  }
+
   /// Remove any iOS notification still on screen for [sessionId].
   ///
   /// THE RING HAS TWO HALVES ON iOS AND ONLY ONE RETIRED ITSELF. CallKit goes
