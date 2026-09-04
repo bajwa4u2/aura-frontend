@@ -24,6 +24,7 @@ if (window.IntersectionObserver &&
 </script>
 </head>
 <body>
+<div class="progress" id="progress" aria-hidden="true"></div>
 <main class="wrap">
 
   <header class="masthead">
@@ -293,33 +294,48 @@ if (window.IntersectionObserver &&
     to a plain divider. Nothing is hidden and nothing is deleted — the institution's newest
     statement simply carries the weight.</p>
 
-    <div class="grid3">
-      <article class="pub" data-official data-age="fresh">
+    <div class="decay">
+      <article class="pub" data-official data-decay id="decayCard">
         <div class="pub__eyebrow">
           <span class="official">OFFICIAL</span>
-          <span class="typetoken">• ANNOUNCEMENT</span>
+          <span class="typetoken">&bull; ANNOUNCEMENT</span>
+          <span class="newchip" id="decayNew">NEW</span>
         </div>
-        <h4 class="pub__title" style="margin-top:0">Bus lane consultation — summary</h4>
-        <p class="pub__meta">3h · full intensity</p>
+        <div class="author">
+          <div class="avatar" data-inst>RC</div>
+          <div class="author__b">
+            <div class="author__l1">
+              <span class="author__name">Riverside City</span>
+              <span class="idchip">Official</span>
+              <span class="author__dot">&middot;</span>
+              <span class="author__time" id="decayTime">3h</span>
+            </div>
+            <h3 class="pub__title">Bus lane consultation &mdash; summary and next steps</h3>
+            <p class="pub__body">The consultation summary is published today, with the two
+            departmental responses reconciled into one case record.</p>
+          </div>
+        </div>
       </article>
 
-      <article class="pub" data-official data-age="recent">
-        <div class="pub__eyebrow">
-          <span class="official">OFFICIAL</span>
-          <span class="typetoken">• ANNOUNCEMENT</span>
+      <div class="decay__panel">
+        <div class="decay__age" id="decayAge">3 hours old</div>
+        <span class="chip decay__bucket" id="decayBucket">FRESH</span>
+        <label for="decayRange" class="small" style="display:block;margin-bottom:6px">
+          Move the statement through time
+        </label>
+        <input type="range" id="decayRange" min="0" max="240" value="3" step="1"
+               aria-label="Age of the announcement in hours">
+        <div class="decay__rows">
+          <div class="decay__row"><span>Accent border alpha</span><b id="decayAlpha">0.45</b></div>
+          <div class="decay__row"><span>Eyebrow opacity</span><b id="decayEyebrow">1.00</b></div>
+          <div class="decay__row"><span>NEW chip</span><b id="decayChip">shown</b></div>
         </div>
-        <h4 class="pub__title" style="margin-top:0">Winter service advisory</h4>
-        <p class="pub__meta">2d · calmer accent</p>
-      </article>
-
-      <article class="pub" data-official data-age="stale">
-        <div class="pub__eyebrow">
-          <span class="official">OFFICIAL</span>
-          <span class="typetoken">• NOTICE</span>
+        <div class="thresholds" id="decayThresholds">
+          <span class="chip" data-bucket="fresh">&le;24h &middot; 0.45</span>
+          <span class="chip" data-bucket="recent">24&ndash;72h &middot; 0.28</span>
+          <span class="chip" data-bucket="stale">&gt;72h &middot; divider</span>
         </div>
-        <h4 class="pub__title" style="margin-top:0">Committee membership update</h4>
-        <p class="pub__meta">9d · plain edge</p>
-      </article>
+      </div>
     </div>
 
     <p class="small" style="margin-top:20px">Attention decays without animation, without a
@@ -451,21 +467,7 @@ if (window.IntersectionObserver &&
 
 </main>
 
-<script>
-(function () {
-  var els = document.querySelectorAll('.rv');
-  if (!('IntersectionObserver' in window) ||
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    for (var i = 0; i < els.length; i++) els[i].classList.add('in');
-    return;
-  }
-  var io = new IntersectionObserver(function (entries) {
-    entries.forEach(function (e) {
-      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
-    });
-  }, { rootMargin: '0px 0px -8% 0px' });
-  els.forEach(function (el) { io.observe(el); });
-})();
-</script>
+<script src="/shared/aura-motion.js" defer></script>
+<script src="/shared/aura-decay.js" defer></script>
 </body>
 </html>

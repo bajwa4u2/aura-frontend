@@ -33,7 +33,8 @@
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  background: var(--subtle);
+  /* AuraGradients.header — what the client draws behind shell chrome. */
+  background: var(--g-header);
   border-bottom: 1px solid var(--divider);
   font-family: var(--mono);
   font-size: 11px;
@@ -297,4 +298,119 @@
   .pair, .pair[data-reverse] { grid-template-columns: 1fr; }
   .stage { grid-template-columns: 1fr; }
   .msg__b { max-width: 88%; }
+}
+
+
+/* ── time decay, driven ────────────────────────────────────────────────────
+   The client computes an age bucket and applies two numbers: a border alpha
+   on the announcement's accent edge and an opacity on the OFFICIAL eyebrow.
+   Both are read from CSS custom properties here so the same card can be moved
+   through the rule instead of being photographed three times.
+
+   With no script the card renders at its default fresh values, which is a
+   true state — only the adjustment is lost, not the meaning. */
+
+.decay {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 340px);
+  gap: var(--s24);
+  align-items: start;
+  margin-top: var(--s24);
+}
+
+.pub[data-decay] {
+  border-color: rgba(91, 108, 255, var(--age-alpha, 0.45));
+}
+.pub[data-decay] .pub__eyebrow { opacity: var(--eyebrow-op, 1); }
+
+.decay__panel {
+  background: var(--g-card);
+  border: 1px solid var(--divider);
+  border-radius: var(--r-card);
+  padding: var(--s20);
+}
+
+.decay__age {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.decay__bucket {
+  display: inline-flex;
+  margin: var(--s8) 0 var(--s16);
+}
+
+.decay input[type="range"] {
+  width: 100%;
+  height: 4px;
+  margin: 0 0 var(--s16);
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: var(--r-pill);
+  /* The default track renders near-white on this surface. Toned to the
+     divider so the control belongs to the panel it sits in. */
+  background: rgba(255, 255, 255, 0.10);
+  cursor: pointer;
+}
+
+.decay input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--g-accent);
+  border: 2px solid var(--card);
+  box-shadow: 0 0 0 1px rgba(91, 108, 255, 0.45);
+}
+
+.decay input[type="range"]::-moz-range-thumb {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: #5B6CFF;
+  border: 2px solid var(--card);
+}
+
+.decay input[type="range"]:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 3px;
+}
+
+.decay__rows { border-top: 1px solid var(--divider); }
+
+.decay__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s12);
+  padding: 9px 0;
+  border-bottom: 1px solid var(--divider);
+  font-size: 13px;
+  color: var(--muted);
+}
+.decay__row b {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* the three thresholds, always visible and always correct */
+.thresholds { display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--s16); }
+
+/* ── the speaking tile ─────────────────────────────────────────────────────
+   A live session marks who is speaking. The client does this with a border,
+   not a pulse, and so does this. */
+.tile[data-speaking]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r-sm);
+  box-shadow: inset 0 0 0 1px rgba(91, 108, 255, 0.45);
+  pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .decay { grid-template-columns: 1fr; }
 }

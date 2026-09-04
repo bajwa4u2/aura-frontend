@@ -25,6 +25,7 @@ if (window.IntersectionObserver &&
 </script>
 </head>
 <body>
+<div class="progress" id="progress" aria-hidden="true"></div>
 <main class="wrap">
 
   <header class="masthead">
@@ -78,9 +79,12 @@ if (window.IntersectionObserver &&
       </div>
     </div>
 
-    <p class="small" style="margin-top:24px">The reverse order — institutions first, public
-    second — is named and prohibited in the founder-frozen causal doctrine, and a build-breaking
-    test enforces it against Aura's general surfaces.</p>
+    <blockquote class="frozen">
+      <p>Aura is public-first, not institution-first. People and their communication needs are
+      the originating force; institutional identity is accountability infrastructure inside a
+      public environment whose value already exists — not the premise by which people arrive.</p>
+      <cite>Founder-frozen causal doctrine · enforced by a build-breaking test</cite>
+    </blockquote>
   </section>
 
   <!-- ── 2. what is built ───────────────────────────────────────────────── -->
@@ -199,6 +203,30 @@ if (window.IntersectionObserver &&
     concerns them. It is not permitted to publish, approve, admit, or speak officially. That
     boundary is enforced at runtime, not stated in a policy document.</p>
 
+    <div class="grants">
+      <div class="grant" data-held="yes">
+        <div class="grant__k">Grant 01</div>
+        <div class="grant__t">Publish officially</div>
+        <div class="grant__d">May issue a statement in the institution's own voice.</div>
+        <div class="grant__bar"></div>
+      </div>
+      <div class="grant" data-held="yes">
+        <div class="grant__k">Grant 02</div>
+        <div class="grant__t">Approve</div>
+        <div class="grant__d">May let someone else's statement become official.</div>
+        <div class="grant__bar"></div>
+      </div>
+      <div class="grant" data-held="no">
+        <div class="grant__k">Not held</div>
+        <div class="grant__t">Admit to a session</div>
+        <div class="grant__d">May decide who enters a live session. Withdrawn without
+        touching the other two.</div>
+        <div class="grant__bar"></div>
+      </div>
+    </div>
+    <p class="small" style="margin-top:16px">Three separate grants, shown as one person actually
+    holds them. Nothing here is a role that arrives as a bundle.</p>
+
     <div class="facts">
       <div class="fact">
         <div class="fact__t"><b>Composition is assisted; publication is approved.</b>
@@ -291,21 +319,6 @@ if (window.IntersectionObserver &&
 
 </main>
 
-<script>
-(function () {
-  var els = document.querySelectorAll('.rv');
-  if (!('IntersectionObserver' in window) ||
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    for (var i = 0; i < els.length; i++) els[i].classList.add('in');
-    return;
-  }
-  var io = new IntersectionObserver(function (entries) {
-    entries.forEach(function (e) {
-      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
-    });
-  }, { rootMargin: '0px 0px -8% 0px' });
-  els.forEach(function (el) { io.observe(el); });
-})();
-</script>
+<script src="/shared/aura-motion.js" defer></script>
 </body>
 </html>
