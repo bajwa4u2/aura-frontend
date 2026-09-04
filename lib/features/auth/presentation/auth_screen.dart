@@ -188,7 +188,24 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         return;
       }
 
-      // Logged in — router handles redirect
+      // SIGNED IN — GO, RATHER THAN WAIT TO BE MOVED.
+      //
+      // This used to end here on the comment "router handles redirect", and
+      // the redirect is driven by a refreshListenable over authority
+      // providers. Those providers return null on ERROR as well as while
+      // loading, and the router treats null as "stay put" — deliberately, so
+      // an unresolved authority never bounces anyone. The consequence is that
+      // a single failed /auth/me leaves a signed-in person on the sign-in
+      // form with no spinner, no error and nothing to press: a button that
+      // did its job and looks broken.
+      //
+      // Navigating explicitly costs nothing when the listener works — the
+      // router re-runs its guards on arrival either way, so verification and
+      // identity gates still get their say — and it removes the failure mode
+      // entirely when it does not.
+      if (!mounted) return;
+      final destination = _safeRedirectOrNull(widget.redirectTo) ?? '/home';
+      context.go(destination);
     } catch (e) {
       if (!mounted) return;
       final msg = _humanizeLoginError(e);
@@ -628,6 +645,9 @@ class _LoginFormCard extends StatelessWidget {
                 textInputAction: TextInputAction.next,
                 validator: emailValidator,
                 prefixIcon: const Icon(Icons.email_outlined),
+                autofillHints: const [AutofillHints.username, AutofillHints.email],
+                // Return/Next moves on rather than doing nothing.
+                onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
               ),
               const SizedBox(height: AuraSpace.s10),
               AuraInput(
@@ -637,6 +657,14 @@ class _LoginFormCard extends StatelessWidget {
                 textInputAction: TextInputAction.done,
                 validator: passwordValidator,
                 prefixIcon: const Icon(Icons.lock_outline),
+                autofillHints: const [AutofillHints.password],
+                // THE KEYBOARD'S DONE KEY NOW SIGNS IN.
+                //
+                // It used to do nothing at all, which mattered most exactly
+                // where it was least visible: on a tablet with the keyboard
+                // up, the Sign in button sits below the fold, and Done was
+                // the affordance a person would reach for first.
+                onFieldSubmitted: busy ? null : (_) => onLogin(),
                 suffixIcon: IconButton(
                   onPressed: busy ? null : onTogglePassword,
                   icon: Icon(

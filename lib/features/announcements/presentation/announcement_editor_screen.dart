@@ -175,6 +175,14 @@ class _AnnouncementEditorScreenState
     if (reason != null) return reason;
     if (_titleController.text.trim().isEmpty) return 'A title is required.';
     if (_summaryController.text.trim().isEmpty) return 'A summary is required.';
+    // The one gate in `_canSubmit` that had no words. Publish sat disabled and
+    // the surface said nothing, which is indistinguishable from a broken
+    // button: there is no wrong input to correct and no reason to look for.
+    if (!_isPlatformMode) {
+      return 'Publish on behalf of an institution from that institution’s '
+          'announcement composer, where official-voice rules apply. This '
+          'surface drafts only.';
+    }
     return null;
   }
 

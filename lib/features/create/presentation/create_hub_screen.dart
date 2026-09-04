@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/auth/admin_access_provider.dart';
+import '../../admin/domain/operator_entry.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/navigation/navigation_authority.dart';
 import '../../../core/ui/aura_design_system.dart';
@@ -65,11 +65,6 @@ class CreateHubScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Display-only admin signal — never triggers a probe from /create. A
-    // platform admin who has not opened /admin this session reaches platform
-    // announcements from the admin workspace, which is where that authority
-    // already lives; Create does not probe every signed-in person to find out.
-    final isAdmin = ref.watch(appAdminCachedDisplayProvider);
     final institutionAsync = ref.watch(institutionAccessProvider);
 
     // UNKNOWN IS NOT "NO". The previous reading collapsed loading into
@@ -84,7 +79,21 @@ class CreateHubScreen extends ConsumerWidget {
     final institutionName =
         (institution.institution?['name'] ?? '').toString().trim();
 
-    final canAnnounceAsPlatform = isAdmin;
+    // WHO MAY ANNOUNCE FOR AURA, ASKED RATHER THAN REMEMBERED.
+    //
+    // This read `isAdmin` — the DISPLAY cache above, which is only populated
+    // by a probe that fires on entering /admin. A platform admin who had not
+    // opened the admin workspace this session therefore looked like a
+    // non-admin here, and `openAnnouncement` silently routed them to
+    // `?scope=institution`: a drafting-only surface whose Publish button is
+    // disabled. No request ever reached the backend, so nothing appeared in
+    // the audit log either — the button simply did nothing.
+    //
+    // `shell_header_tools.dart` already learned this and moved off the same
+    // cache for the operator entrance, in its own words because "an operator
+    // could not see the door until they had already found it by typing the
+    // address". Create asks the same small, audit-safe question.
+    final canAnnounceAsPlatform = ref.watch(canEnterOperatorConsoleProvider);
     final canAnnounceAsInstitution =
         institution.state == InstitutionAccessState.authorizedSpeaker;
     final canAnnounce = canAnnounceAsPlatform || canAnnounceAsInstitution;

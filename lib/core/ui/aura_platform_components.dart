@@ -633,6 +633,8 @@ class AuraInput extends StatelessWidget {
     this.suffixIcon,
     this.prefixIcon,
     this.validator,
+    this.onFieldSubmitted,
+    this.autofillHints,
   });
 
   final TextEditingController controller;
@@ -647,6 +649,20 @@ class AuraInput extends StatelessWidget {
   final Widget? prefixIcon;
   final FormFieldValidator<String>? validator;
 
+  /// Fired when the keyboard's action key is pressed — Go, Done, Return, Next.
+  ///
+  /// AuraInput had no way to accept this at all, so NO form built on it could
+  /// be submitted from the keyboard. On a phone or tablet that is the primary
+  /// way a person finishes a short form, and on any viewport where the submit
+  /// button falls below the fold it is the only way that does not require
+  /// scrolling first.
+  final ValueChanged<String>? onFieldSubmitted;
+
+  /// Lets the platform offer saved credentials. Without hints iOS and Android
+  /// cannot tell an email field from a password one, and neither offers to
+  /// fill them.
+  final Iterable<String>? autofillHints;
+
   @override
   Widget build(BuildContext context) {
     return TextFormField(
@@ -657,6 +673,8 @@ class AuraInput extends StatelessWidget {
       keyboardType: keyboardType,
       textInputAction: textInputAction,
       validator: validator,
+      onFieldSubmitted: onFieldSubmitted,
+      autofillHints: autofillHints,
       style: AuraText.body,
       decoration: InputDecoration(
         labelText: label,

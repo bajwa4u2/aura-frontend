@@ -3,7 +3,6 @@ import '../data/conversation_unread_authority.dart';
 import 'dart:async';
 
 import 'package:desktop_drop/desktop_drop.dart';
-import 'package:dio/dio.dart' as dio_pkg;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -18,7 +17,9 @@ import '../../../core/media/call_preflight_sheet.dart';
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/media/aura_attachment_card.dart';
 import '../../../core/media/aura_stored_media.dart';
+import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/media/aura_voice_player.dart';
+import '../../../core/media/voice_note_capture.dart';
 import '../../../core/media/stored_media.dart';
 import '../../../core/media/aura_media_viewer.dart';
 import '../../../core/media/aura_attachment_open.dart';
@@ -879,34 +880,55 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   // and never manufactures a type it has no evidence for.
 
   /// Voice note: record → stop → the note joins the pending attachments.
+  ///
+  /// WHAT WAS WRONG HERE, AND WHY IT ONLY EVER WORKED IN A BROWSER.
+  ///
+  /// This asserted one container and one read-back mechanism for every
+  /// platform, and `record` provides neither uniformly:
+  ///
+  ///   * `AudioEncoder.opus` writes WebM in Chrome and Firefox, **OGG** on
+  ///     Android, **CAF** on iOS, and is **not supported at all** on Windows
+  ///     or macOS. The declaration `audio/webm` was therefore true on exactly
+  ///     one platform, and the backend's content-truth check refused the rest
+  ///     — after the person had already spoken.
+  ///   * `stop()` returns a `blob:` URL on the web but a FILESYSTEM PATH
+  ///     natively, and this read it back with an HTTP client either way. On
+  ///     every native build that failed before a single byte was uploaded.
+  ///   * `path: 'voice-note.webm'` is relative, and native recorders need an
+  ///     absolute one.
+  ///
+  /// [VoiceNoteCapture] now answers all three, per platform, and the format it
+  /// reports is what the bytes genuinely are.
   Future<void> _toggleVoiceNote() async {
     if (_recording) {
-      final path = await _recorder.stop();
+      final handle = await _recorder.stop();
       setState(() => _recording = false);
-      if (path == null) return;
+      if (handle == null) return;
       try {
-        final res = await dio_pkg.Dio().get<List<int>>(
-          path,
-          options: dio_pkg.Options(responseType: dio_pkg.ResponseType.bytes),
-        );
-        final bytes = Uint8List.fromList(res.data ?? const []);
-        if (bytes.isEmpty) throw Exception('empty recording');
+        final bytes = await VoiceNoteCapture.readCaptured(handle);
+        final format = VoiceNoteCapture.format;
         // Messenger ergonomics (founder): a voice MESSAGE sends itself —
         // stop recording IS the send.
         await _uploadAndSendImmediately(
           await ContentIntake.resolveAndPrepareBytes(
             path: IntakePath.picker,
             bytes: bytes,
-            fileName: 'voice-note.webm',
-            declaredMimeType: 'audio/webm',
+            fileName: format.fileName,
+            declaredMimeType: format.mimeType,
             source: AttachmentSource.recording,
           ),
         );
-      } catch (_) {
+        await VoiceNoteCapture.discardCaptured(handle);
+      } catch (e) {
+        // The swallowed error was the whole problem: three distinct native
+        // failures all surfaced as one sentence that suggested trying again,
+        // which never helped because nothing transient was wrong.
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Could not capture the recording — try again.'),
+            SnackBar(
+              content: Text(
+                'The voice note could not be sent. ${AppErrorMapper.from(e).message}',
+              ),
             ),
           );
         }
@@ -923,11 +945,24 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       }
       return;
     }
-    await _recorder.start(
-      const RecordConfig(encoder: AudioEncoder.opus),
-      path: 'voice-note.webm',
-    );
-    setState(() => _recording = true);
+    try {
+      final format = VoiceNoteCapture.format;
+      await _recorder.start(
+        RecordConfig(encoder: format.encoder),
+        path: await VoiceNoteCapture.targetPath(format.extension),
+      );
+      setState(() => _recording = true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Recording could not start. ${AppErrorMapper.from(e).message}',
+            ),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _send() async {
