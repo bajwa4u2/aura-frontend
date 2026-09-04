@@ -18,6 +18,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../application/share_destinations.dart';
+import '../application/share_intake_channel.dart';
 import '../application/share_handoff.dart';
 import '../application/share_intake_controller.dart';
 import '../application/share_intake_inbox.dart';
@@ -77,7 +78,10 @@ class _ShareIntakeScreenState extends ConsumerState<ShareIntakeScreen> {
     // Typing is the person's, so the field is the authority for the body and
     // the controller follows it.
     _bodyController.addListener(() => controller.editBody(_bodyController.text));
-    controller.resolve();
+    // Once intake has read the bytes, the platform's copies are dead weight
+    // on someone's device. Released here rather than on the way out, because
+    // the way out includes closing the app mid-share.
+    controller.resolve().whenComplete(ShareIntakeChannel.release);
   }
 
   void _onControllerChanged() {

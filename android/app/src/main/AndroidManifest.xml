@@ -169,6 +169,140 @@
                 <data android:path="/account-deletion" />
             </intent-filter>
 
+            <!--
+              SHARE INTO AURA — the operating system's share sheet.
+
+              EVERY TYPE IS ENUMERATED, and none is a wildcard. `image/*` would
+              put Aura in the share sheet for SVG, which the backend rejects at
+              five separate gates; `*/*` would put it there for everything and
+              turn most shares into a refusal a person cannot have predicted.
+              An app that appears in the sheet is making a promise, so the list
+              below is exactly what intake accepts and is held to that by
+              `test/doctrine/android_share_target_gate_test.dart`.
+
+              text/plain is what a browser sends when someone shares a link.
+
+              This filter names no destination and grants no authority. The
+              intent arrives with a read grant scoped to itself, and everything
+              after that happens inside Aura, on `/share/incoming`, with the
+              person choosing.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+                <!-- images. SVG is absent deliberately: the backend rejects it across five
+                   gates as a P0-7 measure, so offering Aura for it would be an
+                   invitation to a refusal. HEIC and HEIF ARE offered — intake
+                   re-encodes them to something every recipient can render. -->
+                <data android:mimeType="image/jpeg" />
+                <data android:mimeType="image/png" />
+                <data android:mimeType="image/webp" />
+                <data android:mimeType="image/gif" />
+                <data android:mimeType="image/heic" />
+                <data android:mimeType="image/heif" />
+                <!-- video -->
+                <data android:mimeType="video/mp4" />
+                <data android:mimeType="video/quicktime" />
+                <data android:mimeType="video/webm" />
+                <!-- audio -->
+                <data android:mimeType="audio/mpeg" />
+                <data android:mimeType="audio/mp4" />
+                <data android:mimeType="audio/aac" />
+                <data android:mimeType="audio/ogg" />
+                <data android:mimeType="audio/webm" />
+                <data android:mimeType="audio/wav" />
+                <data android:mimeType="audio/x-wav" />
+                <data android:mimeType="audio/flac" />
+                <data android:mimeType="audio/mp3" />
+                <data android:mimeType="audio/m4a" />
+                <data android:mimeType="audio/x-aac" />
+                <!-- documents -->
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/msword" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <data android:mimeType="application/vnd.ms-excel" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:mimeType="application/vnd.ms-powerpoint" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+                <data android:mimeType="application/rtf" />
+                <data android:mimeType="text/csv" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+            </intent-filter>
+
+            <!--
+              A share sheet can hand over several items at once, and refusing
+              the second is not something a person would forgive.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <!-- images. SVG is absent deliberately: the backend rejects it across five
+                   gates as a P0-7 measure, so offering Aura for it would be an
+                   invitation to a refusal. HEIC and HEIF ARE offered — intake
+                   re-encodes them to something every recipient can render. -->
+                <data android:mimeType="image/jpeg" />
+                <data android:mimeType="image/png" />
+                <data android:mimeType="image/webp" />
+                <data android:mimeType="image/gif" />
+                <data android:mimeType="image/heic" />
+                <data android:mimeType="image/heif" />
+                <!-- video -->
+                <data android:mimeType="video/mp4" />
+                <data android:mimeType="video/quicktime" />
+                <data android:mimeType="video/webm" />
+                <!-- audio -->
+                <data android:mimeType="audio/mpeg" />
+                <data android:mimeType="audio/mp4" />
+                <data android:mimeType="audio/aac" />
+                <data android:mimeType="audio/ogg" />
+                <data android:mimeType="audio/webm" />
+                <data android:mimeType="audio/wav" />
+                <data android:mimeType="audio/x-wav" />
+                <data android:mimeType="audio/flac" />
+                <data android:mimeType="audio/mp3" />
+                <data android:mimeType="audio/m4a" />
+                <data android:mimeType="audio/x-aac" />
+                <!-- documents -->
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/msword" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <data android:mimeType="application/vnd.ms-excel" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:mimeType="application/vnd.ms-powerpoint" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+                <data android:mimeType="application/rtf" />
+                <data android:mimeType="text/csv" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+            </intent-filter>
+
+            <!--
+              FLUTTER READS THIS FROM THE ACTIVITY, AND ONLY FROM THE ACTIVITY.
+              ─────────────────────────────────────────────────────────────────
+              It sat inside the <receiver> below until 2026-09-04, where neither
+              reader could see it: `FlutterActivity.shouldHandleDeeplinking()`
+              reads `getActivityInfo(getComponentName(), GET_META_DATA)
+              .metaData`, and the Gradle app-link tooling walks <activity>
+              children only (DeepLinkJsonFromManifestTaskHelper).
+
+              WHAT THAT DID AND DID NOT COST, disassembled rather than assumed.
+              `FlutterActivityLaunchConfigs.deepLinkEnabled` returns TRUE when
+              the key is absent, so deep linking was on the whole time and
+              continuation was not broken — the comment that sat beside the
+              misplaced line overstated its own importance. What it did cost is
+              real but quieter: `outputAppLinkSettings` reported
+              deeplinkingFlagEnabled=false, so the build tooling and the deep
+              link validator described this app's configuration wrongly. And a
+              declaration nothing reads is a trap: it would have failed to
+              disable anything the day someone needed it to, and it would fail
+              to enable anything the day the default changes.
+            -->
+            <meta-data
+                android:name="flutter_deeplinking_enabled"
+                android:value="true" />
+
         </activity>
 
         <!-- Flutter engine registration -->
@@ -198,16 +332,6 @@
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
             </intent-filter>
 
-            <!--
-              Without this, Flutter does NOT hand the launch intent's URL to
-              the Dart router: the activity starts and the app opens at its
-              default route. Every App Link above would resolve to home. This
-              single line is the difference between "association works" and
-              "continuation works".
-            -->
-            <meta-data
-                android:name="flutter_deeplinking_enabled"
-                android:value="true" />
         </receiver>
 
         <!-- Default FCM channel for incoming-call ringing. Channel itself is

@@ -22,6 +22,9 @@ import '../features/devices/device_providers.dart';
 import '../features/realtime/application/realtime_providers.dart';
 import '../features/realtime/domain/realtime_enums.dart';
 import '../features/realtime/application/thread_call_lifecycle_controller.dart';
+import '../features/share_intake/application/share_intake_channel.dart';
+import '../features/share_intake/application/share_intake_inbox.dart';
+import '../features/share_intake/domain/acquisition_envelope.dart';
 import '../features/realtime/data/realtime_reconciliation_controller.dart';
 import '../features/realtime/presentation/thread_call_lifecycle_host.dart';
 import '../features/realtime/presentation/widgets/orphaned_session_banner.dart';
@@ -58,6 +61,15 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     // native side buffers those events and releases them the moment `start()`
     // reports ready. Binding later would answer into nothing.
     _bindNativeCallArrival();
+
+    // OS SHARE ARRIVAL. No-op on every platform that has not implemented the
+    // channel, and deliberately without asking which platform this is.
+    //
+    // Bound before the first frame for the same reason as the call binding: a
+    // share can be what LAUNCHED the app, in which case the content is already
+    // waiting natively and Dart has to ask for it. Binding later means the
+    // person shares a photograph, Aura opens, and the photograph is not there.
+    unawaited(ref.read(shareIntakeChannelProvider).start());
 
     // Register device if already authed at startup (stored token from prior session)
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -614,6 +626,11 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       // the engine was detached. Held natively until Dart could hear it; the
       // slot clears on read, so draining on every resume cannot replay an act.
       unawaited(NativeCallActions.instance.drainPending());
+
+      // A share can arrive at an engine that was detached. The native slot
+      // clears on read, so draining on every resume cannot present the same
+      // content twice.
+      unawaited(ref.read(shareIntakeChannelProvider).drainPending());
     }
   }
 
@@ -675,6 +692,23 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
           ref.read(mediaUrlResolverProvider).clearAll();
         } catch (_) {}
       }
+    });
+
+    // SOMETHING WAS SHARED INTO AURA.
+    //
+    // The routing lives HERE, above the router, rather than in the channel:
+    // an adapter's job ends at delivery, and a platform adapter that also
+    // navigated would be the beginning of a second share pipeline. Every
+    // share — Android, iOS, Windows, cold or warm — reaches the destination
+    // through this one line.
+    //
+    // Note what it does NOT do. It does not check who is signed in, and it
+    // does not decide anything about the content. `/share/incoming` gates on
+    // an authenticated Human itself, and holds the share while the person
+    // signs in rather than discarding it.
+    ref.listen<AcquisitionEnvelope?>(shareIntakeInboxProvider, (_, next) {
+      if (next == null) return;
+      ref.read(routerProvider).go(NavigationAuthority.incomingShareRoute);
     });
 
     final router = ref.watch(routerProvider);

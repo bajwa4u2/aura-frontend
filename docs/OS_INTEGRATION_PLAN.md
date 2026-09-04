@@ -1,7 +1,8 @@
 # OS Integration Plan — call register and share destination
 
 **Date:** 2026-09-04 · **Status: IN EXECUTION.** Founder-approved, decisions resolved.
-Track A, the token hardening and Track B1 are implemented; B2/B3/B4 and Track C are not started.
+Track A, the token hardening, Track B1 and Track B2 are implemented; B3/B4 and Track C are
+not started.
 
 ## Execution status
 
@@ -10,7 +11,7 @@ Track A, the token hardening and Track B1 are implemented; B2/B3/B4 and Track C 
 | **Track A** — iOS outgoing CallKit | Implemented (`5ffed711`) | 7 invariant gates pass · **device UNVERIFIED** |
 | **Security** — secure token storage | Implemented (`22dddae6`, `4a71c817`) | **Windows CERTIFIED** on the real Credential Manager · iOS/Android IMPLEMENTED / UNVERIFIED |
 | **Track B1** — governed share intake | Implemented | 22 invariant gates pass · full suite 2415 pass / 6 pre-existing golden diffs |
-| **Track B2** — Android share target | Not started | — |
+| **Track B2** — Android share target | Implemented | 15 gates pass · Kotlin **COMPILES** (`:app:compileDebugKotlin`) · merged manifest carries both filters · **device UNVERIFIED** |
 | **Track B3** — iOS Share Extension | Not started | — |
 | **Track B4** — Windows share target | Not started | — |
 | **Track C** — Android Telecom | Not started | — |
@@ -41,6 +42,47 @@ is staged, so the two can never race.
 
 **Not yet reachable by a person.** B1 is the destination; nothing delivers into it until B2/B3/B4
 exist. `shareIntakeInboxProvider.deliver()` is the single door every platform adapter will use.
+
+### Track B2 as built
+
+`ACTION_SEND` + `ACTION_SEND_MULTIPLE` on `MainActivity`, **every MIME type enumerated and no
+wildcard**. `image/*` would put Aura in the share sheet for SVG, which the backend rejects at five
+separate gates; `*/*` would put it there for everything and turn most shares into a refusal nobody
+could have predicted. Appearing in the sheet is a promise, so a gate holds the manifest and
+`media_mime.dart` to each other in both directions — declared-but-unsupported and
+supported-but-undeclared both fail.
+
+**The adapter carries content and decides nothing.** `ShareIntake.kt` classifies nothing, names no
+destination, resolves no identity and holds no token; a gate asserts those words are absent from
+its code. The class is decided in Dart, from the bytes, by the same `ContentIntake` every other
+door uses.
+
+**It copies rather than passing the URI along, and copies rather than reading into memory.** An
+Android `content://` grant is scoped to the intent that delivered it — alive now, gone long before
+the person has looked at the preview and chosen a conversation. Reading it later is a share that
+works in testing and fails as a permission error in someone's hand. And a shared video can be a
+hundred megabytes: a file copy is bounded work where a byte array across a method channel is an
+ANR. Dart reads the copy when it actually needs the bytes, and the copies are cleared on the way
+in as well as released on the way out.
+
+**One channel, and no Dart branch.** `org.auraplatform.app/share_intake`, pulled at cold start and
+pushed while warm. A platform that has not implemented it answers `MissingPluginException`, which
+is handled as "nothing was shared" rather than guarded against by asking which platform this is —
+so B3 and B4 are Swift and C++, not Dart edits.
+
+### Found while doing B2 — the deep-link flag, and what it actually cost
+
+`flutter_deeplinking_enabled` was declared inside the `<receiver>` element, where neither reader
+looks: `FlutterActivity.shouldHandleDeeplinking()` reads the ACTIVITY's metadata, and Gradle's
+`DeepLinkJsonFromManifestTaskHelper` walks `<activity>` children only.
+
+**Runtime was not broken, and the comment beside it overstated the case.** Disassembling
+`FlutterActivityLaunchConfigs.deepLinkEnabled` shows it returns **true when the key is absent**, so
+deep linking has been on. What the misplacement did cost is quieter: `outputAppLinkSettings`
+reported `deeplinkingFlagEnabled=false`, so the build tooling and the deep-link validator described
+this app's configuration wrongly — and a declaration nothing reads would have failed to disable
+anything the day someone needed it to. Now declared once, inside the activity; the merged manifest
+confirms it.
 
 ### What this environment can and cannot prove
 

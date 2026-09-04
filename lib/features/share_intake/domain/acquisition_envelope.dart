@@ -34,9 +34,11 @@ class AcquiredPayload {
     required this.kind,
     this.text,
     this.bytes,
+    this.filePath,
     this.declaredMimeType,
     this.fileName,
     this.sourceUri,
+    this.sizeBytes,
   });
 
   final AcquiredPayloadKind kind;
@@ -44,11 +46,20 @@ class AcquiredPayload {
   /// Present for [AcquiredPayloadKind.text] and [AcquiredPayloadKind.url].
   final String? text;
 
-  /// Present for [AcquiredPayloadKind.file]. Read eagerly by the adapter:
-  /// an Android content URI's read grant is scoped to the intent, so deferring
-  /// the read until the person has finished choosing a destination turns a
-  /// share into a permission error minutes later.
+  /// Present for [AcquiredPayloadKind.file] when the adapter had the content
+  /// in hand. Either this or [filePath] is set; never neither.
   final Uint8List? bytes;
+
+  /// A COPY THE ADAPTER ALREADY TOOK, inside Aura's own storage.
+  ///
+  /// The platform's own reference is not carried here, and that is the point.
+  /// An Android `content://` grant is scoped to the intent that delivered it:
+  /// alive now, gone long before the person has looked at the preview, chosen
+  /// a conversation and pressed a button. Reading it later is a share that
+  /// works in testing and fails as a permission error in someone's hand. So
+  /// the adapter takes the content while the grant is alive — as a file rather
+  /// than a byte array, because a shared video can be a hundred megabytes and
+  /// a copy is bounded work where a channel transfer is an ANR.
 
   /// What the sharing application claimed. A hint for tie-breaking only, and
   /// never the answer when the bytes disagree.
@@ -58,9 +69,16 @@ class AcquiredPayload {
   /// and because an extension is a second weak hint.
   final String? fileName;
 
+  final String? filePath;
+
   /// Where it came from, when the OS says. A `content://`, `file://` or
-  /// `https://` reference — retained as provenance, not re-fetched.
+  /// `https://` reference — retained as PROVENANCE and deliberately never
+  /// re-opened; [filePath] is what gets read.
   final String? sourceUri;
+
+  /// What the adapter actually took in, when it counted. A claim like the
+  /// rest; capacity is judged again by intake.
+  final int? sizeBytes;
 
   bool get isTextual =>
       kind == AcquiredPayloadKind.text || kind == AcquiredPayloadKind.url;
@@ -81,6 +99,7 @@ class AcquisitionEnvelope {
     required this.platform,
     required this.payloads,
     required this.receivedAt,
+    this.refusals = const <String>[],
     this.handoffReference,
     this.subject,
   });
@@ -95,6 +114,15 @@ class AcquisitionEnvelope {
   /// stale rather than replayed as new.
   final DateTime receivedAt;
 
+  /// Items the adapter could not take in, each with the reason in words.
+  ///
+  /// Carried rather than dropped. A platform adapter can legitimately refuse
+  /// before Aura ever sees the content — an item too large to be worth reading,
+  /// a provider that will not open its own file — and a person who watched
+  /// three photographs go into a share sheet and two arrive needs to be told
+  /// which, and why.
+  final List<String> refusals;
+
   /// The opaque token an iOS Share Extension writes alongside the payload in
   /// the App Group container. Never a credential, and never anything the
   /// extension could act on by itself.
@@ -105,7 +133,7 @@ class AcquisitionEnvelope {
   /// it.
   final String? subject;
 
-  bool get isEmpty => payloads.isEmpty;
+  bool get isEmpty => payloads.isEmpty && refusals.isEmpty;
 
   /// The single URL in this share, when there is exactly one and nothing else.
   /// Used to offer a link preview, never to publish on its own.

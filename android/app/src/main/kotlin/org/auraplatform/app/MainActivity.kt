@@ -25,15 +25,28 @@ class MainActivity : FlutterActivity() {
      */
     private var pendingCallAction: Map<String, Any?>? = null
 
+    /**
+     * A share that arrived before Dart was ready to hear it.
+     *
+     * The same cold-start ordering as a call action, and the same consequence
+     * if it is dropped: someone shares a photograph, Aura opens, and the
+     * photograph is not there. Held here and drained by Dart on startup.
+     */
+    private var pendingShare: Map<String, Any?>? = null
+
+    private var shareChannel: MethodChannel? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         captureCallIntent(intent)
+        captureShareIntent(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         captureCallIntent(intent)
+        captureShareIntent(intent)
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -50,6 +63,36 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 SecureStore.handle(applicationContext, call, result)
             }
+
+        // SHARE INTAKE — the single door every Android share comes through.
+        // Registered here so the handler exists before Dart drains the pending
+        // share on its first frame; a missing handler there would read as
+        // "nothing was shared", which is the failure this whole track removes.
+        val shares =
+            MethodChannel(flutterEngine.dartExecutor.binaryMessenger, ShareIntake.CHANNEL)
+        shareChannel = shares
+        shares.setMethodCallHandler { call, result ->
+            when (call.method) {
+                // Returns at most once per share. Consuming it here is what
+                // stops the same content being presented twice — which on that
+                // surface would mean publishing it twice.
+                "consumePendingShare" -> {
+                    val pending = pendingShare
+                    pendingShare = null
+                    result.success(pending)
+                }
+
+                // Called once Dart has read the bytes it was given. The copies
+                // live in Aura's cache and are the person's content; they are
+                // not left lying there after the share is done with.
+                "releaseSharedContent" -> {
+                    ShareIntake.clearCache(applicationContext)
+                    result.success(null)
+                }
+
+                else -> result.notImplemented()
+            }
+        }
 
         methodChannel.setMethodCallHandler { call, result ->
             when (call.method) {
@@ -127,6 +170,30 @@ class MainActivity : FlutterActivity() {
         // it straight through; the pending slot then covers only cold start.
         channel?.invokeMethod("onCallAction", payload)
         Log.i(TAG, "captureCallIntent: action=$action sessionId=$sessionId")
+    }
+
+    /**
+     * Take in whatever the share sheet handed over — and nothing more.
+     *
+     * SHARE ACQUISITION IS NOT PUBLICATION. This reads the content while the
+     * intent's grant is alive and stops. It chooses no destination, resolves no
+     * identity, and sends nothing. Where the share goes is decided afterwards,
+     * in Aura, by the person, with the content in front of them.
+     */
+    private fun captureShareIntent(intent: Intent?) {
+        val share = ShareIntake.extract(applicationContext, intent) ?: return
+
+        // Consumed once. Without this, backgrounding and resuming the app
+        // re-delivers the same launch intent and the share arrives again.
+        intent?.action = null
+        intent?.removeExtra(Intent.EXTRA_STREAM)
+        intent?.removeExtra(Intent.EXTRA_TEXT)
+
+        pendingShare = share
+        // Warm start: push it straight through. The pending slot then covers
+        // only the cold-start case where Dart is not listening yet.
+        shareChannel?.invokeMethod("onShare", share)
+        Log.i(TAG, "captureShareIntent: delivered")
     }
 
     /**

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart' show XFile;
 
 import '../../../core/authority/acting_context.dart';
 import '../../../core/composition/content_intake.dart';
@@ -113,6 +114,11 @@ class ShareIntakeController extends ChangeNotifier {
     _resolving = true;
     notifyListeners();
 
+    // Refusals the platform adapter already made, before Aura saw the content.
+    // Adopted first so they appear alongside intake's own in the order things
+    // actually happened.
+    _refusals.addAll(envelope.refusals);
+
     final textParts = <String>[];
 
     for (final payload in envelope.payloads) {
@@ -122,7 +128,7 @@ class ShareIntakeController extends ChangeNotifier {
         continue;
       }
 
-      final bytes = payload.bytes;
+      final bytes = await _bytesOf(payload);
       if (bytes == null || bytes.isEmpty) {
         _refusals.add('One item arrived empty and was not kept.');
         continue;
@@ -164,6 +170,22 @@ class ShareIntakeController extends ChangeNotifier {
     _resolving = false;
     _resolved = true;
     notifyListeners();
+  }
+
+  /// The content itself, however the adapter chose to hand it over.
+  ///
+  /// A path is read HERE rather than in the adapter because a hundred-megabyte
+  /// video should cross into Dart once, when it is actually being judged — not
+  /// be held in memory from the moment the share sheet closed.
+  Future<Uint8List?> _bytesOf(AcquiredPayload payload) async {
+    if (payload.bytes != null) return payload.bytes;
+    final path = payload.filePath;
+    if (path == null || path.isEmpty) return null;
+    try {
+      return await XFile(path).readAsBytes();
+    } catch (_) {
+      return null;
+    }
   }
 
   void editBody(String value) {
