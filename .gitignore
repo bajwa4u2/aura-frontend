@@ -88,7 +88,14 @@ Thumbs.db
 /nav_entrymodes.json
 /nav_surfaces.json
 
-# Golden-test failure artefacts
+# Golden-test failure artefacts.
+#
+# `/test/failures/` alone covers ONLY the top level, and flutter_test writes
+# these beside the test that produced them -- `test/admin/failures/` had 24
+# untracked PNGs sitting in the tree because the rule looked like it covered
+# them and did not. Same near-miss shape as a `*.tmp` rule that never matches
+# a `.tmp_` prefix.
+test/**/failures/
 /test/failures/
 /nav_gopush.json
 
