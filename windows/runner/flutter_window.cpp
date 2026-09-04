@@ -3,6 +3,7 @@
 #include <optional>
 
 #include "flutter/generated_plugin_registrant.h"
+#include "share_intake.h"
 #include "wns_channel.h"
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
@@ -29,6 +30,10 @@ bool FlutterWindow::OnCreate() {
   // Windows call arrival. Registered beside the plugins because it is the
   // same kind of thing: a native capability the Dart side cannot reach.
   RegisterWnsChannel(flutter_controller_.get());
+  // Share acquisition. Registered before the first frame because a share is
+  // what ACTIVATED this process: the content is already waiting, and Dart
+  // asks for it as soon as it is listening.
+  RegisterShareIntake(flutter_controller_.get());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {

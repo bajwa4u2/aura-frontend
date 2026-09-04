@@ -245,6 +245,27 @@ msix_config:
   # cannot express path scope. Android has pathPrefix, iOS has AASA
   # components, Windows has neither. Every path rule from the contract is
   # therefore enforced in-app by route classification, which fails closed.
+  #
+  # WINDOWS SHARE TARGET — NOT DECLARABLE HERE, AND THAT IS NOT AN OVERSIGHT.
+  #
+  # The `msix` package builds its AppxManifest from a fixed template. It has
+  # keys for a protocol, a file association, an execution alias, App URI
+  # handlers, a startup task and a toast activator — and none for a share
+  # target, and no escape hatch for arbitrary extensions. There is nothing to
+  # set below; the declaration is injected between the two supported
+  # packaging commands instead:
+  #
+  #     dart run msix:build
+  #     dart run tool/windows/declare_share_target.dart
+  #     dart run msix:pack
+  #
+  # `msix:pack` packs whatever manifest is present, so this is a supported
+  # flow rather than a patch of a finished package — nothing is unpacked and
+  # nothing is re-signed. The step is idempotent.
+  #
+  # SKIPPING IT SHIPS A PACKAGE THAT IS SILENTLY NOT A SHARE TARGET. Running
+  # `dart run msix:create` alone — the one-shot command — regenerates the
+  # manifest and drops the declaration. Use the three steps.
   protocol_activation: aura
   app_uri_handler_hosts: auraplatform.org, app.auraplatform.org
   logo_path: assets\aura_icon.png

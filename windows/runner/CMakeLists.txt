@@ -7,6 +7,7 @@ project(runner LANGUAGES CXX)
 #
 # Any new source files that you add to the application should be added here.
 add_executable(${BINARY_NAME} WIN32
+  "share_intake.cpp"
   "wns_channel.cpp"
   "flutter_window.cpp"
   "main.cpp"
@@ -35,8 +36,9 @@ target_compile_definitions(${BINARY_NAME} PRIVATE "NOMINMAX")
 # dependencies here.
 target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app)
 target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib")
-# WinRT, for the WNS push channel. A channel URI is issued by the OS to a
-# PACKAGED app, so this is only meaningful from the installed MSIX.
+# WinRT, for the WNS push channel and the share target. Both are properties of
+# PACKAGE IDENTITY rather than of the executable, so both are only meaningful
+# from the installed MSIX and both say so rather than pretending otherwise.
 target_link_libraries(${BINARY_NAME} PRIVATE "windowsapp.lib")
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 

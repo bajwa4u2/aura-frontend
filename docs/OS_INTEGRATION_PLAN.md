@@ -1,7 +1,7 @@
 # OS Integration Plan — call register and share destination
 
 **Date:** 2026-09-04 · **Status: IN EXECUTION.** Founder-approved, decisions resolved.
-Track A, the token hardening, B1, B2 and B3 are implemented; B4 and Track C are not started.
+Track A, the token hardening, and all of Track B (B1–B4) are implemented. Track C is not started.
 
 > **BEFORE THE NEXT iOS BUILD.** Track B3 adds a Share Extension target and an App Group. The
 > archive **fails at codesign** until the Apple Developer portal has: App Groups enabled on
@@ -20,7 +20,7 @@ Track A, the token hardening, B1, B2 and B3 are implemented; B4 and Track C are 
 | **Track B1** — governed share intake | Implemented | 22 invariant gates pass · full suite 2415 pass / 6 pre-existing golden diffs |
 | **Track B2** — Android share target | Implemented | 15 gates pass · Kotlin **COMPILES** (`:app:compileDebugKotlin`) · merged manifest carries both filters · **device UNVERIFIED** |
 | **Track B3** — iOS Share Extension | Implemented | 26 gates pass · project graph diffed object-by-object against the pre-edit file · **no macOS here: build and device UNVERIFIED** |
-| **Track B4** — Windows share target | Not started | — |
+| **Track B4** — Windows share target | Implemented | 20 gates pass · **runner COMPILES** · **share target verified inside the packed `aura.msix`** · install-and-share UNVERIFIED |
 | **Track C** — Android Telecom | Not started | — |
 
 ### Track B1 as built
@@ -111,6 +111,45 @@ removed**, 20 added (exactly the ones created), 6 changed (main group, products 
 targets and attributes, Runner's sources, Runner's phases and dependencies). The reformat is
 therefore lossless. What that does NOT prove is that Xcode agrees — there is no macOS here, so the
 first real build is where the target wiring is certified.
+
+### Track B4 as built
+
+Windows delivers a share by ACTIVATING the app with a `ShareOperation`, which is a property of
+**package identity** — a loose `aura.exe` is not a share target and never will be. The runner
+already records exactly that truth for the WNS push channel, and this follows the same pattern:
+WinRT is already linked, and an unpackaged run answers "nothing was shared", which is true, rather
+than crashing.
+
+**The manifest declaration is not expressible in `msix_config`, and that is a tool limit rather than
+an oversight.** The `msix` package builds its AppxManifest from a fixed template with keys for a
+protocol, a file association, an execution alias, App URI handlers, a startup task and a toast
+activator — and none for a share target, and no escape hatch. So the declaration is injected between
+the two supported commands:
+
+```
+dart run msix:build
+dart run tool/windows/declare_share_target.dart
+dart run msix:pack
+```
+
+`msix:pack` packs whatever manifest is present, so this is a supported flow rather than a patch of a
+finished package: nothing is unpacked and nothing is re-signed. The step is idempotent, and it is
+recorded in `pubspec.yaml` beside the config it compensates for, because a step that lives only in
+someone's memory gets skipped — and skipping it ships a package that is silently not a share target.
+`dart run msix:create` alone regenerates the manifest and drops the declaration.
+
+**The file types are derived, not listed.** Windows matches a share target on FILE EXTENSION where
+Android matches on MIME, so a hand-written list would have been a fourth place the accepted set is
+recorded and the first to go stale. The tool reads the extensions straight out of
+`inferMimeFromFileName`, and refuses to declare a share target at all if that parse comes back
+empty — a target with no supported types would put Aura in the share sheet and then decline
+everything.
+
+**Proved as far as this machine allows.** The runner compiles; `msix:build` → inject → `msix:pack`
+was run end to end; and the packed `aura.msix` was opened and its manifest read: `windows.shareTarget`
+present with 29 file types and Text / WebLink / StorageItems, alongside the pre-existing
+`windows.protocol` and `uap3:windows.appUriHandler` — neither displaced. What is NOT proved is
+installing that package and sharing into it, which needs the signed Store build.
 
 ### Found while doing B2 — the deep-link flag, and what it actually cost
 
