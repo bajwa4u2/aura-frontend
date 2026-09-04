@@ -1,8 +1,15 @@
 # OS Integration Plan — call register and share destination
 
 **Date:** 2026-09-04 · **Status: IN EXECUTION.** Founder-approved, decisions resolved.
-Track A, the token hardening, Track B1 and Track B2 are implemented; B3/B4 and Track C are
-not started.
+Track A, the token hardening, B1, B2 and B3 are implemented; B4 and Track C are not started.
+
+> **BEFORE THE NEXT iOS BUILD.** Track B3 adds a Share Extension target and an App Group. The
+> archive **fails at codesign** until the Apple Developer portal has: App Groups enabled on
+> `org.auraplatform.app` with `group.org.auraplatform.app` created; the App ID
+> `org.auraplatform.app.ShareExtension` registered with the same group; and both profiles
+> re-fetched. Codemagic cannot do any of that from the API key. **If an iOS build is needed
+> first, revert the B3 commit** — it is self-contained and the project then signs exactly as it
+> did before.
 
 ## Execution status
 
@@ -12,7 +19,7 @@ not started.
 | **Security** — secure token storage | Implemented (`22dddae6`, `4a71c817`) | **Windows CERTIFIED** on the real Credential Manager · iOS/Android IMPLEMENTED / UNVERIFIED |
 | **Track B1** — governed share intake | Implemented | 22 invariant gates pass · full suite 2415 pass / 6 pre-existing golden diffs |
 | **Track B2** — Android share target | Implemented | 15 gates pass · Kotlin **COMPILES** (`:app:compileDebugKotlin`) · merged manifest carries both filters · **device UNVERIFIED** |
-| **Track B3** — iOS Share Extension | Not started | — |
+| **Track B3** — iOS Share Extension | Implemented | 26 gates pass · project graph diffed object-by-object against the pre-edit file · **no macOS here: build and device UNVERIFIED** |
 | **Track B4** — Windows share target | Not started | — |
 | **Track C** — Android Telecom | Not started | — |
 
@@ -69,6 +76,41 @@ in as well as released on the way out.
 pushed while warm. A platform that has not implemented it answers `MissingPluginException`, which
 is handled as "nothing was shared" rather than guarded against by asking which platform this is —
 so B3 and B4 are Swift and C++, not Dart edits.
+
+### Track B3 as built
+
+**The extension is given nothing to be trusted with.** That is what makes capture-only a property
+of the build rather than a promise in a comment. Its entitlements file contains one key — the App
+Group — and gates assert the absence of `keychain-access-groups`, `associated-domains`,
+`aps-environment`, and of `URLSession`, `SecItem`, `accessToken`, `refreshToken` and every
+publishing verb in its source. A share extension is a second process, launched by another
+application, outside the app the person signed into; a credential there would let Aura publish from
+a process the person never opened.
+
+**No compose sheet.** `SLComposeServiceViewController` — the template default — is a text box with
+a Post button, and a Post button is a promise to publish. The extension subclasses `UIViewController`,
+shows an acknowledgement, and offers no control, because there is nothing here it is allowed to
+decide.
+
+**The App Group is transit.** The extension writes content plus a manifest; the app MOVES the files
+into its own container and deletes what it found. Two processes can read that container, so
+anything left in it stays readable by the one the person did not open. The manifest is written last
+and is what makes a share visible, so a share still being written — or one whose extension was
+killed mid-capture — is never picked up half-finished. Several shares can be waiting, and they are
+drained oldest-first into one envelope rather than overwriting each other.
+
+**It does not reach for a private door to open Aura.** `NSExtensionContext.open` is asked once and
+its answer is ignored. The usual way round the restriction is to walk the responder chain until
+`UIApplication` appears and call `openURL:` on it — a way past a restriction rather than a use of
+the API, on an app already working through an App Store rejection. It is also unnecessary: the Dart
+side drains on every resume, so the share is waiting whether Aura opens now or in an hour.
+
+**The Xcode target was added programmatically, not by hand.** The `pbxproj` library round-trips the
+file, and the result was verified by diffing the OBJECT GRAPH against the pre-edit copy: **0 objects
+removed**, 20 added (exactly the ones created), 6 changed (main group, products group, project
+targets and attributes, Runner's sources, Runner's phases and dependencies). The reformat is
+therefore lossless. What that does NOT prove is that Xcode agrees — there is no macOS here, so the
+first real build is where the target wiring is certified.
 
 ### Found while doing B2 — the deep-link flag, and what it actually cost
 

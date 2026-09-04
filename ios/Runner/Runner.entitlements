@@ -32,6 +32,25 @@
 	  (the client registers an FCM token); the APNs auth key (.p8) is
 	  uploaded to the Firebase Console, not bundled here.
 	-->
+	<!--
+	  App Group: the transit area between the Share Extension and this app.
+
+	  The extension writes content the person explicitly shared into this
+	  container and stops; the app moves it into its own storage and empties
+	  the container. Nothing else crosses, and specifically no credential —
+	  founder ruling: no auth secrets in the Share Extension App Group. The
+	  extension holds no keychain access group for the same reason.
+
+	  RELEASE PREREQUISITE. The App ID org.auraplatform.app must have App
+	  Groups enabled in the Apple Developer portal, with this group created,
+	  and the provisioning profile regenerated — otherwise codesign fails at
+	  archive time. Same for the extension's own App ID.
+	-->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.org.auraplatform.app</string>
+	</array>
+
 	<key>aps-environment</key>
 	<string>production</string>
 </dict>

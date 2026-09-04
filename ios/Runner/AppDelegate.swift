@@ -126,6 +126,10 @@ func notificationBelongsToCall(
   private var pendingEvents: [[String: Any]] = []
   private var dartReady = false
 
+  /// The share channel, kept so a share arriving while Aura is already open
+  /// can be pushed rather than waited for.
+  private var shareChannel: FlutterMethodChannel?
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -151,6 +155,18 @@ func notificationBelongsToCall(
       )
       secure.setMethodCallHandler { call, result in
         SecureStore.handle(call, result: result)
+      }
+
+      // SHARE INTAKE. The main app's side of the Share Extension handoff, on
+      // the same channel name Android uses — one shape, three platforms, and
+      // no branch in Dart.
+      let shares = FlutterMethodChannel(
+        name: ShareIntake.channelName,
+        binaryMessenger: controller.binaryMessenger
+      )
+      shareChannel = shares
+      shares.setMethodCallHandler { call, result in
+        ShareIntake.handle(call, result: result)
       }
     }
 

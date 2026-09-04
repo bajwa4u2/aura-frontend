@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  THE ONLY ENTITLEMENT THIS PROCESS HAS, AND THE ONLY ONE IT MAY EVER HAVE.
+
+	  An App Group is a shared container. It is here so content the person
+	  explicitly shared can reach the main app, and for nothing else.
+
+	  WHAT MUST NEVER BE ADDED HERE:
+	    * keychain-access-groups — a shared keychain is how the extension would
+	      come to hold a session, and a process the person did not open must
+	      never be able to act as them (founder ruling: no auth secrets in the
+	      Share Extension App Group).
+	    * associated-domains, aps-environment, or any capability that would
+	      make this process addressable from outside.
+
+	  The extension is given nothing to be trusted with, which is what makes
+	  "capture-only" a property of the build rather than a promise in a comment.
+	-->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.org.auraplatform.app</string>
+	</array>
+</dict>
+</plist>

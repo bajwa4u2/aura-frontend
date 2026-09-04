@@ -25,6 +25,26 @@
 #   Codemagic auto-creates the Apple Distribution certificate and the
 #   App Store provisioning profile from the API key; it cannot enable
 #   App ID capabilities, so those must exist before the first build.
+#
+# ── ADDED 2026-09-04 BY TRACK B3, AND REQUIRED BEFORE THE NEXT iOS BUILD ────
+#   The Share Extension introduces a second target and an App Group. Neither
+#   can be provisioned by Codemagic, and the archive FAILS AT CODESIGN until
+#   both exist in the Apple Developer portal:
+#
+#     1. Enable App Groups on App ID `org.auraplatform.app`, and create the
+#        group `group.org.auraplatform.app`.
+#     2. Register the explicit App ID `org.auraplatform.app.ShareExtension`,
+#        with App Groups enabled and the same group selected.
+#     3. Regenerate / let Codemagic re-fetch the profiles for BOTH ids.
+#
+#   `bundle_identifier` below still names the app only. If the extension is
+#   not signed by automatic signing, add its id here as well — that is the
+#   symptom to look for, and it is a configuration answer rather than a code
+#   change.
+#
+#   IF A BUILD IS NEEDED BEFORE THE PORTAL WORK IS DONE: the Share Extension
+#   arrived in one commit and reverting that commit restores a project that
+#   signs exactly as it did before. Nothing else depends on it.
 # =============================================================================
 
 workflows:
