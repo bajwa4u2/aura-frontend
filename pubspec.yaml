@@ -62,6 +62,13 @@ dependencies:
   image_picker_android: ^0.8.13
   file_picker: ^8.0.0
   record: ^6.2.0
+  # Platform-secure credential storage, first-party per platform.
+  # `flutter_secure_storage` was tried and rejected: its Windows plugin
+  # compiles against <atlstr.h>, so it adds a Visual Studio ATL component to
+  # the Windows release prerequisites. win32 gives the same Credential
+  # Manager through FFI with no native build step at all.
+  win32: ^5.5.3
+  ffi: ^2.1.0
   cached_network_image: ^3.3.1
   video_player: ^2.11.1
   flutter_webrtc: ^1.4.1

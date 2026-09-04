@@ -141,6 +141,17 @@ func notificationBelongsToCall(
       ch.setMethodCallHandler { [weak self] call, result in
         self?.handle(call, result: result)
       }
+
+      // The session's credential store. Registered on the same messenger and
+      // before anything can ask for a token, because `TokenStore.load()` runs
+      // on the first frame and a missing handler there reads as "signed out".
+      let secure = FlutterMethodChannel(
+        name: SecureStore.channelName,
+        binaryMessenger: controller.binaryMessenger
+      )
+      secure.setMethodCallHandler { call, result in
+        SecureStore.handle(call, result: result)
+      }
     }
 
     // THE STACK IS NO LONGER BUILT HERE.

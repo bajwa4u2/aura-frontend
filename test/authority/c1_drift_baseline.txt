@@ -33,7 +33,6 @@ R1 3 lib/features/communications/presentation/communications_center_screen.dart
 R1 6 lib/features/communications/presentation/widgets/communication_center_shell.dart
 R1 9 lib/features/communications/presentation/widgets/communication_role_hero.dart
 R1 3 lib/features/communications/presentation/widgets/communication_status_cards.dart
-R1 2 lib/features/create/presentation/create_hub_screen.dart
 R1 2 lib/features/institutions/activity/institution_activity_screen.dart
 R1 9 lib/features/institutions/correspondence/institution_correspondence_screen.dart
 # live_rooms 4 -> 0: startLive gate converged onto C1 capability projection (C2 closeout, 2026-08-16)

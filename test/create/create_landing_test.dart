@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:aura/core/auth/admin_access_provider.dart';
+import 'package:aura/features/admin/domain/operator_entry.dart';
 import 'package:aura/core/institutions/institution_access_provider.dart';
 import 'package:aura/features/create/presentation/create_hub_screen.dart';
 
@@ -49,7 +49,11 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          appAdminCachedDisplayProvider.overrideWithValue(admin),
+          // Create asks the audit-safe operator question rather than reading
+          // the display cache, which is only warm after a visit to /admin.
+          // A platform admin who had not opened the admin workspace this
+          // session was silently routed to a surface that cannot publish.
+          canEnterOperatorConsoleProvider.overrideWithValue(admin),
           institutionAccessProvider.overrideWith((ref) async {
             if (institution.isLoading) {
               // Never completes: "still finding out" is a state the surface

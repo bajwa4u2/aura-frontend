@@ -61,6 +61,12 @@ dependencies {
     // version the Flutter embedding happened to pull in transitively would
     // make incoming-call presentation depend on an unrelated upgrade.
     implementation("androidx.core:core-ktx:1.13.1")
+
+    // EncryptedSharedPreferences, for the session tokens. Pinned for the
+    // same reason as core-ktx above: the only bytes in Aura that ARE a
+    // session must not have their protection depend on what some other
+    // dependency happened to pull in transitively.
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 }
 
 flutter {

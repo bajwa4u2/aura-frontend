@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'secure_token_storage.dart';
+
 import 'session_hint.dart';
 
 /// Canonical TokenStore used across the app.
@@ -122,9 +124,13 @@ class TokenStore extends ChangeNotifier {
       return;
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    _accessToken = prefs.getString(_kAccess);
-    _refreshToken = prefs.getString(_kRefresh);
+    // Storage hardening only — see SecureTokenStorage. The session's shape,
+    // its derivation and its restore semantics are unchanged; the bytes simply
+    // stop resting in a readable plist. Migration runs before the read so an
+    // upgrade never signs anyone out.
+    await SecureTokenStorage.migrateFromPreferences();
+    _accessToken = await SecureTokenStorage.read(_kAccess);
+    _refreshToken = await SecureTokenStorage.read(_kRefresh);
 
     _isLoaded = true;
     if (!_loadedCompleter.isCompleted) _loadedCompleter.complete();
@@ -143,7 +149,7 @@ class TokenStore extends ChangeNotifier {
   /// - refresh token is never stored (cookie-based)
   ///
   /// Non-web:
-  /// - both access/refresh are persisted to SharedPreferences
+  /// - both access/refresh are persisted to the platform credential store
   Future<void> setSession({
     String? accessToken,
     String? refreshToken,
@@ -179,19 +185,8 @@ class TokenStore extends ChangeNotifier {
 
     _refreshToken = (refreshToken?.trim().isEmpty ?? true) ? null : refreshToken!.trim();
 
-    final prefs = await SharedPreferences.getInstance();
-
-    if (_accessToken == null) {
-      await prefs.remove(_kAccess);
-    } else {
-      await prefs.setString(_kAccess, _accessToken!);
-    }
-
-    if (_refreshToken == null) {
-      await prefs.remove(_kRefresh);
-    } else {
-      await prefs.setString(_kRefresh, _refreshToken!);
-    }
+    await SecureTokenStorage.write(_kAccess, _accessToken);
+    await SecureTokenStorage.write(_kRefresh, _refreshToken);
 
     notifyListeners();
   }
@@ -213,9 +208,15 @@ class TokenStore extends ChangeNotifier {
       return;
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_kAccess);
-    await prefs.remove(_kRefresh);
+    await SecureTokenStorage.delete(_kAccess);
+    await SecureTokenStorage.delete(_kRefresh);
+    // Belt and braces on the way out: a session cleared on a build that has
+    // not yet migrated must not leave a readable copy behind.
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_kAccess);
+      await prefs.remove(_kRefresh);
+    } catch (_) {}
 
     notifyListeners();
   }

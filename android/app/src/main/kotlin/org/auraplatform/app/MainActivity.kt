@@ -42,6 +42,15 @@ class MainActivity : FlutterActivity() {
         val methodChannel =
             MethodChannel(flutterEngine.dartExecutor.binaryMessenger, NOTIFICATIONS_CHANNEL)
         channel = methodChannel
+
+        // The session's credential store. Registered here so the handler
+        // exists before TokenStore.load() asks for a token on the first
+        // frame -- a missing handler there would read as "signed out".
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SecureStore.CHANNEL)
+            .setMethodCallHandler { call, result ->
+                SecureStore.handle(applicationContext, call, result)
+            }
+
         methodChannel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "cancelCallNotifications" -> result.success(cancelCallNotifications())
