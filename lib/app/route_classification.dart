@@ -266,6 +266,12 @@ bool isMemberShellPath(String path) {
       // same reason /compose is: an unauthenticated visitor has nothing to
       // share from and nowhere to share it to.
       path == '/share' ||
+      // Content handed over by an operating system's share sheet. MEMBER for
+      // a sharper reason than /share: the destination question is "which of
+      // YOUR conversations", so there is nothing to render to a visitor who
+      // has none. The share itself is not lost by the redirect — it waits in
+      // the intake inbox and the person returns to it after signing in.
+      path == '/share/incoming' ||
       path == '/announcements/create' ||
       path == '/ai/claim-audit' ||
       path == '/me' ||

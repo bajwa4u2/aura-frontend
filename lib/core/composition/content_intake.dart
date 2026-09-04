@@ -34,7 +34,20 @@ import 'attachment_lifecycle.dart';
 /// How content arrived. Distinct from [AttachmentSource] on purpose: source is
 /// a wire field the server records, intake path is a client-side fact about
 /// which door was used and what evidence that door can be trusted to supply.
-enum IntakePath { picker, paste, drop }
+enum IntakePath {
+  picker,
+  paste,
+  drop,
+
+  /// Handed over by the operating system's share sheet.
+  ///
+  /// A fourth door with genuinely different evidence: the sharing application
+  /// declares a type Aura has no reason to believe, and the person never chose
+  /// the file inside Aura at all. It is listed here so intake can say where
+  /// content came from truthfully — not so any of them can be trusted
+  /// differently. All four resolve the same way: by reading the bytes.
+  share,
+}
 
 /// The outcome of resolving one piece of incoming content.
 ///
@@ -336,6 +349,7 @@ class ContentIntake {
         return AttachmentSource.paste;
       case IntakePath.picker:
       case IntakePath.drop:
+      case IntakePath.share:
         return AttachmentSource.upload;
     }
   }

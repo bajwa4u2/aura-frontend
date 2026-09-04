@@ -1,19 +1,46 @@
 # OS Integration Plan — call register and share destination
 
 **Date:** 2026-09-04 · **Status: IN EXECUTION.** Founder-approved, decisions resolved.
-Track A and the token hardening are implemented; everything else is not started.
+Track A, the token hardening and Track B1 are implemented; B2/B3/B4 and Track C are not started.
 
 ## Execution status
 
 | Item | Code | Proof |
 |---|---|---|
 | **Track A** — iOS outgoing CallKit | Implemented (`5ffed711`) | 7 invariant gates pass · **device UNVERIFIED** |
-| **Security** — secure token storage | Implemented (`22dddae6`) | **Windows CERTIFIED** on the real Credential Manager · iOS/Android UNVERIFIED |
-| **Track B1** — governed share intake | Not started | — |
+| **Security** — secure token storage | Implemented (`22dddae6`, `4a71c817`) | **Windows CERTIFIED** on the real Credential Manager · iOS/Android IMPLEMENTED / UNVERIFIED |
+| **Track B1** — governed share intake | Implemented | 22 invariant gates pass · full suite 2415 pass / 6 pre-existing golden diffs |
 | **Track B2** — Android share target | Not started | — |
 | **Track B3** — iOS Share Extension | Not started | — |
 | **Track B4** — Windows share target | Not started | — |
 | **Track C** — Android Telecom | Not started | — |
+
+### Track B1 as built
+
+`/share/incoming` — a **separate route from `/share`**, which is the in-app content-first
+intention whose audience is fixed by design and explicitly "not a control". Content handed over by
+an operating system arrives with no destination and no identity, so both are questions there and
+neither may be defaulted; threading a mode flag through one screen to serve both would have been
+the page-specific pipeline this track exists to prevent. The two entrances share everything below
+the surface — the same `ContentIntake` door, the same `Attachment`, the same composition strip.
+
+| Invariant | How it holds |
+|---|---|
+| `OS_SHARE_DIRECT_PUBLISH = 0` | The feature contains **no code that can publish** — no HTTP write, no `uploadAuraMedia`, no draft call. A confirmed share is STAGED and the destination's ordinary composer sends it, so there is one publishing implementation rather than two |
+| `LAST_USED_DESTINATION_INFERENCE = 0` | Destinations are resolved from the Conversation ledger at the moment of the share. There is no recents list, and the gate fails on the words that would introduce one |
+| `LAST_USED_IDENTITY_INFERENCE = 0` | The destination names a `ConsequentialAct`; **C1's `ActingContextAuthority` answers it**. A private acting-identity type was written first and deleted — a second answer to "who am I acting as" is the defect C1 exists to remove |
+| `CONTENTINTAKE_BYPASS = 0` | The feature never constructs an `Attachment`. A payload declared `application/pdf` whose bytes are a PNG resolves as `image/png`, and that is asserted |
+| `PAGE_SPECIFIC_SHARE_PIPELINES = 0` | No platform branch anywhere in the feature; exactly one route renders the surface; every adapter delivers into one `deliver()` |
+
+**A real hazard found and handled.** A person holds exactly one post draft (`PUT /posts/draft`
+upserts it), and the composer's draft load *clears and replaces* both text and attachments. Seeding
+a share into it would either be silently wiped by the draft response or silently overwrite
+unpublished writing. The public-post destination is therefore offered as **unavailable, with the
+reason stated**, while a post is in progress — and the composer skips its draft load when a share
+is staged, so the two can never race.
+
+**Not yet reachable by a person.** B1 is the destination; nothing delivers into it until B2/B3/B4
+exist. `shareIntakeInboxProvider.deliver()` is the single door every platform adapter will use.
 
 ### What this environment can and cannot prove
 

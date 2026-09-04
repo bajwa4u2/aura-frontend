@@ -39,6 +39,7 @@ import '../../institutions/spaces/institution_space_context.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../share_intake/application/share_handoff.dart';
 import '../data/conversations_repository.dart';
 import 'add_people_sheet.dart';
 import 'conversation_avatar.dart';
@@ -207,6 +208,30 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   void initState() {
     super.initState();
     _listenForIncoming();
+    _adoptSharedContent();
+  }
+
+  /// Pick up content the person shared from another application and chose to
+  /// send here.
+  ///
+  /// It arrives ALREADY RESOLVED — through the same `ContentIntake` door as a
+  /// picker or a paste — and it arrives UNSENT. Nothing about having come from
+  /// a share sheet shortens the path: it lands in this composer, in the draft,
+  /// and the person presses the same send button as always.
+  ///
+  /// Claimed by conversation id, so opening any other conversation cannot pick
+  /// it up.
+  void _adoptSharedContent() {
+    final staged =
+        ref.read(shareHandoffProvider.notifier).takeForConversation(widget.conversationId);
+    if (staged == null) return;
+    _composer.text = staged.body;
+    setState(() {
+      _composition = _composition.copyWith(
+        body: staged.body,
+        attachments: staged.attachments,
+      );
+    });
   }
 
   @override

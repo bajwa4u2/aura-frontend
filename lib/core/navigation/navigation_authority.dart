@@ -247,6 +247,29 @@ class NavigationAuthority {
   /// CREATE — the creation primary's canonical address.
   static const String createRoute = '/create';
 
+  /// COMPOSE — the discourse-first composer.
+  static const String composeRoute = '/compose';
+
+  /// SHARE FROM ANOTHER APPLICATION — where an operating system's share sheet
+  /// lands. Distinct from [shareRoute], which is the in-app content-first
+  /// intention with an audience fixed by design.
+  static const String incomingShareRoute = '/share/incoming';
+
+  /// SHARE — the in-app content-first creation intention.
+  static const String shareRoute = '/share';
+
+  /// SIGN IN, returning to where the person was going.
+  ///
+  /// [returnTo] is preserved rather than dropped because a sign-in that
+  /// forgets the destination is indistinguishable from one that failed — and
+  /// on the share path it is how content a person handed to Aura appears to
+  /// vanish.
+  static String signInRoute({String? returnTo}) {
+    final destination = (returnTo ?? '').trim();
+    if (destination.isEmpty) return '/login';
+    return '/login?redirect=${Uri.encodeQueryComponent(destination)}';
+  }
+
   // ── Canonical object route builders ──────────────────────────────
 
   static String personRoute(String handle) => '/u/$handle';

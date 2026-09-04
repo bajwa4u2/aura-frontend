@@ -32,6 +32,7 @@ import '../../../core/link_preview/link_preview_card.dart';
 import '../../../core/link_preview/link_preview_service.dart';
 import '../../../core/composition/composition_authority.dart';
 import '../../../core/media/attachment.dart';
+import '../../share_intake/application/share_handoff.dart';
 import '../../../core/media/media_acquisition.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
@@ -594,12 +595,24 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   void initState() {
     super.initState();
 
+    // Claimed BEFORE the draft load is scheduled, and synchronously, because
+    // `_loadDraft` clears and replaces both the text and the attachment list
+    // — a share seeded first would be wiped a moment later by a network
+    // response, which is indistinguishable from Aura having dropped it.
+    final sharedIn = ref.read(shareHandoffProvider.notifier).takeForPublicPost();
+
     if (_isEditingPost) {
       _loadEditablePost();
     } else if (!_isReply) {
-      _loadDraft();
+      // The two are mutually exclusive on purpose. A person holds ONE post
+      // draft, so loading it here would either overwrite the share or be
+      // overwritten by it; share intake only offers this destination when
+      // there is no draft to lose.
+      if (sharedIn == null) _loadDraft();
       _loadExternalConnections();
     }
+
+    if (sharedIn != null) _adoptSharedContent(sharedIn);
 
     // `mode=media` PREDATES SHARE, AND SHARE IS WHAT IT WAS REACHING FOR.
     //
@@ -650,6 +663,24 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         _scheduleAutosave();
       },
     );
+  }
+
+  /// Take up content the person shared into Aura from another application.
+  ///
+  /// It arrives already through the same `ContentIntake` door as a picker or a
+  /// paste, and it arrives UNPUBLISHED. Everything that follows is the
+  /// ordinary composer: the same topics, the same audience control, the same
+  /// publish button. Coming from a share sheet buys no shortcut.
+  void _adoptSharedContent(StagedShare shared) {
+    _textController.text = shared.body;
+    for (final attachment in shared.attachments) {
+      _ensureCaptionController(attachment);
+    }
+    setState(() {
+      _attachments
+        ..clear()
+        ..addAll(shared.attachments);
+    });
   }
 
   @override

@@ -75,6 +75,7 @@ import 'features/me/presentation/security_screen.dart';
 import 'features/devices/presentation/devices_screen.dart';
 import 'features/me/presentation/change_password_screen.dart';
 import 'features/posts/presentation/compose_screen.dart';
+import 'features/share_intake/presentation/share_intake_screen.dart';
 import 'features/share/presentation/share_screen.dart';
 import 'features/posts/presentation/post_detail_screen.dart';
 import 'features/profile/presentation/author_profile_screen.dart';
@@ -1947,6 +1948,25 @@ final routerProvider = Provider<GoRouter>((ref) {
                     ?.trim(),
               );
             },
+          ),
+          // TRACK B1 — content that arrived from ANOTHER APPLICATION.
+          //
+          // A sibling of `/share` above, and deliberately not the same screen.
+          // `/share` is the in-app content-first intention, whose audience is
+          // fixed by design and is explicitly "not a control". Content handed
+          // over by an operating system arrives with no destination and no
+          // identity, so both are questions there and neither may be
+          // defaulted — a mode flag through one screen would be the
+          // page-specific pipeline this track exists to prevent.
+          //
+          // One system underneath, two entrances: the same `ContentIntake`
+          // door, the same `Attachment`, the same composition strip, and the
+          // destination's own composer for the send. Every platform adapter
+          // delivers into `shareIntakeInboxProvider` and routes here; none of
+          // them routes anywhere else, and none of them publishes.
+          GoRoute(
+            path: '/share/incoming',
+            builder: (_, __) => const ShareIntakeScreen(),
           ),
           GoRoute(
             path: '/posts/:postId/edit',

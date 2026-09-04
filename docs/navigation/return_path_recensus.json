@@ -1463,6 +1463,17 @@
   "verdict": "COMPLIANT"
  },
  {
+  "route": "/share/incoming",
+  "sample": "/share/incoming",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "parentReturn",
+  "deepLinkDestination": "/share",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
   "route": "/posts/:postId/edit",
   "sample": "/posts/x-postid/edit",
   "renders": true,
