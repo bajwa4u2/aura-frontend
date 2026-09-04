@@ -1,7 +1,10 @@
 # OS Integration Plan — call register and share destination
 
 **Date:** 2026-09-04 · **Status: IN EXECUTION.** Founder-approved, decisions resolved.
-Track A, the token hardening, and all of Track B (B1–B4) are implemented. Track C is not started.
+Track A, the token hardening, and all of Track B (B1–B4) are implemented. **Track C is AUDITED
+and BLOCKED** — the SDK audit it was to start with is complete and favourable, and it surfaced a
+platform fact that stops the jurisdiction gate from being built the way the iOS one was. One founder
+decision unblocks it; see §C-AUDIT.
 
 > **BEFORE THE NEXT iOS BUILD.** Track B3 adds a Share Extension target and an App Group. The
 > archive **fails at codesign** until the Apple Developer portal has: App Groups enabled on
@@ -21,7 +24,7 @@ Track A, the token hardening, and all of Track B (B1–B4) are implemented. Trac
 | **Track B2** — Android share target | Implemented | 15 gates pass · Kotlin **COMPILES** (`:app:compileDebugKotlin`) · merged manifest carries both filters · **device UNVERIFIED** |
 | **Track B3** — iOS Share Extension | Implemented | 26 gates pass · project graph diffed object-by-object against the pre-edit file · **no macOS here: build and device UNVERIFIED** |
 | **Track B4** — Windows share target | Implemented | 20 gates pass · **runner COMPILES** · **share target verified inside the packed `aura.msix`** · install-and-share UNVERIFIED |
-| **Track C** — Android Telecom | Not started | — |
+| **Track C** — Android Telecom | **Audited · BLOCKED on one decision** | SDK support CONFIRMED by resolution and manifest-merge measurement · jurisdiction gate has no Android equivalent · nothing implemented, certified ringing untouched |
 
 ### Track B1 as built
 
@@ -111,6 +114,68 @@ removed**, 20 added (exactly the ones created), 6 changed (main group, products 
 targets and attributes, Runner's sources, Runner's phases and dependencies). The reformat is
 therefore lossless. What that does NOT prove is that Xcode agrees — there is no macOS here, so the
 first real build is where the target wiring is certified.
+
+### §C-AUDIT — Track C, audited before anything was built
+
+The instruction was to audit SDK support first. The audit is done, it is favourable, and it then
+ran into something that is not about the SDK at all.
+
+**What was measured, not assumed.**
+
+| Question | Answer | How it was established |
+|---|---|---|
+| Is Jetpack Core-Telecom available? | **Yes** — `androidx.core:core-telecom:1.0.0`, a stable 1.0.0 | Added to the build and resolved against the real repositories |
+| Does it force a minSdk bump? | **No.** Its manifest declares `minSdkVersion 21`; Aura is on 24 | Read from the AAR's own `AndroidManifest.xml` |
+| Does Aura have to write a `ConnectionService`? | **No.** The library ships and registers `androidx.core.telecom.internal.JetpackConnectionService` | Appeared in the merged manifest's service list |
+| What does the dependency cost in the shipped manifest? | **Exactly one new permission: `MANAGE_OWN_CALLS`** | Merged manifest generated twice, with and without the dependency, and the permission sets differenced |
+| What is the API? | `registerAppWithTelecom(capabilities)`, then a suspend `addCall(...)` taking `onAnswer` / `onDisconnect` / `onSetActive` / `onSetInactive` and a `CallControlScope` | `javap` on `CallsManager` from the AAR |
+
+`BLUETOOTH`, `BLUETOOTH_CONNECT` and `MODIFY_AUDIO_SETTINGS` are also declared by the library and
+were **already** in Aura's merged manifest, so they are not a delta. The dependency is therefore
+much cheaper than expected: one permission, no new service of ours, no minSdk change.
+
+**And then the part that is not about the SDK.**
+
+§7 item 4 asks who answers the Android Telecom jurisdiction question. Building the answer requires
+knowing which jurisdiction Aura was DISTRIBUTED into — and Android does not expose that fact.
+
+`CallCapabilityPolicy.swift` exists because Apple rejected build 35 under Guideline 5 for shipping
+CallKit unconditionally into a territory list that includes China mainland. Its central judgement is
+that the obligation attaches to the **storefront**, not to the handset, and that `Locale.current`,
+the SIM's MCC, the timezone and the IP address all answer a different question. `SKStorefront` is
+what makes the correct answer available on iOS.
+
+**Android has no `SKStorefront`.** The nearest equivalent is
+`BillingClient.getBillingConfigAsync()` → `BillingConfig.countryCode`, which reports the user's
+Play country — and Aura has no Play Billing dependency at all (checked: no `in_app_purchase`, no
+`billing` artifact anywhere in `releaseRuntimeClasspath`). Everything else the platform offers is a
+device signal, which is precisely what the iOS policy file rejects in writing.
+
+So the gate cannot be ported. The options, stated without a recommendation being smuggled in as a
+fact:
+
+1. **Add Play Billing to read one field.** A large dependency for a country code, and it answers
+   only for Play installs.
+2. **Answer it server-side.** The backend knows the account; a capability flag returned to the
+   client is device-independent, auditable, and changeable without a release. It fits how the rest
+   of Aura's authority already works, and it is the only option that keeps working for a
+   non-Play install.
+3. **Ship Telecom with no jurisdiction gate.** This is the shape of the defect Apple already
+   rejected once, on the other platform.
+4. **Do not adopt Telecom on Android.** The notification ring is certified and works; the cost of
+   this option is the call log and system call behaviour, and nothing else.
+
+**Nothing was implemented, and that is deliberate.** Adding the dependency puts `MANAGE_OWN_CALLS`
+into the shipped manifest — a jurisdiction-constrained capability, visible on the Play listing,
+introduced before the policy that constrains it exists. That is the exact ordering that produced the
+iOS rejection, and doing it on Android while the gate is undecided would be repeating it knowingly.
+The founder ruling to preserve the existing certified ringing points the same way: `IncomingCallPresenter`
+is untouched, and it stays the live path until a replacement can be certified on a real device.
+
+**What unblocks it:** one decision on which of the four options above is Aura's answer. After that,
+Track C is small — the SDK work is a policy object, a registration call and an `addCall` bridge
+alongside the existing presenter, with the switch defaulting off until a physical Android device
+certifies it.
 
 ### Track B4 as built
 
@@ -398,16 +463,28 @@ plan.
 
 ---
 
-## 7. Decisions required before anything starts
+## 7. Decision record
 
-1. **iOS Share Extension: capture-only, or credential-bearing?** Section 3 recommends capture-only.
-   This is the one architectural decision in the plan that is genuinely a governance judgement.
-2. **Does the share destination allow public Posts, or private surfaces only** — Spaces, Threads,
-   Conversations? Allowing a share to become a public post makes the acting-identity question
-   sharper and the mis-share consequence larger.
-3. **Is Track C wanted at all, or is the Android call log an acceptable absence?** The notification
-   ring works and is certified. Track C buys the log plus system call behaviour, at the cost of
-   replacing that certified path.
-4. **Who answers the Android Telecom jurisdiction question**, and before which step.
-5. **Order confirmation.** The sequence above is a recommendation, not a constraint. Track B can be
-   moved ahead of Track A if a share entry point matters more than call-log parity.
+This section asked five questions before execution began. Four are answered; the fifth is what
+Track C is now blocked on. Each answer says where it came from, because "resolved" with no
+provenance is how a decision nobody made becomes settled.
+
+1. **iOS Share Extension: capture-only, or credential-bearing?** — **CAPTURE-ONLY.** Founder
+   ruling, stated explicitly and at length: the extension must not carry Aura authentication
+   authority, publish, send, choose an acting identity, choose a destination, or infer either from
+   recent use; and *"Do not place access tokens or refresh tokens into the App Group."* Built that
+   way, and asserted by gates rather than promised in comments.
+2. **Does the share destination allow public Posts, or private surfaces only?** — **PUBLIC POSTS
+   ARE OFFERED.** Answered by B1 as built, not by a separate ruling: the founder's B1 requirements
+   name *visibility* as one of the things the destination experience must establish, which is only
+   a question if a public destination exists. It is stated first in the list, never pre-selected,
+   and carries its consequence in words. **Reversible in one file** — removing it is deleting one
+   entry from `shareDestinationsProvider` — if the founder reads that requirement differently.
+3. **Is Track C wanted at all?** — **YES.** Founder track order named it: A → B1 → B2 → B3
+   → B4 → C.
+4. **Who answers the Android Telecom jurisdiction question, and before which step?** — **STILL
+   OPEN, AND IT IS NOW THE BLOCKER.** §C-AUDIT establishes that the iOS gate cannot be ported
+   because Android exposes no storefront fact, and sets out four options. This is the decision Track
+   C waits on.
+5. **Order confirmation.** — **CONFIRMED AND FOLLOWED**, with B4 pulled forward of C because C
+   became blocked: A → B1 → B2 → B3 → B4 → C.
