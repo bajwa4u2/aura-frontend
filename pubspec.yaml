@@ -10,7 +10,7 @@ publish_to: "none"
 # X.Y.Z parts of `version` and zero out the build component to satisfy
 # the store rule. A pre-build script could enforce this automatically;
 # for now it's a manual sync.
-version: 1.4.1+36
+version: 1.4.2+37
 
 environment:
   sdk: ^3.10.8
@@ -233,7 +233,12 @@ msix_config:
   # Continuity/Accountability views, governed topic relationships,
   # communication translation, reshare commentary, severity-aware
   # moderation labels, notification routing repairs.
-  msix_version: 1.4.1.0
+  # 2026-09-04 bump (1.4.2.0): Aura 1.4.2 stabilization release — OS native
+  # integration (governed Share intake and per-platform share targets, Android
+  # Core-Telecom call lifecycle, first-party secure token storage) plus the
+  # Feedback / Rate / Version capability on both widths. MUST equal the X.Y.Z
+  # of `version:` above with a trailing .0.
+  msix_version: 1.4.2.0
   description: "Aura — a platform for purposeful public and personal communication, where conversations keep their context and people and institutions speak under clear, accountable identity."
   publisher: CN=3E4027A7-4D4D-4492-B8DE-BBE425E307E5
 

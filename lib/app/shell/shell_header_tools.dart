@@ -19,6 +19,7 @@ import '../../core/net/dio_provider.dart';
 import '../../core/ui/aura_radius.dart';
 import '../../core/ui/aura_space.dart';
 import '../../core/ui/aura_surface.dart';
+import '../../core/review/rate_aura.dart';
 import '../../core/ui/aura_text.dart';
 import '../../features/updates/providers.dart';
 import '../../features/realtime/application/realtime_providers.dart';
@@ -100,6 +101,14 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
         // Enters NOW — the situation view — never a deep route. An operator
         // arriving should see what needs them before anything else.
         context.go(OperatorArea.now.path);
+        return;
+      case 'feedback':
+        // The SAME destination the mobile drawer has always used. One feedback
+        // capability, reached from both widths — not a desktop variant of it.
+        context.go(NavigationAuthority.feedbackRoute);
+        return;
+      case 'rate':
+        await openRateAura(ref.read(rateDestinationProvider));
         return;
       case 'logout':
         await _logout();
@@ -278,6 +287,8 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
           me: me,
           isAdmin: isAdmin,
           canOperate: canOperate,
+          rateDestination: ref.watch(rateDestinationProvider),
+          version: ref.watch(appVersionLabelProvider),
           onSelected: (v) => unawaited(_handleAccountAction(v)),
         ),
       ],
@@ -685,6 +696,8 @@ class _HeaderAccountBtn extends StatelessWidget {
     required this.isAdmin,
     required this.canOperate,
     required this.onSelected,
+    required this.rateDestination,
+    required this.version,
   });
 
   final bool busy;
@@ -696,6 +709,14 @@ class _HeaderAccountBtn extends StatelessWidget {
   /// into a refusal.
   final bool canOperate;
   final ValueChanged<String> onSelected;
+
+  /// Where "Rate Aura" would legitimately go on this platform. `none` on web,
+  /// where the control is not shown at all rather than shown and inert.
+  final RateDestination rateDestination;
+
+  /// "Version 1.4.2", read from the canonical client identity. Null while it
+  /// resolves.
+  final String? version;
 
   @override
   Widget build(BuildContext context) {
@@ -721,12 +742,40 @@ class _HeaderAccountBtn extends StatelessWidget {
             _menuItem('admin', Icons.shield_outlined, 'Aura Admin'),
           ],
           const PopupMenuDivider(),
+
+          // FEEDBACK, RATE AND VERSION — IN THE MENU, NOT IN THE HEADER.
+          //
+          // The mobile drawer has carried Feedback for some time and the
+          // desktop menu did not, so the same product capability existed on
+          // one width and not the other. These three go here rather than as a
+          // new header row for the reason the invite icon was retired in
+          // 2026-08-16: permanent header width is for immediate attention, and
+          // none of these is that.
+          _menuItem('feedback', Icons.rate_review_outlined, 'Send feedback'),
+          if (rateDestination.exists)
+            _menuItem('rate', Icons.star_outline_rounded, 'Rate Aura'),
+
+          const PopupMenuDivider(),
           _menuItem(
             'logout',
             busy ? Icons.hourglass_empty : Icons.logout_rounded,
             busy ? 'Signing out…' : 'Sign out',
             danger: true,
           ),
+
+          // NOT AN ACTION, AND DELIBERATELY NOT SHAPED LIKE ONE.
+          //
+          // Disabled, unpadded, quiet: a person reading their version to a
+          // support conversation should not be able to press it, and a menu
+          // that turns into developer diagnostics stops being an account
+          // menu. Absent entirely while identity is resolving, because a
+          // placeholder version is worse than none.
+          if (version case final String label)
+            PopupMenuItem<String>(
+              enabled: false,
+              height: 34,
+              child: Text(label, style: AuraText.small),
+            ),
         ],
         child: Container(
           width: 38,

@@ -28,6 +28,7 @@ import 'global_platform_shell.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/navigation/navigation_authority.dart';
 import '../../core/trust/trust_marks.dart';
+import '../../core/review/rate_aura.dart';
 import '../../core/ui/aura_text.dart';
 import '../../features/institutions/data/institution_pending_counts.dart';
 import '../../features/updates/module_attention.dart';
@@ -1015,6 +1016,8 @@ class _MemberDrawerSecondary extends ConsumerWidget {
     // answer rather than flickering on every open.
     final affiliationsResolved = ref.watch(myAffiliationsResolvedProvider);
     final isAdmin = ref.watch(appAdminCachedDisplayProvider);
+    final rateDestination = ref.watch(rateDestinationProvider);
+    final version = ref.watch(appVersionLabelProvider);
 
     void go(String route) {
       Navigator.of(context).maybePop();
@@ -1118,6 +1121,42 @@ class _MemberDrawerSecondary extends ConsumerWidget {
             unawaited(signOutAura(context, ref));
           },
         ),
+
+        // RATE AURA — only where a real store listing exists.
+        //
+        // Absent on web rather than present and inert: a rating control that
+        // posts nowhere is a fiction, and symmetry is not a reason to ship
+        // one. Opening the listing rather than the in-app sheet is what both
+        // stores ask of a button — Google's review quota is silent, so a
+        // "Rate" press could otherwise do nothing at all with no explanation.
+        if (rateDestination.exists)
+          _DrawerEntry(
+            icon: Icons.star_outline_rounded,
+            label: 'Rate Aura',
+            onTap: () {
+              Navigator.of(context).maybePop();
+              unawaited(openRateAura(rateDestination));
+            },
+          ),
+
+        // VERSION — READ, NEVER TYPED, AND NOT A CONTROL.
+        //
+        // From the canonical client identity, which is the same value the app
+        // already sends as X-Aura-App-Version. Rendered as quiet text rather
+        // than a tappable row: this is what a person reads out to support, not
+        // a door into developer diagnostics. Absent while identity resolves,
+        // because a placeholder version is worse than none.
+        if (version case final String label) ...[
+          const SizedBox(height: AuraSpace.s12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s12),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(label, style: AuraText.small),
+            ),
+          ),
+          const SizedBox(height: AuraSpace.s4),
+        ],
       ],
     );
   }
