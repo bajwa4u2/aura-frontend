@@ -19,6 +19,7 @@ import '../domain/realtime_models.dart';
 import '../domain/call_mode.dart';
 import '../domain/realtime_state.dart';
 import '../../../core/diagnostics/call_teardown_diag.dart';
+import '../../../core/notifications/android_telecom.dart';
 import '../../../core/notifications/ios_call_kit.dart';
 
 class RealtimeController extends StateNotifier<RealtimeState>
@@ -1782,6 +1783,10 @@ class RealtimeController extends StateNotifier<RealtimeState>
     // build 30 shipped only the first half.
     if (sessionId.isNotEmpty) {
       unawaited(IosCallKit.instance.reportEnded(sessionId, reason: 'ended'));
+      // Track C — ending a call must actually end it on both call stacks. A
+      // system call left open holds audio focus for a conversation that is
+      // over.
+      unawaited(AndroidTelecom.instance.reportEnded(sessionId, reason: 'ended'));
     }
 
     try {
@@ -2367,6 +2372,13 @@ class RealtimeController extends StateNotifier<RealtimeState>
           IosCallKit.instance
               .reportOutgoingConnected(sessionId)
               .catchError((_) {}),
+        );
+        // Track C — remote media present is the moment a placed call became a
+        // conversation on Android too. Without it the system call stays in
+        // "connecting" for its whole life and any history entry has no
+        // duration.
+        unawaited(
+          AndroidTelecom.instance.reportConnected(sessionId).catchError((_) {}),
         );
       }
     }

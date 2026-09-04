@@ -23,6 +23,7 @@ const _header = 'windows/runner/share_intake.h';
 const _cmake = 'windows/runner/CMakeLists.txt';
 const _window = 'windows/runner/flutter_window.cpp';
 const _tool = 'tool/windows/declare_share_target.dart';
+const _packager = 'tool/windows/package_windows.dart';
 const _mimeAuthority = 'lib/core/media/media_mime.dart';
 
 String _read(String path) {
@@ -220,14 +221,48 @@ void main() {
     });
   });
 
-  group('the release flow is written down where it is run', () {
-    test('the three-step packaging order is recorded in the tool itself', () {
-      final tool = _read(_tool);
-      // A step that only exists in a person's memory is a step that gets
-      // skipped, and skipping it ships a package that is silently not a share
-      // target.
-      expect(tool.contains('msix:build'), isTrue);
-      expect(tool.contains('msix:pack'), isTrue);
+  group('packaging cannot silently drop the share target', () {
+    test('there is ONE canonical packaging command', () {
+      // Three steps that a person has to remember is not a release step.
+      // `dart run msix:create` is the obvious command, it regenerates the
+      // manifest, it drops the declaration, and it SUCCEEDS.
+      final canonical = _read(_packager);
+      expect(canonical.contains("'run', 'msix:build'"), isTrue);
+      expect(canonical.contains("tool/windows/declare_share_target.dart"), isTrue);
+      expect(canonical.contains("'run', 'msix:pack'"), isTrue);
+    });
+
+    test('it verifies the ARTIFACT, not that the right commands were typed', () {
+      final canonical = _read(_packager);
+      // The finished .msix is opened and its manifest read. Passing means the
+      // package is correct, which is a different claim from "the script ran".
+      expect(canonical.contains('verifyPackage'), isTrue);
+      expect(canonical.contains('AppxManifest.xml'), isTrue);
+      expect(canonical.contains('ZipDecoder'), isTrue);
+    });
+
+    test('a package without the declaration is REJECTED, not warned about', () {
+      final canonical = _read(_packager);
+      expect(canonical.contains('WINDOWS PACKAGE REJECTED'), isTrue);
+      expect(canonical.contains('exit(1)'), isTrue);
+    });
+
+    test('the gate also guards what the declaration must not displace', () {
+      final canonical = _read(_packager);
+      // Both are load-bearing continuation mechanisms, and an injection that
+      // stepped on either would be a silent regression of a shipped feature.
+      expect(canonical.contains('windows.protocol'), isTrue);
+      expect(canonical.contains('windows.appUriHandler'), isTrue);
+    });
+
+    test('it can be run against an existing package as a release gate', () {
+      expect(_read(_packager).contains('--verify-only'), isTrue);
+    });
+
+    test('the canonical command is what the release config points at', () {
+      // pubspec is where anyone configuring the Windows build looks.
+      final pubspec = _read('pubspec.yaml');
+      expect(pubspec.contains('tool/windows/package_windows.dart'), isTrue);
     });
   });
 }

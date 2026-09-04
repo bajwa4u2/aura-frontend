@@ -64,6 +64,18 @@ class MainActivity : FlutterActivity() {
                 SecureStore.handle(applicationContext, call, result)
             }
 
+        // TRACK C — NATIVE CALL LIFECYCLE. Registered here, but Telecom
+        // registration itself happens on the first call rather than at app
+        // start: putting Aura in the system's calling-account settings for
+        // someone who never places a call would be a presence they did not ask
+        // for.
+        val telecom =
+            MethodChannel(flutterEngine.dartExecutor.binaryMessenger, AuraTelecom.CHANNEL)
+        AuraTelecom.attach(telecom)
+        telecom.setMethodCallHandler { call, result ->
+            AuraTelecom.handle(applicationContext, call, result)
+        }
+
         // SHARE INTAKE — the single door every Android share comes through.
         // Registered here so the handler exists before Dart drains the pending
         // share on its first frame; a missing handler there would read as

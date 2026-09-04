@@ -1,10 +1,8 @@
 # OS Integration Plan — call register and share destination
 
 **Date:** 2026-09-04 · **Status: IN EXECUTION.** Founder-approved, decisions resolved.
-Track A, the token hardening, and all of Track B (B1–B4) are implemented. **Track C is AUDITED
-and BLOCKED** — the SDK audit it was to start with is complete and favourable, and it surfaced a
-platform fact that stops the jurisdiction gate from being built the way the iOS one was. One founder
-decision unblocks it; see §C-AUDIT.
+Track A, the token hardening, all of Track B (B1–B4) and **Track C** are implemented. Every
+native adapter remains **UNVERIFIED** until a real device exercises it.
 
 > **BEFORE THE NEXT iOS BUILD.** Track B3 adds a Share Extension target and an App Group. The
 > archive **fails at codesign** until the Apple Developer portal has: App Groups enabled on
@@ -24,7 +22,7 @@ decision unblocks it; see §C-AUDIT.
 | **Track B2** — Android share target | Implemented | 15 gates pass · Kotlin **COMPILES** (`:app:compileDebugKotlin`) · merged manifest carries both filters · **device UNVERIFIED** |
 | **Track B3** — iOS Share Extension | Implemented | 26 gates pass · project graph diffed object-by-object against the pre-edit file · **no macOS here: build and device UNVERIFIED** |
 | **Track B4** — Windows share target | Implemented | 20 gates pass · **runner COMPILES** · **share target verified inside the packed `aura.msix`** · install-and-share UNVERIFIED |
-| **Track C** — Android Telecom | **Audited · BLOCKED on one decision** | SDK support CONFIRMED by resolution and manifest-merge measurement · jurisdiction gate has no Android equivalent · nothing implemented, certified ringing untouched |
+| **Track C** — Android Telecom | Implemented / **DEVICE UNVERIFIED** | 21 gates pass · Kotlin **compiles** · **debug APK builds** · merged manifest verified to carry `MANAGE_OWN_CALLS` and **no** restricted Call Log permission |
 
 ### Track B1 as built
 
@@ -43,12 +41,27 @@ the surface — the same `ContentIntake` door, the same `Attachment`, the same c
 | `CONTENTINTAKE_BYPASS = 0` | The feature never constructs an `Attachment`. A payload declared `application/pdf` whose bytes are a PNG resolves as `image/png`, and that is asserted |
 | `PAGE_SPECIFIC_SHARE_PIPELINES = 0` | No platform branch anywhere in the feature; exactly one route renders the surface; every adapter delivers into one `deliver()` |
 
-**A real hazard found and handled.** A person holds exactly one post draft (`PUT /posts/draft`
-upserts it), and the composer's draft load *clears and replaces* both text and attachments. Seeding
-a share into it would either be silently wiped by the draft response or silently overwrite
-unpublished writing. The public-post destination is therefore offered as **unavailable, with the
-reason stated**, while a post is in progress — and the composer skips its draft load when a share
-is staged, so the two can never race.
+**A real hazard found and handled — as a stop-gap, not as doctrine.** A person holds exactly one
+post draft (`PUT /posts/draft` upserts it), and the composer's draft load *clears and replaces* both
+text and attachments. Seeding a share into it would either be silently wiped by the draft response
+or silently overwrite unpublished writing. The public-post destination is therefore offered as
+**unavailable, with the reason stated**, while a post is in progress — and the composer skips its
+draft load when a share is staged, so the two can never race.
+
+> **OPEN OBLIGATION — carried to Rich Content / Compose readiness (founder, 2026-09-04).**
+> The safe refusal must not become permanent product doctrine. The long-term targets are
+> `EXISTING_DRAFT_OVERWRITE = 0`, `INCOMING_SHARE_LOSS = 0` **and**
+> `PUBLIC_POST_DESTINATION_PERMANENTLY_DISABLED_BY_EXISTING_DRAFT = 0` — all three at once, which
+> today's behaviour does not achieve because it satisfies the first two by failing the third.
+>
+> The eventual Compose model must let both pieces of work survive, by **offering the person the
+> choice**: add the shared content to the existing draft, keep the draft and start another
+> composition, choose a different destination, or cancel. **Do not auto-merge** — merging someone's
+> unrelated draft with a photograph they shared is a consequence they did not ask for, which is the
+> same failure as overwriting it wearing a friendlier face.
+>
+> This does not block Track C and is not scheduled here. It is an obligation on the Compose model,
+> recorded so the stop-gap cannot quietly become the answer.
 
 **Not yet reachable by a person.** B1 is the destination; nothing delivers into it until B2/B3/B4
 exist. `shareIntakeInboxProvider.deliver()` is the single door every platform adapter will use.
@@ -172,10 +185,65 @@ iOS rejection, and doing it on Android while the gate is undecided would be repe
 The founder ruling to preserve the existing certified ringing points the same way: `IncomingCallPresenter`
 is untouched, and it stays the live path until a replacement can be certified on a real device.
 
-**What unblocks it:** one decision on which of the four options above is Aura's answer. After that,
-Track C is small — the SDK work is a policy object, a registration call and an `addCall` bridge
-alongside the existing presenter, with the switch defaulting off until a physical Android device
-certifies it.
+**RESOLVED (founder, 2026-09-04): `ANDROID_TELECOM_PLATFORM_JURISDICTION_GATE = NONE`.**
+
+The reasoning is the part worth keeping. Apple issued a real, storefront-specific instruction and
+enforced it, so iOS has a gate. Android has issued none. `MANAGE_OWN_CALLS` is the ordinary
+permission a self-managed VoIP app needs for `CallsManager.addCall()`; Play's special restrictions
+attach to the Call Log permissions — `READ_CALL_LOG`, `WRITE_CALL_LOG`, `PROCESS_OUTGOING_CALLS` —
+which Aura neither requests nor needs. And Play Billing must not be added merely to read
+`BillingConfig.countryCode`: it would couple calling policy to a commercial subsystem Aura does not
+otherwise need here, and would still answer a storefront/payment question rather than necessarily
+the legal one.
+
+The governing model is **no known restriction → feature available**, not *unknown restriction →
+invent a gate*. A manufactured Android rule would have removed a system call experience from
+territories nobody asked us to remove it from, on the strength of a rule nobody has written.
+
+What survives is the SHAPE, not the content. `CallCapabilityPolicy.kt` exists, is asked before any
+Telecom call, and its restriction list is **empty** — so if Google, Android, a jurisdiction or
+Aura's own product configuration ever establishes a restriction, there is one place it lands and
+one predicate every caller already honours. That is the real lesson of the Apple rejection: the gate
+should exist before the evidence does, and stay empty until it arrives. A restriction added there
+must carry the evidence that established it, which the type requires. Locale, timezone, SIM country
+and IP geography remain forbidden as substitutes for a rule, and a gate asserts their absence.
+
+### Track C as built
+
+**Core-Telecom is the lifecycle, not a second ringing surface.** These are self-managed calls, so
+Android draws no incoming-call screen for them — `IncomingCallPresenter` remains exactly what a
+person sees, unchanged and still certified, and Telecom sits underneath it supplying audio focus,
+Bluetooth and wired routing, and concurrency with the dialer. A gate asserts that the Telecom code
+contains no notification, no full-screen intent and no reference to the presenter at all.
+
+**One call lifecycle, reported to two systems.** Android is reported from the *same lines* iOS is —
+`_onSessionTerminated`, `clearAccepted`, the outgoing-call site, the remote-media site — because a
+second place that decides a call is over is a second place that can be wrong about it. Accepting
+reports CONNECTED and never ENDED, which is the distinction that already cost a production call
+five seconds of life on iOS.
+
+**Incoming needs one line iOS does not.** A CallKit call is created natively from the PushKit push
+before Dart sees anything; on Android the ring is Aura's own notification, so `addIncoming` is the
+first moment the system could learn a call exists. It is placed *after* the expiry and precedence
+guards, so a stale or superseded invite never registers a system call that nothing will ever end.
+
+**Nothing decides anything on the person's behalf.** A system answer — a Bluetooth button, a car, a
+wearable — is carried to the same accept path a foreground answer uses, never joined here. Hold is
+recorded and not acted on, because Aura has no hold semantics yet and inventing one behind a system
+callback would be a call behaviour nobody designed.
+
+**`DIRECT_CALLLOG_WRITES = 0`, and provable.** No restricted Call Log permission is declared, no
+source touches the `CallLog` provider, and the merged manifest was generated and read to confirm
+it. System call history is whatever Android records for a call it is managing; nothing manufactures
+Recents entries.
+
+**Proved as far as this machine allows:** Kotlin compiles, the debug APK builds, and the merged
+manifest carries `MANAGE_OWN_CALLS`, the library's `JetpackConnectionService`, and no Call Log
+permission. **Not proved:** any of it running. Track C is IMPLEMENTED / UNVERIFIED until a physical
+Android device exercises the founder's list — incoming, outgoing, answer, decline, hang up,
+foreground/background, lock state, audio focus, speaker, Bluetooth, wired audio, cellular call
+during an Aura call and the reverse, duplicate/reentrant lifecycle, system call-history behaviour,
+and return to the correct Aura context.
 
 ### Track B4 as built
 
@@ -475,16 +543,21 @@ provenance is how a decision nobody made becomes settled.
    recent use; and *"Do not place access tokens or refresh tokens into the App Group."* Built that
    way, and asserted by gates rather than promised in comments.
 2. **Does the share destination allow public Posts, or private surfaces only?** — **PUBLIC POSTS
-   ARE OFFERED.** Answered by B1 as built, not by a separate ruling: the founder's B1 requirements
-   name *visibility* as one of the things the destination experience must establish, which is only
-   a question if a public destination exists. It is stated first in the list, never pre-selected,
-   and carries its consequence in words. **Reversible in one file** — removing it is deleting one
-   entry from `shareDestinationsProvider` — if the founder reads that requirement differently.
+   ARE ALLOWED. Explicitly approved in the governing task**, not inferred from B1 as built. An
+   earlier revision of this record described it as answered-by-implementation and flagged it as
+   possibly unauthorised; that was wrong, and the correction is founder-stated (2026-09-04).
+
+   The governing rule is **OS SHARE ACQUISITION ≠ PUBLICATION**. An inbound share may become a
+   public Post only after Aura has established an authenticated Human, an acting identity, a
+   destination, the capability for it, a preview-and-edit opportunity, and an explicit
+   consequential confirmation. The extension itself never publishes — which is why B3 holds no
+   credential and B1 contains no code that can publish.
 3. **Is Track C wanted at all?** — **YES.** Founder track order named it: A → B1 → B2 → B3
    → B4 → C.
-4. **Who answers the Android Telecom jurisdiction question, and before which step?** — **STILL
-   OPEN, AND IT IS NOW THE BLOCKER.** §C-AUDIT establishes that the iOS gate cannot be ported
-   because Android exposes no storefront fact, and sets out four options. This is the decision Track
-   C waits on.
+4. **Who answers the Android Telecom jurisdiction question, and before which step?** — **ANSWERED
+   BY THE FOUNDER, 2026-09-04: `ANDROID_TELECOM_PLATFORM_JURISDICTION_GATE = NONE`.** Apple gave
+   Aura an actual storefront-specific restriction, so Aura has an Apple gate. Android has given no
+   equivalent restriction, so Aura does not manufacture one. The empty policy object stays, so a
+   future rule has somewhere to land. See §C-AUDIT.
 5. **Order confirmation.** — **CONFIRMED AND FOLLOWED**, with B4 pulled forward of C because C
    became blocked: A → B1 → B2 → B3 → B4 → C.

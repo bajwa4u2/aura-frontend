@@ -108,6 +108,18 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # RELEASE GATE, NOT SHIPPED CODE.
+  #
+  # `tool/windows/package_windows.dart` opens the finished .msix and reads its
+  # manifest, so a package that is silently not a share target fails the build
+  # instead of reaching a person. That was first written as a hand-rolled zip
+  # reader to avoid a dependency, and it broke immediately on the real package:
+  # a 32 MB MSIX uses Zip64, whose entry offsets are a 0xFFFFFFFF sentinel
+  # pointing into an extra field. A release gate that mis-parses the artifact
+  # it is guarding is worse than no gate, so this reads it properly. It is
+  # already in the lock file as a transitive dependency; naming it here makes
+  # it importable by tooling without adding anything to the app.
+  archive: ^4.0.0
   # NATIVE CERTIFICATION HARNESS.
   #
   # Calls, Live, Meetings, Notifications and Interactions are cross-platform
@@ -252,20 +264,24 @@ msix_config:
   # keys for a protocol, a file association, an execution alias, App URI
   # handlers, a startup task and a toast activator — and none for a share
   # target, and no escape hatch for arbitrary extensions. There is nothing to
-  # set below; the declaration is injected between the two supported
-  # packaging commands instead:
+  # set below; the declaration is injected between `msix:build` and
+  # `msix:pack`, which pack whatever manifest is present.
   #
-  #     dart run msix:build
-  #     dart run tool/windows/declare_share_target.dart
-  #     dart run msix:pack
+  # ►► PACKAGE WITH ONE COMMAND, AND ONLY THIS ONE:
   #
-  # `msix:pack` packs whatever manifest is present, so this is a supported
-  # flow rather than a patch of a finished package — nothing is unpacked and
-  # nothing is re-signed. The step is idempotent.
+  #        dart run tool/windows/package_windows.dart
   #
-  # SKIPPING IT SHIPS A PACKAGE THAT IS SILENTLY NOT A SHARE TARGET. Running
-  # `dart run msix:create` alone — the one-shot command — regenerates the
-  # manifest and drops the declaration. Use the three steps.
+  # It runs the sequence and then OPENS THE FINISHED .msix AND READS ITS
+  # MANIFEST, failing if the share target is not in the shipped package. It
+  # passes on the artifact being correct, not on the right commands having
+  # been typed.
+  #
+  # DO NOT RUN `dart run msix:create`. It regenerates the manifest, drops the
+  # declaration, and SUCCEEDS — producing a package that installs, runs, and
+  # is silently not a share target. Nothing fails, so nobody finds out until
+  # someone looks for Aura in the Windows share sheet and it is not there.
+  #
+  # `--verify-only <path>` re-runs the check alone, for a release gate.
   protocol_activation: aura
   app_uri_handler_hosts: auraplatform.org, app.auraplatform.org
   logo_path: assets\aura_icon.png

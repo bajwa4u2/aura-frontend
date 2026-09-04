@@ -19,6 +19,7 @@ import '../../../core/media/aura_attachment_card.dart';
 import '../../../core/media/aura_stored_media.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/media/aura_voice_player.dart';
+import '../../../core/notifications/android_telecom.dart';
 import '../../../core/notifications/ios_call_kit.dart';
 import '../../../core/media/voice_note_capture.dart';
 import '../../../core/media/stored_media.dart';
@@ -1102,6 +1103,18 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       unawaited(
         IosCallKit.instance
             .reportOutgoingStarted(
+              sessionId,
+              displayName: (who ?? '').trim().isEmpty ? 'Aura call' : who!,
+              video: video,
+            )
+            .catchError((_) => false),
+      );
+      // Track C — the same report to Android's call stack, from the same
+      // line, with the same identity and the same indifference to the answer.
+      // Each is a no-op off its own platform.
+      unawaited(
+        AndroidTelecom.instance
+            .reportOutgoing(
               sessionId,
               displayName: (who ?? '').trim().isEmpty ? 'Aura call' : who!,
               video: video,

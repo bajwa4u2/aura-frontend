@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../correspondence/data/correspondence_live_service.dart';
 import '../realtime/application/incoming_call_projection.dart';
 import '../realtime/application/realtime_providers.dart';
+import '../../core/notifications/android_telecom.dart';
 import '../../core/notifications/ios_call_kit.dart';
 
 final incomingCallBridgeProvider =
@@ -97,6 +100,40 @@ class IncomingCallBridgeNotifier
       return;
     }
 
+    // TRACK C — TELL THE SYSTEM A CALL IS RINGING.
+    //
+    // iOS needs no equivalent: a CallKit call is created natively from the
+    // PushKit push, before Dart has seen anything. On Android the ring is
+    // Aura's own notification, so this admission is the first moment the
+    // system could know a call exists — and it is placed AFTER the expiry and
+    // precedence guards above, so a stale or superseded invite never registers
+    // a system call that nothing will ever end.
+    //
+    // Best-effort and unawaited: the ring must not wait on Telecom, and a
+    // refusal changes nothing about the card built below.
+    if (sessionId.isNotEmpty) {
+      // The SAME two answers the ringing card derives, from the same fields:
+      // the canonical actor with the flat push field behind it, and video read
+      // from mediaMode or callKind. A system call entry naming a different
+      // person from the card beside it would be worse than no entry.
+      final actor = normalized['actor'];
+      final actorName =
+          actor is Map ? '${actor['displayName'] ?? ''}'.trim() : '';
+      final callerName = actorName.isNotEmpty
+          ? actorName
+          : (data is Map ? _str(data['callerDisplayName']) : '');
+      final video = data is Map &&
+          ('${data['mediaMode'] ?? ''}'.toLowerCase().contains('video') ||
+              '${data['callKind'] ?? ''}'.toLowerCase().contains('video'));
+      unawaited(
+        AndroidTelecom.instance.reportIncoming(
+          sessionId,
+          displayName: callerName.isEmpty ? 'Aura' : callerName,
+          video: video,
+        ),
+      );
+    }
+
     // Dedup by both notification ID and session ID so two pushes for the same
     // session (e.g. delivery retry on a different notification ID) don't produce
     // two ring cards stacked on top of each other.
@@ -132,6 +169,10 @@ class IncomingCallBridgeNotifier
   void _onSessionTerminated(String sessionId, {String reason = 'ended'}) {
     _guard.recordClear(sessionId);
     IosCallKit.instance.reportEnded(sessionId, reason: reason);
+    // Track C — the same truth, told to Android's call stack. Reported from
+    // this line rather than a new one, because a second place that decides a
+    // call is over is a second place that can be wrong about it.
+    AndroidTelecom.instance.reportEnded(sessionId, reason: reason);
     // AND THE OTHER HALF OF THE RING. Reporting the CallKit call ended retires
     // the system call; it does nothing to the ordinary APNs banner delivered
     // beside it, which is why an iPhone kept showing "Incoming call…" for a
@@ -178,6 +219,10 @@ class IncomingCallBridgeNotifier
     _guard.recordClear(trimmed);
     // Deliberately NOT reportEnded. See above.
     IosCallKit.instance.reportConnected(trimmed);
+    // And the same distinction on Android: a call that was just answered is
+    // ACTIVE, not disconnected. Reporting it ended here would tear down the
+    // system call, and with it the audio focus the call needs.
+    AndroidTelecom.instance.reportConnected(trimmed);
     // Accepting resolves the call as surely as ending it does, and the banner
     // must go either way: nobody wants a ringing notification for the call
     // they are now in. This is the accept-side half of the same cleanup, and

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/auth/auth_broadcast.dart';
+import '../core/notifications/android_telecom.dart';
 import '../core/notifications/ios_call_kit.dart';
 import '../core/notifications/native_call_actions.dart';
 import '../core/auth/auth_providers.dart';
@@ -61,6 +62,13 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     // native side buffers those events and releases them the moment `start()`
     // reports ready. Binding later would answer into nothing.
     _bindNativeCallArrival();
+
+    // TRACK C — ANDROID'S CALL STACK ACTING ON A CALL.
+    //
+    // Bound beside the iOS binding because it is the same kind of thing: the
+    // operating system doing something to a call, which Aura then has to make
+    // true. No-op on every platform but Android.
+    _bindNativeTelecom();
 
     // OS SHARE ARRIVAL. No-op on every platform that has not implemented the
     // channel, and deliberately without asking which platform this is.
@@ -439,6 +447,59 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     };
 
     unawaited(callKit.start());
+  }
+
+  /// The system acted on a call Aura registered with Telecom.
+  ///
+  /// THREE EVENTS, AND NOT ONE OF THEM DECIDES ANYTHING. Each is routed into
+  /// the authority that already owns that decision — the same rule the
+  /// notification path keeps, and the reason a headset button cannot join a
+  /// call on the recipient's behalf.
+  void _bindNativeTelecom() {
+    final telecom = AndroidTelecom.instance;
+    if (!telecom.isSupported) return;
+
+    // A Bluetooth headset button, a car, a wearable. The person answered on a
+    // real control, so this is an ACCEPT — but it is carried to the same
+    // incoming-call surface a foreground answer uses rather than joining
+    // here. Founder ruling 2026-08-14: never join on the recipient's behalf.
+    telecom.onAnswer = (sessionId) async {
+      if (!mounted || sessionId.isEmpty) return;
+      debugPrint('[telecom] system answered session=$sessionId');
+      try {
+        ref
+            .read(routerProvider)
+            .go(NavigationAuthority.realtimeSessionJoinRoute(sessionId));
+      } catch (e) {
+        debugPrint('[telecom] answer navigation failed: $e');
+      }
+    };
+
+    // The system took the call away — a cellular call arrived and won, or the
+    // person ended it from a system surface. The ringing card must go, or the
+    // phone keeps offering a call the OS has already disconnected.
+    telecom.onDisconnect = (sessionId) async {
+      if (!mounted || sessionId.isEmpty) return;
+      debugPrint('[telecom] system disconnected session=$sessionId');
+      try {
+        ref
+            .read(incomingCallBridgeProvider.notifier)
+            .removeBySession(sessionId);
+      } catch (e) {
+        debugPrint('[telecom] disconnect cleanup failed: $e');
+      }
+    };
+
+    // Held and resumed. Recorded rather than acted on: Aura has no hold
+    // semantics of its own yet, and inventing one here — muting, leaving,
+    // pausing media — would be a call behaviour nobody designed, arriving
+    // through a system callback. When Aura has a hold, this is where it is
+    // driven from.
+    telecom.onHoldChanged = (sessionId, active) async {
+      debugPrint('[telecom] session=$sessionId active=$active');
+    };
+
+    unawaited(telecom.start());
   }
 
   @override
