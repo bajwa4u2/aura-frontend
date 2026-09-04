@@ -1,6 +1,34 @@
 # OS Integration Plan — call register and share destination
 
-**Date:** 2026-09-04 · **Status: FOR FOUNDER REVIEW. Nothing here is started.**
+**Date:** 2026-09-04 · **Status: IN EXECUTION.** Founder-approved, decisions resolved.
+Track A and the token hardening are implemented; everything else is not started.
+
+## Execution status
+
+| Item | Code | Proof |
+|---|---|---|
+| **Track A** — iOS outgoing CallKit | Implemented (`5ffed711`) | 7 invariant gates pass · **device UNVERIFIED** |
+| **Security** — secure token storage | Implemented (`22dddae6`) | **Windows CERTIFIED** on the real Credential Manager · iOS/Android UNVERIFIED |
+| **Track B1** — governed share intake | Not started | — |
+| **Track B2** — Android share target | Not started | — |
+| **Track B3** — iOS Share Extension | Not started | — |
+| **Track B4** — Windows share target | Not started | — |
+| **Track C** — Android Telecom | Not started | — |
+
+### What this environment can and cannot prove
+
+Buildable and runnable here: **Windows desktop** and **web**. Not available: **no macOS**
+(iOS cannot be built), **no Android device**, no `adb`, no AVD images. iOS and Android work is
+therefore reported as IMPLEMENTED / UNVERIFIED and never as PASS, per the governing instruction.
+
+### Release prerequisite discovered
+
+`flutter_secure_storage` was the obvious choice for the token hardening and **failed the Windows
+build**: its Windows plugin compiles against `<atlstr.h>` and this machine's Visual Studio 2022
+Build Tools has no ATL component — `error C1083`. Adopting it would have added a Visual Studio
+component to the Windows release prerequisites in order to compile a file the package no longer
+uses at runtime. Rejected; the Credential Manager is reached directly through `win32` FFI instead,
+with no native build step. **No new toolchain requirement was added to the release path.**
 
 Two observations, audited rather than assumed: Aura calls do not appear in the phone's call
 register, and no other app offers Aura as a share destination. Neither is a defect in something
