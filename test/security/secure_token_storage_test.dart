@@ -42,9 +42,10 @@ void main() {
       expect(io.contains('CredDelete'), isTrue);
       // Apple: Keychain.
       expect(swift.contains('kSecClassGenericPassword'), isTrue);
-      // Android: Keystore-backed preferences.
-      expect(kotlin.contains('EncryptedSharedPreferences'), isTrue);
-      expect(gradle.contains('androidx.security:security-crypto'), isTrue);
+      // Android: AES-256-GCM under a key held in the Android Keystore.
+      expect(kotlin.contains('AndroidKeyStore'), isTrue);
+      expect(kotlin.contains('AES/GCM/NoPadding'), isTrue);
+      expect(kotlin.contains('setKeySize(256)'), isTrue);
     });
 
     test('the rejected plugin stays rejected, with the reason recorded', () {
@@ -156,9 +157,60 @@ void main() {
               'would gain the session it must never hold.');
     });
 
+    test('Android owns its Keystore use rather than importing an alpha', () {
+      // The name appears in the comment recording WHY it was rejected. What
+      // must be absent is the use, and the import that enables it.
+      expect(kotlin.contains('EncryptedSharedPreferences.create'), isFalse,
+          reason: 'It arrives only via security-crypto, whose sole release '
+              'carrying it is an alpha, and the class is deprecated upstream. '
+              'The session must not depend on that.');
+      expect(kotlin.contains('import androidx.security'), isFalse);
+      expect(gradle.contains('androidx.security:security-crypto'), isFalse);
+      expect(gradle.contains('NO androidx.security HERE'), isTrue,
+          reason: 'The reason must survive next to the absence, or someone '
+              'adds it back for brevity.');
+    });
+
+    test('the Android key is usable while the phone is locked', () {
+      // Assert on the CALL, not the word. Both names appear in the comment
+      // that records why they are absent, and a gate that trips on the
+      // documentation of its own rule is a gate nobody can explain.
+      expect(kotlin.contains('setUserAuthenticationRequired(true)'), isFalse,
+          reason: 'A token that cannot be decrypted until someone unlocks '
+              'cannot refresh while an incoming call is presenting, so the '
+              'call would ring and then fail to join.');
+      expect(kotlin.contains('setUnlockedDeviceRequired(true)'), isFalse);
+    });
+
+    test('every GCM encryption gets a fresh IV, enforced by the platform', () {
+      expect(kotlin.contains('setRandomizedEncryptionRequired(true)'), isTrue,
+          reason: 'IV reuse under GCM is catastrophic. This makes it '
+              'impossible rather than merely discouraged.');
+      expect(kotlin.contains('cipher.iv'), isTrue,
+          reason: 'A system-generated IV must be stored beside the ciphertext '
+              'or nothing can be decrypted.');
+    });
+
+    test('Android never falls back to storing the token in the clear', () {
+      expect(kotlin.contains('refusing to persist an unencrypted session'),
+          isTrue,
+          reason: 'Writing the token unencrypted "so it works" is the defect '
+              'this file exists to remove.');
+    });
+
+    test('an unreadable blob is cleared rather than failing every launch', () {
+      expect(kotlin.contains('session unrecoverable'), isTrue);
+      expect(kotlin.contains('Do not leave an unreadable blob behind'), isTrue,
+          reason: 'A restore onto another device brings the ciphertext without '
+              'the key. That is no longer a session.');
+    });
+
     test('a credential store failure degrades, it does not crash the boot', () {
-      expect(secure.contains('debugPrint(\'[secure-store] read failed'), isTrue);
-      expect(secure.contains('debugPrint(\'[secure-store] write failed'), isTrue);
+      expect(secure.contains('read failed for'), isTrue);
+      expect(secure.contains('write failed for'), isTrue);
+      expect(kotlin.contains('keystore unavailable'), isTrue,
+          reason: 'A Keystore can be unavailable. Losing a session is '
+              'recoverable; failing app start is not.');
     });
 
     test('session semantics are untouched', () {

@@ -62,11 +62,16 @@ dependencies {
     // make incoming-call presentation depend on an unrelated upgrade.
     implementation("androidx.core:core-ktx:1.13.1")
 
-    // EncryptedSharedPreferences, for the session tokens. Pinned for the
-    // same reason as core-ktx above: the only bytes in Aura that ARE a
-    // session must not have their protection depend on what some other
-    // dependency happened to pull in transitively.
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    // NO androidx.security HERE, DELIBERATELY.
+    //
+    // EncryptedSharedPreferences would store the session tokens in fewer
+    // lines, and it arrives only via security-crypto, whose sole release
+    // carrying it is an ALPHA — and the class is deprecated upstream. The
+    // most security-sensitive bytes in the product must not depend on an
+    // alpha artifact its own maintainers are moving away from.
+    //
+    // SecureStore.kt uses the platform Keystore APIs underneath it
+    // directly: AES-256-GCM under a key that never enters this process.
 }
 
 flutter {
