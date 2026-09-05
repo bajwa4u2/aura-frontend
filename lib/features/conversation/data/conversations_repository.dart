@@ -230,6 +230,7 @@ class ConversationMessage {
     required this.body,
     required this.systemKind,
     required this.createdAt,
+    this.readState,
     required this.editedAt,
     required this.deleted,
     required this.reactions,
@@ -256,6 +257,18 @@ class ConversationMessage {
   /// The author retracted this for everyone. The row survives as a truthful
   /// tombstone, so replies to it stay structurally valid.
   final bool deleted;
+
+  /// HOW MANY OF THE OTHER PARTIES HAVE READ THIS, of how many there are.
+  ///
+  /// Null on anything that is not this viewer's own message, and on a
+  /// conversation with nobody else in it — there is nobody for it to be true
+  /// or false about.
+  ///
+  /// Read from the recorded cursor each party already keeps for their unread
+  /// count. There is no DELIVERY equivalent and there must not be one invented:
+  /// Aura records that a message exists and that somebody's cursor passed it,
+  /// never that it reached a particular handset.
+  final ({int seenCount, int otherPartyCount})? readState;
 
   /// Reaction totals by type, and this viewer's own. Both come from the
   /// shared engagement authority.
@@ -306,7 +319,16 @@ class ConversationMessage {
         .whereType<Map<String, dynamic>>()
         .toList()
       ..sort((a, b) => _i(a['position']).compareTo(_i(b['position'])));
+    final rawRead = json['readState'];
+    final readState = rawRead is Map
+        ? (
+            seenCount: _i(rawRead['seenCount']),
+            otherPartyCount: _i(rawRead['otherPartyCount']),
+          )
+        : null;
+
     return ConversationMessage(
+      readState: readState,
       id: _s(json['id']),
       senderUserId: _s(json['senderUserId']),
       speakingForInstitutionId: _ns(json['speakingForInstitutionId']),

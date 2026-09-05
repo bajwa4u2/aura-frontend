@@ -1,3 +1,4 @@
+import '../../../core/product/temporal.dart';
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -2174,13 +2175,7 @@ class _MessageBubble extends ConsumerWidget {
               // rewritten message is a record nobody can rely on. Prior
               // versions are retained by the authority; showing them is a
               // separate product decision and would clutter ordinary reading.
-              if (message.wasEdited && !message.deleted) ...[
-                const SizedBox(height: 2),
-                Text(
-                  'Edited',
-                  style: AuraText.micro.copyWith(color: AuraSurface.faint),
-                ),
-              ],
+              if (!message.deleted) _MessageStamp(message: message, mine: mine),
               // REACTIONS as actually recorded, with this viewer's own marked.
               // Tapping one toggles it through the same authority the sheet
               // uses, so a tap here and a tap there cannot disagree.
@@ -2199,6 +2194,67 @@ class _MessageBubble extends ConsumerWidget {
 /// Attachment renderer: resolves the visibility-checked delivery URL from
 /// the canonical Media authority and renders by kind — inline image,
 /// playable voice note, tap-to-play video — with an honest chip fallback.
+/// WHEN A MESSAGE WAS SENT, WHETHER IT WAS CHANGED, AND WHETHER IT WAS READ.
+///
+/// One quiet line under the body. Messages carried none of this: no time at
+/// all, and nothing about whether anybody had seen them. Founder observation on
+/// a physical Pixel, 2026-09-05.
+///
+/// ── WHAT IS SHOWN, AND WHAT IS NOT ────────────────────────────────────────
+///
+/// **Time** comes from the Human Temporal authority in its own inline-stamp
+/// style — `now`, `5m`, `2h`, then a date — rather than a formatter declared
+/// here. Turning a DateTime into a human string is that authority's job, and a
+/// screen that grows its own is how a product ends up with six ways to say the
+/// same instant.
+///
+/// **Edited** stays exactly as it was: said plainly, and only where it is true.
+///
+/// **Read** is a recorded fact. Each party keeps a read cursor for their own
+/// unread count, and this reads it. In a pair it is simply Read; in a group it
+/// is a count, because "Read" would be a claim about everyone that is not yet
+/// true.
+///
+/// **Delivered is deliberately absent.** Aura records that a message exists and
+/// that somebody's cursor passed it. It has no record that a message reached a
+/// particular handset, so there is no delivery to report — and a tick claiming
+/// otherwise would be a statement about somebody's phone that nothing in this
+/// system can support.
+class _MessageStamp extends StatelessWidget {
+  const _MessageStamp({required this.message, required this.mine});
+
+  final ConversationMessage message;
+  final bool mine;
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = <String>[
+      AuraTemporal.humanize(
+        ProductTime(message.createdAt, TimeEvent.sent),
+        style: TemporalStyle.compact,
+      ),
+      if (message.wasEdited) 'Edited',
+    ];
+
+    final read = mine ? message.readState : null;
+    if (read != null && read.otherPartyCount > 0 && read.seenCount > 0) {
+      parts.add(
+        read.otherPartyCount == 1
+            ? 'Read'
+            : 'Read by ${read.seenCount} of ${read.otherPartyCount}',
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 3),
+      child: Text(
+        parts.join(' · '),
+        style: AuraText.micro.copyWith(color: AuraSurface.faint),
+      ),
+    );
+  }
+}
+
 /// WHETHER THIS PLATFORM NEEDS A VISIBLE WAY INTO A MESSAGE'S ACTIONS.
 ///
 /// ── THE DEFECT BEHIND THIS ────────────────────────────────────────────────
@@ -2276,15 +2332,23 @@ class _ConversationAttachment extends ConsumerWidget {
     return _withTrace(context, _buildAttachment(context, ref));
   }
 
+  /// ── THE TRACE BELONGS ON THE THING IT DESCRIBES ────────────────────────
+  ///
+  /// It sat in a Column BELOW the attachment, which made it read as a footer
+  /// of the message rather than a mark on the media — a full-width strip under
+  /// a voice note, saying "TR", looking like a control the message owned.
+  ///
+  /// It is a mark about THIS piece of media, so it goes on it: overlaid in the
+  /// corner, out of the way of the content and unmistakably attached to it.
+  /// Founder observation, 2026-09-05.
   Widget _withTrace(BuildContext context, Widget child) {
     if (media.trace.isEmpty) return child;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      mainAxisSize: MainAxisSize.min,
+    return Stack(
       children: [
         child,
-        Padding(
-          padding: const EdgeInsets.only(top: 4),
+        Positioned(
+          right: 6,
+          bottom: 6,
           child: AuraTraceMark(
             trace: media.trace,
             compact: true,
