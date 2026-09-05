@@ -21,7 +21,7 @@ import 'stage_remote_binding.dart';
 /// not reach another Aura session's media if it tried: a subscribe carries
 /// AURA track ids, which the server resolves inside the caller's own session.
 class SfuRealtimeTransport implements RealtimeTransport {
-  SfuRealtimeTransport(this._repository, {this.onLost});
+  SfuRealtimeTransport(this._repository, {this.onLost, this.onMediaFlowing});
 
   final RealtimeRepository _repository;
 
@@ -47,6 +47,22 @@ class SfuRealtimeTransport implements RealtimeTransport {
   /// everyone else -- actively harmful in a group call -- so the owner
   /// re-subscribes instead.
   final void Function(String reason, bool iceHealthy)? onLost;
+
+  /// REMOTE MEDIA IS ACTUALLY ARRIVING — the strongest evidence this client
+  /// can produce that a conversation is possible.
+  ///
+  /// Fired once, when inbound RTP byte counts are first seen to increase. Not
+  /// "a track object exists", not "a renderer was attached", not "the socket
+  /// is up": bytes of remote media decoded by this device, right now.
+  ///
+  /// The liveness probe below has always computed this in order to detect
+  /// media STOPPING. It was never told that the same observation is what
+  /// proves media STARTED, so the one signal in the client that could
+  /// honestly answer "can these two people hear each other" was computed every
+  /// three seconds and thrown away.
+  final void Function(int bytes)? onMediaFlowing;
+
+  bool _mediaFlowingReported = false;
 
   Timer? _iceGrace;
   Timer? _liveness;
@@ -674,6 +690,19 @@ class SfuRealtimeTransport implements RealtimeTransport {
       if (bytes > _lastLivenessBytes) {
         if (_stallTicks > 0) {
           unawaited(_report('op=LIVE state=resumed afterTicks=$_stallTicks'));
+        }
+        // FIRST evidence that remote media is genuinely arriving. `_lastLivenessBytes`
+        // starts at -1, so the first readable tick with any inbound bytes at
+        // all satisfies this — which is exactly the moment the other side
+        // became audible.
+        if (!_mediaFlowingReported && bytes > 0) {
+          _mediaFlowingReported = true;
+          unawaited(_report('op=LIVE state=media_flowing bytes=$bytes'));
+          try {
+            onMediaFlowing?.call(bytes);
+          } catch (_) {
+            // Reporting evidence must never be able to disturb the call.
+          }
         }
         _lastLivenessBytes = bytes;
         _stallTicks = 0;

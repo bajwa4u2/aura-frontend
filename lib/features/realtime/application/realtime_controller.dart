@@ -3602,6 +3602,29 @@ class RealtimeController extends StateNotifier<RealtimeState>
           // thing that died is still the live one.
           onLost: (reason, iceHealthy) =>
               unawaited(_recoverStage(reason, transport, iceHealthy)),
+          // REMOTE MEDIA IS ACTUALLY ARRIVING — bytes of inbound RTP, decoded
+          // by this device. The strongest evidence a client can produce that
+          // these two people can hear each other, and stronger than the
+          // renderer-presence check the snapshot path uses.
+          onMediaFlowing: (bytes) {
+            final id = _managedSessionId;
+            if (id.isEmpty || _reportedMediaEstablished) return;
+            _reportedMediaEstablished = true;
+            unawaited(
+              _repository
+                  .reportMediaEstablished(
+                    id,
+                    evidence: 'stage-inbound-rtp-bytes=$bytes',
+                  )
+                  .catchError((_) {
+                    // The person can still hear the other side; what is lost is
+                    // the server's ability to mark CONNECTED from this end, and
+                    // the next read of the session still carries whatever phase
+                    // the backend did reach.
+                    _reportedMediaEstablished = false;
+                  }),
+            );
+          },
         );
         await _mediaService.attachStage(
           transport,
