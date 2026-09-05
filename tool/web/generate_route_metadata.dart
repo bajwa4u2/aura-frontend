@@ -79,7 +79,12 @@ class _RouteMeta {
   final String? crawlerVisibleContactEmail;
 
   String get canonicalUrl => 'https://auraplatform.org$path';
-  String get imageUrl => 'https://auraplatform.org/social/$image';
+  /// Version-suffixed, matching `web/index.html` and the backend's
+  /// `ShareHtmlService.DEFAULT_OG_IMAGE`. A social platform caches a scraped
+  /// image against its URL, so an artwork change under an unchanged file name
+  /// keeps showing the old card for days -- about a week on LinkedIn, which
+  /// offers no purge. Bump all three together when the artwork changes.
+  String get imageUrl => 'https://auraplatform.org/social/$image?v=2';
 
   bool get hasCrawlerVisibleContent =>
       (crawlerVisibleHeading ?? '').trim().isNotEmpty;

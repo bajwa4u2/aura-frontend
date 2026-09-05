@@ -59,6 +59,22 @@ const _generalSurfaces = <String>[
   // same layer cannot drift again.
   'web/index.html',
   'web/manifest.json',
+
+  // The social cards are the same layer one step further out: they are what a
+  // person sees on Facebook, LinkedIn or Slack BEFORE they reach any Aura
+  // surface at all, and the default card is what every share without a cover
+  // image unfurls as. The generator is scoped rather than the PNGs because a
+  // gate cannot read text out of an image, so the source of the words is what
+  // gets guarded.
+  //
+  // This file carried the first prohibited phrase in the map below --
+  // verbatim, as the default card's headline -- for as long as the gate has
+  // existed. Nothing caught it because nothing looked here. Found 2026-09-05
+  // while correcting the card the founder called legacy. It is not quoted
+  // here: a scan this blunt would flag the comment describing the fix, and
+  // the right answer to that is to say less, not to soften the scan.
+  'tool/web/generate_og_images.ps1',
+  'tool/web/generate_route_metadata.dart',
 ];
 
 /// Phrases that assert the prohibited reverse causal model, or claim a
@@ -123,6 +139,47 @@ void main() {
             'specific surfaces are not scanned. Fix the causality, not the '
             'vocabulary.\n',
       );
+    });
+
+    test('the default social card says what the canon says', () {
+      // THE NEGATIVE GATE ABOVE IS NOT ENOUGH FOR THIS ONE FILE.
+      //
+      // Banning a phrase stops the known-wrong headline coming back. It does
+      // not stop a fourth wording being invented, which is what actually
+      // happened here: the committed card, this generator and web/index.html
+      // each carried a different statement of what Aura is, and the card that
+      // reached Facebook and LinkedIn was the oldest of the three.
+      //
+      // So the default card's copy is tied to the metadata layer that already
+      // carries the founder-approved public-first correction. Fragments, not
+      // whole strings: a headline is not a sentence and a card is not a page,
+      // but every claim the card makes must be traceable to one that ships.
+      final generator =
+          File('tool/web/generate_og_images.ps1').readAsStringSync();
+      final index = File('web/index.html').readAsStringSync().toLowerCase();
+
+      final defaultCard = generator.substring(
+        generator.indexOf("-OutFile (Join-Path \$assetsDir 'og-default.png')"),
+        generator.indexOf("-OutFile (Join-Path \$assetsDir 'og-investors.png')"),
+      ).toLowerCase();
+      expect(defaultCard, isNotEmpty,
+          reason: 'the default card block moved; re-anchor this rather than '
+              'deleting the rule');
+
+      for (final claim in const [
+        'public-first',
+        'civic discourse',
+        'people take part in purposeful communication that keeps its context',
+        'accountable for what they say officially',
+      ]) {
+        expect(defaultCard, contains(claim),
+            reason: 'the default social card dropped a canonical claim: '
+                '"\$claim"');
+        expect(index, contains(claim),
+            reason: 'the default social card claims "\$claim", which '
+                'web/index.html does not. One of them is drifting, and the '
+                'card is the one nobody can read without rendering it.');
+      }
     });
 
     test('the scope list stays honest', () {

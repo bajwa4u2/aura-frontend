@@ -6,11 +6,18 @@
 # Output: aura_final/web/social/og-default.png, og-investors.png,
 # og-mission.png, og-founder.png. These are committed as static assets;
 # the Docker build does NOT regenerate them.
+#
+# -OutDir writes somewhere else instead, so a copy change can be rendered and
+# looked at before it replaces a committed card. The script rewrites all four
+# every run, and three of them were already out of step with what is committed
+# -- rendering blind would have quietly changed cards nobody asked about.
+
+param([string]$OutDir)
 
 Add-Type -AssemblyName System.Drawing
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
-$assetsDir = Join-Path $repoRoot 'aura_final\web\social'
+$assetsDir = if ($OutDir) { $OutDir } else { Join-Path $repoRoot 'aura_final\web\social' }
 $markPath = Join-Path $repoRoot 'aura_final\web\icons\Icon-512.png'
 
 New-Item -ItemType Directory -Force $assetsDir | Out-Null
@@ -93,10 +100,31 @@ function New-Og {
 # does not corrupt the rendered text.
 $emdash = [char]0x2014
 
+# THE DEFAULT CARD IS AURA'S GENERAL IDENTITY, SO IT FOLLOWS THE CANON.
+#
+# This card is what every share without an image of its own unfurls as -- every
+# article, post, announcement and profile that has no cover. It is the single
+# most-seen statement of what Aura is, and it was three versions behind.
+#
+# Committed PNG (rendered before 2026-05-21): "Accountable public discourse." /
+# "Institutional communication infrastructure..." -- what the founder saw on
+# Facebook and LinkedIn on 2026-09-05 and called legacy.
+#
+# This script (until now): a third, institution-first headline again -- so the
+# file on disk was not even what this generator produced. That headline is
+# named verbatim in the public-first causal gate's prohibited map and is not
+# repeated here, because the gate now scans this file and would flag the
+# sentence describing its own removal. The gate never scanned it before, which
+# is exactly why the phrase survived every correction around it.
+#
+# Canon: representation/inventory/PRODUCT_IDENTITY_CANON.md, Aura > Identity,
+# and the matching public-first correction already carried in
+# aura_final/web/index.html. Both lines below are lifted from those, not
+# composed here -- a card that paraphrases the canon is a fifth wording.
 New-Og `
   -OutFile (Join-Path $assetsDir 'og-default.png') `
-  -Headline 'Institution operating infrastructure.' `
-  -Subline ('The system an institution runs its public and member-facing life on. Verified identity, structured authority, durable records ' + $emdash + ' on one accountable record.')
+  -Headline 'Public-first civic discourse.' `
+  -Subline 'People take part in purposeful communication that keeps its context. Institutions enter under clear identity, accountable for what they say officially.'
 
 New-Og `
   -OutFile (Join-Path $assetsDir 'og-investors.png') `
