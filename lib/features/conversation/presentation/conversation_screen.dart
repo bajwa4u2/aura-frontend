@@ -1,3 +1,5 @@
+import '../../../core/auth/session_providers.dart';
+import '../../realtime/domain/call_state.dart';
 import '../../correspondence/data/correspondence_live_service.dart';
 import '../data/conversation_unread_authority.dart';
 import 'dart:async';
@@ -1784,6 +1786,29 @@ class _ConversationLiveRibbon extends ConsumerWidget {
 
   final String conversationId;
 
+  /// What this ribbon is honestly allowed to say.
+  ///
+  /// Falls back to the old wording only when the session carries no call — a
+  /// meeting or a stage — where "in progress" describes a room and is true.
+  static String _liveRibbonLabel(
+    CallProductState? state, {
+    required bool isVideo,
+  }) {
+    switch (state) {
+      case CallProductState.calling:
+      case CallProductState.ringing:
+      case CallProductState.incoming:
+        return isVideo ? 'Incoming video call' : 'Incoming call';
+      case CallProductState.connecting:
+        return 'Connecting…';
+      case CallProductState.connected:
+        return isVideo ? 'Video call in progress' : 'Call in progress';
+      case CallProductState.ended:
+      case null:
+        return isVideo ? 'Video call in progress' : 'Call in progress';
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final joined = ref.watch(
@@ -1814,6 +1839,16 @@ class _ConversationLiveRibbon extends ConsumerWidget {
     if (status != 'ACTIVE') return const SizedBox.shrink();
     final isVideo = (session['kind'] ?? '').toString().toUpperCase() == 'VIDEO';
 
+    // WHAT THE RIBBON MAY CLAIM COMES FROM THE CALL, NOT THE SESSION.
+    //
+    // "Call in progress" was shown for any ACTIVE session — which is true the
+    // instant a room opens, before anyone's phone has rung and long before
+    // anyone has answered. It told a person a conversation was under way when
+    // the caller was still waiting for them to pick up.
+    final call = CallState.fromJson(session['call']);
+    final me = ref.watch(currentUserIdProvider);
+    final productState = call?.productStateFor(me);
+
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AuraSpace.s16,
@@ -1833,7 +1868,7 @@ class _ConversationLiveRibbon extends ConsumerWidget {
           const SizedBox(width: AuraSpace.s8),
           Expanded(
             child: Text(
-              isVideo ? 'Video call in progress' : 'Call in progress',
+              _liveRibbonLabel(productState, isVideo: isVideo),
               style: AuraText.small.copyWith(
                 color: AuraSurface.ink,
                 fontWeight: FontWeight.w700,
