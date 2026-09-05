@@ -92,6 +92,62 @@ enum CallProductState {
   ended,
 }
 
+/// WHY A CONNECTION ATTEMPT COULD NOT BE MADE.
+///
+/// Not why a call ENDED — that is [CallOutcome], and it belongs to the server.
+/// This is the live, local fact that the attempt in front of this person is
+/// not going to succeed, so that a call can fail visibly instead of sitting on
+/// "Connecting…" forever.
+///
+/// ── WHY THIS EXISTS ──────────────────────────────────────────────────────
+///
+/// Transport policy belongs to the backend: it returns the configuration Aura
+/// is permitted to use, the client negotiates with exactly that, and reports
+/// what happened. When the backend cannot issue that configuration, the client
+/// does NOT get to invent a substitute — no retired relay, no client-owned
+/// STUN policy, no ungoverned transport. `CLIENT_TRANSPORT_FALLBACK_AUTHORITY
+/// = 0`.
+///
+/// What it must do instead is say so. Before this existed, a failed
+/// configuration request threw, was caught into an error string nothing
+/// displayed, and no peer connection was ever constructed — both people sat on
+/// "Connecting…" indefinitely with nothing said. An infrastructure failure had
+/// become an unexplained silence.
+enum CallConnectionFailure {
+  /// Aura could not obtain the configuration it is allowed to connect with.
+  /// Nothing was attempted, so nothing about the network was learned.
+  transportUnavailable,
+
+  /// Configuration was obtained and negotiation ran, but no usable media path
+  /// existed by the end of the connection window.
+  notEstablished,
+}
+
+/// WHAT TO SAY, IN PRODUCT LANGUAGE.
+///
+/// Deliberately says nothing about relays, ICE, TURN, providers or error
+/// codes. A person cannot act on any of those, and naming them would put
+/// Aura's infrastructure in front of somebody trying to make a phone call.
+/// What they can act on is: it did not connect, and you may try again.
+extension CallConnectionFailureCopy on CallConnectionFailure {
+  String get headline => switch (this) {
+        CallConnectionFailure.transportUnavailable => 'Call not connected',
+        CallConnectionFailure.notEstablished => 'Call not connected',
+      };
+
+  String get detail => switch (this) {
+        // True and useful: the problem is not this person's network, and
+        // trying again shortly is the honest advice.
+        CallConnectionFailure.transportUnavailable =>
+          'Aura could not set up this call right now. Please try again in a '
+              'moment.',
+        // Here the network genuinely may be the reason, so it is fair to say.
+        CallConnectionFailure.notEstablished =>
+          'Aura could not establish audio with the other side. Check your '
+              'connection and try again.',
+      };
+}
+
 /// ONE PERSON IN A CALL — never a device.
 ///
 /// Someone with a phone, a laptop and a tablet is one participant. Their

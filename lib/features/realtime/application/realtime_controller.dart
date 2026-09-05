@@ -17,10 +17,31 @@ import '../data/realtime_socket_service.dart';
 import '../domain/realtime_enums.dart';
 import '../domain/realtime_models.dart';
 import '../domain/call_mode.dart';
+import '../domain/call_state.dart';
 import '../domain/realtime_state.dart';
 import '../../../core/diagnostics/call_teardown_diag.dart';
 import '../../../core/notifications/android_telecom.dart';
 import '../../../core/notifications/ios_call_kit.dart';
+
+/// THE BACKEND WOULD NOT SAY HOW THIS CALL MAY CONNECT.
+///
+/// Raised when the transport-configuration request fails, and never for a
+/// device, permission or negotiation problem. Those are different failures
+/// with different answers: a microphone problem is this person's to fix, and
+/// this one is not.
+///
+/// It exists as a TYPE rather than a message, because the only honest response
+/// to it is a policy decision — fail the call visibly — and a policy must not
+/// hinge on server wording that nobody promised to keep stable.
+class TransportConfigurationUnavailable implements Exception {
+  const TransportConfigurationUnavailable(this.cause);
+
+  /// The underlying failure, kept for logs and never shown to a person.
+  final Object cause;
+
+  @override
+  String toString() => 'TransportConfigurationUnavailable: $cause';
+}
 
 class RealtimeController extends StateNotifier<RealtimeState>
     with WidgetsBindingObserver {
@@ -324,6 +345,15 @@ class RealtimeController extends StateNotifier<RealtimeState>
           );
           _pendingOfferTargets.remove(peerKey);
         } catch (error) {
+          // Same distinction as in _ensureMediaReady: a failure to obtain
+          // authorised configuration is a failed CONNECTION, not a stray error
+          // string on a room that is otherwise fine.
+          if (error is TransportConfigurationUnavailable) {
+            state = state.copyWith(
+              connectionFailure: CallConnectionFailure.transportUnavailable,
+            );
+            return;
+          }
           state = state.copyWith(errorMessage: error.toString());
         }
       }
@@ -1953,6 +1983,26 @@ class RealtimeController extends StateNotifier<RealtimeState>
       _rtcConfiguration = configuration;
       _rtcConfigurationSessionId = sessionId;
     } catch (error) {
+      // TRANSPORT CONFIGURATION FAILURE IS NOT A MEDIA FAILURE.
+      //
+      // Only the backend may say what Aura is permitted to connect with. When
+      // it cannot issue that configuration there is nothing for this client to
+      // substitute — no retired relay, no client-owned policy, no ungoverned
+      // transport. `CLIENT_TRANSPORT_FALLBACK_AUTHORITY = 0`.
+      //
+      // What it must not do is what it did: catch the failure into a
+      // diagnostic string and carry on as though the room were merely quiet.
+      // Nothing displayed that string, no peer connection was ever
+      // constructed, and both people sat on "Connecting…" indefinitely. An
+      // infrastructure failure had become an unexplained silence.
+      if (error is TransportConfigurationUnavailable) {
+        state = state.copyWith(
+          isMediaBusy: false,
+          connectionFailure: CallConnectionFailure.transportUnavailable,
+          clearInfoMessage: true,
+        );
+        return;
+      }
       state = state.copyWith(
         isMediaBusy: false,
         mediaError: error.toString(),
@@ -1960,6 +2010,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
       );
     }
   }
+
 
   Future<Map<String, dynamic>> _resolveRtcConfiguration(
     String sessionId, {
@@ -1971,7 +2022,18 @@ class RealtimeController extends StateNotifier<RealtimeState>
       return _rtcConfiguration!;
     }
 
-    final issued = await _repository.issueTurnCredentials(sessionId);
+    // No fallback, deliberately. If this throws, the call fails visibly; it
+    // does not quietly proceed on a configuration nobody authorised.
+    final Map<String, dynamic> issued;
+    try {
+      issued = await _repository.issueTurnCredentials(sessionId);
+    } catch (error) {
+      // Typed, so every caller can tell "Aura is not permitted to connect
+      // right now" apart from "this device's microphone failed" — which need
+      // opposite answers and must never share one catch. A flag would go
+      // stale; the type travels with the failure it describes.
+      throw TransportConfigurationUnavailable(error);
+    }
     final rawIceServers = issued['iceServers'];
     final configuration = <String, dynamic>{
       'iceServers': rawIceServers is List ? rawIceServers : const <dynamic>[],
@@ -2228,6 +2290,34 @@ class RealtimeController extends StateNotifier<RealtimeState>
     await join(sessionId);
   }
 
+  /// TRY THIS CALL AGAIN.
+  ///
+  /// The recovery offered alongside a visible connection failure. It clears
+  /// the failure, asks the backend afresh for the configuration it is willing
+  /// to authorise — refreshed, never the cached one that just failed — and
+  /// re-runs negotiation. It does NOT end the call, so a transient
+  /// infrastructure problem does not cost somebody their call.
+  ///
+  /// If it fails again the failure simply reappears, which is the honest
+  /// outcome. Nothing here retries silently or on a loop.
+  Future<void> retryConnection() async {
+    final sessionId = _managedSessionId;
+    if (sessionId.isEmpty) return;
+    _rtcConfiguration = null;
+    _rtcConfigurationSessionId = null;
+    _connectionWindowTimer?.cancel();
+    _connectionWindowTimer = null;
+    _connectionWindowSessionId = null;
+    state = state.copyWith(
+      clearConnectionFailure: true,
+      clearErrorMessage: true,
+      clearMediaError: true,
+    );
+    await _ensureMediaReady(sessionId, refreshTurnCredentials: true);
+    if (state.connectionFailure != null) return;
+    await _reconcileRtcPeers('join', refreshTurnCredentials: true);
+  }
+
   /// Re-attempt media acquisition after a permission denial or device
   /// failure, without leaving the room.
   Future<void> retryMedia() async {
@@ -2264,8 +2354,70 @@ class RealtimeController extends StateNotifier<RealtimeState>
   /// rare by nature; if this cap is ever reached that is itself the finding.
   static const int _maxLifecycleReports = 60;
 
+  // ── THE CONNECTION WINDOW ────────────────────────────────────────────────
+  //
+  // A call that has been answered is either going to carry audio shortly or it
+  // is not. Waiting forever is the one answer that is never true, and it is
+  // what both sides used to get: the callee sat on "Connecting…" for the whole
+  // life of the session with nothing said.
+  //
+  // Ninety seconds is deliberately generous — far beyond any healthy
+  // negotiation, which completes in low single-digit seconds, and beyond a
+  // slow mobile network renegotiating after a handover. It is a bound on
+  // silence, not a performance target: it must never fire on a call that was
+  // about to work.
+  //
+  // It bounds this CLIENT's presentation only. Nothing here writes call state,
+  // and the outcome still comes from the authority when the call ends —
+  // answered-with-no-media ends ACCEPTED_NOT_CONNECTED because that is what
+  // happened, not because a timer said so.
+  static const Duration _connectionWindow = Duration(seconds: 90);
+  Timer? _connectionWindowTimer;
+  String? _connectionWindowSessionId;
+
+  void _updateConnectionWindow(RealtimeState next) {
+    final sessionId = next.sessionId;
+    final phase = next.session?.call?.phase;
+    final needsWindow =
+        sessionId != null &&
+        sessionId.isNotEmpty &&
+        (phase == CallPhase.accepted || phase == CallPhase.connecting);
+
+    if (!needsWindow) {
+      _connectionWindowTimer?.cancel();
+      _connectionWindowTimer = null;
+      _connectionWindowSessionId = null;
+      return;
+    }
+
+    // Already armed for this call. The clock must NOT restart on every state
+    // change, or a chatty session would keep pushing the deadline away and the
+    // bound would never arrive.
+    if (_connectionWindowSessionId == sessionId &&
+        _connectionWindowTimer != null) {
+      return;
+    }
+
+    _connectionWindowTimer?.cancel();
+    _connectionWindowSessionId = sessionId;
+    _connectionWindowTimer = Timer(_connectionWindow, () {
+      if (!mounted) return;
+      final now = state;
+      // Re-read at fire time: the call may have connected or ended while this
+      // was pending, and a stale timer must never accuse a working call.
+      if (now.sessionId != sessionId) return;
+      final live = now.session?.call?.phase;
+      if (live != CallPhase.accepted && live != CallPhase.connecting) return;
+      if (now.connectionFailure != null) return;
+      state = now.copyWith(
+        connectionFailure: CallConnectionFailure.notEstablished,
+      );
+    });
+  }
+
   @override
   set state(RealtimeState value) {
+    _updateConnectionWindow(value);
     RealtimeState? previous;
     if (mounted) {
       previous = super.state;
@@ -3708,6 +3860,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
     _stopStatsTimer();
     _cancelTurnRefresh();
     _cancelSignalingGrace();
+    _connectionWindowTimer?.cancel();
     for (final timer in _peerGraceTimers.values) {
       timer.cancel();
     }

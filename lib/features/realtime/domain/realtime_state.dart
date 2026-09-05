@@ -1,5 +1,6 @@
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+import 'call_state.dart';
 import 'realtime_enums.dart';
 import 'realtime_models.dart';
 
@@ -35,6 +36,7 @@ class RealtimeState {
     this.reconnectingUserIds = const <String>{},
     this.acceptedByPeer = false,
     this.speakerphoneEnabled = false,
+    this.connectionFailure,
   });
 
   final RealtimeConnectionStatus connectionStatus;
@@ -64,6 +66,17 @@ class RealtimeState {
   final String? mediaError;
   final String? callMode;
   final Map<String, dynamic>? incomingCall;
+
+  /// THIS CONNECTION ATTEMPT IS NOT GOING TO SUCCEED.
+  ///
+  /// Set when the attempt has definitively failed — not while it is merely
+  /// slow — so a call can end visibly instead of waiting forever. Null is the
+  /// ordinary case, including "still trying".
+  ///
+  /// Deliberately separate from [errorMessage] and [mediaError]: those are
+  /// diagnostic strings that surfaces show incidentally, and neither can be
+  /// branched on. This is a state a surface must handle.
+  final CallConnectionFailure? connectionFailure;
 
   /// I1: True while the local user is broadcasting their screen.
   final bool isScreenSharing;
@@ -130,6 +143,7 @@ class RealtimeState {
       reconnectingUserIds: <String>{},
       acceptedByPeer: false,
       speakerphoneEnabled: false,
+      connectionFailure: null,
     );
   }
 
@@ -175,6 +189,10 @@ class RealtimeState {
     Set<String>? reconnectingUserIds,
     bool? acceptedByPeer,
     bool? speakerphoneEnabled,
+    CallConnectionFailure? connectionFailure,
+    // A failure must be CLEARED deliberately — by a retry or a new attempt —
+    // never by the next unrelated copyWith that happens not to mention it.
+    bool clearConnectionFailure = false,
   }) {
     return RealtimeState(
       connectionStatus: connectionStatus ?? this.connectionStatus,
@@ -224,6 +242,9 @@ class RealtimeState {
       reconnectingUserIds: reconnectingUserIds ?? this.reconnectingUserIds,
       acceptedByPeer: acceptedByPeer ?? this.acceptedByPeer,
       speakerphoneEnabled: speakerphoneEnabled ?? this.speakerphoneEnabled,
+      connectionFailure: clearConnectionFailure
+          ? null
+          : (connectionFailure ?? this.connectionFailure),
     );
   }
 

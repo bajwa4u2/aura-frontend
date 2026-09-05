@@ -1,3 +1,4 @@
+import '../../../core/product/product_language.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:math' as math;
@@ -1107,6 +1108,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                     call: state.session?.call,
                     productState:
                         state.session?.call?.productStateFor(myUserId),
+                    connectionFailure: state.connectionFailure,
                     // Kept for meetings and stages, which have no call and so
                     // still need the local derivations.
                     isAccepted:
@@ -1273,6 +1275,12 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       myUserId: myUserId,
       productState: state.session?.call?.productStateFor(myUserId),
       ref: ref,
+      // Recovery from a visibly failed connection. Retry re-asks the backend
+      // for authorised configuration and renegotiates; End is the ordinary
+      // hang-up, so the call ends through the same path and earns the same
+      // truthful outcome as any other.
+      onRetryConnection: controller.retryConnection,
+      onEndCall: controller.endCall,
     );
 
     if (!wide || _activePanel == null) return stage;
@@ -2145,6 +2153,7 @@ class _CallTopBar extends StatelessWidget {
     this.isAccepted = false,
     this.call,
     this.productState,
+    this.connectionFailure,
     this.onMinimize,
     this.sessionTypeChip,
     this.trustLine,
@@ -2181,6 +2190,10 @@ class _CallTopBar extends StatelessWidget {
   /// session is not a call — a meeting or a stage — which is a different fact
   /// from a call that has not connected, and the two must not be collapsed.
   final CallProductState? productState;
+
+  /// This connection attempt has definitively failed. Outranks the phase,
+  /// because "Ringing…" beside a dead attempt is not a status but a false one.
+  final CallConnectionFailure? connectionFailure;
 
   final VoidCallback? onMinimize;
 
@@ -2241,7 +2254,10 @@ class _CallTopBar extends StatelessWidget {
     // Transport trouble outranks the call's own phase: a connected call whose
     // socket has dropped is still a connected call, but the person needs to be
     // told why they cannot hear anything.
-    if (hasIssue) {
+    if (connectionFailure != null) {
+      statusColor = AuraSurface.coRose;
+      statusLabel = 'Not connected';
+    } else if (hasIssue) {
       statusColor = AuraSurface.coRose;
       statusLabel = 'Connection issue';
     } else if (waitingLabel != null) {
@@ -2533,11 +2549,18 @@ class _PreConnectStage extends StatelessWidget {
     required this.productState,
     required this.state,
     required this.myUserId,
+    required this.onRetry,
+    required this.onEnd,
   });
 
   final CallProductState productState;
   final RealtimeState state;
   final String myUserId;
+
+  /// Recovery, per the transport-authority ruling: a failed connection must be
+  /// recoverable, not merely visible.
+  final VoidCallback onRetry;
+  final VoidCallback onEnd;
 
   /// The person on the other end. A call is with someone, and saying so is the
   /// difference between waiting and waiting for a named human.
@@ -2549,6 +2572,69 @@ class _PreConnectStage extends StatelessWidget {
       }
     }
     return '';
+  }
+
+  /// A CALL THAT CANNOT CONNECT SAYS SO, AND OFFERS A WAY OUT.
+  ///
+  /// This outranks the phase line. "Ringing…" or "Connecting…" beside a dead
+  /// connection attempt is not a status, it is a false one — and leaving it
+  /// there indefinitely was the defect this replaces.
+  Widget _failureView(BuildContext context, CallConnectionFailure failure) {
+    final name = _otherPartyName;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.s24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.phone_disabled_rounded,
+              size: 44,
+              color: AuraSurface.coRose,
+            ),
+            const SizedBox(height: AuraSpace.s16),
+            if (name.isNotEmpty) ...[
+              Text(name, textAlign: TextAlign.center, style: AuraText.headline),
+              const SizedBox(height: AuraSpace.s8),
+            ],
+            Text(
+              failure.headline,
+              textAlign: TextAlign.center,
+              style: AuraText.title,
+            ),
+            const SizedBox(height: AuraSpace.s8),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 360),
+              child: Text(
+                // Product language only. Nothing here names a relay, a
+                // provider, ICE, TURN or an error code: a person cannot act on
+                // any of those, and putting Aura's infrastructure in front of
+                // somebody trying to make a phone call explains nothing.
+                failure.detail,
+                textAlign: TextAlign.center,
+                style: AuraText.body.copyWith(color: AuraSurface.muted),
+              ),
+            ),
+            const SizedBox(height: AuraSpace.s24),
+            Wrap(
+              spacing: AuraSpace.s8,
+              runSpacing: AuraSpace.s8,
+              alignment: WrapAlignment.center,
+              children: [
+                // The canonical action, not a synonym of it. The C0 product
+                // language gate owns this word; inventing "Try again" beside it
+                // would be a second name for one thing.
+                AuraPrimaryButton(
+                  label: ProductLabels.of(ProductAction.retry),
+                  onPressed: onRetry,
+                ),
+                AuraSecondaryButton(label: 'End call', onPressed: onEnd),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   String get _line {
@@ -2570,6 +2656,9 @@ class _PreConnectStage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final failure = state.connectionFailure;
+    if (failure != null) return _failureView(context, failure);
+
     final name = _otherPartyName;
     return Center(
       child: Padding(
@@ -2609,9 +2698,14 @@ class _CallStage extends StatelessWidget {
   const _CallStage({
     required this.state,
     required this.myUserId,
+    required this.onRetryConnection,
+    required this.onEndCall,
     this.productState,
     this.ref,
   });
+
+  final Future<void> Function() onRetryConnection;
+  final Future<void> Function() onEndCall;
 
   /// What this person is looking at, from the shared Call projection. Null for
   /// a session that is not a call — a meeting or a stage — which keeps its
@@ -2736,6 +2830,8 @@ class _CallStage extends StatelessWidget {
         productState: preConnect,
         state: state,
         myUserId: myUserId,
+        onRetry: () => unawaited(onRetryConnection()),
+        onEnd: () => unawaited(onEndCall()),
       );
     }
 

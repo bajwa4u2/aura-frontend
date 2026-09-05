@@ -883,19 +883,67 @@ class _IncomingCallCard extends StatefulWidget {
   State<_IncomingCallCard> createState() => _IncomingCallCardState();
 }
 
-class _IncomingCallCardState extends State<_IncomingCallCard> {
+class _IncomingCallCardState extends State<_IncomingCallCard>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // THE PRESENTATION BOUNDARY.
     //
     // `initState` means "this card has been inserted into the tree"; the
     // post-frame callback means "a frame carrying it has actually been
     // rendered". Only the second one is a human being shown an incoming call.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      widget.onPresented();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _presentIfVisible());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // A card that was laid out behind a hidden tab has not presented anything.
+    // The moment the app is actually on screen, it has — so report then rather
+    // than never.
+    if (_isEligibleToBeSeen(state)) _presentIfVisible();
+  }
+
+  /// ── A RENDERED FRAME IS NOT NECESSARILY A VISIBLE ONE ──────────────────
+  ///
+  /// Moving the acknowledgement out of `build` fixed one half of this: Flutter
+  /// builds widgets that are never painted. It does not fix the other half. A
+  /// backgrounded browser tab, a minimised window and a paused app all keep
+  /// laying out and can still produce frames — and a card rendered into one of
+  /// those has shown nobody anything.
+  ///
+  /// Reporting from there would manufacture exactly the lie this authority
+  /// exists to prevent, in its worst direction: the caller would be told the
+  /// other person's device is ringing at them, and an unanswered call would be
+  /// recorded MISSED — "they ignored you" — when the call was never in front of
+  /// a human at all.
+  ///
+  /// The line drawn here is ELIGIBLE TO BE SEEN, not focused. A visible window
+  /// that has lost focus is still showing the person an incoming call, and
+  /// demanding focus would swing the lie the other way — recording
+  /// NOT_PRESENTED for a card somebody is looking at while typing elsewhere.
+  /// So `inactive` counts; `hidden`, `paused` and `detached` do not.
+  ///
+  /// Background and system presentation — CallKit, a Telecom incoming call,
+  /// a system notification — is NOT this card and is not gated here. Those
+  /// have their own presentation mechanism and their platform adapter owns
+  /// their acknowledgement.
+  static bool _isEligibleToBeSeen(AppLifecycleState? state) =>
+      state == null ||
+      state == AppLifecycleState.resumed ||
+      state == AppLifecycleState.inactive;
+
+  void _presentIfVisible() {
+    if (!mounted) return;
+    if (!_isEligibleToBeSeen(WidgetsBinding.instance.lifecycleState)) return;
+    widget.onPresented();
   }
 
   @override
