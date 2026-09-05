@@ -116,12 +116,37 @@ void main() {
       expect(realtime.contains('reportOutgoingConnected('), isTrue,
           reason: 'Without a connected timestamp the call register shows an '
               'outgoing entry with no duration.');
-      expect(realtime.contains('snapshot.remoteRenderers.isNotEmpty'), isTrue,
-          reason: 'Remote media present is the honest moment a placed call '
-              'became a conversation. Socket connection is not.');
-      expect(realtime.contains('_reportedOutgoingConnected = false;'), isTrue,
+      expect(realtime.contains('_reportedMediaEstablished = false;'), isTrue,
           reason: 'The latch must retire on leave, or the next placed call '
               'inherits this one\'s report.');
+    });
+
+    test('remote media is observed on BOTH transports, not just mesh', () {
+      // This used to assert `snapshot.remoteRenderers.isNotEmpty` alone — the
+      // device-keyed map that only the MESH transport fills. On an SFU call
+      // that map is permanently empty and the stage populates
+      // `remoteRenderersByParticipant` instead, so the one hook that noticed
+      // remote media never fired at all on SFU calls. The test passed the
+      // whole time, because it was checking a spelling rather than a question.
+      expect(realtime.contains('snapshot.remoteRenderers.isNotEmpty'), isTrue,
+          reason: 'Mesh remote media.');
+      expect(
+          realtime.contains('snapshot.remoteRenderersByParticipant.isNotEmpty'),
+          isTrue,
+          reason: 'Stage/SFU remote media. Without this, the far side arriving '
+              'is invisible on every SFU call.');
+    });
+
+    test('media is reported as evidence, never asserted as connected', () {
+      // The endpoint is the only place that can observe a usable media path,
+      // but it reports EVIDENCE. The backend decides CONNECTED, and only once
+      // both sides have reported — one endpoint hearing silence must never be
+      // able to tell the product the call connected.
+      expect(realtime.contains('reportMediaEstablished('), isTrue,
+          reason: 'The observation has to reach the call authority.');
+      expect(realtime.contains('_hasRemoteMedia(snapshot)'), isTrue,
+          reason: 'One predicate for "we can hear the other side", shared by '
+              'the OS report and the backend report.');
     });
   });
 }

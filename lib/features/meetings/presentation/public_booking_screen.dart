@@ -1,3 +1,4 @@
+import '../../../core/utils/local_timezone.dart';
 import 'package:flutter/material.dart';
 import '../../../core/trust/trust_marks.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -286,10 +287,13 @@ class _BookingIntro extends StatelessWidget {
               icon: Icons.schedule_rounded,
               label: _durationLabel(profile.defaultDuration),
             ),
-            _DetailChip(
-              icon: Icons.public_rounded,
-              label: DateTime.now().timeZoneName,
-            ),
+            // Named only when the zone is actually resolved. A chip reading
+            // "PKT" told a person nothing the system itself could act on.
+            if ((cachedLocalTimezone ?? '').isNotEmpty)
+              _DetailChip(
+                icon: Icons.public_rounded,
+                label: cachedLocalTimezone!,
+              ),
             if (profile.allowGuests)
               const _DetailChip(
                 icon: Icons.person_outline_rounded,

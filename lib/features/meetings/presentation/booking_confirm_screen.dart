@@ -79,7 +79,7 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
               : _notesCtrl.text.trim(),
           scheduledAt: widget.slot.startAt,
           durationMinutes: widget.durationMinutes,
-          timezone: resolveLocalTimezone(),
+          timezone: cachedLocalTimezone,
         );
       } else {
         conf = await repo.createBooking(
@@ -91,7 +91,7 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
               : _notesCtrl.text.trim(),
           scheduledAt: widget.slot.startAt,
           durationMinutes: widget.durationMinutes,
-          timezone: resolveLocalTimezone(),
+          timezone: cachedLocalTimezone,
         );
       }
       setState(() => _confirmation = conf);

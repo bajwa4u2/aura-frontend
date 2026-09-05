@@ -57,8 +57,17 @@ class RealtimeStatusStrip extends StatelessWidget {
     final session = state.session;
     if (session == null) return null;
 
-    final startedAt =
-        session.answeredAt ?? session.firstJoinedAt ?? session.startedAt ?? session.createdAt;
+    // A CALL'S CLOCK STARTS WHEN IT CONNECTED.
+    //
+    // This widget is not currently mounted anywhere, which is exactly why it
+    // is corrected rather than left: it carried the most permissive anchor in
+    // the codebase — answeredAt, then firstJoinedAt, then startedAt, then
+    // createdAt — every one of which is written when the ROOM opens. Mounting
+    // it as written would have put a fourth, and the wrongest, clock on screen.
+    final call = session.call;
+    final startedAt = call != null
+        ? call.connectedAt
+        : (session.startedAt ?? session.createdAt);
     if (startedAt == null) return null;
 
     final finishedAt = session.endedAt;

@@ -1,3 +1,4 @@
+import 'call_state.dart';
 import 'realtime_enums.dart';
 import '../../../core/identity/person_identity_model.dart';
 
@@ -209,6 +210,7 @@ class RealtimeSession {
     this.participantSummaries = const [],
     this.title,
     this.metadataJson,
+    this.call,
   });
 
   final String id;
@@ -282,6 +284,47 @@ class RealtimeSession {
   final List<RealtimeSessionParticipantSummary> participantSummaries;
   final String? title;
   final Map<String, dynamic>? metadataJson;
+
+  /// THE CALL THIS ROOM CARRIES, or null when the session is not a call.
+  ///
+  /// The session is infrastructure — a room, a transport, a roster. This is the
+  /// human conversation happening inside it, and it is the only thing a surface
+  /// should read to answer "is it ringing", "has it connected", "how long has
+  /// it been going". Null means there is no call here (a meeting, a stage),
+  /// which is a different fact from a call that has not connected yet.
+  final CallState? call;
+
+  /// Replace only the call, keeping every other fact about the room intact.
+  ///
+  /// Deliberately narrow rather than a general `copyWith`: the session is
+  /// server truth, and the one part of it a client legitimately advances on
+  /// its own is the call phase it was just told about.
+  RealtimeSession withCall(CallState? next) => RealtimeSession(
+        id: id,
+        surfaceType: surfaceType,
+        surfaceId: surfaceId,
+        startedByUserId: startedByUserId,
+        status: status,
+        kind: kind,
+        accessMode: accessMode,
+        routingMode: routingMode,
+        liveState: liveState,
+        isActive: isActive,
+        isLocked: isLocked,
+        waitingRoomEnabled: waitingRoomEnabled,
+        startedAt: startedAt,
+        answeredAt: answeredAt,
+        firstJoinedAt: firstJoinedAt,
+        endedAt: endedAt,
+        durationSeconds: durationSeconds,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        activeParticipantCount: activeParticipantCount,
+        participantSummaries: participantSummaries,
+        title: title,
+        metadataJson: metadataJson,
+        call: next,
+      );
 
   /// This user's own participant row, or null when the user is not on the
   /// roster (or the payload had no participants array).
@@ -360,6 +403,7 @@ class RealtimeSession {
       participantSummaries: summaries,
       title: _readString(json['title']),
       metadataJson: meta,
+      call: CallState.fromJson(json['call']),
     );
   }
 }

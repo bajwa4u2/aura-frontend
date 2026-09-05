@@ -69,7 +69,7 @@ class _BookingRescheduleScreenState
       await ref.read(availabilityRepositoryProvider).rescheduleBookingByToken(
             widget.token,
             scheduledAt: slot.startAt,
-            timezone: resolveLocalTimezone(),
+            timezone: cachedLocalTimezone,
           );
       setState(() => _done = true);
     } catch (e) {

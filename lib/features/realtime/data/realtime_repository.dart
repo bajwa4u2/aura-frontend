@@ -722,6 +722,23 @@ class RealtimeRepository {
     await _safePost('/realtime/sessions/$sessionId/decline');
   }
 
+  /// REPORT THAT THIS DEVICE HAS A USABLE MEDIA PATH.
+  ///
+  /// Evidence, not a verdict. The backend decides whether the call is
+  /// connected — and only once the other side has reported the same thing.
+  /// The installation identity is read from the request headers the platform
+  /// already sends, never from this body: a client does not get to claim which
+  /// physical device it is.
+  Future<void> reportMediaEstablished(
+    String sessionId, {
+    String? evidence,
+  }) async {
+    await _dio.post(
+      '/realtime/sessions/$sessionId/media-established',
+      data: {if (evidence != null && evidence.isNotEmpty) 'evidence': evidence},
+    );
+  }
+
   Future<RealtimeSessionSnapshot> joinSession(RealtimeSession session) async {
     final id = session.id.trim();
     if (id.isEmpty) {

@@ -56,7 +56,7 @@ class AvailabilityRepository {
     String? bookerNotes,
     required DateTime scheduledAt,
     required int durationMinutes,
-    required String timezone,
+    String? timezone,
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/book/$slug',
@@ -66,7 +66,7 @@ class AvailabilityRepository {
         if (bookerNotes != null) 'bookerNotes': bookerNotes,
         'scheduledAt': scheduledAt.toUtc().toIso8601String(),
         'durationMinutes': durationMinutes,
-        'timezone': timezone,
+        if (timezone != null) 'timezone': timezone,
       },
     );
     final data = res.data!['data'] as Map<String, dynamic>;
@@ -124,7 +124,7 @@ class AvailabilityRepository {
     String? meetingDescription,
     required List<int> durationOptions,
     required int defaultDuration,
-    required String timezone,
+    String? timezone,
     String? assignedHostId,
     int bufferBefore = 0,
     int bufferAfter = 15,
@@ -143,7 +143,7 @@ class AvailabilityRepository {
         if (meetingDescription != null) 'meetingDescription': meetingDescription,
         'durationOptions': durationOptions,
         'defaultDuration': defaultDuration,
-        'timezone': timezone,
+        if (timezone != null) 'timezone': timezone,
         if (assignedHostId != null) 'assignedHostId': assignedHostId,
         'bufferBefore': bufferBefore,
         'bufferAfter': bufferAfter,
@@ -283,7 +283,7 @@ class AvailabilityRepository {
     String? bookerNotes,
     required DateTime scheduledAt,
     required int durationMinutes,
-    required String timezone,
+    String? timezone,
   }) async {
     final res = await _dio.post<Map<String, dynamic>>(
       '/i/$institutionSlug/meet/$slug',
@@ -293,7 +293,7 @@ class AvailabilityRepository {
         if (bookerNotes != null) 'bookerNotes': bookerNotes,
         'scheduledAt': scheduledAt.toUtc().toIso8601String(),
         'durationMinutes': durationMinutes,
-        'timezone': timezone,
+        if (timezone != null) 'timezone': timezone,
       },
     );
     final data = res.data!['data'] as Map<String, dynamic>;

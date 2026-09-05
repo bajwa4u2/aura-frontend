@@ -1,3 +1,4 @@
+import 'core/utils/local_timezone.dart';
 import 'dart:async';
 import 'core/continuation/windows_activation.dart';
 
@@ -24,6 +25,19 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // RESOLVE THE DEVICE'S TIMEZONE ONCE, BEFORE ANYTHING ASKS FOR IT.
+  //
+  // Native resolution crosses a platform channel and several callers cannot
+  // await one — a widget build, a request interceptor. Primed here so the
+  // answer is present by the time a booking screen or a device registration
+  // needs it. Awaited deliberately: it is a single fast platform call, and a
+  // screen that renders before it lands would show no zone at all.
+  //
+  // If it cannot be resolved the cache stays null and every caller omits the
+  // field. Nothing substitutes UTC, which is what used to make a wrong time in
+  // Karachi indistinguishable from a right one in New York.
+  await primeLocalTimezone();
 
   // WINDOWS CONTINUATION. An App URI Handler or `aura://` activation launches
   // this process with the URL as a command-line argument. Android and iOS hand

@@ -29,6 +29,7 @@ import '../../search/search_repository.dart';
 import '../application/caller_ringback_provider.dart';
 import '../application/realtime_controller.dart';
 import '../application/realtime_providers.dart';
+import '../domain/call_state.dart';
 import '../domain/realtime_enums.dart';
 import '../domain/ready_to_join_policy.dart';
 import '../domain/remote_media_presentation.dart'
@@ -1095,17 +1096,27 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                         .length,
                     isConnecting: isConnecting,
                     hasIssue: showConnectionIssue,
-                    // ACCEPTED/JOINING: the invited party's ACCEPT has been
-                    // authoritatively confirmed by the backend, but they have
-                    // not yet actually joined media — distinct from both
-                    // "Ringing…" (no answer yet) and "Live" (connected).
-                    // Must not be collapsed into either.
+                    // WHERE THE CALL ACTUALLY IS, FROM THE CALL.
+                    //
+                    // These used to be assembled locally: "ringing" meant the
+                    // roster had one row and a ringback set contained this
+                    // session; anything that matched nothing fell through to a
+                    // green dot labelled "Live". A call with no remote media
+                    // and a peer who had never answered therefore rendered as
+                    // Live the instant the socket join was acknowledged.
+                    call: state.session?.call,
+                    isCaller:
+                        state.session?.call?.isCaller(myUserId) ?? false,
+                    // Kept for meetings and stages, which have no call and so
+                    // still need the local derivations.
                     isAccepted:
                         !isMeetingSession &&
+                        state.session?.call == null &&
                         state.isJoined &&
                         state.isPeerAcceptedNotYetPresent,
                     isRinging:
                         !isMeetingSession &&
+                        state.session?.call == null &&
                         state.isJoined &&
                         state.participants.length <= 1 &&
                         !state.acceptedByPeer &&
@@ -2086,17 +2097,25 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
   Duration? _callDuration(RealtimeSession? session, DateTime now) {
     if (session == null) return null;
-    // FOUNDER RULING (2026-08-17): CALL DURATION BEGINS WHEN THE REALTIME
-    // COMMUNICATION SESSION ACTUALLY ESTABLISHES. Ringing / Ready-to-join /
-    // Connecting time is not call duration — never fall back to startedAt/
-    // createdAt (session-creation time), which made the clock count a call
-    // that had not connected.
-    // answeredAt ONLY (2026-08-17 addendum §6): firstJoinedAt equals the
-    // host's REST join at session CREATION for conversation calls, so the
-    // Ready-to-join screen was still counting from creation through that
-    // fallback. Before canonical establishment there is NO call-duration
-    // clock at all.
-    final start = session.answeredAt;
+
+    // THE CALL'S OWN CLOCK, STARTED WHERE THE CONVERSATION STARTED.
+    //
+    // The founder ruling this replaces was right and the implementation could
+    // not honour it: duration was anchored on `answeredAt`, but `answeredAt`
+    // was written by `markJoined` when the FIRST participant joined — and the
+    // caller always joins first. Every call was therefore "answered" the moment
+    // it was placed, and the clock ran while the other phone was still ringing.
+    //
+    // `connectedAt` is written once, by the backend, only after both sides have
+    // reported a usable media path. Null until then, so ringing, connecting and
+    // ready-to-join time have no clock at all — which is the ruling, finally
+    // implementable.
+    final call = session.call;
+    if (call != null) return call.durationAt(now);
+
+    // No call here: a meeting or a stage, whose duration legitimately runs from
+    // when its room began, because nobody was ever ringing.
+    final start = session.startedAt;
     if (start == null) return null;
     if (session.endedAt != null) return session.endedAt!.difference(start);
     final d = now.difference(start);
@@ -2119,6 +2138,8 @@ class _CallTopBar extends StatelessWidget {
     this.contextLabel,
     this.isRinging = false,
     this.isAccepted = false,
+    this.call,
+    this.isCaller = false,
     this.onMinimize,
     this.sessionTypeChip,
     this.trustLine,
@@ -2145,6 +2166,16 @@ class _CallTopBar extends StatelessWidget {
   /// confirmed, but they have not yet joined media. Never true at the same
   /// time as a genuinely connected/"Live" state.
   final bool isAccepted;
+
+  /// The call itself, when this room carries one. Where it is present it
+  /// decides the status line outright; [isRinging] and [isAccepted] remain for
+  /// meetings and stages, which have no call.
+  final CallState? call;
+
+  /// Which side of the call this person is on. It changes the words: a caller
+  /// waiting is "Calling" and then "Ringing"; a callee has already been rung.
+  final bool isCaller;
+
   final VoidCallback? onMinimize;
 
   /// Per-type session chip — e.g. "Public session", "Class session",
@@ -2167,29 +2198,88 @@ class _CallTopBar extends StatelessWidget {
     return h > 0 ? '${two(h)}:${two(m)}:${two(sec)}' : '${two(m)}:${two(sec)}';
   }
 
+  /// Why a call ended, in words a person would use about their own call.
+  static String _endedLabel(CallOutcome? outcome) {
+    switch (outcome) {
+      case CallOutcome.declined:
+        return 'Declined';
+      case CallOutcome.missed:
+        return 'No answer';
+      case CallOutcome.notPresented:
+        // Their phone never rang. Saying "no answer" here would blame someone
+        // for ignoring a call they were never offered.
+        return 'Could not be reached';
+      case CallOutcome.canceledBeforeAnswer:
+        return 'Canceled';
+      case CallOutcome.acceptedNotConnected:
+        return 'Could not connect';
+      case CallOutcome.failed:
+        return 'Call failed';
+      case CallOutcome.connectedEnded:
+      case CallOutcome.unknownLegacy:
+      case null:
+        return 'Call ended';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final durationLabel = duration != null ? _fmt(duration!) : null;
 
-    Color statusColor;
-    String statusLabel;
+    const amber = Color(0xFFFBBF24);
+    const green = Color(0xFF4ADE80);
+
+    Color statusColor = green;
+    String statusLabel = 'Live';
+
+    // Transport trouble outranks the call's own phase: a connected call whose
+    // socket has dropped is still a connected call, but the person needs to be
+    // told why they cannot hear anything.
     if (hasIssue) {
       statusColor = AuraSurface.coRose;
       statusLabel = 'Connection issue';
+    } else if (waitingLabel != null) {
+      statusColor = amber;
+      statusLabel = waitingLabel!;
+    } else if (call != null) {
+      // THE CALL SAYS WHERE IT IS. No inference, and — importantly — no
+      // fall-through: "Live" used to be the default label for anything the
+      // local derivations did not recognise, so a call that had rung nobody
+      // and connected to nothing still showed a green dot the moment the
+      // socket acknowledged the join.
+      switch (call!.phase) {
+        case CallPhase.initiated:
+        case CallPhase.invited:
+          statusColor = amber;
+          // Nothing has rung yet. For the caller that is "Calling"; the callee
+          // is not looking at this bar before their phone rings.
+          statusLabel = isCaller ? 'Calling…' : 'Connecting…';
+        case CallPhase.alerting:
+          statusColor = amber;
+          // A real device is really alerting a real person.
+          statusLabel = isCaller ? 'Ringing…' : 'Incoming call';
+        case CallPhase.accepted:
+        case CallPhase.connecting:
+          statusColor = amber;
+          statusLabel = 'Connecting…';
+        case CallPhase.connected:
+          statusColor = green;
+          statusLabel = 'Connected';
+        case CallPhase.ended:
+          statusColor = AuraSurface.coRose;
+          statusLabel = _endedLabel(call!.outcome);
+      }
     } else if (isConnecting) {
       statusColor = AuraSurface.coSun;
       statusLabel = 'Connecting…';
-    } else if (waitingLabel != null) {
-      statusColor = const Color(0xFFFBBF24);
-      statusLabel = waitingLabel!;
     } else if (isAccepted) {
-      statusColor = const Color(0xFFFBBF24);
+      statusColor = amber;
       statusLabel = 'Accepted — joining…';
     } else if (isRinging) {
-      statusColor = const Color(0xFFFBBF24);
+      statusColor = amber;
       statusLabel = 'Ringing…';
     } else {
-      statusColor = const Color(0xFF4ADE80);
+      statusColor = green;
       statusLabel = 'Live';
     }
 
@@ -2261,8 +2351,14 @@ class _CallTopBar extends StatelessWidget {
             const SizedBox(width: AuraSpace.s10),
           ],
 
-          // Status label (issue, connecting, or ringing states)
-          if (hasIssue || isConnecting || isRinging) ...[
+          // THE STATUS IS ALWAYS SHOWN FOR A CALL.
+          //
+          // It used to be painted only for issue/connecting/ringing, so the
+          // most important transition in the product — the moment the call
+          // actually connected — was communicated by a dot changing colour and
+          // the text vanishing. A call that had been accepted but not yet
+          // connected looked identical to one that had.
+          if (call != null || hasIssue || isConnecting || isRinging) ...[
             Text(
               statusLabel,
               style: AuraText.label.copyWith(color: statusColor),

@@ -154,7 +154,20 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
         isVideo: local.isVideoMode,
         micOn: local.microphoneEnabled,
         cameraOn: local.cameraEnabled,
-        startedAt: session.startedAt,
+        // THE SAME CLOCK THE ROOM SHOWS.
+        //
+        // This used to anchor on `session.startedAt` — when the ROOM opened —
+        // while the full-screen room anchored on a different field entirely.
+        // Minimising a call visibly changed the elapsed time, because the two
+        // surfaces were counting different things. `connectedAt` is the one
+        // start instant, and null until the call actually connected.
+        // For a call: `connectedAt`, and null until it connects, so the PiP
+        // shows `--:--` rather than counting a call nobody has answered. For a
+        // meeting or a stage there is no call, and the room's own start is the
+        // honest anchor because nobody was ever ringing.
+        startedAt: session.call != null
+            ? session.call!.connectedAt
+            : session.startedAt,
         participants: local.participants.where((p) => p.isPresent).toList(),
         isOwner: true,
         localRenderer: local.localRenderer,

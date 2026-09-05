@@ -1,3 +1,4 @@
+import '../../../core/utils/local_timezone.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -884,7 +885,17 @@ class _CreateProfileDialogState extends ConsumerState<_CreateProfileDialog> {
             meetingTitle: title,
             durationOptions: const [30, 60],
             defaultDuration: 30,
-            timezone: DateTime.now().timeZoneName,
+            // THE ZONE THE BACKEND ACTUALLY COMPUTES WITH.
+            //
+            // A profile's timezone is what turns "available 9:00–17:00" into
+            // real UTC instants a guest is offered. This sent
+            // `DateTime.now().timeZoneName` — "Pakistan Standard Time", "AEST"
+            // — which is not a zone identifier, and the backend silently
+            // resolved anything it could not parse to UTC. A host outside the
+            // United States would then have had their availability published
+            // at the wrong hours, and every guest offered the wrong times,
+            // with nothing anywhere reporting a fault.
+            timezone: cachedLocalTimezone,
             assignedHostId: _selectedHostId,
           );
       await _refreshInstitutionProfiles(ref, widget.institutionId);

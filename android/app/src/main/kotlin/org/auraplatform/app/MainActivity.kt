@@ -64,6 +64,26 @@ class MainActivity : FlutterActivity() {
                 SecureStore.handle(applicationContext, call, result)
             }
 
+        // THE DEVICE'S IANA TIMEZONE.
+        //
+        // Dart has no API for this. `DateTime.now().timeZoneName` returns an
+        // abbreviation ("PKT") or a display name, neither of which is a zone
+        // identifier — and turning one into a zone needs a lookup table, which
+        // is precisely how this was limited to the United States and how a
+        // person in Karachi came to be shown a wrong meeting time while a
+        // person in New York was shown the right one.
+        //
+        // Android already knows the answer and has since API 1.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "org.auraplatform.app/timezone")
+            .setMethodCallHandler { call, result ->
+                if (call.method == "zoneId") {
+                    // e.g. "Asia/Karachi", "Europe/Istanbul", "Europe/Berlin".
+                    result.success(java.util.TimeZone.getDefault().id)
+                } else {
+                    result.notImplemented()
+                }
+            }
+
         // TRACK C — NATIVE CALL LIFECYCLE. Registered here, but Telecom
         // registration itself happens on the first call rather than at app
         // start: putting Aura in the system's calling-account settings for

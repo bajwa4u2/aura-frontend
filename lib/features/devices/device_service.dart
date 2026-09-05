@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/utils/local_timezone.dart';
 import 'device_repository.dart';
 import 'web_push_service.dart';
 import 'windows_push_service.dart';
@@ -565,12 +566,15 @@ class DeviceService {
     }
   }
 
+  /// The device's IANA zone, or empty when it genuinely cannot be resolved.
+  ///
+  /// This used to report `DateTime.now().timeZoneName` — "PKT", "EDT",
+  /// "Pakistan Standard Time" — none of which is a zone identifier. 78 of 85
+  /// registered devices carried such a value, and 14 of them named zones no
+  /// lookup table covered. Empty is the honest answer; a zone nobody can
+  /// interpret is not better than none.
   String _resolveTimezone() {
-    try {
-      return DateTime.now().timeZoneName;
-    } catch (_) {
-      return '';
-    }
+    return cachedLocalTimezone ?? '';
   }
 
   // ── Local persistence ─────────────────────────────────────────────────────

@@ -4,6 +4,7 @@
 
 #include "flutter/generated_plugin_registrant.h"
 #include "share_intake.h"
+#include "timezone_channel.h"
 #include "wns_channel.h"
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
@@ -34,6 +35,9 @@ bool FlutterWindow::OnCreate() {
   // what ACTIVATED this process: the content is already waiting, and Dart
   // asks for it as soon as it is listening.
   RegisterShareIntake(flutter_controller_.get());
+  // The device's IANA timezone. Windows names its zones differently from every
+  // other platform, so this is the one runner that has to translate.
+  RegisterTimezoneChannel(flutter_controller_.get());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {

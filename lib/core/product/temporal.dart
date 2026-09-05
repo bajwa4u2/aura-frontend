@@ -130,7 +130,14 @@ class AuraTemporal {
   /// Presentation uses [ProductTime.local]; this is the transport answer, and
   /// the two are deliberately different questions. `timeZoneName` alone is a
   /// display name or abbreviation and is not a valid zone identifier.
-  static String get zoneId => resolveLocalTimezone();
+  /// NULL WHEN THE ZONE IS GENUINELY UNKNOWN.
+  ///
+  /// It previously fell back to whatever the platform said, and the backend
+  /// then coerced anything it could not parse to UTC — so a person in Karachi
+  /// or Istanbul could be shown a wrong time with nothing indicating a problem,
+  /// while a person in New York was shown the right one. A caller that gets
+  /// null must omit the field, never substitute a plausible default.
+  static String? get zoneId => cachedLocalTimezone;
 
   static const List<String> _months = <String>[
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',

@@ -1132,9 +1132,9 @@ class RealtimeController extends StateNotifier<RealtimeState>
   }
 
   Future<void> leave() async {
-    // One call, one report. Leaving retires the latch so the next placed
-    // call reports its own connect rather than inheriting this one's.
-    _reportedOutgoingConnected = false;
+    // One call, one report. Leaving retires the latch so the next call
+    // reports its own media rather than inheriting this one's.
+    _reportedMediaEstablished = false;
     if (_terminating) return;
     final sessionId = (state.sessionId ?? '').trim();
     if (sessionId.isEmpty) return;
@@ -2342,7 +2342,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
   /// outgoing at all and ignores it otherwise, so this hook does not need to
   /// know the direction — which matters, because the media layer below is the
   /// same code for a call received and a call placed.
-  bool _reportedOutgoingConnected = false;
+  bool _reportedMediaEstablished = false;
 
   void _handleMediaSnapshot(RealtimeMediaSnapshot snapshot) {
     state = state.copyWith(
@@ -2361,13 +2361,19 @@ class RealtimeController extends StateNotifier<RealtimeState>
       unawaited(_reconcileRtcPeers('media-ready'));
     }
 
-    // Purely additive: nothing above branches on this, and a failure here
-    // cannot affect the call. Remote media present is the honest moment a
-    // placed call became a conversation.
-    if (!_reportedOutgoingConnected && snapshot.remoteRenderers.isNotEmpty) {
+    // THIS DEVICE CAN NOW HEAR THE OTHER SIDE.
+    //
+    // Only an endpoint can observe that, which is why it is reported from
+    // here — but it is reported as EVIDENCE, not as a verdict. The backend
+    // decides whether the call is connected, and only once BOTH sides have
+    // said this. One endpoint alone hears silence and would otherwise have
+    // been told the call had connected.
+    if (!_reportedMediaEstablished && _hasRemoteMedia(snapshot)) {
       final sessionId = _managedSessionId;
       if (sessionId.isNotEmpty) {
-        _reportedOutgoingConnected = true;
+        _reportedMediaEstablished = true;
+        unawaited(_reportMediaEstablished(sessionId, snapshot));
+
         unawaited(
           IosCallKit.instance
               .reportOutgoingConnected(sessionId)
@@ -2381,6 +2387,56 @@ class RealtimeController extends StateNotifier<RealtimeState>
           AndroidTelecom.instance.reportConnected(sessionId).catchError((_) {}),
         );
       }
+    }
+  }
+
+  /// A USABLE MEDIA PATH WITH THE REMOTE PEER, ON EITHER TRANSPORT.
+  ///
+  /// This previously read `remoteRenderers` alone — the device-keyed map the
+  /// MESH transport fills. On an SFU call that map stays permanently empty and
+  /// the stage populates `remoteRenderersByParticipant` instead, so on every
+  /// SFU call the one hook that noticed remote media never fired at all.
+  ///
+  /// Audio is enough. A video call whose remote camera is off is still a
+  /// conversation, and waiting for a remote video track would hold a working
+  /// call at "Connecting" indefinitely.
+  bool _hasRemoteMedia(RealtimeMediaSnapshot snapshot) =>
+      snapshot.remoteRenderers.isNotEmpty ||
+      snapshot.remoteRenderersByParticipant.isNotEmpty;
+
+  /// Describe what was actually observed, so a CONNECTED call can be audited
+  /// rather than trusted. Free text: nothing branches on it.
+  String _mediaEvidence(RealtimeMediaSnapshot snapshot) {
+    final parts = <String>[];
+    if (snapshot.remoteRenderers.isNotEmpty) {
+      parts.add('mesh-remote-renderers=${snapshot.remoteRenderers.length}');
+    }
+    if (snapshot.remoteRenderersByParticipant.isNotEmpty) {
+      parts.add(
+        'stage-remote-participants='
+        '${snapshot.remoteRenderersByParticipant.length}',
+      );
+    }
+    if (snapshot.onTrackAudioSeen) parts.add('onTrack:audio');
+    if (snapshot.onTrackVideoSeen) parts.add('onTrack:video');
+    return parts.join(' ');
+  }
+
+  Future<void> _reportMediaEstablished(
+    String sessionId,
+    RealtimeMediaSnapshot snapshot,
+  ) async {
+    try {
+      await _repository.reportMediaEstablished(
+        sessionId,
+        evidence: _mediaEvidence(snapshot),
+      );
+    } catch (_) {
+      // Reporting evidence must never break a call in progress. The person can
+      // still hear the other side; what is lost is the server's ability to
+      // mark the call connected from this end, and the next read of the
+      // session will still carry whatever phase the backend did reach.
+      _reportedMediaEstablished = false;
     }
   }
 
@@ -2903,6 +2959,35 @@ class RealtimeController extends StateNotifier<RealtimeState>
         // mutate `participants` / `joinState` here — the controller is
         // responsible for the join/leave lifecycle, not the ring UI.
         state = state.copyWith(lastSocketEvent: event.name);
+        return;
+      case 'call:phase':
+        // WHERE THE CALL IS, FROM THE ONLY THING THAT DECIDES IT.
+        //
+        // This is a projection of a phase the backend has already committed,
+        // so it is applied to the call we hold rather than used to derive a
+        // new one. `applyPhaseEvent` refuses to move backwards: these arrive
+        // over an unreliable transport, out of order and more than once, and a
+        // late "connecting" must never rewrite a conversation that connected.
+        final phaseSessionId = (event.payload['sessionId'] ?? '')
+            .toString()
+            .trim();
+        final session = state.session;
+        if (session == null) return;
+        if (phaseSessionId.isNotEmpty && phaseSessionId != session.id) return;
+
+        final existing = session.call;
+        if (existing == null) {
+          // A session we hold with no call — a meeting, a stage, or a call
+          // whose session we have not re-read since it began. Nothing is
+          // invented here; the next read of the session carries the call.
+          state = state.copyWith(lastSocketEvent: event.name);
+          return;
+        }
+
+        state = state.copyWith(
+          session: session.withCall(existing.applyPhaseEvent(event.payload)),
+          lastSocketEvent: event.name,
+        );
         return;
       case 'call:accepted':
         // Authoritative ACCEPT truth, emitted the moment the backend's

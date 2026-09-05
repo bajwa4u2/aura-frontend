@@ -157,6 +157,28 @@ func notificationBelongsToCall(
         SecureStore.handle(call, result: result)
       }
 
+      // THE DEVICE'S IANA TIMEZONE.
+      //
+      // Dart has no API for this. `DateTime.now().timeZoneName` gives an
+      // abbreviation or a display name, neither of which is a zone identifier;
+      // converting one needs a lookup table, which is how this was limited to
+      // the United States and how someone in Karachi could be shown a wrong
+      // meeting time while someone in New York was shown the right one.
+      //
+      // Foundation already knows, and returns a real IANA identifier.
+      let timezone = FlutterMethodChannel(
+        name: "org.auraplatform.app/timezone",
+        binaryMessenger: controller.binaryMessenger
+      )
+      timezone.setMethodCallHandler { call, result in
+        if call.method == "zoneId" {
+          // e.g. "Asia/Karachi", "Europe/Istanbul", "Europe/Berlin".
+          result(TimeZone.current.identifier)
+        } else {
+          result(FlutterMethodNotImplemented)
+        }
+      }
+
       // SHARE INTAKE. The main app's side of the Share Extension handoff, on
       // the same channel name Android uses — one shape, three platforms, and
       // no branch in Dart.

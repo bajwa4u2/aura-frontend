@@ -446,6 +446,10 @@ class RealtimeSocketService {
       'call:declined',
       'call:terminal',
       'call:incoming',
+      // THE CALL'S OWN PHASE, from the authority that decided it. A projection
+      // of a fact the backend already wrote — a client that misses one is
+      // behind, not wrong, and re-reading the session gives the same answer.
+      'call:phase',
       // Realtime Architecture Correction — Phase 4 (Notification/Ringing
       // Projection Migration). Canonical dot-case wire names, dual-emitted
       // by RealtimeGateway on this same namespace since Phase 2/3

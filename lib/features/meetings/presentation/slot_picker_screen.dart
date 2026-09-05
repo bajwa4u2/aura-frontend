@@ -1,3 +1,4 @@
+import '../../../core/utils/local_timezone.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -58,7 +59,9 @@ class _SlotPickerScreenState extends ConsumerState<SlotPickerScreen> {
     final slotsAsync = _slotsForDate(ref);
     final width = MediaQuery.sizeOf(context).width;
     final isWide = width >= 980;
-    final timezone = DateTime.now().timeZoneName;
+    // The resolved IANA zone, or empty. Never an abbreviation the rest of the
+    // system cannot interpret, and never a guess.
+    final timezone = cachedLocalTimezone ?? '';
 
     return AuraScaffold(
       title: 'Pick a time',
@@ -653,7 +656,10 @@ class _TimesPanel extends StatelessWidget {
                     ),
                     const SizedBox(height: AuraSpace.s4),
                     Text(
-                      'Times shown in your local time (${DateTime.now().timeZoneName})',
+                      (cachedLocalTimezone ?? '').isEmpty
+                          ? 'Times shown in your local time'
+                          : 'Times shown in your local time '
+                              '(${cachedLocalTimezone!})',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: const Color(0xFF9CA3AF),
                       ),

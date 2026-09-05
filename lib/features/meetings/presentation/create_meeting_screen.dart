@@ -307,7 +307,7 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
         type: _startNow ? 'INSTANT' : 'SCHEDULED',
         scheduledAt: _startNow ? null : _scheduledAt!.toUtc().toIso8601String(),
         durationMinutes: _durationMinutes,
-        timezone: resolveLocalTimezone(),
+        timezone: cachedLocalTimezone,
         waitingRoomEnabled: !_startNow,
         allowGuests: false,
         guestApprovalRequired: false,
