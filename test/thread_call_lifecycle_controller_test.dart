@@ -129,6 +129,13 @@ void main() {
         ThreadCallLifecyclePhase.mediaNegotiating,
       );
 
+      // LOCAL CAPTURE IS NOT A CONVERSATION.
+      //
+      // This previously expected `connected` from `isMediaReady` alone, which
+      // means only that this device's own camera and microphone started. It
+      // says nothing about the remote peer, so a call with nobody on the other
+      // end satisfied it. The test encoded the defect, which is why the defect
+      // survived a green suite.
       expect(
         ThreadCallLifecycleController.phaseForRealtime(
           RealtimeState.initial().copyWith(
@@ -139,8 +146,15 @@ void main() {
             participants: [_participant('a'), _participant('b')],
           ),
         ),
-        ThreadCallLifecyclePhase.connected,
+        ThreadCallLifecyclePhase.mediaNegotiating,
       );
+
+      // The positive case — remote media actually arriving — needs a real
+      // RTCVideoRenderer, which cannot be constructed without a platform
+      // binding. It is covered where it matters instead: the room screen reads
+      // the Call authority, not this phase, and even when this phase does
+      // observe remote media it reports MEDIA FLOWING rather than a connected
+      // call. Whether a call is connected is the Call authority's answer alone.
     });
 
     test('maps transport loss and terminal join states', () {

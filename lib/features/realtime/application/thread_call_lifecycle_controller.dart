@@ -11,12 +11,28 @@ import '../domain/realtime_enums.dart';
 import '../domain/realtime_state.dart';
 import 'realtime_providers.dart';
 
+/// ROOM AND TRANSPORT READINESS — DELIBERATELY NOT THE CALL.
+///
+/// This describes the state of the media room: whether this device has joined,
+/// whether its transport is healthy, whether remote media has arrived. Those
+/// are supporting infrastructure facts.
+///
+/// It is NOT the call lifecycle. It used to have a `connected` member derived
+/// from renderers and local media readiness, which made it a second, quieter
+/// answer to "are we on a call" — and one that could say yes when nobody had
+/// answered, because starting your own camera satisfied it. That member is now
+/// `mediaFlowing`, which is what it actually observed.
+///
+/// The call's own state is `CallState.productStateFor`, projected from the
+/// server's Call authority. CLIENT_CALL_STATE_AUTHORITIES = 1.
 enum ThreadCallLifecyclePhase {
   invited,
   joining,
   joined,
   mediaNegotiating,
-  connected,
+  /// Remote media has arrived in the room. Says nothing about whether a human
+  /// answered — that is the Call authority's answer.
+  mediaFlowing,
   transportDegraded,
   ended,
 }
@@ -363,8 +379,17 @@ class ThreadCallLifecycleController
     if (realtime.isMediaBusy) {
       return ThreadCallLifecyclePhase.mediaNegotiating;
     }
-    if (realtime.remoteRenderers.isNotEmpty || realtime.isMediaReady) {
-      return ThreadCallLifecyclePhase.connected;
+    if (realtime.remoteRenderers.isNotEmpty ||
+        realtime.remoteRenderersByParticipant.isNotEmpty) {
+      // TRANSPORT READINESS, NOT CALL TRUTH. See the doc comment above: this
+      // says the room's media is up, which is a supporting fact. Whether the
+      // CALL is connected is Call.phase's answer and nothing else's.
+      //
+      // `isMediaReady` was previously accepted here too. It means the LOCAL
+      // camera and microphone started — it says nothing whatever about the
+      // remote peer — so a call with no one on the other end reached this
+      // branch and called itself connected.
+      return ThreadCallLifecyclePhase.mediaFlowing;
     }
     return ThreadCallLifecyclePhase.mediaNegotiating;
   }

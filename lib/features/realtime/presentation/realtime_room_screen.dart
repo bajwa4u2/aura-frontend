@@ -1105,8 +1105,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                     // and a peer who had never answered therefore rendered as
                     // Live the instant the socket join was acknowledged.
                     call: state.session?.call,
-                    isCaller:
-                        state.session?.call?.isCaller(myUserId) ?? false,
+                    productState:
+                        state.session?.call?.productStateFor(myUserId),
                     // Kept for meetings and stages, which have no call and so
                     // still need the local derivations.
                     isAccepted:
@@ -1268,7 +1268,12 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     required bool canModerate,
     required bool wide,
   }) {
-    final stage = _CallStage(state: state, myUserId: myUserId, ref: ref);
+    final stage = _CallStage(
+      state: state,
+      myUserId: myUserId,
+      productState: state.session?.call?.productStateFor(myUserId),
+      ref: ref,
+    );
 
     if (!wide || _activePanel == null) return stage;
 
@@ -2139,7 +2144,7 @@ class _CallTopBar extends StatelessWidget {
     this.isRinging = false,
     this.isAccepted = false,
     this.call,
-    this.isCaller = false,
+    this.productState,
     this.onMinimize,
     this.sessionTypeChip,
     this.trustLine,
@@ -2172,9 +2177,10 @@ class _CallTopBar extends StatelessWidget {
   /// meetings and stages, which have no call.
   final CallState? call;
 
-  /// Which side of the call this person is on. It changes the words: a caller
-  /// waiting is "Calling" and then "Ringing"; a callee has already been rung.
-  final bool isCaller;
+  /// What this person is looking at, from the shared projection. Null when the
+  /// session is not a call — a meeting or a stage — which is a different fact
+  /// from a call that has not connected, and the two must not be collapsed.
+  final CallProductState? productState;
 
   final VoidCallback? onMinimize;
 
@@ -2241,33 +2247,33 @@ class _CallTopBar extends StatelessWidget {
     } else if (waitingLabel != null) {
       statusColor = amber;
       statusLabel = waitingLabel!;
-    } else if (call != null) {
-      // THE CALL SAYS WHERE IT IS. No inference, and — importantly — no
-      // fall-through: "Live" used to be the default label for anything the
-      // local derivations did not recognise, so a call that had rung nobody
-      // and connected to nothing still showed a green dot the moment the
-      // socket acknowledged the join.
-      switch (call!.phase) {
-        case CallPhase.initiated:
-        case CallPhase.invited:
+    } else if (productState != null) {
+      // THE SHARED PROJECTION SAYS WHAT THIS PERSON IS LOOKING AT.
+      //
+      // Not re-derived here. This screen used to fall through to a green
+      // "Live" for anything its local rules did not recognise, so a call that
+      // had rung nobody and connected to nothing showed as live the moment the
+      // socket acknowledged a join. There is no fall-through now, and no
+      // second opinion: CLIENT_CALL_STATE_AUTHORITIES = 1.
+      switch (productState!) {
+        case CallProductState.calling:
           statusColor = amber;
-          // Nothing has rung yet. For the caller that is "Calling"; the callee
-          // is not looking at this bar before their phone rings.
-          statusLabel = isCaller ? 'Calling…' : 'Connecting…';
-        case CallPhase.alerting:
+          statusLabel = 'Calling…';
+        case CallProductState.ringing:
           statusColor = amber;
-          // A real device is really alerting a real person.
-          statusLabel = isCaller ? 'Ringing…' : 'Incoming call';
-        case CallPhase.accepted:
-        case CallPhase.connecting:
+          statusLabel = 'Ringing…';
+        case CallProductState.incoming:
+          statusColor = amber;
+          statusLabel = 'Incoming call';
+        case CallProductState.connecting:
           statusColor = amber;
           statusLabel = 'Connecting…';
-        case CallPhase.connected:
+        case CallProductState.connected:
           statusColor = green;
           statusLabel = 'Connected';
-        case CallPhase.ended:
+        case CallProductState.ended:
           statusColor = AuraSurface.coRose;
-          statusLabel = _endedLabel(call!.outcome);
+          statusLabel = _endedLabel(call?.outcome);
       }
     } else if (isConnecting) {
       statusColor = AuraSurface.coSun;
@@ -2358,7 +2364,7 @@ class _CallTopBar extends StatelessWidget {
           // actually connected — was communicated by a dot changing colour and
           // the text vanishing. A call that had been accepted but not yet
           // connected looked identical to one that had.
-          if (call != null || hasIssue || isConnecting || isRinging) ...[
+          if (productState != null || hasIssue || isConnecting || isRinging) ...[
             Text(
               statusLabel,
               style: AuraText.label.copyWith(color: statusColor),
@@ -2517,8 +2523,100 @@ class _ConnectionBanner extends StatelessWidget {
 // CALL STAGE
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// WHAT A CALL LOOKS LIKE BEFORE IT CONNECTS.
+///
+/// Deliberately quiet: the other person's name, and one honest line about where
+/// the call actually is. No grid, no tiles, no controls that imply a
+/// conversation is under way, and — most importantly — no timer.
+class _PreConnectStage extends StatelessWidget {
+  const _PreConnectStage({
+    required this.productState,
+    required this.state,
+    required this.myUserId,
+  });
+
+  final CallProductState productState;
+  final RealtimeState state;
+  final String myUserId;
+
+  /// The person on the other end. A call is with someone, and saying so is the
+  /// difference between waiting and waiting for a named human.
+  String get _otherPartyName {
+    for (final p in state.participants) {
+      if (p.userId != myUserId) {
+        final name = (p.displayName ?? '').trim();
+        if (name.isNotEmpty) return name;
+      }
+    }
+    return '';
+  }
+
+  String get _line {
+    switch (productState) {
+      case CallProductState.calling:
+        return 'Calling…';
+      case CallProductState.ringing:
+        return 'Ringing…';
+      case CallProductState.incoming:
+        return state.isVideoMode ? 'Incoming video call' : 'Incoming call';
+      case CallProductState.connecting:
+        return 'Connecting…';
+      case CallProductState.connected:
+      case CallProductState.ended:
+        // Unreachable: this stage is only mounted before connection.
+        return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final name = _otherPartyName;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.s24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              state.isVideoMode
+                  ? Icons.videocam_rounded
+                  : Icons.call_rounded,
+              size: 44,
+              color: AuraSurface.muted,
+            ),
+            const SizedBox(height: AuraSpace.s16),
+            if (name.isNotEmpty) ...[
+              Text(
+                name,
+                textAlign: TextAlign.center,
+                style: AuraText.headline,
+              ),
+              const SizedBox(height: AuraSpace.s8),
+            ],
+            Text(
+              _line,
+              textAlign: TextAlign.center,
+              style: AuraText.body.copyWith(color: AuraSurface.muted),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _CallStage extends StatelessWidget {
-  const _CallStage({required this.state, required this.myUserId, this.ref});
+  const _CallStage({
+    required this.state,
+    required this.myUserId,
+    this.productState,
+    this.ref,
+  });
+
+  /// What this person is looking at, from the shared Call projection. Null for
+  /// a session that is not a call — a meeting or a stage — which keeps its
+  /// existing behaviour.
+  final CallProductState? productState;
 
   final RealtimeState state;
   final String myUserId;
@@ -2619,6 +2717,27 @@ class _CallStage extends StatelessWidget {
     // create renderers for audio tracks too.
     final someoneSharingScreen =
         state.isScreenSharing || state.participants.any((p) => p.screenOn);
+
+    // ── A CALL THAT HAS NOT CONNECTED IS NOT A CONVERSATION ──────────────
+    //
+    // The live experience — the video grid, the speaking avatars, the
+    // participant tiles — used to be mounted from the moment this screen
+    // opened. A caller waiting for someone to pick up saw the room they would
+    // eventually be in, which reads as though the call is already happening.
+    //
+    // Before CONNECTED there is nobody to see. What a person needs here is who
+    // they are calling and what is actually happening, so that is all this
+    // shows. A session that is not a call is unaffected.
+    final preConnect = productState;
+    if (preConnect != null &&
+        preConnect != CallProductState.connected &&
+        preConnect != CallProductState.ended) {
+      return _PreConnectStage(
+        productState: preConnect,
+        state: state,
+        myUserId: myUserId,
+      );
+    }
 
     final takesGrid =
         (state.isVideoMode || someoneSharingScreen) && hasAnyRenderer;

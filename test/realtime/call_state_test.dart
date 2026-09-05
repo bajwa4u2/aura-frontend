@@ -210,4 +210,62 @@ void main() {
       expect(advanced.startedAt, session.startedAt);
     });
   });
+
+  group('the shared product projection', () {
+    // CLIENT_CALL_STATE_AUTHORITIES = 1. Every surface — web, Android, iOS,
+    // Windows — reads these, and none of them re-derives a call state from a
+    // socket, a roster, a route or a notification.
+    const caller = 'caller-1';
+    const callee = 'callee-1';
+
+    CallState at(String phase) => CallState.fromJson(callJson(phase: phase))!;
+
+    test('the same phase reads differently on each end of the call', () {
+      final ringing = at('ALERTING');
+      expect(ringing.productStateFor(caller), CallProductState.ringing);
+      expect(ringing.productStateFor(callee), CallProductState.incoming);
+    });
+
+    test('placed but not yet ringing is Calling for the caller', () {
+      expect(at('INITIATED').productStateFor(caller), CallProductState.calling);
+      expect(at('INVITED').productStateFor(caller), CallProductState.calling);
+    });
+
+    test('answered is Connecting, for both, until media exists', () {
+      for (final phase in ['ACCEPTED', 'CONNECTING']) {
+        expect(at(phase).productStateFor(caller), CallProductState.connecting);
+        expect(at(phase).productStateFor(callee), CallProductState.connecting);
+      }
+    });
+
+    test('connected is the only state with a running timer', () {
+      for (final phase in ['INITIATED', 'INVITED', 'ALERTING', 'ACCEPTED', 'CONNECTING']) {
+        expect(at(phase).hasRunningTimer, isFalse, reason: '$phase must not run a timer');
+      }
+      expect(at('CONNECTED').hasRunningTimer, isTrue);
+      expect(at('ENDED').hasRunningTimer, isFalse);
+    });
+
+    test('only the person being called, while ringing, can answer', () {
+      final ringing = at('ALERTING');
+      expect(ringing.canAnswer(callee), isTrue);
+      // The caller cannot answer their own call.
+      expect(ringing.canAnswer(caller), isFalse);
+      // And there is nothing to answer before it rings, or after it is over.
+      expect(at('INVITED').canAnswer(callee), isFalse);
+      expect(at('CONNECTED').canAnswer(callee), isFalse);
+      expect(at('ENDED').canAnswer(callee), isFalse);
+    });
+
+    test('every phase projects to exactly one product state', () {
+      // No fall-through, and no phase left unhandled — the gap that used to
+      // render an unrecognised call as a green "Live".
+      for (final phase in [
+        'INITIATED', 'INVITED', 'ALERTING', 'ACCEPTED', 'CONNECTING', 'CONNECTED', 'ENDED',
+      ]) {
+        expect(at(phase).productStateFor(caller), isA<CallProductState>());
+        expect(at(phase).productStateFor(callee), isA<CallProductState>());
+      }
+    });
+  });
 }

@@ -1176,6 +1176,28 @@ String _buildTitle(Map<String, dynamic> item) {
       return 'You declined a call from $actorName';
     }
     if (notifKind == 'CALL_CANCELLED') {
+      // THE CANONICAL OUTCOME OUTRANKS THE COARSE ONE.
+      //
+      // `CALL_CANCELLED` is a four-value bucket, and two genuinely different
+      // things land in it: a call that never reached the person at all, and a
+      // call they answered before hearing silence. Rendering either as
+      // "cancelled" tells them a false story about their own call — and the
+      // first one, told as "missed", would blame them for ignoring a call
+      // their phone never announced.
+      switch (_stringOf(data['callOutcome']).toUpperCase()) {
+        case 'NOT_PRESENTED':
+          return outgoing
+              ? 'Could not reach $actorName'
+              : '$actorName tried to call you';
+        case 'ACCEPTED_NOT_CONNECTED':
+          return outgoing
+              ? 'Your $callType with $actorName could not connect'
+              : 'Your $callType with $actorName could not connect';
+        case 'FAILED':
+          return outgoing
+              ? 'Your $callType to $actorName failed'
+              : 'A $callType from $actorName failed';
+      }
       return outgoing
           ? 'You cancelled a $callType'
           : '$actorName cancelled a $callType';

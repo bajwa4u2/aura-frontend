@@ -58,6 +58,40 @@ enum CallOutcome {
   unknownLegacy,
 }
 
+/// WHAT A PERSON IS ACTUALLY LOOKING AT.
+///
+/// The phase says where the call is; this says what to show, which is not the
+/// same question — the same phase reads differently depending on which end of
+/// the call you are on. ALERTING is "Ringing…" to the caller and an incoming
+/// call to the person being rung.
+///
+/// Derived ONCE, here, and consumed by web, Android, iOS and Windows alike.
+/// Aura previously had no such thing, so each surface assembled its own answer
+/// from whatever was nearest — a socket being open, a roster having two rows, a
+/// route being mounted — and they disagreed with each other and with the
+/// server. `CLIENT_CALL_STATE_AUTHORITIES = 1` means this enum is the only
+/// vocabulary a call surface may branch on.
+enum CallProductState {
+  /// Placed, nothing has rung. The caller's "Calling…".
+  calling,
+
+  /// A real device is really alerting a real person. The caller sees
+  /// "Ringing…"; the callee is being offered the call.
+  ringing,
+
+  /// Incoming, from the callee's side, before they have answered.
+  incoming,
+
+  /// Answered by a human; the media path is still being established.
+  connecting,
+
+  /// Both sides have a usable media path. The only state with a timer.
+  connected,
+
+  /// Over. [CallState.outcome] says why.
+  ended,
+}
+
 /// ONE PERSON IN A CALL — never a device.
 ///
 /// Someone with a phone, a laptop and a tablet is one participant. Their
@@ -152,6 +186,47 @@ class CallState {
   bool get isRinging => phase == CallPhase.alerting;
   bool get isConnected => phase == CallPhase.connected;
   bool get hasEnded => phase == CallPhase.ended;
+
+  /// THE ONE PROJECTION EVERY SURFACE READS.
+  ///
+  /// Takes the recorded phase and the viewer's side of the call, and returns
+  /// what that person is looking at. Nothing else in the client may decide
+  /// this — not from a session being ACTIVE, a join state, a mounted route, a
+  /// live socket, or a notification having arrived. Those are infrastructure
+  /// facts; they can support a call but they are not one.
+  CallProductState productStateFor(String viewerUserId) {
+    final viewerIsCaller = isCaller(viewerUserId);
+    switch (phase) {
+      case CallPhase.initiated:
+      case CallPhase.invited:
+        // Nothing has rung yet. To the caller this is "Calling…"; the callee
+        // has not been alerted, so there is nothing to show them at all.
+        return viewerIsCaller ? CallProductState.calling : CallProductState.incoming;
+      case CallPhase.alerting:
+        return viewerIsCaller ? CallProductState.ringing : CallProductState.incoming;
+      case CallPhase.accepted:
+      case CallPhase.connecting:
+        return CallProductState.connecting;
+      case CallPhase.connected:
+        return CallProductState.connected;
+      case CallPhase.ended:
+        return CallProductState.ended;
+    }
+  }
+
+  /// Whether a duration should be running at all.
+  ///
+  /// CALLING_TIMER = 0, RINGING_TIMER = 0, CONNECTING_TIMER = 0.
+  /// A clock that runs before a conversation exists is a lie about how long
+  /// people have been talking.
+  bool get hasRunningTimer => phase == CallPhase.connected;
+
+  /// Whether this person still has an answer/decline decision to make.
+  bool canAnswer(String viewerUserId) =>
+      !isCaller(viewerUserId) &&
+      phase == CallPhase.alerting &&
+      participantOf(viewerUserId)?.acceptedAt == null &&
+      participantOf(viewerUserId)?.declinedAt == null;
 
   /// True once a human has agreed to talk, whatever the media is doing.
   bool get isAccepted =>
