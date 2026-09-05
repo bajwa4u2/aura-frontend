@@ -204,6 +204,81 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '    proxy_connect_timeout 5s;' \
 '  }' \
 '' \
+'  # PUBLIC CONTENT ROUTES, SERVED WITH THEIR OWN METADATA.' \
+'  #' \
+'  # These are real application routes, not share pages. Every one of them' \
+'  # used to be answered from the single static Flutter shell, whose' \
+'  # metadata describes the SITE -- so a person who read an article and' \
+'  # copied the address out of the browser had a link that unfurled as the' \
+'  # homepage everywhere they pasted it. /p/ was already correct, but' \
+'  # requiring people to press Share for a canonical URL to describe' \
+'  # itself is not a fix.' \
+'  #' \
+'  # The backend answers with the SAME shell and the SAME bundle, with this' \
+'  # page's own metadata substituted in. One document for everyone: no' \
+'  # user-agent branching, no crawler-only copy, no redirect, no second' \
+'  # page.' \
+'  #' \
+'  # REGEX, and anchored to a value-bearing segment. /institutions is the' \
+'  # directory and has its own build-time variant; /institutions/<slug> is' \
+'  # one institution. A prefix location would have swallowed the first.' \
+'  #' \
+'  # proxy_pass carries a variable, which is what permits a URI part' \
+'  # inside a regex location -- the same construction the media door' \
+'  # below already relies on.' \
+'  location ~ ^/(?:articles|announcements|posts|u)/[^/]+$ {' \
+'    resolver 1.1.1.1 8.8.8.8 valid=300s ipv6=off;' \
+'    resolver_timeout 5s;' \
+'    proxy_pass ${AURA_BACKEND_API_ORIGIN}/v1/shell$request_uri;' \
+'    proxy_http_version 1.1;' \
+'    proxy_ssl_server_name on;' \
+'    proxy_set_header Host api.auraplatform.org;' \
+'    proxy_set_header X-Forwarded-Host $host;' \
+'    proxy_set_header X-Forwarded-Proto $scheme;' \
+'    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+'    proxy_set_header X-Real-IP $remote_addr;' \
+'    proxy_read_timeout 10s;' \
+'    proxy_connect_timeout 5s;' \
+'    proxy_intercept_errors on;' \
+'    error_page 404 500 502 503 504 = @static_shell;' \
+'  }' \
+'' \
+'  location ~ ^/institutions/[^/]+(?:/posts/[^/]+)?$ {' \
+'    resolver 1.1.1.1 8.8.8.8 valid=300s ipv6=off;' \
+'    resolver_timeout 5s;' \
+'    proxy_pass ${AURA_BACKEND_API_ORIGIN}/v1/shell$request_uri;' \
+'    proxy_http_version 1.1;' \
+'    proxy_ssl_server_name on;' \
+'    proxy_set_header Host api.auraplatform.org;' \
+'    proxy_set_header X-Forwarded-Host $host;' \
+'    proxy_set_header X-Forwarded-Proto $scheme;' \
+'    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' \
+'    proxy_set_header X-Real-IP $remote_addr;' \
+'    proxy_read_timeout 10s;' \
+'    proxy_connect_timeout 5s;' \
+'    proxy_intercept_errors on;' \
+'    error_page 404 500 502 503 504 = @static_shell;' \
+'  }' \
+'' \
+'  # THE PAGE STILL LOADS WHEN THE METADATA CANNOT BE HAD.' \
+'  #' \
+'  # 404 is in that list for a reason that is not hypothetical: the two' \
+'  # containers deploy independently, so there is always a window where' \
+'  # one is ahead of the other. A front door that had learned these' \
+'  # routes before the backend had, or after the endpoint was moved,' \
+'  # would hand a visitor the API not-found body instead of the article.' \
+'  # The renderer itself never answers 404 -- it answers 200 or 502 --' \
+'  # so nothing legitimate is being swallowed here.' \
+'  #' \
+'  # An unreachable or erroring backend must cost the visitor a generic' \
+'  # preview, never the article. This serves exactly what these routes' \
+'  # were served before: the static shell, site metadata, Flutter boots,' \
+'  # and the SPA renders the real page from its own data.' \
+'  location @static_shell {' \
+'    try_files /index.html =404;' \
+'    add_header Cache-Control "no-cache";' \
+'  }' \
+'' \
 '  # Governed media door (same-origin first hop). THIS BLOCK EXISTS FOR' \
 '  # ONE REASON: browser CORS. The API returns a 302 to a signed private' \
 '  # R2 URL. Reached CROSS-origin, the Fetch spec replaces the request' \

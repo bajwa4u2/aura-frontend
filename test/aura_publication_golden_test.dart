@@ -162,8 +162,14 @@ Widget _missionGallery({required Size viewport}) {
       showSiteFooter: false,
       hero: AuraPublicationHero(
         eyebrow: 'Mission',
-        title: 'Durable systems for communication, '
-            'coordination, and execution.',
+        // The canonical mission sentence, verbatim, because a golden that
+        // renders superseded copy keeps that copy alive in the repository and
+        // reads as approved. Authority: PRODUCT_IDENTITY_CANON.md, Company
+        // Mission, frozen 2026-09-05. Enforced by
+        // test/doctrine/mission_sentence_gate_test.dart, which is what found
+        // this file.
+        title: 'Build durable public communication where people '
+            'participate purposefully and institutions remain accountable.',
         subtitle:
             'Aura Platform LLC builds infrastructure where identity, '
             'authority, and outcomes stay connected — across people, '

@@ -25,30 +25,49 @@
   <meta name="description" data-aura-meta="description" content="Aura is a public-first platform for civic discourse and accountable communication. People take part in purposeful communication that keeps its context, and institutions enter under clear identity, accountable for what they say officially.">
   <link rel="canonical" data-aura-meta="canonical" href="https://auraplatform.org/">
 
-  <meta name="robots" content="index, follow, max-image-preview:large">
+  <!-- SOCIAL IMAGE URLS ARE WRITTEN HERE WITHOUT A VERSION, DELIBERATELY.
+       tool/web/generate_route_metadata.dart stamps `?v=<n>` onto every
+       /social/ image in this file and in every route variant, from one
+       constant. A version typed here by hand would be a second authority for
+       it, on the most-served page in the product, and the two would part
+       company the first time only one was bumped.
+
+       Five more markers than the build-time generator uses, and that is
+       deliberate. A dynamic public route -- /articles/<slug> and its siblings
+       -- is answered by the backend with THIS file and its own metadata
+       substituted in, through the same data-aura-meta contract. The route
+       generator simply has nothing to say about these five, so it leaves them
+       alone and every static route keeps the values written here.
+
+       og:image's dimensions are the reason this mattered enough to mark. They
+       describe the DEFAULT card, and a crawler lays a card out from what the
+       page declares: an article cover of a different shape, announced as
+       1200x630, is cropped or dropped. The runtime substitution can now state
+       the real ones, or remove the tag when it does not know. -->
+  <meta name="robots" data-aura-meta="robots" content="index, follow, max-image-preview:large">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="theme-color" content="#1A1A2E">
   <meta name="color-scheme" content="dark light">
 
   <!-- ─── Open Graph (LinkedIn, Facebook, Discord, Slack) ─────────── -->
-  <meta property="og:type" content="website">
+  <meta property="og:type" data-aura-meta="og:type" content="website">
   <meta property="og:site_name" content="Aura Platform">
   <meta property="og:locale" content="en_US">
   <meta property="og:title" data-aura-meta="og:title" content="Aura Platform — Public-First Communication and Civic Discourse">
   <meta property="og:description" data-aura-meta="og:description" content="A public-first platform for civic discourse and accountable communication. People take part in purposeful communication that keeps its context; institutions enter under clear identity.">
   <meta property="og:url" data-aura-meta="og:url" content="https://auraplatform.org/">
-  <meta property="og:image" data-aura-meta="og:image" content="https://auraplatform.org/social/og-default.png?v=2">
-  <meta property="og:image:secure_url" data-aura-meta="og:image:secure_url" content="https://auraplatform.org/social/og-default.png?v=2">
-  <meta property="og:image:type" content="image/png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
+  <meta property="og:image" data-aura-meta="og:image" content="https://auraplatform.org/social/og-default.png">
+  <meta property="og:image:secure_url" data-aura-meta="og:image:secure_url" content="https://auraplatform.org/social/og-default.png">
+  <meta property="og:image:type" data-aura-meta="og:image:type" content="image/png">
+  <meta property="og:image:width" data-aura-meta="og:image:width" content="1200">
+  <meta property="og:image:height" data-aura-meta="og:image:height" content="630">
   <meta property="og:image:alt" data-aura-meta="og:image:alt" content="Aura Platform — public-first civic discourse and accountable communication">
 
   <!-- ─── Twitter / X card ────────────────────────────────────────── -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" data-aura-meta="twitter:title" content="Aura Platform — Public-First Communication and Civic Discourse">
   <meta name="twitter:description" data-aura-meta="twitter:description" content="A public-first platform for civic discourse and accountable communication. People take part in purposeful communication that keeps its context; institutions enter under clear identity.">
-  <meta name="twitter:image" data-aura-meta="twitter:image" content="https://auraplatform.org/social/og-default.png?v=2">
+  <meta name="twitter:image" data-aura-meta="twitter:image" content="https://auraplatform.org/social/og-default.png">
   <meta name="twitter:image:alt" data-aura-meta="twitter:image:alt" content="Aura Platform — public-first civic discourse and accountable communication">
 
   <!-- ─── Mobile PWA hints ────────────────────────────────────────── -->

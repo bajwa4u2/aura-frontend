@@ -34,6 +34,27 @@ import 'dart:io';
 
 const _outputRoot = 'build/web';
 
+/// THE ONE PLACE THE SOCIAL ARTWORK'S VERSION IS DECIDED.
+///
+/// Social platforms cache a scraped image against its URL. The cards are
+/// committed under fixed file names, so correcting the artwork changes nothing
+/// a platform can see: Facebook keeps its copy until somebody re-scrapes, and
+/// LinkedIn holds one for about a week with no purge reachable from outside.
+/// A corrected card then looks like a correction that never shipped -- which
+/// is exactly what would have happened on 2026-09-05, when the default and
+/// mission cards were both replaced under their existing names.
+///
+/// Bump this when the ARTWORK changes. It is not a build hash and must not
+/// become one: a version that changes every deploy makes every platform
+/// re-fetch four unchanged images forever, and tells nobody anything.
+///
+/// Stamped over EVERY image URL in the bundle, the root shell included, so a
+/// bump cannot reach three of four places. `web/index.html` therefore carries
+/// the bare file name and a gate keeps it that way -- a version written there
+/// by hand would be a second authority, silently outranking this one on the
+/// most-served page in the product.
+const _socialAssetVersion = '2';
+
 /// Substitution map keyed by `data-aura-meta` attribute value. Keys
 /// MUST match the `data-aura-meta` markers in `web/index.html`.
 class _RouteMeta {
@@ -79,12 +100,9 @@ class _RouteMeta {
   final String? crawlerVisibleContactEmail;
 
   String get canonicalUrl => 'https://auraplatform.org$path';
-  /// Version-suffixed, matching `web/index.html` and the backend's
-  /// `ShareHtmlService.DEFAULT_OG_IMAGE`. A social platform caches a scraped
-  /// image against its URL, so an artwork change under an unchanged file name
-  /// keeps showing the old card for days -- about a week on LinkedIn, which
-  /// offers no purge. Bump all three together when the artwork changes.
-  String get imageUrl => 'https://auraplatform.org/social/$image?v=2';
+  /// Versioned from [_socialAssetVersion], never by hand.
+  String get imageUrl =>
+      'https://auraplatform.org/social/$image?v=$_socialAssetVersion';
 
   bool get hasCrawlerVisibleContent =>
       (crawlerVisibleHeading ?? '').trim().isNotEmpty;
@@ -110,8 +128,20 @@ const _routes = <_RouteMeta>[
   _RouteMeta(
     path: '/mission',
     title: 'Mission — Aura Platform LLC',
+    // THE CANONICAL MISSION SENTENCE, VERBATIM.
+    //
+    // Authority: representation/inventory/PRODUCT_IDENTITY_CANON.md, Company
+    // Mission, frozen by founder decision 2026-09-05. Two wordings were live
+    // before that and both were rejected — the institution-first one was here,
+    // the generic-technology one was in the mission page hero and the
+    // committed social card. So this route served one sentence in its
+    // metadata and a different one in its picture.
+    //
+    // Not paraphrased and not extended. A meta description that improves on
+    // the sentence is a second sentence.
     description:
-        'Build the durable substrate institutions run on — identity, accountability, continuity, human authority, operational memory — in an era where capability is abundant and continuity is scarce.',
+        'Build durable public communication where people participate '
+        'purposefully and institutions remain accountable.',
     image: 'og-mission.png',
     imageAlt: 'Aura Platform LLC — mission',
   ),
@@ -296,6 +326,20 @@ const _routes = <_RouteMeta>[
   ),
 ];
 
+/// Adds [_socialAssetVersion] to every `/social/` image URL in [html].
+///
+/// Idempotent by construction: any version already present is replaced rather
+/// than appended, so running the build twice cannot produce `?v=2?v=2`, and a
+/// stray hand-written version in the source is corrected rather than
+/// preserved. That is the point -- there is one authority for this value and
+/// it is the constant at the top of this file.
+String _stampSocialAssets(String html) {
+  return html.replaceAllMapped(
+    RegExp(r'(/social/[A-Za-z0-9._-]+\.png)(\?v=[A-Za-z0-9._-]+)?'),
+    (m) => '${m.group(1)}?v=$_socialAssetVersion',
+  );
+}
+
 /// Per-route value to substitute, keyed by `data-aura-meta`.
 Map<String, String> _substitutions(_RouteMeta r) {
   return {
@@ -442,10 +486,23 @@ Future<int> main(List<String> args) async {
     return 2;
   }
 
+  // THE ROOT SHELL IS STAMPED TOO, AND FIRST.
+  //
+  // It is the document every unversioned route is served from, and the one the
+  // backend fetches to render dynamic public routes. Stamping only the route
+  // variants would leave the most-served page pointing at an unversioned image
+  // -- the one URL whose cached copy matters most.
+  final stampedRoot = _stampSocialAssets(canonical);
+  await rootIndex.writeAsString(stampedRoot);
+  stdout.writeln(
+    'generate_route_metadata: stamped social assets in '
+    '$_outputRoot/index.html as v=$_socialAssetVersion.',
+  );
+
   var written = 0;
   for (final route in _routes) {
     final variant = _applySubstitutions(
-      canonical,
+      stampedRoot,
       _substitutions(route),
       route: route,
     );

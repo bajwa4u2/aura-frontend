@@ -182,6 +182,46 @@ void main() {
       }
     });
 
+    test('one place decides the social artwork version', () {
+      // A platform caches a scraped image against its URL, so correcting a
+      // card under its existing file name changes nothing anyone can see:
+      // Facebook keeps its copy until re-scraped, LinkedIn for about a week
+      // with no purge reachable from outside. Both the default and mission
+      // cards were replaced under their existing names on 2026-09-05, so the
+      // version suffix is what makes those corrections visible at all.
+      //
+      // The hazard is that the suffix is trivial to write by hand, and it was
+      // written by hand in three files before this. Three copies of a value
+      // whose whole job is to change together is three chances to bump two.
+      // So the shell carries the bare file name, the build stamps it, and
+      // this is what stops a hand-written one creeping back onto the page the
+      // product serves most.
+      final shell = File('web/index.html').readAsStringSync();
+      final social = RegExp(r'/social/[A-Za-z0-9._-]+\.png(\?[^"\s]*)?')
+          .allMatches(shell)
+          .map((m) => m.group(0)!)
+          .toList();
+
+      expect(social, isNotEmpty,
+          reason: 'the shell stopped naming a social card at all');
+      for (final url in social) {
+        expect(url.contains('?'), isFalse,
+            reason: '\n[SOCIAL VERSION] web/index.html writes a version into '
+                '"$url" by hand. The authority is _socialAssetVersion in '
+                'tool/web/generate_route_metadata.dart, which stamps this file '
+                'and every route variant at build time. A version here is a '
+                'second authority for the same value.');
+      }
+
+      final generator =
+          File('tool/web/generate_route_metadata.dart').readAsStringSync();
+      expect(generator, contains('_socialAssetVersion'));
+      // And it must actually be applied to the root, not only to variants.
+      // Stamping only the variants would leave the most-served document in
+      // the product pointing at an unversioned image.
+      expect(generator, contains('_stampSocialAssets(canonical)'));
+    });
+
     test('the scope list stays honest', () {
       // A surface silently dropped from the list would silently drop the rule.
       expect(_generalSurfaces.length, greaterThanOrEqualTo(15));

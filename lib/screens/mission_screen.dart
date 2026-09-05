@@ -21,8 +21,16 @@ class MissionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final hero = AuraPublicationHero(
       eyebrow: 'Mission',
-      title: 'Durable systems for communication, '
-          'coordination, and execution.',
+      // THE CANONICAL MISSION SENTENCE, VERBATIM.
+      //
+      // Authority: representation/inventory/PRODUCT_IDENTITY_CANON.md, Company
+      // Mission, frozen by founder decision 2026-09-05. This hero previously
+      // carried a generic-technology framing that named no product identity at
+      // all — and it was the source of the wording on the committed mission
+      // social card, so the page and its own preview agreed with each other
+      // while both disagreed with the route metadata beside them.
+      title: 'Build durable public communication where people '
+          'participate purposefully and institutions remain accountable.',
       subtitle:
           'Aura Platform LLC builds infrastructure where identity, '
           'authority, and outcomes stay connected — across people, '

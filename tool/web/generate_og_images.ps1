@@ -131,10 +131,13 @@ New-Og `
   -Headline 'Investors & Partners' `
   -Subline ('Trust. Action. Records. One identity, one record, one accountable surface ' + $emdash + ' the Aura Platform thesis.')
 
+# The canonical mission sentence, verbatim. See the note on the default card
+# above: the committed PNG said something different again, so /mission served
+# one sentence in its metadata and another in its picture.
 New-Og `
   -OutFile (Join-Path $assetsDir 'og-mission.png') `
   -Headline 'Mission' `
-  -Subline 'Build the durable substrate institutions run on, in an era where capability is abundant and continuity is scarce.'
+  -Subline 'Build durable public communication where people participate purposefully and institutions remain accountable.'
 
 New-Og `
   -OutFile (Join-Path $assetsDir 'og-founder.png') `
