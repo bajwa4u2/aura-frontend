@@ -26,7 +26,11 @@ void main() {
         'the meeting live room',
     'lib/features/realtime/presentation/widgets/floating_call_widget.dart':
         'the picture-in-picture',
-    'lib/core/media/call_preflight_sheet.dart': 'the preflight self-view',
+    // The preflight self-view was here. The sheet it lived on was deleted
+    // (founder ruling, 2026-09-05 — tapping Call places the call), so there is
+    // no surface left to letterbox. Removed rather than pointed at a file that
+    // does not exist, which would fail for a reason that says nothing about
+    // video fit.
   };
 
   group('no call surface letterboxes a participant', () {

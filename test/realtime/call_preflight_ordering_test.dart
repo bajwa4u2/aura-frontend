@@ -2,106 +2,90 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// THE ORDERING INVARIANT — founder ruling, A/V continuation §2.
+/// TAPPING CALL PLACES THE CALL.
 ///
-///     CALL INTENT
-///       → PREFLIGHT
-///       → PERMISSION / DEVICE READINESS
-///       → USER PROCEEDS
-///       → CALL SESSION CREATED
-///       → OTHER PARTY MAY BE RUNG
+/// ── WHAT THIS FILE USED TO ASSERT, AND WHY IT NO LONGER DOES ────────────
 ///
-/// `ConversationsRepository.startLive()` is the single act that both creates
-/// the realtime session and rings the recipient. Before this chapter it was
-/// the FIRST thing `_startCall` did: pressing Call created a session and woke
+/// It held an ordering invariant: call intent → preflight → device readiness →
+/// the person proceeds → session created → the other party is rung. A modal
+/// sheet checked the microphone and camera and asked for confirmation before
+/// `startLive()` created the session.
+///
+/// That gate was added for a real reason. Before it, pressing Call woke
 /// somebody up before the caller knew whether they had a working microphone,
-/// and the OS permission prompt then arrived mid-join.
+/// and the OS permission prompt arrived mid-join with nothing explaining it.
 ///
-/// This is proved structurally, by reading the shipped source, because the
-/// invariant is about statement ORDER inside one method and that is exactly
-/// what a structural test can prove and a behavioural one cannot isolate. The
-/// repository already uses this technique for architectural invariants (see
-/// `test/conversation/institution_space_conversation_test.dart`).
+/// It answered that by taxing EVERY call with an extra screen and an extra tap,
+/// including the overwhelming majority where the devices were fine and nobody
+/// needed telling. Founder ruling, 2026-09-05: no phone works that way, and it
+/// did not read as care — it read as the app getting in the way of a phone
+/// call. The sheet is deleted.
 ///
-/// The behavioural half — that dismissing yields a non-proceed answer, so the
-/// guard below is actually reached — is certified on the physical handset in
-/// `integration_test/av_android_certification_test.dart`.
+/// The original concern is now met where it belongs, INSIDE the call: the
+/// permission prompt appears over the calling screen, which is its own
+/// explanation, and a genuine device problem surfaces there with an action
+/// beside it rather than blocking the call from starting. `CallReadiness` still
+/// owns that judgement and is unchanged.
+///
+/// So this now guards the replacement, because a test that keeps asserting a
+/// removed design does not protect anything — it blocks the fix. That already
+/// happened once in this repository, to the media-report latch.
 void main() {
   late String startCall;
+  late String screen;
 
   setUpAll(() {
-    final src = File(
+    screen = File(
       'lib/features/conversation/presentation/conversation_screen.dart',
     ).readAsStringSync();
 
-    final begin = src.indexOf('Future<void> _startCall(');
+    final begin = screen.indexOf('Future<void> _startCall(');
     expect(begin, greaterThan(-1),
         reason: '_startCall was renamed; re-establish this invariant against '
             'whatever replaced it rather than deleting the test');
-
-    // Bound the slice at the next method declaration so nothing later in the
-    // file can accidentally satisfy or break the assertions.
-    final end = src.indexOf('\n  String _draftPreviewLabel(', begin);
-    expect(end, greaterThan(begin));
-    startCall = src.substring(begin, end);
+    final rest = screen.substring(begin);
+    final end = rest.indexOf('\n  Future<');
+    startCall = end > 0 ? rest.substring(0, end) : rest;
   });
 
-  test('the preflight is awaited before anything else happens', () {
-    expect(startCall, contains('await CallPreflightSheet.show('),
-        reason: 'the preflight is gone — Call would ring somebody again');
-  });
+  test('nothing is awaited before the call is placed', () {
+    // The defining property of the new behaviour: pressing Call reaches
+    // startLive without waiting on a person to answer a question first.
+    final live = startCall.indexOf('.startLive(');
+    expect(live, greaterThan(-1), reason: 'startLive must still be the act');
 
-  test('a non-proceed answer returns before any session is created', () {
-    final guard = startCall.indexOf('if (proceed != true');
-    expect(guard, greaterThan(-1),
-        reason: 'the preflight result is not checked, so "Not now" would '
-            'still start the call');
-
-    final show = startCall.indexOf('CallPreflightSheet.show(');
-    expect(show, lessThan(guard),
-        reason: 'the guard runs before the preflight is even shown');
-
-    // The guard must actually return, not merely log.
-    final afterGuard = startCall.substring(guard, guard + 120);
-    expect(afterGuard, contains('return'),
-        reason: 'declining did not abort the call');
-  });
-
-  test('startLive is reached ONLY after the guard', () {
-    final guard = startCall.indexOf('if (proceed != true');
-    final startLive = startCall.indexOf('.startLive(');
-    expect(startLive, greaterThan(-1),
-        reason: 'the call is no longer started here; re-point this invariant');
-    expect(startLive, greaterThan(guard),
-        reason: 'THE REGRESSION THIS PREVENTS: a session is created, and the '
-            'recipient rung, before the caller has proceeded through '
-            'readiness');
-  });
-
-  test('navigation into the room also happens only after the guard', () {
-    final guard = startCall.indexOf('if (proceed != true');
-    final push = startCall.indexOf('context.push(');
-    expect(push, greaterThan(-1));
-    expect(push, greaterThan(guard),
-        reason: 'the caller was pushed into a room they had not agreed to '
-            'enter');
-  });
-
-  test('an audio call does not ask for a camera', () {
-    // Asking for permissions a call will never use is how products train
-    // people to refuse.
-    expect(startCall, contains("wantsCamera: video"),
-        reason: 'the preflight requests a camera regardless of call kind');
-  });
-
-  test('the person being called is named from governed identity', () {
-    // §13: never "User", "Member", "Someone" or "Guest" where a real name
-    // exists.
-    expect(startCall, contains('conversationDisplayName('),
-        reason: 'the preflight no longer names who is being called');
-    for (final placeholder in ["'User'", "'Someone'", "'Guest'", "'Member'"]) {
-      expect(startCall, isNot(contains(placeholder)),
-          reason: 'a placeholder identity appeared in the call preflight');
+    final before = startCall.substring(0, live);
+    for (final blocker in const [
+      'showModalBottomSheet',
+      'showDialog',
+      'CallPreflightSheet',
+    ]) {
+      expect(before.contains(blocker), isFalse,
+          reason: 'a call must not wait on "$blocker" before it is placed');
     }
+  });
+
+  test('the preflight sheet is gone from the product entirely', () {
+    expect(
+      File('lib/core/media/call_preflight_sheet.dart').existsSync(),
+      isFalse,
+      reason: 'the gate was deleted, not merely bypassed — leaving it behind '
+          'invites it back',
+    );
+    expect(screen.contains('call_preflight_sheet'), isFalse);
+  });
+
+  test('device readiness still exists, because the concern was real', () {
+    // Removing the GATE must not remove the JUDGEMENT. CallReadiness classifies
+    // a refused permission, a missing device and a device held by another app
+    // differently, and a call surface needs that to say anything useful.
+    expect(File('lib/core/media/call_readiness.dart').existsSync(), isTrue);
+    final readiness =
+        File('lib/core/media/call_readiness.dart').readAsStringSync();
+    // The bounded probe stays: getUserMedia is not guaranteed to settle, and an
+    // unanswered permission prompt must become an honest answer rather than a
+    // screen that never changes.
+    expect(readiness, contains('_probeTimeout'));
+    expect(readiness, contains('DevicePermissionState.unknown'));
   });
 }

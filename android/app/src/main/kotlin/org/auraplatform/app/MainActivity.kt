@@ -84,6 +84,18 @@ class MainActivity : FlutterActivity() {
                 }
             }
 
+        // WHERE THE CALL IS ACTUALLY BEING HEARD.
+        //
+        // Read-only. flutter_webrtc selects the route; this reports what the
+        // operating system says came of that, because a request can be refused,
+        // substituted, or overridden the moment a headset connects — and a
+        // picker that displays its own intentions would show a confident wrong
+        // answer instead of the truth.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, AudioRoute.CHANNEL)
+            .setMethodCallHandler { call, result ->
+                AudioRoute.handle(applicationContext, call, result)
+            }
+
         // TRACK C — NATIVE CALL LIFECYCLE. Registered here, but Telecom
         // registration itself happens on the first call rather than at app
         // start: putting Aura in the system's calling-account settings for

@@ -17,6 +17,8 @@ import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/navigation/navigation_authority.dart';
 import '../../../core/services/call_presence_bridge.dart';
+import '../../../core/media/audio_output.dart';
+import '../../../core/media/audio_output_controller.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_design_system.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -27,6 +29,7 @@ import '../../../core/trust/trust_marks.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../institutions/live_rooms/institution_session_meta.dart';
 import '../../search/search_repository.dart';
+import 'audio_output_sheet.dart';
 import '../application/caller_ringback_provider.dart';
 import '../application/realtime_controller.dart';
 import '../application/realtime_providers.dart';
@@ -84,6 +87,19 @@ const _kPanelMore = 'more';
 /// mobile-native (`Helper.setSpeakerphoneOn`); showing it elsewhere would be
 /// a control with no effect. `kIsWeb` is checked first — `Platform.*` throws
 /// on web.
+/// The icon for a route the platform reported. Null when it reported nothing,
+/// so the caller can keep the speaker toggle's own icon rather than invent one.
+IconData? _audioRouteIcon(AudioOutputRoute? route) {
+  if (route == null) return null;
+  return switch (route.kind) {
+    AudioOutputKind.earpiece => Icons.hearing_rounded,
+    AudioOutputKind.speaker => Icons.volume_up_rounded,
+    AudioOutputKind.bluetooth => Icons.bluetooth_audio_rounded,
+    AudioOutputKind.wiredHeadset => Icons.headset_rounded,
+    AudioOutputKind.other => Icons.speaker_rounded,
+  };
+}
+
 bool get _supportsSpeakerphoneToggle {
   if (kIsWeb) return false;
   return Platform.isIOS || Platform.isAndroid;
@@ -284,11 +300,25 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         ref.read(realtimeControllerProvider.notifier).hydrateSession(id),
       );
     });
+
+    // WATCH THE AUDIO ROUTE WHILE THE CALL IS ON SCREEN.
+    //
+    // Routes change without Aura doing anything — a headset connects, a
+    // headset drops, the system moves the call — and Android exposes no
+    // callback for the communication device, so the only honest way to keep
+    // the control true is to keep asking. It reads local device state only,
+    // and it stops when this surface goes away.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(audioOutputControllerProvider.notifier).start();
+    });
   }
 
 
   @override
   void dispose() {
+    // The route watcher belongs to this surface, not to the app.
+    ref.read(audioOutputControllerProvider.notifier).stop();
     // WHY DID THE ROOM GO AWAY?
     //
     // Founder, 2026-08-28, during an induced outage: "call screen
@@ -1025,6 +1055,14 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     // present the moment the session is, and falls back to /auth/me's retained
     // value. It has no loading state.
     final myUserId = ref.watch(currentUserIdProvider);
+
+    // LOCAL DEVICE STATE, WATCHED WHILE A CALL IS ON SCREEN.
+    //
+    // Audio output is not call truth: choosing a different speaker changes no
+    // phase, no acceptance, no media-established fact and nothing in anybody's
+    // history. It is watched here purely so the control can show where the
+    // sound actually is, and it stops when this surface goes away.
+    final audioOut = ref.watch(audioOutputControllerProvider);
     final isMeetingSession =
         state.session?.surfaceType == RealtimeSurfaceType.meeting;
 
@@ -1275,6 +1313,14 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                             speakerOn: state.speakerphoneEnabled,
                             onToggleSpeaker: () =>
                                 unawaited(controller.toggleSpeakerphone()),
+                            // The platform's answer, not ours. When it cannot
+                            // say, these stay null and the button keeps its
+                            // existing two-word behaviour.
+                            audioRouteLabel: audioOut.current?.label,
+                            audioRouteIcon: _audioRouteIcon(audioOut.current),
+                            onChooseAudioOutput: audioOut.hasChoice
+                                ? () => unawaited(AudioOutputSheet.show(context))
+                                : null,
                             onMore: () => _togglePanel(_kPanelMore, wide),
                             isEndCall: isHost,
                             isEnding: state.isEndingCall,
@@ -3672,6 +3718,9 @@ class _CallControlDock extends StatelessWidget {
     this.isEnding = false,
     this.showSpeakerToggle = false,
     this.speakerOn = false,
+    this.audioRouteLabel,
+    this.audioRouteIcon,
+    this.onChooseAudioOutput,
     this.onToggleSpeaker,
     this.isScreenSharing = false,
     this.isTogglingScreenShare = false,
@@ -3718,6 +3767,15 @@ class _CallControlDock extends StatelessWidget {
   /// on platforms where the toggle actually does something (mobile-native).
   final bool showSpeakerToggle;
   final bool speakerOn;
+
+  /// The route the PLATFORM reports, when this device can answer. Null falls
+  /// back to the speaker toggle's own two words.
+  final String? audioRouteLabel;
+  final IconData? audioRouteIcon;
+
+  /// Present only when there is genuinely more than one route to choose
+  /// between; otherwise the button keeps toggling as before.
+  final VoidCallback? onChooseAudioOutput;
   final VoidCallback? onToggleSpeaker;
 
   @override
@@ -3823,15 +3881,26 @@ class _CallControlDock extends StatelessWidget {
               const SizedBox(width: AuraSpace.s8),
             ],
 
-            // Speaker (mobile-native only — 2026-08-14 repair)
+            // ── WHERE THE CALL IS BEING HEARD ────────────────────────
+            //
+            // ONE control, not several. It shows the route the platform says is
+            // in use, and opening it lists the routes that actually exist.
+            //
+            // It replaces a binary speaker toggle, which could not express a
+            // third output: with a Bluetooth headset connected there are at
+            // least three legitimate places a call can play, and a two-state
+            // switch left the person with no way to move it. On a device with
+            // nothing to choose between, it stays the toggle it always was —
+            // an "Audio" menu offering one option would be theatre.
             if (showSpeakerToggle) ...[
               _DockButton(
-                icon: speakerOn
-                    ? Icons.volume_up_rounded
-                    : Icons.hearing_rounded,
-                label: speakerOn ? 'Speaker' : 'Earpiece',
+                icon: audioRouteIcon ??
+                    (speakerOn
+                        ? Icons.volume_up_rounded
+                        : Icons.hearing_rounded),
+                label: audioRouteLabel ?? (speakerOn ? 'Speaker' : 'Earpiece'),
                 active: speakerOn,
-                onPressed: onToggleSpeaker ?? () {},
+                onPressed: onChooseAudioOutput ?? onToggleSpeaker ?? () {},
               ),
               const SizedBox(width: AuraSpace.s8),
             ],

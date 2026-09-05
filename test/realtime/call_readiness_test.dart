@@ -154,40 +154,20 @@ void main() {
     //
     // It fitted on the Pixel's tall screen, which is exactly why a phone-only
     // check would have missed it.
-    test('the sheet is bounded and its content scrolls', () {
-      final src = File(
-        'lib/core/media/call_preflight_sheet.dart',
-      ).readAsStringSync();
-      expect(src, contains('maxHeight: maxSheet'),
-          reason: 'the sheet is unbounded again and can exceed the viewport');
-      expect(src, contains('SingleChildScrollView'),
-          reason: 'the content cannot scroll, so anything overflowing is lost');
-      expect(src, contains('height: previewHeight'),
-          reason: 'the preview is uncapped and can crowd out the actions');
-      // Asserted on the values rather than the formatting: dart format wraps
-      // the clamp across lines.
-      expect(src, contains('previewHeight'));
-      expect(src, contains('120.0'),
-          reason: 'the preview lower bound is gone');
-      expect(src, contains('240.0'),
-          reason: 'the preview cap is gone; ConstrainedBox around AspectRatio '
-              'did NOT clamp in practice, which is why it is a fixed height');
-    });
-
-    test('the decision controls stay OUTSIDE the scrollable', () {
-      // A control that decides whether to start a call must not be able to
-      // scroll away — that is the same defect wearing a scrollbar.
-      final src = File(
-        'lib/core/media/call_preflight_sheet.dart',
-      ).readAsStringSync();
-      final scrollEnd = src.indexOf('const SizedBox(height: AuraSpace.s20),',
-          src.indexOf('SingleChildScrollView'));
-      final notNow = src.indexOf("'Not now'");
-      final confirm = src.indexOf('widget.confirmLabel');
-      expect(notNow, greaterThan(scrollEnd),
-          reason: 'the cancel control moved inside the scrollable');
-      expect(confirm, greaterThan(scrollEnd),
-          reason: 'the confirm control moved inside the scrollable');
-    });
+    // ── THE SHEET THESE GUARDED IS GONE ─────────────────────────────────
+    //
+    // Two tests lived here, and both were earned: a real defect where the
+    // preflight sheet grew past a short viewport and pushed "Start video call"
+    // and "Not now" off the bottom with no way to scroll to them, so the call
+    // could neither be started nor dismissed.
+    //
+    // The sheet itself was deleted on 2026-09-05 — tapping Call now places the
+    // call — so there is no bounded-height or scroll-region invariant left to
+    // hold. They are removed rather than repointed at something they were never
+    // about; the layout lesson belongs to whatever sheet is written next, not
+    // to a file that no longer exists.
+    //
+    // What the sheet was FOR is still tested: `CallReadiness` classification
+    // above, and the bounded device probe, which is where the honesty lived.
   });
 }
