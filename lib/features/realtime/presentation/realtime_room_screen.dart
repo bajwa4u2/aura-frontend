@@ -128,6 +128,10 @@ class RealtimeRoomScreen extends ConsumerStatefulWidget {
 }
 
 class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
+  /// Session whose identity gap has already been reported, so a rebuild
+  /// storm cannot turn one finding into a flood.
+  String? _identityGapReported;
+
   bool _didBoot = false;
   // A5: removed local _isEnding — UI now reads state.isEndingCall, the
   // single authoritative flag set by RealtimeController.endCall().
@@ -1007,12 +1011,41 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     // silently breaking host detection (Leave instead of End), the
     // participant-role lookup, and the in-call Go Live control's
     // eligibility check. One shared resolver now, everywhere.
-    final myUserId = meAsync.maybeWhen(
-      data: readUserIdFromAuthMe,
-      orElse: () => '',
-    );
+    // IDENTITY WITHOUT A LOADING STATE.
+    //
+    // This read `/auth/me` alone, through `maybeWhen(data:, orElse: '')` — so
+    // while that request was in flight, or refreshing in place, this client did
+    // not know who it was. Every surface here that identifies people by
+    // "whoever is not me" then excluded nobody: the caller and the answerer
+    // were each shown their OWN name as the person on the other end. Caught on
+    // a real device, 2026-09-05, with the roster complete and both ids present
+    // — the roster was never the problem.
+    //
+    // `currentUserIdProvider` answers from the access token first, which is
+    // present the moment the session is, and falls back to /auth/me's retained
+    // value. It has no loading state.
+    final myUserId = ref.watch(currentUserIdProvider);
     final isMeetingSession =
         state.session?.surfaceType == RealtimeSurfaceType.meeting;
+
+    // WHY AN IDENTITY WAS UNKNOWN, IF IT WAS.
+    //
+    // Naming the other party depends on knowing which roster entry is you, and
+    // that has now failed twice in this file for two different reasons: once
+    // because /auth/me nests the person under `user`, and once because the
+    // roster entry carried no userId at all. Both look identical from the
+    // outside — a screen that names the wrong person — so this records which
+    // one it was, once per session, instead of leaving the next report to
+    // guesswork.
+    if (myUserId.isEmpty && _identityGapReported != state.sessionId) {
+      _identityGapReported = state.sessionId;
+      debugPrint(
+        '[identity-diag] my userId is EMPTY in the call room '
+        'session=${state.sessionId} meAsync=${meAsync.runtimeType} '
+        'participants=${state.participants.length} '
+        'rosterIds=${state.participants.map((p) => (p.userId).isEmpty ? "<empty>" : "set").join(",")}',
+      );
+    }
 
     RealtimeParticipant? myParticipant;
     for (final p in state.participants) {
@@ -2564,12 +2597,31 @@ class _PreConnectStage extends StatelessWidget {
 
   /// The person on the other end. A call is with someone, and saying so is the
   /// difference between waiting and waiting for a named human.
+  ///
+  /// ── YOU CANNOT SAY WHO SOMEONE ELSE IS UNTIL YOU KNOW WHO YOU ARE ──────
+  ///
+  /// This excluded self by comparing against [myUserId] — and [myUserId] comes
+  /// from an async provider that reads `''` until it resolves. An empty string
+  /// matches nobody, so "the first participant who is not me" returned the
+  /// FIRST PARTICIPANT: during a ring, when the other person has not joined the
+  /// room yet, the only participant on the roster is you.
+  ///
+  /// So the caller was shown their own name over "Ringing…", and the person
+  /// answering was shown their own name over "Connecting…" — each side told it
+  /// was calling itself. Reported from a real device, 2026-09-05.
+  ///
+  /// An unknown identity now names NOBODY. A call that says "Ringing…" with no
+  /// name is waiting honestly; a call that says "Ringing… you" is a lie about
+  /// who is on the other end, and the surface whose entire job is to say who
+  /// you are talking to must not guess at it.
   String get _otherPartyName {
+    final me = myUserId.trim();
+    if (me.isEmpty) return '';
     for (final p in state.participants) {
-      if (p.userId != myUserId) {
-        final name = (p.displayName ?? '').trim();
-        if (name.isNotEmpty) return name;
-      }
+      if (p.userId.trim().isEmpty) continue;
+      if (p.userId.trim() == me) continue;
+      final name = (p.displayName ?? '').trim();
+      if (name.isNotEmpty) return name;
     }
     return '';
   }
@@ -2967,9 +3019,18 @@ class _VideoGrid extends StatelessWidget {
 
     // Exactly one other person on the roster and one remote stream: the
     // mapping is unambiguous even if the socket id has since rotated.
-    final others = participants
-        .where((p) => p.userId.isNotEmpty && p.userId != myUserId)
-        .toList();
+    //
+    // Only once this client knows who IT is. `myUserId` reads '' until its
+    // async provider resolves, and an empty string excludes nobody — so this
+    // would happily call the local participant "the other person" and label a
+    // remote stream with the viewer's own name.
+    final me = myUserId.trim();
+    final others = me.isEmpty
+        ? const <RealtimeParticipant>[]
+        : participants
+            .where((p) =>
+                p.userId.trim().isNotEmpty && p.userId.trim() != me)
+            .toList();
     if (others.length == 1 && remoteRenderers.length == 1) {
       return _nameOf(others.first);
     }

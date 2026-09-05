@@ -146,10 +146,62 @@ String readUserIdFromAuthMe(Map<String, dynamic> me) {
   return (me['id'] ?? '').toString().trim();
 }
 
+/// WHO THIS CLIENT IS — ANSWERABLE WITHOUT WAITING.
+///
+/// `/auth/me` is a network call, so anything that reads identity only from it
+/// has a window where the answer is "unknown". That window is not theoretical:
+/// on a real device, 2026-09-05, the call room built while `authMeDataProvider`
+/// was still `AsyncLoading` and every surface that identifies people by
+/// "whoever is not me" excluded nobody. Both people were shown their OWN name
+/// as the person they were calling.
+///
+/// The access token already carries the answer and is present the moment the
+/// session is, so it is asked first. `/auth/me` remains the authority for
+/// everything ELSE about the person; it is simply not the fastest way to learn
+/// their id, and identity is needed before it arrives.
+///
+/// `.valueOrNull` rather than `maybeWhen(data:)` for the fallback, because a
+/// provider refreshing in place still holds its previous value and discarding
+/// it would reintroduce the same gap on every refresh.
 final currentUserIdProvider = Provider<String>((ref) {
+  final store = ref.watch(tokenStoreProvider);
+  final fromToken = readUserIdFromAccessToken(store.accessToken);
+  if (fromToken.isNotEmpty) return fromToken;
+
   final me = ref.watch(authMeDataProvider).valueOrNull;
   return me == null ? '' : readUserIdFromAuthMe(me);
 });
+
+/// The member id carried by an access token, or '' when there is none.
+///
+/// A guest token has no member identity and must return '' rather than a guest
+/// session id — a guest is not a member, and passing one off as a member id
+/// would put the wrong person into every "is this me?" comparison.
+///
+/// Pure and synchronous, so identity never has a loading state.
+String readUserIdFromAccessToken(String? token) {
+  final t = (token ?? '').trim();
+  if (t.isEmpty) return '';
+  try {
+    final parts = t.split('.');
+    if (parts.length != 3) return '';
+    final payload = jsonDecode(
+      utf8.decode(base64Url.decode(base64Url.normalize(parts[1]))),
+    );
+    if (payload is! Map) return '';
+    if (payload['type'] == 'guest') return '';
+    // `sub` is the standard claim; the others are accepted because this is
+    // read-only inference about our OWN token, and being wrong here means
+    // showing no name rather than the wrong one.
+    for (final key in const ['sub', 'userId', 'id']) {
+      final value = (payload[key] ?? '').toString().trim();
+      if (value.isNotEmpty) return value;
+    }
+    return '';
+  } catch (_) {
+    return '';
+  }
+}
 
 /// Email verification / auth validity check.
 ///

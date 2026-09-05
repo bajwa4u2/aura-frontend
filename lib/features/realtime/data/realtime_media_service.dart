@@ -1225,6 +1225,26 @@ class RealtimeMediaService {
   /// Whether this session's media moves through the stage transport.
   bool get usesStageTransport => _stage != null;
 
+  /// Bytes of media this device has actually RECEIVED and decoded, or null
+  /// when there is no transport to ask.
+  ///
+  /// Local truth, available without the server's opinion. It exists so a client
+  /// can tell "the call has not connected" apart from "the call connected and
+  /// the report went missing" — which look identical from the phase alone, and
+  /// which need opposite answers.
+  Future<int?> inboundMediaBytes() async {
+    final stage = _stage;
+    if (stage == null) return null;
+    try {
+      final stats = await stage.stats();
+      return stats.inboundBytes;
+    } catch (_) {
+      // Unknown is not zero. A stats read that failed must not be reported as
+      // "nothing is arriving".
+      return null;
+    }
+  }
+
   /// Is THIS transport still the live one?
   ///
   /// `usesStageTransport` answers presence, not health, and a DEAD transport

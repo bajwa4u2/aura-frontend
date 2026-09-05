@@ -205,6 +205,22 @@ class SfuRealtimeTransport implements RealtimeTransport {
     String trigger = 'UNKNOWN',
   }) {
     _sessionId = sessionId; // so the trace can be attributed before open runs
+    // ONE CALL, ONE FIRST-MEDIA REPORT — AND A NEW CALL GETS ITS OWN.
+    //
+    // `_mediaFlowingReported` stops a single session reporting first-media
+    // twice. It is per-TRANSPORT, and a transport that is reused for a second
+    // call carried the first call's spent latch into it — so the second call's
+    // media, however much of it arrived, was never reported and the authority
+    // held that call at CONNECTING.
+    //
+    // Measured on a real device, 2026-09-05: one endpoint reported
+    // `stage-inbound-rtp-bytes=84291` and the other, whose transport had
+    // carried over from the audio call a minute earlier, reported nothing at
+    // all. Opening for a session is exactly the moment that latch stops
+    // belonging to anyone.
+    _mediaFlowingReported = false;
+    _lastLivenessBytes = -1;
+    _stallTicks = 0;
     return _traced('OPEN', trigger, () => _open(sessionId: sessionId, local: local));
   }
 

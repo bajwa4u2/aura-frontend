@@ -1162,9 +1162,8 @@ class RealtimeController extends StateNotifier<RealtimeState>
   }
 
   Future<void> leave() async {
-    // One call, one report. Leaving retires the latch so the next call
-    // reports its own media rather than inheriting this one's.
-    _reportedMediaEstablished = false;
+    // Retired in _terminateSession, which every exit from a call passes
+    // through — including this one.
     if (_terminating) return;
     final sessionId = (state.sessionId ?? '').trim();
     if (sessionId.isEmpty) return;
@@ -1968,9 +1967,33 @@ class RealtimeController extends StateNotifier<RealtimeState>
         // normal phone call, with the explicit speaker toggle available
         // to switch. No-ops on web/desktop (no speakerphone concept
         // there — the OS/browser's own output routing is untouched).
-        if (wantsVideo) {
-          unawaited(_mediaService.setSpeakerphoneEnabled(true));
-        }
+        //
+        // ── A DEFAULT THAT WAS ONLY EVER A COMMENT ─────────────────────
+        //
+        // The paragraph above described BOTH defaults; the code applied one.
+        // `if (wantsVideo)` meant an audio call asserted no route at all and
+        // simply inherited whatever the OS happened to have — which is not
+        // reliably anything.
+        //
+        // Measured on a real device, 2026-09-05, from the platform's own
+        // routing log:
+        //
+        //   :11.158  call audio routed to bt_sco  (a paired headset)
+        //   :11.556  onBluetoothHfpAudioDisconnected -> device: null
+        //   :11.560  preferredCommunicationDevice: null
+        //   :14.222  still null
+        //   :51.782  setSpeakerphoneOn(true)      (the person, 40s later)
+        //
+        // For forty seconds that call had NO output device. Media was
+        // arriving and correctly bound the whole time — both endpoints
+        // recorded inbound RTP — so every layer this authority governs was
+        // telling the truth. The person simply could not hear it, because
+        // nothing had said where to play it.
+        //
+        // Asserting the default makes it real rather than aspirational: a
+        // voice call claims the earpiece, exactly as the paragraph always
+        // said it did.
+        unawaited(_mediaService.setSpeakerphoneEnabled(wantsVideo));
       }
 
       state = state.copyWith(
@@ -2375,6 +2398,42 @@ class RealtimeController extends StateNotifier<RealtimeState>
   Timer? _connectionWindowTimer;
   String? _connectionWindowSessionId;
 
+  /// A FAILURE THAT IS NO LONGER TRUE MUST NOT KEEP BEING SHOWN.
+  ///
+  /// [CallConnectionFailure] means "this attempt is not going to succeed". The
+  /// moment the call actually connects, or the moment this client moves to a
+  /// different call, that sentence stops being true — and a screen still saying
+  /// "Not connected" over a working conversation is a worse lie than the
+  /// indefinite "Connecting…" it replaced, because it contradicts what the
+  /// person can plainly hear.
+  ///
+  /// Observed in the first real production call, 2026-09-05: a call held at
+  /// CONNECTING by a separate defect tripped the connection window; rejoining
+  /// then genuinely connected, and the ribbon went on reading "Not connected".
+  ///
+  /// Reconciled here rather than at each `copyWith` site, because the rule is
+  /// about the state itself and not about who happened to build it. Doing it in
+  /// the setter also means it cannot recurse: the value is corrected on its way
+  /// in, never by assigning again.
+  RealtimeState _retireStaleConnectionFailure(RealtimeState next) {
+    if (next.connectionFailure == null) return next;
+
+    final phase = next.session?.call?.phase;
+    final connected =
+        phase == CallPhase.connected || next.session?.call?.connectedAt != null;
+
+    // A different session is a different attempt, and inherits nothing.
+    // `mounted` is checked because reading `state` on a disposed notifier
+    // throws, and this runs on the way INTO every assignment — including the
+    // ones a teardown makes.
+    final movedOn = mounted && next.sessionId != super.state.sessionId;
+
+    if (connected || movedOn) {
+      return next.copyWith(clearConnectionFailure: true);
+    }
+    return next;
+  }
+
   void _updateConnectionWindow(RealtimeState next) {
     final sessionId = next.sessionId;
     final phase = next.session?.call?.phase;
@@ -2401,22 +2460,70 @@ class RealtimeController extends StateNotifier<RealtimeState>
     _connectionWindowTimer?.cancel();
     _connectionWindowSessionId = sessionId;
     _connectionWindowTimer = Timer(_connectionWindow, () {
-      if (!mounted) return;
-      final now = state;
-      // Re-read at fire time: the call may have connected or ended while this
-      // was pending, and a stale timer must never accuse a working call.
-      if (now.sessionId != sessionId) return;
-      final live = now.session?.call?.phase;
-      if (live != CallPhase.accepted && live != CallPhase.connecting) return;
-      if (now.connectionFailure != null) return;
-      state = now.copyWith(
-        connectionFailure: CallConnectionFailure.notEstablished,
-      );
+      unawaited(_closeConnectionWindow(sessionId));
     });
+  }
+
+  /// ── THE PHASE AND THE MEDIA ARE TWO DIFFERENT WORLDS ──────────────────
+  ///
+  /// The call's phase is the server's account of the call. What this device can
+  /// hear is a fact this device holds. They are supposed to agree, and when a
+  /// report goes missing they do not — and then the phase says CONNECTING while
+  /// two people are talking.
+  ///
+  /// This window used to consult the phase alone, so it announced "Call not
+  /// connected" over a conversation the person could plainly hear. Founder
+  /// observation, 2026-09-05: *"call failed audio still connected, it means
+  /// they are two worlds."* Exactly so.
+  ///
+  /// A client must never declare a call failed while it is demonstrably
+  /// receiving that call. Local media is evidence it already has, and consulting
+  /// it is not inventing a fact — it is refusing to assert a false one.
+  ///
+  /// So at the deadline this asks what actually arrived:
+  ///
+  ///   * bytes received — the call is working and the REPORT is what went
+  ///     missing, so it is sent again rather than the call being failed;
+  ///   * nothing received — the call genuinely has not connected, and it fails
+  ///     visibly as before;
+  ///   * unknown — no transport to ask, which is the same as nothing.
+  Future<void> _closeConnectionWindow(String sessionId) async {
+    if (!mounted) return;
+    var now = state;
+    // Re-read at fire time: the call may have connected or ended while this was
+    // pending, and a stale timer must never accuse a working call.
+    if (now.sessionId != sessionId) return;
+    final live = now.session?.call?.phase;
+    if (live != CallPhase.accepted && live != CallPhase.connecting) return;
+    if (now.connectionFailure != null) return;
+
+    final bytes = await _mediaService.inboundMediaBytes();
+    if (!mounted) return;
+    now = state;
+    if (now.sessionId != sessionId) return;
+    if (now.connectionFailure != null) return;
+
+    if (bytes != null && bytes > 0) {
+      // MEDIA IS ARRIVING, SO THIS CALL HAS NOT FAILED.
+      //
+      // Deliberately only a refusal to lie, not a repair. An earlier version
+      // re-sent the media report from here, which papered over a report that
+      // should never have gone missing — and it did go missing only because
+      // the report latch outlived its call, which is fixed at its source now.
+      // If this branch ever fires again it means that source has regressed,
+      // and the right outcome is a call that keeps working and a defect that
+      // stays visible, not a self-healing timer that hides it.
+      return;
+    }
+
+    state = now.copyWith(
+      connectionFailure: CallConnectionFailure.notEstablished,
+    );
   }
 
   @override
   set state(RealtimeState value) {
+    value = _retireStaleConnectionFailure(value);
     _updateConnectionWindow(value);
     RealtimeState? previous;
     if (mounted) {
@@ -2494,7 +2601,34 @@ class RealtimeController extends StateNotifier<RealtimeState>
   /// outgoing at all and ignores it otherwise, so this hook does not need to
   /// know the direction — which matters, because the media layer below is the
   /// same code for a call received and a call placed.
-  bool _reportedMediaEstablished = false;
+  /// THE SESSION WHOSE MEDIA THIS DEVICE HAS ALREADY REPORTED.
+  ///
+  /// ── WHY THIS IS AN ID AND NOT A BOOL ──────────────────────────────────
+  ///
+  /// "This device has reported media for this call" is a fact ABOUT A SESSION.
+  /// It was held in a `bool`, whose lifetime was the controller — and the
+  /// controller outlives a call. So a second call inherited the first call's
+  /// answer and never reported its own media, and the authority, correctly
+  /// refusing to invent a fact nobody sent it, held that call at CONNECTING
+  /// for its whole life while two people talked over it.
+  ///
+  /// That produced a run of bugs that all looked different and were one bug:
+  /// `endCall()` not clearing what `leave()` cleared; a reused stage transport
+  /// carrying a spent probe into the next call; a connection window then
+  /// announcing failure over a working conversation. Each was a lifetime
+  /// mismatch, and each was patched by adding another reset at another exit.
+  ///
+  /// Naming the session ends the class. A fact about session A cannot be
+  /// mistaken for a fact about session B, whatever survives in between, and no
+  /// exit has to remember anything.
+  ///
+  /// The server is idempotent here — `mediaEstablishedAt` is first-write-wins —
+  /// so this is a courtesy to the network, never the thing that makes the
+  /// record correct.
+  String? _mediaReportedForSession;
+
+  bool _hasReportedMediaFor(String sessionId) =>
+      sessionId.isNotEmpty && _mediaReportedForSession == sessionId;
 
   void _handleMediaSnapshot(RealtimeMediaSnapshot snapshot) {
     state = state.copyWith(
@@ -2520,10 +2654,37 @@ class RealtimeController extends StateNotifier<RealtimeState>
     // decides whether the call is connected, and only once BOTH sides have
     // said this. One endpoint alone hears silence and would otherwise have
     // been told the call had connected.
-    if (!_reportedMediaEstablished && _hasRemoteMedia(snapshot)) {
-      final sessionId = _managedSessionId;
+    // ── RENDERER PRESENCE IS NOT MEDIA, ON THE STAGE TRANSPORT ────────────
+    //
+    // CONNECTED means confirmed media establishment. On MESH that is what this
+    // check measures: `remoteRenderers` is filled from `onTrack`, so a renderer
+    // exists because a track was actually received.
+    //
+    // On the STAGE transport it is not. `remoteRenderersByParticipant` is
+    // filled when the subscribe BINDS, which happens before a single frame
+    // arrives — so this path reported "media established" for a renderer that
+    // had received nothing, the authority admitted CONNECTED on it, and the
+    // person sat in a "connected" video call looking at their own picture and
+    // no one else's. Observed in the first real production video call,
+    // 2026-09-05: both endpoints recorded `stage-remote-participants=1` and
+    // neither ever recorded a byte.
+    //
+    // The audio call minutes earlier is the control: with no remote renderer to
+    // find, the only path left was the byte probe, and both endpoints recorded
+    // `stage-inbound-rtp-bytes` — real decoded media. The weak path had simply
+    // been winning the race on video, every time.
+    //
+    // So the stage transport reports through its own inbound-RTP probe and
+    // nothing else. CONNECTED arrives a few seconds later there, and it is true
+    // when it does.
+    final stageOwnsEvidence = state.session?.usesStageTransport ?? false;
+    final snapshotSessionId = _managedSessionId;
+    if (!stageOwnsEvidence &&
+        !_hasReportedMediaFor(snapshotSessionId) &&
+        _hasRemoteMedia(snapshot)) {
+      final sessionId = snapshotSessionId;
       if (sessionId.isNotEmpty) {
-        _reportedMediaEstablished = true;
+        _mediaReportedForSession = sessionId;
         unawaited(_reportMediaEstablished(sessionId, snapshot));
 
         unawaited(
@@ -2588,7 +2749,11 @@ class RealtimeController extends StateNotifier<RealtimeState>
       // still hear the other side; what is lost is the server's ability to
       // mark the call connected from this end, and the next read of the
       // session will still carry whatever phase the backend did reach.
-      _reportedMediaEstablished = false;
+      //
+      // Released for THIS session only, so a later observation can try again.
+      if (_mediaReportedForSession == sessionId) {
+        _mediaReportedForSession = null;
+      }
     }
   }
 
@@ -3760,8 +3925,8 @@ class RealtimeController extends StateNotifier<RealtimeState>
           // renderer-presence check the snapshot path uses.
           onMediaFlowing: (bytes) {
             final id = _managedSessionId;
-            if (id.isEmpty || _reportedMediaEstablished) return;
-            _reportedMediaEstablished = true;
+            if (id.isEmpty || _hasReportedMediaFor(id)) return;
+            _mediaReportedForSession = id;
             unawaited(
               _repository
                   .reportMediaEstablished(
@@ -3772,8 +3937,10 @@ class RealtimeController extends StateNotifier<RealtimeState>
                     // The person can still hear the other side; what is lost is
                     // the server's ability to mark CONNECTED from this end, and
                     // the next read of the session still carries whatever phase
-                    // the backend did reach.
-                    _reportedMediaEstablished = false;
+                    // the backend did reach. Released for THIS session only.
+                    if (_mediaReportedForSession == id) {
+                      _mediaReportedForSession = null;
+                    }
                   }),
             );
           },

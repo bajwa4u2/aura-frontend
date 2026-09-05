@@ -15,7 +15,6 @@ import 'package:pasteboard/pasteboard.dart';
 import 'package:record/record.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../core/media/call_preflight_sheet.dart';
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/media/aura_attachment_card.dart';
 import '../../../core/media/aura_stored_media.dart';
@@ -1055,13 +1054,25 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   Future<void> _startCall(String kind) async {
     if (_startingCall) return;
 
-    // READINESS BEFORE THE RING — A/V reconstruction section 6.
+    // TAPPING CALL PLACES THE CALL.
     //
-    // This used to create the session and push straight into the room, so the
-    // OS permission prompt arrived mid-join with nothing explaining it, and
-    // the other person was rung before the caller knew whether they even had
-    // a working microphone. The ask now happens first, in front of the call,
-    // and the session is not created unless the person proceeds.
+    // There used to be a device sheet in front of this: tap Call, wait while
+    // the microphone and camera were checked, read a summary, then press a
+    // second button to actually start. It was added for a real reason — before
+    // it, the OS permission prompt arrived mid-join with nothing explaining it
+    // — but it answered that by making every single call cost an extra screen
+    // and an extra tap, including the overwhelming majority where the devices
+    // were fine and nobody needed telling.
+    //
+    // No phone works that way, and it did not read as care. It read as the app
+    // getting in the way of a phone call.
+    //
+    // The original concern is now met where it belongs, inside the call: the
+    // permission prompt appears over the calling screen, which is its own
+    // explanation, and a genuine device problem surfaces there with a real
+    // action next to it instead of blocking the call from ever starting.
+    // `CallReadiness` still owns that judgement and is unchanged; what is gone
+    // is the gate.
     final video = kind == 'VIDEO';
     final conversation = ref
         .read(conversationProvider(widget.conversationId))
@@ -1070,20 +1081,6 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     final who = conversation == null
         ? null
         : conversationDisplayName(conversation, myUserId);
-
-    final proceed = await CallPreflightSheet.show(
-      context,
-      // Governed identity, never "User" or "Someone" — section 13.
-      title: who == null || who.trim().isEmpty
-          ? (video ? 'Start a video call' : 'Start a call')
-          : (video ? 'Video call $who' : 'Call $who'),
-      subtitle: video
-          ? 'They will be able to see and hear you.'
-          : 'They will be able to hear you.',
-      wantsCamera: video,
-      confirmLabel: video ? 'Start video call' : 'Start call',
-    );
-    if (proceed != true || !mounted) return;
 
     setState(() => _startingCall = true);
     try {
