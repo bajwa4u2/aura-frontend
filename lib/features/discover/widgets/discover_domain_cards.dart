@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/media/aura_attachment_image.dart';
 import '../../../core/interactions/follow_invalidation.dart';
 import '../../../core/interactions/follows_repository.dart';
 import '../../../core/navigation/navigation_authority.dart';
@@ -410,16 +411,27 @@ class ArticleEditorialCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (a.coverUrl != null)
-                SizedBox(
+                // THE GOVERNED IMAGE, AND A SLOT THAT COLLAPSES.
+                //
+                // This was a raw `Image.network` on the delivery URL, and it
+                // could not fetch Aura media at all: media is RESTRICTED by
+                // default and needs a freshly signed URL, so every cover
+                // failed to `errorBuilder` and every card carried a blank
+                // 108px panel down its left edge — the bar the founder saw in
+                // Discover on 2026-09-04. Reserving width for a picture that
+                // cannot load is worse than having no picture.
+                //
+                // `AuraAttachmentImage` is the canonical reader: it takes the
+                // server's delivery URL and the media identity, and re-resolves
+                // a signed URL when the address has expired. Sizing the IMAGE
+                // rather than a wrapping box is what lets the failure case
+                // shrink to nothing and give the width back to the words.
+                AuraAttachmentImage(
+                  url: a.coverUrl!,
+                  attachmentId: a.coverMediaId,
                   width: 108,
-                  child: Image.network(
-                    a.coverUrl!,
-                    fit: BoxFit.cover,
-                    // A cover that fails to load must not break the card: the
-                    // article is still readable without its picture.
-                    errorBuilder: (_, __, ___) =>
-                        Container(color: AuraSurface.subtle),
-                  ),
+                  fit: BoxFit.cover,
+                  errorWidget: (_) => const SizedBox.shrink(),
                 ),
               Expanded(
                 child: Padding(
