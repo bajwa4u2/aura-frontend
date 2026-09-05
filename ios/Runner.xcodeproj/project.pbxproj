@@ -19,6 +19,7 @@
 		ADC44DCF883B7121C63C327E /* ShareExtension.appex in "Embed App Extensions" */ = {isa = PBXBuildFile; fileRef = 50DF4CFCBE1218F582ED90D3 /* ShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		CA11C0DE0000000000004201 /* CallCapabilityPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11C0DE0000000000004202 /* CallCapabilityPolicy.swift */; };
 		CA11C0DE0000000000004301 /* SecureStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11C0DE0000000000004302 /* SecureStore.swift */; };
+		CA11C0DE0000000000004401 /* TimezoneChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA11C0DE0000000000004402 /* TimezoneChannel.swift */; };
 		FBFBFBFB000000000000FBFB /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = FBFBFBFC000000000000FBFC /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
 
@@ -86,6 +87,7 @@
 		AE0B46E8941E8A16BBC34430 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "\"<group>\""; };
 		CA11C0DE0000000000004202 /* CallCapabilityPolicy.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CallCapabilityPolicy.swift; sourceTree = "<group>"; };
 		CA11C0DE0000000000004302 /* SecureStore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SecureStore.swift; sourceTree = "<group>"; };
+		CA11C0DE0000000000004402 /* TimezoneChannel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TimezoneChannel.swift; sourceTree = "<group>"; };
 		FAFAFAFA000000000000FAFA /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		FBFBFBFC000000000000FBFC /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -171,6 +173,7 @@
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				CA11C0DE0000000000004202 /* CallCapabilityPolicy.swift */,
 				CA11C0DE0000000000004302 /* SecureStore.swift */,
+				CA11C0DE0000000000004402 /* TimezoneChannel.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 				FAFAFAFA000000000000FAFA /* Runner.entitlements */,
 				61C9464898E7C83BA7861D6C /* ShareIntake.swift */,
@@ -365,6 +368,7 @@
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				CA11C0DE0000000000004201 /* CallCapabilityPolicy.swift in Sources */,
 				CA11C0DE0000000000004301 /* SecureStore.swift in Sources */,
+				CA11C0DE0000000000004401 /* TimezoneChannel.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
 				08EE4BDBBEEA998C312CEFD4 /* ShareIntake.swift in Sources */,
 			);
