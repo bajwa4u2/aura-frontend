@@ -1,3 +1,6 @@
+import 'dart:io' show Platform;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../../core/auth/session_providers.dart';
 import '../../realtime/domain/call_state.dart';
 import '../../correspondence/data/correspondence_live_service.dart';
@@ -1979,30 +1982,36 @@ class _MessageBubble extends ConsumerWidget {
         ? _conversationSenderName(conversation, message.senderUserId)
         : null;
 
+    void openActions() => showMessageActionSheet(
+          context,
+          message: message,
+          mine: mine,
+          onAction: onAction,
+          onReact: onReact,
+        );
+
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-      child: GestureDetector(
-        // Message actions — Reply/Copy/Translate for everyone; Report
-        // (canonical moderation authority, frozen hook) for another
-        // party's message. Long-press is the touch ergonomic; right-click
-        // is the desktop one (messenger parity) — same sheet either way.
-        // Touch and pointer open the SAME sheet, so the two platforms
-        // cannot drift apart on what a message can do.
-        onLongPress: () => showMessageActionSheet(
-          context,
-          message: message,
-          mine: mine,
-          onAction: onAction,
-          onReact: onReact,
-        ),
-        onSecondaryTap: () => showMessageActionSheet(
-          context,
-          message: message,
-          mine: mine,
-          onAction: onAction,
-          onReact: onReact,
-        ),
-        child: Container(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        // The opener sits INBOARD — left of my own messages, right of
+        // everyone else's — so it never crowds the screen edge and does not
+        // move as bubbles change width.
+        textDirection: mine ? TextDirection.rtl : TextDirection.ltr,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Desktop only. A phone should not carry a control beside every line
+          // it has ever received; there the long press is the affordance, and
+          // the body gives it up so that it can arrive.
+          if (_messageActionsNeedAButton)
+            _MessageActionOpener(onPressed: openActions),
+          Flexible(
+            child: GestureDetector(
+              // Both gestures stay: where they work they are the faster way
+              // in. What changed is that neither is the ONLY way in any more.
+              onLongPress: openActions,
+              onSecondaryTap: openActions,
+              child: Container(
           margin: const EdgeInsets.symmetric(vertical: 3),
           padding: const EdgeInsets.symmetric(
             horizontal: AuraSpace.s14,
@@ -2127,9 +2136,21 @@ class _MessageBubble extends ConsumerWidget {
                   const SizedBox(height: AuraSpace.s6),
                 ],
                 if (message.body.trim() != '…' || message.media.isEmpty)
-                  SelectableText.rich(
-                    _conversationRichBody(context, message.body, conversation),
-                  ),
+                  // SELECTION AND ACTIONS BOTH WANT THE LONG PRESS.
+                  //
+                  // On a phone the actions win. They are the whole interaction
+                  // surface of a message, and dragging to select a few words
+                  // inside one bubble is a rare want that the sheet's own
+                  // "Copy text" already answers.
+                  //
+                  // On desktop nothing is contested: the visible opener
+                  // carries the actions, so the text stays selectable, which
+                  // is what somebody with a mouse and a keyboard wants.
+                  _messageActionsNeedAButton
+                      ? SelectableText.rich(_conversationRichBody(
+                          context, message.body, conversation))
+                      : Text.rich(_conversationRichBody(
+                          context, message.body, conversation)),
               ],
               if (message.linkPreview != null) ...[
                 const SizedBox(height: AuraSpace.s6),
@@ -2166,7 +2187,10 @@ class _MessageBubble extends ConsumerWidget {
               MessageReactionBar(message: message, onToggle: onReact),
             ],
           ),
-        ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -2175,6 +2199,68 @@ class _MessageBubble extends ConsumerWidget {
 /// Attachment renderer: resolves the visibility-checked delivery URL from
 /// the canonical Media authority and renders by kind — inline image,
 /// playable voice note, tap-to-play video — with an honest chip fallback.
+/// WHETHER THIS PLATFORM NEEDS A VISIBLE WAY INTO A MESSAGE'S ACTIONS.
+///
+/// ── THE DEFECT BEHIND THIS ────────────────────────────────────────────────
+///
+/// Actions had only a long press and a right click. On a phone the long press
+/// never arrived: the message body is `SelectableText`, and Flutter's text
+/// selection claims that gesture for itself — so the operating system's
+/// Copy / Share / Select all bar came up instead of Aura's sheet.
+///
+/// Everything behind it was unreachable on Android: Reply, Forward, Edit, Copy
+/// text, Translate, Report, Retract for everyone, Remove for me, and all five
+/// reactions. The entire interaction surface of a message, on the platform most
+/// people will use it from. Desktop and web never showed it, because a right
+/// click is not a gesture selection wants. Observed on a physical Pixel 9a,
+/// 2026-09-05.
+///
+/// ── THE SPLIT, WHICH IS NOT A COMPROMISE ──────────────────────────────────
+///
+/// Founder ruling, same day: three dots on desktop, not on Android or iOS.
+///
+/// A phone already has a gesture meaning "do something with this", and should
+/// not repeat a control beside every line ever received. So on touch the body
+/// gives the long press back by not being selectable, and "Copy text" in the
+/// sheet covers what that costs.
+///
+/// A desktop has no long press worth the name, and a right click is not
+/// discoverable — nobody right-clicks a message to find out whether they may.
+/// So there the actions get a small visible control, and because the control
+/// carries them, the text stays selectable.
+bool get _messageActionsNeedAButton {
+  if (kIsWeb) return true;
+  try {
+    return Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+  } catch (_) {
+    return false;
+  }
+}
+
+/// THE OPENER. Deliberately small and quiet: it sits beside every message, so
+/// anything louder would read as decoration on a busy thread.
+class _MessageActionOpener extends StatelessWidget {
+  const _MessageActionOpener({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(14),
+      child: const Padding(
+        padding: EdgeInsets.all(4),
+        child: Icon(
+          Icons.more_vert_rounded,
+          size: 16,
+          color: AuraSurface.faint,
+        ),
+      ),
+    );
+  }
+}
+
 class _ConversationAttachment extends ConsumerWidget {
   const _ConversationAttachment({required this.media});
   final MessageMediaRef media;
