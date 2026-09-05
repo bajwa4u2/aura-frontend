@@ -215,7 +215,7 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '  # itself is not a fix.' \
 '  #' \
 '  # The backend answers with the SAME shell and the SAME bundle, with this' \
-'  # page's own metadata substituted in. One document for everyone: no' \
+'  # metadata of THIS page substituted in. One document for everyone: no' \
 '  # user-agent branching, no crawler-only copy, no redirect, no second' \
 '  # page.' \
 '  #' \
