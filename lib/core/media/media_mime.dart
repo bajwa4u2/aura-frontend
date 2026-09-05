@@ -117,8 +117,20 @@ String? sniffMimeFromBytes(Uint8List? bytes) {
       case 'm4a ':
         return 'audio/mp4';
       default:
-        // isom / mp42 / avc1 and friends are all MP4 video.
-        return 'video/mp4';
+        // THE BRAND DOES NOT SAY WHETHER THERE IS A PICTURE.
+        //
+        // This returned `video/mp4` for every brand it did not recognise, and
+        // that turned Aura's own voice notes into videos. Android records them
+        // with `MediaRecorder` as AAC in an MPEG-4 container, which is stamped
+        // `isom` or `mp42` — never `m4a `. The recorder declared `audio/mp4`
+        // honestly, the sniffer overruled it to `video/mp4` because bytes
+        // outrank a declaration, and the message then rendered as a video
+        // card. Founder-observed on a Pixel, 2026-09-04.
+        //
+        // The rule was right and the reading was too shallow. `isom` says the
+        // file is ISO base media; it says nothing about its tracks. So this
+        // reads the tracks.
+        return _isoBaseMediaTrackMime(b);
     }
   }
 
@@ -138,6 +150,48 @@ String? sniffMimeFromBytes(Uint8List? bytes) {
   // caller falls through to it.
   if (at(0, [0x50, 0x4B, 0x03, 0x04])) return null;
 
+  return null;
+}
+
+/// WHAT AN ISO BASE MEDIA FILE ACTUALLY CONTAINS.
+///
+/// `isom`, `mp42`, `avc1` and friends are container brands, and a container
+/// brand is not a content type: the same brand covers a film and a voice note.
+/// Deciding from the brand alone is how Aura's own voice notes became videos.
+///
+/// So this reads the track handlers, which is where the answer actually lives.
+/// Every track carries an `hdlr` box, and its handler type is `vide` for
+/// picture and `soun` for sound:
+///
+///     [size 4][ 'hdlr' ][version+flags 4][pre_defined 4][handler_type 4]
+///
+/// A file with any video track is a video, whatever else it also has. A file
+/// with sound and no picture is audio. And when neither handler can be found —
+/// a truncated buffer, or an `moov` that is not in the bytes we were given —
+/// this answers NULL rather than guessing, so the caller falls through to the
+/// declared type and the filename. Refusing to answer is the honest outcome;
+/// asserting "video" is what caused the defect.
+String? _isoBaseMediaTrackMime(Uint8List b) {
+  const hdlr = [0x68, 0x64, 0x6C, 0x72]; // 'hdlr'
+  var sawSound = false;
+
+  for (var i = 0; i + 16 <= b.length; i++) {
+    if (b[i] != hdlr[0] ||
+        b[i + 1] != hdlr[1] ||
+        b[i + 2] != hdlr[2] ||
+        b[i + 3] != hdlr[3]) {
+      continue;
+    }
+    // handler_type sits 12 bytes past the start of the 'hdlr' name.
+    final at = i + 12;
+    if (at + 4 > b.length) break;
+    final handler = String.fromCharCodes(b.sublist(at, at + 4));
+    // A picture anywhere settles it — a video with an audio track is a video.
+    if (handler == 'vide') return 'video/mp4';
+    if (handler == 'soun') sawSound = true;
+  }
+
+  if (sawSound) return 'audio/mp4';
   return null;
 }
 

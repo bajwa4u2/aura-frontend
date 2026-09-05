@@ -672,7 +672,21 @@ final _contractCache = <String, dynamic>{};
 /// touched — only the answer this transport gives.
 dynamic _auditAnchoredToToday() {
   final source = _contract('audit.list');
-  final now = DateTime.now().toUtc();
+  // ANCHOR ON THE LOCAL DAY, BECAUSE THAT IS THE DAY THE LABEL ASKS ABOUT.
+  //
+  // This anchored on `DateTime.now().toUtc()` and still drifted, which is why
+  // the six RECORD goldens went on failing after the anchoring landed.
+  // `RecordArea._dayLabel` compares a row against `DateTime.now()` — LOCAL —
+  // so anchoring onto the UTC date is only the same day for part of the
+  // twenty-four hours. Measured here at 20:23 in UTC-4, where UTC had already
+  // rolled over: the rows were stamped onto the UTC tomorrow, `_dayLabel` saw
+  // neither today nor yesterday, and rendered an absolute date. The isolated
+  // diff was one text region — "TODAY" against "2026-09-05".
+  //
+  // A test whose result depends on the hour it is run is not a fixed golden,
+  // and this one failed only in the evening, which is the worst version of
+  // that: it looks like a real regression to whoever happens to run it late.
+  final now = DateTime.now();
 
   dynamic anchor(dynamic node) {
     if (node is Map) {
@@ -681,10 +695,12 @@ dynamic _auditAnchoredToToday() {
         if (k == 'createdAt' && v is String) {
           final parsed = DateTime.tryParse(v);
           // Keep each row's time of day; only the DATE is moved onto today, so
-          // the rendered clock column still reads what it always read.
+          // the rendered clock column still reads what it always read. Built
+          // as a LOCAL instant and then converted, so the wire value stays UTC
+          // while the day it lands on is the one the label will compare.
           out[k] = parsed == null
               ? v
-              : DateTime.utc(
+              : DateTime(
                   now.year,
                   now.month,
                   now.day,
@@ -692,7 +708,7 @@ dynamic _auditAnchoredToToday() {
                   parsed.minute,
                   parsed.second,
                   parsed.millisecond,
-                ).toIso8601String();
+                ).toUtc().toIso8601String();
         } else {
           out[k] = anchor(v);
         }
