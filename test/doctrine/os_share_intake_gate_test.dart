@@ -395,6 +395,54 @@ void main() {
     });
   });
 
+  group('a share survives arriving mid-build', () {
+    test('the screen claims the envelope AFTER the frame that mounts it', () {
+      // FOUND ON A PHYSICAL PIXEL, 2026-09-04. Every real share ended on
+      // "This section ran into a problem" instead of the person's content:
+      // `take()` CLEARS the inbox, which is a provider mutation, and
+      // `initState` runs while the widget tree is building — so claiming the
+      // envelope there threw `Tried to modify a provider while the widget tree
+      // was building` from the inbox's own listener.
+      //
+      // The share had already arrived and been read correctly. It died on the
+      // way to being shown, which is why no gate and no headless test caught
+      // it: every one of them exercises the controller, and none of them
+      // mounts the screen against a live provider mid-build.
+      final screen = File(
+        '$_featureDir/presentation/share_intake_screen.dart',
+      ).readAsStringSync();
+
+      final initAt = screen.indexOf('void initState()');
+      expect(initAt, greaterThan(-1));
+      final initState = screen.substring(
+        initAt,
+        screen.indexOf('void _claimPendingShare', initAt),
+      );
+
+      expect(
+        initState.contains('addPostFrameCallback'),
+        isTrue,
+        reason: 'The claim must wait for the frame that mounts this screen.',
+      );
+      expect(
+        initState.contains('.take()'),
+        isFalse,
+        reason: 'Claiming inside initState mutates a provider during build.',
+      );
+    });
+
+    test('navigation to the destination also waits for the frame', () {
+      // Same cause, the other half of the chain: delivery notifies while the
+      // tree is building, and `go()` would rebuild the router inside that
+      // build.
+      final app = File('lib/app/aura_app.dart').readAsStringSync();
+      final at = app.indexOf('shareIntakeInboxProvider,');
+      expect(at, greaterThan(-1));
+      final listener = app.substring(at, at + 1200);
+      expect(listener.contains('addPostFrameCallback'), isTrue);
+    });
+  });
+
   group('what the envelope carries', () {
     test('an envelope has no destination, identity or publish notion', () {
       final envelope =

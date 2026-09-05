@@ -769,7 +769,27 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     // signs in rather than discarding it.
     ref.listen<AcquisitionEnvelope?>(shareIntakeInboxProvider, (_, next) {
       if (next == null) return;
-      ref.read(routerProvider).go(NavigationAuthority.incomingShareRoute);
+      // AFTER THE FRAME, NOT DURING IT.
+      //
+      // Found on a physical Pixel, 2026-09-04: a real cold share arrived and
+      // the person got "This section ran into a problem" instead of their
+      // content — `Tried to modify a provider while the widget tree was
+      // building`, thrown by this listener.
+      //
+      // The chain is the whole reason: a share can be delivered while the tree
+      // is mid-build (the native drain resolves during startup), delivery sets
+      // the inbox state, that notifies here, and `go()` then rebuilds the
+      // router inside the same build. Navigation is a consequence of the
+      // delivery, not part of it, so it waits for the frame to finish. Nothing
+      // is lost by waiting: the envelope is already in the inbox.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        try {
+          ref.read(routerProvider).go(NavigationAuthority.incomingShareRoute);
+        } catch (e) {
+          debugPrint('[share] navigation to the share destination failed: $e');
+        }
+      });
     });
 
     final router = ref.watch(routerProvider);

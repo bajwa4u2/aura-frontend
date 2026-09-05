@@ -1113,15 +1113,6 @@ class _MemberDrawerSecondary extends ConsumerWidget {
             label: 'Aura Admin',
             onTap: () => go(OperatorArea.now.path),
           ),
-        _DrawerEntry(
-          icon: Icons.logout_rounded,
-          label: 'Sign out',
-          onTap: () {
-            Navigator.of(context).maybePop();
-            unawaited(signOutAura(context, ref));
-          },
-        ),
-
         // RATE AURA — only where a real store listing exists.
         //
         // Absent on web rather than present and inert: a rating control that
@@ -1138,6 +1129,15 @@ class _MemberDrawerSecondary extends ConsumerWidget {
               unawaited(openRateAura(rateDestination));
             },
           ),
+
+        _DrawerEntry(
+          icon: Icons.logout_rounded,
+          label: 'Sign out',
+          onTap: () {
+            Navigator.of(context).maybePop();
+            unawaited(signOutAura(context, ref));
+          },
+        ),
 
         // VERSION — READ, NEVER TYPED, AND NOT A CONTROL.
         //

@@ -67,13 +67,36 @@ class _ShareIntakeScreenState extends ConsumerState<ShareIntakeScreen> {
   @override
   void initState() {
     super.initState();
+    // CLAIMED AFTER THE FRAME THAT MOUNTS THIS SCREEN, NOT INSIDE IT.
+    //
+    // Found on a physical Pixel, 2026-09-04: every real share ended on "This
+    // section ran into a problem" instead of the person's content.
+    // `take()` CLEARS the inbox, which is a provider mutation — and `initState`
+    // runs while the widget tree is building, so claiming the envelope here
+    // threw `Tried to modify a provider while the widget tree was building`
+    // from the inbox's own listener. The share arrived, was extracted
+    // correctly, and then died on the way to being shown.
+    //
+    // Nothing about "taken once" changes: the claim still happens exactly
+    // once, one frame later, and the envelope is sitting in the inbox until it
+    // does.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _claimPendingShare();
+    });
+  }
+
+  void _claimPendingShare() {
     // Taken once. A share presented twice is a person publishing twice
     // without having asked to.
     final envelope = ref.read(shareIntakeInboxProvider.notifier).take();
     if (envelope == null) return;
 
     final controller = ShareIntakeController(envelope);
-    _controller = controller;
+    // The first frame legitimately rendered "nothing was shared", because at
+    // that moment nothing had been claimed. This is the correction, and it has
+    // to be a setState or the screen keeps saying so with the content in hand.
+    setState(() => _controller = controller);
     controller.addListener(_onControllerChanged);
     // Typing is the person's, so the field is the authority for the body and
     // the controller follows it.
