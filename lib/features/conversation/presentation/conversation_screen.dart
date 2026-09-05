@@ -1795,8 +1795,15 @@ class _ConversationLiveRibbon extends ConsumerWidget {
     required bool isVideo,
   }) {
     switch (state) {
+      // WHICH END OF THE CALL YOU ARE ON CHANGES THE WORDS.
+      //
+      // These three were lumped together and every one of them read "Incoming
+      // call" — so the person who PLACED the call was told they were receiving
+      // one. Caught on screen during the local two-party run.
       case CallProductState.calling:
+        return 'Calling…';
       case CallProductState.ringing:
+        return 'Ringing…';
       case CallProductState.incoming:
         return isVideo ? 'Incoming video call' : 'Incoming call';
       case CallProductState.connecting:

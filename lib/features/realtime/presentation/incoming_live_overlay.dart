@@ -220,7 +220,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
   /// "a widget rebuilt".
   final Set<String> _presentedSessionIds = <String>{};
 
-  /// THIS DEVICE IS ACTUALLY ALERTING SOMEONE — SAY SO.
+  /// THIS DEVICE ACTUALLY PRESENTED THE CALL TO A HUMAN — SAY SO.
   ///
   /// ── THE DEFECT THIS CLOSES ────────────────────────────────────────────
   ///
@@ -241,12 +241,34 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
   ///     reached" — when the device demonstrably DID present it. That is the
   ///     precise misreport the call authority exists to prevent, inverted.
   ///
-  /// This card IS the presentation on these platforms. Reporting it here is
-  /// not a proxy for ringing; it is the ringing.
-  void _reportPresented(Map<String, dynamic> item) {
-    final sessionId = _resolveSessionId(item);
+  /// ── WHAT COUNTS AS PRESENTATION ───────────────────────────────────────
+  ///
+  /// Called from the card's own presentation lifecycle, after its FIRST
+  /// RENDERED FRAME — not from `build`.
+  ///
+  /// That distinction is the whole meaning of this signal. A `build` call is
+  /// not proof that a human saw anything: Flutter builds widgets that are
+  /// never painted, builds them repeatedly, and builds them during layout
+  /// passes that get discarded. Reporting from `build` would make ESTABLISHED
+  /// mean "a widget was constructed", which is exactly the class of
+  /// infrastructure-for-truth substitution this authority exists to refuse —
+  /// the same mistake as "a push was delivered, therefore it rang".
+  ///
+  /// After a frame has been rendered with this card in the tree, a person
+  /// looking at the screen is being shown an incoming call. That is ringing.
+  void _reportPresented(String sessionId) {
     if (sessionId.isEmpty) return;
+    // One logical presentation per session on this device. `initState` runs
+    // once per mount, so rebuilds cannot produce a second semantic event.
     if (!_presentedSessionIds.add(sessionId)) return;
+
+    // A call that has already ended, been declined or been dismissed must not
+    // report a ring afterwards. The card can outlive the call by a frame.
+    if (_dismissedSessionIds.contains(sessionId)) {
+      _presentedSessionIds.remove(sessionId);
+      return;
+    }
+
     unawaited(
       ref
           .read(realtimeRepositoryProvider)
@@ -254,11 +276,12 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
             sessionId,
             state: 'ESTABLISHED',
             platform: kIsWeb ? 'web' : defaultTargetPlatform.name,
-            detail: 'in-app incoming call surface presented',
+            detail: 'in-app incoming call surface rendered',
           )
           .catchError((_) {
-            // A ring that could not be reported is still a ring. Allow a later
-            // attempt rather than pretending it was recorded.
+            // A ring that could not be reported is still a ring. The latch is
+            // released so a later presentation can try again, rather than
+            // recording silence as if it were a decision.
             _presentedSessionIds.remove(sessionId);
           }),
     );
@@ -711,10 +734,10 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     }
 
     _ensureRingTimer(item);
-    // The card is about to be built for this person: this device is alerting
-    // them, and that is the one fact that entitles the caller to see
-    // "Ringing…". Reported once per session.
-    _reportPresented(item);
+
+    // The session this presentation is FOR. Resolved once here so the card's
+    // key and its acknowledgement name the same call.
+    final sessionIdForPresentation = _resolveSessionId(item);
 
     final data = _mapOf(item['data']);
     final actor = _mapOf(item['actor']);
@@ -795,6 +818,10 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
               : AuraSpace.s12,
           child: SafeArea(
             child: _IncomingCallCard(
+              // Identifies the presentation, so a NEW call remounts the card's
+              // state and can report its own ring.
+              key: ValueKey('incoming-call-$sessionIdForPresentation'),
+              onPresented: () => _reportPresented(sessionIdForPresentation),
               actorName: actorName,
               actorAvatarUrl: actorAvatarUrl,
               title: title,
@@ -815,8 +842,10 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
   }
 }
 
-class _IncomingCallCard extends StatelessWidget {
+class _IncomingCallCard extends StatefulWidget {
   const _IncomingCallCard({
+    super.key,
+    required this.onPresented,
     required this.actorName,
     this.actorAvatarUrl,
     required this.title,
@@ -830,6 +859,12 @@ class _IncomingCallCard extends StatelessWidget {
     required this.onDismissError,
     required this.onRetry,
   });
+
+  /// Fired once, after this card's first RENDERED frame — the moment the
+  /// incoming call is genuinely in front of a person. See
+  /// `_AuraIncomingLiveLayerState._reportPresented` for why that boundary and
+  /// not `build`.
+  final VoidCallback onPresented;
 
   final String actorName;
   final String? actorAvatarUrl;
@@ -845,7 +880,39 @@ class _IncomingCallCard extends StatelessWidget {
   final VoidCallback onRetry;
 
   @override
+  State<_IncomingCallCard> createState() => _IncomingCallCardState();
+}
+
+class _IncomingCallCardState extends State<_IncomingCallCard> {
+  @override
+  void initState() {
+    super.initState();
+    // THE PRESENTATION BOUNDARY.
+    //
+    // `initState` means "this card has been inserted into the tree"; the
+    // post-frame callback means "a frame carrying it has actually been
+    // rendered". Only the second one is a human being shown an incoming call.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      widget.onPresented();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final actorName = widget.actorName;
+    final actorAvatarUrl = widget.actorAvatarUrl;
+    final title = widget.title;
+    final ringLabel = widget.ringLabel;
+    final isVideo = widget.isVideo;
+    final joining = widget.joining;
+    final joinError = widget.joinError;
+    final pulseAnim = widget.pulseAnim;
+    final onAccept = widget.onAccept;
+    final onDecline = widget.onDecline;
+    final onDismissError = widget.onDismissError;
+    final onRetry = widget.onRetry;
+
     final ringColor = isVideo ? AuraSurface.accent : AuraSurface.coVerdant;
     // Material ancestor is MANDATORY here (founder evidence 2026-08-17):
     // this card renders in a root overlay Stack; without Material every
@@ -963,7 +1030,7 @@ class _IncomingCallCard extends StatelessWidget {
                 ),
               ),
               child: Text(
-                joinError!,
+                joinError,
                 style: AuraText.small.copyWith(
                   color: AuraSurface.coRose,
                   fontWeight: FontWeight.w700,

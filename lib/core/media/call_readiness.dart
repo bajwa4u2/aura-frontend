@@ -35,6 +35,15 @@ class CallReadiness extends ChangeNotifier {
   /// permissions a call will never use is how products train people to refuse.
   final bool wantsCamera;
 
+  /// How long the device probe may take before the answer becomes "could not
+  /// be checked".
+  ///
+  /// Twelve seconds is far longer than any real device open — Android's slow
+  /// path, measured on a physical Pixel 9a, is a small number of seconds — and
+  /// short enough that a stalled permission prompt turns into an honest answer
+  /// with a Retry rather than a screen that never changes.
+  static const Duration _probeTimeout = Duration(seconds: 12);
+
   MediaReadiness _readiness = MediaReadiness.unchecked;
   MediaReadiness get readiness => _readiness;
 
@@ -130,12 +139,41 @@ class CallReadiness extends ChangeNotifier {
       final cameraRefused = wantsCamera && _isRefusal(cameraState);
 
       if (!micRefused || !cameraRefused) {
+        // ── A CHECK THAT NEVER ANSWERS IS NOT A CHECK ──────────────────────
+        //
+        // `getUserMedia` is not guaranteed to settle. A browser showing a
+        // permission prompt that nobody answers leaves the future PENDING
+        // FOREVER — observed directly in a local two-party run: an audio
+        // device was present, the prompt was never answered, and the preflight
+        // sat on "Checking your microphone…" with its only action a disabled
+        // button. The person could not place the call and was not told why.
+        //
+        // Bounded here, at the one call that can hang, rather than around the
+        // whole method — so a slow but genuine device answer still counts, and
+        // only the part that can stall is given a deadline.
         final probe = await _open(
           audio: !micRefused,
           video: wantsCamera && !cameraRefused,
+        ).timeout(
+          _probeTimeout,
+          // Nulls mean "the probe learned nothing", which is precisely what a
+          // timeout is. The mapping below turns that into `unknown`.
+          onTimeout: () => (mic: null, camera: null),
         );
-        micState = probe.mic ?? micState;
-        cameraState = probe.camera ?? cameraState;
+
+        // A timeout is NOT a denial, NOT a missing device and NOT a device
+        // failure. It is "we asked and could not tell", which this vocabulary
+        // already has a name for — and which, deliberately, is never presented
+        // as a refusal and keeps an in-app Retry available. Forcing it into
+        // `denied` would accuse somebody of refusing access they never
+        // refused; forcing it into `unavailable` would claim hardware that is
+        // demonstrably there does not exist.
+        micState = probe.mic ??
+            (micRefused ? micState : DevicePermissionState.unknown);
+        cameraState = probe.camera ??
+            (wantsCamera && !cameraRefused
+                ? DevicePermissionState.unknown
+                : cameraState);
       }
 
       _readiness = MediaReadiness(

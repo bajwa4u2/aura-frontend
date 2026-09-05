@@ -87,12 +87,32 @@ ClientDistribution _defaultDistribution(ClientPlatform platform) {
 const _kRuntimeDeviceIdKey = 'aura_runtime_device_id';
 
 /// Generate or load the stable per-install runtime device id.
-/// Returns null on web, where we don't want to depend on
-/// localStorage for security-relevant identity (the backend
-/// treats null as "no canonical device" and falls back to the old
-/// behavior of one session row per login — fine for browsers).
+///
+/// Every platform, browsers included. Returns null only when the store itself
+/// is unusable — see the note in the body for why web was excluded, what that
+/// silently broke, and why localStorage is the right grain after all.
 Future<String?> _resolveRuntimeDeviceId() async {
-  if (kIsWeb) return null;
+  // A BROWSER IS A DEVICE.
+  //
+  // This returned null for web, so web sent no `X-Aura-Device-Id` — and the
+  // call lifecycle's device-scoped facts are keyed by installation and read
+  // that header, never a request body, because a client does not get to claim
+  // which physical device it is.
+  //
+  // The consequence was total and silent on web. `POST .../presentation`
+  // answered `{recorded: false, reason: NO_INSTALLATION_IDENTITY}` and wrote
+  // nothing, so a browser that was visibly ringing at somebody could never
+  // record that it rang: the caller stayed on "Calling…", and an unanswered
+  // call came out NOT_PRESENTED — "could not be reached" — from a device that
+  // demonstrably presented it. `media-established` is gated the same way, so
+  // CONNECTED was unreachable from a browser for the same reason.
+  //
+  // Proven in a two-party local run: the callee's card was on screen with
+  // Answer and Decline, and the call sat at INVITED with zero acknowledgements.
+  //
+  // On web `SharedPreferences` is localStorage: per-origin, durable, and
+  // exactly the "same installation" grain this id means everywhere else. The
+  // value is random and identifies nothing but itself.
   try {
     final prefs = await SharedPreferences.getInstance();
     final existing = prefs.getString(_kRuntimeDeviceIdKey)?.trim();
