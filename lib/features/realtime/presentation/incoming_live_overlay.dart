@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback, SystemSound, SystemSoundType;
@@ -211,6 +212,56 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       }
     }
     return null;
+  }
+
+  /// Sessions this device has already reported as presented.
+  ///
+  /// One report per call: the ring fact is "this device began alerting", not
+  /// "a widget rebuilt".
+  final Set<String> _presentedSessionIds = <String>{};
+
+  /// THIS DEVICE IS ACTUALLY ALERTING SOMEONE — SAY SO.
+  ///
+  /// ── THE DEFECT THIS CLOSES ────────────────────────────────────────────
+  ///
+  /// `ESTABLISHED` was reported from exactly one place: the iOS CallKit
+  /// arrival path. Everywhere else — every in-app incoming call, which is the
+  /// whole of web and every Android call that arrives while Aura is open — the
+  /// card appeared on screen, a person was visibly being called, and the
+  /// server was told nothing.
+  ///
+  /// Proven in a two-party local run: the callee's card was on screen with
+  /// Answer and Decline, and the call sat at INVITED with zero presentation
+  /// acknowledgements. Two consequences, both wrong in the direction that
+  /// matters:
+  ///
+  ///   * the caller could never see "Ringing…", only "Calling…", while the
+  ///     other person's screen was ringing at them;
+  ///   * an unanswered call would be recorded NOT_PRESENTED — "could not be
+  ///     reached" — when the device demonstrably DID present it. That is the
+  ///     precise misreport the call authority exists to prevent, inverted.
+  ///
+  /// This card IS the presentation on these platforms. Reporting it here is
+  /// not a proxy for ringing; it is the ringing.
+  void _reportPresented(Map<String, dynamic> item) {
+    final sessionId = _resolveSessionId(item);
+    if (sessionId.isEmpty) return;
+    if (!_presentedSessionIds.add(sessionId)) return;
+    unawaited(
+      ref
+          .read(realtimeRepositoryProvider)
+          .reportCallPresentation(
+            sessionId,
+            state: 'ESTABLISHED',
+            platform: kIsWeb ? 'web' : defaultTargetPlatform.name,
+            detail: 'in-app incoming call surface presented',
+          )
+          .catchError((_) {
+            // A ring that could not be reported is still a ring. Allow a later
+            // attempt rather than pretending it was recorded.
+            _presentedSessionIds.remove(sessionId);
+          }),
+    );
   }
 
   void _ensureRingTimer(Map<String, dynamic> item) {
@@ -660,6 +711,10 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     }
 
     _ensureRingTimer(item);
+    // The card is about to be built for this person: this device is alerting
+    // them, and that is the one fact that entitles the caller to see
+    // "Ringing…". Reported once per session.
+    _reportPresented(item);
 
     final data = _mapOf(item['data']);
     final actor = _mapOf(item['actor']);
