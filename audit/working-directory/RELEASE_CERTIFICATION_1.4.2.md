@@ -669,7 +669,8 @@ distinction is written down rather than inferred later from two dates.
 
 ```
 1.4.2 CLIENT_ARTIFACT_FREEZE   = PRESERVED
-PRODUCTION_BACKEND_SHA         = 16991bc  (was 7d15faa at the freeze)
+PRODUCTION_BACKEND_SHA         = 9716e2d  (was 7d15faa at the freeze)
+                                 16991bc -> 267a70f -> 9716e2d, same day
 POST_1.4.2_BACKEND_ADVANCEMENT = YES
 ```
 
@@ -698,6 +699,16 @@ OpenAPI document was being served wrapped as `{"ok":true,"data":"openapi:
 3.1.0\n..."}`. It is corrected in `16991bc` and re-verified from production.
 It never touched a released-client path, and the fix is guarded on both sides
 by tests that assert internal routes keep Aura's envelope exactly.
+
+**A second defect, found the same way and larger.** Before provisioning an
+external consumer, the operator console was checked for reachability rather
+than assumed. A read-only census found ONE active admin grant -- role OWNER --
+storing 25 of the catalogue's 29 permissions, because a grant's stored array is
+a snapshot of the catalogue at write time and the resolver preferred it to the
+role. `SUPPORT_READ` and `SUPPORT_WRITE` had therefore belonged to NOBODY since
+whenever they were added, long before this workstream. Founder-approved fix
+deployed as `267a70f`, with every other reader of that array corrected in
+`9716e2d`. Frozen doctrine: OWNER means the complete CURRENT catalogue.
 
 Worth keeping: a green suite of 4,431 tests did not see it. Asking production
 what it actually returns did, in under a minute.
