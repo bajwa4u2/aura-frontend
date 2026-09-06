@@ -14,6 +14,7 @@ import 'features/admin/areas/identity_review.dart';
 import 'features/admin/areas/integrity_area.dart';
 import 'features/admin/areas/now_area.dart';
 import 'features/admin/areas/platform_area.dart';
+import 'features/admin/areas/external_area.dart';
 import 'features/admin/areas/record_area.dart';
 import 'features/admin/areas/subject_institution_area.dart';
 import 'features/admin/areas/subject_person_area.dart';
@@ -1841,6 +1842,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/admin/record',
             pageBuilder: (_, __) => _operatorPage(const RecordArea()),
+          ),
+          GoRoute(
+            path: '/admin/external',
+            pageBuilder: (_, __) => _operatorPage(const ExternalArea()),
           ),
           GoRoute(
             path: '/admin/subjects',

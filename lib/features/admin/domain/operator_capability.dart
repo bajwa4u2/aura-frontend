@@ -16,10 +16,15 @@
 ///
 /// The consequence was live: a MODERATOR holds 4 permissions and an ANALYST
 /// holds 3, and both saw the same fourteen navigation entries as an OWNER
-/// holding all 25.
+/// holding the whole catalogue.
 library;
 
-/// The 25 permissions defined by `AdminPermission` in the backend schema.
+/// The permissions defined by `AdminPermission` in the backend schema.
+///
+/// COUNTED NOWHERE. This list used to open by naming a number, which went
+/// stale twice in silence -- the catalogue grew and the sentence did not. What
+/// matters is that a wire value here matches the server's exactly, which is
+/// asserted in the backend suite rather than described here.
 ///
 /// Two separations are deliberate and carry recorded governance rationale.
 /// They are mirrored here exactly and must never be collapsed for the
@@ -57,7 +62,13 @@ enum OperatorCapability {
   productFeedbackRead('PRODUCT_FEEDBACK_READ'),
   productFeedbackWrite('PRODUCT_FEEDBACK_WRITE'),
   discoveryRead('DISCOVERY_READ'),
-  discoveryEvidenceRead('DISCOVERY_EVIDENCE_READ');
+  discoveryEvidenceRead('DISCOVERY_EVIDENCE_READ'),
+
+  /// EXTERNAL SERVICE CONSUMERS. Issuing one of these credentials hands an
+  /// outside system standing to create meetings and read participation AS
+  /// AURA, which is not implied by any other admin duty.
+  externalConsumersRead('EXTERNAL_CONSUMERS_READ'),
+  externalConsumersWrite('EXTERNAL_CONSUMERS_WRITE');
 
   const OperatorCapability(this.wire);
 

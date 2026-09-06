@@ -103,6 +103,21 @@ enum OperatorArea {
     label: 'Discovery',
     icon: Icons.travel_explore_rounded,
     anyOf: [OperatorCapability.discoveryRead],
+  ),
+
+  /// The systems that build on Aura Meetings, and the credentials they hold.
+  ///
+  /// ITS OWN AREA, not a panel inside Platform. Platform is about whether AURA
+  /// is healthy; this is about who else is allowed to act as Aura, which is a
+  /// different question with a different permission and a different reader.
+  /// Folding it in would also have hidden it behind SETTINGS_READ, and area
+  /// access is not action permission.
+  external(
+    id: 'external',
+    path: '/admin/external',
+    label: 'External',
+    icon: Icons.hub_rounded,
+    anyOf: [OperatorCapability.externalConsumersRead],
   );
 
   const OperatorArea({
