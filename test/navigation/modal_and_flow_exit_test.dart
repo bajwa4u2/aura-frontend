@@ -136,7 +136,22 @@ void main() {
     // action is in flight. An operator who dismissed mid-flight would never
     // learn whether the decision landed, and a decision believed not to have
     // landed gets taken twice. That is a consequence of the act, not a trap.
-    expect(full, 20,
+    // 16th member RETIRED 2026-09-05 by the calling chapter:
+    // `core/media/call_preflight_sheet.dart` is deleted. Recorded here rather
+    // than left to drift, on the same principle the 18th member's retirement
+    // was recorded — a census that only ever rises stops being a census.
+    //
+    // It was not reclassified as a route. It stopped existing. The commit that
+    // removed it says why: "Tapping Call places the call. The preflight sheet
+    // is gone. It was added for a real reason and answered it by taxing every
+    // call with an extra screen and an extra tap, including the overwhelming
+    // majority where nothing was wrong." The permission prompt now appears
+    // over the calling screen, which is its own explanation.
+    //
+    // The population falls to 19. Two integration test groups that certified
+    // the sheet went with it, and this line is the third consequence of that
+    // deletion — the one that CI found, six minutes into a release build.
+    expect(full, 19,
         reason: 'the full-height sheet population changed — reclassify it '
             'against §6 (behaviour, not dimensions) rather than adjusting '
             'this number');

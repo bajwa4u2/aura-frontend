@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
-import 'package:aura/core/media/call_preflight_sheet.dart';
-import 'package:aura/core/media/call_readiness.dart';
 import 'package:aura/core/media/device_permission.dart';
 import 'package:aura/core/media/media_control_labels.dart';
 import 'package:aura/core/media/media_permission_service.dart';
@@ -95,64 +93,6 @@ void main() {
         expect(MediaControlLabels.cameraAction(on: on), isNot('Camera'));
         expect(MediaControlLabels.cameraSemantics(on: on), contains('Camera'));
       }
-    });
-  });
-
-  group('AV · the preflight runs on real hardware', () {
-    testWidgets('it opens, checks, and releases the camera when dismissed',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => Center(
-                child: ElevatedButton(
-                  onPressed: () => CallPreflightSheet.show(
-                    context,
-                    title: 'Call Ada Lovelace',
-                    subtitle: 'They will be able to hear you.',
-                    // Audio-only: a voice call must not ask for a camera it
-                    // will never use.
-                    wantsCamera: false,
-                  ),
-                  child: const Text('call'),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('call'));
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 3));
-
-      expect(find.text('Call Ada Lovelace'), findsOneWidget,
-          reason: 'the preflight did not open');
-      // It says what it needs, and offers a way out that is not "join".
-      expect(find.text('Not now'), findsOneWidget);
-
-      await tester.tap(find.text('Not now'));
-      await tester.pumpAndSettle(const Duration(seconds: 2));
-      expect(find.text('Call Ada Lovelace'), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('readiness releases its preview stream', (tester) async {
-      // A preview that keeps the camera light on after somebody backs out is
-      // the orphaned capture §17 forbids.
-      final readiness = CallReadiness(wantsCamera: false);
-      await readiness.check(requestPermission: false);
-      await readiness.releasePreview();
-      expect(readiness.preview, isNull);
-      readiness.dispose();
-    });
-
-    testWidgets('joining is never barred by a refusal', (tester) async {
-      // Listening is a legitimate way to attend.
-      final readiness = CallReadiness(wantsCamera: true);
-      expect(readiness.canJoin, isTrue);
-      readiness.dispose();
     });
   });
 }

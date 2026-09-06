@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:aura/core/media/media_mime.dart';
-import 'package:aura/core/media/attachment.dart';
 void main(List<String> a) {
   for (final p in a) {
     final b = File(p).readAsBytesSync();

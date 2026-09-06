@@ -116,9 +116,22 @@ void main() {
       expect(realtime.contains('reportOutgoingConnected('), isTrue,
           reason: 'Without a connected timestamp the call register shows an '
               'outgoing entry with no duration.');
-      expect(realtime.contains('_reportedMediaEstablished = false;'), isTrue,
-          reason: 'The latch must retire on leave, or the next placed call '
-              'inherits this one\'s report.');
+      // THE LATCH THIS GUARDED NO LONGER EXISTS, AND THAT IS THE FIX.
+      //
+      // This asserted `_reportedMediaEstablished = false;` -- a reset that
+      // had to be repeated at every exit. The calling chapter replaced the
+      // bool with `String? _mediaReportedForSession`, so the fact is keyed by
+      // the session it is about and cannot leak into the next call whatever
+      // survives in between. Every reset was deleted because none is needed.
+      //
+      // Asserting the reset would lock the workaround back in, which is
+      // exactly what the commit removing it warned about. The question this
+      // test asks is unchanged: does a media report belong to its own
+      // session? Session-keying answers it by construction rather than by
+      // remembering to clear a flag.
+      expect(realtime.contains('String? _mediaReportedForSession'), isTrue,
+          reason: 'A media report must be keyed by the session it is about, '
+              'or the next placed call inherits the previous report.');
     });
 
     test('remote media is observed on BOTH transports, not just mesh', () {

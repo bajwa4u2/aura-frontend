@@ -103,7 +103,17 @@ void main() {
     });
 
     test('an edited message says so, and only when true', () {
-      expect(screen, contains('message.wasEdited && !message.deleted'));
+      // THE GUARD MOVED OUTWARD, WHICH IS STRONGER THAN WHERE IT WAS.
+      //
+      // This asserted `message.wasEdited && !message.deleted` inside the
+      // stamp. The stamp no longer has to ask: it is not built at all for a
+      // deleted message, so a deleted message cannot claim to be edited
+      // because it has nothing to claim it with.
+      //
+      // Asserting the old spelling would fail on a change that made the
+      // invariant harder to break. Assert the invariant.
+      expect(screen, contains('if (!message.deleted) _MessageStamp'));
+      expect(screen, contains("if (message.wasEdited) 'Edited'"));
     });
 
     test('a forwarded message names who said it, never where', () {
@@ -130,8 +140,16 @@ void main() {
     });
 
     test('touch and pointer open the same sheet', () {
-      expect(screen, contains('onLongPress: () => showMessageActionSheet'));
-      expect(screen, contains('onSecondaryTap: () => showMessageActionSheet'));
+      // ONE FUNCTION, BOTH INPUTS — which is the thing this test is named for.
+      //
+      // This asserted the sheet call inlined on `onLongPress`. It is now a
+      // single `openActions()` that long press, secondary tap and the desktop
+      // opener all call. That is the same question answered better: touch and
+      // pointer cannot diverge, because there is only one path to diverge
+      // from.
+      expect(screen, contains('void openActions() => showMessageActionSheet'));
+      expect(screen, contains('onLongPress: openActions'));
+      expect(screen, contains('onSecondaryTap: openActions'));
     });
 
     test('every mutation re-reads the canonical projection', () {

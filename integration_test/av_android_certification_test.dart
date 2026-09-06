@@ -2,11 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
-import 'package:aura/core/media/call_preflight_sheet.dart';
 import 'package:aura/core/media/call_readiness.dart';
 import 'package:aura/core/media/device_permission.dart';
 import 'package:aura/core/media/media_control_labels.dart';
@@ -169,91 +167,6 @@ void main() {
     });
   });
 
-  group('ANDROID · the preflight, on the handset', () {
-    Future<void> openPreflight(
-      WidgetTester tester, {
-      required bool wantsCamera,
-      bool? result,
-    }) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => Center(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    result = await CallPreflightSheet.show(
-                      context,
-                      title: 'Call Ada Lovelace',
-                      subtitle: wantsCamera
-                          ? 'They will be able to see and hear you.'
-                          : 'They will be able to hear you.',
-                      wantsCamera: wantsCamera,
-                    );
-                  },
-                  child: const Text('call'),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('call'));
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 3));
-    }
-
-    testWidgets('it opens, names who is being called, and offers a way out',
-        (tester) async {
-      await openPreflight(tester, wantsCamera: false);
-      // Section 13: governed identity, never "User" or "Someone".
-      expect(find.text('Call Ada Lovelace'), findsOneWidget);
-      expect(find.text('They will be able to hear you.'), findsOneWidget);
-      expect(find.text('Not now'), findsOneWidget);
-      await tester.tap(find.text('Not now'));
-      await tester.pumpAndSettle(const Duration(seconds: 2));
-      expect(find.text('Call Ada Lovelace'), findsNothing);
-    });
-
-    testWidgets('its controls meet Android touch-target size', (tester) async {
-      await openPreflight(tester, wantsCamera: false);
-      for (final label in ['Not now', 'Start call']) {
-        final finder = find.text(label);
-        if (finder.evaluate().isEmpty) continue;
-        final size = tester.getSize(
-          find.ancestor(of: finder, matching: find.byType(Padding)).first,
-        );
-        expect(size.height, greaterThanOrEqualTo(40.0),
-            reason: '$label is too small to hit reliably on a phone');
-      }
-      await tester.tap(find.text('Not now'));
-      await tester.pumpAndSettle(const Duration(seconds: 2));
-    });
-
-    testWidgets('device state is announced, not just drawn', (tester) async {
-      final handle = tester.ensureSemantics();
-      await openPreflight(tester, wantsCamera: false);
-      // The microphone line must carry a spoken state; colour and icon alone
-      // are what section 34 forbids.
-      expect(
-        find.bySemanticsLabel(RegExp('[Mm]icrophone')),
-        findsWidgets,
-        reason: 'the microphone state was not announced',
-      );
-      await tester.tap(find.text('Not now'));
-      await tester.pumpAndSettle(const Duration(seconds: 2));
-      handle.dispose();
-    });
-
-    testWidgets('it composes without overflow on this screen', (tester) async {
-      await openPreflight(tester, wantsCamera: true);
-      expect(tester.takeException(), isNull,
-          reason: 'the preflight overflowed on a real phone viewport');
-      await tester.tap(find.text('Not now'));
-      await tester.pumpAndSettle(const Duration(seconds: 2));
-    });
-  });
-
   group('ANDROID · lifecycle and cleanup', () {
     testWidgets('backgrounding and returning does not break the preflight',
         (tester) async {
@@ -307,92 +220,6 @@ void main() {
       expect(readiness.preview, isNull);
       readiness.dispose();
       expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('system Back closes the preflight without starting anything',
-        (tester) async {
-      bool? outcome;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => Center(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    outcome = await CallPreflightSheet.show(
-                      context,
-                      title: 'Call Ada Lovelace',
-                      subtitle: 'They will be able to hear you.',
-                      wantsCamera: false,
-                    );
-                  },
-                  child: const Text('call'),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('call'));
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 2));
-      expect(find.text('Call Ada Lovelace'), findsOneWidget);
-
-      // The Android system Back gesture.
-      await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
-        'flutter/navigation',
-        const JSONMethodCodec().encodeMethodCall(
-          const MethodCall('popRoute'),
-        ),
-        (_) {},
-      );
-      await tester.pumpAndSettle(const Duration(seconds: 2));
-
-      expect(find.text('Call Ada Lovelace'), findsNothing);
-      // THE INVARIANT: dismissing must never read as "proceed".
-      expect(outcome, isNot(true),
-          reason: 'system Back was treated as consent to start a call');
-    });
-  });
-
-  group('ANDROID · the ordering invariant', () {
-    // CALL INTENT → PREFLIGHT → READINESS → USER PROCEEDS → SESSION CREATED
-    //             → OTHER PARTY RUNG
-    //
-    // `startLive()` is the single act that both creates the session and rings
-    // the recipient. It must be unreachable until the preflight has resolved
-    // AND the person has chosen to proceed.
-    testWidgets('dismissal yields a non-proceed answer', (tester) async {
-      bool? outcome;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => Center(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    outcome = await CallPreflightSheet.show(
-                      context,
-                      title: 'Call Ada Lovelace',
-                      subtitle: 'They will be able to hear you.',
-                      wantsCamera: false,
-                    );
-                  },
-                  child: const Text('call'),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('call'));
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 2));
-      await tester.tap(find.text('Not now'));
-      await tester.pumpAndSettle(const Duration(seconds: 2));
-
-      expect(outcome, isFalse,
-          reason: 'a caller who backed out would still have rung somebody');
     });
   });
 }
