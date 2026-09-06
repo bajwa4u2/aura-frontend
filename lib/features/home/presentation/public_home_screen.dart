@@ -776,42 +776,62 @@ class _DiscussionPreviewSection extends ConsumerWidget {
       // held out to `kHeroWidth` it ran past the right edge of its own
       // cards, and a heading wider than what it heads reads as a section
       // that lost its contents.
+      //
+      // THE COLUMN IS NARROWER THAN THE BAND, NOT CENTRED INSIDE IT.
+      //
+      // A single `Center` around the reading column centred the whole
+      // section in the page instead of seating it on the page's left edge,
+      // so this one section began 185 logical px inside every other one.
+      // Measured on the packaged 1.4.2 build before release: hero 447,
+      // headline 438, How Aura works 411, the paid line 409, and this
+      // section 643. A jog the eye reads immediately even though each
+      // section is individually correct.
+      //
+      // So: centre the PAGE BAND as every other section does, then align the
+      // reading column to its leading edge inside that band. The section
+      // shares the left edge and simply does not reach as far right.
       child: Center(
-        child: LayoutBuilder(
-          builder: (context, outer) {
-            final rail = AuraContextRail.widthFor(
-              MediaQuery.sizeOf(context).width,
-            );
-            final column = (kHeroWidth - rail - AuraSpace.s16).clamp(
-              kReadWidth,
-              kHeroWidth,
-            );
-            return ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: column),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: kHeroWidth),
+          child: LayoutBuilder(
+            builder: (context, outer) {
+              final rail = AuraContextRail.widthFor(
+                MediaQuery.sizeOf(context).width,
+              );
+              final column = (kHeroWidth - rail - AuraSpace.s16).clamp(
+                kReadWidth,
+                kHeroWidth,
+              );
+              return Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: column),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Expanded(
-                        child: _SectionHeading(
-                          title: "What's being discussed now",
-                          subtitle: 'Live conversations across spaces',
-                        ),
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: _SectionHeading(
+                              title: "What's being discussed now",
+                              subtitle: 'Live conversations across spaces',
+                            ),
+                          ),
+                          AuraGhostButton(
+                            label: 'See all discussions',
+                            icon: Icons.explore_outlined,
+                            onPressed: () => context.push('/discover'),
+                          ),
+                        ],
                       ),
-                      AuraGhostButton(
-                        label: 'See all discussions',
-                        icon: Icons.explore_outlined,
-                        onPressed: () => context.push('/discover'),
-                      ),
+                      const SizedBox(height: AuraSpace.s16),
+                      _buildDiscussions(context, ref),
                     ],
                   ),
-                  const SizedBox(height: AuraSpace.s16),
-                  _buildDiscussions(context, ref),
-                ],
-              ),
-            );
-          },
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
