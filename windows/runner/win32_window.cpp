@@ -150,8 +150,13 @@ bool Win32Window::Create(const std::wstring& title,
   return OnCreate();
 }
 
+void Win32Window::SetStartMaximized(bool maximized) {
+  start_maximized_ = maximized;
+}
+
 bool Win32Window::Show() {
-  return ShowWindow(window_handle_, SW_SHOWNORMAL);
+  return ShowWindow(window_handle_,
+                    start_maximized_ ? SW_SHOWMAXIMIZED : SW_SHOWNORMAL);
 }
 
 // static

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
@@ -6,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/product/product_state.dart';
+import '../../../core/product/product_state_view.dart';
 import '../../../config.dart';
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/auth/auth_providers.dart';
@@ -42,9 +45,24 @@ class AnnouncementEditorScreen extends ConsumerStatefulWidget {
   const AnnouncementEditorScreen({
     super.key,
     required this.scope,
+    this.editSlug,
   });
 
   final AnnouncementEditorScope scope;
+
+  /// EDITING AN ANNOUNCEMENT THAT ALREADY EXISTS.
+  ///
+  /// This screen could only ever create. An announcement, once published, was
+  /// unchangeable from the product: the only controls the author had were
+  /// Unpublish and Remove, so correcting a typo meant withdrawing the notice
+  /// and publishing a new one at a new address — which breaks every link
+  /// anyone had already shared and reads, to a reader, as the institution
+  /// retracting something.
+  ///
+  /// The backend has supported PATCH throughout; the flow already uses it to
+  /// re-save a draft whose text changed while the confirmation sheet was open.
+  /// This just gives that path an entry point.
+  final String? editSlug;
 
   @override
   ConsumerState<AnnouncementEditorScreen> createState() =>
@@ -122,6 +140,18 @@ class _AnnouncementEditorScreenState
     'Russian',
   ];
 
+  /// The announcement being edited, when this screen was opened to edit one.
+  /// Null for a new announcement, which is what makes the save path choose
+  /// between PATCH and create.
+  String? _editingId;
+
+  /// True while an existing announcement is being read.
+  ///
+  /// Without this the composer shows an empty form for the round trip, which
+  /// on a slow connection reads as "this announcement has no content" — and
+  /// saving from that state would replace a published notice with nothing.
+  bool _loadingExisting = false;
+
   @override
   void initState() {
     super.initState();
@@ -131,6 +161,44 @@ class _AnnouncementEditorScreenState
     _bodyController.addListener(_handleDraftChanged);
     if (_isPlatformMode) {
       _loadExternalConnections();
+    }
+    final slug = (widget.editSlug ?? '').trim();
+    if (slug.isNotEmpty) unawaited(_loadForEdit(slug));
+  }
+
+  /// Fills the composer with what is already published.
+  ///
+  /// Read through the same repository the reader uses, so the author edits the
+  /// announcement as it actually stands rather than a second representation of
+  /// it. A failure leaves the composer empty and says so rather than silently
+  /// offering a blank form that would replace the notice with nothing.
+  Future<void> _loadForEdit(String slug) async {
+    setState(() => _loadingExisting = true);
+    try {
+      final existing =
+          await ref.read(announcementsRepoProvider).getBySlug(slug);
+      if (!mounted) return;
+      if (existing == null) {
+        setState(() => _loadingExisting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('That announcement could not be opened.')),
+        );
+        return;
+      }
+      setState(() {
+        _editingId = existing.id;
+        _titleController.text = existing.title;
+        _summaryController.text = existing.summary;
+        _bodyController.text = existing.bodyMarkdown;
+        _pinNotice = existing.pinned;
+        _loadingExisting = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingExisting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('That announcement could not be opened.')),
+      );
     }
   }
 
@@ -784,7 +852,10 @@ class _AnnouncementEditorScreenState
           .where((id) => id.isNotEmpty)
           .toList(growable: false);
 
-      final reuse = (reuseDraftId ?? '').trim();
+      // An explicit edit target takes precedence over the in-flight draft id:
+      // when this screen was opened on an existing announcement, EVERY save is
+      // an update to that announcement, including the first one.
+      final reuse = (_editingId ?? reuseDraftId ?? '').trim();
       // Updating rather than merely re-reading the draft: the person may have
       // adjusted the text while the confirmation sheet was open, and the
       // announcement they publish should be the one on their screen.
@@ -1289,6 +1360,21 @@ class _AnnouncementEditorScreenState
   @override
   Widget build(BuildContext context) {
     final institutionAccess = ref.watch(institutionAccessProvider);
+
+    if (_loadingExisting) {
+      // Reading the announcement that is being edited. An empty composer here
+      // would read as "this announcement has no content", and saving from it
+      // would replace a published notice with nothing.
+      // The canonical loading surface, not a bare spinner — the C0 gate is
+      // right that a full-surface wait is product state and belongs to the
+      // one authority that renders it, so every wait in the product looks and
+      // reads the same.
+      return AuraScaffold(
+        maxWidth: 980,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        body: const AuraProductState(state: ProductState.loading),
+      );
+    }
 
     return AuraScaffold(
       maxWidth: 980,

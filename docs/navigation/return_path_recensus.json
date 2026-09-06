@@ -297,6 +297,17 @@
   "verdict": "COMPLIANT"
  },
  {
+  "route": "/announcements/:slug/edit",
+  "sample": "/announcements/x-slug/edit",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "flowCancel",
+  "deepLinkDestination": "/home",
+  "inAppSemantic": "flowCancel",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
   "route": "/announcements/create",
   "sample": "/announcements/create",
   "renders": true,

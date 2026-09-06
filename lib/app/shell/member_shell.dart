@@ -2444,9 +2444,11 @@ class _InstitutionSideNav extends StatelessWidget {
       // Two shells, two widths, one product. Expanded keeps the room this
       // workspace's longer section names need; compact matches the member
       // rail exactly.
-      width: posture == AuraNavPosture.compact
-          ? AuraNavPosture.compact.railWidth
-          : 232,
+      // The posture's own widths, both of them. 232 was this rail's private
+      // number; the member rail used 264 and the operator console 216, so the
+      // shell's left edge moved by tens of pixels every time somebody crossed
+      // between realms. One region, one pair of widths.
+      width: posture.railWidth,
       decoration: const BoxDecoration(
         gradient: _institutionNavGradient,
         border: Border(right: BorderSide(color: Color(0x14FFFFFF))),

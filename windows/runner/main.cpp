@@ -44,11 +44,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
     size = Win32Window::Size(saved_size.cx, saved_size.cy);
   }
 
+  if (restored && saved_maximized) {
+    window.SetStartMaximized(true);
+  }
   if (!window.Create(L"aura", origin, size)) {
     return EXIT_FAILURE;
-  }
-  if (restored && saved_maximized) {
-    ::ShowWindow(window.GetHandle(), SW_MAXIMIZE);
   }
   window.SetQuitOnClose(true);
 

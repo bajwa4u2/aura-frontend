@@ -39,6 +39,15 @@ class Win32Window {
   // Show the current window. Returns true if the window was successfully shown.
   bool Show();
 
+  // Whether the first Show() should open maximised.
+  //
+  // Show() is not called by Create(); FlutterWindow defers it to the first
+  // rendered frame. So a ShowWindow(SW_MAXIMIZE) issued right after Create
+  // is undone moments later by Show()'s SW_SHOWNORMAL -- which is exactly
+  // why the remembered maximised state was saved correctly and then ignored
+  // on relaunch. The intent has to survive until Show() actually runs.
+  void SetStartMaximized(bool maximized);
+
   // Release OS resources associated with window.
   void Destroy();
 
@@ -94,6 +103,7 @@ class Win32Window {
 
   // window handle for top level window.
   HWND window_handle_ = nullptr;
+  bool start_maximized_ = false;
 
   // window handle for hosted content.
   HWND child_content_ = nullptr;

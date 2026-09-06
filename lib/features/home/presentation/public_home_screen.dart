@@ -13,6 +13,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/aura_window.dart';
 import '../../../core/ui/responsive/adaptive_card_grid.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/domain/feed_item.dart';
@@ -212,11 +213,14 @@ class _HeroSection extends StatelessWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: kHeroWidth),
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(
+                // Vertical rhythm by window, not a fixed 60/56 tuned for a
+                // phone hero. On a desktop window that padding pushed the
+                // fold past everything worth seeing.
+                padding: EdgeInsets.fromLTRB(
                   AuraSpace.s20,
-                  60,
+                  AuraWindow.of(context).windowClass.canHoldSelection ? 32 : 60,
                   AuraSpace.s20,
-                  56,
+                  AuraWindow.of(context).windowClass.canHoldSelection ? 28 : 56,
                 ),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
@@ -306,9 +310,31 @@ class _HeroLeft extends StatelessWidget {
         // enter as accountable participants. The previous hero led with an
         // institutions-first, verification-as-premise headline — the
         // prohibited acquisition framing (see the public-first gate).
-        const Text(
-          'Public conversation that\nkeeps its context.',
-          style: AuraText.display,
+        // A HEADLINE SIZED FOR THE WINDOW IT IS IN.
+        //
+        // `AuraText.display` is a phone hero size. Unchanged on a 2000 px
+        // desktop window it filled the viewport on its own, so the installed
+        // client opened on one enormous sentence and everything real — the
+        // live discourse panel beside it, the sections below — was a scroll
+        // away. That is what made the signed-out client read as a marketing
+        // website running inside an EXE.
+        //
+        // The hard line break goes with it: it was placed for a narrow
+        // measure and, at desktop width, broke the sentence in the wrong
+        // place while leaving the line half empty.
+        Builder(
+          builder: (context) {
+            final desktop =
+                AuraWindow.of(context).windowClass.canHoldSelection;
+            return Text(
+              desktop
+                  ? 'Public conversation that keeps its context.'
+                  : 'Public conversation that\nkeeps its context.',
+              style: desktop
+                  ? AuraText.display.copyWith(fontSize: 46, height: 1.12)
+                  : AuraText.display,
+            );
+          },
         ),
         const SizedBox(height: AuraSpace.s16),
         Text(

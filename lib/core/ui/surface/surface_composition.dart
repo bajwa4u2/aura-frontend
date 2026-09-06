@@ -429,6 +429,40 @@ class AuraSurfaceScaffold extends StatelessWidget {
 
 }
 
+/// THE WORK COLUMN, FOR REALMS THAT DO NOT COMPOSE THROUGH THE SCAFFOLD.
+///
+/// `AuraSurfaceScaffold` gives its centre this treatment already. The operator
+/// console builds its own frame — legitimately, because its areas and
+/// authority chip are operator-specific — and so had no content measure at
+/// all: its surfaces ran edge to edge with a 120 px gutter on one side and
+/// none on the other, which is a different spatial physics from every other
+/// realm in the product.
+///
+/// Exposing the same column means a realm can keep its own chrome without
+/// inventing its own content geometry.
+class AuraWorkColumn extends StatelessWidget {
+  const AuraWorkColumn({
+    super.key,
+    required this.child,
+    this.measure = AuraMeasure.working,
+    this.padding = const EdgeInsets.symmetric(horizontal: AuraSpace.s20),
+  });
+
+  final Widget child;
+  final AuraMeasure measure;
+  final EdgeInsets padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return _CenterColumn(
+      measure: measure,
+      padding: padding,
+      composition: AuraSurfaceComposition.multiZone,
+      child: child,
+    );
+  }
+}
+
 class _CenterColumn extends StatelessWidget {
   const _CenterColumn({
     required this.measure,

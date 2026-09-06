@@ -292,20 +292,66 @@ class _Body extends ConsumerWidget {
                       ],
                     ],
                   ),
-                  if (continuity != null) ...[
+                  // WHO IT IS WITH GETS THE WHOLE FIRST LINE.
+                  //
+                  // The timestamp used to sit in a trailing column beside the
+                  // name, taking ~68 px off it before a single letter was
+                  // drawn. In the desktop selection column that left "Muham…"
+                  // and "Mrs Bajw…" — the one thing a person scans this list
+                  // for, truncated, to make room for metadata they are not
+                  // scanning for.
+                  //
+                  // A timestamp is metadata about the last message, so it
+                  // belongs on the line WITH the last message. The name now
+                  // has the full width; the preview yields a little instead,
+                  // which is the right thing to give up because it is already
+                  // an excerpt.
+                  if (continuity != null || conversation.lastMessageAt != null)
+                    ...[
                     const SizedBox(height: 3),
-                    Text(
-                      continuity,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AuraText.small.copyWith(
-                        color: attention
-                            ? AuraSurface.ink
-                            : AuraSurface.muted,
-                        fontStyle: conversation.latest?.retracted == true
-                            ? FontStyle.italic
-                            : FontStyle.normal,
-                      ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        if (continuity != null)
+                          Expanded(
+                            child: Text(
+                              continuity,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AuraText.small.copyWith(
+                                color: attention
+                                    ? AuraSurface.ink
+                                    : AuraSurface.muted,
+                                fontStyle:
+                                    conversation.latest?.retracted == true
+                                        ? FontStyle.italic
+                                        : FontStyle.normal,
+                              ),
+                            ),
+                          )
+                        else
+                          const Spacer(),
+                        if (conversation.lastMessageAt != null) ...[
+                          const SizedBox(width: AuraSpace.s8),
+                          Text(
+                            // The one temporal authority every surface reads.
+                            AuraTemporal.humanize(
+                              ProductTime(
+                                  conversation.lastMessageAt!, TimeEvent.sent),
+                              style: TemporalStyle.compact,
+                            ),
+                            style: AuraText.micro.copyWith(
+                              color: attention
+                                  ? AuraSurface.ink
+                                  : AuraSurface.faint,
+                              fontWeight: attention
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                   if (contextLabel != null) ...[
@@ -319,28 +365,11 @@ class _Body extends ConsumerWidget {
                 ],
               ),
             ),
-            const SizedBox(width: AuraSpace.s8),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                if (conversation.lastMessageAt != null)
-                  Text(
-                    // The one temporal authority every surface reads.
-                    AuraTemporal.humanize(
-                      ProductTime(conversation.lastMessageAt!, TimeEvent.sent),
-                      style: TemporalStyle.compact,
-                    ),
-                    style: AuraText.micro.copyWith(
-                      color: attention ? AuraSurface.ink : AuraSurface.faint,
-                      fontWeight:
-                          attention ? FontWeight.w700 : FontWeight.w500,
-                    ),
-                  ),
-                const SizedBox(height: AuraSpace.s6),
-                _AttentionMark(conversation: conversation),
-              ],
-            ),
+            // Attention stays where the eye already goes for it — the end
+            // of the row — but on its own now, with no timestamp stacked
+            // above it competing for the same corner.
+            const SizedBox(width: AuraSpace.s6),
+            _AttentionMark(conversation: conversation),
             // Discoverable without a gesture, on every platform.
             _OverflowButton(onTap: openSheet),
           ],

@@ -22,6 +22,10 @@
 ///    sheet for the rest. No capability disappears because the viewport did.
 library;
 
+import '../../../core/ui/aura_design_system.dart';
+import '../../../core/ui/surface/surface_composition.dart';
+import '../../../app/shell/global_platform_shell.dart';
+import '../../../core/ui/aura_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -159,43 +163,61 @@ class _OperatorShellState extends ConsumerState<OperatorShell> {
         final path = GoRouterState.of(context).uri.path;
         final current = OperatorArea.forPath(path) ?? areas.first;
 
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final width = constraints.maxWidth;
-            final isDesktop = width >= kOperatorDesktopWidth;
-            final hasRail = width >= kOperatorRailWidth;
+        // THE OPERATOR CONSOLE IS A REALM OF AURA, NOT A SEPARATE PRODUCT.
+        //
+        // This shell drew its own chrome from top to bottom: no Aura platform
+        // bar, no wordmark, no search or attention or account — a different
+        // header height, its own 1000/760 breakpoints, and a rail that
+        // expanded whenever the window was wide regardless of the posture the
+        // person had chosen everywhere else. Crossing into Admin from Home
+        // read as launching a different application.
+        //
+        // What is operator-specific stays: the area header, the authority
+        // chip, the areas themselves. What is Aura stays Aura: the platform
+        // bar above it, the window authority deciding when a rail exists, and
+        // the same navigation posture the member and institution rails use.
+        final win = AuraWindow.of(context);
+        final hasRail = win.isDesktopClass;
+        final isDesktop = win.navPosture == AuraNavPosture.expanded;
 
-            return Scaffold(
-              backgroundColor: AuraSurface.page,
-              body: SafeArea(
-                child: Column(
-                  children: [
-                    _OperatorHeader(
-                      area: current,
-                      authority: authority,
-                      dense: !hasRail,
-                    ),
-                    Expanded(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (hasRail)
-                            _OperatorRail(
-                              areas: areas,
-                              current: current,
-                              expanded: isDesktop,
-                            ),
-                          Expanded(child: widget.child),
-                        ],
-                      ),
-                    ),
-                    if (!hasRail)
-                      _OperatorBar(areas: areas, current: current),
-                  ],
-                ),
+        return Scaffold(
+          backgroundColor: AuraSurface.page,
+          body: SafeArea(
+            child: GlobalPlatformShell(
+              // The operator header becomes the context bar the platform
+              // shell already knows how to carry — the same slot the member
+              // shell uses — instead of a second top-level header.
+              contextBar: _OperatorHeader(
+                area: current,
+                authority: authority,
+                dense: !hasRail,
               ),
-            );
-          },
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (hasRail)
+                          _OperatorRail(
+                            areas: areas,
+                            current: current,
+                            expanded: isDesktop,
+                          ),
+                        // The same content measure every other realm uses.
+                        // Operator surfaces are working surfaces, so they take
+                        // the room — but with the product's margins, not with
+                        // none on one side and 120 px on the other.
+                        Expanded(child: AuraWorkColumn(child: widget.child)),
+                      ],
+                    ),
+                  ),
+                  if (!hasRail)
+                    _OperatorBar(areas: areas, current: current),
+                ],
+              ),
+            ),
+          ),
         );
       },
     );
@@ -296,9 +318,18 @@ class _OperatorRail extends StatelessWidget {
     // there is a compact one that still names every area — because an icon
     // an operator cannot name is not navigation, it is a guess.
     return Container(
-      width: expanded ? 216 : 92,
+      // ONE EXPANDED WIDTH ACROSS THE PRODUCT. This was 216, the member
+      // rail was 264 and the institution rail 232 — three numbers for one
+      // region, so the left edge moved every time somebody crossed realms.
+      width: expanded
+          ? AuraNavPosture.expanded.railWidth
+          : AuraNavPosture.compact.railWidth,
+      // The same surface the member and institution rails use. Primary
+      // navigation is one region of the product; painting it a flat card
+      // colour here and a gradient everywhere else made the same region look
+      // like it belonged to a different application.
       decoration: const BoxDecoration(
-        color: AuraSurface.card,
+        gradient: AuraGradients.sideNav,
         border: Border(right: BorderSide(color: AuraSurface.divider)),
       ),
       child: ListView(
@@ -366,16 +397,22 @@ class _RailItem extends StatelessWidget {
                 color: selected ? AuraSurface.accent : AuraSurface.muted,
               ),
               const SizedBox(height: 4),
-              Text(
-                area.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: selected ? AuraSurface.ink : AuraSurface.muted,
-                  fontSize: 10.5,
-                  height: 1.1,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              // SHRINK, DO NOT TRUNCATE — the same rule the member rail
+              // follows. Ellipsis turned these into "Subje…", "Integr…",
+              // "Platfo…" and "Disco…", which asks an operator to decode four
+              // of the seven areas they navigate by.
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  area.label,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: selected ? AuraSurface.ink : AuraSurface.muted,
+                    fontSize: 10.5,
+                    height: 1.1,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  ),
                 ),
               ),
             ],

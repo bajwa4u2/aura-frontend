@@ -273,6 +273,14 @@ bool isMemberShellPath(String path) {
       // the intake inbox and the person returns to it after signing in.
       path == '/share/incoming' ||
       path == '/announcements/create' ||
+      // Editing a published announcement. MEMBER for the same reason the
+      // composer is: it writes on behalf of the authority that published the
+      // notice, so a visitor reaching it must be sent to sign in with the
+      // destination preserved rather than shown an empty composer over a
+      // real announcement. `_isEditingPath` already keeps it out of the
+      // public reading prefix; this is the other half — being explicitly
+      // classified rather than merely not-public.
+      (path.startsWith('/announcements/') && _isEditingPath(path)) ||
       path == '/ai/claim-audit' ||
       path == '/me' ||
       path == '/me/edit' ||

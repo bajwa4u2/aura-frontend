@@ -356,6 +356,15 @@ class NavigationAuthority {
   /// founder ruling 2026-08-16: same identity, same canonical URL).
   static String articleRoute(String slug) => '/articles/$slug';
 
+  /// ANNOUNCEMENT EDITING — the authority that published a notice correcting
+  /// it in place, at the address readers already hold.
+  ///
+  /// Addressed by SLUG, the same identity the reader, the share page and the
+  /// canonical URL use. An announcement edited at one identity and read at
+  /// another would be two objects.
+  static String announcementEditorRoute(String slug) =>
+      '/announcements/$slug/edit';
+
   /// Article editor for an existing draft or published article.
   static String articleEditorRoute(String articleId) =>
       '/articles/write/$articleId';

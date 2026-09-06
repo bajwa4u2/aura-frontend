@@ -1,3 +1,4 @@
+import '../../../core/navigation/navigation_authority.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -5,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/shell/rail/rail_composition.dart';
-import '../../../core/auth/admin_access_provider.dart';
+import '../../admin/domain/operator_entry.dart';
 import '../../../core/navigation/canonical_destinations.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/link_preview/display_link_preview.dart';
@@ -260,28 +261,90 @@ class _AnnouncementDetailScreenState
     }
   }
 
-  /// Withdraw / remove, for the authority that publishes announcements.
+  /// WHAT THE AUTHORITY THAT PUBLISHED THIS CAN DO WITH IT.
+  ///
+  /// This offered Unpublish and Remove and nothing else, which made an
+  /// announcement effectively immutable once published: correcting a typo
+  /// meant withdrawing the notice and publishing a new one at a new address,
+  /// breaking every link already shared and reading, to anyone watching, as
+  /// the institution retracting something.
+  ///
+  /// Pinning was in the same position. The repository has had `pin` and
+  /// `unpin` throughout and the composer can set it at publication time, but
+  /// afterwards there was no way to take a notice down from the top of the
+  /// feed short of removing it altogether.
+  ///
+  /// Edit and Pin/Unpin are both ordinary authorship, and both were simply
+  /// unreachable. Destructive actions stay behind the confirmation they
+  /// already had; these two do not need one.
   Widget _buildAdminActions(Announcement a) {
     return PopupMenuButton<String>(
       tooltip: 'Manage this announcement',
-      itemBuilder: (context) => const [
+      itemBuilder: (context) => <PopupMenuEntry<String>>[
+        const PopupMenuItem<String>(
+          value: 'edit',
+          child: Text('Edit'),
+        ),
         PopupMenuItem<String>(
+          value: a.pinned ? 'unpin' : 'pin',
+          // The label states what the action DOES, not what is currently
+          // true — a menu that says "Pinned" leaves somebody guessing whether
+          // choosing it pins or unpins.
+          child: Text(a.pinned ? 'Unpin' : 'Pin to top'),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem<String>(
           value: 'unpublish',
           child: Text('Unpublish'),
         ),
-        PopupMenuItem<String>(
+        const PopupMenuItem<String>(
           value: 'remove',
           child: Text('Remove'),
         ),
       ],
       onSelected: (choice) {
-        if (choice == 'unpublish') {
-          unawaited(_unpublish(a));
-        } else if (choice == 'remove') {
-          unawaited(_remove(a));
+        switch (choice) {
+          case 'edit':
+            context.push(
+                NavigationAuthority.announcementEditorRoute(a.slug));
+          case 'pin':
+          case 'unpin':
+            unawaited(_setPinned(a, choice == 'pin'));
+          case 'unpublish':
+            unawaited(_unpublish(a));
+          case 'remove':
+            unawaited(_remove(a));
         }
       },
     );
+  }
+
+  /// Pin or unpin, and say so.
+  ///
+  /// Not behind a confirmation: pinning is reversible from the same menu in
+  /// one step, and a dialog for a reversible act trains people to dismiss
+  /// dialogs. Remove keeps its confirmation because it does not.
+  Future<void> _setPinned(Announcement a, bool pinned) async {
+    final repo = ref.read(announcementsRepoProvider);
+    try {
+      if (pinned) {
+        await repo.pin(a.id);
+      } else {
+        await repo.unpin(a.id);
+      }
+      if (!mounted) return;
+      ref.invalidate(announcementBySlugProvider(a.slug));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(pinned ? 'Pinned to the top.' : 'No longer pinned.'),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('That did not go through. Try again.')),
+      );
+    }
   }
 
   Future<bool> _confirm({
@@ -385,8 +448,24 @@ class _AnnouncementDetailScreenState
     // unpublishing withdraws it from view and keeps it; removing is the
     // deletion. Neither is offered to anyone who cannot already administer
     // announcements -- the same authority that publishes them.
-    final isAdmin =
-        ref.watch(appAdminAccessProvider).valueOrNull?.isAdmin ?? false;
+    // WHY THE OWNER CONTROLS WERE NEVER THERE.
+    //
+    // This read `appAdminAccessProvider`, an AsyncValue, through
+    // `valueOrNull` — which is null while the check is in flight and null
+    // again on any error, so the menu resolved to "not an administrator" and
+    // the actions were simply not built. On a route reached by deep link or
+    // by tapping the pinned banner, that is the ordinary case: the founder
+    // reported the controls missing because for them they always were.
+    //
+    // `appAdminCachedDisplayProvider` was the second attempt and it is a
+    // CACHE: observed true on one visit and false on the next, which made the
+    // controls flicker in and out of existence. `canEnterOperatorConsoleProvider`
+    // is the durable answer to "may this person operate Aura", it is what
+    // gates the Aura Admin entry in the header, and it is the right authority
+    // here on its own terms — platform announcements are published by the
+    // operator, so the authority that may publish one is the authority that
+    // may correct, pin or withdraw it.
+    final isAdmin = ref.watch(canEnterOperatorConsoleProvider);
     final loaded = async.valueOrNull;
 
     return AuraScaffold(

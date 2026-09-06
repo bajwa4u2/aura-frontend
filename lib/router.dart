@@ -1097,6 +1097,20 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/announcements',
             builder: (_, __) => const AnnouncementsScreen(),
           ),
+          // EDITING A PUBLISHED ANNOUNCEMENT.
+          //
+          // Addressed by slug, the same identity the reader and the share
+          // page use, so an author editing a notice and a person reading it
+          // are talking about the same object. Registered BEFORE the
+          // `/announcements/:slug` reader route so the more specific path
+          // wins.
+          GoRoute(
+            path: '/announcements/:slug/edit',
+            builder: (context, state) => AnnouncementEditorScreen(
+              scope: AnnouncementEditorScope.platform,
+              editSlug: state.pathParameters['slug'],
+            ),
+          ),
           GoRoute(
             path: '/announcements/create',
             builder: (context, state) {
