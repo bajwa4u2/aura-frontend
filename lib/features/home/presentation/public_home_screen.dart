@@ -13,8 +13,8 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/ui/surface/surface_composition.dart';
 import '../../../core/ui/aura_window.dart';
-import '../../../core/ui/responsive/adaptive_card_grid.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../../feed/domain/feed_item.dart';
 import '../../institutions/live_rooms/global_live_discovery.dart';
@@ -49,23 +49,73 @@ class PublicHomeScreen extends ConsumerWidget {
 
     return AuraScaffold(
       showHeader: false,
+      // THE SECTIONS ARE THE COMPOSITION; THE PAGE MUST NOT RE-CROP THEM.
+      //
+      // Home was inheriting `AuraScaffold`'s default page band, so the whole
+      // landing was a 1320 px column inside a 2000 px window. Every section
+      // already centres its own content at `kHeroWidth`, so the band bought
+      // nothing — but the sections that paint a BACKGROUND (the hero
+      // gradient, the ecosystem strip's rules) were cropped to that column
+      // and read as cards floating on the page rather than as bands of it.
+      // On the maximised client the hero was a visible 1311 px rectangle
+      // with dark page either side.
+      //
+      // Window composition is resolved once. Here that resolution belongs to
+      // the sections: full-bleed surface, content centred inside it.
+      maxWidth: AuraScaffold.childDecidesWidth,
+      // ONE ARC: ARRIVAL → UNDERSTANDING → ENCOUNTER → PARTICIPATION → CLOSING.
+      //
+      // What this replaces was nine sections in the order they were built:
+      //
+      //   hero → live-discourse rail → the same discussions again as full
+      //   cards → continuity cue → how it works → spaces → ecosystem →
+      //   a bordered promo restating Aura → footer
+      //
+      // Two defects were structural rather than visual, and no amount of
+      // restyling would have reached either.
+      //
+      //   * THE ENCOUNTER HAPPENED TWICE. `_LiveDiscourseSection` and
+      //     `_DiscussionPreviewSection` both read `globalPublicFeedProvider`:
+      //     the first as summary rail cards under "Live discourse", the
+      //     second as the real posts under "What's being discussed now". A
+      //     visitor met the same three discussions twice in a row, under two
+      //     headings that mean the same thing. The real posts are the
+      //     encounter; the rail was a preview of what came next. Retired.
+      //     Nothing is lost — the institution-responded signal the rail
+      //     carried is already rendered inside each card's footer strip.
+      //
+      //   * UNDERSTANDING ARRIVED AFTER ENCOUNTER. "How Aura works" is four
+      //     short steps and it explains what the discussions below it are.
+      //     It sat five sections down. It now bridges the hero and the
+      //     discourse, which is the job it was written for.
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
+          // ARRIVAL
           _HeroSection(
             feedAsync: feedAsync,
             liveAsync: liveAsync,
             isAuthed: isAuthed,
           ),
-          _LiveDiscourseSection(feedAsync: feedAsync, isAuthed: isAuthed),
+          // UNDERSTANDING
+          const _HowItWorksSection(),
+          // ENCOUNTER
           _DiscussionPreviewSection(feedAsync: feedAsync, isAuthed: isAuthed),
           const SizedBox(height: AuraSpace.s14),
-          const CivicMemoryContinuityCue(),
+          // The cue paints no background of its own and does not centre
+          // itself, so it takes the page's reading band explicitly rather
+          // than stretching to the window.
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: kHeroWidth),
+              child: const CivicMemoryContinuityCue(),
+            ),
+          ),
           const SizedBox(height: AuraSpace.s14),
-          const _HowItWorksSection(),
+          // PARTICIPATION
           const _SpacesSection(),
           const _PublicDiscoveryStrip(),
-          const _ParticipationBand(),
+          // CLOSING
           const ShellFooter(),
         ],
       ),
@@ -106,9 +156,11 @@ class _ClassifiedFeed {
     var instReplyHits = 0;
     for (final it in items) {
       final officialReplies = (it.replyPreview?.items ?? const [])
-          .where((r) =>
-              r.author.context?.type ==
-              FeedIdentityContextType.officialInstitution)
+          .where(
+            (r) =>
+                r.author.context?.type ==
+                FeedIdentityContextType.officialInstitution,
+          )
           .toList(growable: false);
       if (officialReplies.isNotEmpty) {
         institution.add(it);
@@ -226,6 +278,15 @@ class _HeroSection extends StatelessWidget {
                   builder: (context, constraints) {
                     final wide = constraints.maxWidth >= 720;
                     final left = _HeroLeft(isAuthed: isAuthed);
+                    // The activity module is optional. When the network has
+                    // nothing current to show, the hero is the whole band
+                    // rather than a headline column with a hole beside it.
+                    if (!_LiveDiscoursePulse.hasCurrentActivity(
+                      feedAsync,
+                      liveAsync,
+                    )) {
+                      return left;
+                    }
                     final right = _LiveDiscoursePulse(
                       feedAsync: feedAsync,
                       liveAsync: liveAsync,
@@ -324,21 +385,44 @@ class _HeroLeft extends StatelessWidget {
         // place while leaving the line half empty.
         Builder(
           builder: (context) {
-            final desktop =
-                AuraWindow.of(context).windowClass.canHoldSelection;
+            final desktop = AuraWindow.of(context).windowClass.canHoldSelection;
             return Text(
               desktop
                   ? 'Public conversation that keeps its context.'
                   : 'Public conversation that\nkeeps its context.',
-              style: desktop
-                  ? AuraText.display.copyWith(fontSize: 46, height: 1.12)
-                  : AuraText.display,
+              // 46 was WRONG and I put it there. `AuraText.display` is 40 --
+              // I assumed it was an oversized phone-hero style without
+              // reading it, so the "desktop correction" made the headline
+              // BIGGER than the thing it was correcting. Looking at the
+              // running client is what caught it.
+              //
+              // The size was never the problem. What made the first view read
+              // as a marketing page was the hard line break and a header and
+              // hero band that floated in the middle of the window; both are
+              // addressed where they actually live.
+              style: AuraText.display,
             );
           },
         ),
         const SizedBox(height: AuraSpace.s16),
+        // ONE THOUGHT, NOT SIX CLAIMS.
+        //
+        // This paragraph ran 55 words and made five separate claims, three of
+        // them about institutions — it named governments, universities,
+        // agencies and associations before a visitor had been told what the
+        // product does for a person. That reverses the causal order Aura is
+        // built on: public communication is the originating force and
+        // institutional accountability is what follows from institutions
+        // participating in it, not the reason to be here.
+        //
+        // What remains is the part only Aura claims: you speak as yourself,
+        // and what was said stays legible afterwards. Institutions arrive
+        // three lines later, as step three of a loop and as a place to
+        // browse — participants, not premise.
         Text(
-          'Raise what matters in the open, with people who answer under their real identity. Conversations keep their history, commitments stay on the record, and when institutions take part they respond where everyone can see it — governments, universities, agencies, and associations included. Not a feed. A record.',
+          'Raise what matters in the open, with people who answer under their '
+          'real name. Conversations keep their history, so what was said and '
+          'what was promised are still there later.',
           style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.6),
         ),
         const SizedBox(height: AuraSpace.s28),
@@ -351,9 +435,13 @@ class _HeroLeft extends StatelessWidget {
               icon: Icons.arrow_forward_rounded,
               onPressed: () => _goJoinAura(context, isAuthed: isAuthed),
             ),
+            // C3 froze Discover as the consolidated discovery intention and
+            // Search as a facet of it. "Explore discussions" was routing to
+            // the search box — a label promising discussions and a
+            // destination offering an empty field.
             _HeroOutlineButton(
               label: 'Explore discussions',
-              onTap: () => context.push('/search'),
+              onTap: () => context.push('/discover'),
             ),
           ],
         ),
@@ -395,38 +483,75 @@ class _HeroLeft extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: AuraSpace.s16),
-        const Wrap(
-          spacing: AuraSpace.s8,
-          runSpacing: AuraSpace.s8,
-          children: [
-            _TrustPill(
-              label: 'Accountable identities',
-              icon: Icons.verified_user_outlined,
-            ),
-            _TrustPill(
-              label: 'Institutions on record',
-              icon: Icons.account_balance_outlined,
-            ),
-            _TrustPill(
-              label: 'Outcomes are public',
-              icon: Icons.task_alt_rounded,
-            ),
-          ],
-        ),
+        // THE TRUST CHIPS ARE GONE, AND THEY WERE NOT A LOSS.
+        //
+        // "Accountable identities · Institutions on record · Outcomes are
+        // public" are steps 1, 3 and 4 of "How Aura works", which now sits
+        // directly beneath the hero. The first view was carrying an eyebrow,
+        // a headline, a paragraph, two buttons, a text link, an activity
+        // panel AND three badges — seven mechanisms all explaining the same
+        // product. Saying a thing twice in one viewport does not make it
+        // twice as true; it makes the surface read as though it does not
+        // trust the sentence above.
       ],
     );
   }
 }
 
+/// HAPPENING NOW — SHOWN ONLY WHEN SOMETHING IS.
+///
+/// This panel used to render unconditionally, three rows deep, beside the
+/// headline. On the live network that meant a signed-out visitor's first
+/// view of Aura was:
+///
+///     3 active discussions
+///     0 institution responses
+///     0 live now
+///     "Discourse is just starting to surface — stay close."
+///
+/// Every number true, and the composition still wrong: a scoreboard whose
+/// dominant value is zero makes the product's immaturity the co-star of its
+/// own hero, and the line underneath asked a stranger to be patient with a
+/// product they had known for four seconds.
+///
+/// The correction is not to invent numbers or soften the words. It is to let
+/// the module earn its prominence:
+///
+///   * HAPPENING NOW MEANS NOW. Live sessions and institutional responses are
+///     current events. A handful of discussions with a reply each is the
+///     archive, and the encounter section renders it properly a screen below
+///     — so the panel is not the only way to learn it exists.
+///   * ZERO ROWS ARE NOT SHOWN. A count of nothing is not a signal, and
+///     three of them in a bordered card is a scoreboard of absence.
+///   * NO REASSURANCE LINE. Aura presents what exists; it does not ask to be
+///     graded on a curve.
+///
+/// When nothing qualifies the module is absent and the hero takes the whole
+/// width — which is the honest use of the space, not a gap where a widget
+/// used to be.
 class _LiveDiscoursePulse extends StatelessWidget {
-  const _LiveDiscoursePulse({
-    required this.feedAsync,
-    required this.liveAsync,
-  });
+  const _LiveDiscoursePulse({required this.feedAsync, required this.liveAsync});
 
   final AsyncValue<FeedPage> feedAsync;
   final AsyncValue<List<LiveNowDiscoveryEntry>> liveAsync;
+
+  /// Whether the network has something current worth a module in the hero.
+  ///
+  /// Deliberately NOT "any count above zero". Asked by `_HeroSection` before
+  /// it chooses its layout, so the decision is made once and the panel and
+  /// the space it would occupy can never disagree.
+  static bool hasCurrentActivity(
+    AsyncValue<FeedPage> feedAsync,
+    AsyncValue<List<LiveNowDiscoveryEntry>> liveAsync,
+  ) {
+    final live = liveAsync.maybeWhen(data: (l) => l.length, orElse: () => 0);
+    if (live > 0) return true;
+    final responses = feedAsync.maybeWhen(
+      data: (p) => _ClassifiedFeed.from(p.items).institutionResponseCount,
+      orElse: () => 0,
+    );
+    return responses > 0;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -438,8 +563,8 @@ class _LiveDiscoursePulse extends StatelessWidget {
         institutionResponseCount: 0,
       ),
     );
-    final activeCount = classified.active.length +
-        classified.institutionResponded.length;
+    final activeCount =
+        classified.active.length + classified.institutionResponded.length;
     final liveEntries = liveAsync.maybeWhen(
       data: (l) => l,
       orElse: () => const <LiveNowDiscoveryEntry>[],
@@ -479,59 +604,43 @@ class _LiveDiscoursePulse extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AuraSpace.s14),
-          _PulseStatRow(
-            icon: Icons.forum_rounded,
-            tint: AuraSurface.accent,
-            label: 'active discussions',
-            count: activeCount,
-            loading: feedAsync.isLoading,
-          ),
-          const SizedBox(height: AuraSpace.s10),
-          _PulseStatRow(
-            icon: Icons.account_balance_rounded,
-            tint: AuraSurface.accent,
-            label: 'institution responses',
-            count: classified.institutionResponseCount,
-            loading: feedAsync.isLoading,
-          ),
-          const SizedBox(height: AuraSpace.s10),
-          _PulseStatRow(
-            icon: Icons.podcasts_rounded,
-            tint: AuraSurface.accent,
-            label: 'live now',
-            count: liveCount,
-            loading: liveAsync.isLoading,
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          // Honest context line — varies with the actual counts so the
-          // closing line never lies. With three zero counts the box would
-          // otherwise claim "Discussions are happening across spaces" while
-          // the rail showed zeros next to it. Now the line reflects what
-          // the numbers actually say.
-          Text(
-            (() {
-              final any = activeCount > 0 ||
-                  classified.institutionResponseCount > 0 ||
-                  liveCount > 0;
-              final all = activeCount > 0 &&
-                  classified.institutionResponseCount > 0 &&
-                  liveCount > 0;
-              if (all) {
-                return 'Discussions are happening across spaces right now';
-              }
-              if (any) {
-                return 'Discourse is just starting to surface — stay close.';
-              }
-              return 'Quiet across the network right now. New discourse '
-                  'shows up here as it lands.';
-            })(),
-            style: AuraText.small.copyWith(
-              color: AuraSurface.muted,
-              height: 1.5,
-            ),
-          ),
+          // Only what is actually happening. A row per non-zero signal, in
+          // the same order as before so the panel is recognisable when it
+          // does appear.
+          for (final row in <Widget>[
+            if (liveCount > 0)
+              _PulseStatRow(
+                icon: Icons.podcasts_rounded,
+                tint: AuraSurface.accent,
+                label: 'live now',
+                count: liveCount,
+                loading: false,
+              ),
+            if (classified.institutionResponseCount > 0)
+              _PulseStatRow(
+                icon: Icons.account_balance_rounded,
+                tint: AuraSurface.accent,
+                label: 'institution responses',
+                count: classified.institutionResponseCount,
+                loading: false,
+              ),
+            if (activeCount > 0)
+              _PulseStatRow(
+                icon: Icons.forum_rounded,
+                tint: AuraSurface.accent,
+                label: 'active discussions',
+                count: activeCount,
+                loading: false,
+              ),
+          ]) ...[row, const SizedBox(height: AuraSpace.s10)],
+          // NO CLOSING LINE.
+          //
+          // Every version of it was launch-stage reassurance: "stay close",
+          // "just starting to surface", "shows up here as it lands". The
+          // counts above are the statement. A number that is present does
+          // not need to be apologised for, and a number that is absent is
+          // no longer shown.
           if (firstLive != null) ...[
-            const SizedBox(height: AuraSpace.s14),
             const Divider(color: AuraSurface.divider, height: 1),
             const SizedBox(height: AuraSpace.s14),
             LiveNowCard(
@@ -575,7 +684,11 @@ class _PulseStatRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(AuraRadius.r10),
             border: Border.all(color: tint.withValues(alpha: 0.25)),
           ),
-          child: Icon(icon, size: AuraIconSize.sm, color: AuraSurface.accentText),
+          child: Icon(
+            icon,
+            size: AuraIconSize.sm,
+            color: AuraSurface.accentText,
+          ),
         ),
         const SizedBox(width: AuraSpace.s12),
         Text(
@@ -590,42 +703,6 @@ class _PulseStatRow extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _TrustPill extends StatelessWidget {
-  const _TrustPill({required this.label, required this.icon});
-
-  final String label;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: AuraSpace.s6,
-      ),
-      decoration: BoxDecoration(
-        color: AuraSurface.subtle,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: AuraSurface.faint),
-          const SizedBox(width: AuraSpace.s6),
-          Text(
-            label,
-            style: AuraText.micro.copyWith(
-              color: AuraSurface.muted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -663,468 +740,6 @@ class _HeroOutlineButton extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION 2 — LIVE DISCOURSE RAILS
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _LiveDiscourseSection extends StatelessWidget {
-  const _LiveDiscourseSection({
-    required this.feedAsync,
-    required this.isAuthed,
-  });
-
-  final AsyncValue<FeedPage> feedAsync;
-  final bool isAuthed;
-
-  @override
-  Widget build(BuildContext context) {
-    return feedAsync.maybeWhen(
-      data: (page) {
-        final classified = _ClassifiedFeed.from(page.items);
-        // When the rails are empty we used to hide the section. That made
-        // a quiet day on the network read as "the product is dead." Show
-        // a launch-state placeholder instead: same heading, same scaffold
-        // weight, with copy that frames the silence as intentional and
-        // points to a concrete next action.
-        if (classified.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(
-              0,
-              AuraSpace.s28,
-              0,
-              AuraSpace.s4,
-            ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: kHeroWidth),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AuraSpace.s16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const _SectionHeading(
-                        title: 'Live discourse',
-                        subtitle:
-                            'When discussions move, they show up here',
-                      ),
-                      const SizedBox(height: AuraSpace.s16),
-                      _LiveDiscoursePlaceholderCard(isAuthed: isAuthed),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        }
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(
-            0,
-            AuraSpace.s28,
-            0,
-            AuraSpace.s4,
-          ),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: kHeroWidth),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AuraSpace.s16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const _SectionHeading(
-                      title: 'Live discourse',
-                      subtitle:
-                          "What's happening across the network right now",
-                    ),
-                    const SizedBox(height: AuraSpace.s16),
-                    if (classified.active.isNotEmpty) ...[
-                      _DiscourseRail(
-                        title: 'Active discussions',
-                        icon: Icons.bolt_rounded,
-                        count: classified.active.length,
-                        items: classified.active.take(5).toList(),
-                        kind: _RailKind.active,
-                        ctaLabel: 'Join discussion',
-                        onTap: (it) => _openThread(context, it),
-                      ),
-                      const SizedBox(height: AuraSpace.s16),
-                    ],
-                    if (classified.institutionResponded.isNotEmpty)
-                      _DiscourseRail(
-                        title: 'Institution responded',
-                        icon: Icons.account_balance_rounded,
-                        count: classified.institutionResponded.length,
-                        items: classified.institutionResponded
-                            .take(5)
-                            .toList(),
-                        kind: _RailKind.institutionResponded,
-                        ctaLabel: 'View responses',
-                        onTap: (it) => _openThreadFocused(
-                          context,
-                          it,
-                          'first-official',
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-      orElse: () => const SizedBox.shrink(),
-    );
-  }
-}
-
-// Empty-state placeholder for the Live Discourse section. We show this
-// instead of hiding the whole section when both rails would be empty —
-// the public homepage needs to communicate that the discourse surface
-// EXISTS and is something the visitor can join, even on a quiet day.
-class _LiveDiscoursePlaceholderCard extends StatelessWidget {
-  const _LiveDiscoursePlaceholderCard({required this.isAuthed});
-
-  final bool isAuthed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AuraSpace.s20),
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.r16),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.forum_outlined,
-                size: 22,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(width: AuraSpace.s8),
-              const Text('Quiet right now', style: AuraText.title),
-            ],
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          Text(
-            'No active discussions in the last hour. New discourse '
-            'shows up here as institutions respond and members start '
-            'threads. Check back shortly, or start one yourself.',
-            style: AuraText.body.copyWith(height: 1.5),
-          ),
-          const SizedBox(height: AuraSpace.s14),
-          Wrap(
-            spacing: AuraSpace.s8,
-            runSpacing: AuraSpace.s8,
-            children: [
-              FilledButton(
-                onPressed: () => context.go(isAuthed ? '/compose' : '/auth'),
-                child: Text(isAuthed ? 'Start a discussion' : 'Join Aura'),
-              ),
-              OutlinedButton(
-                onPressed: () => context.push('/spaces'),
-                child: const Text('Explore spaces'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DiscourseRail extends StatelessWidget {
-  const _DiscourseRail({
-    required this.title,
-    required this.icon,
-    required this.count,
-    required this.items,
-    required this.kind,
-    required this.ctaLabel,
-    required this.onTap,
-  });
-
-  final String title;
-  final IconData icon;
-  final int count;
-  final List<FeedItem> items;
-  final _RailKind kind;
-  final String ctaLabel;
-  final void Function(FeedItem) onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: AuraIconSize.sm, color: AuraSurface.accentText),
-            const SizedBox(width: AuraSpace.s8),
-            Text(
-              title,
-              style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(width: AuraSpace.s8),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AuraSpace.s8,
-                vertical: 2,
-              ),
-              decoration: BoxDecoration(
-                color: AuraSurface.accentSoft,
-                borderRadius: BorderRadius.circular(AuraRadius.pill),
-                border: Border.all(
-                  color: AuraSurface.accent.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Text(
-                '$count',
-                style: AuraText.micro.copyWith(
-                  color: AuraSurface.accentText,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AuraSpace.s10),
-        // Discourse rails — operational cards, not chips. On tablet/desktop
-        // they wrap into a grid (2–4 columns by available width). On narrow
-        // viewports they fall back to a pointer-aware horizontal rail with
-        // mouse-wheel + arrow keys + chevron affordances, so no card is
-        // unreachable on any pointing input. cardHeight is REQUIRED so the
-        // narrow rail doesn't throw "Vertical viewport given unbounded
-        // height" — a previous build that wrapped each card in SizedBox
-        // height 196 but forgot to bound the rail itself caused the
-        // entire feed below to fail rendering.
-        AdaptiveCardGrid(
-          cards: [
-            for (final item in items)
-              _RailCard(
-                item: item,
-                kind: kind,
-                ctaLabel: ctaLabel,
-                onTap: () => onTap(item),
-              ),
-          ],
-          cardWidth: 320,
-          // 240 not 196 — the rail card content (_RailPill + up to
-          // two-line headline + author/space line + Spacer + footer
-          // row with replies / officials counters) intrinsically
-          // needs ~240px; 196 tripped a 44px BOTTOM OVERFLOWED
-          // RenderFlex on /home for any item whose headline wrapped
-          // to two lines.
-          cardHeight: 240,
-          gap: AuraSpace.s10,
-          minCardsPerRow: 2,
-          maxCardsPerRow: 4,
-        ),
-      ],
-    );
-  }
-}
-
-/// Phase-7 polish — differentiates rail cards visually so a scanning
-/// eye instantly tells "Active" from "Institution responded". Both
-/// pills stay inside the existing accent token family so we don't
-/// introduce new colors.
-enum _RailKind { active, institutionResponded }
-
-class _RailCard extends StatelessWidget {
-  const _RailCard({
-    required this.item,
-    required this.kind,
-    required this.ctaLabel,
-    required this.onTap,
-  });
-
-  final FeedItem item;
-  final _RailKind kind;
-  final String ctaLabel;
-  final VoidCallback onTap;
-
-  String get _headline {
-    final t = item.title?.trim() ?? '';
-    if (t.isNotEmpty) return t;
-    final body = item.body.trim();
-    if (body.length <= 80) return body;
-    return '${body.substring(0, 80)}…';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final replyCount = item.interaction.canViewReplyCount
-        ? item.interaction.replyCount
-        : 0;
-    final spaceName = item.publicSpaceName?.trim() ?? '';
-    final authorName = item.author.name.trim();
-    final officialReplies = (item.replyPreview?.items ?? const [])
-        .where((r) =>
-            r.author.context?.type ==
-            FeedIdentityContextType.officialInstitution)
-        .toList(growable: false);
-    // Width comes from the parent (AdaptiveCardGrid sizes the cell in
-    // both rail and grid modes); the previous hard-coded 320 fought the
-    // grid wrap on wide viewports.
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AuraRadius.lg),
-        child: Container(
-          padding: const EdgeInsets.all(AuraSpace.s14),
-          decoration: BoxDecoration(
-            color: AuraSurface.card,
-            borderRadius: BorderRadius.circular(AuraRadius.lg),
-            border: Border.all(color: AuraSurface.divider),
-            boxShadow: AuraShadows.panel,
-          ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _RailPill(kind: kind),
-                const SizedBox(height: AuraSpace.s8),
-                Text(
-                  _headline,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AuraText.body.copyWith(
-                    fontWeight: FontWeight.w700,
-                    height: 1.35,
-                  ),
-                ),
-                const SizedBox(height: AuraSpace.s6),
-                Text(
-                  [
-                    if (authorName.isNotEmpty) authorName,
-                    if (spaceName.isNotEmpty) 'in $spaceName',
-                  ].join(' · '),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AuraText.small.copyWith(color: AuraSurface.muted),
-                ),
-                const Spacer(),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.chat_bubble_outline_rounded,
-                      size: 14,
-                      color: AuraSurface.faint,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$replyCount ${replyCount == 1 ? 'reply' : 'replies'}',
-                      style: AuraText.micro
-                          .copyWith(color: AuraSurface.muted),
-                    ),
-                    if (officialReplies.isNotEmpty) ...[
-                      const SizedBox(width: AuraSpace.s8),
-                      const Icon(
-                        Icons.account_balance_rounded,
-                        size: 14,
-                        color: AuraSurface.accentText,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${officialReplies.length} institution${officialReplies.length == 1 ? '' : 's'}',
-                        style: AuraText.micro.copyWith(
-                          color: AuraSurface.accentText,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: AuraSpace.s8),
-                Row(
-                  children: [
-                    Text(
-                      ctaLabel,
-                      style: AuraText.small.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: AuraSurface.accentText,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 14,
-                      color: AuraSurface.accentText,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-  }
-}
-
-/// Pulse pill on the rail card — leading marker that distinguishes
-/// active discussions from institution-responded threads at a glance.
-/// Both variants use existing accent tokens; the institutional variant
-/// gets a stronger fill + border so it reads as authoritative without
-/// introducing a new color.
-class _RailPill extends StatelessWidget {
-  const _RailPill({required this.kind});
-
-  final _RailKind kind;
-
-  @override
-  Widget build(BuildContext context) {
-    final isInstitutional = kind == _RailKind.institutionResponded;
-    final label =
-        isInstitutional ? 'Institution involved' : 'Active discussion';
-    // Institutional involvement is attribution, not verification — the
-    // verification glyph stays reserved for actual verification marks.
-    final icon =
-        isInstitutional ? Icons.account_balance_rounded : Icons.bolt_rounded;
-    final bg = isInstitutional
-        ? AuraSurface.accent.withValues(alpha: 0.18)
-        : AuraSurface.accentSoft;
-    final border = isInstitutional
-        ? AuraSurface.accent.withValues(alpha: 0.55)
-        : AuraSurface.accent.withValues(alpha: 0.3);
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s8,
-        vertical: 2,
-      ),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(color: border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 11, color: AuraSurface.accentText),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: AuraText.micro.copyWith(
-              color: AuraSurface.accentText,
-              fontWeight: isInstitutional ? FontWeight.w900 : FontWeight.w800,
-              letterSpacing: 0.2,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // SECTION 3 — DISCUSSION PREVIEW
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1146,78 +761,105 @@ class _DiscussionPreviewSection extends ConsumerWidget {
         AuraSpace.s16,
         AuraSpace.s8,
       ),
+      // THE DISCUSSIONS ARE READ, SO THE WHOLE SECTION IS A READING COLUMN.
+      //
+      // Signed in, this exact card lives in a `discourseFeed` surface: the
+      // `feed` measure with a context rail beside it, so its real column is
+      // roughly 1320 minus the rail. Public Home has no rail, so the same
+      // card was handed the entire page band and a paragraph ran about 140
+      // characters to the line. One object shown at two very different
+      // measures in two realms is the clearest way to make a product feel
+      // like two products.
+      //
+      // The same arithmetic gives the card the same width it has signed in.
+      // The HEADING travels with it rather than staying on the wider band:
+      // held out to `kHeroWidth` it ran past the right edge of its own
+      // cards, and a heading wider than what it heads reads as a section
+      // that lost its contents.
       child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: kHeroWidth),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        child: LayoutBuilder(
+          builder: (context, outer) {
+            final rail = AuraContextRail.widthFor(
+              MediaQuery.sizeOf(context).width,
+            );
+            final column = (kHeroWidth - rail - AuraSpace.s16).clamp(
+              kReadWidth,
+              kHeroWidth,
+            );
+            return ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: column),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Expanded(
-                    child: _SectionHeading(
-                      title: "What's being discussed now",
-                      subtitle: 'Live conversations across spaces',
-                    ),
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: _SectionHeading(
+                          title: "What's being discussed now",
+                          subtitle: 'Live conversations across spaces',
+                        ),
+                      ),
+                      AuraGhostButton(
+                        label: 'See all discussions',
+                        icon: Icons.explore_outlined,
+                        onPressed: () => context.push('/discover'),
+                      ),
+                    ],
                   ),
-                  AuraGhostButton(
-                    label: 'See all discussions',
-                    icon: Icons.explore_outlined,
-                    onPressed: () => context.push('/search'),
-                  ),
+                  const SizedBox(height: AuraSpace.s16),
+                  _buildDiscussions(context, ref),
                 ],
               ),
-              const SizedBox(height: AuraSpace.s16),
-              feedAsync.when(
-                data: (page) {
-                  if (page.items.isEmpty) {
-                    return const AuraProductState(
-                      state: ProductState.empty,
-                      headline: 'No public discussions yet',
-                      detail:
-                          'When people raise issues and institutions respond, those discussions appear here.',
-                      icon: Icons.forum_outlined,
-                    );
-                  }
-                  final items = page.items.take(6).toList(growable: false);
-                  return Column(
-                    children: [
-                      for (final item in items) ...[
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            DiscourseCard(
-                              item: item,
-                              showInteractionBar: isAuthed,
-                              // Phase-7 polish — homepage owns its own
-                              // footer strip below; suppress the card's
-                              // built-in CTA so we don't stack two.
-                              showEntryHookCta: false,
-                            ),
-                            _DiscourseRailFooter(
-                              item: item,
-                              isAuthed: isAuthed,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AuraSpace.s10),
-                      ],
-                    ],
-                  );
-                },
-                loading: () => const AuraProductState(
-                  state: ProductState.loading,
-                  headline: 'Loading discussions…',
-                ),
-                error: (e, _) => AuraProductState(
-                  state: ProductState.retryableError,
-                  headline: 'Could not load discussions',
-                  onRecover: () => ref.invalidate(globalPublicFeedProvider),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
+      ),
+    );
+  }
+
+  Widget _buildDiscussions(BuildContext context, WidgetRef ref) {
+    return feedAsync.when(
+      data: (page) {
+        if (page.items.isEmpty) {
+          return const AuraProductState(
+            state: ProductState.empty,
+            headline: 'No public discussions yet',
+            detail:
+                'When people raise issues and institutions respond, those discussions appear here.',
+            icon: Icons.forum_outlined,
+          );
+        }
+        final items = page.items.take(6).toList(growable: false);
+        return Column(
+          children: [
+            for (final item in items) ...[
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DiscourseCard(
+                    item: item,
+                    showInteractionBar: isAuthed,
+                    // Phase-7 polish — homepage owns its own
+                    // footer strip below; suppress the card's
+                    // built-in CTA so we don't stack two.
+                    showEntryHookCta: false,
+                  ),
+                  _DiscourseRailFooter(item: item, isAuthed: isAuthed),
+                ],
+              ),
+              const SizedBox(height: AuraSpace.s10),
+            ],
+          ],
+        );
+      },
+      loading: () => const AuraProductState(
+        state: ProductState.loading,
+        headline: 'Loading discussions…',
+      ),
+      error: (e, _) => AuraProductState(
+        state: ProductState.retryableError,
+        headline: 'Could not load discussions',
+        onRecover: () => ref.invalidate(globalPublicFeedProvider),
       ),
     );
   }
@@ -1228,22 +870,18 @@ class _DiscussionPreviewSection extends ConsumerWidget {
 /// routes through `/register?redirect=…`; everything else lands on the
 /// thread directly (where the existing compose flow handles auth).
 class _DiscourseRailFooter extends StatelessWidget {
-  const _DiscourseRailFooter({
-    required this.item,
-    required this.isAuthed,
-  });
+  const _DiscourseRailFooter({required this.item, required this.isAuthed});
 
   final FeedItem item;
   final bool isAuthed;
 
-  bool get _hasInstitutionalReply =>
-      (item.replyPreview?.items ?? const []).any((r) =>
-          r.author.context?.type ==
-          FeedIdentityContextType.officialInstitution);
+  bool get _hasInstitutionalReply => (item.replyPreview?.items ?? const []).any(
+    (r) =>
+        r.author.context?.type == FeedIdentityContextType.officialInstitution,
+  );
 
-  int get _replyCount => item.interaction.canViewReplyCount
-      ? item.interaction.replyCount
-      : 0;
+  int get _replyCount =>
+      item.interaction.canViewReplyCount ? item.interaction.replyCount : 0;
 
   @override
   Widget build(BuildContext context) {
@@ -1281,9 +919,7 @@ class _DiscourseRailFooter extends StatelessWidget {
         ),
         child: Container(
           height: 44,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s14,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s14),
           decoration: const BoxDecoration(
             color: AuraSurface.subtle,
             border: Border(top: BorderSide(color: AuraSurface.divider)),
@@ -1409,10 +1045,91 @@ class _HowItWorksSection extends StatelessWidget {
                   );
                 },
               ),
+              const SizedBox(height: AuraSpace.s14),
+              // PARTICIPATION, COMPOSED QUIETLY.
+              //
+              // This replaces `_ParticipationBand`: a full-width bordered
+              // panel, headline weight, that sat between the last real
+              // content and the footer and used that position to restate the
+              // product ("Institutions respond and act publicly here"),
+              // explain paid actions, and offer a button — three marketing
+              // moves in the place a page should be ending. It made the last
+              // thing a visitor read about Aura the commercial mechanics.
+              //
+              // Commercial transparency is not negotiable and has not been
+              // reduced: the sentence still says paid actions exist and are
+              // labelled, and `/aura/participation` still carries the full
+              // account. What changed is that it now sits where the loop is
+              // explained — one line, at the end of the explanation it
+              // belongs to — instead of becoming Home's closing identity.
+              _QuietContinuation(
+                text:
+                    'Some institutional actions are paid, such as priority '
+                    'responses and hosted sessions. Those are always '
+                    'labelled.',
+                label: 'How participation works',
+                onTap: () => context.push('/aura/participation'),
+              ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// A sentence and a way onward. Used where a section has a legitimate
+/// continuation that does not deserve a panel of its own.
+class _QuietContinuation extends StatelessWidget {
+  const _QuietContinuation({
+    required this.text,
+    required this.label,
+    required this.onTap,
+  });
+
+  final String text;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          text,
+          style: AuraText.small.copyWith(
+            color: AuraSurface.muted,
+            height: 1.55,
+          ),
+        ),
+        const SizedBox(height: AuraSpace.s6),
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(4),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.accentText,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 14,
+                  color: AuraSurface.accentText,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1530,9 +1247,7 @@ class _SpacesSection extends ConsumerWidget {
                         return Row(
                           children: [
                             for (var i = 0; i < featured.length; i++) ...[
-                              Expanded(
-                                child: _SpaceTile(space: featured[i]),
-                              ),
+                              Expanded(child: _SpaceTile(space: featured[i])),
                               if (i != featured.length - 1)
                                 const SizedBox(width: AuraSpace.s12),
                             ],
@@ -1607,9 +1322,7 @@ class _SpaceTile extends ConsumerWidget {
               Expanded(
                 child: Text(
                   space.name,
-                  style: AuraText.body.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -1656,103 +1369,6 @@ class _SpaceTile extends ConsumerWidget {
             onPressed: () => context.push('/spaces/${space.slug}'),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION 6 — PARTICIPATION BAND
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _ParticipationBand extends StatelessWidget {
-  const _ParticipationBand();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AuraSpace.s16,
-        AuraSpace.s32,
-        AuraSpace.s16,
-        AuraSpace.s32,
-      ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: kHeroWidth),
-          child: Container(
-            padding: const EdgeInsets.all(AuraSpace.s20),
-            decoration: BoxDecoration(
-              color: AuraSurface.subtle,
-              borderRadius: BorderRadius.circular(AuraRadius.lg),
-              border: Border.all(color: AuraSurface.divider),
-            ),
-            child: LayoutBuilder(
-              builder: (context, c) {
-                final wide = c.maxWidth >= 720;
-                final body = Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'How participation works',
-                      style: AuraText.headline.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: AuraSpace.s8),
-                    Text.rich(
-                      TextSpan(
-                        style: AuraText.body.copyWith(
-                          color: AuraSurface.muted,
-                          height: 1.55,
-                        ),
-                        children: [
-                          TextSpan(
-                            text:
-                                'Institutions respond and act publicly here.',
-                            style: AuraText.body.copyWith(
-                              color: AuraSurface.ink,
-                              fontWeight: FontWeight.w800,
-                              height: 1.55,
-                            ),
-                          ),
-                          const TextSpan(text: ' '),
-                          const TextSpan(
-                            text:
-                                'Paid actions — priority responses and hosted sessions — are always labeled. Participation is attributable: people and institutions take part under their real identity.',
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-                final cta = AuraSecondaryButton(
-                  label: 'How participation works',
-                  icon: Icons.arrow_forward_rounded,
-                  onPressed: () => context.push('/aura/participation'),
-                );
-                if (wide) {
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Expanded(child: body),
-                      const SizedBox(width: AuraSpace.s24),
-                      cta,
-                    ],
-                  );
-                }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    body,
-                    const SizedBox(height: AuraSpace.s16),
-                    cta,
-                  ],
-                );
-              },
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -1807,7 +1423,11 @@ class _PublicDiscoveryStrip extends StatelessWidget {
         final hPad = isDesktop ? AuraSpace.s24 : AuraSpace.s16;
         return Container(
           padding: EdgeInsets.fromLTRB(
-              hPad, AuraSpace.s32, hPad, AuraSpace.s32),
+            hPad,
+            AuraSpace.s32,
+            hPad,
+            AuraSpace.s32,
+          ),
           decoration: const BoxDecoration(
             border: Border(
               top: BorderSide(color: AuraSurface.divider),
@@ -1829,9 +1449,12 @@ class _PublicDiscoveryStrip extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: AuraSpace.s4),
+                  // The trailing clause used to be "and how Aura works on
+                  // the public record" — a third telling of the thing the
+                  // hero and "How Aura works" have already said. This
+                  // section's job is to name what is actually here.
                   Text(
-                    'Verified institutions, what is live now, '
-                    'and how Aura works on the public record.',
+                    'Verified institutions and what is live now.',
                     style: AuraText.body.copyWith(color: AuraSurface.muted),
                   ),
                   const SizedBox(height: AuraSpace.s20),
@@ -1840,9 +1463,7 @@ class _PublicDiscoveryStrip extends StatelessWidget {
                   // institution, and admin rails consume, arranged for
                   // the public-home single-page landing.
                   if (isDesktop)
-                    _PublicDiscoveryRow(
-                      columns: publicDiscoveryColumns(),
-                    )
+                    _PublicDiscoveryRow(columns: publicDiscoveryColumns())
                   else
                     _PublicDiscoveryStack(
                       modules: publicDiscoveryColumns().stacked,
@@ -1869,14 +1490,31 @@ class _PublicDiscoveryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // AN EMPTY COLUMN TAKES NO SPACE.
+    //
+    // This was three unconditional `Expanded`s. Each column self-hides when
+    // its providers have nothing, so on the live network, where only the
+    // continuity column was populated, the row rendered two empty thirds and
+    // pushed three small cards into the far right of a 2000 px window with
+    // the other two thirds blank. Nothing was broken by any single widget;
+    // the row simply kept paying for panes that had declined to exist.
+    //
+    // The modules already earn their place. The COLUMNS have to as well.
+    final populated = <List<Widget>>[
+      columns.civicSignal,
+      columns.ecosystem,
+      columns.continuity,
+    ].where((c) => c.isNotEmpty).toList();
+
+    if (populated.isEmpty) return const SizedBox.shrink();
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: _DiscoveryColumn(modules: columns.civicSignal)),
-        const SizedBox(width: AuraSpace.s16),
-        Expanded(child: _DiscoveryColumn(modules: columns.ecosystem)),
-        const SizedBox(width: AuraSpace.s16),
-        Expanded(child: _DiscoveryColumn(modules: columns.continuity)),
+        for (var i = 0; i < populated.length; i++) ...[
+          Expanded(child: _DiscoveryColumn(modules: populated[i])),
+          if (i != populated.length - 1) const SizedBox(width: AuraSpace.s16),
+        ],
       ],
     );
   }

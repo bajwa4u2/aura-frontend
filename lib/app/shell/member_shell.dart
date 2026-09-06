@@ -359,10 +359,19 @@ class InstitutionShell extends ConsumerWidget {
         );
 
         final body = GlobalPlatformShell(
-          // Suppress the global search button on institution routes —
-          // /search is member-scoped; surfacing it here would leak member
-          // content into institution context. The notifications bell and
-          // account menu stay (they're platform-level, not member-only).
+          // THE WORKSPACE DECLARES ITS REALM.
+          //
+          // Search was already suppressed here by hand, for the right reason:
+          // `/search` is member-scoped and would leak member content into
+          // institution context. The realm says the same thing once and takes
+          // Live and the "Add your institution" onboarding offer with it. A
+          // person acting for an institution does not need to be invited to
+          // acquire one, and Live is a member act.
+          //
+          // Attention and account stay. A notification is addressed to the
+          // person, not to the surface they are standing on, and identity is
+          // never realm-scoped.
+          realm: AuraShellRealm.institution,
           searchPath: null,
           // Desktop/tablet: identity + nav live in the left rail, so no
           // institution context bar at all. Mobile: a slim bar with a menu

@@ -1,5 +1,6 @@
 import '../../../core/product/product_state_view.dart';
 import '../../../core/product/product_state.dart';
+import '../../../app/shell/shell_shared.dart';
 import '../../../core/product/product_language.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -76,12 +77,12 @@ class _PublicInstitutionsDirectoryScreenState
   }
 
   PublicInstitutionsQuery get _query => PublicInstitutionsQuery(
-        q: _q,
-        category: _category,
-        verifiedOnly: _verifiedOnly,
-        institutionClass: _ontologyClass,
-        institutionType: _ontologyType,
-      );
+    q: _q,
+    category: _category,
+    verifiedOnly: _verifiedOnly,
+    institutionClass: _ontologyClass,
+    institutionType: _ontologyType,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -90,130 +91,176 @@ class _PublicInstitutionsDirectoryScreenState
 
     return AuraScaffold(
       showHeader: false,
+      // THE CLOSING IS A BAND, SO THE PAGE HAS TO BE ONE.
+      //
+      // The directory inherited `AuraScaffold`'s page band, so everything
+      // it rendered, the closing included, was cropped to a centred
+      // column. On Home the support band and the closing span the window;
+      // here the identical widget drew a bordered rectangle with page
+      // either side and read as a card. One closing rendering two
+      // different ways across two public pages is the inconsistency the
+      // whole composition pass exists to remove.
+      //
+      // Same resolution Home uses: the page is full-bleed, the CONTENT
+      // centres itself inside it, and the bands reach the edges.
+      maxWidth: AuraScaffold.childDecidesWidth,
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AuraSpace.s16,
-          AuraSpace.s20,
-          AuraSpace.s16,
-          AuraSpace.s32,
-        ),
+        padding: EdgeInsets.zero,
         children: [
           Center(
             child: ConstrainedBox(
-              // Desktop composition normalization — widened from 1080 →
-              // kHeroWidth (1360) so the ecosystem map breathes on
-              // widescreen and ultrawide displays, and so card grids
-              // can run 4 columns wide without compressing card
-              // content. Mobile / tablet are unaffected; the outer
-              // ListView still owns horizontal padding (s16) so the
-              // visual cap kicks in only at viewport > 1392 px.
               constraints: const BoxConstraints(maxWidth: kHeroWidth),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _Header(isAuthed: isAuthed),
-                  const SizedBox(height: AuraSpace.s16),
-                  // Browse-by-sector ecosystem grid — every curated
-                  // ontology class as a tap-through entry card. Each
-                  // tile routes to `/institutions/sector/:classId`,
-                  // which renders a dedicated sector landing with its
-                  // own verified / on-the-platform cohorts and type
-                  // narrow row. Self-hides while the ontology is
-                  // loading (the grid widget shrinks).
-                  const _BrowseBySectorSection(),
-                  // Real public-feed civic signal — collapses entirely
-                  // when no institution-authored items are present in
-                  // the public feed. Derived from
-                  // `recentInstitutionalVoicesProvider` (no new
-                  // endpoints, no fake counts).
-                  const InstitutionActivityStrip(),
-                  const SizedBox(height: AuraSpace.s16),
-                  // Civic continuity band — recent public discussions
-                  // with sustained reply activity. Single horizontal
-                  // strip, capped tight; self-collapses when no
-                  // discussion clears the reply-velocity threshold
-                  // on the backend aggregation.
-                  const OngoingDiscussionsStrip(),
-                  const SizedBox(height: AuraSpace.s16),
-                  _SearchAndFilters(
-                    controller: _searchController,
-                    onSearchSubmit: (value) {
-                      setState(() => _q = value.trim());
-                    },
-                    onSearchChanged: (value) {
-                      // Debounce-free: only refetch when the user pauses;
-                      // server filters on substring so this is cheap.
-                      setState(() => _q = value.trim());
-                    },
-                    verifiedOnly: _verifiedOnly,
-                    onVerifiedToggled: (value) =>
-                        setState(() => _verifiedOnly = value),
-                  ),
-                  const SizedBox(height: AuraSpace.s12),
-                  // Ontology Level-1 class filter pills. Renders only the
-                  // curated classes (from `institutionOntologyProvider`).
-                  // Self-renders an "All" pill so the row makes sense even
-                  // before the ontology has loaded. Selecting a class
-                  // sends `?class=…` to the backend AND reveals the type
-                  // narrow row below.
-                  OntologyClassFilter(
-                    selected: _ontologyClass,
-                    onChanged: (id) {
-                      setState(() {
-                        _ontologyClass = id;
-                        // Selecting (or clearing) a class drops any
-                        // active type filter — the chosen type may no
-                        // longer belong to the new class.
-                        _ontologyType = null;
-                      });
-                    },
-                  ),
-                  if (_ontologyClass != null) ...[
-                    const SizedBox(height: AuraSpace.s8),
-                    _OntologyTypeNarrowRow(
-                      classId: _ontologyClass!,
-                      selected: _ontologyType,
-                      onChanged: (id) =>
-                          setState(() => _ontologyType = id),
-                    ),
-                  ],
-                  const SizedBox(height: AuraSpace.s16),
-                  listAsync.when(
-                    loading: () => const Padding(
-                      padding: EdgeInsets.all(AuraSpace.s32),
-                      child: Center(
-                        child: AuraLoadingState(
-                            message: 'Loading institutions…'),
-                      ),
-                    ),
-                    error: (e, _) => Padding(
-                      padding: const EdgeInsets.all(AuraSpace.s8),
-                      child: AuraErrorState(
-                        title: 'Could not load the directory',
-                        body: 'Try again in a moment.',
-                        action: AuraSecondaryButton(
-                          label: 'Retry',
-                          onPressed: () => ref.invalidate(
-                            publicInstitutionsListProvider(_query),
-                          ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AuraSpace.s16,
+                  AuraSpace.s20,
+                  AuraSpace.s16,
+                  AuraSpace.s24,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Center(
+                      child: ConstrainedBox(
+                        // Desktop composition normalization — widened from 1080 →
+                        // kHeroWidth (1360) so the ecosystem map breathes on
+                        // widescreen and ultrawide displays, and so card grids
+                        // can run 4 columns wide without compressing card
+                        // content. Mobile / tablet are unaffected; the outer
+                        // ListView still owns horizontal padding (s16) so the
+                        // visual cap kicks in only at viewport > 1392 px.
+                        constraints: const BoxConstraints(maxWidth: kHeroWidth),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _Header(isAuthed: isAuthed),
+                            const SizedBox(height: AuraSpace.s16),
+                            // Browse-by-sector ecosystem grid — every curated
+                            // ontology class as a tap-through entry card. Each
+                            // tile routes to `/institutions/sector/:classId`,
+                            // which renders a dedicated sector landing with its
+                            // own verified / on-the-platform cohorts and type
+                            // narrow row. Self-hides while the ontology is
+                            // loading (the grid widget shrinks).
+                            const _BrowseBySectorSection(),
+                            // Real public-feed civic signal — collapses entirely
+                            // when no institution-authored items are present in
+                            // the public feed. Derived from
+                            // `recentInstitutionalVoicesProvider` (no new
+                            // endpoints, no fake counts).
+                            const InstitutionActivityStrip(),
+                            const SizedBox(height: AuraSpace.s16),
+                            // Civic continuity band — recent public discussions
+                            // with sustained reply activity. Single horizontal
+                            // strip, capped tight; self-collapses when no
+                            // discussion clears the reply-velocity threshold
+                            // on the backend aggregation.
+                            const OngoingDiscussionsStrip(),
+                            const SizedBox(height: AuraSpace.s16),
+                            _SearchAndFilters(
+                              controller: _searchController,
+                              onSearchSubmit: (value) {
+                                setState(() => _q = value.trim());
+                              },
+                              onSearchChanged: (value) {
+                                // Debounce-free: only refetch when the user pauses;
+                                // server filters on substring so this is cheap.
+                                setState(() => _q = value.trim());
+                              },
+                              verifiedOnly: _verifiedOnly,
+                              onVerifiedToggled: (value) =>
+                                  setState(() => _verifiedOnly = value),
+                            ),
+                            const SizedBox(height: AuraSpace.s12),
+                            // Ontology Level-1 class filter pills. Renders only the
+                            // curated classes (from `institutionOntologyProvider`).
+                            // Self-renders an "All" pill so the row makes sense even
+                            // before the ontology has loaded. Selecting a class
+                            // sends `?class=…` to the backend AND reveals the type
+                            // narrow row below.
+                            OntologyClassFilter(
+                              selected: _ontologyClass,
+                              onChanged: (id) {
+                                setState(() {
+                                  _ontologyClass = id;
+                                  // Selecting (or clearing) a class drops any
+                                  // active type filter — the chosen type may no
+                                  // longer belong to the new class.
+                                  _ontologyType = null;
+                                });
+                              },
+                            ),
+                            if (_ontologyClass != null) ...[
+                              const SizedBox(height: AuraSpace.s8),
+                              _OntologyTypeNarrowRow(
+                                classId: _ontologyClass!,
+                                selected: _ontologyType,
+                                onChanged: (id) =>
+                                    setState(() => _ontologyType = id),
+                              ),
+                            ],
+                            const SizedBox(height: AuraSpace.s16),
+                            listAsync.when(
+                              loading: () => const Padding(
+                                padding: EdgeInsets.all(AuraSpace.s32),
+                                child: Center(
+                                  child: AuraLoadingState(
+                                    message: 'Loading institutions…',
+                                  ),
+                                ),
+                              ),
+                              error: (e, _) => Padding(
+                                padding: const EdgeInsets.all(AuraSpace.s8),
+                                child: AuraErrorState(
+                                  title: 'Could not load the directory',
+                                  body: 'Try again in a moment.',
+                                  action: AuraSecondaryButton(
+                                    label: 'Retry',
+                                    onPressed: () => ref.invalidate(
+                                      publicInstitutionsListProvider(_query),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              data: (page) => _ResultsBody(
+                                page: page,
+                                hasQuery:
+                                    _q.isNotEmpty ||
+                                    _category != null ||
+                                    _verifiedOnly ||
+                                    _ontologyClass != null ||
+                                    _ontologyType != null,
+                                ontologyFilterActive:
+                                    _ontologyClass != null ||
+                                    _ontologyType != null,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                    data: (page) => _ResultsBody(
-                      page: page,
-                      hasQuery: _q.isNotEmpty ||
-                          _category != null ||
-                          _verifiedOnly ||
-                          _ontologyClass != null ||
-                          _ontologyType != null,
-                      ontologyFilterActive:
-                          _ontologyClass != null || _ontologyType != null,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
+          // THE CLOSING BELONGS TO EVERY PUBLIC SURFACE, NOT JUST HOME.
+          //
+          // The closing offers Mission, Discover and Institutions, and
+          // Start a conversation. Home, Mission and the publication
+          // layouts rendered it; the destinations it SENDS PEOPLE TO did
+          // not. So a visitor followed the closing and arrived somewhere
+          // the closing had vanished, which is the exact moment a public
+          // estate stops feeling like one place.
+          //
+          // `ShellFooter` is one shared widget, so this is not a desktop
+          // treatment being backported: web, Windows, Android and iOS all
+          // render the same composition. What was missing was reach, not
+          // platform support.
+          if (!isAuthed) ...[
+            const SizedBox(height: AuraSpace.s24),
+            const ShellFooter(),
+          ],
         ],
       ),
     );
@@ -235,10 +282,7 @@ class _Header extends ConsumerWidget {
           'Institutions participating publicly on Aura, under their '
           'official identity — what they say and commit to stays on the '
           'public record.',
-          style: AuraText.body.copyWith(
-            color: AuraSurface.muted,
-            height: 1.55,
-          ),
+          style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.55),
         ),
         if (!isAuthed) ...[
           const SizedBox(height: AuraSpace.s14),
@@ -311,8 +355,7 @@ class _SearchAndFilters extends StatelessWidget {
           onSubmitted: onSearchSubmit,
           onChanged: onSearchChanged,
           decoration: InputDecoration(
-            hintText:
-                'Search institutions by name, tagline, or description',
+            hintText: 'Search institutions by name, tagline, or description',
             prefixIcon: const Icon(Icons.search_rounded),
             filled: true,
             fillColor: AuraSurface.card,
@@ -382,17 +425,17 @@ class _ResultsBody extends StatelessWidget {
           title: ontologyFilterActive
               ? 'No institutions match this classification yet'
               : (hasQuery
-                  ? 'No institutions match those filters'
-                  : 'Institutions arrive here as they join Aura'),
+                    ? 'No institutions match those filters'
+                    : 'Institutions arrive here as they join Aura'),
           body: ontologyFilterActive
               ? 'Try a different class or clear the filter to browse '
-                  'every institution on the platform.'
+                    'every institution on the platform.'
               : (hasQuery
-                  ? 'Try removing a filter or widening your search.'
-                  : 'When organizations join Aura, their public profile '
-                      'appears on this directory. Until then, you can '
-                      'explore individual institutions through links '
-                      'shared in posts and announcements.'),
+                    ? 'Try removing a filter or widening your search.'
+                    : 'When organizations join Aura, their public profile '
+                          'appears on this directory. Until then, you can '
+                          'explore individual institutions through links '
+                          'shared in posts and announcements.'),
           icon: Icons.account_balance_outlined,
         ),
       );
@@ -490,18 +533,18 @@ class _InstitutionGrid extends StatelessWidget {
         final cols = constraints.maxWidth >= 1280
             ? 4
             : constraints.maxWidth >= 920
-                ? 3
-                : constraints.maxWidth >= 600
-                    ? 2
-                    : 1;
+            ? 3
+            : constraints.maxWidth >= 600
+            ? 2
+            : 1;
         return Wrap(
           spacing: AuraSpace.s12,
           runSpacing: AuraSpace.s12,
           children: [
             for (final i in items)
               SizedBox(
-                width: (constraints.maxWidth -
-                        (AuraSpace.s12 * (cols - 1))) /
+                width:
+                    (constraints.maxWidth - (AuraSpace.s12 * (cols - 1))) /
                     cols,
                 child: _InstitutionCard(item: i),
               ),
@@ -668,8 +711,7 @@ class _Avatar extends StatelessWidget {
         color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18),
         borderRadius: BorderRadius.circular(AuraRadius.r10),
         border: Border.all(
-          color:
-              Theme.of(context).colorScheme.primary.withValues(alpha: 0.35),
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35),
         ),
       ),
       child: Text(
@@ -697,9 +739,7 @@ class _MetaChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(
-          color: AuraSurface.divider.withValues(alpha: 0.6),
-        ),
+        border: Border.all(color: AuraSurface.divider.withValues(alpha: 0.6)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -741,9 +781,7 @@ class _OntologyTypeNarrowRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ontology = ref
-        .watch(institutionOntologyProvider)
-        .valueOrNull;
+    final ontology = ref.watch(institutionOntologyProvider).valueOrNull;
     if (ontology == null) return const SizedBox.shrink();
     final types = ontology.typesForClass(classId);
     if (types.isEmpty) return const SizedBox.shrink();
@@ -792,19 +830,18 @@ class _BrowseBySectorSection extends ConsumerWidget {
     final ontology = ref.watch(institutionOntologyProvider);
 
     Widget framed(Widget child) => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const _BrowseBySectorHeading(),
-            const SizedBox(height: AuraSpace.s10),
-            child,
-            const SizedBox(height: AuraSpace.s20),
-          ],
-        );
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _BrowseBySectorHeading(),
+        const SizedBox(height: AuraSpace.s10),
+        child,
+        const SizedBox(height: AuraSpace.s20),
+      ],
+    );
 
     return ontology.when(
-      loading: () => framed(
-        const AuraProductState(state: ProductState.loading),
-      ),
+      loading: () =>
+          framed(const AuraProductState(state: ProductState.loading)),
       error: (_, __) => framed(
         AuraProductState(
           state: ProductState.unavailable,

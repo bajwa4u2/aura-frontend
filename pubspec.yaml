@@ -151,6 +151,10 @@ flutter:
   assets:
     - assets/investor/
     - assets/brand/
+    # Support-programme marks, shared verbatim with the company estate,
+    # Orchestrate and Bajwa Writes so the three products' closings carry
+    # the same originals rather than three re-exports.
+    - assets/branding/support/
     - assets/adi-registration.properties
     # The Trace lifecycle golden. Declared as an asset so it travels to the
     # DEVICE with the test bundle — on Android there is no host filesystem path

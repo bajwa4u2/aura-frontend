@@ -11,6 +11,7 @@ import '../../features/admin/domain/operator_area.dart';
 import '../../features/admin/domain/operator_entry.dart';
 import '../../core/auth/auth_providers.dart';
 import '../../core/auth/session_providers.dart';
+import 'global_platform_shell.dart';
 import '../../core/institutions/institution_access_provider.dart';
 import '../../core/identity/person_identity_model.dart';
 import '../../core/media/aura_attachment_image.dart';
@@ -46,10 +47,15 @@ class ShellHeaderTools extends ConsumerStatefulWidget {
     this.searchPath,
     this.activityPath,
     this.showLive = true,
+    this.realm = AuraShellRealm.member,
   });
 
   final bool isTablet;
   final bool isDesktop;
+
+  /// Which realm this strip is standing in. See [AuraShellRealm] for the
+  /// control-by-control judgement.
+  final AuraShellRealm realm;
 
   /// When null the search button is hidden. Member shell passes the global
   /// `/search` route; institution shell currently passes null because there
@@ -65,7 +71,8 @@ class ShellHeaderTools extends ConsumerStatefulWidget {
   // creation is a CREATION intention, not a global utility — it lives in
   // the Create hub and Me → Connections.
 
-  /// When false the Live pill is hidden.
+  /// When false the Live pill is hidden. Realm also decides: Live is a
+  /// member act, so it is absent outside the member realm regardless.
   final bool showLive;
 
   @override
@@ -219,7 +226,10 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
           onTap: () => context.push(widget.activityPath!),
         ),
       ],
-      if (widget.showLive) ...[
+      // LIVE IS A MEMBER ACT. It joins or starts a session as the person, and
+      // there is no operator or institution-workspace sense of "go live" — in
+      // those realms it was an offer to leave the surface you are working on.
+      if (widget.showLive && widget.realm == AuraShellRealm.member) ...[
         gap,
         const _HeaderLiveBtn(),
       ],
@@ -232,7 +242,13 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
       // canonical relationship truth (myAffiliationsProvider); never from
       // route, shell, or cached assumptions. Not a Discover domain, not a
       // Create domain, never buried in menus/settings/redirect chains.
-      if (affiliationsResolved && !hasInstitution) ...[
+      // ...and the realm has to be one where acquiring an institution is a
+      // sensible next act. The frozen "visible at every WIDTH" ruling is about
+      // widths; it was never a ruling that an onboarding offer belongs on the
+      // operator console, where it was rendering.
+      if (widget.realm == AuraShellRealm.member &&
+          affiliationsResolved &&
+          !hasInstitution) ...[
         gap,
         // ICON-ONLY ON PHONES — founder-reported collision, 2026-08-23.
         //
@@ -286,7 +302,8 @@ class _ShellHeaderToolsState extends ConsumerState<ShellHeaderTools> {
           busy: _busyLogout,
           me: me,
           isAdmin: isAdmin,
-          canOperate: canOperate,
+          // The operator door is not drawn from inside the room it opens.
+          canOperate: canOperate && widget.realm != AuraShellRealm.operator,
           rateDestination: ref.watch(rateDestinationProvider),
           version: ref.watch(appVersionLabelProvider),
           onSelected: (v) => unawaited(_handleAccountAction(v)),

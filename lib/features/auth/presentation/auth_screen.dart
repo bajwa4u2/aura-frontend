@@ -111,7 +111,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
   String _humanizeLoginError(Object error) {
     final raw = error.toString().trim();
     final msg = raw.toLowerCase();
-    if (msg.isEmpty) return 'We could not sign you in right now. Please try again.';
+    if (msg.isEmpty)
+      return 'We could not sign you in right now. Please try again.';
     if (msg.contains('invalid credentials') ||
         msg.contains('does not look right') ||
         msg.contains('401') ||
@@ -166,7 +167,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
         await RememberedIdentifier.remove();
       }
 
-      final result = await AuthController(ref).login(email: email, password: pass);
+      final result = await AuthController(
+        ref,
+      ).login(email: email, password: pass);
 
       if (!mounted) return;
 
@@ -211,7 +214,9 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       final msg = _humanizeLoginError(e);
       setState(() {
         _error = msg;
-        _needsVerification = msg.toLowerCase().contains('verify your email first');
+        _needsVerification = msg.toLowerCase().contains(
+          'verify your email first',
+        );
       });
     } finally {
       if (mounted && _step == _LoginStep.credentials) {
@@ -331,7 +336,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             codeValidator: _codeValidator,
             resendCooldown: _resendCooldown,
             trustDevice: _trustDevice,
-            onTrustDeviceChanged: (v) => setState(() => _trustDevice = v ?? false),
+            onTrustDeviceChanged: (v) =>
+                setState(() => _trustDevice = v ?? false),
             onVerify: _verifyCode,
             onResend: _resendCode,
             onBack: _backToLogin,
@@ -348,10 +354,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             rememberEmail: _rememberEmail,
             emailValidator: _emailValidator,
             passwordValidator: _passwordValidator,
-            onTogglePassword: () => setState(() => _obscurePassword = !_obscurePassword),
-            onRememberEmailChanged: (v) => setState(() => _rememberEmail = v ?? false),
+            onTogglePassword: () =>
+                setState(() => _obscurePassword = !_obscurePassword),
+            onRememberEmailChanged: (v) =>
+                setState(() => _rememberEmail = v ?? false),
             onLogin: _login,
-            onForgotPassword: () => context.push(_withRedirect('/forgot-password')),
+            onForgotPassword: () =>
+                context.push(_withRedirect('/forgot-password')),
             onCreateAccount: () => context.push(_withRedirect('/register')),
             onResendVerification: _needsVerification
                 ? () => context.push(
@@ -362,7 +371,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           );
 
     return AuraScaffold(
-      title: 'Login',
+      // NO SCAFFOLD TITLE.
+      //
+      // It read "Login" in the page's top-left while the card beneath it read
+      // "Sign in": two names for one screen, and "Login" is a word Aura uses
+      // nowhere else. The header already says Sign in, the card says Sign in,
+      // and a third label pinned to the top of an otherwise empty band was
+      // the only thing on that line.
+      title: '',
       body: AuraPageShell(
         maxWidth: kHeroWidth,
         child: LayoutBuilder(
@@ -386,7 +402,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                   body:
                                       'Sign in to continue your work, conversations, institutions, and meetings.',
                                   accent:
-                                      'Aura is for purposeful communication and discourse — one clear identity, conversations that keep their context.',
+                                      'Aura is for purposeful communication and discourse, one clear '
+                                      'identity and conversations that keep their context.',
                                 ),
                               ),
                               const SizedBox(width: AuraSpace.s16),
@@ -400,7 +417,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                                 body:
                                     'Sign in to continue your work, conversations, institutions, and meetings.',
                                 accent:
-                                    'Aura is for purposeful communication and discourse — one clear identity, conversations that keep their context.',
+                                    'Aura is for purposeful communication and discourse, one clear '
+                                    'identity and conversations that keep their context.',
                               ),
                               const SizedBox(height: AuraSpace.s16),
                               formWidget,
@@ -486,7 +504,10 @@ class _EmailCodeCard extends StatelessWidget {
               codeSent
                   ? 'We sent a 6-digit code to $maskedEmail. Enter it below to continue.'
                   : 'A code is required to continue, but our email service did not deliver it just now. Tap "Resend" to try again.',
-              style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
+              style: AuraText.body.copyWith(
+                color: AuraSurface.muted,
+                height: 1.5,
+              ),
             ),
             const SizedBox(height: AuraSpace.s16),
             if (error != null) ...[
@@ -611,7 +632,9 @@ class _LoginFormCard extends StatelessWidget {
             children: [
               if (successNotice != null) ...[
                 _NoticeBanner(
-                  title: successNotice == 'reset' ? 'Password updated' : 'Email verified',
+                  title: successNotice == 'reset'
+                      ? 'Password updated'
+                      : 'Email verified',
                   body: successNotice == 'reset'
                       ? 'Your password has been updated. Sign in with your new password.'
                       : 'Your email has been verified. You can sign in now.',
@@ -645,7 +668,10 @@ class _LoginFormCard extends StatelessWidget {
                 textInputAction: TextInputAction.next,
                 validator: emailValidator,
                 prefixIcon: const Icon(Icons.email_outlined),
-                autofillHints: const [AutofillHints.username, AutofillHints.email],
+                autofillHints: const [
+                  AutofillHints.username,
+                  AutofillHints.email,
+                ],
                 // Return/Next moves on rather than doing nothing.
                 onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
               ),
@@ -687,7 +713,9 @@ class _LoginFormCard extends StatelessWidget {
                   ),
                   const SizedBox(width: AuraSpace.s8),
                   GestureDetector(
-                    onTap: busy ? null : () => onRememberEmailChanged(!rememberEmail),
+                    onTap: busy
+                        ? null
+                        : () => onRememberEmailChanged(!rememberEmail),
                     child: Text(
                       'Remember email',
                       style: AuraText.small.copyWith(color: AuraSurface.muted),
@@ -748,7 +776,11 @@ class _LoginFormCard extends StatelessWidget {
 // ── Hero ──────────────────────────────────────────────────────────────────────
 
 class _AuthHero extends StatelessWidget {
-  const _AuthHero({required this.title, required this.body, required this.accent});
+  const _AuthHero({
+    required this.title,
+    required this.body,
+    required this.accent,
+  });
 
   final String title;
   final String body;
@@ -763,11 +795,17 @@ class _AuthHero extends StatelessWidget {
         children: [
           const AuraBadge(label: 'Trusted access', icon: Icons.shield_outlined),
           const SizedBox(height: AuraSpace.s16),
-          Text(title, style: AuraText.title.copyWith(fontSize: 34, height: 1.05)),
+          Text(
+            title,
+            style: AuraText.title.copyWith(fontSize: 34, height: 1.05),
+          ),
           const SizedBox(height: AuraSpace.s12),
           Text(
             body,
-            style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.6),
+            style: AuraText.body.copyWith(
+              color: AuraSurface.muted,
+              height: 1.6,
+            ),
           ),
           const SizedBox(height: AuraSpace.s20),
           const _AuthFeatureRow(
@@ -787,7 +825,10 @@ class _AuthHero extends StatelessWidget {
           const SizedBox(height: AuraSpace.s20),
           Text(
             accent,
-            style: AuraText.small.copyWith(color: AuraSurface.faint, height: 1.5),
+            style: AuraText.small.copyWith(
+              color: AuraSurface.faint,
+              height: 1.5,
+            ),
           ),
         ],
       ),
@@ -811,7 +852,9 @@ class _AuthFeatureRow extends StatelessWidget {
           decoration: BoxDecoration(
             color: AuraSurface.accentSoft,
             borderRadius: BorderRadius.circular(AuraRadius.sm),
-            border: Border.all(color: AuraSurface.accent.withValues(alpha: 0.2)),
+            border: Border.all(
+              color: AuraSurface.accent.withValues(alpha: 0.2),
+            ),
           ),
           child: Icon(icon, size: 14, color: AuraSurface.accentText),
         ),
@@ -819,7 +862,10 @@ class _AuthFeatureRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: AuraText.small.copyWith(color: AuraSurface.muted, height: 1.4),
+            style: AuraText.small.copyWith(
+              color: AuraSurface.muted,
+              height: 1.4,
+            ),
           ),
         ),
       ],
@@ -843,7 +889,9 @@ class _NoticeBanner extends StatelessWidget {
       decoration: BoxDecoration(
         color: AuraSurface.coVerdant.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(AuraRadius.md),
-        border: Border.all(color: AuraSurface.coVerdant.withValues(alpha: 0.35)),
+        border: Border.all(
+          color: AuraSurface.coVerdant.withValues(alpha: 0.35),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -858,7 +906,10 @@ class _NoticeBanner extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             body,
-            style: AuraText.small.copyWith(color: AuraSurface.coVerdant, height: 1.45),
+            style: AuraText.small.copyWith(
+              color: AuraSurface.coVerdant,
+              height: 1.45,
+            ),
           ),
         ],
       ),

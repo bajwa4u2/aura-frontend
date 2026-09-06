@@ -327,13 +327,20 @@ class _CommunicationTranslateActionState
                 ),
               ),
             ],
-            // TR, at the end of the row the reader is already looking at.
+            // TR SITS AGAINST WHAT IT DISCLOSES.
+            //
+            // A `Spacer()` used to push the mark to the far end of the row on
+            // every non-inline surface. On a wide desktop card that meant the
+            // Translate control sat at the left margin and TR sat alone
+            // against the right edge, a thousand pixels away with nothing
+            // between them, reading as a floating stamp on the page rather
+            // than as an annotation of this post. Whatever a disclosure mark
+            // is attached to has to be visibly the thing it is about.
             //
             // Silent on the posts with nothing to disclose, which is most of
             // them: the mark is a disclosure, not a badge a post earns for
             // existing.
             if (widget.trace.isNotEmpty) ...[
-              if (!inline) const Spacer(),
               const SizedBox(width: AuraSpace.s8),
               AuraTraceMark(
                 trace: widget.trace,

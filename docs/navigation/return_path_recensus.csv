@@ -11,7 +11,7 @@ route,sample,renders,protected,deeplink_semantic,deeplink_destination,in_app_sem
 /child-safety,/child-safety,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT
 /safety,/safety,false,false,deepLinkFallback,/home,stackReturn,true,NOT_A_SURFACE
 /trust-safety,/trust-safety,false,false,deepLinkFallback,/home,stackReturn,true,NOT_A_SURFACE
-/contact,/contact,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT
+/contact,/contact,false,false,deepLinkFallback,/home,stackReturn,true,NOT_A_SURFACE
 /support/agent,/support/agent,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT
 /account-deletion,/account-deletion,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT
 /investors,/investors,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT

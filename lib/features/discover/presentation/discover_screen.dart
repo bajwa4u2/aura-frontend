@@ -249,7 +249,7 @@ class _PeopleSection extends ConsumerWidget {
               _DomainHeader(
                 title: 'People',
                 subtitle: data.coldStart
-                    ? 'Active on Aura — a starting point while Aura learns '
+                    ? 'Active on Aura, a starting point while Aura learns '
                         'what matters to you'
                     : 'Suggested from who and what you already follow',
                 onOpen: () =>
@@ -405,7 +405,7 @@ class _SearchResults extends ConsumerWidget {
           return AuraProductState(
             state: ProductState.empty,
             headline: 'Nothing matched "$query"',
-            detail: 'Try a different name, handle, subject or title — or '
+            detail: 'Try a different name, handle, subject or title, or '
                 'explore a domain below.',
             action: AuraSecondaryButton(
               label: ProductLabels.of(ProductAction.retry),

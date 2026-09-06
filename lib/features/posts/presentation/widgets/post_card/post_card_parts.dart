@@ -285,9 +285,13 @@ class PostCardSingleMediaCard extends StatelessWidget {
     return Stack(
       children: [
         child,
-        Positioned(
-          // Bottom-right, clear of the play affordance a video centres.
-          right: 6,
+        // Bound to the media's leading edge, for the reason recorded on
+        // `CanonicalMediaThumb._withTraceMark`: the frame's box is the card's
+        // width and the picture is start-aligned inside it, so a trailing
+        // anchor leaves the mark floating in open space beside the media
+        // rather than on it.
+        PositionedDirectional(
+          start: 6,
           bottom: 6,
           child: AuraTraceMark(
             trace: item.trace,

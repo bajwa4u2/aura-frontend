@@ -34,8 +34,9 @@ class PublicShell extends StatelessWidget {
     // ACTIVE MEETING = focus surface. A guest lives in the PublicShell, which
     // has no left rail; suppress the public header too so the meeting's own
     // header/timer is the only top bar and the participant grid is full-bleed.
-    final isMeetingFocus =
-        isMeetingFocusPath(GoRouterState.of(context).uri.path);
+    final isMeetingFocus = isMeetingFocusPath(
+      GoRouterState.of(context).uri.path,
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -59,7 +60,8 @@ class PublicShell extends StatelessWidget {
                   _PublicHeader(isDesktop: isDesktop, isTablet: isTablet),
                 if (!isMeetingFocus &&
                     shouldShowAuraPublicAppAcquisition(
-                        GoRouterState.of(context).uri.path))
+                      GoRouterState.of(context).uri.path,
+                    ))
                   const PublicAppAcquisition(),
                 Expanded(child: child),
               ],
@@ -99,25 +101,56 @@ class _PublicHeader extends ConsumerWidget {
     final currentUri = GoRouterState.of(context).uri;
     final currentPath = currentUri.path;
 
-    final hPad = isDesktop
-        ? AuraSpace.s24
-        : isTablet
-            ? AuraSpace.s20
-            : AuraSpace.s16;
+    // The same gutter the public sections use inside `kHeroWidth`, so the
+    // bar's contents sit on the page's own edges rather than near them.
+    final hPad = isDesktop || isTablet ? AuraSpace.s20 : AuraSpace.s16;
 
     return Container(
       decoration: const BoxDecoration(
         gradient: AuraGradients.header,
         border: Border(bottom: BorderSide(color: AuraSurface.divider)),
       ),
+      // THE BAR SHARES THE PAGE'S MEASURE.
+      //
+      // Three states, in order. It was capped at 1080 and centred, so on a
+      // 2000 px window the wordmark sat near the middle with half the window
+      // empty beside it: a web page inside a native frame. Raising the cap to
+      // 1680 moved it, but then the identity mark hung 128 px outside the
+      // left edge of every section beneath it and the actions ended past
+      // their right edge, so the bar belonged to a different page than the
+      // one under it.
+      //
+      // `kHeroWidth` with the section gutter is what makes it one product.
+      // The wordmark lands on exactly the left edge of the hero, the
+      // heading, the discussions and the closing; the actions land on their
+      // right edge. The band itself still spans the window, which is what
+      // the signed-in platform bar does with its own rail inset.
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(
-              maxWidth: PublicShell.maxContentWidth + 160),
+          constraints: const BoxConstraints(maxWidth: kHeroWidth),
           child: Padding(
             padding: EdgeInsets.symmetric(
-                horizontal: hPad, vertical: AuraSpace.s12),
+              horizontal: hPad,
+              vertical: AuraSpace.s12,
+            ),
             child: Row(
+              // THE ACTIONS ARE PINNED TO THE OUTER INSET.
+              //
+              // The bar previously read `Flexible(wordmark), Spacer(), ...`.
+              // Both of those take flex 1, so the free width was split evenly
+              // between them: the wordmark's SLOT claimed half of it even
+              // though a loose Flexible child draws at its natural size, and
+              // the actions landed roughly mid-window with a third of the bar
+              // empty to their right. On the maximised DEV client the
+              // wordmark sat at x=197 and "Join" ended at x=1315 in a 1997 px
+              // window — the same "web page in a native frame" tell the width
+              // cap was raised to fix, surviving the raise.
+              //
+              // Dropping the Spacer and letting `spaceBetween` place the
+              // leftover width is what the bar always meant: identity hard
+              // left, actions hard right, and the gap between them is
+              // whatever the window has spare.
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // THE WORDMARK YIELDS BEFORE THE ACTIONS DO.
                 //
@@ -137,50 +170,64 @@ class _PublicHeader extends ConsumerWidget {
                     onTap: () => context.go(isAuthed ? '/home' : '/public'),
                   ),
                 ),
-                const Spacer(),
-                if (isAuthLoading) ...[
-                  // Bootstrap settles within one round-trip. Render nothing
-                  // rather than a misleading "Join | Sign in" or a premature
-                  // "Open Aura" — the moment authStatus settles we re-render.
-                ] else if (isAuthed) ...[
-                  if (isTablet) ...[
-                    // C3 — founder-frozen public navigation: Home · Discover.
-                    // Institutions/Search are Discover facets, not primaries.
-                    _NavTextLink(
-                      label: 'Discover',
-                      onTap: () => context.go('/discover'),
-                    ),
-                    const SizedBox(width: AuraSpace.s12),
+                // The actions travel together as one group so
+                // `spaceBetween` has exactly two things to separate.
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isAuthLoading) ...[
+                      // Bootstrap settles within one round-trip. Render nothing
+                      // rather than a misleading "Join | Sign in" or a premature
+                      // "Open Aura" — the moment authStatus settles we re-render.
+                    ] else if (isAuthed) ...[
+                      if (isTablet) ...[
+                        // C3 — founder-frozen public navigation: Home · Discover.
+                        // Institutions/Search are Discover facets, not primaries.
+                        _NavTextLink(
+                          label: 'Discover',
+                          onTap: () => context.go('/discover'),
+                        ),
+                        const SizedBox(width: AuraSpace.s12),
+                      ],
+                      _GoHomeButton(onTap: () => context.go('/home')),
+                    ] else ...[
+                      if (isTablet) ...[
+                        // C3 — founder-frozen public navigation: Home · Discover.
+                        // Institutions/Search are Discover facets, not primaries.
+                        _NavTextLink(
+                          label: 'Discover',
+                          onTap: () => context.go('/discover'),
+                        ),
+                        const SizedBox(width: AuraSpace.s12),
+                      ],
+                      _SignInButton(
+                        onTap: () {
+                          final redirect = _worthRedirecting(currentPath)
+                              ? currentUri.toString()
+                              : null;
+                          context.go(
+                            redirect != null
+                                ? '/login?redirect=${Uri.encodeComponent(redirect)}'
+                                : '/login',
+                          );
+                        },
+                      ),
+                      const SizedBox(width: AuraSpace.s8),
+                      _JoinButton(
+                        onTap: () {
+                          final redirect = _worthRedirecting(currentPath)
+                              ? currentUri.toString()
+                              : null;
+                          context.go(
+                            redirect != null
+                                ? '/register?redirect=${Uri.encodeComponent(redirect)}'
+                                : '/register',
+                          );
+                        },
+                      ),
+                    ],
                   ],
-                  _GoHomeButton(onTap: () => context.go('/home')),
-                ] else ...[
-                  if (isTablet) ...[
-                    // C3 — founder-frozen public navigation: Home · Discover.
-                    // Institutions/Search are Discover facets, not primaries.
-                    _NavTextLink(
-                      label: 'Discover',
-                      onTap: () => context.go('/discover'),
-                    ),
-                    const SizedBox(width: AuraSpace.s12),
-                  ],
-                  _SignInButton(onTap: () {
-                    final redirect = _worthRedirecting(currentPath)
-                        ? currentUri.toString()
-                        : null;
-                    context.go(redirect != null
-                        ? '/login?redirect=${Uri.encodeComponent(redirect)}'
-                        : '/login');
-                  }),
-                  const SizedBox(width: AuraSpace.s8),
-                  _JoinButton(onTap: () {
-                    final redirect = _worthRedirecting(currentPath)
-                        ? currentUri.toString()
-                        : null;
-                    context.go(redirect != null
-                        ? '/register?redirect=${Uri.encodeComponent(redirect)}'
-                        : '/register');
-                  }),
-                ],
+                ),
               ],
             ),
           ),
@@ -207,7 +254,9 @@ class _NavTextLink extends StatelessWidget {
       style: TextButton.styleFrom(
         foregroundColor: AuraSurface.muted,
         padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s10, vertical: AuraSpace.s8),
+          horizontal: AuraSpace.s10,
+          vertical: AuraSpace.s8,
+        ),
       ),
       child: Text(
         label,
@@ -236,11 +285,15 @@ class _GoHomeButton extends StatelessWidget {
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(
-                horizontal: AuraSpace.s14, vertical: AuraSpace.s8),
+              horizontal: AuraSpace.s14,
+              vertical: AuraSpace.s8,
+            ),
             child: Text(
               'Open Aura',
               style: AuraText.small.copyWith(
-                  fontWeight: FontWeight.w700, color: Colors.white),
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
             ),
           ),
         ),
@@ -261,11 +314,15 @@ class _SignInButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(AuraRadius.pill),
       child: Padding(
         padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s12, vertical: AuraSpace.s8),
+          horizontal: AuraSpace.s12,
+          vertical: AuraSpace.s8,
+        ),
         child: Text(
           'Sign in',
           style: AuraText.small.copyWith(
-              fontWeight: FontWeight.w600, color: AuraSurface.muted),
+            fontWeight: FontWeight.w600,
+            color: AuraSurface.muted,
+          ),
         ),
       ),
     );
@@ -291,11 +348,15 @@ class _JoinButton extends StatelessWidget {
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(
-                horizontal: AuraSpace.s14, vertical: AuraSpace.s8),
+              horizontal: AuraSpace.s14,
+              vertical: AuraSpace.s8,
+            ),
             child: Text(
               'Join',
               style: AuraText.small.copyWith(
-                  fontWeight: FontWeight.w700, color: Colors.white),
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
             ),
           ),
         ),

@@ -115,6 +115,48 @@ import 'shell_shared.dart';
 ///   * No routed body may push its own AppBar/Scaffold over the
 ///     platform bar.
 ///
+/// WHICH REALM THIS SHELL IS STANDING IN.
+///
+/// The founder's question was whether the wordmark, search, attention, Live
+/// and account controls belong in Admin, and the instruction was to make the
+/// SHARED shell context-aware rather than build a second one. This is that
+/// seam: one declaration per shell, read by the tools strip, so a control that
+/// is meaningless in a realm is absent there and identical everywhere it is
+/// meaningful.
+///
+/// Judged control by control:
+///
+///   * WORDMARK — belongs in all three. It is the way back to the product,
+///     and an operator console with no way home is a trap.
+///   * ACCOUNT — belongs in all three. Identity and sign-out are never
+///     realm-scoped, and burying them once cost the founder both.
+///   * ATTENTION — belongs in all three. Notifications are addressed to the
+///     PERSON, not to the surface they happen to be standing on. An operator
+///     reviewing a queue is still owed the message someone sent them.
+///   * SEARCH — member only. `/search` searches public discourse. In an
+///     institution workspace it would leak member content into institution
+///     scope, which is why that shell already passes null; in Admin it
+///     answers a question about the wrong corpus entirely.
+///   * LIVE — member only. It joins or starts a live session AS A MEMBER.
+///     There is no operator sense of "go live", and offering it inside the
+///     console is offering to leave.
+///   * ADD YOUR INSTITUTION — member only. It is an onboarding action for a
+///     person with no institution relationship, and it was rendering on the
+///     operator console, where the frozen "visible at every width" rule was
+///     never meant to reach.
+///   * THE OPERATOR DOOR — member and institution only. Inside the console it
+///     points at the room it is already in.
+enum AuraShellRealm {
+  /// A person acting as themselves.
+  member,
+
+  /// A person acting for an institution.
+  institution,
+
+  /// A person operating Aura.
+  operator,
+}
+
 class GlobalPlatformShell extends StatelessWidget {
   const GlobalPlatformShell({
     super.key,
@@ -123,6 +165,7 @@ class GlobalPlatformShell extends StatelessWidget {
     this.showLive = true,
     this.searchPath = '/search',
     this.activityPath = '/notifications',
+    this.realm = AuraShellRealm.member,
   });
 
   /// The routed body + per-shell context. This widget composes the
@@ -146,6 +189,10 @@ class GlobalPlatformShell extends StatelessWidget {
 
   /// Path the notifications bell pushes to. Null suppresses the bell.
   final String? activityPath;
+
+  /// Which realm this shell stands in. See [AuraShellRealm] for the
+  /// control-by-control judgement it drives.
+  final AuraShellRealm realm;
 
   /// Logical height of the platform bar. Kept stable across breakpoints
   /// so the user perceives a continuous top edge while navigating.
@@ -174,6 +221,7 @@ class GlobalPlatformShell extends StatelessWidget {
               showLive: showLive,
               searchPath: searchPath,
               activityPath: activityPath,
+              realm: realm,
             ),
             if (contextBar != null) contextBar!,
             Expanded(child: child),
@@ -191,6 +239,7 @@ class _PlatformBar extends StatelessWidget {
     required this.showLive,
     required this.searchPath,
     required this.activityPath,
+    required this.realm,
   });
 
   final bool isDesktop;
@@ -198,14 +247,15 @@ class _PlatformBar extends StatelessWidget {
   final bool showLive;
   final String? searchPath;
   final String? activityPath;
+  final AuraShellRealm realm;
 
   @override
   Widget build(BuildContext context) {
     final hPad = isDesktop
         ? AuraSpace.s24
         : isTablet
-            ? AuraSpace.s20
-            : AuraSpace.s16;
+        ? AuraSpace.s20
+        : AuraSpace.s16;
     return Container(
       height: GlobalPlatformShell.height,
       decoration: const BoxDecoration(
@@ -227,60 +277,69 @@ class _PlatformBar extends StatelessWidget {
           ),
         ],
       ),
-      child: Center(
-        child: ConstrainedBox(
-          // Wide bound: the platform bar spans more than any single
-          // page surface so the wordmark and tools always sit at the
-          // outer edges, regardless of which surface width is below.
-          constraints: const BoxConstraints(maxWidth: 1440),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: hPad),
-            child: Row(
-              children: [
-                AuraShellWordmark(onTap: () => _goHome(context)),
-                // THE UTILITY CLUSTER IS ANCHORED, NOT MERELY PUSHED.
-                //
-                // This was `Spacer()` followed by `Flexible(tools)`. Spacer is
-                // `Expanded(flex: 1)` and Flexible also defaults to `flex: 1`,
-                // so the free width was split fifty-fifty between the gap and
-                // the tools slot — and the tools, sized to their content,
-                // sat at the START of their half. The cluster therefore
-                // floated near the middle of the header with a wide dead gap
-                // to its right, at every desktop width. Measured on the
-                // deployed build at a 1142px viewport: ~227px of trailing
-                // emptiness. The 1440 bound below was not involved; it never
-                // binds at that width.
-                //
-                // One Expanded, with the cluster aligned to the trailing edge
-                // inside it, expresses the intent directly: the wordmark
-                // leads, the utilities anchor right against the outer inset,
-                // and everything between is gap.
-                //
-                // Still BOUNDED, so a future addition degrades inside the
-                // header rather than pushing the account button off the edge:
-                // Align passes a bounded max width down, which is what the
-                // tools' internal scroll-and-anchor behaviour needs.
-                //
-                // RESPONSIVE, NOT TWO LAYOUTS. On phones ShellHeaderTools
-                // renders nothing at all — the founder-validated mobile
-                // reconstruction — so this resolves to a wordmark and empty
-                // space without reintroducing search, attention, Live or
-                // account into the mobile header.
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: ShellHeaderTools(
-                      isTablet: isTablet,
-                      isDesktop: isDesktop,
-                      showLive: showLive,
-                      searchPath: searchPath,
-                      activityPath: activityPath,
-                    ),
-                  ),
+      // A BAR SITS ON THE OUTER INSET OF WHAT IS UNDER IT.
+      //
+      // This was capped at 1440 and centred, with a comment claiming the bar
+      // "spans more than any single page surface". That stopped being true
+      // when the workspace surfaces were given the window: on a maximised
+      // 1997 px client the navigation rail starts at x=0 and the context rail
+      // ends at the right edge, while the bar's own contents were boxed into
+      // 278..1718. The wordmark floated 300 px inside the rail beneath it and
+      // the account button stopped 280 px short of the panel beneath IT.
+      //
+      // The rule this now follows is the one the public bar follows, and it
+      // is the same rule in both realms: the bar's contents land on the outer
+      // inset of the surface below. Public composes a centred page band, so
+      // the public bar takes that band. A workspace composes the whole
+      // window, so this bar takes the whole window. Different content, one
+      // physics.
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: hPad),
+        child: Row(
+          children: [
+            AuraShellWordmark(onTap: () => _goHome(context)),
+            // THE UTILITY CLUSTER IS ANCHORED, NOT MERELY PUSHED.
+            //
+            // This was `Spacer()` followed by `Flexible(tools)`. Spacer is
+            // `Expanded(flex: 1)` and Flexible also defaults to `flex: 1`,
+            // so the free width was split fifty-fifty between the gap and
+            // the tools slot — and the tools, sized to their content,
+            // sat at the START of their half. The cluster therefore
+            // floated near the middle of the header with a wide dead gap
+            // to its right, at every desktop width. Measured on the
+            // deployed build at a 1142px viewport: ~227px of trailing
+            // emptiness. The 1440 bound below was not involved; it never
+            // binds at that width.
+            //
+            // One Expanded, with the cluster aligned to the trailing edge
+            // inside it, expresses the intent directly: the wordmark
+            // leads, the utilities anchor right against the outer inset,
+            // and everything between is gap.
+            //
+            // Still BOUNDED, so a future addition degrades inside the
+            // header rather than pushing the account button off the edge:
+            // Align passes a bounded max width down, which is what the
+            // tools' internal scroll-and-anchor behaviour needs.
+            //
+            // RESPONSIVE, NOT TWO LAYOUTS. On phones ShellHeaderTools
+            // renders nothing at all — the founder-validated mobile
+            // reconstruction — so this resolves to a wordmark and empty
+            // space without reintroducing search, attention, Live or
+            // account into the mobile header.
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: ShellHeaderTools(
+                  isTablet: isTablet,
+                  isDesktop: isDesktop,
+                  showLive: showLive,
+                  searchPath: searchPath,
+                  activityPath: activityPath,
+                  realm: realm,
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
@@ -288,8 +347,9 @@ class _PlatformBar extends StatelessWidget {
 
   void _goHome(BuildContext context) {
     final currentPath = GoRouterState.of(context).uri.path;
-    final target =
-        shouldUseMemberShellForAuthed(currentPath) ? '/home' : '/home';
+    final target = shouldUseMemberShellForAuthed(currentPath)
+        ? '/home'
+        : '/home';
     context.go(target);
   }
 }
@@ -325,8 +385,8 @@ class PlatformContextBar extends StatelessWidget {
         final hPad = isDesktop
             ? AuraSpace.s24
             : isTablet
-                ? AuraSpace.s20
-                : AuraSpace.s16;
+            ? AuraSpace.s20
+            : AuraSpace.s16;
         return Container(
           height: height,
           decoration: BoxDecoration(

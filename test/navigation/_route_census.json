@@ -145,8 +145,8 @@
   "path": "/contact",
   "segments": 1,
   "params": [],
-  "renders": true,
-  "hasRedirect": false,
+  "renders": false,
+  "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
    "ShellRoute#0"

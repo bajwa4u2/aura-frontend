@@ -134,13 +134,13 @@
  {
   "route": "/contact",
   "sample": "/contact",
-  "renders": true,
+  "renders": false,
   "protected": false,
   "deepLinkSemantic": "deepLinkFallback",
   "deepLinkDestination": "/home",
   "inAppSemantic": "stackReturn",
   "affordance": true,
-  "verdict": "COMPLIANT"
+  "verdict": "NOT_A_SURFACE"
  },
  {
   "route": "/support/agent",

@@ -6,7 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/shell/rail/rail_composition.dart';
-import '../../admin/domain/operator_entry.dart';
+import '../../admin/domain/operator_capability.dart';
+import '../../admin/domain/operator_capability_outside_console.dart';
 import '../../../core/navigation/canonical_destinations.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/link_preview/display_link_preview.dart';
@@ -281,10 +282,7 @@ class _AnnouncementDetailScreenState
     return PopupMenuButton<String>(
       tooltip: 'Manage this announcement',
       itemBuilder: (context) => <PopupMenuEntry<String>>[
-        const PopupMenuItem<String>(
-          value: 'edit',
-          child: Text('Edit'),
-        ),
+        const PopupMenuItem<String>(value: 'edit', child: Text('Edit')),
         PopupMenuItem<String>(
           value: a.pinned ? 'unpin' : 'pin',
           // The label states what the action DOES, not what is currently
@@ -293,20 +291,39 @@ class _AnnouncementDetailScreenState
           child: Text(a.pinned ? 'Unpin' : 'Pin to top'),
         ),
         const PopupMenuDivider(),
-        const PopupMenuItem<String>(
-          value: 'unpublish',
-          child: Text('Unpublish'),
-        ),
-        const PopupMenuItem<String>(
-          value: 'remove',
-          child: Text('Remove'),
-        ),
+        // WITHDRAWAL AND DELETION ARE NOT PEERS, SO THEY ARE NOT OFFERED AS
+        // PEERS.
+        //
+        // They sat side by side under identical weight, and the difference
+        // between them is the difference between taking something out of
+        // circulation and ending it. What the backend does confirms the
+        // asymmetry rather than softening it: `adminSoftDelete` stamps
+        // `deletedAt` and nothing else, and there is no admin list endpoint
+        // and no restore endpoint anywhere in the module. The row survives in
+        // the database, and NOTHING IN THE PRODUCT CAN EVER SEE IT AGAIN. For
+        // the operator, and for every reader, that is permanent.
+        //
+        // So a published announcement offers withdrawal only. Deletion
+        // becomes available once it is withdrawn, at which point it is a
+        // draft nobody is reading and discarding it destroys no public
+        // record. This costs an operator who genuinely wants it gone one
+        // extra step, and it makes the destructive step impossible to reach
+        // by accident from a live communication.
+        if (a.publishedAt != null)
+          const PopupMenuItem<String>(
+            value: 'unpublish',
+            child: Text('Unpublish'),
+          )
+        else
+          const PopupMenuItem<String>(
+            value: 'remove',
+            child: Text('Delete draft'),
+          ),
       ],
       onSelected: (choice) {
         switch (choice) {
           case 'edit':
-            context.push(
-                NavigationAuthority.announcementEditorRoute(a.slug));
+            context.push(NavigationAuthority.announcementEditorRoute(a.slug));
           case 'pin':
           case 'unpin':
             unawaited(_setPinned(a, choice == 'pin'));
@@ -376,8 +393,9 @@ class _AnnouncementDetailScreenState
   Future<void> _unpublish(Announcement a) async {
     final ok = await _confirm(
       title: 'Unpublish this announcement?',
-      body: 'It stops appearing to readers. It is kept, and can be published '
-          'again.',
+      body:
+          'It stops appearing to readers. It is kept, and you can publish '
+          'it again.',
       confirmLabel: 'Unpublish',
     );
     if (!ok || !mounted) return;
@@ -385,9 +403,9 @@ class _AnnouncementDetailScreenState
       await ref.read(announcementsRepoProvider).unpublish(a.id);
       if (!mounted) return;
       ref.invalidate(announcementBySlugProvider(widget.slug));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unpublished.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Unpublished.')));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -402,17 +420,23 @@ class _AnnouncementDetailScreenState
 
   Future<void> _remove(Announcement a) async {
     final ok = await _confirm(
-      title: 'Remove this announcement?',
-      body: 'It is taken down and no longer listed.',
-      confirmLabel: 'Remove',
+      // The old copy said "It is taken down and no longer listed", which
+      // reads as a filing change. It is not one. There is no restore path and
+      // no admin listing that shows deleted rows, so nothing in Aura can
+      // reach it again. Say that.
+      title: 'Delete this draft?',
+      body:
+          'This cannot be undone. The draft will not be recoverable from '
+          'anywhere in Aura.',
+      confirmLabel: 'Delete',
     );
     if (!ok || !mounted) return;
     try {
       await ref.read(announcementsRepoProvider).remove(a.id);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Removed.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Draft deleted.')));
       // The address no longer resolves to anything worth standing on.
       if (context.canPop()) {
         context.pop();
@@ -423,9 +447,7 @@ class _AnnouncementDetailScreenState
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            AppErrorMapper.from(e, feature: 'remove this').message,
-          ),
+          content: Text(AppErrorMapper.from(e, feature: 'remove this').message),
         ),
       );
     }
@@ -446,32 +468,37 @@ class _AnnouncementDetailScreenState
     //
     // The two are kept distinct because they mean different things:
     // unpublishing withdraws it from view and keeps it; removing is the
-    // deletion. Neither is offered to anyone who cannot already administer
-    // announcements -- the same authority that publishes them.
-    // WHY THE OWNER CONTROLS WERE NEVER THERE.
+    // deletion.
     //
-    // This read `appAdminAccessProvider`, an AsyncValue, through
-    // `valueOrNull` — which is null while the check is in flight and null
-    // again on any error, so the menu resolved to "not an administrator" and
-    // the actions were simply not built. On a route reached by deep link or
-    // by tapping the pinned banner, that is the ordinary case: the founder
-    // reported the controls missing because for them they always were.
+    // WHO IS ALLOWED TO DO ANY OF IT.
     //
-    // `appAdminCachedDisplayProvider` was the second attempt and it is a
-    // CACHE: observed true on one visit and false on the next, which made the
-    // controls flicker in and out of existence. `canEnterOperatorConsoleProvider`
-    // is the durable answer to "may this person operate Aura", it is what
-    // gates the Aura Admin entry in the header, and it is the right authority
-    // here on its own terms — platform announcements are published by the
-    // operator, so the authority that may publish one is the authority that
-    // may correct, pin or withdraw it.
-    final isAdmin = ref.watch(canEnterOperatorConsoleProvider);
+    // Three wrong answers preceded this one, and the third is the instructive
+    // one. `appAdminAccessProvider.valueOrNull` was null while in flight and
+    // null on error, so on a deep-linked route the controls were never built
+    // at all: the founder reported them missing because for them they always
+    // were. `appAdminCachedDisplayProvider` was a cache, so they flickered.
+    // `canEnterOperatorConsoleProvider` was durable and always populated, and
+    // answers a DIFFERENT QUESTION: whether this person holds at least one
+    // operator capability. An operator holding only SUPPORT_READ would have
+    // been shown Edit, Unpublish and Remove and would have collected a 403
+    // and an audit denial for using them.
+    //
+    // AREA ACCESS IS NOT ACTION PERMISSION. The backend is explicit here:
+    // every handler on `AdminAnnouncementsController` sits under
+    // `@RequireAdminPermission(AdminPermission.ANNOUNCEMENTS_WRITE)`, and the
+    // schema defines ANNOUNCEMENTS_READ separately from it. The client has to
+    // ask the question the endpoint will ask, which is what
+    // `operatorCapabilityProvider` does: no probe for a non-operator, then
+    // the capability the server actually returned.
+    final canManage = ref.watch(
+      operatorCapabilityProvider(OperatorCapability.announcementsWrite),
+    );
     final loaded = async.valueOrNull;
 
     return AuraScaffold(
       title: 'Announcement',
       showHomeAction: true,
-      actions: (isAdmin && loaded != null)
+      actions: (canManage && loaded != null)
           ? <Widget>[_buildAdminActions(loaded)]
           : null,
       // Discourse detail composition: the page widens to host a

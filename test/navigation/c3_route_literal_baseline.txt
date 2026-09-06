@@ -37,7 +37,7 @@
 1 lib/features/feed/presentation/quoted_post_preview.dart
 1 lib/features/feed/presentation/unified_feed_card.dart
 1 lib/features/home/presentation/member_home_screen.dart
-9 lib/features/home/presentation/public_home_screen.dart
+8 lib/features/home/presentation/public_home_screen.dart
 1 lib/features/institution_ontology/widgets/sector_grid.dart
 2 lib/features/institutions/announcements/institution_announcements_screen.dart
 1 lib/features/institutions/engagement/engagement_detail_screen.dart
@@ -113,7 +113,6 @@
 2 lib/features/updates/presentation/updates_screen.dart
 1 lib/screens/account_deletion_screen.dart
 2 lib/screens/child_safety_screen.dart
-1 lib/screens/contact_screen.dart
 2 lib/screens/founder_message_screen.dart
 5 lib/screens/investors_hub_screen.dart
 2 lib/screens/mission_screen.dart

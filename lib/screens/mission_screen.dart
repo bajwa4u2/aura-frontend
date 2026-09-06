@@ -33,7 +33,7 @@ class MissionScreen extends StatelessWidget {
           'participate purposefully and institutions remain accountable.',
       subtitle:
           'Aura Platform LLC builds infrastructure where identity, '
-          'authority, and outcomes stay connected — across people, '
+          'authority, and outcomes stay connected across people, '
           'institutions, and AI.',
       actions: [
         AuraGhostButton(
@@ -56,8 +56,8 @@ class MissionScreen extends StatelessWidget {
         PubText.p(
           'Modern work is fast, but unstable. Conversations scatter '
           'across tools. Identity blurs. Decisions move forward, but '
-          'the record of who said what — and what was supposed to '
-          'happen next — gets lost between the tab and the calendar.',
+          'the record of who said what, and what was supposed to '
+          'happen next, gets lost between the tab and the calendar.',
         ),
         PubText.p(
           'Aura Platform exists to fix that fragmentation at the '
@@ -74,7 +74,7 @@ class MissionScreen extends StatelessWidget {
         const SizedBox(height: AuraSpace.s10),
         const _Protect(
           label: 'Accountability',
-          body: 'Authority is named, scoped, and reviewable — for '
+          body: 'Authority is named, scoped, and reviewable, for '
               'individuals, institutions, and AI alike.',
         ),
         const SizedBox(height: AuraSpace.s10),
@@ -103,15 +103,15 @@ class MissionScreen extends StatelessWidget {
           'people and institutions an accountable place to speak, '
           'respond, and record outcomes. Public discourse, '
           'institutional announcements, member conversations, and '
-          'correspondence all share one identity layer — so positions '
+          'correspondence all share one identity layer, so positions '
           'stay attributable and corrections stay attached.',
         ),
 
         PubText.h('What Orchestrate does'),
         PubText.p(
           'Orchestrate is the execution side of the platform. It is '
-          'AI-assisted revenue automation and operational execution — '
-          'from outreach to meetings to workflow to billing — for '
+          'AI-assisted revenue automation and operational execution, '
+          'from outreach to meetings to workflow to billing, for '
           'institutional teams that need follow-through to stay '
           'connected to the people accountable for it.',
         ),

@@ -184,6 +184,21 @@ class _OperatorShellState extends ConsumerState<OperatorShell> {
           backgroundColor: AuraSurface.page,
           body: SafeArea(
             child: GlobalPlatformShell(
+              // THE CONSOLE DECLARES ITS REALM RATHER THAN ITS OWN CHROME.
+              //
+              // The shared bar was rendering the member strip verbatim here:
+              // `/search` over public discourse, a Live pill that offers to
+              // leave, "Add your institution" onboarding, and a door to the
+              // console the operator is standing in. Four controls answering
+              // questions nobody asks in Admin.
+              //
+              // Declaring the realm is the correction the founder asked for.
+              // The shell stays one shell; what it composes is decided by
+              // where it stands. Attention and account remain, because a
+              // notification is addressed to the person and not to the
+              // surface, and identity is never realm-scoped.
+              realm: AuraShellRealm.operator,
+              searchPath: null,
               // The operator header becomes the context bar the platform
               // shell already knows how to carry — the same slot the member
               // shell uses — instead of a second top-level header.

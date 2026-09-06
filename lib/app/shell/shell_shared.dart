@@ -3,8 +3,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../core/ui/aura_radius.dart';
 import '../../core/ui/aura_responsive.dart';
+import '../../core/ui/aura_radius.dart';
 import '../../core/ui/aura_space.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
@@ -49,50 +49,93 @@ class AuraShellWordmark extends StatelessWidget {
 // FOOTER
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Phase 6.5 — product-grade public footer.
+/// THE PUBLIC CLOSING.
 ///
-/// Owned by `PublicShell` only. Workspace shells (Member / Institution /
-/// Admin) MUST NOT render this widget. Renders four short link columns plus
-/// a calm platform note, in a dark, restrained surface aligned with the
-/// Aura design system.
+/// ── WHAT THIS REPLACES ──────────────────────────────────────────────────────
+///
+/// A sitemap. Three link columns headed Aura / Support / Legal, a paragraph
+/// defining the platform, an attribution lockup and a continuity row — five
+/// separate blocks, each individually reasonable, together a warehouse. It
+/// ended the page the way a corporate site ends a page: by listing itself.
+///
+/// A public surface's last movement is the last thing a visitor reads. It is
+/// the natural place to say what the product is FOR and to offer the one act
+/// that follows from believing it. Everything else is context and belongs
+/// quietly underneath.
+///
+/// ── THE MOVEMENT ────────────────────────────────────────────────────────────
+///
+///   1. the mark, and one authored thought
+///   2. the invitation — Start a conversation
+///   3. a short line of destinations that genuinely earn a place
+///   4. a quiet line: product, company, legal, ecosystem
+///
+/// ── WHAT WAS DELIBERATELY NOT CARRIED OVER ──────────────────────────────────
+///
+///   * "Contact". `/contact` is a redirect to the support agent, so the
+///     footer offered two names for one destination and taught people that
+///     Contact and Help were different places. Founder ruling: contact is
+///     retired as public taxonomy and the relationship path is Start a
+///     conversation. Both names converge on the one real surface.
+///   * Column HEADINGS. Three headings above one or two links each is
+///     scaffolding for a structure that is not there.
+///   * The platform definition paragraph. A closing invites; it does not
+///     re-explain.
+///
+/// Owned by `PublicShell` and the public document/publication layouts.
+/// Workspace shells (Member / Institution / Admin) MUST NOT render it.
 class ShellFooter extends StatelessWidget {
   const ShellFooter({super.key});
 
-  // Footer content shares the public surface's content container so its
-  // edges align with every section above it. The public home/landing
-  // sections center their content at `kHeroWidth` (1360) — the previous
-  // hardcoded 1080 left the footer 280 px narrower than the band directly
-  // above it, so on desktop the full-width dark surface read as
-  // under-filled (a dead void on the right). Resolving to the canonical
-  // content width keeps the footer composed across the same canvas.
-  static const double maxWidth = kHeroWidth; // 1360
-  // Width at which the footer composes into its multi-column desktop
-  // layout (brand left, link columns distributed right, bottom row
-  // spanning full width) instead of stacking. This is a *content* test on
-  // the footer's own available width, not a viewport/shell breakpoint:
-  // brand + three short link columns compose cleanly from ~760 px up.
-  //
-  // It was previously pinned to kTabletBreak (900). The public home wraps
-  // its whole page — footer included — in AuraScaffold's default 920 px
-  // container, leaving the footer only 880 px of inner width. 880 < 900,
-  // so on desktop the footer fell 20 px short of going wide and rendered
-  // stacked: the three columns huddled at the left and the right two-
-  // thirds of the full-bleed dark surface read as an empty void. Lowering
-  // the threshold lets the footer fill that 880 px cleanly. Document /
-  // investor / publication hosts (1080 px container → ~1040 px footer)
-  // were always above either threshold and are unaffected.
+  /// The closing sits on the page's own edges.
+  ///
+  /// It was set to a narrower band of its own, which read well in isolation
+  /// and wrongly in place: the closing's left edge stood 190 px inside the
+  /// left edge of every section above it, so the last movement of the page
+  /// looked like a different page. A closing that does not line up with what
+  /// it closes is not a closing.
+  ///
+  /// The PROSE is still held to a reading measure (see
+  /// [_closingThoughtMeasure]), which is the part that actually needed
+  /// narrowing.
+  static const double maxWidth = kHeroWidth;
+
+  /// A closing thought set across 1300 px reads as a banner. The band is the
+  /// page's; the sentence inside it is sized to be read.
+  static const double _closingThoughtMeasure = 620;
+
+  /// Below this the closing stacks. A content test on the footer's own width,
+  /// not a viewport breakpoint — the footer is rendered inside containers of
+  /// several widths across the public estate.
   static const double _wideBreakpoint = 760;
 
-  static const _platformNote =
-      'Aura is a platform for purposeful public and personal communication, '
-      'where conversations keep their context and people speak under a clear '
-      'identity. Institutions take part under verified identity, so what they '
-      'say officially stays attributable.';
+  /// THE CLOSING THOUGHT.
+  ///
+  /// Public-first by construction and in the doctrine's own order: people and
+  /// what they say come first, continuity second, institutional
+  /// accountability last and as a consequence rather than a premise. It
+  /// claims no capability Aura does not have and names no institution as the
+  /// reason to be here.
+  static const _closingThought =
+      'Say it in the open, and let it keep its meaning. Conversations here '
+      'hold on to who spoke and what was promised. When an institution '
+      'takes part, it answers on the same record.';
 
   @override
   Widget build(BuildContext context) {
-    final year = DateTime.now().year;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // The estate's shared support band sits ABOVE the closing, which is
+        // where the company site, Orchestrate and Bajwa Writes all put it.
+        const _MadeWithSupportBand(),
+        _closing(context),
+      ],
+    );
+  }
 
+  Widget _closing(BuildContext context) {
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -105,27 +148,21 @@ class ShellFooter extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AuraSpace.s20,
-              vertical: AuraSpace.s28,
+              vertical: AuraSpace.s32,
             ),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final wide = constraints.maxWidth >= _wideBreakpoint;
-                // Reconciled 2026-06-01 — see
-                // docs/ecosystem/FOOTER_RECONCILIATION_2026-06-01.md
-                // in the personal repo. The earlier two-slab footer
-                // (4 columns → bottom row → separate ecosystem band)
-                // read as two stacked footers. The ecosystem is now
-                // integrated into `_FooterBottomRow` (institution
-                // lockup left, canonical links right) — one footer,
-                // closing in two layers within one container.
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _FooterTopRow(wide: wide),
+                    _ClosingInvitation(wide: wide),
+                    const SizedBox(height: AuraSpace.s24),
+                    const _ClosingDestinations(),
                     const SizedBox(height: AuraSpace.s24),
                     Container(height: 1, color: AuraSurface.divider),
                     const SizedBox(height: AuraSpace.s16),
-                    _FooterBottomRow(year: year, wide: wide),
+                    _QuietLine(wide: wide),
                   ],
                 );
               },
@@ -137,60 +174,424 @@ class ShellFooter extends StatelessWidget {
   }
 }
 
-class _FooterTopRow extends StatelessWidget {
-  const _FooterTopRow({required this.wide});
+/// The mark, the thought, and the one act that follows from it.
+/// MADE WITH SUPPORT: the estate's shared band, in Aura's palette.
+///
+/// Not a new invention. The company site, Orchestrate and Bajwa Writes all
+/// close the same way: a full-bleed field above the footer carrying a small
+/// letterspaced label, one sentence naming the environment the product is
+/// being built in, and the three programme marks ranged to the trailing edge.
+/// Aura was the only surface in the estate without it, which is the sort of
+/// gap that makes three products look like three companies.
+///
+/// WHAT IS TAKEN EXACTLY, and why:
+///
+///   * THE MARKS are the same original files, copied from the sibling
+///     repositories rather than re-exported. Three slightly different
+///     renderings of a partner's logo across one estate is worse than none.
+///   * THE GEOMETRY is the siblings': 132 / 110 / 94 wide at desktop and
+///     110 / 82 / 76 compact, all on a 42 px line, contained, ranged to the
+///     end with 22 px between them. Marks set at different sizes on
+///     different products read as three separate arrangements.
+///   * THE SENTENCE follows the construction the other two use, so the three
+///     read as one house saying the same thing about three products.
+///
+/// WHAT DIFFERS, deliberately:
+///
+///   * THE FIELD is Aura's, not Bajwa Writes' teal or Orchestrate's slate.
+///     Parity of composition, not of palette: each product closes in its own
+///     colour, in the same shape.
+///   * THE MARKS ARE LINKS. Neither Flutter sibling links them; the COMPANY
+///     estate does. A reader who wants to check a claim about who supports
+///     this work should be able to, so where the two disagree this follows
+///     the company.
+class _MadeWithSupportBand extends StatelessWidget {
+  const _MadeWithSupportBand();
+
+  /// Below this the label and the marks stack. The siblings' own threshold.
+  static const double _compactBreakpoint = 760;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: AuraSurface.subtle,
+        border: Border(
+          top: BorderSide(color: AuraSurface.divider),
+          bottom: BorderSide(color: AuraSurface.divider),
+        ),
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: kHeroWidth),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s20,
+              vertical: AuraSpace.s24,
+            ),
+            child: LayoutBuilder(
+              builder: (context, c) {
+                final compact = c.maxWidth < _compactBreakpoint;
+                final copy = _copy();
+                final marks = _SupportMarks(compact: compact);
+                if (compact) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      copy,
+                      const SizedBox(height: AuraSpace.s16),
+                      marks,
+                    ],
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(child: copy),
+                    const SizedBox(width: AuraSpace.s24),
+                    Flexible(child: marks),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _copy() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'MADE WITH SUPPORT',
+          style: AuraText.micro.copyWith(
+            color: AuraSurface.accentText,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.4,
+          ),
+        ),
+        const SizedBox(height: AuraSpace.s8),
+        Text(
+          'Aura is being built in an environment that values durable public '
+          'communication.',
+          style: AuraText.body.copyWith(
+            color: AuraSurface.ink,
+            fontWeight: FontWeight.w600,
+            height: 1.35,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SupportMarks extends StatelessWidget {
+  const _SupportMarks({required this.compact});
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      alignment: compact ? WrapAlignment.start : WrapAlignment.end,
+      spacing: compact ? 12 : 22,
+      runSpacing: 16,
+      children: [
+        _SupportMark(
+          asset: 'assets/branding/support/microsoft-for-startups-badge.png',
+          label: 'Microsoft for Startups',
+          url: 'https://www.microsoft.com/en-us/startups/',
+          width: compact ? 110 : 132,
+        ),
+        _SupportMark(
+          asset: 'assets/branding/support/google-for-startups.svg',
+          label: 'Google for Startups',
+          url: 'https://startup.google.com/',
+          width: compact ? 82 : 110,
+        ),
+        _SupportMark(
+          asset: 'assets/branding/support/aws-activate.svg',
+          label: 'AWS Activate',
+          url: 'https://aws.amazon.com/activate/',
+          width: compact ? 76 : 94,
+        ),
+      ],
+    );
+  }
+}
+
+class _SupportMark extends StatelessWidget {
+  const _SupportMark({
+    required this.asset,
+    required this.label,
+    required this.url,
+    required this.width,
+  });
+
+  final String asset;
+  final String label;
+  final String url;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      link: true,
+      label: label,
+      child: Tooltip(
+        message: label,
+        child: InkWell(
+          onTap: () => _openExternal(url),
+          borderRadius: BorderRadius.circular(4),
+          child: SizedBox(
+            width: width,
+            height: 42,
+            // The marks sit free on the field. A white plate behind them
+            // reads as three pasted image cards on a dark closing.
+            child: asset.endsWith('.svg')
+                ? SvgPicture.asset(asset, fit: BoxFit.contain)
+                : Image.asset(
+                    asset,
+                    fit: BoxFit.contain,
+                    // A missing partner mark must not become a broken tile in
+                    // the estate's closing. Name it in text instead.
+                    errorBuilder: (context, error, stack) => Text(
+                      label,
+                      style: AuraText.micro.copyWith(color: AuraSurface.muted),
+                    ),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ClosingInvitation extends StatelessWidget {
+  const _ClosingInvitation({required this.wide});
 
   final bool wide;
 
-  // Task #272 — responsibility-boundary cleanup. Founder, white-paper,
-  // supporter, patron, and investor concerns now live on the dedicated
-  // Founder (bajwa.auraplatform.org) and Company (company.auraplatform.org)
-  // surfaces, so they are removed from Aura's product footer. The
-  // Participation column held only supporter/patron/investor relations
-  // (no Aura-specific participation), so it is removed entirely. The
-  // ecosystem continuity band is unaffected. Aura's footer now answers
-  // only "what is Aura?" — Mission, Support, Legal.
-  static const _columns = <_FooterColumn>[
-    _FooterColumn(title: 'Aura', links: [_FooterLink('Mission', '/mission')]),
-    _FooterColumn(
-      title: 'Support',
-      links: [
-        _FooterLink('Contact', '/contact'),
-        _FooterLink('Help', '/support/agent'),
+  @override
+  Widget build(BuildContext context) {
+    final thought = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // THE AURA PRODUCT MARK — the gold ring with its eight radial ticks,
+        // from the identity master. Not the Aura Platform LLC company mark:
+        // this is the product closing its own public surface, and the company
+        // appears quietly below where it belongs.
+        ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: ShellFooter._closingThoughtMeasure,
+          ),
+          child: Text(
+            ShellFooter._closingThought,
+            style: AuraText.body.copyWith(color: AuraSurface.ink, height: 1.6),
+          ),
+        ),
       ],
-    ),
-    _FooterColumn(
-      title: 'Legal',
-      links: [
-        _FooterLink('Privacy', '/privacy'),
-        _FooterLink('Terms', '/terms'),
+    );
+
+    final invitation = _StartAConversationButton();
+
+    if (wide) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(child: thought),
+          const SizedBox(width: AuraSpace.s32),
+          invitation,
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        thought,
+        const SizedBox(height: AuraSpace.s20),
+        invitation,
       ],
-    ),
+    );
+  }
+}
+
+/// START A CONVERSATION — the canonical relationship path.
+///
+/// One destination, deliberately. `/contact` was a route that redirected here
+/// and "Help" was a second name for the same place; a public surface offering
+/// three doors into one room is not offering choice, it is offering doubt.
+class _StartAConversationButton extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Start a conversation',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => context.push('/support/agent'),
+          borderRadius: BorderRadius.circular(AuraRadius.pill),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AuraSpace.s20,
+              vertical: AuraSpace.s12,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AuraRadius.pill),
+              border: Border.all(
+                color: AuraSurface.accent.withValues(alpha: 0.45),
+              ),
+              color: AuraSurface.accentSoft,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Start a conversation',
+                  style: AuraText.small.copyWith(
+                    color: AuraSurface.accentText,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: AuraSpace.s8),
+                const Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 16,
+                  color: AuraSurface.accentText,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The destinations that earn a place in a closing.
+///
+/// Three, on one line, with no headings. Each answers a question a public
+/// visitor actually has at the end of a public page: what is this for
+/// (Mission), what is happening (Discover), who is accountable here
+/// (Institutions). Routes exist for a great deal more; existing is not a
+/// reason to be listed.
+class _ClosingDestinations extends StatelessWidget {
+  const _ClosingDestinations();
+
+  static const _destinations = <_FooterLink>[
+    _FooterLink('Mission', '/mission'),
+    _FooterLink('Discover', '/discover'),
+    _FooterLink('Institutions', '/institutions'),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final brand = _BrandBlock(wide: wide);
+    return Wrap(
+      spacing: AuraSpace.s20,
+      runSpacing: AuraSpace.s8,
+      children: [
+        for (final d in _destinations) _FooterNavLink(link: d, emphasis: true),
+      ],
+    );
+  }
+}
+
+/// THE BOTTOM ROW, at parity with the estate.
+///
+/// Orchestrate and Bajwa Writes close on the identical shape: a rule, then
+/// the company name set bold at the leading edge with its relationship line
+/// beneath it, and the SIBLING products ranged to the trailing edge. Both
+/// omit themselves from that row.
+///
+/// That resolves a tension worth recording. The five-link band this replaces
+/// was retired here because Aura's closing is not a corporate portfolio
+/// directory and Aura does not link to itself. Both remain true, and the
+/// estate's own shape already honours the second one: what the siblings carry
+/// is not a directory of everything, it is the two OTHER products and the
+/// founder. Aura carrying the same three, and no self-link, is what parity
+/// actually asks for.
+///
+/// Legal sits under the company name rather than in a column of its own,
+/// because Aura's closing has no columns to put it in.
+class _QuietLine extends StatelessWidget {
+  const _QuietLine({required this.wide});
+
+  final bool wide;
+
+  /// The estate, minus Aura. Same order and same omission-of-self the two
+  /// sibling products use.
+  static const _siblings = <_ExternalLink>[
+    _ExternalLink('Orchestrate', 'https://orchestrateops.com'),
+    _ExternalLink('Bajwa Writes', 'https://bajwawrites.com'),
+    _ExternalLink('Founder', 'https://bajwa.auraplatform.org'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    // THE COMPANY IS NAMED ONCE, AND IT IS THE LINK.
+    //
+    // This block said it twice in three lines: a bold "Aura Platform LLC"
+    // and then "Aura is part of Aura Platform LLC" directly beneath it. That
+    // was the legacy attribution lockup surviving inside a new composition,
+    // which is the failure mode of editing a footer instead of replacing it.
+    //
+    // The shape is now the estate's. Orchestrate closes on the product name
+    // over "A product of Aura Platform LLC.", and Aura closes the same way,
+    // with the company line carrying the link to the company. The Aura mark
+    // went too: this closing is already on an Aura page, and a product does
+    // not need to show a visitor its own logo to sign off.
+    //
+    // No copyright line. Neither sibling prints one, and the company name is
+    // the attribution.
+    final brand = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'Aura',
+          style: AuraText.small.copyWith(
+            color: AuraSurface.ink,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
+          ),
+        ),
+        const SizedBox(height: 2),
+        const _ExternalNavLink(
+          link: _ExternalLink(
+            'A product of Aura Platform LLC.',
+            _kEcosystemCompanyUrl,
+          ),
+        ),
+      ],
+    );
+
+    // Legal and the rest of the estate travel together at the trailing edge,
+    // in one quiet run. Aura has no link columns to file Privacy and Terms
+    // into, so this is where they live.
+    final trailing = Wrap(
+      spacing: AuraSpace.s16,
+      runSpacing: 4,
+      alignment: wide ? WrapAlignment.end : WrapAlignment.start,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        const _FooterNavLink(link: _FooterLink('Privacy', '/privacy')),
+        const _FooterNavLink(link: _FooterLink('Terms', '/terms')),
+        for (final l in _siblings) _ExternalNavLink(link: l),
+      ],
+    );
 
     if (wide) {
       return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Expanded(flex: 4, child: brand),
-          const SizedBox(width: AuraSpace.s32),
-          Expanded(
-            flex: 6,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (var i = 0; i < _columns.length; i++) ...[
-                  Expanded(child: _columns[i]),
-                  if (i != _columns.length - 1)
-                    const SizedBox(width: AuraSpace.s20),
-                ],
-              ],
-            ),
-          ),
+          Expanded(child: brand),
+          const SizedBox(width: AuraSpace.s24),
+          trailing,
         ],
       );
     }
@@ -199,299 +600,103 @@ class _FooterTopRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         brand,
-        const SizedBox(height: AuraSpace.s24),
-        const Wrap(
-          spacing: AuraSpace.s32,
-          runSpacing: AuraSpace.s24,
-          children: _columns,
-        ),
-      ],
-    );
-  }
-}
-
-class _BrandBlock extends StatelessWidget {
-  const _BrandBlock({required this.wide});
-
-  final bool wide;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        GestureDetector(
-          onTap: () => context.go('/'),
-          child: SvgPicture.asset(
-            'assets/brand/AURA_logo_master.svg',
-            height: 22,
-            fit: BoxFit.contain,
-          ),
-        ),
         const SizedBox(height: AuraSpace.s12),
-        ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: wide ? 400 : 480),
-          child: Text(
-            ShellFooter._platformNote,
-            style: AuraText.small.copyWith(
-              color: AuraSurface.muted,
-              height: 1.55,
-            ),
-          ),
-        ),
+        trailing,
       ],
     );
   }
 }
 
-class _FooterColumn extends StatelessWidget {
-  const _FooterColumn({required this.title, required this.links});
-
-  final String title;
-  final List<_FooterLink> links;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title.toUpperCase(),
-          style: AuraText.micro.copyWith(
-            color: AuraSurface.faint,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.8,
-            fontSize: 10,
-          ),
-        ),
-        const SizedBox(height: AuraSpace.s12),
-        for (final link in links) _FooterNavLink(link: link),
-      ],
-    );
-  }
+class _ExternalLink {
+  const _ExternalLink(this.label, this.url);
+  final String label;
+  final String url;
 }
 
-class _FooterNavLink extends StatelessWidget {
-  const _FooterNavLink({required this.link});
+class _ExternalNavLink extends StatelessWidget {
+  const _ExternalNavLink({required this.link});
 
-  final _FooterLink link;
+  final _ExternalLink link;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AuraSpace.s6),
+    return Semantics(
+      link: true,
+      label: 'Open ${link.label}',
       child: InkWell(
-        onTap: () => context.go(link.path),
+        onTap: () => _openExternal(link.url),
         borderRadius: BorderRadius.circular(4),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 2),
+          padding: const EdgeInsets.symmetric(vertical: 4),
           child: Text(
             link.label,
-            style: AuraText.small.copyWith(
-              color: AuraSurface.muted,
-              fontWeight: FontWeight.w500,
-            ),
+            style: AuraText.micro.copyWith(color: AuraSurface.muted),
           ),
         ),
       ),
-    );
-  }
-}
-
-class _FooterBottomRow extends StatelessWidget {
-  const _FooterBottomRow({required this.year, required this.wide});
-
-  final int year;
-  final bool wide;
-
-  @override
-  Widget build(BuildContext context) {
-    // Institutional attribution lockup — wordmark linked to the
-    // company surface, plus the Aura-specific attribution copy.
-    // Replaces the previous free-floating "© $year Aura" line; year
-    // moves into the attribution caption so the visual weight of the
-    // institution sits where the surface closes.
-    final lockup = InkWell(
-      onTap: () => _openExternal('https://company.auraplatform.org'),
-      borderRadius: BorderRadius.circular(2),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Aura Platform LLC',
-              style: AuraText.small.copyWith(
-                color: AuraSurface.ink,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.2,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'Built by Aura Platform LLC · © $year',
-              style: AuraText.micro.copyWith(color: AuraSurface.muted),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    // Inline continuity row — five canonical links in doctrine-locked
-    // order. The current surface (Aura) is the "you are here" marker
-    // and is not tappable.
-
-    if (wide) {
-      // Lockup left, links flush right. The links take the remaining width
-      // via Expanded so the Wrap can wrap to a second line when the row is
-      // narrow (e.g. the public home's ~880 px footer) instead of forcing a
-      // horizontal overflow.
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          lockup,
-          const SizedBox(width: AuraSpace.s20),
-          const Expanded(
-            child: _AuraEcosystemRow(currentSlug: 'aura', alignEnd: true),
-          ),
-        ],
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        lockup,
-        const SizedBox(height: AuraSpace.s8),
-        const _AuraEcosystemRow(currentSlug: 'aura'),
-      ],
     );
   }
 }
 
 class _FooterLink {
   const _FooterLink(this.label, this.path);
-
   final String label;
   final String path;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ECOSYSTEM CONTINUITY BAND
-// ─────────────────────────────────────────────────────────────────────────────
-//
-// Renders the canonical institutional band at the foot of the public shell.
-// See docs/ecosystem/ECOSYSTEM_CONTINUITY_ARCHITECTURE.md in the personal
-// repo for the doctrine this implements.
-//
-// Layout: two layers in one row.
-//   Left  — institution lockup: "Aura Platform LLC" wordmark linked to
-//           the company site, plus Aura's attribution copy below it.
-//   Right — five canonical links in doctrine-locked order
-//           (Company → Aura → Orchestrate → Bajwa Writes → Founder),
-//           with the current surface (Aura) marked as the
-//           "you are here" link.
-//
-// Tone: restrained mono-style typography, smaller than the surface-
-// native footer above it. The band orients without competing.
+class _FooterNavLink extends StatelessWidget {
+  const _FooterNavLink({required this.link, this.emphasis = false});
 
-class _EcosystemEntry {
-  const _EcosystemEntry({
-    required this.slug,
-    required this.label,
-    required this.url,
-  });
-  final String slug;
-  final String label;
-  final String url;
-}
+  final _FooterLink link;
 
-const String _kEcosystemCompanyUrl = 'https://company.auraplatform.org';
-
-const List<_EcosystemEntry> _kEcosystemLinks = <_EcosystemEntry>[
-  _EcosystemEntry(
-    slug: 'company',
-    label: 'Company',
-    url: _kEcosystemCompanyUrl,
-  ),
-  _EcosystemEntry(slug: 'aura', label: 'Aura', url: 'https://auraplatform.org'),
-  _EcosystemEntry(
-    slug: 'orchestrate',
-    label: 'Orchestrate',
-    url: 'https://orchestrateops.com',
-  ),
-  _EcosystemEntry(
-    slug: 'bajwa-writes',
-    label: 'Bajwa Writes',
-    url: 'https://bajwawrites.com',
-  ),
-  _EcosystemEntry(
-    slug: 'founder',
-    label: 'Founder',
-    url: 'https://bajwa.auraplatform.org',
-  ),
-];
-
-class _AuraEcosystemRow extends StatelessWidget {
-  const _AuraEcosystemRow({required this.currentSlug, this.alignEnd = false});
-  final String currentSlug;
-
-  /// When the row is given bounded width (wide bottom row, where it sits to
-  /// the right of the institution lockup) it aligns to the trailing edge and
-  /// wraps onto a second line if the five links don't fit. When unbounded
-  /// (stacked layout, full own line) it stays leading-aligned.
-  final bool alignEnd;
+  /// A destination reads slightly forward of the legal line beneath it.
+  final bool emphasis;
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      alignment: alignEnd ? WrapAlignment.end : WrapAlignment.start,
-      spacing: AuraSpace.s12,
-      runSpacing: 4,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        for (var i = 0; i < _kEcosystemLinks.length; i++) ...[
-          if (i > 0)
-            Text('·', style: AuraText.micro.copyWith(color: AuraSurface.faint)),
-          _EcosystemLink(link: _kEcosystemLinks[i], currentSlug: currentSlug),
-        ],
-      ],
-    );
-  }
-}
-
-class _EcosystemLink extends StatelessWidget {
-  const _EcosystemLink({required this.link, required this.currentSlug});
-  final _EcosystemEntry link;
-  final String currentSlug;
-
-  @override
-  Widget build(BuildContext context) {
-    final isCurrent = link.slug == currentSlug;
-    final style = AuraText.micro.copyWith(
-      color: isCurrent ? AuraSurface.ink : AuraSurface.muted,
-      fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
-      decoration: isCurrent ? TextDecoration.underline : TextDecoration.none,
-      decorationColor: AuraSurface.divider,
-      decorationThickness: 1.2,
-    );
-    if (isCurrent) {
-      return Semantics(
-        selected: true,
-        label: '${link.label} (current surface)',
-        child: Text(link.label, style: style),
-      );
-    }
     return Semantics(
-      link: true,
-      label: 'Open ${link.label} surface',
+      button: true,
+      label: link.label,
       child: InkWell(
-        onTap: () => _openExternal(link.url),
-        child: Text(link.label, style: style),
+        onTap: () => context.go(link.path),
+        borderRadius: BorderRadius.circular(4),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Text(
+            link.label,
+            style: emphasis
+                ? AuraText.small.copyWith(
+                    color: AuraSurface.ink,
+                    fontWeight: FontWeight.w600,
+                  )
+                : AuraText.micro.copyWith(color: AuraSurface.muted),
+          ),
+        ),
       ),
     );
   }
 }
+
+// AURA'S CLOSING IS NOT A CORPORATE PORTFOLIO DIRECTORY.
+//
+// A five-link band lived here — Company · Aura · Orchestrate · Bajwa Writes ·
+// Founder — and it was carried forward through every footer revision because
+// it was recorded as doctrine-locked. Audited on the founder's instruction,
+// each link answers for itself poorly at the foot of Aura:
+//
+//   * AURA linked Aura to Aura. A "you are here" marker in a five-item row is
+//     navigation furniture, not orientation.
+//   * ORCHESTRATE and BAJWA WRITES are separate products with their own
+//     audiences. Advertising them to someone reading a public Aura page is a
+//     company-level decision, and the company estate is where it belongs.
+//   * FOUNDER is a route, and a route existing has never been a reason for
+//     permanent public taxonomy.
+//
+// What a visitor legitimately gains at this point is knowing WHO BUILDS THIS.
+// That survives, as one quiet line linking to the company — which is itself
+// the entrance to the portfolio for anyone who wants it. Aura owns Aura.
+
+const String _kEcosystemCompanyUrl = 'https://company.auraplatform.org';
 
 Future<void> _openExternal(String url) async {
   final uri = Uri.tryParse(url);

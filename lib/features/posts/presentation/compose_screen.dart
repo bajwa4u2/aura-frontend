@@ -214,6 +214,7 @@ const List<String> _kRotatingPrompts = [
 
 class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   static const int _limit = ContentLengthPolicy.post;
+
   /// The shared ceiling, not a surface-local number.
   ///
   /// This was 5 here and unbounded elsewhere, so how many photographs a person
@@ -310,9 +311,15 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   Timer? _autosaveDebounce;
 
   DestinationCapability _tiktok = const DestinationCapability(
-      id: 'tiktok', label: 'TikTok', state: DestinationState.temporarilyUnavailable);
+    id: 'tiktok',
+    label: 'TikTok',
+    state: DestinationState.temporarilyUnavailable,
+  );
   DestinationCapability _linkedin = const DestinationCapability(
-      id: 'linkedin', label: 'LinkedIn', state: DestinationState.temporarilyUnavailable);
+    id: 'linkedin',
+    label: 'LinkedIn',
+    state: DestinationState.temporarilyUnavailable,
+  );
 
   bool _tiktokLoading = false;
   final bool _tiktokActionBusy = false;
@@ -341,6 +348,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   bool get _hasUploadingAttachments => _attachments.any((a) => a.uploading);
   bool get _canAddMoreAttachments =>
       !_isReply && _attachments.length < _maxAttachments;
+
   /// Delegated to the acquisition authority rather than re-derived.
   ///
   /// This was its own `!kIsWeb`, a second copy of a rule that was wrong in the
@@ -366,15 +374,15 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   /// The canonical composition. Built from live fields rather than stored, so
   /// it cannot drift from them.
   CompositionState get _composition => CompositionState(
-        body: _textController.text,
-        attachments: _attachments,
-        maxLength: _limit,
-        // A photograph with no caption is a real post. Requiring text was a
-        // per-composer accident, not a rule — CompositionState still refuses a
-        // composition that carries nothing at all.
-        requiresBody: false,
-        isSubmitting: _posting || _saving,
-      );
+    body: _textController.text,
+    attachments: _attachments,
+    maxLength: _limit,
+    // A photograph with no caption is a real post. Requiring text was a
+    // per-composer accident, not a rule — CompositionState still refuses a
+    // composition that carries nothing at all.
+    requiresBody: false,
+    isSubmitting: _posting || _saving,
+  );
 
   bool get _canPublish {
     // Readiness is the authority's answer. The guard that stood here asked
@@ -570,7 +578,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         // portrait reports a landscape natural size with a 90-degree rotation,
         // and laying it out from the raw numbers produces a sideways letterbox
         // in every feed it reaches.
-        final quarterTurned = v.rotationCorrection == 90 || v.rotationCorrection == 270;
+        final quarterTurned =
+            v.rotationCorrection == 90 || v.rotationCorrection == 270;
         attachment.width = (quarterTurned ? size.height : size.width).round();
         attachment.height = (quarterTurned ? size.width : size.height).round();
       }
@@ -599,7 +608,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     // `_loadDraft` clears and replaces both the text and the attachment list
     // — a share seeded first would be wiped a moment later by a network
     // response, which is indistinguishable from Aura having dropped it.
-    final sharedIn = ref.read(shareHandoffProvider.notifier).takeForPublicPost();
+    final sharedIn = ref
+        .read(shareHandoffProvider.notifier)
+        .takeForPublicPost();
 
     if (_isEditingPost) {
       _loadEditablePost();
@@ -723,8 +734,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     if (_editPostId.isNotEmpty) {
       params['edit'] = _editPostId;
     }
-    final replyToInstitutionPostId =
-        (widget.replyToInstitutionPostId ?? '').trim();
+    final replyToInstitutionPostId = (widget.replyToInstitutionPostId ?? '')
+        .trim();
     if (replyToInstitutionPostId.isNotEmpty) {
       params['replyToInstitutionPostId'] = replyToInstitutionPostId;
       final parentInstitutionId = (widget.parentInstitutionId ?? '').trim();
@@ -825,8 +836,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       // to appear here. Both destinations stay visible and say so.
       if (!mounted) return;
       setState(() {
-        _tiktok = _tiktok.copyWith(state: DestinationState.temporarilyUnavailable);
-        _linkedin = _linkedin.copyWith(state: DestinationState.temporarilyUnavailable);
+        _tiktok = _tiktok.copyWith(
+          state: DestinationState.temporarilyUnavailable,
+        );
+        _linkedin = _linkedin.copyWith(
+          state: DestinationState.temporarilyUnavailable,
+        );
       });
     } finally {
       if (mounted) {
@@ -1133,13 +1148,23 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               eligible: true,
               internal: false,
               sourceUrl: draftLinkUrl,
-              status: _str(draft['linkTitle']).isNotEmpty || _str(draft['linkImageUrl']).isNotEmpty
+              status:
+                  _str(draft['linkTitle']).isNotEmpty ||
+                      _str(draft['linkImageUrl']).isNotEmpty
                   ? 'READY'
                   : 'PENDING',
-              title: _str(draft['linkTitle']).isEmpty ? null : _str(draft['linkTitle']),
-              description: _str(draft['linkDescription']).isEmpty ? null : _str(draft['linkDescription']),
-              siteName: _str(draft['linkSiteName']).isEmpty ? null : _str(draft['linkSiteName']),
-              imageUrl: _str(draft['linkImageUrl']).isEmpty ? null : _str(draft['linkImageUrl']),
+              title: _str(draft['linkTitle']).isEmpty
+                  ? null
+                  : _str(draft['linkTitle']),
+              description: _str(draft['linkDescription']).isEmpty
+                  ? null
+                  : _str(draft['linkDescription']),
+              siteName: _str(draft['linkSiteName']).isEmpty
+                  ? null
+                  : _str(draft['linkSiteName']),
+              imageUrl: _str(draft['linkImageUrl']).isEmpty
+                  ? null
+                  : _str(draft['linkImageUrl']),
             );
 
       // RC7 (compose half) — RESTORE THE DRAFT'S IDENTITY, NOT ONLY ITS
@@ -1243,13 +1268,23 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               eligible: true,
               internal: false,
               sourceUrl: postLinkUrl,
-              status: _str(post['linkTitle']).isNotEmpty || _str(post['linkImageUrl']).isNotEmpty
+              status:
+                  _str(post['linkTitle']).isNotEmpty ||
+                      _str(post['linkImageUrl']).isNotEmpty
                   ? 'READY'
                   : 'PENDING',
-              title: _str(post['linkTitle']).isEmpty ? null : _str(post['linkTitle']),
-              description: _str(post['linkDescription']).isEmpty ? null : _str(post['linkDescription']),
-              siteName: _str(post['linkSiteName']).isEmpty ? null : _str(post['linkSiteName']),
-              imageUrl: _str(post['linkImageUrl']).isEmpty ? null : _str(post['linkImageUrl']),
+              title: _str(post['linkTitle']).isEmpty
+                  ? null
+                  : _str(post['linkTitle']),
+              description: _str(post['linkDescription']).isEmpty
+                  ? null
+                  : _str(post['linkDescription']),
+              siteName: _str(post['linkSiteName']).isEmpty
+                  ? null
+                  : _str(post['linkSiteName']),
+              imageUrl: _str(post['linkImageUrl']).isEmpty
+                  ? null
+                  : _str(post['linkImageUrl']),
             );
 
       setState(() {
@@ -1309,15 +1344,19 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   Future<void> _pickMediaFromGallery() async {
     if (!_canAddMoreAttachments || _posting) return;
 
-    final acquired =
-        await acquireMultipleMedia(remainingSlots: _remainingAttachments);
+    final acquired = await acquireMultipleMedia(
+      remainingSlots: _remainingAttachments,
+    );
     await _addAcquired(acquired);
 
-    final message = acquisitionLimitMessage(acquired.droppedForLimit,
-          limit: kMaxMemberPostMedia);
+    final message = acquisitionLimitMessage(
+      acquired.droppedForLimit,
+      limit: kMaxMemberPostMedia,
+    );
     if (message != null && mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -1396,9 +1435,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       final attachment = resolution.attachment;
       if (attachment == null) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(resolution.rejectionMessage!)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(resolution.rejectionMessage!)));
         continue;
       }
       if (expect != null && attachment.kind != expect) {
@@ -1670,8 +1709,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       // link -- only `linkSourceUrl` is kept in that case, so an internal
       // Aura link or an unresolvable-but-typed URL still renders as a
       // plain link rather than being silently dropped.
-      'linkPreviewId': (_linkPreview?.eligible ?? false) ? _linkPreview!.linkPreviewId : null,
-      'linkSourceUrl': (_linkPreview?.eligible ?? false) ? _linkPreview!.sourceUrl : null,
+      'linkPreviewId': (_linkPreview?.eligible ?? false)
+          ? _linkPreview!.linkPreviewId
+          : null,
+      'linkSourceUrl': (_linkPreview?.eligible ?? false)
+          ? _linkPreview!.sourceUrl
+          : null,
     };
   }
 
@@ -1831,7 +1874,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     setState(() => _governanceChecking = true);
     try {
       final repo = PersonalPostIntegrityRepository(ref.read(dioProvider));
-      final updated = await repo.acknowledge(postId: postId, decisionId: pending.decisionId);
+      final updated = await repo.acknowledge(
+        postId: postId,
+        decisionId: pending.decisionId,
+      );
       if (!mounted) return false;
       setState(() {
         _governancePendingAction = updated;
@@ -1840,8 +1886,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       return updated.satisfied;
     } catch (e) {
       if (!mounted) return false;
-      final message = AppErrorMapper.from(e, feature: 'record this acknowledgment').message;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      final message = AppErrorMapper.from(
+        e,
+        feature: 'record this acknowledgment',
+      ).message;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       return false;
     } finally {
       if (mounted) setState(() => _governanceChecking = false);
@@ -2032,7 +2083,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       children: [
         InkWell(
           borderRadius: BorderRadius.circular(AuraRadius.md),
-          onTap: () => setState(() => _governanceExpanded = !_governanceExpanded),
+          onTap: () =>
+              setState(() => _governanceExpanded = !_governanceExpanded),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: AuraSpace.s4),
             child: Row(
@@ -2057,7 +2109,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 const SizedBox(width: 4),
                 Text(
                   statusLine,
-                  style: AuraText.small.copyWith(fontWeight: FontWeight.w700, color: statusColor),
+                  style: AuraText.small.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: statusColor,
+                  ),
                 ),
               ],
             ),
@@ -2074,7 +2129,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(assessment.statusLabel, style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  assessment.statusLabel,
+                  style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                ),
                 const SizedBox(height: AuraSpace.s4),
                 Text(assessment.summaryExplanation, style: AuraText.small),
               ],
@@ -2082,7 +2140,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           ),
           if (!pending.clearsPublish) ...[
             const SizedBox(height: AuraSpace.s10),
-            Text(pending.reason, style: AuraText.small.copyWith(color: AuraSurface.muted)),
+            Text(
+              pending.reason,
+              style: AuraText.small.copyWith(color: AuraSurface.muted),
+            ),
             const SizedBox(height: AuraSpace.s10),
             CheckboxListTile(
               value: _governanceAckAccepted,
@@ -2130,7 +2191,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       children: [
         InkWell(
           borderRadius: BorderRadius.circular(AuraRadius.md),
-          onTap: () => setState(() => _enrichmentExpanded = !_enrichmentExpanded),
+          onTap: () =>
+              setState(() => _enrichmentExpanded = !_enrichmentExpanded),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: AuraSpace.s4),
             child: Row(
@@ -2190,8 +2252,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             },
             fetchApprovedSecondaries: (primary) =>
                 ref.read(topicRepositoryProvider).approvedSecondaries(primary),
-            fetchSuggestions: (primary, text) =>
-                ref.read(topicRepositoryProvider).suggestSecondary(primary, text),
+            fetchSuggestions: (primary, text) => ref
+                .read(topicRepositoryProvider)
+                .suggestSecondary(primary, text),
           ),
         ],
       ],
@@ -2659,7 +2722,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         !_governanceAckAccepted) {
       setState(() => _governanceExpanded = true);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Review the Governance panel before publishing.')),
+        const SnackBar(
+          content: Text('Review the Governance panel before publishing.'),
+        ),
       );
       return;
     }
@@ -3374,28 +3439,80 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       );
     }
 
-    return Row(
+    // A NAME MUST NEVER BREAK MID-WORD.
+    //
+    // This was one Row: icon, an `Expanded` label-and-status column, and an
+    // inflexible action. The action takes its natural width first, so in the
+    // composer's context rail the column was left roughly forty pixels and
+    // rendered "TikTok" as "Tik / Tok" and "Not connected" as
+    // "Not / con / nect / ed", one syllable per line. Founder-observed on the
+    // Windows client at a maximised window, which is the width where a rail
+    // is MOST likely to exist, so it was not an edge case.
+    //
+    // The row is not wrong; it is wrong at that width. Below the threshold
+    // the action moves under the name it belongs to instead of competing
+    // with it for the same line, and the name is held to one line either way
+    // so no future narrowing can hyphenate a brand again.
+    final identity = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: AuraSurface.ink),
-        const SizedBox(width: AuraSpace.s10),
-        Expanded(
-          child: Column(
+        Text(
+          cap.label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          softWrap: false,
+          style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          busy ? 'Checking connection…' : cap.statusLine,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: AuraText.small.copyWith(color: AuraSurface.muted),
+        ),
+      ],
+    );
+
+    return LayoutBuilder(
+      builder: (context, c) {
+        // Icon, gap, a readable name, and an action reading roughly "Connect"
+        // do not coexist on one line below about this. Measured against the
+        // real rail rather than guessed: the composer's context rail is the
+        // narrowest place this row is rendered.
+        final stack = c.maxWidth < 260;
+
+        if (stack) {
+          return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                cap.label,
-                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Icon(icon, size: 18, color: AuraSurface.ink),
               ),
-              const SizedBox(height: 2),
-              Text(
-                busy ? 'Checking connection…' : cap.statusLine,
-                style: AuraText.small.copyWith(color: AuraSurface.muted),
+              const SizedBox(width: AuraSpace.s10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    identity,
+                    const SizedBox(height: AuraSpace.s6),
+                    Align(alignment: Alignment.centerLeft, child: trailing),
+                  ],
+                ),
               ),
             ],
-          ),
-        ),
-        trailing,
-      ],
+          );
+        }
+
+        return Row(
+          children: [
+            Icon(icon, size: 18, color: AuraSurface.ink),
+            const SizedBox(width: AuraSpace.s10),
+            Expanded(child: identity),
+            trailing,
+          ],
+        );
+      },
     );
   }
 
@@ -3508,27 +3625,28 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     final publishBtn = Tooltip(
       message: _publishBlockedReason ?? '',
       child: AuraPrimaryButton(
-      label: _posting
-          ? (_isReply
-                ? 'Publishing reply…'
-                : (_isEditingPost
-                      ? 'Saving…'
-                      : (_publishingToTikTok
-                            ? 'Queuing TikTok…'
-                            : 'Publishing…')))
-          : (_isReply
-                ? 'Publish response'
-                : (_isEditingPost ? 'Save changes' : 'Publish post')),
-      onPressed: (_posting || !_canPublish)
-          ? null
-          : () {
-              if (!_hasText && _composition.composableAttachments.isEmpty) {
-                setState(() => _showTextError = true);
-                return;
-              }
-              _publish();
-            },
-    ));
+        label: _posting
+            ? (_isReply
+                  ? 'Publishing reply…'
+                  : (_isEditingPost
+                        ? 'Saving…'
+                        : (_publishingToTikTok
+                              ? 'Queuing TikTok…'
+                              : 'Publishing…')))
+            : (_isReply
+                  ? 'Publish response'
+                  : (_isEditingPost ? 'Save changes' : 'Publish post')),
+        onPressed: (_posting || !_canPublish)
+            ? null
+            : () {
+                if (!_hasText && _composition.composableAttachments.isEmpty) {
+                  setState(() => _showTextError = true);
+                  return;
+                }
+                _publish();
+              },
+      ),
+    );
 
     return Container(
       padding: EdgeInsets.fromLTRB(

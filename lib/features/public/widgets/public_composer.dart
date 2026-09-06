@@ -86,34 +86,57 @@ class PublicComposer extends ConsumerWidget {
                 size: 36,
               ),
               const SizedBox(width: AuraSpace.s12),
+              // THE PROMPT IS A FIELD, BECAUSE THAT IS WHAT IT IS.
+              //
+              // This was two lines of muted label floating in an `Expanded`,
+              // with the Post button pinned to the far end of the same row.
+              // At a phone's width that reads as a composer. At the desktop
+              // feed measure it is a 1290 px bar holding one short sentence
+              // at the leading edge and a button roughly 800 px away at the
+              // trailing one, with nothing in between: the emptiest object
+              // on member Home, and it got emptier when the work column was
+              // widened. Founder-observed.
+              //
+              // Nothing here needed to be smaller. What was missing was a
+              // reason for the width to exist. A field fills it honestly,
+              // says what tapping does before you tap, and puts the action
+              // against the thing it acts on.
+              //
+              // The whole card remains one tap target, so the button is a
+              // second door into the same room rather than the only one.
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'What’s happening on Aura?',
-                      style: AuraText.body.copyWith(
-                        color: AuraSurface.muted,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        PubVisibilityChip(value: defaultVisibility),
-                        const SizedBox(width: AuraSpace.s6),
-                        Text(
-                          'Tap to start a statement',
-                          style: AuraText.micro.copyWith(
-                            color: AuraSurface.faint,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AuraSpace.s12,
+                    vertical: AuraSpace.s10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AuraSurface.page,
+                    borderRadius: BorderRadius.circular(AuraRadius.md),
+                    border: Border.all(color: AuraSurface.divider),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'What’s happening on Aura?',
+                          style: AuraText.body.copyWith(
+                            color: AuraSurface.muted,
                             fontWeight: FontWeight.w600,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      // Visibility rides INSIDE the field, at its trailing
+                      // edge, because it is a property of what is about to be
+                      // written rather than a caption about the composer. It
+                      // also replaces "Tap to start a statement", which
+                      // explained the affordance the field now shows.
+                      const SizedBox(width: AuraSpace.s8),
+                      PubVisibilityChip(value: defaultVisibility),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: AuraSpace.s10),

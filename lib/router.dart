@@ -155,7 +155,6 @@ import 'features/public/presentation/public_unit_detail_screen.dart';
 import 'screens/patrons_hub_screen.dart';
 import 'screens/supporters_hub_screen.dart';
 import 'screens/institution_sign_in_screen.dart';
-import 'screens/contact_screen.dart';
 import 'screens/account_deletion_screen.dart';
 import 'screens/child_safety_screen.dart';
 import 'screens/terms_screen.dart';
@@ -1005,7 +1004,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(path: '/safety', redirect: (_, __) => '/child-safety'),
           GoRoute(path: '/trust-safety', redirect: (_, __) => '/child-safety'),
-          GoRoute(path: '/contact', builder: (_, __) => const ContactScreen()),
+          // CONTACT IS RETIRED AS PUBLIC TAXONOMY.
+          //
+          // It never was a destination: `ContactScreen` rendered a spinner and
+          // then PUSHED the support agent on top of itself, so `/contact`
+          // stayed underneath and Back landed on a spinner that pushed again.
+          // A router redirect is what the route always meant. The path stays
+          // resolvable because it is published in store listings and old mail;
+          // it is simply no longer a name Aura offers for the relationship
+          // path, which is Start a conversation.
+          GoRoute(path: '/contact', redirect: (_, __) => '/support/agent'),
           GoRoute(
             path: '/support/agent',
             builder: (_, __) => const SupportAgentScreen(),

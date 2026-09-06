@@ -74,7 +74,6 @@ G4 2 lib/features/meetings/presentation/institution_availability_screen.dart
 G4 1 lib/features/meetings/presentation/meeting_live_room_screen.dart
 G4 2 lib/features/meetings/presentation/public_booking_screen.dart
 G4 2 lib/features/monetization/presentation/institution_billing_screen.dart
-G4 1 lib/screens/contact_screen.dart
 
 # ── G7 — time formatter declared on a screen ─────────────────────────────────
 G7 2 lib/app/shell/rail/rail_modules.dart

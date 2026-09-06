@@ -94,7 +94,15 @@ class _SupportAgentScreenState extends ConsumerState<SupportAgentScreen> {
     if (state.messages.isNotEmpty) _scrollToBottom();
 
     return AuraScaffold(
-      title: 'Support',
+      // THE CANONICAL NAME, NOT THE LEGACY ONE.
+      //
+      // The public estate now offers exactly one relationship path and calls
+      // it Start a conversation. This surface is where that path lands, and
+      // it was still introducing itself as "Support" in the page title and
+      // "Aura Support" in its own header. Three names for one door was the
+      // Contact/Help problem the retirement was meant to end, and leaving the
+      // destination unrenamed would have preserved it one screen deeper.
+      title: 'Start a conversation',
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -219,7 +227,7 @@ class _SupportPageHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Aura Support', style: AuraText.subtitle),
+                const Text('Start a conversation', style: AuraText.subtitle),
                 Text(
                   'Powered by AI · Responses may take a moment',
                   style: AuraText.micro.copyWith(color: AuraSurface.muted),

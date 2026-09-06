@@ -17,10 +17,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../auth/auth_repository.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
-  const RegisterScreen({
-    super.key,
-    this.redirectTo,
-  });
+  const RegisterScreen({super.key, this.redirectTo});
 
   final String? redirectTo;
 
@@ -77,7 +74,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final t = (v ?? '').trim().toLowerCase();
     if (t.isEmpty) return null;
     final ok = RegExp(r'^[a-z0-9_]+$').hasMatch(t);
-    if (!ok) return 'Handle can only use lowercase letters, numbers, and underscores';
+    if (!ok)
+      return 'Handle can only use lowercase letters, numbers, and underscores';
     if (t.length < 3) return 'Handle must be at least 3 characters';
     if (t.length > 24) return 'Handle must be 24 characters or fewer';
     return null;
@@ -104,7 +102,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final e = email.trim().toLowerCase();
     final at = e.indexOf('@');
     final local = at > 0 ? e.substring(0, at) : (e.isEmpty ? 'member' : e);
-    return local.replaceAll(RegExp(r'[^a-z0-9_]+'), '_').replaceAll(RegExp(r'^_+|_+$'), '');
+    return local
+        .replaceAll(RegExp(r'[^a-z0-9_]+'), '_')
+        .replaceAll(RegExp(r'^_+|_+$'), '');
   }
 
   String _defaultDisplayName(String firstName, String lastName, String handle) {
@@ -131,7 +131,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final raw = error.toString().trim();
     final msg = raw.toLowerCase();
 
-    if (msg.isEmpty) return 'We could not create your account right now. Please try again.';
+    if (msg.isEmpty)
+      return 'We could not create your account right now. Please try again.';
 
     if (msg.contains('email already') ||
         msg.contains('email is already') ||
@@ -149,7 +150,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return 'That handle is already taken. Please choose another one.';
     }
 
-    if (msg.contains('invalid email') || msg.contains('email is invalid') ||
+    if (msg.contains('invalid email') ||
+        msg.contains('email is invalid') ||
         msg.contains('must be a valid email')) {
       return 'Please enter a valid email address.';
     }
@@ -158,11 +160,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return 'Please choose a stronger password.';
     }
 
-    if (msg.contains('handle') && (msg.contains('lowercase') || msg.contains('underscores'))) {
+    if (msg.contains('handle') &&
+        (msg.contains('lowercase') || msg.contains('underscores'))) {
       return 'Handle can only use lowercase letters, numbers, and underscores.';
     }
 
-    if (msg.contains('some details need another look') || msg.contains('review the form')) {
+    if (msg.contains('some details need another look') ||
+        msg.contains('review the form')) {
       return raw;
     }
 
@@ -201,8 +205,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     // without it; we surface the message here so users don't even
     // round-trip when they haven't ticked the box.
     if (!_termsAccepted) {
-      setState(() => _error =
-          'You must agree to the Terms of Service before creating an account.');
+      setState(
+        () => _error =
+            'You must agree to the Terms of Service before creating an account.',
+      );
       return;
     }
 
@@ -242,15 +248,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       if (!mounted) return;
 
       final redirect = _safeRedirect(widget.redirectTo);
-      final qp = <String, String>{
-        'email': email,
-        'redirect': redirect,
-      };
+      final qp = <String, String>{'email': email, 'redirect': redirect};
       if (!emailSent) qp['emailSent'] = '0';
 
-      context.go(
-        Uri(path: '/verify-pending', queryParameters: qp).toString(),
-      );
+      context.go(Uri(path: '/verify-pending', queryParameters: qp).toString());
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = _humanizeRegisterError(e));
@@ -265,7 +266,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final redirect = Uri.encodeComponent(redirectPath);
     final isInstitutionEntry = _isInstitutionRedirect(widget.redirectTo);
 
-    final title = isInstitutionEntry ? 'Continue to your institution' : 'Join Aura';
+    final title = isInstitutionEntry
+        ? 'Continue to your institution'
+        : 'Join Aura';
     final subtitle = isInstitutionEntry
         ? 'Create your account first. After sign-in, Aura will continue to verify your institution.'
         : "Create your account. We'll email you a verification link.";
@@ -311,7 +314,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   password: _password,
                                   confirmPassword: _confirmPassword,
                                   obscurePassword: _obscurePassword,
-                                  obscureConfirmPassword: _obscureConfirmPassword,
+                                  obscureConfirmPassword:
+                                      _obscureConfirmPassword,
                                   termsAccepted: _termsAccepted,
                                   onToggleTerms: (v) =>
                                       setState(() => _termsAccepted = v),
@@ -320,11 +324,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   emailValidator: _emailValidator,
                                   passwordValidator: _passwordValidator,
                                   onTogglePassword: () => setState(
-                                      () => _obscurePassword = !_obscurePassword),
-                                  onToggleConfirmPassword: () => setState(() =>
-                                      _obscureConfirmPassword = !_obscureConfirmPassword),
+                                    () => _obscurePassword = !_obscurePassword,
+                                  ),
+                                  onToggleConfirmPassword: () => setState(
+                                    () => _obscureConfirmPassword =
+                                        !_obscureConfirmPassword,
+                                  ),
                                   onSubmit: _submit,
-                                  onSignIn: () => context.go('/login?redirect=$redirect'),
+                                  onSignIn: () =>
+                                      context.go('/login?redirect=$redirect'),
                                 ),
                               ),
                             ],
@@ -356,11 +364,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 emailValidator: _emailValidator,
                                 passwordValidator: _passwordValidator,
                                 onTogglePassword: () => setState(
-                                    () => _obscurePassword = !_obscurePassword),
-                                onToggleConfirmPassword: () => setState(() =>
-                                    _obscureConfirmPassword = !_obscureConfirmPassword),
+                                  () => _obscurePassword = !_obscurePassword,
+                                ),
+                                onToggleConfirmPassword: () => setState(
+                                  () => _obscureConfirmPassword =
+                                      !_obscureConfirmPassword,
+                                ),
                                 onSubmit: _submit,
-                                onSignIn: () => context.go('/login?redirect=$redirect'),
+                                onSignIn: () =>
+                                    context.go('/login?redirect=$redirect'),
                               ),
                             ],
                           ),
@@ -386,14 +398,32 @@ class _RegisterHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final features = isInstitution
         ? const [
-            _HeroFeatureRow(icon: Icons.apartment_rounded, label: 'Access institutional resources and announcements'),
-            _HeroFeatureRow(icon: Icons.verified_user_outlined, label: 'Verify your affiliation with an institution'),
-            _HeroFeatureRow(icon: Icons.lock_outline_rounded, label: 'Private by default — only handle and name are public'),
+            _HeroFeatureRow(
+              icon: Icons.apartment_rounded,
+              label: 'Access institutional resources and announcements',
+            ),
+            _HeroFeatureRow(
+              icon: Icons.verified_user_outlined,
+              label: 'Verify your affiliation with an institution',
+            ),
+            _HeroFeatureRow(
+              icon: Icons.lock_outline_rounded,
+              label: 'Private by default — only handle and name are public',
+            ),
           ]
         : const [
-            _HeroFeatureRow(icon: Icons.edit_note_rounded, label: 'Post publicly and take part in discussions'),
-            _HeroFeatureRow(icon: Icons.forum_outlined, label: 'Keep conversations in context with Threads and Spaces'),
-            _HeroFeatureRow(icon: Icons.mail_outline_rounded, label: 'Structured correspondence with the people that matter'),
+            _HeroFeatureRow(
+              icon: Icons.edit_note_rounded,
+              label: 'Post publicly and take part in discussions',
+            ),
+            _HeroFeatureRow(
+              icon: Icons.forum_outlined,
+              label: 'Keep conversations in context with Threads and Spaces',
+            ),
+            _HeroFeatureRow(
+              icon: Icons.mail_outline_rounded,
+              label: 'Structured correspondence with the people that matter',
+            ),
           ];
 
     return AuraCard(
@@ -416,17 +446,28 @@ class _RegisterHero extends StatelessWidget {
           Text(
             isInstitution
                 ? 'You need an Aura account to join an institution. Your account stays private; only your handle and display name are public.'
-                : 'Aura is for purposeful communication and discourse — one clear identity, conversations that keep their context, and institutions accountable for what they say officially.',
-            style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.6),
+                : 'Aura is for purposeful communication and discourse, one clear '
+                      'identity, conversations that keep their context, and '
+                      'institutions accountable for what they say officially.',
+            style: AuraText.body.copyWith(
+              color: AuraSurface.muted,
+              height: 1.6,
+            ),
           ),
           const SizedBox(height: AuraSpace.s20),
-          ...features.expand((f) => [f, const SizedBox(height: AuraSpace.s10)]).toList()..removeLast(),
+          ...features
+              .expand((f) => [f, const SizedBox(height: AuraSpace.s10)])
+              .toList()
+            ..removeLast(),
           const SizedBox(height: AuraSpace.s20),
           Text(
             isInstitution
                 ? 'After creating your account, you will be guided through the institutional verification flow.'
                 : 'Your identity, participation record, and conversations stay with you.',
-            style: AuraText.small.copyWith(color: AuraSurface.faint, height: 1.5),
+            style: AuraText.small.copyWith(
+              color: AuraSurface.faint,
+              height: 1.5,
+            ),
           ),
         ],
       ),
@@ -450,13 +491,21 @@ class _HeroFeatureRow extends StatelessWidget {
           decoration: BoxDecoration(
             color: AuraSurface.accentSoft,
             borderRadius: BorderRadius.circular(AuraRadius.sm),
-            border: Border.all(color: AuraSurface.accent.withValues(alpha: 0.2)),
+            border: Border.all(
+              color: AuraSurface.accent.withValues(alpha: 0.2),
+            ),
           ),
           child: Icon(icon, size: 14, color: AuraSurface.accentText),
         ),
         const SizedBox(width: AuraSpace.s10),
         Expanded(
-          child: Text(label, style: AuraText.small.copyWith(color: AuraSurface.muted, height: 1.4)),
+          child: Text(
+            label,
+            style: AuraText.small.copyWith(
+              color: AuraSurface.muted,
+              height: 1.4,
+            ),
+          ),
         ),
       ],
     );
@@ -533,7 +582,10 @@ class _RegisterFormCard extends StatelessWidget {
               const SizedBox(height: AuraSpace.s6),
               Text(
                 subtitle,
-                style: AuraText.small.copyWith(color: AuraSurface.muted, height: 1.4),
+                style: AuraText.small.copyWith(
+                  color: AuraSurface.muted,
+                  height: 1.4,
+                ),
               ),
               if (error != null) ...[
                 const SizedBox(height: AuraSpace.s12),
@@ -593,8 +645,10 @@ class _RegisterFormCard extends StatelessWidget {
                 autocorrect: false,
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9_]')),
-                  TextInputFormatter.withFunction((old, newVal) =>
-                      newVal.copyWith(text: newVal.text.toLowerCase())),
+                  TextInputFormatter.withFunction(
+                    (old, newVal) =>
+                        newVal.copyWith(text: newVal.text.toLowerCase()),
+                  ),
                 ],
                 style: AuraText.body,
                 validator: handleValidator,
@@ -699,8 +753,8 @@ class _RegisterFormCard extends StatelessWidget {
                           ),
                           children: [
                             const TextSpan(
-                                text:
-                                    'I have read and agree to the '),
+                              text: 'I have read and agree to the ',
+                            ),
                             TextSpan(
                               text: 'Terms of Service',
                               style: AuraText.small.copyWith(
@@ -716,8 +770,9 @@ class _RegisterFormCard extends StatelessWidget {
                                 },
                             ),
                             const TextSpan(
-                                text:
-                                    '. Aura has zero tolerance for objectionable content and abusive users. Reported content may be removed and offending users may be suspended; moderation action within 24 hours.'),
+                              text:
+                                  '. Aura has zero tolerance for objectionable content and abusive users. Reported content may be removed and offending users may be suspended; moderation action within 24 hours.',
+                            ),
                           ],
                         ),
                       ),
