@@ -262,9 +262,33 @@ class OperatorExternalRepository {
     return const {};
   }
 
+  /// UNWRAP AURA'S ENVELOPE. The Dio layer does not do this.
+  ///
+  /// Every internal Aura response is `{ok: true, data: <payload>}`, applied
+  /// globally on the server and never undone on the client — `AdminRepository`
+  /// reaches through `m['data']` by hand for exactly this reason. Reading a
+  /// field straight off `res.data` therefore finds nothing, always, and the
+  /// failure is silent: a list parses as empty and a screen renders "none"
+  /// over a database that has rows.
+  ///
+  /// It is worse than a blank list on the write paths. `showOnce` read off the
+  /// wrong level is null, so the dialog that exists to show a credential
+  /// exactly once would have shown an empty box — and the secret it was
+  /// holding would be gone, since Aura keeps only a hash.
+  ///
+  /// Tolerates an already-bare body so this stays correct if the transport
+  /// ever does unwrap.
+  static dynamic _body(dynamic raw) {
+    if (raw is Map) {
+      final m = Map<String, dynamic>.from(raw);
+      if (m['ok'] == true && m.containsKey('data')) return m['data'];
+    }
+    return raw;
+  }
+
   Future<List<ExternalConsumerRow>> list() async {
     final res = await _dio.get(_base);
-    final rows = _map(res.data)['consumers'];
+    final rows = _map(_body(res.data))['consumers'];
     if (rows is! List) return const [];
     return rows
         .whereType<Map>()
@@ -274,12 +298,12 @@ class OperatorExternalRepository {
 
   Future<ExternalConsumerRow> detail(String consumerId) async {
     final res = await _dio.get('$_base/$consumerId');
-    return ExternalConsumerRow.fromJson(_map(res.data));
+    return ExternalConsumerRow.fromJson(_map(_body(res.data)));
   }
 
   Future<List<ExternalTenantRow>> tenants(String consumerId) async {
     final res = await _dio.get('$_base/$consumerId/tenants');
-    final rows = _map(res.data)['tenants'];
+    final rows = _map(_body(res.data))['tenants'];
     if (rows is! List) return const [];
     return rows
         .whereType<Map>()
@@ -301,7 +325,7 @@ class OperatorExternalRepository {
         'webhookUrl': webhookUrl.trim(),
       'isControlledCertification': isControlledCertification,
     });
-    final body = _map(res.data);
+    final body = _map(_body(res.data));
     return ExternalConsumerCreated(
       consumerId: _map(body['consumer'])['id'] as String? ?? '',
       showOnce: ExternalShowOnce.fromJson(_map(body['showOnce'])),
@@ -321,7 +345,7 @@ class OperatorExternalRepository {
       if (supersedesCredentialId != null)
         'supersedesCredentialId': supersedesCredentialId,
     });
-    return ExternalShowOnce.fromJson(_map(_map(res.data)['showOnce']));
+    return ExternalShowOnce.fromJson(_map(_map(_body(res.data))['showOnce']));
   }
 
   Future<void> revoke({
@@ -341,7 +365,7 @@ class OperatorExternalRepository {
     final res = await _dio.post('$_base/$consumerId/webhook', data: {
       'webhookUrl': webhookUrl,
     });
-    final once = _map(res.data)['showOnce'];
+    final once = _map(_body(res.data))['showOnce'];
     if (once is! Map) return const ExternalShowOnce();
     return ExternalShowOnce.fromJson(Map<String, dynamic>.from(once));
   }
@@ -364,7 +388,7 @@ class OperatorExternalRepository {
       'externalRef': externalRef,
       'displayName': displayName,
     });
-    return ExternalTenantRow.fromJson(_map(_map(res.data)['tenant']));
+    return ExternalTenantRow.fromJson(_map(_map(_body(res.data))['tenant']));
   }
 
   Future<ExternalIdentityRow> provisionIdentity({
@@ -387,7 +411,7 @@ class OperatorExternalRepository {
         if (timezone != null && timezone.trim().isNotEmpty) 'timezone': timezone.trim(),
       },
     );
-    return ExternalIdentityRow.fromJson(_map(_map(res.data)['identity']));
+    return ExternalIdentityRow.fromJson(_map(_map(_body(res.data))['identity']));
   }
 }
 
