@@ -52,7 +52,7 @@ class PublicUnitCard extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: AuraSurface.accentSoft,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AuraRadius.xl),
                 ),
                 child: Text(
                   unit.typeLabel,

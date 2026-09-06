@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import '../../../core/ui/aura_radius.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -282,7 +283,7 @@ class _UnitCard extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: AuraSurface.accentSoft,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AuraRadius.xl),
                 ),
                 child: Text(
                   unit.typeLabel,
@@ -301,7 +302,7 @@ class _UnitCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: AuraSurface.coSun.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AuraRadius.xl),
                   ),
                   child: Text(
                     'Hidden',

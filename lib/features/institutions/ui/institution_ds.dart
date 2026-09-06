@@ -85,25 +85,46 @@ class InsToneStyle {
 
   static InsToneStyle of(InsTone tone) {
     switch (tone) {
+      // THE CHIP'S GROUND IS ITS OWN INK, NOT A NEIGHBOURING PALETTE.
+      //
+      // These carried raw hex backgrounds and borders while their text came
+      // from Aura's status tokens, and for two of the three the two hues were
+      // not the same colour:
+      //
+      //   warn    ground #F59E0B   text `coSun`   #EAB308
+      //   danger  ground #EF4444   text `coRose`  #F43F5E
+      //
+      // So a warning chip was amber on a differently-amber ground and an
+      // error chip was rose on a differently-red one. Small enough to survive
+      // review, and exactly the kind of thing that makes a surface read as
+      // imported from another product: everything around it is one system and
+      // this is one system plus a little of something else.
+      //
+      // Deriving ground and border from the same token as the text keeps the
+      // translucent overlay behaviour (these sit on cards AND on the page, so
+      // an opaque `goodBg` would be wrong) while ending the second palette.
+      // The status VOCABULARY is untouched: ok, warn, danger still mean what
+      // they meant, and `co*` remains the app's status ink, used 348 times
+      // against 74 for the opaque pairs.
       case InsTone.ok:
-        return const InsToneStyle(
-          bg: Color(0x2222C55E),
+        return InsToneStyle(
+          bg: AuraSurface.coVerdant.withValues(alpha: 0.13),
           fg: AuraSurface.coVerdant,
-          border: Color(0x4422C55E),
+          border: AuraSurface.coVerdant.withValues(alpha: 0.27),
           icon: Icons.check_circle_rounded,
         );
       case InsTone.warn:
-        return const InsToneStyle(
-          bg: Color(0x22F59E0B),
+        return InsToneStyle(
+          bg: AuraSurface.coSun.withValues(alpha: 0.13),
           fg: AuraSurface.coSun,
-          border: Color(0x44F59E0B),
+          border: AuraSurface.coSun.withValues(alpha: 0.27),
           icon: Icons.warning_amber_rounded,
         );
       case InsTone.danger:
-        return const InsToneStyle(
-          bg: Color(0x22EF4444),
+        return InsToneStyle(
+          bg: AuraSurface.coRose.withValues(alpha: 0.13),
           fg: AuraSurface.coRose,
-          border: Color(0x44EF4444),
+          border: AuraSurface.coRose.withValues(alpha: 0.27),
           icon: Icons.error_outline_rounded,
         );
       case InsTone.info:
@@ -419,7 +440,7 @@ class InsActionCard extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: AuraSurface.coRose,
-                            borderRadius: BorderRadius.circular(9),
+                            borderRadius: BorderRadius.circular(AuraRadius.r10),
                           ),
                           child: Center(
                             child: Text(

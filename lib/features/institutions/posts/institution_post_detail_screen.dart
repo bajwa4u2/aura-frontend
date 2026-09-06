@@ -298,7 +298,7 @@ class _InstitutionPostDetailScreenState
                       height: 6,
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Color(0xFF22C55E),
+                        color: AuraSurface.coVerdant,
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -695,7 +695,7 @@ class _ContinuityContextSection extends StatelessWidget {
             _ContinuityRow(
               label: 'Resolves',
               icon: Icons.check_circle_outline_rounded,
-              color: const Color(0xFF4ADE80),
+              color: AuraSurface.coVerdant,
               targetPostId: resolves,
               institutionId: (item.author.id.isNotEmpty)
                   ? item.author.id
@@ -708,7 +708,7 @@ class _ContinuityContextSection extends StatelessWidget {
             _ContinuityRow(
               label: 'Follow-up to',
               icon: Icons.history_rounded,
-              color: const Color(0xFF60A5FA),
+              color: AuraSurface.infoInk,
               targetPostId: continues,
               institutionId: (item.author.id.isNotEmpty)
                   ? item.author.id

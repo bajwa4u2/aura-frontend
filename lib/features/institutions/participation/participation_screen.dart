@@ -192,8 +192,8 @@ class _ParticipationCard extends StatelessWidget {
     final topicLabel = item.topic?.label ?? 'Unknown topic';
 
     final statusColor = switch (item.status) {
-      ParticipationStatus.active => const Color(0xFF1B8A4C),
-      ParticipationStatus.paused => const Color(0xFFE8853A),
+      ParticipationStatus.active => AuraSurface.coVerdant,
+      ParticipationStatus.paused => AuraSurface.coSun,
       ParticipationStatus.inactive => AuraSurface.faint,
     };
 
@@ -208,7 +208,7 @@ class _ParticipationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AuraRadius.card),
         border: Border.all(
           color: isActive
-              ? const Color(0xFF1B8A4C).withValues(alpha: 0.25)
+              ? AuraSurface.coVerdant.withValues(alpha: 0.25)
               : AuraSurface.divider,
         ),
       ),
@@ -293,7 +293,7 @@ class _ParticipationCard extends StatelessWidget {
             ),
             decoration: BoxDecoration(
               color: isActive
-                  ? const Color(0xFF1B8A4C).withValues(alpha: 0.07)
+                  ? AuraSurface.coVerdant.withValues(alpha: 0.07)
                   : AuraSurface.subtle,
               borderRadius: BorderRadius.circular(AuraRadius.md),
             ),
@@ -307,7 +307,7 @@ class _ParticipationCard extends StatelessWidget {
                           : Icons.remove_circle_outline_rounded,
                   size: 13,
                   color: isActive
-                      ? const Color(0xFF1B8A4C)
+                      ? AuraSurface.coVerdant
                       : AuraSurface.faint,
                 ),
                 const SizedBox(width: AuraSpace.s6),
@@ -316,7 +316,7 @@ class _ParticipationCard extends StatelessWidget {
                     item.status.routingNote,
                     style: AuraText.micro.copyWith(
                       color: isActive
-                          ? const Color(0xFF1B8A4C)
+                          ? AuraSurface.coVerdant
                           : AuraSurface.muted,
                       height: 1.4,
                     ),
@@ -786,7 +786,7 @@ class _CreateParticipationSheetState
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AuraRadius.card),
                     borderSide: const BorderSide(
-                        color: Color(0xFF0D9488), width: 1.5),
+                        color: AuraSurface.coTeal, width: 1.5),
                   ),
                 ),
               ),

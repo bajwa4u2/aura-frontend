@@ -153,9 +153,9 @@ class _Counter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = urgent
-        ? const Color(0xFFE8853A)
+        ? AuraSurface.coSun
         : highlight
-            ? const Color(0xFF1B8A4C)
+            ? AuraSurface.coVerdant
             : AuraSurface.ink;
 
     return Expanded(
@@ -209,10 +209,10 @@ class _RecordCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColor = switch (record.status) {
-      RoutedRecordStatus.pending => const Color(0xFFE8853A),
+      RoutedRecordStatus.pending => AuraSurface.coSun,
       RoutedRecordStatus.responded => AuraSurface.accent,
       RoutedRecordStatus.committed => AuraSurface.accent,
-      RoutedRecordStatus.resolved => const Color(0xFF1B8A4C),
+      RoutedRecordStatus.resolved => AuraSurface.coVerdant,
     };
 
     return InkWell(

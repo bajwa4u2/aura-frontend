@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import '../../../core/ui/aura_radius.dart';
+import '../../../core/ui/aura_surface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -363,11 +365,11 @@ class _InstitutionDomainsScreenState
 
     Color statusColor;
     if (isVerified) {
-      statusColor = const Color(0xFF5FD99A);
+      statusColor = AuraSurface.goodInk;
     } else if (status == 'CHALLENGE_ISSUED') {
-      statusColor = const Color(0xFF6BAEED);
+      statusColor = AuraSurface.infoInk;
     } else {
-      statusColor = const Color(0xFFEDC264);
+      statusColor = AuraSurface.warnInk;
     }
 
     return AuraCard(
@@ -386,7 +388,7 @@ class _InstitutionDomainsScreenState
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AuraRadius.xl),
                 ),
                 child: Text(
                   status.replaceAll('_', ' '),

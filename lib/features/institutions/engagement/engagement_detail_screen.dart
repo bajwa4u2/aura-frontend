@@ -83,10 +83,10 @@ class _DetailBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusColor = switch (record.status) {
-      RoutedRecordStatus.pending => const Color(0xFFE8853A),
+      RoutedRecordStatus.pending => AuraSurface.coSun,
       RoutedRecordStatus.responded => AuraSurface.accent,
       RoutedRecordStatus.committed => AuraSurface.accent,
-      RoutedRecordStatus.resolved => const Color(0xFF1B8A4C),
+      RoutedRecordStatus.resolved => AuraSurface.coVerdant,
     };
 
     return ListView(
@@ -616,7 +616,7 @@ class _OfficialReplySheetState extends ConsumerState<_OfficialReplySheet> {
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AuraRadius.md),
                     borderSide: const BorderSide(
-                        color: Color(0xFF0D9488), width: 1.5),
+                        color: AuraSurface.coTeal, width: 1.5),
                   ),
                   contentPadding: const EdgeInsets.all(AuraSpace.s14),
                 ),
@@ -735,8 +735,8 @@ class _TagChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color activeColor = switch (tag) {
       _AccountabilityTag.commitment => AuraSurface.accent,
-      _AccountabilityTag.resolved => const Color(0xFF1B8A4C),
-      _AccountabilityTag.update => const Color(0xFF7C5CE0),
+      _AccountabilityTag.resolved => AuraSurface.coVerdant,
+      _AccountabilityTag.update => AuraSurface.accent,
       _AccountabilityTag.none => AuraSurface.muted,
     };
 

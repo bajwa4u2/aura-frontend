@@ -246,7 +246,7 @@ class _CreateChannelCard extends StatelessWidget {
   final VoidCallback onSubmit;
   final VoidCallback onCancel;
 
-  static const Color _accent = Color(0xFF0D9488);
+  static const Color _accent = AuraSurface.coTeal;
 
   @override
   Widget build(BuildContext context) {
@@ -327,7 +327,7 @@ class _ChannelCard extends StatelessWidget {
 
   final Map<String, dynamic> space;
 
-  static const Color _accent = Color(0xFF0D9488);
+  static const Color _accent = AuraSurface.coTeal;
 
   @override
   Widget build(BuildContext context) {
@@ -367,8 +367,8 @@ class _ChannelCard extends StatelessWidget {
               Container(
                 width: 40,
                 height: 40,
-                decoration: const BoxDecoration(
-                  color: Color(0x1E0D9488),
+                decoration: BoxDecoration(
+                  color: AuraSurface.coTeal.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(

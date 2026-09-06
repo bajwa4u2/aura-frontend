@@ -372,8 +372,8 @@ class _RoomCard extends ConsumerStatefulWidget {
 }
 
 class _RoomCardState extends ConsumerState<_RoomCard> {
-  static const Color _accent = Color(0xFF0D9488);
-  static const Color _accentSoft = Color(0x1E0D9488);
+  static const Color _accent = AuraSurface.coTeal;
+  static final Color _accentSoft = AuraSurface.coTeal.withValues(alpha: 0.12);
 
   /// Locally-cached session metadata (type/audience/title). Async-loaded
   /// because `SharedPreferences` is async; the card renders the kind-only

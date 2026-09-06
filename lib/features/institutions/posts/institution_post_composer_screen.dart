@@ -1601,7 +1601,7 @@ class _InstitutionPostComposerScreenState
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AuraRadius.md),
-      borderSide: const BorderSide(color: Color(0xFF0D9488), width: 1.5),
+      borderSide: const BorderSide(color: AuraSurface.coTeal, width: 1.5),
     ),
     contentPadding: const EdgeInsets.symmetric(
       horizontal: AuraSpace.s14,
@@ -1617,9 +1617,14 @@ class _ActorBanner extends StatelessWidget {
 
   final InstitutionIdentity? identity;
 
-  static const Color _accent = Color(0xFF0D9488);
-  static const Color _accentSoft = Color(0x1E0D9488);
-  static const Color _accentText = Color(0xFF5EEAD4);
+  static const Color _accent = AuraSurface.coTeal;
+  static final Color _accentSoft = AuraSurface.coTeal.withValues(alpha: 0.12);
+  // Kept, and no longer independent. Aura defines no light-teal ink, and
+  // legible text on this screen's teal field is a real need rather than
+  // obsolete drift. Deriving it from the accent it sits on means the two
+  // cannot drift apart the way the status hues had.
+  static final Color _accentText =
+      Color.lerp(AuraSurface.coTeal, Colors.white, 0.55)!;
 
   @override
   Widget build(BuildContext context) {
@@ -1668,7 +1673,7 @@ class _ActorBanner extends StatelessWidget {
                     ),
                     if (identity?.isVerified == true) ...[
                       const SizedBox(width: 6),
-                      const InstitutionVerifiedMark(color: _accentText),
+                      InstitutionVerifiedMark(color: _accentText),
                     ],
                   ],
                 ),
@@ -1805,7 +1810,7 @@ class _VisibilitySection extends StatelessWidget {
                       value: v,
                       title: Text(v.label, style: AuraText.body),
                       dense: true,
-                      activeColor: const Color(0xFF0D9488),
+                      activeColor: AuraSurface.coTeal,
                       contentPadding: EdgeInsets.zero,
                     ),
                 ],
@@ -1863,7 +1868,7 @@ class _DistributionSection extends StatelessWidget {
               Switch.adaptive(
                 value:
                     distribution == InstitutionPostDistribution.globalEligible,
-                activeThumbColor: const Color(0xFF0D9488),
+                activeThumbColor: AuraSurface.coTeal,
                 onChanged: globalEnabled
                     ? (v) => onChange(
                         v
@@ -2008,7 +2013,7 @@ class _DraftStatusRow extends StatelessWidget {
       case _DraftStatus.unsaved:
         return AuraSurface.muted;
       case _DraftStatus.saved:
-        return const Color(0xFF0D9488);
+        return AuraSurface.coTeal;
       case _DraftStatus.idle:
         return AuraSurface.faint;
     }
