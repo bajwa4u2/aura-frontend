@@ -159,34 +159,36 @@ workflows:
         # rendering-platform specific and are validated locally instead.
         script: flutter test --exclude-tags golden
       - name: Set up code signing
-        # `ios_signing` above fetches a profile for ONE bundle id, strictly.
-        # Aura ships a share extension, which is a SECOND bundle id needing its
-        # own App Store profile. Build #36 reported the miss and still exited 0,
-        # so it only surfaced two steps later as a codesign failure:
+        # Two things the managed `ios_signing` step does not do.
         #
-        #   - Did not find provisioning profile matching bundle identifier
-        #     "org.auraplatform.app.ShareExtension" for target "ShareExtension"
+        # 1. It fetches a profile for ONE bundle id, strictly. Aura ships a
+        #    share extension, which is a SECOND bundle id needing its own App
+        #    Store profile. `use-profiles` reported the miss and still exited 0,
+        #    so it surfaced two steps later as a codesign failure (#36, #37).
         #
-        # NOT `fetch-signing-files`: that fetches certificates as well as
-        # profiles, with no option to skip them, and saving certificates needs
-        # --certificate-key, which managed signing does not expose to build
-        # scripts. Build #38 died on exactly that in under a second, having
-        # created nothing. The certificate is already in the keychain from the
-        # managed step -- that is how Runner signs -- so only the profile was
-        # ever missing, and only the profile is asked for here.
+        # 2. It can leave a profile on the machine that is older than the one
+        #    Apple holds. Enabling App Groups invalidated the main app profile;
+        #    it was regenerated in the portal and Apple showed it Active with
+        #    App Groups, yet #40 still signed with a copy that lacked the
+        #    entitlement. So the profile directories are cleared and every
+        #    ACTIVE App Store profile is downloaded fresh, which removes the
+        #    question of which copy wins. `use-profiles` matches on bundle id,
+        #    so profiles belonging to other apps are downloaded and unused.
         #
-        # Idempotent: an ACTIVE profile of this name is downloaded and reused,
-        # and one is created only when there is none. (A profile left INVALID by
-        # a capability change would have to be deleted first -- Apple will not
-        # issue a second profile under a name already taken.)
+        # Deliberately NOT `fetch-signing-files`: it fetches certificates too,
+        # with no option to skip them, and saving those needs --certificate-key,
+        # which managed signing does not expose to build scripts (#38). The
+        # certificate is already in the keychain from the managed step -- that is
+        # how Runner signed all along -- so only profiles are handled here.
         script: |
           set -eu
           EXT_BUNDLE_ID="$BUNDLE_ID.ShareExtension"
           EXT_PROFILE_NAME="Aura ShareExtension App Store Profile"
 
+          # Create the extension profile only when there is no active one.
           if ! app-store-connect profiles list \
                  --type IOS_APP_STORE --name "$EXT_PROFILE_NAME" \
-                 --state ACTIVE --save --json \
+                 --state ACTIVE --json \
                | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin) else 1)'; then
             echo "No active $EXT_PROFILE_NAME yet; creating one."
             BUNDLE_RESOURCE_ID=$(app-store-connect bundle-ids list \
@@ -197,9 +199,7 @@ workflows:
             # whose certificateType is DISTRIBUTION. IOS_DISTRIBUTION is the
             # older "iOS Distribution (App Store and Ad Hoc)" kind, which this
             # account does not have -- filtering on it matched nothing and
-            # profiles create rejected the empty --certificate-ids (build #39).
-            # Accept either kind, and fail with a sentence rather than pass an
-            # empty argument on.
+            # profiles create rejected the empty --certificate-ids (#39).
             CERTIFICATE_IDS=$(app-store-connect certificates list --json \
               | python3 -c 'import json,sys; d=json.load(sys.stdin); ok={"DISTRIBUTION","IOS_DISTRIBUTION"}; ids=[c["id"] for c in d if ((c.get("attributes") or c).get("certificateType")) in ok]; print(" ".join(ids)) if ids else sys.exit("No distribution certificate in this account; cannot create a profile.")')
             app-store-connect profiles create "$BUNDLE_RESOURCE_ID" \
@@ -207,10 +207,28 @@ workflows:
               --type IOS_APP_STORE --name "$EXT_PROFILE_NAME" --save
           fi
 
+          # Take Apple as the single source of truth for profile CONTENT.
+          for DIR in "$HOME/Library/MobileDevice/Provisioning Profiles" \
+                     "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
+            rm -f "$DIR"/*.mobileprovision 2>/dev/null || true
+          done
+          app-store-connect profiles list --type IOS_APP_STORE --state ACTIVE --save
+
+          # Say what each downloaded profile actually grants, so a mismatch is
+          # readable here instead of as an Xcode entitlement error two steps on.
+          for F in "$HOME/Library/MobileDevice/Provisioning Profiles"/*.mobileprovision \
+                   "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"/*.mobileprovision; do
+            [ -e "$F" ] || continue
+            security cms -D -i "$F" > /tmp/pp.plist 2>/dev/null || continue
+            echo "profile: $(/usr/libexec/PlistBuddy -c "Print :Name" /tmp/pp.plist 2>/dev/null)"
+            echo "  app id: $(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /tmp/pp.plist 2>/dev/null)"
+            echo "  groups: $(/usr/libexec/PlistBuddy -c "Print :Entitlements:com.apple.security.application-groups" /tmp/pp.plist 2>/dev/null | tr -d "\n" || echo NONE)"
+          done
+
           # Writes every downloaded profile into the Xcode project -- which is
           # also what gives the extension target its DEVELOPMENT_TEAM and flips
           # CODE_SIGN_STYLE to Manual, so "Signing for ShareExtension requires a
-          # development team" is a symptom of the missing profile rather than a
+          # development team" was a symptom of the missing profile rather than a
           # separate defect -- and generates /Users/builder/export_options.plist
           # for `flutter build ipa`.
           xcode-project use-profiles
