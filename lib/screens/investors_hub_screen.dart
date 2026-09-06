@@ -301,7 +301,7 @@ class InvestorsHubScreen extends StatelessWidget {
                     icon: Icons.menu_book_outlined,
                     label: 'Editorial posture',
                     body:
-                        'Bajwa Writes — long-form work on conscience, '
+                        'Bajwa Write — long-form work on conscience, '
                         'institutional responsibility, and moral '
                         'structure — informs the platform\'s voice.',
                   ),

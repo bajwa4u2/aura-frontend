@@ -21,7 +21,7 @@ enum DiscoveryEstate {
   auraPlatform('AURA_PLATFORM', 'Aura Platform'),
   aura('AURA', 'Aura'),
   orchestrate('ORCHESTRATE', 'Orchestrate'),
-  bajwaWrites('BAJWA_WRITES', 'Bajwa Writes'),
+  bajwaWrites('BAJWA_WRITES', 'Bajwa Write'),
   founder('FOUNDER', 'Founder');
 
   const DiscoveryEstate(this.wire, this.label);

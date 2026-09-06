@@ -128,7 +128,7 @@ class ShellFooter extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // The estate's shared support band sits ABOVE the closing, which is
-        // where the company site, Orchestrate and Bajwa Writes all put it.
+        // where the company site, Orchestrate and Bajwa Write all put it.
         const _MadeWithSupportBand(),
         _closing(context),
       ],
@@ -177,7 +177,7 @@ class ShellFooter extends StatelessWidget {
 /// The mark, the thought, and the one act that follows from it.
 /// MADE WITH SUPPORT: the estate's shared band, in Aura's palette.
 ///
-/// Not a new invention. The company site, Orchestrate and Bajwa Writes all
+/// Not a new invention. The company site, Orchestrate and Bajwa Write all
 /// close the same way: a full-bleed field above the footer carrying a small
 /// letterspaced label, one sentence naming the environment the product is
 /// being built in, and the three programme marks ranged to the trailing edge.
@@ -198,7 +198,7 @@ class ShellFooter extends StatelessWidget {
 ///
 /// WHAT DIFFERS, deliberately:
 ///
-///   * THE FIELD is Aura's, not Bajwa Writes' teal or Orchestrate's slate.
+///   * THE FIELD is Aura's, not Bajwa Write's teal or Orchestrate's slate.
 ///     Parity of composition, not of palette: each product closes in its own
 ///     colour, in the same shape.
 ///   * THE MARKS ARE LINKS. Neither Flutter sibling links them; the COMPANY
@@ -556,7 +556,7 @@ class _ClosingDestinations extends StatelessWidget {
 
 /// THE BOTTOM ROW, at parity with the estate.
 ///
-/// Orchestrate and Bajwa Writes close on the identical shape: a rule, then
+/// Orchestrate and Bajwa Write close on the identical shape: a rule, then
 /// the company name set bold at the leading edge with its relationship line
 /// beneath it, and the SIBLING products ranged to the trailing edge. Both
 /// omit themselves from that row.
@@ -580,7 +580,7 @@ class _QuietLine extends StatelessWidget {
   /// sibling products use.
   static const _siblings = <_ExternalLink>[
     _ExternalLink('Orchestrate', 'https://orchestrateops.com'),
-    _ExternalLink('Bajwa Writes', 'https://bajwawrites.com'),
+    _ExternalLink('Bajwa Write', 'https://bajwawrites.com'),
     _ExternalLink('Founder', 'https://bajwa.auraplatform.org'),
   ];
 
@@ -732,7 +732,7 @@ class _FooterNavLink extends StatelessWidget {
 
 // AURA'S CLOSING IS NOT A CORPORATE PORTFOLIO DIRECTORY.
 //
-// A five-link band lived here — Company · Aura · Orchestrate · Bajwa Writes ·
+// A five-link band lived here — Company · Aura · Orchestrate · Bajwa Write ·
 // Founder — and it was carried forward through every footer revision because
 // it was recorded as doctrine-locked. Audited on the founder's instruction,
 // each link answers for itself poorly at the foot of Aura:
