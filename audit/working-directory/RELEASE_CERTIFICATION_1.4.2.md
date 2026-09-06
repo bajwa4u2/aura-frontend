@@ -658,3 +658,46 @@ this document. The four artifacts carry the same product.
 
 No Aura Meetings external API code entered this baseline, and none may. That
 work begins from the next development state.
+
+---
+
+## 9. Backend advancement after the freeze — 2026-09-06
+
+The freeze is on the CLIENT ARTIFACT. It was never a freeze on the service the
+client talks to, and this section records the first advancement past it so the
+distinction is written down rather than inferred later from two dates.
+
+```
+1.4.2 CLIENT_ARTIFACT_FREEZE   = PRESERVED
+PRODUCTION_BACKEND_SHA         = 16991bc  (was 7d15faa at the freeze)
+POST_1.4.2_BACKEND_ADVANCEMENT = YES
+```
+
+**What PRESERVED means here, checked rather than asserted:** the tags `v1.4.2`
+and `v1.4.2-baseline` are unmoved and remain ancestors of `main`. `main` has
+commits after them; the tagged commits themselves are byte-for-byte what was
+built and submitted. No client artifact was rebuilt, re-signed or re-submitted.
+
+**What advanced:** the Aura Meetings external API (`/v1/external`), plus its
+operator provisioning surface. Deployed through a seven-point compatibility
+gate against the code actually serving the released clients — recorded in
+`aura-backend/docs/2026-09-06-external-api-release-compatibility-gate.md` —
+which found the change additive in every dimension a released client can
+observe: no route removed or altered, no serialized field removed, no
+destructive migration, no permission withdrawn, no route shadowed.
+
+**Verified from production after deploying, not assumed:** health reports the
+expected commit; `/v1/meetings`, `/v1/conversations` and `/v1/notifications`
+still answer in Aura's internal envelope with `requestId`, `timestamp` and
+`path` intact, which is the shape released clients parse.
+
+**One defect found by that verification, and fixed the same hour.** Aura's two
+global response shapers were also rewriting every `/v1/external` response, so
+the published contract and the running service disagreed on every call — the
+OpenAPI document was being served wrapped as `{"ok":true,"data":"openapi:
+3.1.0\n..."}`. It is corrected in `16991bc` and re-verified from production.
+It never touched a released-client path, and the fix is guarded on both sides
+by tests that assert internal routes keep Aura's envelope exactly.
+
+Worth keeping: a green suite of 4,431 tests did not see it. Asking production
+what it actually returns did, in under a minute.
