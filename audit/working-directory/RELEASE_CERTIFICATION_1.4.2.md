@@ -309,8 +309,11 @@ A wrong identifier here is not easily undone, so the field was cleared and the
 suffix appended, and the confirmation screen was read before registering.
 
 Apple warned on save that changing capabilities invalidates existing
-provisioning profiles and they must be regenerated. That is expected and is
-what Codemagic's automatic signing does on the next run.
+provisioning profiles and they must be regenerated. **That warning was taken
+too lightly here.** This section originally recorded that regenerating them is
+"what Codemagic's automatic signing does on the next run". It is not. Build #37
+downloaded the invalidated profile and archived with it, and the failure came
+only at codesign. See section 5c.
 
 **CARRY THIS INTO EVERY FUTURE iOS ATTEMPT.** A TestFlight build that fails
 PROCESSING consumes its build number permanently. Neither Aura failure reached
@@ -320,6 +323,104 @@ produced and rejected in processing, 37 is spent, and the next attempt is
 refused for a reason unrelated to whatever was fixed. Bump the build number
 before re-attempting after any failure that reached upload. (Learned from
 Orchestrate, which burned 12 exactly this way and shipped on 13.)
+
+### 5c. Behind the estate work: two more faults, neither of them the estate
+
+Establishing the App IDs and the App Group was necessary and not sufficient.
+Three further builds were needed, and each failed for a *different* reason, so
+each is recorded separately rather than as "signing was broken".
+
+**#36 — the project itself was unreadable.** With the estate in place, `Set up
+code signing` dropped from failing to 1s and the build advanced to `Build
+signed IPA`, where `xcodebuild` refused the project outright:
+
+> `*** -[NSMutableDictionary addEntriesFromDictionary:]: dictionary argument
+> is not an NSDictionary` … `The project 'Runner' is damaged and cannot be
+> opened.`
+
+This is the consequence `1339235f` wrote down when it added the Share
+Extension target programmatically: *"That proves the reformat lost nothing. It
+does not prove Xcode agrees — there is no macOS here."* Two generator faults,
+both invisible on Windows because **the file is a well-formed plist and parses
+without complaint** — syntax was never the problem:
+
+| Fault | What was written | What it should be |
+|---|---|---|
+| `TargetAttributes[ShareExtension]` | Python's `str()` of a dict — `"{'CreatedOnToolsVersion': '15.0', …}"`, a **string** where both sibling entries are dictionaries | a dictionary |
+| 16 values quoted twice | `productType = "\"com.apple.product-type.app-extension\""` — the identifier *including* quote characters, matching no Apple product type; likewise `sourceTree`, `PRODUCT_NAME`, `TARGETED_DEVICE_FAMILY`, `SWIFT_OPTIMIZATION_LEVEL`, `explicitFileType`, `dstPath`, the copy phase name | singly quoted |
+
+The first is the reported crash verbatim: Xcode merges each `TargetAttributes`
+entry with `addEntriesFromDictionary:`, and that entry was not a dictionary.
+
+Fixed in `77a6bb22`. Nothing structural changed — 83 objects, 0 dangling
+references, the same three targets, Runner still depending on ShareExtension
+and still embedding it into `PlugIns`. Verified on Windows by parsing the file
+and then checking value **shapes** rather than syntax, since syntax was never
+the problem: every `buildSettings`/`attributes` a dictionary, every
+`files`/`buildPhases`/`children`/`dependencies` a list, every `TargetAttributes`
+entry a dictionary naming a real target, every product type one Apple defines,
+and no parsed string still carrying a quote. #37 then reached **`Xcode archive
+done.`**, which is the proof the repair worked.
+
+**#37 — the profile was there and was the wrong one.** Two separate signing
+faults, both of which the earlier record got wrong:
+
+1. *Enabling a capability invalidates existing profiles, and CI does not
+   notice.* Adding App Groups flipped "AURA PLATFORM App Store Profile" to
+   **Invalid**. This document previously said regenerating it is "what
+   Codemagic's automatic signing does on the next run". It is not — #37
+   downloaded the invalid profile and archived with it, failing only at
+   codesign with *doesn't include the App Groups capability* / *doesn't support
+   the group.org.auraplatform.app App Group* / *doesn't include the
+   com.apple.security.application-groups entitlement*. Regenerated in the
+   portal (`78SXU7YZR4`, Edit → Save, form pre-filled) and confirmed no longer
+   Invalid in the profiles list.
+
+2. *`ios_signing.bundle_identifier` names ONE bundle id.* The extension is a
+   second one and was never fetched. `xcode-project use-profiles` said so and
+   **still exited 0**, which is why the miss surfaced two steps later:
+
+   > `- Did not find provisioning profile matching bundle identifier
+   > "org.auraplatform.app.ShareExtension" for target "ShareExtension"`
+
+   The fourth error of that build, *"Signing for ShareExtension requires a
+   development team"*, is a **symptom** of the same gap: with no profile the
+   target keeps `CODE_SIGN_STYLE = Automatic` and no `DEVELOPMENT_TEAM`, both
+   of which `use-profiles` sets once a profile exists. It is not a separate
+   defect and needs no separate fix.
+
+   This is the "secondary item to check" flagged above, now confirmed. The
+   founder's condition for touching signing config — *Runner signs but
+   ShareExtension lacks a profile* — is met literally and in writing.
+
+**#38 — the right goal, the wrong instrument.** `341771d1` reached for
+`fetch-signing-files`, which fetches profiles *and* certificates with no option
+to skip the latter, and saving certificates needs `--certificate-key`, which
+managed signing does not hand to build scripts. It died in under a second with
+`Cannot save Signing Certificates without certificate private key`, having
+created nothing — confirmed by the portal still showing no extension profile.
+The certificate was never missing: the managed step already puts it in the
+keychain, which is how Runner signed in #37. Corrected in `0a38dc25` to ask for
+a **profile and nothing else** (`profiles list --save`, else `profiles create
+--save`), which needs no certificate key.
+
+One correction to the reasoning, kept because it changes how the next such
+question should be asked: matching is **loose** by default —
+`com.example.app` also matches `com.example.app.extension` — so the conclusion
+that Codemagic matches strictly rests on behaviour, not on the flag's default:
+#36 neither found nor created a profile for an App ID that already existed.
+Either way the second bundle id must be named explicitly.
+
+Verified before pushing rather than on the runner, because each round trip is
+roughly eight minutes: the generated shell passes `bash -n`, and the three
+python one-liners were exercised against representative App Store Connect
+payloads — an empty list exits 1 so a profile is created, a populated list
+exits 0 so an existing one is reused, and the id extractions return what the
+surrounding commands consume.
+
+**Build numbering is still intact.** None of #36–#38 produced an artifact, let
+alone uploaded one, so **37 is unspent** and the rule recorded above still
+holds.
 
 | Gate | State |
 |---|---|
