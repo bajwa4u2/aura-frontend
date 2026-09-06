@@ -300,25 +300,78 @@ class _SupportMarks extends StatelessWidget {
       spacing: compact ? 12 : 22,
       runSpacing: 16,
       children: [
+        // A MARK MAY STAND FOR A PROGRAMME ONLY IF IT IS THAT PROGRAMME'S
+        // MARK. Two of these were not, and were removed rather than redrawn.
+        //
+        //   google-for-startups.svg was the plain Google "G" from the Simple
+        //   Icons set — its own <title> said `Google` — sitting under a label
+        //   naming a programme it does not represent.
+        //
+        //   aws-activate.svg was an AWS ARCHITECTURE DIAGRAM icon,
+        //   `Icon-Architecture/48/Arch_AWS-Activate_48`, drawn on the magenta
+        //   #C925D1 "Customer Enablement" category tile that set uses inside
+        //   diagrams. At 42px it read as a magenta square. That icon set is
+        //   not licensed as programme badges.
+        //
+        // The relationships are real and recorded, so the WORDS stay. Only the
+        // pictures were untrue, and a fabricated replacement would have been
+        // the same offence with better craft. Where an official asset is
+        // established, a mark can return here.
         _SupportMark(
           asset: 'assets/branding/support/microsoft-for-startups-badge.png',
           label: 'Microsoft for Startups',
           url: 'https://www.microsoft.com/en-us/startups/',
           width: compact ? 110 : 132,
         ),
-        _SupportMark(
-          asset: 'assets/branding/support/google-for-startups.svg',
+        const _SupportWordmark(
           label: 'Google for Startups',
           url: 'https://startup.google.com/',
-          width: compact ? 82 : 110,
         ),
-        _SupportMark(
-          asset: 'assets/branding/support/aws-activate.svg',
+        const _SupportWordmark(
           label: 'AWS Activate',
           url: 'https://aws.amazon.com/activate/',
-          width: compact ? 76 : 94,
         ),
       ],
+    );
+  }
+}
+
+/// A supporter named in the product's own type, for a relationship that is
+/// real but has no legitimate mark to show.
+///
+/// Deliberately the SAME 42px row height as a badge, so the strip reads as
+/// three considered entries rather than one image and two holes. Setting it in
+/// Aura's own type is also the honest form: it claims a relationship, which is
+/// true, and does not imply an endorsed asset, which would not be.
+class _SupportWordmark extends StatelessWidget {
+  const _SupportWordmark({required this.label, required this.url});
+
+  final String label;
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      link: true,
+      label: label,
+      child: InkWell(
+        onTap: () => _openExternal(url),
+        borderRadius: BorderRadius.circular(4),
+        child: SizedBox(
+          height: 42,
+          child: Align(
+            alignment: Alignment.center,
+            child: Text(
+              label,
+              style: AuraText.micro.copyWith(
+                color: AuraSurface.ink,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
