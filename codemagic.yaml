@@ -193,9 +193,15 @@ workflows:
                 --bundle-id-identifier "$EXT_BUNDLE_ID" --platform IOS \
                 --strict-match-identifier --json \
               | python3 -c 'import json,sys; print(json.load(sys.stdin)[0]["id"])')
-            CERTIFICATE_IDS=$(app-store-connect certificates list \
-                --type IOS_DISTRIBUTION --json \
-              | python3 -c 'import json,sys; print(" ".join(c["id"] for c in json.load(sys.stdin)))')
+            # Apple assigns this account an "Apple Distribution" certificate,
+            # whose certificateType is DISTRIBUTION. IOS_DISTRIBUTION is the
+            # older "iOS Distribution (App Store and Ad Hoc)" kind, which this
+            # account does not have -- filtering on it matched nothing and
+            # profiles create rejected the empty --certificate-ids (build #39).
+            # Accept either kind, and fail with a sentence rather than pass an
+            # empty argument on.
+            CERTIFICATE_IDS=$(app-store-connect certificates list --json \
+              | python3 -c 'import json,sys; d=json.load(sys.stdin); ok={"DISTRIBUTION","IOS_DISTRIBUTION"}; ids=[c["id"] for c in d if ((c.get("attributes") or c).get("certificateType")) in ok]; print(" ".join(ids)) if ids else sys.exit("No distribution certificate in this account; cannot create a profile.")')
             app-store-connect profiles create "$BUNDLE_RESOURCE_ID" \
               --certificate-ids $CERTIFICATE_IDS \
               --type IOS_APP_STORE --name "$EXT_PROFILE_NAME" --save
