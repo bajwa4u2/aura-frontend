@@ -1,7 +1,40 @@
 # Aura Release Client — Next Work
 
-**As of 2026-08-31.** The **Operator Control Plane** is reconstructed; the A/V
+**As of 2026-09-06.** The **Operator Control Plane** is reconstructed; the A/V
 chapter below is unchanged and still open.
+
+## Aura 1.4.2 — frozen 2026-09-06, with named remainders
+
+Record: `audit/working-directory/RELEASE_CERTIFICATION_1.4.2.md`.
+Release source `e8a9a43f` (tag `v1.4.2`), baseline tag `v1.4.2-baseline`.
+
+Owed, and none of it a product defect:
+
+1. **iOS physical certification.** 1.4.2 is on TestFlight but has never run on
+   an iPhone. Calling, live, meetings, notifications and interactions are
+   UNVERIFIED on iOS for this version. Installable is not exercised, and
+   neither a simulator nor a browser substitutes for the device.
+2. **Store submissions** — Partner Center, Play Closed testing / Alpha, App
+   Store review. Founder-actioned by standing arrangement.
+3. **Web redeploy** at the release source; live was `7a10dc90`.
+4. **Institution dashboard still unseen.** The available identity holds
+   institution MEMBER standing, which Aura correctly refuses the dashboard to.
+   Reaching it needs institution admin authority, and manufacturing that
+   standing in production to look at a screen is out of bounds.
+5. **`store_assets/` is untracked** (~34MB, from a separate store-listing pass
+   the same day). Left out of the baseline deliberately; whether it belongs in
+   a release commit is a founder call.
+
+## Aura Meetings external API — the next chapter
+
+Authorized to begin only after the 1.4.2 freeze, which is now done, and in
+coordination with CLAUDE-1. **No Meetings external API code is in the 1.4.2
+baseline and none may be added to it** — that work starts from the next
+development state. Read `docs/meetings/MEETINGS_PRODUCT_CONTRACT.md` and the
+Meetings section of `HANDOFF.md` before touching `features/meetings`; the
+lifecycle has one authority (`resolveMeetingPhase`) and the workspace reads
+A/V through one adapter, and both have been broken by well-meaning additions
+before.
 
 ## Operator Control Plane — delivered
 

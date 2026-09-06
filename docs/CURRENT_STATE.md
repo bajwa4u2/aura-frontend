@@ -1,10 +1,50 @@
 # Aura Release Client — Current State
 
-**Last updated: 2026-08-31**
+**Last updated: 2026-09-06**
 
 ---
 
 ## Status
+
+> **2026-09-06 — AURA 1.4.2 IS FROZEN AND SHIPPED TO ALL FOUR PLATFORMS.**
+>
+> Record: `audit/working-directory/RELEASE_CERTIFICATION_1.4.2.md`.
+> Release source `e8a9a43f` (tag `v1.4.2`); baseline tag `v1.4.2-baseline`.
+> Backend `7d15faa` in production.
+>
+> `AURA_1_4_2_FROZEN = YES`
+> `IOS_TESTFLIGHT_AVAILABLE = YES` — 1.4.2 (37), status Complete
+> `IOS_PHYSICAL_CERTIFICATION = NOT_EXECUTED`
+>
+> | Platform | Artifact | State |
+> |---|---|---|
+> | Windows | MSIX 1.4.2.0 | built, exercised, unsigned by design |
+> | Android | `app-release.aab` 37 | certified on a physical Pixel 9a |
+> | iOS | 1.4.2 (37) | built → uploaded → processed → TestFlight Complete |
+> | Web | `e8a9a43f` | certified on live |
+>
+> **The iOS artifact carries the Share Extension**, by founder decision, which
+> is what made this release expensive: six Codemagic builds, each failing at a
+> strictly later point and for a genuinely different reason. Two faults are
+> worth carrying forward because they will recur:
+>
+> * A programmatically generated `project.pbxproj` can be a **well-formed
+>   plist that Xcode still calls damaged**. Check value SHAPES, not syntax —
+>   a `TargetAttributes` entry that was a string produced
+>   `addEntriesFromDictionary: … is not an NSDictionary`.
+> * **`xcode-project use-profiles` exits 0 when a target has no profile.** It
+>   prints `Did not find provisioning profile matching bundle identifier …`
+>   and reports success, so the miss surfaces two steps later as a codesign
+>   failure. A green signing step is not evidence every target got a profile.
+>
+> Enabling a capability on an App ID also invalidates its existing profiles,
+> and CI will download and archive with the invalid one. `codemagic.yaml` now
+> purges the profile directories, re-downloads every ACTIVE App Store profile,
+> and prints each profile's application-identifier and application-groups.
+>
+> **What is NOT done:** 1.4.2 has never run on a physical iPhone, so calling,
+> live, meetings, notifications and interactions are UNVERIFIED on iOS for this
+> version. Store submissions are founder-actioned.
 
 > **2026-08-31 — OPERATOR CONTROL PLANE: RECONSTRUCTED.**
 >
