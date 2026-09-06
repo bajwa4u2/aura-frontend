@@ -283,6 +283,35 @@ A secondary item to check if the portal work is done and codesign still fails:
 `codemagic.yaml` declares a single `ios_signing.bundle_identifier`, which may
 fetch a profile for the main app only and leave the extension unsigned.
 
+### The Apple estate, established 2026-09-06
+
+Done through the authorized Apple Developer session rather than handed back.
+Team **MUHAMMAD SAKHAWAT — 4WZQA8T5MT**. State before: two App IDs
+(`org.auraplatform.app`, `com.orchestrateops.app`) and **zero App Groups** —
+the Identifiers list showed the App Groups empty state, which is why no
+profile could be issued for the extension.
+
+| Resource | Action | Result |
+|---|---|---|
+| App Group `group.org.auraplatform.app` | created | "Aura Platform App Group" |
+| `org.auraplatform.app` (id `73VA9G9X9V`) | App Groups enabled + group assigned | Enabled App Groups (1) |
+| `org.auraplatform.app.ShareExtension` (id `KW5TXC3RSC`) | registered, explicit, App Groups enabled + group assigned | Enabled App Groups (1) |
+
+**Existing capabilities were preserved, and verified after saving** rather than
+assumed. The main App ID still carries `ASSOCIATED_DOMAINS`,
+`PUSH_NOTIFICATIONS`, `USERNOTIFICATIONS_COMMUNICATION` and `IN_APP_PURCHASE`
+alongside the new `APP_GROUPS`.
+
+One near-miss worth recording: Apple's App Group identifier field pre-fills the
+literal prefix `group.`, so typing the full identifier produced
+`group.group.org.auraplatform.app`. Caught on the form before submitting.
+A wrong identifier here is not easily undone, so the field was cleared and the
+suffix appended, and the confirmation screen was read before registering.
+
+Apple warned on save that changing capabilities invalidates existing
+provisioning profiles and they must be regenerated. That is expected and is
+what Codemagic's automatic signing does on the next run.
+
 **CARRY THIS INTO EVERY FUTURE iOS ATTEMPT.** A TestFlight build that fails
 PROCESSING consumes its build number permanently. Neither Aura failure reached
 upload — one died at analyze, one at codesign, and Codemagic publishes only
