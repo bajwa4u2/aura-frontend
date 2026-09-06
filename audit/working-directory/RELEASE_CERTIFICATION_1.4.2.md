@@ -248,9 +248,53 @@ existing App Store Connect answers without auditing the code would make the
 claims look substantiated without making them true. That audit is real work and
 belongs to whoever owns the store listings.
 
+### Codemagic #34 and after — what actually blocked iOS
+
+**First attempt failed at `flutter analyze`, not at the tests.** Analyze runs
+before them and warnings are fatal there, so the build died at six minutes.
+Six errors and two warnings, all from one incomplete deletion: `a41a1b4b`
+removed `call_preflight_sheet.dart` on purpose, and two integration tests
+still imported it, the full-height sheet census still expected it, and a
+CallKit assertion still guarded the workaround the same commit had replaced.
+Fixed in `e8a9a43f`. Both gates verified locally with the runner's exact
+commands: `flutter analyze --no-fatal-infos` exits 0, and
+`flutter test --exclude-tags golden` reports 2521 passing.
+
+**Second attempt reached signing and failed at codesign, which was predicted
+in writing.** The Share Extension added in this range gives the project two
+signable targets — `org.auraplatform.app` and the embedded
+`org.auraplatform.app.ShareExtension` — and both entitlements require the App
+Group `group.org.auraplatform.app`. Commit `1339235f` recorded the
+consequence when it added the target:
+
+> REQUIRED BEFORE THE NEXT iOS BUILD, and it cannot be done from code: App
+> Groups enabled on `org.auraplatform.app` with `group.org.auraplatform.app`
+> created, the App ID `org.auraplatform.app.ShareExtension` registered with
+> the same group, and both profiles re-fetched. Until then the archive fails
+> at codesign.
+
+Neither the second App ID nor the group exists in the portal. This is founder
+work in Apple Developer; no repo change fixes it. The commit was made
+self-contained on purpose, so reverting the Share Extension restores a project
+that signs exactly as 1.4.1 did — that is a scope decision about what 1.4.2
+contains, not a technical one.
+
+A secondary item to check if the portal work is done and codesign still fails:
+`codemagic.yaml` declares a single `ios_signing.bundle_identifier`, which may
+fetch a profile for the main app only and leave the extension unsigned.
+
+**CARRY THIS INTO EVERY FUTURE iOS ATTEMPT.** A TestFlight build that fails
+PROCESSING consumes its build number permanently. Neither Aura failure reached
+upload — one died at analyze, one at codesign, and Codemagic publishes only
+after the scripts succeed — so **37 is intact**. But the moment an IPA is
+produced and rejected in processing, 37 is spent, and the next attempt is
+refused for a reason unrelated to whatever was fixed. Bump the build number
+before re-attempting after any failure that reached upload. (Learned from
+Orchestrate, which burned 12 exactly this way and shipped on 13.)
+
 | Gate | State |
 |---|---|
-| IOS_ARCHIVE_BUILT | NOT_EXECUTED — no macOS |
+| IOS_ARCHIVE_BUILT | BLOCKED — codesign, see below |
 | IOS_DISTRIBUTABLE_ARTIFACT | NOT_EXECUTED |
 | IOS_TESTFLIGHT | NOT_EXECUTED |
 | IOS_PHYSICAL_CERTIFICATION | NOT_EXECUTED |
