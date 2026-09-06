@@ -159,27 +159,54 @@ workflows:
         # rendering-platform specific and are validated locally instead.
         script: flutter test --exclude-tags golden
       - name: Set up code signing
-        # `ios_signing` above fetches a profile for ONE bundle id. Aura ships a
-        # share extension, which is a SECOND bundle id and needs its own App
-        # Store profile, or the archive cannot be signed. Build #36 reported
-        # this and still exited 0, so the miss only surfaced two steps later:
+        # `ios_signing` above fetches a profile for ONE bundle id, strictly.
+        # Aura ships a share extension, which is a SECOND bundle id needing its
+        # own App Store profile. Build #36 reported the miss and still exited 0,
+        # so it only surfaced two steps later as a codesign failure:
         #
         #   - Did not find provisioning profile matching bundle identifier
         #     "org.auraplatform.app.ShareExtension" for target "ShareExtension"
         #
-        # --create so a missing or invalidated profile is regenerated rather
-        # than failing the release. Enabling a capability on an App ID marks
-        # its existing profiles Invalid, which is exactly what App Groups did
-        # to the Runner profile, so this is not a one-off.
+        # NOT `fetch-signing-files`: that fetches certificates as well as
+        # profiles, with no option to skip them, and saving certificates needs
+        # --certificate-key, which managed signing does not expose to build
+        # scripts. Build #38 died on exactly that in under a second, having
+        # created nothing. The certificate is already in the keychain from the
+        # managed step -- that is how Runner signs -- so only the profile was
+        # ever missing, and only the profile is asked for here.
         #
-        # Then use-profiles writes ALL fetched profiles into the Xcode project
-        # and generates /Users/builder/export_options.plist for
-        # `flutter build ipa`.
+        # Idempotent: an ACTIVE profile of this name is downloaded and reused,
+        # and one is created only when there is none. (A profile left INVALID by
+        # a capability change would have to be deleted first -- Apple will not
+        # issue a second profile under a name already taken.)
         script: |
           set -eu
-          app-store-connect fetch-signing-files "$BUNDLE_ID.ShareExtension" \
-            --platform IOS --type IOS_APP_STORE --create
-          keychain add-certificates
+          EXT_BUNDLE_ID="$BUNDLE_ID.ShareExtension"
+          EXT_PROFILE_NAME="Aura ShareExtension App Store Profile"
+
+          if ! app-store-connect profiles list \
+                 --type IOS_APP_STORE --name "$EXT_PROFILE_NAME" \
+                 --state ACTIVE --save --json \
+               | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin) else 1)'; then
+            echo "No active $EXT_PROFILE_NAME yet; creating one."
+            BUNDLE_RESOURCE_ID=$(app-store-connect bundle-ids list \
+                --bundle-id-identifier "$EXT_BUNDLE_ID" --platform IOS \
+                --strict-match-identifier --json \
+              | python3 -c 'import json,sys; print(json.load(sys.stdin)[0]["id"])')
+            CERTIFICATE_IDS=$(app-store-connect certificates list \
+                --type IOS_DISTRIBUTION --json \
+              | python3 -c 'import json,sys; print(" ".join(c["id"] for c in json.load(sys.stdin)))')
+            app-store-connect profiles create "$BUNDLE_RESOURCE_ID" \
+              --certificate-ids $CERTIFICATE_IDS \
+              --type IOS_APP_STORE --name "$EXT_PROFILE_NAME" --save
+          fi
+
+          # Writes every downloaded profile into the Xcode project -- which is
+          # also what gives the extension target its DEVELOPMENT_TEAM and flips
+          # CODE_SIGN_STYLE to Manual, so "Signing for ShareExtension requires a
+          # development team" is a symptom of the missing profile rather than a
+          # separate defect -- and generates /Users/builder/export_options.plist
+          # for `flutter build ipa`.
           xcode-project use-profiles
       - name: Build signed IPA
         # Build name / number come from pubspec.yaml `version:` (currently 1.3.0+24).
