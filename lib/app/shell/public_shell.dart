@@ -119,8 +119,23 @@ class _PublicHeader extends ConsumerWidget {
                 horizontal: hPad, vertical: AuraSpace.s12),
             child: Row(
               children: [
-                AuraShellWordmark(
-                  onTap: () => context.go(isAuthed ? '/home' : '/public'),
+                // THE WORDMARK YIELDS BEFORE THE ACTIONS DO.
+                //
+                // Verified on the Windows client: at narrow supported widths
+                // the header ran past the window and took "Join" — and at the
+                // 1024 minimum, "Sign in" as well — off-screen. A signed-out
+                // person could not reach sign-in from the header at the
+                // smallest window the app permits.
+                //
+                // A Row overflows when its inflexible children exceed the
+                // width, and every child here was inflexible. The identity
+                // mark is the one thing that can afford to give: it shrinks,
+                // and the two actions that are the entire purpose of this bar
+                // for a signed-out visitor keep their room.
+                Flexible(
+                  child: AuraShellWordmark(
+                    onTap: () => context.go(isAuthed ? '/home' : '/public'),
+                  ),
                 ),
                 const Spacer(),
                 if (isAuthLoading) ...[

@@ -1,3 +1,5 @@
+import '../../core/ui/aura_window.dart';
+import '../../core/ui/nav_posture_preference.dart';
 import '../../features/conversation/data/conversation_unread_authority.dart';
 import '../../features/updates/providers.dart';
 import 'dart:async';
@@ -21,7 +23,6 @@ import '../../core/institutions/institution_paths.dart';
 import '../../core/media/aura_attachment_image.dart';
 import '../../core/ui/aura_design_system.dart';
 import '../../core/ui/aura_radius.dart';
-import '../../core/ui/aura_responsive.dart';
 import '../../core/ui/aura_space.dart';
 import '../../core/ui/surface/surface_composition.dart';
 import 'global_platform_shell.dart';
@@ -123,7 +124,6 @@ class MemberShell extends StatelessWidget {
           ))
       .toList(growable: false);
 
-  static const double _tabletBreakpoint = kTabletBreak; // 900
 
   /// Returns the index of the nav item that should be highlighted, or
   /// -1 when the current path is not a primary nav destination.
@@ -153,10 +153,26 @@ class MemberShell extends StatelessWidget {
     // navigates away mid-compose. Hide it while editing; it returns the
     // moment the keyboard dismisses.
     final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    // THE WINDOW, NOT THIS BOX. The shell is the outermost thing that
+    // spends width, so it must ask the window — measuring its own constraints
+    // was harmless here but taught every descendant to do the same, and for
+    // them it was not harmless.
+    final win = AuraWindow.of(context);
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final isTablet = width >= _tabletBreakpoint; // 900
+        // PERSISTENT NAVIGATION IS A DESKTOP FACT, NOT A 900 px FACT.
+        //
+        // This compared the width against 900, so an 880 px desktop window --
+        // the smallest the app allows — fell to the phone composition:
+        // hamburger, drawer, and a bottom bar across the foot of a desktop
+        // window. Nothing about that window is a phone.
+        //
+        // The window class already answers this: only a handset (< 600) has
+        // no room for a rail, and compact navigation costs 92 px, which an
+        // 880 px window can plainly afford. Mobile behaviour is unchanged
+        // because the handset threshold is unchanged.
+        final isTablet = win.isDesktopClass;
         // ACTIVE MEETING = focus surface: drop the persistent rail (and bottom
         // nav) to a hamburger drawer so the participant grid gets full width.
         final isMeetingFocus = isMeetingFocusPath(path);
@@ -223,6 +239,7 @@ class MemberShell extends StatelessWidget {
                           items: _items,
                           selectedIndex: selectedIndex,
                           currentPath: path,
+                          posture: win.navPosture,
                         ),
                       Expanded(child: child),
                     ],
@@ -304,13 +321,24 @@ class InstitutionShell extends ConsumerWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth;
+        // THE SAME WINDOW AUTHORITY THE MEMBER SHELL USES.
+        //
+        // This read `constraints.maxWidth` and compared it against 900/1200,
+        // which is how moving between a member surface and an institution
+        // workspace could change the shape of the shell itself -- one 288 px
+        // rail, one 232 px rail, appearing at different widths. Crossing from
+        // one to the other read as arriving in a different application.
+        //
+        // Both shells now answer from the window, and both take the posture
+        // the person chose, so the left edge does not move when the
+        // destination does.
+        final win = AuraWindow.of(context);
         // ACTIVE MEETING = focus surface: collapse the persistent rails to a
         // hamburger drawer so the participant grid takes the full width. The
         // drawer still opens the full institution navigation on demand.
         final isMeetingFocus = isMeetingFocusPath(path);
-        final isDesktop = width >= kDesktopBreak && !isMeetingFocus; // 1200
-        final isTablet = width >= kTabletBreak && !isMeetingFocus; // 900
+        final isDesktop = win.windowClass.canHoldSelection && !isMeetingFocus;
+        final isTablet = win.isDesktopClass && !isMeetingFocus;
 
         // Workspace navigation doctrine (institution workspace only):
         //   * DESKTOP / TABLET (≥900): the persistent LEFT RAIL is the single
@@ -323,6 +351,7 @@ class InstitutionShell extends ConsumerWidget {
         final showLeftRail = isTablet;
 
         final sideNav = _InstitutionSideNav(
+          posture: win.navPosture,
           currentPath: path,
           identity: identity,
           pendingJoinRequests: pendingJoinRequests,
@@ -871,12 +900,21 @@ class _MemberSideNav extends ConsumerWidget {
     required this.selectedIndex,
     required this.currentPath,
     this.inDrawer = false,
+    this.posture = AuraNavPosture.expanded,
   });
 
   final List<_NavItem> items;
   final int selectedIndex;
   final String currentPath;
   final bool inDrawer;
+
+  /// COMPACT IS THE DESKTOP DEFAULT.
+  ///
+  /// This rail was a flat 240 px whenever the window was at least 900 wide —
+  /// a quarter of a laptop window, permanently, for four destinations whose
+  /// icons are unambiguous. Navigation orients somebody; it does not own the
+  /// window. Expanded remains available and is remembered when chosen.
+  final AuraNavPosture posture;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -887,14 +925,21 @@ class _MemberSideNav extends ConsumerWidget {
     final conversationUnread = ref
         .watch(conversationUnreadProvider)
         .maybeWhen(data: (u) => u, orElse: () => const ConversationUnread.none());
+    final compact = !inDrawer && posture == AuraNavPosture.compact;
     final list = Padding(
-      padding: const EdgeInsets.fromLTRB(
-          AuraSpace.s12, AuraSpace.s8, AuraSpace.s12, AuraSpace.s20),
+      padding: EdgeInsets.fromLTRB(
+          compact ? AuraSpace.s8 : AuraSpace.s12,
+          AuraSpace.s8,
+          compact ? AuraSpace.s8 : AuraSpace.s12,
+          AuraSpace.s20),
       child: Column(
         children: [
           // Member identity at the top of the rail (it is no longer repeated
           // as a page hero on member surfaces).
-          const _MemberIdentityHeader(),
+          // Compact keeps the person's own face — it is the one thing in
+          // this rail that is not a destination — and drops the name block
+          // that needs the width.
+          _MemberIdentityHeader(compact: compact),
           const SizedBox(height: AuraSpace.s10),
 
           // PRIMARY DESTINATIONS ARE NOT REPEATED IN THE MOBILE DRAWER.
@@ -914,6 +959,7 @@ class _MemberSideNav extends ConsumerWidget {
               _MemberSideNavTile(
                 item: items[i],
                 selected: i == selectedIndex,
+                compact: compact,
                 badgeCount:
                     _memberBadgeFor(items[i], attention, conversationUnread),
                 onTap: () {
@@ -930,6 +976,14 @@ class _MemberSideNav extends ConsumerWidget {
           if (inDrawer) const _MemberDrawerSecondary(),
 
           const Spacer(),
+
+          // The choice, where the person can find it, and nowhere else in the
+          // product. Absent in the drawer, which is already a temporary
+          // surface, and on windows too narrow for expanded navigation to be
+          // an honest offer.
+          if (!inDrawer &&
+              MediaQuery.sizeOf(context).width >= kNavExpandedFloor)
+            _NavPostureToggle(compact: compact),
         ],
       ),
     );
@@ -940,13 +994,18 @@ class _MemberSideNav extends ConsumerWidget {
         child: SafeArea(child: list),
       );
     }
-    return Container(
-      width: 240,
+    return AnimatedContainer(
+      duration: AuraMotion.fast,
+      curve: Curves.easeOutCubic,
+      width: posture.railWidth,
       decoration: const BoxDecoration(
         gradient: AuraGradients.sideNav,
         border: Border(right: BorderSide(color: AuraSurface.divider)),
       ),
-      child: list,
+      // The width animates, so during the transition the children are briefly
+      // laid out against a width they were not built for. Clipping is what
+      // keeps that from being a frame of overflow stripes.
+      child: ClipRect(child: list),
     );
   }
 }
@@ -1224,7 +1283,21 @@ class _DrawerEntry extends StatelessWidget {
 }
 
 class _MemberIdentityHeader extends ConsumerWidget {
-  const _MemberIdentityHeader();
+  const _MemberIdentityHeader({this.compact = false});
+
+  /// WHERE THE MEMBER IDENTITY BLOCK GOES. Once, for both postures.
+  ///
+  /// The compact avatar and the expanded name block are the same affordance
+  /// at two sizes, so they must not be able to disagree about their
+  /// destination — and the C3 literal ratchet is right that a second copy of
+  /// a route string is how that starts.
+  void _openProfile(BuildContext context) => context.go('/me');
+
+  /// In compact posture the rail is 76 px: the avatar is kept, because it is
+  /// the one element here that is not a destination and it confirms WHO is
+  /// signed in, and the name/role/affiliation block is dropped rather than
+  /// squeezed into three ellipsised characters.
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1248,13 +1321,49 @@ class _MemberIdentityHeader extends ConsumerWidget {
     // institution appear briefly as though they did not.
     final affiliationsResolved = ref.watch(myAffiliationsResolvedProvider);
 
+    if (compact) {
+      return Tooltip(
+        message: name.isEmpty ? 'Your profile' : name,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _openProfile(context),
+            borderRadius: BorderRadius.circular(AuraRadius.r14),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AuraSpace.s8),
+              child: Center(
+                child: Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: AuraSurface.accentSoft,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        color: AuraSurface.accent.withValues(alpha: 0.35)),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: avatarUrl.isNotEmpty
+                      ? AuraAttachmentImage(
+                          url: avatarUrl,
+                          fit: BoxFit.cover,
+                          errorWidget: (_) => _MemberAvatarFallback(initials),
+                        )
+                      : _MemberAvatarFallback(initials),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => context.go('/me'),
+        onTap: () => _openProfile(context),
         borderRadius: BorderRadius.circular(AuraRadius.r14),
         child: Padding(
           padding: const EdgeInsets.symmetric(
@@ -1673,6 +1782,7 @@ class _MemberSideNavTile extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.badgeCount = 0,
+    this.compact = false,
   });
 
   final _NavItem item;
@@ -1683,12 +1793,15 @@ class _MemberSideNavTile extends StatelessWidget {
   /// destination's owning module (0 = no badge).
   final int badgeCount;
 
+  /// Icon and a short caption, rather than icon and a full-width label row.
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
-
-
     final iconData = selected ? item.selectedIcon : item.icon;
     final fgColor = selected ? AuraSurface.ink : AuraSurface.muted;
+
+    if (compact) return _buildCompact(context, iconData, fgColor);
 
     return Semantics(
       button: true,
@@ -1733,6 +1846,141 @@ class _MemberSideNavTile extends StatelessWidget {
                   _NavCountBadge(count: badgeCount),
                 ],
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// THE COMPACT TILE.
+  ///
+  /// Icon over a small caption rather than icon-only: four destinations named
+  /// Home, Create, Messages and Discover are not self-evident from glyphs
+  /// alone, and a tooltip is not an answer for somebody scanning. The caption
+  /// costs eight pixels of height and removes the guessing.
+  Widget _buildCompact(BuildContext context, IconData iconData, Color fg) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: item.label,
+      child: Tooltip(
+        message: item.label,
+        waitDuration: const Duration(milliseconds: 600),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(AuraRadius.r14),
+            child: AnimatedContainer(
+              duration: AuraMotion.fast,
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: AuraSpace.s8),
+              decoration: BoxDecoration(
+                color: selected ? AuraSurface.accentSoft : Colors.transparent,
+                borderRadius: BorderRadius.circular(AuraRadius.r14),
+                border: Border.all(
+                  color: selected
+                      ? AuraSurface.accent.withValues(alpha: 0.25)
+                      : Colors.transparent,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // The badge rides the icon here. In the expanded tile it
+                  // sits at the end of the label row; there is no room for
+                  // that, and a count with nothing beside it reads as noise.
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Icon(iconData, size: AuraIconSize.md, color: fg),
+                      if (badgeCount > 0)
+                        Positioned(
+                          right: -10,
+                          top: -6,
+                          child: _NavCountBadge(count: badgeCount),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: AuraSpace.s4),
+                  // A CAPTION THAT SHRINKS RATHER THAN TRUNCATES.
+                  //
+                  // Ellipsis was the first attempt and it was worse than
+                  // nothing: "Messa…" and "Disco…" ask somebody to decode a
+                  // word instead of reading it, which is exactly what a label
+                  // exists to prevent. Widening the rail to fit the longest
+                  // label would let one word decide how much of every window
+                  // navigation takes.
+                  //
+                  // scaleDown only ever makes text smaller, and only when it
+                  // has to, so short labels are unaffected and a long one
+                  // stays whole.
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      item.label,
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
+                      style: AuraText.micro.copyWith(
+                        fontWeight:
+                            selected ? FontWeight.w700 : FontWeight.w500,
+                        color: fg,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The one control that changes navigation posture.
+class _NavPostureToggle extends ConsumerWidget {
+  const _NavPostureToggle({required this.compact});
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final label = compact ? 'Expand navigation' : 'Collapse navigation';
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        button: true,
+        label: label,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => ref.read(navExpandedProvider.notifier).toggle(),
+            borderRadius: BorderRadius.circular(AuraRadius.r14),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AuraSpace.s8, vertical: AuraSpace.s8),
+              child: Row(
+                mainAxisAlignment: compact
+                    ? MainAxisAlignment.center
+                    : MainAxisAlignment.start,
+                children: [
+                  Icon(
+                    compact
+                        ? Icons.keyboard_double_arrow_right_rounded
+                        : Icons.keyboard_double_arrow_left_rounded,
+                    size: AuraIconSize.sm,
+                    color: AuraSurface.faint,
+                  ),
+                  if (!compact) ...[
+                    const SizedBox(width: AuraSpace.s10),
+                    Text('Collapse',
+                        style: AuraText.small.copyWith(
+                            color: AuraSurface.faint)),
+                  ],
+                ],
+              ),
             ),
           ),
         ),
@@ -2101,7 +2349,12 @@ class _InstitutionSideNav extends StatelessWidget {
     this.pendingJoinRequests = 0,
     this.pendingInvites = 0,
     this.inDrawer = false,
+    this.posture = AuraNavPosture.expanded,
   });
+
+  /// Matches the member rail's posture so the shell's left edge is the same
+  /// width on both sides of a move between them.
+  final AuraNavPosture posture;
 
   final String currentPath;
   final InstitutionIdentity? identity;
@@ -2120,37 +2373,54 @@ class _InstitutionSideNav extends StatelessWidget {
       pendingInvites: pendingInvites,
     );
 
+    final compact = !inDrawer && posture == AuraNavPosture.compact;
+
     final list = ListView(
       padding: const EdgeInsets.fromLTRB(0, AuraSpace.s8, 0, AuraSpace.s20),
       children: [
         // Institution identity now lives at the top of the rail (it left the
         // old context bar). It is the workspace's anchor on every screen.
-        _RailIdentityHeader(identity: identity),
+        _RailIdentityHeader(identity: identity, compact: compact),
         const SizedBox(height: AuraSpace.s4),
         for (final entry in entries) ...[
           if (entry.sectionLabel != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AuraSpace.s20,
-                AuraSpace.s12,
-                AuraSpace.s12,
-                AuraSpace.s4,
-              ),
-              child: Text(
-                entry.sectionLabel!,
-                style: AuraText.micro.copyWith(
-                  color: _institutionAccent.withValues(alpha: 0.6),
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2,
-                  fontSize: 9.5,
-                ),
-              ),
-            ),
+            // A SECTION STILL SEPARATES, EVEN WITHOUT ROOM TO NAME ITSELF.
+            //
+            // WORKSPACE / ADMIN / GOVERNANCE / IDENTITY are real groupings and
+            // dropping them entirely would turn the compact rail into an
+            // undifferentiated stack of glyphs. A rule keeps the grouping
+            // legible at a width that cannot hold the word.
+            compact
+                ? const Padding(
+                    padding: EdgeInsets.fromLTRB(
+                        AuraSpace.s20, AuraSpace.s12, AuraSpace.s20,
+                        AuraSpace.s6),
+                    child: Divider(
+                        height: 1, thickness: 1, color: Color(0x1AFFFFFF)),
+                  )
+                : Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AuraSpace.s20,
+                      AuraSpace.s12,
+                      AuraSpace.s12,
+                      AuraSpace.s4,
+                    ),
+                    child: Text(
+                      entry.sectionLabel!,
+                      style: AuraText.micro.copyWith(
+                        color: _institutionAccent.withValues(alpha: 0.6),
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.2,
+                        fontSize: 9.5,
+                      ),
+                    ),
+                  ),
           _InstitutionSideNavTile(
             entry: entry,
             selected: entry.isSelected(currentPath, identity),
             identity: identity,
             currentPath: currentPath,
+            compact: compact,
             onNavigate:
                 inDrawer ? () => Navigator.of(context).maybePop() : null,
           ),
@@ -2167,27 +2437,65 @@ class _InstitutionSideNav extends StatelessWidget {
       );
     }
 
-    return Container(
-      width: 232,
+    return AnimatedContainer(
+      duration: AuraMotion.fast,
+      curve: Curves.easeOutCubic,
+      // 232 was this rail's own number, unrelated to the member rail's 288.
+      // Two shells, two widths, one product. Expanded keeps the room this
+      // workspace's longer section names need; compact matches the member
+      // rail exactly.
+      width: posture == AuraNavPosture.compact
+          ? AuraNavPosture.compact.railWidth
+          : 232,
       decoration: const BoxDecoration(
         gradient: _institutionNavGradient,
         border: Border(right: BorderSide(color: Color(0x14FFFFFF))),
       ),
-      child: list,
+      child: ClipRect(child: list),
     );
   }
 }
 
 /// Compact institution identity block shown at the top of the rail / drawer.
 class _RailIdentityHeader extends StatelessWidget {
-  const _RailIdentityHeader({required this.identity});
+  const _RailIdentityHeader({required this.identity, this.compact = false});
 
   final InstitutionIdentity? identity;
+
+  /// The institution mark alone. Which institution this is remains the most
+  /// important thing in the rail, so it is the one element compact keeps.
+  final bool compact;
+
+  /// One destination for the institution identity block, both postures.
+  /// The C3 literal ratchet caught the second copy the compact branch added,
+  /// which is exactly what it is for: two affordances that are the same
+  /// affordance must not be able to point at different places.
+  void _openInstitutionHome(BuildContext context) =>
+      context.go('/institution/dashboard');
 
   @override
   Widget build(BuildContext context) {
     final name = identity?.name ?? '';
     final verified = identity?.isVerified ?? false;
+    if (compact) {
+      return Tooltip(
+        message: name.isEmpty ? 'Institution' : name,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AuraSpace.s8),
+          child: GestureDetector(
+            onTap: () => _openInstitutionHome(context),
+            behavior: HitTestBehavior.opaque,
+            child: Center(
+              child: _InstitutionAvatarSmall(
+                name: name,
+                logoUrl: identity?.logoUrl,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         AuraSpace.s16,
@@ -2196,7 +2504,7 @@ class _RailIdentityHeader extends StatelessWidget {
         AuraSpace.s8,
       ),
       child: GestureDetector(
-        onTap: () => context.go('/institution/dashboard'),
+        onTap: () => _openInstitutionHome(context),
         behavior: HitTestBehavior.opaque,
         child: Row(
           children: [
@@ -2237,7 +2545,13 @@ class _InstitutionSideNavTile extends StatelessWidget {
     required this.identity,
     required this.currentPath,
     this.onNavigate,
+    this.compact = false,
   });
+
+  /// Icon and tooltip only. The workspace taxonomy is deep, so the compact
+  /// rail keeps the section RULES (see the list above) to preserve grouping
+  /// where the words no longer fit.
+  final bool compact;
 
   final InstWorkspaceEntry entry;
   final bool selected;
@@ -2270,16 +2584,20 @@ class _InstitutionSideNavTile extends StatelessWidget {
 
     return Semantics(
       button: !isDisabled,
+      selected: selected,
       label: entry.label,
-      child: MouseRegion(
+      child: Tooltip(
+        message: compact ? entry.label : '',
+        waitDuration: const Duration(milliseconds: 600),
+        child: MouseRegion(
         cursor:
             isDisabled ? SystemMouseCursors.basic : SystemMouseCursors.click,
         child: GestureDetector(
           onTap: isDisabled ? null : onTap,
           child: AnimatedContainer(
             duration: AuraMotion.fast,
-            margin: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s8,
+            margin: EdgeInsets.symmetric(
+              horizontal: compact ? AuraSpace.s6 : AuraSpace.s8,
               vertical: 1,
             ),
             decoration: BoxDecoration(
@@ -2306,18 +2624,22 @@ class _InstitutionSideNavTile extends StatelessWidget {
                 ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AuraSpace.s12,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: compact ? AuraSpace.s6 : AuraSpace.s12,
                       vertical: AuraSpace.s8,
                     ),
                     child: Row(
+                      mainAxisAlignment: compact
+                          ? MainAxisAlignment.center
+                          : MainAxisAlignment.start,
                       children: [
                         Icon(
                           selected ? entry.selectedIcon : entry.icon,
                           size: AuraIconSize.md,
                           color: iconColor,
                         ),
-                        const SizedBox(width: AuraSpace.s10),
+                        if (!compact) const SizedBox(width: AuraSpace.s10),
+                        if (!compact)
                         Expanded(
                           child: Text(
                             entry.label,
@@ -2331,11 +2653,15 @@ class _InstitutionSideNavTile extends StatelessWidget {
                             ),
                           ),
                         ),
+                        // A count still reads at 92 px; a sentence does
+                        // not, and the tooltip already carries the name.
                         if (!isDisabled && entry.badge > 0) ...[
-                          const SizedBox(width: AuraSpace.s6),
+                          if (!compact) const SizedBox(width: AuraSpace.s6),
                           _NavCountBadge(count: entry.badge),
                         ],
-                        if (isDisabled && entry.disabledReason != null) ...[
+                        if (!compact &&
+                            isDisabled &&
+                            entry.disabledReason != null) ...[
                           const SizedBox(width: AuraSpace.s6),
                           Text(
                             entry.disabledReason!,
@@ -2354,6 +2680,7 @@ class _InstitutionSideNavTile extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }

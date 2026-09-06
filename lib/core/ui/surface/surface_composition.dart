@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../aura_radius.dart';
 import '../aura_responsive.dart';
+import '../aura_window.dart';
 import '../aura_space.dart';
 import '../aura_surface.dart';
 import '../aura_text.dart';
@@ -132,7 +133,7 @@ enum AuraSurfaceDensity {
 /// Resolved composition behavior for a single surface type.
 class AuraSurfacePolicy {
   const AuraSurfacePolicy({
-    required this.maxContentWidth,
+    required this.measure,
     required this.composition,
     required this.leftRailVisibility,
     required this.contextRailVisibility,
@@ -140,10 +141,14 @@ class AuraSurfacePolicy {
     required this.bodyHorizontalPadding,
   });
 
-  /// Cap applied to the center surface's width. The scaffold centers
-  /// the center column inside this cap, leaving any extra room for rails
-  /// or intentional gutters.
-  final double maxContentWidth;
+  /// WHAT KIND OF CONTENT this surface holds.
+  ///
+  /// Was a hard `maxContentWidth` cap. A cap is right for a document and
+  /// wrong for a workspace: applied to the member feed it turned every extra
+  /// pixel of a wide window into gutter, measured at 296 px of dead margin on
+  /// a 2011 px Windows window. The measure is resolved against the room
+  /// actually available -- see `auraMeasureWidth`.
+  final AuraMeasure measure;
 
   final AuraSurfaceComposition composition;
   final AuraRailVisibility leftRailVisibility;
@@ -160,7 +165,7 @@ class AuraSurfacePolicy {
     switch (type) {
       case AuraSurfaceType.discourseFeed:
         return const AuraSurfacePolicy(
-          maxContentWidth: kFeedWidth,
+          measure: AuraMeasure.feed,
           composition: AuraSurfaceComposition.multiZone,
           leftRailVisibility: AuraRailVisibility.never,
           contextRailVisibility: AuraRailVisibility.desktopOnly,
@@ -170,7 +175,7 @@ class AuraSurfacePolicy {
         );
       case AuraSurfaceType.institutionWorkspace:
         return const AuraSurfacePolicy(
-          maxContentWidth: kWorkspaceWidth,
+          measure: AuraMeasure.working,
           composition: AuraSurfaceComposition.multiZone,
           // The institution left rail is the single nav home on tablet too.
           leftRailVisibility: AuraRailVisibility.tabletUp,
@@ -181,7 +186,7 @@ class AuraSurfacePolicy {
         );
       case AuraSurfaceType.workspace:
         return const AuraSurfacePolicy(
-          maxContentWidth: kWorkspaceWidth,
+          measure: AuraMeasure.working,
           composition: AuraSurfaceComposition.multiZone,
           leftRailVisibility: AuraRailVisibility.never,
           contextRailVisibility: AuraRailVisibility.desktopOnly,
@@ -191,7 +196,7 @@ class AuraSurfacePolicy {
         );
       case AuraSurfaceType.adminControl:
         return const AuraSurfacePolicy(
-          maxContentWidth: kWorkspaceWidth,
+          measure: AuraMeasure.working,
           composition: AuraSurfaceComposition.multiZone,
           leftRailVisibility: AuraRailVisibility.desktopOnly,
           contextRailVisibility: AuraRailVisibility.desktopOnly,
@@ -201,7 +206,10 @@ class AuraSurfacePolicy {
         );
       case AuraSurfaceType.messaging:
         return const AuraSurfacePolicy(
-          maxContentWidth: kFeedWidth,
+          // A conversation is WORK, not a feed column. It was capped at feed
+          // width, which is why a 2000 px window showed a 1068 px thread with
+          // 900 px of nothing around it.
+          measure: AuraMeasure.working,
           composition: AuraSurfaceComposition.multiZone,
           leftRailVisibility: AuraRailVisibility.desktopOnly,
           contextRailVisibility: AuraRailVisibility.never,
@@ -210,7 +218,7 @@ class AuraSurfacePolicy {
         );
       case AuraSurfaceType.profile:
         return const AuraSurfacePolicy(
-          maxContentWidth: kFeedWidth,
+          measure: AuraMeasure.feed,
           composition: AuraSurfaceComposition.singleColumn,
           leftRailVisibility: AuraRailVisibility.never,
           contextRailVisibility: AuraRailVisibility.never,
@@ -220,7 +228,7 @@ class AuraSurfacePolicy {
         );
       case AuraSurfaceType.publicMarketing:
         return const AuraSurfacePolicy(
-          maxContentWidth: kHeroWidth,
+          measure: AuraMeasure.hero,
           composition: AuraSurfaceComposition.singleColumn,
           leftRailVisibility: AuraRailVisibility.never,
           contextRailVisibility: AuraRailVisibility.never,
@@ -230,7 +238,7 @@ class AuraSurfacePolicy {
         );
       case AuraSurfaceType.readingDocument:
         return const AuraSurfacePolicy(
-          maxContentWidth: kReadWidth,
+          measure: AuraMeasure.reading,
           composition: AuraSurfaceComposition.singleColumn,
           leftRailVisibility: AuraRailVisibility.never,
           contextRailVisibility: AuraRailVisibility.never,
@@ -240,7 +248,7 @@ class AuraSurfacePolicy {
         );
       case AuraSurfaceType.realtime:
         return const AuraSurfacePolicy(
-          maxContentWidth: double.infinity,
+          measure: AuraMeasure.full,
           composition: AuraSurfaceComposition.fullBleed,
           leftRailVisibility: AuraRailVisibility.never,
           contextRailVisibility: AuraRailVisibility.never,
@@ -249,7 +257,7 @@ class AuraSurfacePolicy {
         );
       case AuraSurfaceType.settings:
         return const AuraSurfacePolicy(
-          maxContentWidth: kWorkspaceWidth,
+          measure: AuraMeasure.working,
           composition: AuraSurfaceComposition.multiZone,
           leftRailVisibility: AuraRailVisibility.desktopOnly,
           contextRailVisibility: AuraRailVisibility.never,
@@ -259,7 +267,7 @@ class AuraSurfacePolicy {
         );
       case AuraSurfaceType.utility:
         return const AuraSurfacePolicy(
-          maxContentWidth: kFormWidth,
+          measure: AuraMeasure.form,
           composition: AuraSurfaceComposition.singleColumn,
           leftRailVisibility: AuraRailVisibility.never,
           contextRailVisibility: AuraRailVisibility.never,
@@ -336,16 +344,22 @@ class AuraSurfaceScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolved = policy ?? AuraSurfacePolicy.forType(type);
 
+    // RAIL DECISIONS COME FROM THE WINDOW, NOT FROM THIS BOX.
+    //
+    // They used to come from `constraints.maxWidth` here, which is the room
+    // left AFTER the shell's navigation had taken its share. A 1400 px window
+    // therefore measured 1112 at this point and concluded it was a tablet --
+    // so the contextual rail vanished on a window plainly wide enough for it,
+    // and reappeared at 1600. The window is one fact; asking it once is the
+    // whole point of AuraWindow.
+    final win = AuraWindow.of(context);
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final isDesktop = width >= kDesktopBreak;
-        final isTablet = width >= kTabletBreak;
-
-        final showLeftRail = leftRail != null &&
-            _allowed(resolved.leftRailVisibility, isDesktop, isTablet);
-        final showContextRail = contextRail != null &&
-            _allowed(resolved.contextRailVisibility, isDesktop, isTablet);
+        final showLeftRail =
+            leftRail != null && _allowed(resolved.leftRailVisibility, win);
+        final showContextRail =
+            contextRail != null && _allowed(resolved.contextRailVisibility, win);
 
         return Column(
           children: [
@@ -357,11 +371,10 @@ class AuraSurfaceScaffold extends StatelessWidget {
                   if (showLeftRail) leftRail!,
                   Expanded(
                     child: _CenterColumn(
-                      maxWidth: resolved.maxContentWidth,
+                      measure: resolved.measure,
                       padding: _adaptiveBodyPadding(
                         resolved.bodyHorizontalPadding,
-                        isDesktop,
-                        isTablet,
+                        win,
                       ),
                       composition: resolved.composition,
                       child: center,
@@ -378,59 +391,93 @@ class AuraSurfaceScaffold extends StatelessWidget {
     );
   }
 
-  static bool _allowed(AuraRailVisibility v, bool isDesktop, bool isTablet) {
+  static bool _allowed(AuraRailVisibility v, AuraWindowInfo win) {
     switch (v) {
       case AuraRailVisibility.always:
         return true;
       case AuraRailVisibility.desktopOnly:
-        return isDesktop;
+        // A CONTEXTUAL INSPECTOR IS THE LAST THING TO EARN ROOM.
+        // It appears only where it can sit beside the work without taking
+        // from it -- never on a laptop window, where the work needs all of it.
+        return win.windowClass.canHoldInspector;
       case AuraRailVisibility.tabletUp:
-        return isTablet;
+        // Structural navigation for a surface that has no other nav home.
+        return win.windowClass.canHoldSelection;
       case AuraRailVisibility.never:
         return false;
     }
   }
 
-  /// Slight horizontal padding shrink on tablet/mobile so the center
-  /// uses the full narrow viewport.
+  /// Page padding for the work column, by window class.
+  ///
+  /// The gutter model in `auraMeasureWidth` already keeps content off the
+  /// window edge; this is the surface's own inner breathing room on top of it.
   static EdgeInsets _adaptiveBodyPadding(
     EdgeInsets base,
-    bool isDesktop,
-    bool isTablet,
+    AuraWindowInfo win,
   ) {
-    if (isDesktop) return base;
-    if (isTablet) {
-      return EdgeInsets.symmetric(
-        horizontal: (base.left * 0.75).clamp(AuraSpace.s12, base.left),
-      );
+    switch (win.windowClass) {
+      case AuraWindowClass.handset:
+        return base * 0.5;
+      case AuraWindowClass.laptop:
+        return base * 0.75;
+      case AuraWindowClass.desktop:
+      case AuraWindowClass.wide:
+        return base;
     }
-    return const EdgeInsets.symmetric(horizontal: AuraSpace.s12);
   }
+
 }
 
 class _CenterColumn extends StatelessWidget {
   const _CenterColumn({
-    required this.maxWidth,
+    required this.measure,
     required this.padding,
     required this.composition,
     required this.child,
   });
 
-  final double maxWidth;
+  final AuraMeasure measure;
   final EdgeInsets padding;
   final AuraSurfaceComposition composition;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    if (composition == AuraSurfaceComposition.fullBleed) {
-      return child;
-    }
-    return Center(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth),
-        child: Padding(padding: padding, child: child),
-      ),
+    if (composition == AuraSurfaceComposition.fullBleed) return child;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Resolved against the room THIS column was given, which is correct:
+        // the rails have already taken theirs, and what is left is genuinely
+        // what the work has to live in. What changed is that the answer grows
+        // with the room instead of stopping at a fixed number.
+        // AN UNBOUNDED WIDTH IS NOT A WIDE ONE.
+        //
+        // Some ancestors hand this column loose or unbounded horizontal
+        // constraints -- a Stack, a scroll view, a page shell told that the
+        // child decides its own width. Resolving a measure against infinity
+        // produced the measure's own upper bound, which then overflowed the
+        // real window: at a 1400 px window the feed ran off the right edge
+        // with no gutter while keeping one on the left.
+        //
+        // The window is the truthful fallback, because it is the only width
+        // that is always real.
+        final available = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : AuraWindow.of(context).workWidth;
+        // Margin is what is left over when the cap is smaller than the
+        // room. Centring supplies it symmetrically, and the surface's own
+        // body padding supplies the inner breathing room. Nothing here takes
+        // width away from a screen that has none to spare.
+        final width = auraMeasureWidth(measure, available);
+        return Center(
+          child: SizedBox(
+            width: width,
+            child: Padding(padding: padding, child: child),
+          ),
+        );
+      },
     );
   }
 }
@@ -488,10 +535,19 @@ class AuraContextRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final viewportWidth = MediaQuery.of(context).size.width;
-    final resolvedWidth = width ?? widthFor(viewportWidth);
+    // NO MODULES, NO WIDTH.
+    //
+    // This returned `SizedBox(width: resolvedWidth)` -- an empty pane still
+    // spending 360 px because a provider might eventually have something to
+    // say. On a quiet platform that is the ordinary case, and it is the
+    // single largest piece of the wasted desktop estate the founder observed.
+    // An inspector with nothing in it is not a narrow inspector; it is not an
+    // inspector.
+    if (modules.isEmpty) return const SizedBox.shrink();
+
+    final win = AuraWindow.of(context);
+    final resolvedWidth = width ?? widthFor(win.width);
     final spacing = spacingFor(resolvedWidth);
-    if (modules.isEmpty) return SizedBox(width: resolvedWidth);
     return Container(
       width: resolvedWidth,
       decoration: const BoxDecoration(

@@ -1,3 +1,5 @@
+import '../core/ui/aura_window.dart';
+import '../core/ui/nav_posture_preference.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -817,12 +819,42 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
             // inside UpdateGate because a pending release takes precedence
             // over restoring a session for a client that is about to be
             // replaced.
-            return ThreadCallLifecycleHost(
-              child: OrphanedSessionBanner(
-                child: UpdateGate(
-                  child: BootGate(child: child ?? const SizedBox.shrink()),
-                ),
-              ),
+            // THE WINDOW IS RESOLVED HERE, ONCE, FOR THE WHOLE APP.
+            //
+            // Every shell and surface used to run its own LayoutBuilder and
+            // compare whatever width it was handed against the breakpoints.
+            // Nested, those measurements contradicted each other: a 1400 px
+            // window was DESKTOP to the shell and TABLET to the surface
+            // inside it, because the shell had already spent 288 px. Asking
+            // the window once, above the router, is the only arrangement in
+            // which the answer cannot depend on who is asking.
+            //
+            // Above BootGate on purpose, so the sign-in and restore screens
+            // are composed by the same authority as everything else.
+            return Consumer(
+              builder: (context, ref, _) {
+                final expanded = ref.watch(navExpandedProvider);
+                return AuraWindow(
+                  width: MediaQuery.sizeOf(context).width,
+                  height: MediaQuery.sizeOf(context).height,
+                  // The SHELL decides whether persistent navigation exists at
+                  // all (public surfaces have none); this is the posture it
+                  // takes when it does.
+                  navPosture: resolveNavPosture(
+                    windowWidth: MediaQuery.sizeOf(context).width,
+                    expandedPreferred: expanded,
+                    hasPersistentNav: true,
+                  ),
+                  child: ThreadCallLifecycleHost(
+                    child: OrphanedSessionBanner(
+                      child: UpdateGate(
+                        child: BootGate(
+                            child: child ?? const SizedBox.shrink()),
+                      ),
+                    ),
+                  ),
+                );
+              },
             );
           },
         ),

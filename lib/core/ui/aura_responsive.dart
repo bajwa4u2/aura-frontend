@@ -79,6 +79,81 @@ const double kFormWidth = 480;
 const double kMaxContentWidth = kFeedWidth;
 
 // ─────────────────────────────────────────────────────────────────────────────
+// MEASURE — how much of the available room a surface should actually take.
+//
+// The constants above are CAPS, and a cap is the right shape for reading and
+// the wrong shape for working. Applied to a work surface it turns every extra
+// pixel of a desktop window into gutter: measured on Windows, a 2011 px window
+// gave the member feed 1068 px and spent 296 px on empty margins either side,
+// and widening the window further changed only the margins.
+//
+// So a surface now declares WHAT KIND OF CONTENT it holds, and the measure is
+// resolved against the room actually available.
+//
+//   reading  a document. Line length is a readability fact, not a layout
+//            preference, and an 1800 px line is unreadable however much room
+//            there is. Stays at kReadWidth.
+//   feed     a timeline of authored items. Grows, but stays a column — a feed
+//            card 1600 px wide reads as a table row, not as a post.
+//   working  a workspace, a conversation, an operational surface. Takes the
+//            room it is given, less honest margins.
+//   form     a stack of inputs. Narrow is correct.
+//   hero     public landing composition. Grows, generously.
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum AuraMeasure { reading, feed, working, form, hero, full }
+
+/// Comfortable page margin at a given width. Wider windows earn more.
+double auraGutterFor(double available) {
+  if (available < kMobileBreak) return AuraSpace.s16;
+  if (available < 1040) return AuraSpace.s24;
+  if (available < 1480) return AuraSpace.s32;
+  // No larger token exists; s32 doubled is the widest honest margin.
+  return AuraSpace.s32 + AuraSpace.s8;
+}
+
+/// The widest a surface of [measure] may be, regardless of the room.
+///
+/// A CAP, not a target. Reading and form measures are readability facts;
+/// feed, hero and working are the points past which a column stops reading as
+/// what it is. `full` declines to have an opinion.
+double auraMeasureCap(AuraMeasure measure) {
+  switch (measure) {
+    case AuraMeasure.form:
+      return kFormWidth;
+    case AuraMeasure.reading:
+      return kReadWidth;
+    case AuraMeasure.feed:
+      return 1320;
+    case AuraMeasure.hero:
+      return 1560;
+    case AuraMeasure.working:
+      return 1720;
+    case AuraMeasure.full:
+      return double.infinity;
+  }
+}
+
+/// The width a surface of [measure] should occupy inside [available].
+///
+/// DELIBERATELY `min(cap, available)` AND NOTHING ELSE.
+///
+/// An earlier version subtracted a gutter here so wide windows would always
+/// show a margin. That silently made every NARROW surface 32-64 px thinner
+/// than it had been, and a Row on the auth screen that had just fitted began
+/// overflowing by 99 px — caught by three navigation contract tests, on
+/// mobile-sized surfaces, from a change made for desktop.
+///
+/// Margin is what is LEFT OVER when the cap is smaller than the room, and the
+/// surface's own body padding supplies the rest. A layout rule that takes
+/// width away from a small screen to decorate a large one is the wrong trade.
+double auraMeasureWidth(AuraMeasure measure, double available) {
+  if (available <= 0) return 0;
+  final cap = auraMeasureCap(measure);
+  return available < cap ? available : cap;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // BREAKPOINT HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 

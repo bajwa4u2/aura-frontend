@@ -705,14 +705,31 @@ class _LoginFormCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AuraSpace.s10),
-              Row(
+              // TWO LABELLED ACTIONS THAT WRAP RATHER THAN OVERFLOW.
+              //
+              // This was a Row with a Spacer between them. A Row cannot give
+              // way: below roughly 580 px the two buttons simply ran past the
+              // edge, and the only reason it had not been seen is that the
+              // page happened to be wider than that everywhere it was looked
+              // at. A few pixels of width change anywhere upstream turned it
+              // into a 99 px overflow.
+              //
+              // Wrap keeps the same arrangement whenever there is room —
+              // spaceBetween puts one at each end exactly as the Spacer did —
+              // and stacks them when there is not. Neither action can be lost
+              // off an edge again; "Forgot password" and "Create account" are
+              // the two ways out of a sign-in nobody can complete.
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                runAlignment: WrapAlignment.start,
+                spacing: AuraSpace.s8,
+                runSpacing: AuraSpace.s8,
                 children: [
                   AuraGhostButton(
                     label: 'Forgot password',
                     onPressed: busy ? null : onForgotPassword,
                     icon: Icons.lock_reset_rounded,
                   ),
-                  const Spacer(),
                   AuraSecondaryButton(
                     label: 'Create account',
                     onPressed: busy ? null : onCreateAccount,

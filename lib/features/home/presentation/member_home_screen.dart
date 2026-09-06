@@ -213,16 +213,22 @@ class _MemberHomeScreenState extends ConsumerState<MemberHomeScreen> {
     // grows to 1200; ≥1680 grows to 1280 (matches workspace width).
     return AuraScaffold(
       showHeader: false,
+      // The surface below composes its own feed column and contextual rail
+      // against the window. This scaffold's default 920 px cap would sit
+      // above that and squeeze both.
+      maxWidth: AuraScaffold.childDecidesWidth,
       body: Stack(
         children: [
           RefreshIndicator(
         onRefresh: _refresh,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final policy = _adaptiveDiscourseFeedPolicy(constraints.maxWidth);
+        child: Builder(
+          builder: (context) {
+            // No policy override any more. It existed to lift a hard width
+            // cap at 1440 and 1680 -- two discontinuities where a few pixels
+            // of resize moved the column by 100. `AuraMeasure.feed` grows
+            // continuously with the room instead.
             return AuraSurfaceScaffold(
               type: AuraSurfaceType.discourseFeed,
-              policy: policy,
               center: ListView(
                 padding: const EdgeInsets.fromLTRB(
                   0,
@@ -335,32 +341,6 @@ class _MemberHomeScreenState extends ConsumerState<MemberHomeScreen> {
   }
 }
 
-/// Adaptive policy override for the member discourse feed. Standard
-/// desktop keeps `kFeedWidth = 1100` for reading comfort; wider
-/// viewports lift the cap so the center column doesn't waste the
-/// horizontal canvas to dead margins next to the right rail.
-///
-/// The width override is the only field that changes — every other
-/// field comes from `AuraSurfacePolicy.forType(discourseFeed)`, so we
-/// don't fork the surface contract.
-AuraSurfacePolicy _adaptiveDiscourseFeedPolicy(double viewportWidth) {
-  final base = AuraSurfacePolicy.forType(AuraSurfaceType.discourseFeed);
-  double width = base.maxContentWidth;
-  if (viewportWidth >= 1680) {
-    width = 1280;
-  } else if (viewportWidth >= 1440) {
-    width = 1200;
-  }
-  if (width == base.maxContentWidth) return base;
-  return AuraSurfacePolicy(
-    maxContentWidth: width,
-    composition: base.composition,
-    leftRailVisibility: base.leftRailVisibility,
-    contextRailVisibility: base.contextRailVisibility,
-    density: base.density,
-    bodyHorizontalPadding: base.bodyHorizontalPadding,
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PINNED ANNOUNCEMENT BANNER

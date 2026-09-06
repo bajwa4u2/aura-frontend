@@ -378,12 +378,20 @@ class ArticleEditorialCard extends StatelessWidget {
 
   final DiscoveredArticle article;
 
-  /// A FIXED EDITORIAL ROW HEIGHT, for two reasons. `stretch` needs a bounded
-  /// height and this card renders inside unbounded-height columns, so without
-  /// it the layout asserts. It also gives the Articles domain a consistent
-  /// rhythm — a run of covers at one height reads as a reading list rather
-  /// than as ragged cards.
-  static const double _rowHeight = 104;
+  /// THE EDITORIAL ROW'S FLOOR, not its ceiling.
+  ///
+  /// This was a fixed 104 px height, and on a desktop window it cut real
+  /// titles in half. "The Quiet Work That Holds People Together" is two lines
+  /// at desktop type scale; two lines of `headline` plus the padding and a
+  /// byline come to more than 104, so the card's own `Clip.antiAlias` sliced
+  /// the second line horizontally through the letterforms. Not an ellipsis —
+  /// a cut. Observed on Windows at 2011 px, 2026-09-05.
+  ///
+  /// A minimum keeps what the fixed height was FOR: a run of covers at a
+  /// common height reads as a reading list rather than as ragged cards. Real
+  /// titles are simply allowed to be taller than the minimum instead of being
+  /// truncated to fit it.
+  static const double _minRowHeight = 104;
 
   @override
   Widget build(BuildContext context) {
@@ -405,10 +413,15 @@ class ArticleEditorialCard extends StatelessWidget {
           border: Border.all(color: AuraSurface.divider),
         ),
         clipBehavior: Clip.antiAlias,
-        child: SizedBox(
-          height: _rowHeight,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: _minRowHeight),
+          // `stretch` still needs a bounded height, which is what the fixed
+          // size used to provide. IntrinsicHeight bounds the row to its
+          // tallest child instead, so the cover still runs the full height of
+          // whatever the words turn out to need.
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (a.coverUrl != null)
                 // THE GOVERNED IMAGE, AND A SLOT THAT COLLAPSES.
@@ -468,7 +481,8 @@ class ArticleEditorialCard extends StatelessWidget {
                   ),
                 ),
               ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

@@ -1,3 +1,4 @@
+import 'features/conversation/presentation/messages_workspace.dart';
 import 'features/discover/presentation/discover_search.dart';
 import 'dart:async';
 
@@ -109,8 +110,6 @@ import 'features/institutions/participation/participation_screen.dart';
 import 'features/direct_threads/presentation/direct_intent_screen.dart';
 import 'core/navigation/navigation_authority.dart';
 import 'features/discover/presentation/discover_screen.dart';
-import 'features/conversation/presentation/messages_screen.dart';
-import 'features/conversation/presentation/conversation_screen.dart';
 import 'features/conversation/presentation/new_conversation_picker.dart';
 import 'features/conversation/presentation/claim_invitation_screen.dart';
 import 'features/discover/presentation/people_discovery_screen.dart';
@@ -1594,7 +1593,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           // migration; until then their addresses remain reachable.
           GoRoute(
             path: kMessagesRoute,
-            builder: (_, __) => const MessagesScreen(),
+            // BOTH MESSAGES ROUTES RENDER THE SAME WORKSPACE.
+            //
+            // The list and the conversation are one surface composed for the
+            // window, not two destinations. Rendering them from one widget is
+            // what lets a desktop window show both without either route
+            // knowing anything about the other -- and what keeps the URL the
+            // single answer to "which conversation is open".
+            builder: (_, __) => const MessagesWorkspace(),
           ),
           GoRoute(
             path: '/messages/new',
@@ -1614,7 +1620,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/messages/c/:conversationId',
-            builder: (context, state) => ConversationScreen(
+            builder: (context, state) => MessagesWorkspace(
               conversationId: state.pathParameters['conversationId'] ?? '',
             ),
           ),

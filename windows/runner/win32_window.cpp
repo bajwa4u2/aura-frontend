@@ -1,3 +1,4 @@
+#include "window_placement.h"
 #include "win32_window.h"
 
 #include <dwmapi.h>
@@ -180,6 +181,10 @@ Win32Window::MessageHandler(HWND hwnd,
                             LPARAM const lparam) noexcept {
   switch (message) {
     case WM_DESTROY:
+      // Recorded here rather than on WM_CLOSE: by WM_DESTROY the placement is
+      // still readable and the window is definitely going away, so this
+      // cannot save a position for a close the person then cancelled.
+      aura::SaveWindowPlacement(window_handle_);
       window_handle_ = nullptr;
       Destroy();
       if (quit_on_close_) {
@@ -198,24 +203,26 @@ Win32Window::MessageHandler(HWND hwnd,
       return 0;
     }
     case WM_GETMINMAXINFO: {
-      // Enforce a desktop-class minimum window size. Without this, the user
-      // can drag the window narrower than the Flutter shell's desktop
-      // breakpoint (1100 logical px in member_shell.dart) and the layout
-      // drops to the tablet/mobile mode — producing the "Windows runtime
-      // behaves like a constrained mobile layout" report. The minimum is
-      // DPI-aware so the constraint holds on per-monitor scaling changes.
+      // A FLOOR THAT PROTECTS USABILITY, NOT A BREAKPOINT.
+      //
+      // This was 1024x720, chosen to force the window above the shell's old
+      // desktop breakpoint so the side-nav layout would always render. That
+      // was a workaround for the layout falling apart below it, and the
+      // workaround cost real people a window they could place: 720 logical px
+      // of height does not fit comfortably on a 1366x768 laptop once the
+      // taskbar is counted.
+      //
+      // The composition no longer needs protecting. Navigation is compact by
+      // default, content is measured against the room available, and Messages
+      // collapses to one pane below the width where two are honest. So the
+      // floor is now only what it should ever have been: the smallest window
+      // in which Aura is still usable.
       auto minMaxInfo = reinterpret_cast<MINMAXINFO*>(lparam);
       HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
       UINT dpi = FlutterDesktopGetDpiForMonitor(monitor);
       double scale_factor = dpi / 96.0;
-      // 1100 logical px = the member/institution shell desktop breakpoint.
-      // 720 logical px is a reasonable minimum height for two-pane content.
-      // Pick 1024x720 as the floor so the shell *always* renders the
-      // desktop side-nav layout once the window opens; smaller monitors
-      // can still scale the content via Flutter's adaptive layout above
-      // that floor.
-      minMaxInfo->ptMinTrackSize.x = Scale(1024, scale_factor);
-      minMaxInfo->ptMinTrackSize.y = Scale(720, scale_factor);
+      minMaxInfo->ptMinTrackSize.x = Scale(880, scale_factor);
+      minMaxInfo->ptMinTrackSize.y = Scale(600, scale_factor);
       return 0;
     }
     case WM_SIZE: {

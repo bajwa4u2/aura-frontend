@@ -21,7 +21,23 @@ import 'conversation_identity.dart';
 /// segmentation — archived is a filter, invitations render inline until
 /// C4 assumes obligation projection.
 class MessagesScreen extends ConsumerStatefulWidget {
-  const MessagesScreen({super.key});
+  const MessagesScreen({
+    super.key,
+    this.selectedConversationId,
+    this.embedded = false,
+  });
+
+  /// Which conversation is open beside this list, when one is.
+  ///
+  /// Selection is a property of the ROUTE, passed in — this screen holds no
+  /// opinion of its own about what is open, so a deep link, a notification and
+  /// a click in the list all agree.
+  final String? selectedConversationId;
+
+  /// True when this is the selection column of the desktop composition rather
+  /// than the whole surface. It then drops the page padding that assumed it
+  /// owned the width, and keeps its own scroll.
+  final bool embedded;
 
   @override
   ConsumerState<MessagesScreen> createState() => _MessagesScreenState();
@@ -47,20 +63,49 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
           ref.invalidate(pendingInvitationsProvider);
         },
         child: ListView(
-          padding: const EdgeInsets.all(AuraSpace.s16),
+          padding: EdgeInsets.all(
+              widget.embedded ? AuraSpace.s10 : AuraSpace.s16),
           children: [
-            Row(
-              children: [
-                const Expanded(
-                    child: Text('Messages', style: AuraText.display)),
-                AuraPrimaryButton(
-                  label: 'New conversation',
-                  icon: Icons.add_comment_outlined,
-                  onPressed: () =>
-                      context.push(NavigationAuthority.newConversationRoute),
-                ),
-              ],
-            ),
+            // A HEADER SIZED TO THE COLUMN IT IS IN.
+            //
+            // This was a display-size title in an Expanded beside a labelled
+            // button. In the desktop selection column — 340 px — the button
+            // took its intrinsic width first and left the title about forty
+            // pixels, so "Messages" rendered ONE LETTER PER LINE down the
+            // side of the pane. Seen on Windows at 2011 px, 2026-09-05.
+            //
+            // The selection column already sits under a nav item that says
+            // Messages, so the heading there is orientation, not a banner: a
+            // title-size word and an icon action. The full-width surface keeps
+            // the display title and the labelled button it has room for.
+            if (widget.embedded)
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text('Messages', style: AuraText.title),
+                  ),
+                  IconButton(
+                    onPressed: () =>
+                        context.push(NavigationAuthority.newConversationRoute),
+                    icon: const Icon(Icons.add_comment_outlined, size: 20),
+                    tooltip: 'New conversation',
+                    color: AuraSurface.accentText,
+                  ),
+                ],
+              )
+            else
+              Row(
+                children: [
+                  const Expanded(
+                      child: Text('Messages', style: AuraText.display)),
+                  AuraPrimaryButton(
+                    label: 'New conversation',
+                    icon: Icons.add_comment_outlined,
+                    onPressed: () =>
+                        context.push(NavigationAuthority.newConversationRoute),
+                  ),
+                ],
+              ),
             const SizedBox(height: AuraSpace.s12),
             Row(
               children: [
@@ -137,6 +182,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                           conversation: c,
                           myUserId: myUserId,
                           allowSwipe: allowSwipe,
+                          selected: c.id == widget.selectedConversationId,
+                          selectable: widget.embedded,
                         ),
                       if (rest.isNotEmpty) const _RegionLabel('Conversations'),
                     ],
@@ -145,6 +192,8 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                         conversation: c,
                         myUserId: myUserId,
                         allowSwipe: allowSwipe,
+                        selected: c.id == widget.selectedConversationId,
+                        selectable: widget.embedded,
                       ),
                   ],
                 );

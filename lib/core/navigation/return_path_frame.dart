@@ -21,6 +21,8 @@
 ///    Close is not Back. The ruling is explicit and so is the presentation.
 library;
 
+import '../../features/conversation/presentation/messages_workspace.dart';
+import '../ui/aura_window.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -147,6 +149,21 @@ class _ReturnPathFrameState extends ConsumerState<ReturnPathFrame> {
     );
 
     if (!action.hasAffordance) return widget.child;
+
+    // A RETURN TO SOMETHING ALREADY ON SCREEN IS NOT A RETURN.
+    //
+    // At desktop widths Messages composes as selection + conversation, so the
+    // conversation list the Back control would go to is sitting beside the
+    // conversation. Drawing "← Back to Messages" above it is the phone flow
+    // the composition exists to retire: a control that undoes a move nobody
+    // made, on a platform with no back gesture to explain it.
+    //
+    // Decided here rather than by the screen because this frame is the
+    // ancestor -- a suppression scope declared inside the route content is a
+    // descendant of the bar and cannot be seen by it.
+    if (_returnIsAlreadyVisible(context, widget.path)) {
+      return widget.child;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -275,4 +292,16 @@ void performReturn(BuildContext context, ReturnAction action) {
   // would grow history in the wrong direction and make the next Back go
   // deeper — the loop this chapter is removing.
   GoRouter.of(context).go(target);
+}
+
+/// Whether the place this path would return TO is already on screen.
+///
+/// Kept narrow on purpose: one route family, one condition. A general
+/// "is my parent visible" rule would need every surface to declare its
+/// composition, and would be wrong the moment one of them changed.
+bool _returnIsAlreadyVisible(BuildContext context, String path) {
+  if (!path.startsWith('/messages/c/')) return false;
+  final win = AuraWindow.of(context);
+  return win.windowClass.canHoldSelection &&
+      win.workWidth >= MessagesWorkspace.splitFloor;
 }

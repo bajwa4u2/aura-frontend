@@ -1,3 +1,4 @@
+import 'aura_responsive.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -80,6 +81,21 @@ class AuraScaffold extends StatelessWidget {
 
   static const double _defaultMaxWidth = 920;
 
+  /// Pass this as [maxWidth] when the CHILD resolves its own composition.
+  ///
+  /// A surface built from `AuraSurfaceScaffold` already decides how wide its
+  /// work column is, where its rails sit and what the gutters are. Wrapping
+  /// that in this scaffold's own 920 px cap made a third independent width
+  /// authority above the other two: on a 2011 px Windows window the whole
+  /// composition -- feed AND contextual rail together -- was squeezed into
+  /// 920 px in the middle of the screen, which is the ~665 px empty band the
+  /// founder saw to the left of the work.
+  ///
+  /// Named rather than passing `double.infinity` at the call site, so the
+  /// intent is legible: this is not "as wide as possible", it is "not mine to
+  /// decide".
+  static const double childDecidesWidth = double.infinity;
+
   bool get _hasHeader =>
       showHeader &&
       (title.trim().isNotEmpty ||
@@ -121,10 +137,42 @@ class AuraScaffold extends StatelessWidget {
     // surface while the shell is also swapping children. Keep AuraScaffold as a
     // pure page surface that always expands inside the shell content slot.
     return SizedBox.expand(
-      child: AuraPageShell(
-        maxWidth: maxWidth ?? _defaultMaxWidth,
-        padding: EdgeInsets.zero,
-        child: content,
+      // THE DEFAULT IS A MEASURE, NOT A NUMBER.
+      //
+      // `_defaultMaxWidth` was a flat 920 px applied to every screen that did
+      // not name a width. On a 2000 px Windows window that left Discover as a
+      // ~900 px column with 500 px of empty page either side — a browser
+      // column inside a native frame, which is the thing this whole pass
+      // exists to end.
+      //
+      // `AuraMeasure.feed` grows with the room and still stops well short of
+      // an unreadable line, so screens that were built expecting a calm
+      // column stay calm; they simply stop refusing the window. A caller that
+      // genuinely needs a fixed width still passes one.
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // IT ONLY EVER WIDENS.
+          //
+          // The first attempt resolved the measure outright, which SUBTRACTS
+          // a gutter — so on a narrow surface the page became 32 px narrower
+          // than before and a Row on the auth screen that had just fitted
+          // overflowed by 99 px. Three navigation contract tests caught it.
+          //
+          // Mobile behaviour must not move for a desktop correction. Taking
+          // the larger of the old cap and the measured width means narrow
+          // windows are byte-for-byte unchanged, and only rooms bigger than
+          // the old 920 px see any difference.
+          final grown = constraints.maxWidth.isFinite
+              ? auraMeasureWidth(AuraMeasure.feed, constraints.maxWidth)
+              : _defaultMaxWidth;
+          final resolved = maxWidth ??
+              (grown > _defaultMaxWidth ? grown : _defaultMaxWidth);
+          return AuraPageShell(
+            maxWidth: resolved,
+            padding: EdgeInsets.zero,
+            child: content,
+          );
+        },
       ),
     );
   }

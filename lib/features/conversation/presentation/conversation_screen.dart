@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_responsive.dart';
 import '../../../core/product/temporal.dart';
 import 'dart:io' show Platform;
 
@@ -1288,6 +1289,16 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           }
         },
         child: AuraScaffold(
+          // A CONVERSATION IS WORK, AND IT TAKES ITS PANE.
+          //
+          // AuraScaffold's default 920 px cap centred the thread inside
+          // whatever it was given. In the desktop split that put the header
+          // and every bubble against the right edge of the pane with ~445 px
+          // of empty page to their left -- a column floating inside a column.
+          // Message bubbles carry their own max width, so releasing this does
+          // not produce 1400 px lines; it lets the thread sit where the pane
+          // is.
+          maxWidth: AuraScaffold.childDecidesWidth,
           showHeader: false,
           body: Column(
             children: [
@@ -1420,7 +1431,20 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   ),
                   data: (messages) => ListView.builder(
                     reverse: true,
-                    padding: const EdgeInsets.all(AuraSpace.s12),
+                    // THE THREAD'S OWN GUTTER.
+                    //
+                    // The page cap used to supply side margins as a
+                    // side-effect of centring. Releasing it so the thread
+                    // fills its pane removed them, and outgoing bubbles --
+                    // which align right -- ran flush into the window edge and
+                    // clipped. A conversation needs a margin for the same
+                    // reason any page does; it just should not need a 920 px
+                    // cap to get one.
+                    padding: EdgeInsets.symmetric(
+                      horizontal:
+                          auraGutterFor(MediaQuery.sizeOf(context).width),
+                      vertical: AuraSpace.s12,
+                    ),
                     itemCount: messages.length,
                     itemBuilder: (_, i) {
                       final m = messages[i];

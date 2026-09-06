@@ -37,10 +37,20 @@ class ConversationRow extends ConsumerWidget {
     required this.conversation,
     required this.myUserId,
     required this.allowSwipe,
+    this.selected = false,
+    this.selectable = false,
   });
 
   final Conversation conversation;
   final String myUserId;
+
+  /// This conversation is the one currently open beside the list.
+  final bool selected;
+
+  /// The list stays on screen when this row is chosen — the desktop
+  /// composition — so choosing is a sideways move within Messages rather than
+  /// a departure from it.
+  final bool selectable;
 
   /// Swipe is a touch idiom. On a pointer it would be an emulation of a
   /// gesture nobody performs, so the pointer gets hover and right-click
@@ -49,7 +59,12 @@ class ConversationRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final row = _Body(conversation: conversation, myUserId: myUserId);
+    final row = _Body(
+      conversation: conversation,
+      myUserId: myUserId,
+      selected: selected,
+      selectable: selectable,
+    );
     if (!allowSwipe) return row;
 
     final actions = ConversationActions(ref);
@@ -133,7 +148,15 @@ class _SwipeAffordance extends StatelessWidget {
 }
 
 class _Body extends ConsumerWidget {
-  const _Body({required this.conversation, required this.myUserId});
+  const _Body({
+    required this.conversation,
+    required this.myUserId,
+    this.selected = false,
+    this.selectable = false,
+  });
+
+  final bool selected;
+  final bool selectable;
 
   final Conversation conversation;
   final String myUserId;
@@ -194,8 +217,17 @@ class _Body extends ConsumerWidget {
         );
 
     return InkWell(
-      onTap: () =>
-          context.push(NavigationAuthority.conversationRoute(conversation.id)),
+      // `go`, not `push`, when the list stays on screen beside the thread.
+      //
+      // In the split composition the list is not being left behind, so
+      // stacking a route on top of it would build a second Messages surface
+      // underneath and make Back mean "the previous conversation" — a history
+      // of sideways moves. Replacing the location keeps one Messages in the
+      // stack and Back meaning "out of Messages", which is what it means
+      // everywhere else in the product.
+      onTap: () => selectable
+          ? context.go(NavigationAuthority.conversationRoute(conversation.id))
+          : context.push(NavigationAuthority.conversationRoute(conversation.id)),
       // Touch and pointer reach the same sheet. Neither platform gets a
       // different set of actions.
       onLongPress: openSheet,
@@ -207,10 +239,19 @@ class _Body extends ConsumerWidget {
           vertical: AuraSpace.s12,
         ),
         decoration: BoxDecoration(
-          // Attention gets a surface, not a shout. A conversation with
-          // something owed sits slightly forward of the rest.
-          color: attention ? AuraSurface.card : Colors.transparent,
+          // SELECTION READS LOUDER THAN ATTENTION, because it answers a
+          // different question: attention says "this one wants you", selection
+          // says "this is the one you are reading". With the thread beside the
+          // list, a person needs to see at a glance which row it belongs to.
+          color: selected
+              ? AuraSurface.accentSoft
+              : attention
+                  ? AuraSurface.card
+                  : Colors.transparent,
           borderRadius: BorderRadius.circular(AuraRadius.card),
+          border: selected
+              ? Border.all(color: AuraSurface.accent.withValues(alpha: 0.30))
+              : null,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
