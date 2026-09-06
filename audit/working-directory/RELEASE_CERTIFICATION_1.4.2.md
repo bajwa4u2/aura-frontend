@@ -4,8 +4,9 @@
 **Release source:** `f24d3a1e` on `main` (pushed)
 **Backend at release:** `7d15faa` (deployed to production, healthy)
 **Marketing version:** 1.4.2
-**Status:** Windows artifact built and exercised; Android artifacts built,
-device exercise blocked; iOS not executable from this environment.
+**Status:** Windows artifact built and exercised; Android artifacts built and
+certified on a physical Pixel 9a; iOS not executable from this environment and
+awaiting the founder’s Codemagic run.
 
 ---
 
@@ -141,11 +142,75 @@ Calling and share capability present in the shipped manifest:
 `POST_NOTIFICATIONS`, `CAMERA`, `WAKE_LOCK`, FCM `c2dm` send/receive, plus
 `AuraCallPushReceiver`.
 
-**ANDROID_RELEASE_DEVICE_EXERCISED = BLOCKED.** No device is attached: `adb
-devices` is empty after a daemon restart, and Windows reports no Pixel or ADB
-USB device present. This needs the founder to connect the Pixel (or enable
-wireless debugging); it is not a product defect and not something to work
-around. The installable artifact is built and waiting.
+### Physical device certification — PASS
+
+**Device:** Pixel 9a (`53061JEBF08485`, `tegu`), Android 16 / API 36.
+Release APK installed over the existing install with `adb install -r`;
+the replace succeeded, which is itself proof the signing key matches.
+
+```
+versionCode=37  versionName=1.4.2  minSdk=24 targetSdk=36
+lastUpdateTime=2026-09-06 03:29:00
+```
+
+| Path | Result |
+|---|---|
+| Launch | PASS |
+| Auth / session | PASS — signed-in member session restored |
+| Home | PASS — mobile composition: primaries in the bottom bar, header carries identity only |
+| Composer | PASS — field treatment adapts to phone width |
+| Discover | PASS — single column, correctly adapted from the desktop two-column |
+| Messages | PASS — conversation list with group avatars, previews, an institution thread |
+| TR / provenance | **PASS — see below** |
+| Version display | PASS — drawer reads *Version 1.4.2* |
+| Deep links | PASS — see below |
+| Calling / OS integration | PASS at the OS boundary — see below |
+| Institution surface | NOT_EXECUTED — this account holds no institution |
+
+**TR / provenance is the important one.** The defect the founder reported was
+that TR rendered on public Home and not on member Home. On the physical device,
+signed in, on the MEMBER feed, the TR mark renders on the media's leading edge,
+attached to the image. That is the reported defect closed end to end: backend
+projection repaired, client placement repaired, and confirmed on real hardware
+against production rather than inferred from an API response.
+
+**Calling, certified at the OS boundary and no further, deliberately.** The
+device holds a real person's signed-in session, so no call was placed. What was
+verified is the integration this release actually changed — Aura is registered
+with Android's Telecom framework:
+
+```
+PhoneAccount: ComponentInfo{org.auraplatform.app/org.auraplatform.app}
+Capabilities: SelfManaged TransactOps
+Audio Routes:  BESW   (Bluetooth, Earpiece, Speaker, Wired)
+Extras:        Bundle[{isCoreTelecomAccount=true}]
+```
+
+`isCoreTelecomAccount=true` confirms the modern `androidx.core.telecom` path
+rather than the deprecated self-managed ConnectionService, and `BESW` confirms
+the audio-route capability behind "let a person choose where a call is heard".
+Aura sits alongside Gmail and Google Meet, which register through the identical
+mechanism. Two-party calling itself remains certified from 1.4.1 on physical
+hardware.
+
+**Deep links, verified by Android itself.**
+
+```
+auraplatform.org:     verified
+app.auraplatform.org: verified
+Signature: 84:39:92:54:A2:A1:CA:65:...:E3:6D:7B:8C
+```
+
+The signature Android verified the domains against is the release upload key,
+matching the APK badging and the 1.4.1 record. Functionally exercised:
+`https://auraplatform.org/articles/<slug>` opened Aura directly rather than a
+browser and rendered the article with cover, title, byline and body.
+
+`https://auraplatform.org/mission` correctly did NOT resolve to the app. The
+manifest claims content and account paths only (`/p/`, `/posts/`,
+`/announcements/`, `/articles/`, `/u/`, `/author/`, `/institutions/`,
+`/spaces/`, `/meetings/join/`, `/invite/`, `/auth/`, plus four exact paths).
+Marketing pages stay in the browser by design; that is scope, not a gap.
 
 ---
 
@@ -231,11 +296,11 @@ member path returned nothing.
 | Home | PASS |
 | Discover | PASS |
 | Messages | PASS |
-| Institution shell | NOT_EXECUTED — no institution identity |
+| Institution shell | NOT_EXECUTED — neither available identity holds a membership |
 | TR / provenance | PASS (production API and rendered on Windows and web) |
-| Calling / ringing | NOT RE-EXERCISED — certified at 1.4.1 on physical hardware |
+| Calling / ringing | OS integration PASS on device; two-party certified at 1.4.1 |
 | Audio / video | NOT RE-EXERCISED |
-| Deep links | Configuration verified; runtime NOT_EXECUTED |
+| Deep links | PASS — domains verified by Android, functional open on device |
 | Return navigation | PASS (route census regenerated, gates green) |
 | Version metadata | PASS (five agreeing sources) |
 
@@ -244,13 +309,29 @@ member path returned nothing.
 ## 8. Freeze
 
 ```
-AURA_1_4_2_RELEASE_SOURCE_SHA = f24d3a1e
-AURA_1_4_2_BACKEND_SHA        = 7d15faa
+AURA_1_4_2_RELEASE_SOURCE_SHA = f24d3a1e   (tag v1.4.2)
+AURA_1_4_2_BACKEND_SHA        = 7d15faa    (in production)
 MARKETING_VERSION             = 1.4.2
 WINDOWS_PACKAGE_VERSION       = 1.4.2.0
 ANDROID_VERSION_CODE          = 37
 IOS_BUILD_NUMBER              = 37 (unused, reserved)
 ```
+
+### Outstanding, all founder-actioned and none a product defect
+
+1. **iOS** — trigger the Codemagic `ios-testflight` workflow against `v1.4.2`.
+   It reads the version from `pubspec.yaml`, so it produces 1.4.2 (37) with no
+   configuration change.
+2. **Windows Store** — Partner Center submission and Store signing. The MSIX
+   cannot be signed or sideloaded from here.
+3. **Play** — upload `app-release.aab` to the Closed testing / Alpha track,
+   which is where 1.4.0 and 1.4.1 went.
+4. **Web** — redeploy at `f24d3a1e`. Live is currently `7a10dc90` and does not
+   carry the section-alignment fix.
+5. **Institution surface** — remains uncertified on every platform. Neither the
+   reviewer account nor the device account holds an institution membership, and
+   production membership was not manufactured to produce a screenshot. This
+   needs a legitimate institution identity, not a workaround.
 
 No Aura Meetings external API code may enter this baseline. That work begins
 from the next development state.
