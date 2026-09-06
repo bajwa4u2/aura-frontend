@@ -1,12 +1,13 @@
 # Aura 1.4.2 — release certification
 
 **Date:** 2026-09-06
-**Release source:** `f24d3a1e` on `main` (pushed)
+**Release source:** `e8a9a43f` on `main`, tag `v1.4.2`
 **Backend at release:** `7d15faa` (deployed to production, healthy)
 **Marketing version:** 1.4.2
-**Status:** Windows artifact built and exercised; Android artifacts built and
-certified on a physical Pixel 9a; iOS not executable from this environment and
-awaiting the founder’s Codemagic run.
+**Status:** FROZEN. All four platforms have a certified artifact. Windows MSIX
+built and exercised; Android built and certified on a physical Pixel 9a; web
+certified on live; iOS 1.4.2 (37) built, uploaded, processed and available on
+TestFlight. iOS has not been exercised on a physical iPhone.
 
 ---
 
@@ -601,30 +602,59 @@ member path returned nothing.
 
 ## 8. Freeze
 
+**FROZEN 2026-09-06.** All four platforms have a certified artifact.
+
 ```
-AURA_1_4_2_RELEASE_SOURCE_SHA = f24d3a1e   (tag v1.4.2)
+AURA_1_4_2_RELEASE_SOURCE_SHA = e8a9a43f   (tag v1.4.2)
+AURA_1_4_2_BASELINE_TAG       = v1.4.2-baseline   (pins this freeze commit)
 AURA_1_4_2_BACKEND_SHA        = 7d15faa    (in production)
 MARKETING_VERSION             = 1.4.2
 WINDOWS_PACKAGE_VERSION       = 1.4.2.0
 ANDROID_VERSION_CODE          = 37
-IOS_BUILD_NUMBER              = 37 (unused, reserved)
+IOS_BUILD_NUMBER              = 37 (spent, processed, on TestFlight)
 ```
 
-### Outstanding, all founder-actioned and none a product defect
+**One release source, verified rather than assumed.** The `v1.4.2` tag was
+re-pointed from `f24d3a1e` to `e8a9a43f` earlier in this release, because
+`f24d3a1e` could not produce an iOS build at all — it fails the analyze gate —
+and a tag that cannot build one platform is not the release source. The
+shipped-code delta between those two commits is a single unused import
+(`package:flutter/foundation.dart` in `lib/core/media/audio_output_controller.dart`).
 
-1. **iOS** — trigger the Codemagic `ios-testflight` workflow against `v1.4.2`.
-   It reads the version from `pubspec.yaml`, so it produces 1.4.2 (37) with no
-   configuration change.
-2. **Windows Store** — Partner Center submission and Store signing. The MSIX
-   cannot be signed or sideloaded from here.
-3. **Play** — upload `app-release.aab` to the Closed testing / Alpha track,
-   which is where 1.4.0 and 1.4.1 went.
-4. **Web** — redeploy at `f24d3a1e`. Live is currently `7a10dc90` and does not
-   carry the section-alignment fix.
-5. **Institution dashboard** — the one surface still unseen. The identity used
-   holds institution MEMBER standing, which Aura correctly refuses the dashboard
-   to. Seeing it needs an identity with institution admin authority; it is not
-   reachable by anything this session should do.
+iOS was ultimately built at `cbdaab24`, six builds later. That is not a second
+baseline: `e8a9a43f..cbdaab24` contains **no change to shipped application
+code**. Confirmed by diffing `lib`, `pubspec.yaml`, `pubspec.lock`, `android`,
+`windows` and `web` across the range and getting an empty result. Everything in
+that span is the Xcode project repair, the Codemagic signing step, tests, and
+this document. The four artifacts carry the same product.
 
-No Aura Meetings external API code may enter this baseline. That work begins
-from the next development state.
+| Platform | Artifact | State |
+|---|---|---|
+| Windows | MSIX 1.4.2.0, `AuraPlatformLLC.AURAPLATFORM` | BUILT, exercised, unsigned by design |
+| Android | `app-release.aab`, versionCode 37 | BUILT, certified on a physical Pixel 9a |
+| iOS | 1.4.2 (37) | BUILT → UPLOADED → PROCESSED → **TestFlight Complete** |
+| Web | `e8a9a43f` | BUILT, certified on live web |
+
+### Still owed, and none of it a product defect
+
+1. **iOS physical certification** — 1.4.2 has never run on an iPhone. Calling,
+   live, meetings, notifications and interactions are UNVERIFIED on iOS for
+   this version. Installable is not exercised, and neither a simulator nor a
+   browser substitutes for the device.
+2. **Store submissions** — Partner Center (Windows), Play Closed testing /
+   Alpha, App Store review. Founder-actioned by standing arrangement; the role
+   here ends at a certified artifact plus instructions.
+3. **Web redeploy** at the release source. Live was `7a10dc90` and lacks the
+   section-alignment fix of section 2.
+4. **Institution dashboard** — still unseen. The identity available holds
+   institution MEMBER standing, which Aura correctly refuses the dashboard to.
+   Reaching it needs institution admin authority; manufacturing that standing
+   in production to look at a screen is not something this session will do.
+5. **`store_assets/` is untracked** — roughly 34MB from a separate
+   store-listing metadata pass run the same day, including iPhone screenshots.
+   Deliberately left out of this baseline: it is not this workstream's work,
+   and whether 34MB of binaries belongs in a release commit is a founder call
+   rather than an assumption to make quietly.
+
+No Aura Meetings external API code entered this baseline, and none may. That
+work begins from the next development state.
