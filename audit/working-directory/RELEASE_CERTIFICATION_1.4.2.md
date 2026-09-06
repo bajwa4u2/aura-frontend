@@ -474,9 +474,22 @@ why #41 could reuse it rather than needing 38.
 | IOS_ARCHIVE_BUILT | PASS — build #41, `Build signed IPA` 4m 10s |
 | IOS_DISTRIBUTABLE_ARTIFACT | PASS — signed IPA produced |
 | IOS_UPLOADED | PASS — `Publishing` 1m 27s, accepted by App Store Connect |
-| IOS_PROCESSED | PENDING — Apple post-processing, "App Store distribution" |
-| IOS_TESTFLIGHT_AVAILABLE | NOT_EXECUTED |
-| IOS_PHYSICAL_CERTIFICATION | NOT_EXECUTED |
+| IOS_PROCESSED | PASS — Apple processing completed |
+| IOS_TESTFLIGHT_AVAILABLE | PASS — 1.4.2 (37), status **Complete**, 2026-09-06 06:50 |
+| IOS_PHYSICAL_CERTIFICATION | NOT_EXECUTED — needs a physical iPhone; browser and simulator are not a proxy |
+
+Read back from App Store Connect rather than inferred from the build going
+green: the TestFlight iOS build list shows **Version 1.4.2, Build (37),
+Complete**, above 1.4.1 (36) and 1.4.0. So **37 was spent but not burned** —
+processing accepted it, and the bump-the-number rule was never triggered.
+
+**What is done and what is not.** 1.4.2 exists as a signed, uploaded, processed
+iOS build carrying the Share Extension, and it is installable through
+TestFlight. It has not been exercised on an iPhone, so the calling, live,
+meetings, notification and interaction surfaces remain UNVERIFIED on iOS for
+this version — a distinction this document has kept for every other platform
+and keeps here. Submission to App Store review is the founder's action, not
+mine.
 
 ---
 
