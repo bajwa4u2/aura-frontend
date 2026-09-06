@@ -418,15 +418,64 @@ payloads — an empty list exits 1 so a profile is created, a populated list
 exits 0 so an existing one is reused, and the id extractions return what the
 surrounding commands consume.
 
-**Build numbering is still intact.** None of #36–#38 produced an artifact, let
-alone uploaded one, so **37 is unspent** and the rule recorded above still
-holds.
+**#39 and #40 — two lookups written from the wrong name.** `profiles create`
+was reached and refused: `argument --certificate-ids: expected at least one
+argument`, because `certificates list --type IOS_DISTRIBUTION` matched nothing.
+This account holds an *Apple Distribution* certificate, whose App Store Connect
+`certificateType` is `DISTRIBUTION`; `IOS_DISTRIBUTION` is the older "iOS
+Distribution (App Store and Ad Hoc)" kind. The filter had been written from
+what the certificate is called rather than from what Apple calls it. Fixed in
+`bb60f4e1`, which also excludes development certificates so a distribution
+profile can never be built around one, and exits with a sentence when nothing
+matches instead of passing an empty argument two commands downstream.
+
+**#40 proved the extension solved, and isolated the last fault.**
+`Aura ShareExtension App Store Profile` was created and applied to
+ShareExtension Debug, Profile and Release, and both the *"Did not find
+provisioning profile"* and *"requires a development team"* errors disappeared —
+confirming the latter was a symptom of the former. What remained was the *main*
+app's profile, still rejected for App Groups. Apple's copy was checked rather
+than assumed: the App ID reported "Enabled App Groups (1)" and the profile was
+Active with App Groups among its capabilities. The machine was simply signing
+with content older than Apple's. `cbdaab24` removes the question rather than
+reasoning about which copy wins — clear both profile directories, download every
+ACTIVE App Store profile fresh, and print what each one actually grants.
+
+**#41 — resolved, and the diagnostic earned its place immediately:**
+
+```
+profile: AURA PLATFORM App Store Profile
+  app id: 4WZQA8T5MT.org.auraplatform.app
+  groups: group.org.auraplatform.app
+profile: Aura ShareExtension App Store Profile
+  app id: 4WZQA8T5MT.org.auraplatform.app.ShareExtension
+  groups: group.org.auraplatform.app
+profile: Orchestrate App Store Profile
+  app id: 4WZQA8T5MT.com.orchestrateops.app
+  groups:
+```
+
+Both Aura profiles carry the group; Orchestrate's is downloaded and unused, as
+intended, because `use-profiles` matches on bundle id. `Set up code signing`
+then made six assignments — two targets across three configurations — and
+`Build signed IPA` completed in **4m 10s**, `Publishing` in **1m 27s**.
+
+**Build number 37 is now spent.** The IPA was produced and accepted by App
+Store Connect, so the rule recorded above is live from this point: if Apple
+rejects it in processing, the next attempt needs a bumped build number, not a
+retry.
+
+**Build numbering, as it stood through #36–#40.** None of those produced an
+artifact, let alone uploaded one, so 37 remained unspent until #41 — which is
+why #41 could reuse it rather than needing 38.
 
 | Gate | State |
 |---|---|
-| IOS_ARCHIVE_BUILT | BLOCKED — codesign, see below |
-| IOS_DISTRIBUTABLE_ARTIFACT | NOT_EXECUTED |
-| IOS_TESTFLIGHT | NOT_EXECUTED |
+| IOS_ARCHIVE_BUILT | PASS — build #41, `Build signed IPA` 4m 10s |
+| IOS_DISTRIBUTABLE_ARTIFACT | PASS — signed IPA produced |
+| IOS_UPLOADED | PASS — `Publishing` 1m 27s, accepted by App Store Connect |
+| IOS_PROCESSED | PENDING — Apple post-processing, "App Store distribution" |
+| IOS_TESTFLIGHT_AVAILABLE | NOT_EXECUTED |
 | IOS_PHYSICAL_CERTIFICATION | NOT_EXECUTED |
 
 ---
