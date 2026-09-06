@@ -257,6 +257,63 @@ belongs to whoever owns the store listings.
 
 ---
 
+## 5b. Operator console and institution workspace — certified on live web
+
+Both had been NOT_EXECUTED on every platform because no identity available to
+this session held the standing to reach them. The founder opened a signed-in
+Chrome session, which supplied a legitimate operator identity. Navigation only;
+no administrative mutation was performed.
+
+### Operator console — PASS
+
+Reached the way an operator reaches it, through the account menu (the door is
+drawn by `/v1/admin/entry`, not by a cached flag). Live at `/admin`:
+
+* Context bar reads **Now · Aura operator**, with **Owner · 25** capabilities.
+* Areas in the rail: Now, Work, Subjects, Integrity, Platform, Record,
+  Discovery — capability-filtered, not a fixed list.
+* Content is real: *1 waiting across 1 queue — Product feedback, oldest 6
+  days*; *Platform — All services healthy*; a *What changed* audit stream.
+
+**The realm work is confirmed in production.** The platform bar in the console
+carries **only the attention bell and the account button**. No search, no Live
+pill, no "Add your institution", and no Aura Admin door. On Home, moments
+earlier and in the same session, the same bar carried search, bell, Live and
+account. One shell, composed by where it stands, which is what the founder
+asked for instead of a second shell.
+
+### Institution workspace — PASS, including its refusal
+
+`/institution/dashboard` redirected to `/institution/standing?reason=denied`
+and rendered:
+
+> **You do not have access to that** — That part of the institution needs
+> authority you have not been granted. Only the institution can change that.
+> You still have full access to everything your standing does include.
+
+with a **Go to your institution** action. That is a refusal rather than a
+failure: it says what is missing, who can change it, and where to go instead.
+
+**And it is a governance result, not just a screen.** The identity holding it
+is an Aura **Owner with all 25 operator capabilities**, and Aura still refused
+it the institution dashboard, because platform operator standing is not
+institution authority. `AREA_ACCESS_USED_AS_ACTION_PERMISSION = 0`, proven live
+across realms — the same principle that was corrected in the announcement
+owner controls this cycle, holding independently in the institution shell.
+
+Following the action reached the workspace at
+`/institution/<id>/explore`: Public / Member / Internal scope tabs, Topic and
+Resources filters, Compose, and an institution post rendering with the OFFICIAL
+badge, the Verified Institution mark, *Source: Verified institution*, and
+secondary attribution *Posted by Founder · M S Bajwa*. Typography, cards,
+chips, accent and spacing are Aura's. That is INSTITUTION_VISUAL_SYSTEM
+observed on a real institution surface rather than inferred from the source.
+
+The institution realm's platform bar also carries only bell and account, so the
+realm judgement holds in both non-member realms.
+
+---
+
 ## 6. Web
 
 The public web was deployed and verified live earlier today at **`7a10dc90`**,
@@ -296,7 +353,7 @@ member path returned nothing.
 | Home | PASS |
 | Discover | PASS |
 | Messages | PASS |
-| Institution shell | NOT_EXECUTED — neither available identity holds a membership |
+| Institution shell | PASS — workspace and refusal both exercised on live web |
 | TR / provenance | PASS (production API and rendered on Windows and web) |
 | Calling / ringing | OS integration PASS on device; two-party certified at 1.4.1 |
 | Audio / video | NOT RE-EXERCISED |
@@ -328,10 +385,10 @@ IOS_BUILD_NUMBER              = 37 (unused, reserved)
    which is where 1.4.0 and 1.4.1 went.
 4. **Web** — redeploy at `f24d3a1e`. Live is currently `7a10dc90` and does not
    carry the section-alignment fix.
-5. **Institution surface** — remains uncertified on every platform. Neither the
-   reviewer account nor the device account holds an institution membership, and
-   production membership was not manufactured to produce a screenshot. This
-   needs a legitimate institution identity, not a workaround.
+5. **Institution dashboard** — the one surface still unseen. The identity used
+   holds institution MEMBER standing, which Aura correctly refuses the dashboard
+   to. Seeing it needs an identity with institution admin authority; it is not
+   reachable by anything this session should do.
 
 No Aura Meetings external API code may enter this baseline. That work begins
 from the next development state.
