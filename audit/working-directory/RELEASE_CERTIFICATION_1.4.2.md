@@ -64,7 +64,8 @@ and 411. This is why `f24d3a1e` and not `7a10dc90` is the release source.
 | Item | Value |
 |---|---|
 | Artifact | `build/windows/x64/runner/Release/aura.msix` |
-| Size | 32,984,485 bytes (pre-fix build; repacked artifact is the one of record) |
+| Size | 32,984,560 bytes |
+| sha256 | `fe7c583e563f0a39c13492e7332bb4153a8e4e92270293bbc2e3e5ec751dbbe6` |
 | Identity | `AuraPlatformLLC.AURAPLATFORM` |
 | Package version | `1.4.2.0` |
 | Publisher | `CN=3E4027A7-4D4D-4492-B8DE-BBE425E307E5` |
