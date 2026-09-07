@@ -87,7 +87,28 @@ enum CallCapabilityPolicy {
 /// drive the authority through every storefront, absence and transition
 /// without an App Store account.
 protocol StorefrontSource: AnyObject {
+  /// The synchronous read, used on the launch path where the gate must resolve
+  /// without awaiting anything.
   var storefrontCountryCode: String? { get }
+
+  /// THE READ THAT CAN SEE A CHANGE.
+  ///
+  /// Proven on a real simulator, 2026-09-07: the synchronous StoreKit 1 read
+  /// answers the FIRST storefront correctly and then keeps answering it. Under
+  /// SKTestSession, a session set to USA read as USA; the same process then set
+  /// to CHN still read USA, and a second test that set CHN alone never saw it.
+  /// Three outcomes, one explanation — the value is cached for the process.
+  ///
+  /// A stale value is worse than an unknown one here. Unknown fails safe to
+  /// prohibited; stale asserts a permission that may no longer hold, which for
+  /// a person who moved their Apple Account to China means CallKit staying
+  /// active until the app is restarted.
+  func currentCountryCode() async -> String?
+}
+
+extension StorefrontSource {
+  /// Sources with nothing better to offer answer with what they have.
+  func currentCountryCode() async -> String? { storefrontCountryCode }
 }
 
 /// THE SUPPORTED API FOR THIS DEPLOYMENT TARGET.
@@ -112,6 +133,17 @@ protocol StorefrontSource: AnyObject {
 final class StoreKitStorefrontSource: StorefrontSource {
   var storefrontCountryCode: String? {
     SKPaymentQueue.default().storefront?.countryCode
+  }
+
+  /// StoreKit 2 reports the storefront as it is NOW, and it is the only read
+  /// here that was observed to follow a change within a live process. It is
+  /// async, so it cannot serve the launch path — the synchronous read above
+  /// still does that — but every re-evaluation goes through this.
+  func currentCountryCode() async -> String? {
+    if #available(iOS 15.0, *) {
+      return await Storefront.current?.countryCode
+    }
+    return storefrontCountryCode
   }
 }
 
@@ -253,11 +285,31 @@ final class StorefrontAuthority {
     let next = CallCapabilityPolicy.capability(forStorefront: source.storefrontCountryCode)
     apply(next)
 
+    // AND ASK THE READ THAT CAN SEE A CHANGE.
+    //
+    // The synchronous read above keeps the launch path synchronous, which is
+    // what keeps the withheld window narrow. But it is cached for the process,
+    // so on its own it can only ever report the storefront this process started
+    // with. Every re-evaluation therefore also asks StoreKit 2, and applies
+    // that answer through the same policy and the same `apply`.
+    refreshFromCurrentStorefront()
+
     guard next == .withheld, retryIndex < Self.retrySchedule.count else { return }
     let delay = Self.retrySchedule[retryIndex]
     retryIndex += 1
     DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
       self?.step()
+    }
+  }
+
+  /// Re-read asynchronously and apply. One policy, one `apply`; this adds a
+  /// second way to LOOK, not a second way to decide.
+  private func refreshFromCurrentStorefront() {
+    Task { [weak self] in
+      guard let self else { return }
+      let code = await self.source.currentCountryCode()
+      let next = CallCapabilityPolicy.capability(forStorefront: code)
+      await MainActor.run { self.apply(next) }
     }
   }
 

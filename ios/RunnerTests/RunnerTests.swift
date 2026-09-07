@@ -340,6 +340,8 @@ final class StorefrontTestAuthorityTests: XCTestCase {
     private func observedCode(settingStorefront code: String) throws -> String? {
       let session = try makeSession()
       session.storefront = code
+      // The read Aura re-evaluates with; see
+      // testTransitionIntoChinaEndsProhibitedThroughTheCurrentRead.
       let observed = StoreKitStorefrontSource().storefrontCountryCode
       return observed
     }
@@ -391,30 +393,79 @@ final class StorefrontTestAuthorityTests: XCTestCase {
     /// The transition is the case the App Review finding actually describes: a
     /// device that was permitted becoming prohibited. It must end prohibited,
     /// never merely "changed".
-    func testTransitionIntoChinaEndsProhibited() throws {
+    /// THE READ AURA ACTUALLY RELIES ON, ACROSS A CHANGE.
+    ///
+    /// This test previously drove the SYNCHRONOUS StoreKit 1 read and failed on
+    /// a real simulator, 2026-09-07: a session set to USA read as USA, and the
+    /// same process then set to CHN still read USA. Its sibling, which set CHN
+    /// alone, never saw CHN either. Three outcomes, one explanation — the
+    /// synchronous value is cached for the process.
+    ///
+    /// That failure was a finding, not a flake, and the fix was to the product
+    /// rather than to the test: re-evaluation now goes through
+    /// `currentCountryCode()`, which asks StoreKit 2 for the storefront as it
+    /// is NOW. The synchronous read still serves the launch path, where a
+    /// narrow withheld window matters more than observing a change that cannot
+    /// have happened yet.
+    ///
+    /// A stale storefront is worse than an unknown one: unknown fails safe to
+    /// prohibited, while stale asserts a permission that may no longer hold.
+    func testTransitionIntoChinaEndsProhibitedThroughTheCurrentRead() async throws {
       guard #available(iOS 15.4, *) else {
         throw XCTSkip("SKTestSession storefront control needs iOS 15.4 or newer")
       }
       let session = try makeSession()
+      let source = StoreKitStorefrontSource()
 
       session.storefront = "USA"
-      let permitted = StoreKitStorefrontSource().storefrontCountryCode
+      let permitted = await source.currentCountryCode()
       guard permitted == "USA" else {
         throw XCTSkip(
           "StoreKit test authority did not reach the storefront read "
             + "(reported \(permitted ?? "nil")); the transition is unproven."
         )
       }
+      XCTAssertEqual(
+        CallCapabilityPolicy.capability(forStorefront: permitted),
+        .available,
+        "a non-China storefront must permit CallKit"
+      )
 
       session.storefront = "CHN"
-      let prohibited = StoreKitStorefrontSource().storefrontCountryCode
+      let prohibited = await source.currentCountryCode()
 
-      XCTAssertEqual(prohibited, "CHN", "the storefront change must be observable")
+      XCTAssertEqual(
+        prohibited,
+        "CHN",
+        "the storefront change must be observable through the read Aura uses to "
+          + "re-evaluate — if this fails, a person moving into the China "
+          + "storefront keeps CallKit until the app restarts"
+      )
       XCTAssertEqual(
         CallCapabilityPolicy.capability(forStorefront: prohibited),
         .prohibited,
         "moving into the China storefront must end prohibited, not merely changed"
       )
+    }
+
+    /// The synchronous read is kept for the launch path, and this records what
+    /// it can and cannot do, so nobody later "fixes" the gate by reaching for
+    /// it on a re-evaluation. Deliberately asserts nothing about staleness —
+    /// caching is an implementation detail of StoreKit that may change — it
+    /// asserts only that the FIRST read is usable, which is all the launch path
+    /// asks of it.
+    func testTheSynchronousReadServesTheFirstResolution() throws {
+      guard #available(iOS 15.4, *) else {
+        throw XCTSkip("SKTestSession storefront control needs iOS 15.4 or newer")
+      }
+      let session = try makeSession()
+      session.storefront = "USA"
+
+      let first = StoreKitStorefrontSource().storefrontCountryCode
+      guard let first else {
+        throw XCTSkip("StoreKit test authority did not reach the synchronous read")
+      }
+      XCTAssertEqual(first, "USA", "the first synchronous read must be truthful")
     }
 
   #else
