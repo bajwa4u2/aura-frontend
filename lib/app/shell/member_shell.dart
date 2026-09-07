@@ -1331,7 +1331,7 @@ class _MemberIdentityHeader extends ConsumerWidget {
     final affiliationsResolved = ref.watch(myAffiliationsResolvedProvider);
 
     if (compact) {
-      return Tooltip(
+      final avatar = Tooltip(
         message: name.isEmpty ? 'Your profile' : name,
         child: Material(
           color: Colors.transparent,
@@ -1363,6 +1363,31 @@ class _MemberIdentityHeader extends ConsumerWidget {
             ),
           ),
         ),
+      );
+
+      // THE RELATION SURVIVES THE NARROW RAIL.
+      //
+      // Compact dropped the whole identity block — name, role AND institution
+      // — because a name cannot be squeezed into 92 px without becoming three
+      // ellipsised characters. That reasoning holds for the name and not for
+      // the relation: below 1180 px the rail is forced compact regardless of
+      // preference, so a person on an ordinary laptop never saw which
+      // institution they speak for at all. Founder-reported 2026-09-07, on an
+      // account that owns one.
+      //
+      // A mark is not a squeezed line. It carries the institution's own logo
+      // at a size the rail has room for, says the whole relation in its
+      // tooltip, and goes exactly where the full line goes.
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          avatar,
+          // UNKNOWN IS NOT ABSENT — the same rule the full line follows.
+          // Nothing while access resolves, nothing after it resolves empty:
+          // two different states, and only one of them is permanent.
+          if (affiliationsResolved && affiliations.isNotEmpty)
+            _CompactAffiliationMark(affiliations: affiliations),
+        ],
       );
     }
 
@@ -1477,24 +1502,128 @@ class _AffiliationLineResolving extends StatelessWidget {
   }
 }
 
+/// How a person's standing in an institution is said, in one place.
+///
+/// Both postures show the relation and they must not be able to word it
+/// differently — a rail that says "Owner" at one width and "Member" at another
+/// is describing two different people.
+String affiliationCapacity(MemberAffiliation a) {
+  if (a.canSpeakOfficially) return 'Speaks for';
+  switch (a.role) {
+    case 'OWNER':
+      return 'Owner ·';
+    case 'ADMIN':
+      return 'Admin ·';
+    case 'EDITOR':
+      return 'Editor ·';
+    default:
+      return 'Member ·';
+  }
+}
+
+/// The institution relation at 92 px: a mark, not a squeezed line.
+///
+/// Carries the institution's own logo where it has one and a monogram where it
+/// does not, because a generic building icon would say "some institution" —
+/// which is the thing the person already knows and not the thing they came to
+/// check.
+class _CompactAffiliationMark extends StatelessWidget {
+  const _CompactAffiliationMark({required this.affiliations});
+
+  final List<MemberAffiliation> affiliations;
+
+  @override
+  Widget build(BuildContext context) {
+    if (affiliations.isEmpty) return const SizedBox.shrink();
+    final primary = affiliations.first;
+    final name = primary.name.isEmpty ? 'an institution' : primary.name;
+    final extra = affiliations.length - 1;
+    // The full relation, said in full, because a tooltip has the room the rail
+    // does not. Same wording as the expanded line, from the same function.
+    final tooltip = extra > 0
+        ? '${affiliationCapacity(primary)} $name, and $extra more'
+        : '${affiliationCapacity(primary)} $name';
+    final logo = (primary.logoUrl ?? '').trim();
+    final monogram = name[0].toUpperCase();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: AuraSpace.s4, bottom: AuraSpace.s4),
+      child: Tooltip(
+        message: tooltip,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            // The same destination as the expanded line, from the same
+            // authority — the two postures must not be able to disagree about
+            // where entering an institution lands.
+            onTap: () => context.go(institutionEntryDestination(primary.id)),
+            borderRadius: BorderRadius.circular(AuraRadius.r10),
+            child: Center(
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: AuraSurface.accentSoft,
+                      borderRadius: BorderRadius.circular(AuraRadius.r10),
+                      border: Border.all(
+                        color: AuraSurface.accent.withValues(alpha: 0.30),
+                      ),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: logo.isNotEmpty
+                        ? AuraAttachmentImage(
+                            url: logo,
+                            fit: BoxFit.cover,
+                            errorWidget: (_) => _AffiliationMonogram(monogram),
+                          )
+                        : _AffiliationMonogram(monogram),
+                  ),
+                  if (primary.isVerified)
+                    const Positioned(
+                      right: -3,
+                      bottom: -3,
+                      child: InstitutionVerifiedIcon(
+                        iconSize: 11,
+                        color: AuraSurface.accentText,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AffiliationMonogram extends StatelessWidget {
+  const _AffiliationMonogram(this.letter);
+
+  final String letter;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        letter,
+        style: AuraText.micro.copyWith(
+          color: AuraSurface.accentText,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
 class _AffiliationLine extends StatelessWidget {
   const _AffiliationLine({required this.affiliations});
 
   final List<MemberAffiliation> affiliations;
 
-  String _capacity(MemberAffiliation a) {
-    if (a.canSpeakOfficially) return 'Speaks for';
-    switch (a.role) {
-      case 'OWNER':
-        return 'Owner ·';
-      case 'ADMIN':
-        return 'Admin ·';
-      case 'EDITOR':
-        return 'Editor ·';
-      default:
-        return 'Member ·';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1502,7 +1631,7 @@ class _AffiliationLine extends StatelessWidget {
     final primary = affiliations.first;
     final extra = affiliations.length - 1;
     final name = primary.name.isEmpty ? 'an institution' : primary.name;
-    final label = '${_capacity(primary)} $name';
+    final label = '${affiliationCapacity(primary)} $name';
 
     return Padding(
       padding: const EdgeInsets.only(
