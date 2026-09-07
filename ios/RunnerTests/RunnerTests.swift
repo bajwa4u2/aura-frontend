@@ -371,6 +371,50 @@ final class StorefrontTestAuthorityTests: XCTestCase {
       )
     }
 
+    /// WHICH EXPLANATION IS TRUE — asked first, deliberately.
+    ///
+    /// Two readings fit everything observed so far, and they lead to opposite
+    /// conclusions:
+    ///
+    ///   A. The storefront value is cached for the PROCESS. XCTest runs a
+    ///      suite alphabetically, so `testANonChina…` sets USA and reads it
+    ///      before anything else, and every later test — including both China
+    ///      ones — then sees that same cached USA. If this is true, Aura has a
+    ///      real defect: a person moving into the China storefront keeps
+    ///      CallKit until the app restarts.
+    ///
+    ///   B. SKTestSession cannot drive a CHN storefront in this environment at
+    ///      all. If this is true, Aura has no defect here and the harness
+    ///      simply cannot prove the China read on a simulator.
+    ///
+    /// The name puts this test first in the suite, so CHN is the FIRST
+    /// storefront this process ever reads. Under A it must now be observed;
+    /// under B it still will not be. Nothing else distinguishes them, and the
+    /// difference decides what we may truthfully tell App Review.
+    func testAAAChinaIsObservableWhenItIsTheFirstStorefrontRead() async throws {
+      guard #available(iOS 15.4, *) else {
+        throw XCTSkip("SKTestSession storefront control needs iOS 15.4 or newer")
+      }
+      let session = try makeSession()
+      session.storefront = "CHN"
+
+      let sync = StoreKitStorefrontSource().storefrontCountryCode
+      let current = await StoreKitStorefrontSource().currentCountryCode()
+
+      // Recorded rather than asserted: this test exists to DISTINGUISH, and a
+      // failure here would only repeat what the other tests already say.
+      // What matters is the pair, in the log, with nothing read before them.
+      print(
+        "CHINA-FIRST READ: sync=\(sync ?? "nil") current=\(current ?? "nil")"
+      )
+
+      XCTAssertNotNil(
+        sync ?? current,
+        "neither read reached the StoreKit test authority at all; the "
+          + "environment cannot speak to this question either way"
+      )
+    }
+
     func testANonChinaStorefrontIsReadThroughAndPermitsCallKit() throws {
       guard #available(iOS 15.4, *) else {
         throw XCTSkip("SKTestSession storefront control needs iOS 15.4 or newer")
