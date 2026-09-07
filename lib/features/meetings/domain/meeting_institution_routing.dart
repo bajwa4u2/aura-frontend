@@ -52,3 +52,26 @@ String resolveMeetingRecordRoute({
   }
   return '/meetings/$id';
 }
+
+/// The LIVE ROOM address for [meetingId], for the surface this viewer is on.
+///
+/// [viewerInstitutionId] is the institution the viewer has been canonicalised
+/// into, NOT the meeting's owner — null means "this viewer is on their own
+/// member surface", which is the same meaning it carries in
+/// [resolveMeetingRecordRoute].
+///
+/// This lived inline in the record screen, where the null branch returned
+/// `/home`. Pressing Enter room on a meeting with no owning institution
+/// therefore navigated to the feed, and pressing the card again did it again —
+/// a loop that read as the record throwing rather than routing. The member
+/// route `/meetings/:meetingId/live` had existed all along with nothing
+/// pointing at it, because every institutional viewer takes the other branch.
+String resolveMeetingLiveRoute({
+  required String meetingId,
+  required String? viewerInstitutionId,
+}) {
+  final id = meetingId.trim();
+  final institution = (viewerInstitutionId ?? '').trim();
+  if (institution.isEmpty) return '/meetings/$id/live';
+  return '/institution/$institution/meetings/$id/live';
+}

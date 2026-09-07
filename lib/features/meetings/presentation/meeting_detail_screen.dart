@@ -242,9 +242,25 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
   /// Null now means "route this viewer through their own surfaces", which is
   /// what the null branches at every call site already do.
   String? get _resolvedInstitutionId => widget.institutionId;
-  String get _liveBasePath => _resolvedInstitutionId == null
-      ? '/home'
-      : '/institution/${_resolvedInstitutionId!}/meetings/${meeting.id}/live';
+  /// THE ROOM, FOR WHICHEVER SURFACE THIS VIEWER IS ON.
+  ///
+  /// The null branch was `/home`, so pressing Enter room on a meeting with no
+  /// owning institution pushed `/home?sessionId=...&isHost=true` — the person
+  /// was sent to their feed, pressed the card again, and was sent back. A loop,
+  /// from the home card and the profile participation card alike, and it looked
+  /// like the record was throwing rather than routing.
+  ///
+  /// `/meetings/:meetingId/live` has existed the whole time and takes exactly
+  /// these query parameters. Nothing ever navigated to it: an institutional
+  /// viewer is canonicalised onto the institution address before reaching here,
+  /// so the branch serving everyone else pointed at a page that is not a room.
+  ///
+  /// Founder-observed 2026-09-07 on external meetings, which have no owning
+  /// institution and therefore always took the broken branch.
+  String get _liveBasePath => routing.resolveMeetingLiveRoute(
+        meetingId: meeting.id,
+        viewerInstitutionId: _resolvedInstitutionId,
+      );
 
   void _enterRoom({String? sessionId}) {
     final sid = sessionId ?? meeting.sessionId;
