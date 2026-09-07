@@ -836,13 +836,26 @@ class _NextMeetingCard extends StatelessWidget {
     );
   }
 
-  String get _meetingPath {
-    final institutionId = meeting.owningInstitutionId?.trim() ?? '';
-    if (institutionId.isEmpty) return '/home';
-    return resolveMeetingRecordRoute(
-      meetingId: meeting.id,
-      owningInstitutionId: institutionId,
-      viewerBelongsToOwningInstitution: viewerBelongsToOwningInstitution,
-    );
-  }
+  /// WHERE THE CARD OPENS.
+  ///
+  /// This returned `/home` whenever the meeting had no owning institution, so
+  /// pressing Open or Join on the home card navigated to the feed the card was
+  /// already on. It read as the card bouncing, and it never reached the record
+  /// at all — the profile participation card, which calls the shared resolver
+  /// directly, got as far as the record and then hit the same defect a second
+  /// time in the room address.
+  ///
+  /// The resolver already answers this correctly: an empty owning institution
+  /// means the meeting is not institution-owned, and the member record route
+  /// resolves regardless of ownership. Guarding it out before calling it left a
+  /// second, private answer to a question that has a shared authority — which
+  /// is the thing that authority exists to prevent.
+  ///
+  /// Founder-observed 2026-09-07 on external meetings, which never have an
+  /// owning institution and so always took the discarded branch.
+  String get _meetingPath => resolveMeetingRecordRoute(
+        meetingId: meeting.id,
+        owningInstitutionId: meeting.owningInstitutionId,
+        viewerBelongsToOwningInstitution: viewerBelongsToOwningInstitution,
+      );
 }

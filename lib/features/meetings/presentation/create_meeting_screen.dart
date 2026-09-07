@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../domain/meeting_institution_routing.dart' as routing;
 
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -349,9 +350,18 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
     }
   }
 
-  String _detailPath(String meetingId) => widget.institutionId == null
-      ? '/home'
-      : '/institution/${widget.institutionId}/meetings/$meetingId';
+  /// The meeting that was just created, not the feed.
+  ///
+  /// The null branch was `/home`, so a member who created a meeting was
+  /// returned to their feed and had to go find it. Third instance of one
+  /// defect: `/home` standing in for the member surface wherever a meeting
+  /// has no owning institution. The shared resolver answers this correctly
+  /// for every viewer.
+  String _detailPath(String meetingId) => routing.resolveMeetingRecordRoute(
+        meetingId: meetingId,
+        owningInstitutionId: widget.institutionId,
+        viewerBelongsToOwningInstitution: widget.institutionId != null,
+      );
 
   void _snack(String message) {
     ScaffoldMessenger.of(
