@@ -1891,6 +1891,10 @@ class _MeetingVideoGrid extends StatelessWidget {
       mirror: true,
       isLocal: true,
       label: 'You',
+      // Still called "You"; drawn as yourself.
+      monogramName: (localP?.displayName ?? '').trim().isEmpty
+          ? null
+          : localP!.displayName!.trim(),
       avatarUrl: localP?.avatarUrl,
       micOn: micOn,
     ));
@@ -2063,6 +2067,7 @@ class _ParticipantTile extends StatefulWidget {
     required this.label,
     required this.avatarUrl,
     required this.micOn,
+    this.monogramName,
   });
 
   final RTCVideoRenderer? renderer;
@@ -2072,6 +2077,15 @@ class _ParticipantTile extends StatefulWidget {
   final String label;
   final String? avatarUrl;
   final bool micOn;
+
+  /// WHOSE INITIAL TO DRAW, when there is no photo and no video.
+  ///
+  /// The label is what to CALL this tile, and for your own it is "You" — so
+  /// deriving the monogram from it drew a "Y" for every person on earth
+  /// looking at themselves. Founder-spotted 2026-09-07: a guest named
+  /// Orchestrate Operations appeared as Y on their own screen and correctly as
+  /// O on everyone else's.
+  final String? monogramName;
 
   @override
   State<_ParticipantTile> createState() => _ParticipantTileState();
@@ -2131,7 +2145,9 @@ class _ParticipantTileState extends State<_ParticipantTile> {
     final showVideo = _showVideo;
     _lastShowVideo = showVideo;
     final renderer = widget.renderer;
-    final trimmed = widget.label.trim();
+    // The person's own name where we know it, falling back to the label —
+    // which is right for a remote tile, whose label already IS their name.
+    final trimmed = (widget.monogramName ?? widget.label).trim();
     final initial = trimmed.isNotEmpty ? trimmed[0].toUpperCase() : '?';
     return DecoratedBox(
       decoration: BoxDecoration(
