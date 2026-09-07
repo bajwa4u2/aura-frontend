@@ -91,18 +91,27 @@ protocol StorefrontSource: AnyObject {
   /// without awaiting anything.
   var storefrontCountryCode: String? { get }
 
-  /// THE READ THAT CAN SEE A CHANGE.
+  /// A SECOND WAY TO LOOK, ASKED AT THE MOMENT OF ASKING.
   ///
-  /// Proven on a real simulator, 2026-09-07: the synchronous StoreKit 1 read
-  /// answers the FIRST storefront correctly and then keeps answering it. Under
-  /// SKTestSession, a session set to USA read as USA; the same process then set
-  /// to CHN still read USA, and a second test that set CHN alone never saw it.
-  /// Three outcomes, one explanation — the value is cached for the process.
+  /// This was introduced on 2026-09-07 under a stated reason that later
+  /// certification DISPROVED, and the wrong reason is recorded here rather
+  /// than quietly replaced. The claim was that the synchronous StoreKit 1
+  /// read is cached for the process, so it could never observe a storefront
+  /// change. Certification #15 showed the synchronous read returning USA
+  /// correctly and repeatedly, in one process, after CHN had already been
+  /// set — which a cached value could not do. What that environment will not
+  /// do is present CHN at all, through either read.
   ///
-  /// A stale value is worse than an unknown one here. Unknown fails safe to
-  /// prohibited; stale asserts a permission that may no longer hold, which for
-  /// a person who moved their Apple Account to China means CallKit staying
-  /// active until the app is restarted.
+  /// So this method is NOT a fix for a proven staleness defect; no such
+  /// defect has been demonstrated. It is a second, independent observation
+  /// path — StoreKit 2 reports the storefront as it is now, and pairs with
+  /// `Storefront.updates` to hear a change rather than wait to be asked. Both
+  /// reads feed the same policy and the same `apply`, so agreeing costs
+  /// nothing and disagreeing resolves to whichever last answered.
+  ///
+  /// The safety argument does not rest on either read. It rests on starting
+  /// `withheld`: an unknown storefront fails closed, so the only way CallKit
+  /// turns on is an affirmative read of a permitted storefront.
   func currentCountryCode() async -> String?
 }
 
@@ -285,13 +294,15 @@ final class StorefrontAuthority {
     let next = CallCapabilityPolicy.capability(forStorefront: source.storefrontCountryCode)
     apply(next)
 
-    // AND ASK THE READ THAT CAN SEE A CHANGE.
+    // AND ASK STOREKIT 2 AS WELL.
     //
-    // The synchronous read above keeps the launch path synchronous, which is
-    // what keeps the withheld window narrow. But it is cached for the process,
-    // so on its own it can only ever report the storefront this process started
-    // with. Every re-evaluation therefore also asks StoreKit 2, and applies
-    // that answer through the same policy and the same `apply`.
+    // The synchronous read keeps the launch path synchronous, which is what
+    // keeps the withheld window narrow. Asking again asynchronously costs a
+    // launch nothing and gives re-evaluation a second, independent source
+    // that reports the storefront as it is now. Not a fix for a proven
+    // staleness defect — see `currentCountryCode()` for what was and was not
+    // established — a second way to look, applied through the same policy and
+    // the same `apply`.
     refreshFromCurrentStorefront()
 
     guard next == .withheld, retryIndex < Self.retrySchedule.count else { return }

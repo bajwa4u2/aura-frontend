@@ -340,8 +340,9 @@ final class StorefrontTestAuthorityTests: XCTestCase {
     private func observedCode(settingStorefront code: String) throws -> String? {
       let session = try makeSession()
       session.storefront = code
-      // The read Aura re-evaluates with; see
-      // testTransitionIntoChinaEndsProhibitedThroughTheCurrentRead.
+      // THE SYNCHRONOUS read — the one the launch path uses. The read
+      // used for re-evaluation is exercised by
+      // testAStorefrontChangeIsObservedAndChinaProhibitsWhenPresented.
       let observed = StoreKitStorefrontSource().storefrontCountryCode
       return observed
     }
@@ -371,26 +372,23 @@ final class StorefrontTestAuthorityTests: XCTestCase {
       )
     }
 
-    /// WHICH EXPLANATION IS TRUE — asked first, deliberately.
+    /// CHN AS THE VERY FIRST STOREFRONT THE PROCESS EVER READS.
     ///
-    /// Two readings fit everything observed so far, and they lead to opposite
-    /// conclusions:
+    /// The name puts this first in the suite on purpose, and that ordering is
+    /// half of an answer this gate has now reached. Two explanations were live
+    /// for never observing CHN: that the value is cached per process, or that
+    /// the harness will not present CHN at all. If it were caching, a CHN read
+    /// taken before anything else would have to succeed.
     ///
-    ///   A. The storefront value is cached for the PROCESS. XCTest runs a
-    ///      suite alphabetically, so `testANonChina…` sets USA and reads it
-    ///      before anything else, and every later test — including both China
-    ///      ones — then sees that same cached USA. If this is true, Aura has a
-    ///      real defect: a person moving into the China storefront keeps
-    ///      CallKit until the app restarts.
+    /// Certification #15: it did not. And the very next test set USA and read
+    /// USA — which a value cached from this one could not have done. Between
+    /// them the two tests rule out caching and leave the harness limit, which
+    /// is what `testAStorefrontChangeIsObservedAndChinaProhibitsWhenPresented`
+    /// now proves properly with a control.
     ///
-    ///   B. SKTestSession cannot drive a CHN storefront in this environment at
-    ///      all. If this is true, Aura has no defect here and the harness
-    ///      simply cannot prove the China read on a simulator.
-    ///
-    /// The name puts this test first in the suite, so CHN is the FIRST
-    /// storefront this process ever reads. Under A it must now be observed;
-    /// under B it still will not be. Nothing else distinguishes them, and the
-    /// difference decides what we may truthfully tell App Review.
+    /// Kept, rather than deleted with the question it settled: it is the only
+    /// test that reads a storefront before anything else has, and it would be
+    /// the first to notice if that ever started behaving differently.
     func testAAAChinaIsObservableWhenItIsTheFirstStorefrontRead() async throws {
       guard #available(iOS 15.4, *) else {
         throw XCTSkip("SKTestSession storefront control needs iOS 15.4 or newer")
@@ -434,27 +432,36 @@ final class StorefrontTestAuthorityTests: XCTestCase {
       )
     }
 
-    /// The transition is the case the App Review finding actually describes: a
-    /// device that was permitted becoming prohibited. It must end prohibited,
-    /// never merely "changed".
-    /// THE READ AURA ACTUALLY RELIES ON, ACROSS A CHANGE.
+    /// A CONTROL FIRST, AND ONLY THEN THE CLAIM.
     ///
-    /// This test previously drove the SYNCHRONOUS StoreKit 1 read and failed on
-    /// a real simulator, 2026-09-07: a session set to USA read as USA, and the
-    /// same process then set to CHN still read USA. Its sibling, which set CHN
-    /// alone, never saw CHN either. Three outcomes, one explanation — the
-    /// synchronous value is cached for the process.
+    /// Certification #15 settled a question this test used to get wrong.
+    /// In one process, with the storefront driven by SKTestSession:
     ///
-    /// That failure was a finding, not a flake, and the fix was to the product
-    /// rather than to the test: re-evaluation now goes through
-    /// `currentCountryCode()`, which asks StoreKit 2 for the storefront as it
-    /// is NOW. The synchronous read still serves the launch path, where a
-    /// narrow withheld window matters more than observing a change that cannot
-    /// have happened yet.
+    ///   CHN set, read first of all  ->  not CHN
+    ///   USA set                     ->  USA
+    ///   CHN set                     ->  not CHN
+    ///   USA set                     ->  USA
+    ///   USA then CHN                ->  USA read fine, CHN never arrived
     ///
-    /// A stale storefront is worse than an unknown one: unknown fails safe to
-    /// prohibited, while stale asserts a permission that may no longer hold.
-    func testTransitionIntoChinaEndsProhibitedThroughTheCurrentRead() async throws {
+    /// USA was read correctly, repeatedly, through BOTH the synchronous and
+    /// the StoreKit 2 path, in the same process, after CHN had been set first.
+    /// So the earlier explanation written here — "the value is cached for the
+    /// process" — is disproven: a cached value could not have tracked USA.
+    /// What this environment does is present every storefront asked of it
+    /// EXCEPT China mainland.
+    ///
+    /// That is an environment limit, not a product defect, and the difference
+    /// is only worth anything if it is PROVEN rather than assumed. So this
+    /// test now changes the storefront to a third, non-China territory and
+    /// ASSERTS that the read follows it. That control is not skippable: if the
+    /// read cannot follow USA -> JPN, then the product genuinely cannot
+    /// observe a storefront change and this test fails, which is the outcome
+    /// it exists to produce.
+    ///
+    /// Only with the control passing does an absent CHN get recorded as an
+    /// environment limit instead of a failure. There is no path here that
+    /// turns a real staleness defect into a skip.
+    func testAStorefrontChangeIsObservedAndChinaProhibitsWhenPresented() async throws {
       guard #available(iOS 15.4, *) else {
         throw XCTSkip("SKTestSession storefront control needs iOS 15.4 or newer")
       }
@@ -465,8 +472,8 @@ final class StorefrontTestAuthorityTests: XCTestCase {
       let permitted = await source.currentCountryCode()
       guard permitted == "USA" else {
         throw XCTSkip(
-          "StoreKit test authority did not reach the storefront read "
-            + "(reported \(permitted ?? "nil")); the transition is unproven."
+          "StoreKit test authority did not reach the storefront read at all "
+            + "(reported \(permitted ?? "nil")); nothing here is provable."
         )
       }
       XCTAssertEqual(
@@ -475,16 +482,72 @@ final class StorefrontTestAuthorityTests: XCTestCase {
         "a non-China storefront must permit CallKit"
       )
 
+      // THE CONTROL.
+      //
+      // Several territories, not one, because a single control cannot tell
+      // "this environment will not present JPN" apart from "the product
+      // cannot observe a change" — and blaming the product for the harness
+      // is the mistake this whole test exists to stop repeating.
+      //
+      //   any control observed          -> the read follows a change. PASS.
+      //   every control read back USA   -> the value is stuck at the first
+      //                                    storefront. That is the staleness
+      //                                    signature, and it FAILS.
+      //   anything else (nil, junk)     -> the authority is not reachable for
+      //                                    control territories, and this test
+      //                                    can prove nothing. SKIP.
+      var observedControl: String?
+      var controlReads: [String?] = []
+      for territory in ["GBR", "JPN", "DEU", "FRA"] {
+        session.storefront = territory
+        let read = await source.currentCountryCode()
+        controlReads.append(read)
+        if read == territory {
+          observedControl = read
+          break
+        }
+      }
+
+      guard let observedControl else {
+        if controlReads.allSatisfy({ $0 == "USA" }) {
+          XCTFail(
+            "the storefront was changed four times and the read still "
+              + "reported USA every time — the value is stuck at the first "
+              + "storefront of the process, and a person moving into the "
+              + "China storefront would keep CallKit until restart"
+          )
+          return
+        }
+        let reads = controlReads.map { $0 ?? "nil" }.joined(separator: ", ")
+        throw XCTSkip(
+          "no control territory could be presented through the read "
+            + "(\(reads)). USA resolved, so the authority is partly reachable, "
+            + "but this environment cannot demonstrate a change and nothing "
+            + "about the China read is provable here."
+        )
+      }
+
+      XCTAssertEqual(
+        CallCapabilityPolicy.capability(forStorefront: observedControl),
+        .available,
+        "\(observedControl) is not a prohibited storefront"
+      )
+
+      // THE CLAIM. Provable only where the environment will present CHN.
       session.storefront = "CHN"
       let prohibited = await source.currentCountryCode()
 
-      XCTAssertEqual(
-        prohibited,
-        "CHN",
-        "the storefront change must be observable through the read Aura uses to "
-          + "re-evaluate — if this fails, a person moving into the China "
-          + "storefront keeps CallKit until the app restarts"
-      )
+      guard prohibited == "CHN" else {
+        throw XCTSkip(
+          "This environment presented USA and \(observedControl) through the "
+            + "same read and would not present CHN (reported \(prohibited ?? "nil")). The "
+            + "control above proves the read observes a change, so this is a "
+            + "limit of Apple's storefront test authority, not a staleness "
+            + "defect in Aura. A real China storefront read remains UNPROVEN "
+            + "here and must not be claimed to App Review."
+        )
+      }
+
       XCTAssertEqual(
         CallCapabilityPolicy.capability(forStorefront: prohibited),
         .prohibited,
