@@ -1,70 +1,68 @@
 # Draft reply — Guideline 5, China mainland CallKit
 
-STATUS: **DRAFTED, NOT SENT.** Founder sends; nothing here goes to Apple
+STATUS: **DRAFTED, NOT SENT.** The founder sends; nothing here goes to Apple
 without that.
 
-BEFORE SENDING: re-read Apple's 2026-09-02 message in App Store Connect and
-confirm this answers the question they actually asked, in their words. This
-draft was written from the established position (Guideline 5, China CallKit,
-reply-only resolution offered) at a moment when App Store Connect was not
-readable from this session. Answer exactly what they asked; do not add
-architecture they did not ask for.
+Basis: `docs/BUILD_37_CHINA_FORENSICS.md`. Every sentence below is supported by
+build 37 (`cbdaab24`, `aura.ipa` 37) and not by current `main`.
+
+BEFORE SENDING: re-read Apple's message in App Store Connect and confirm this
+answers the question they actually asked, in their terms.
 
 ---
 
 ## The reply
 
-> Thank you for the follow-up.
->
-> We can confirm that Aura does not use CallKit in mainland China.
+> Thank you for the follow-up. We can confirm that Aura does not activate its
+> CallKit and VoIP calling integration for users whose App Store storefront is
+> mainland China.
 >
 > The app determines this from the App Store storefront, not from the device's
-> locale, SIM, timezone or IP address. On launch the app reads the storefront
-> and holds the native calling capability in a withheld state until a
-> storefront has been established and is permitted. When the storefront is
-> China mainland (CHN), the app does not create a CXProvider, does not register
-> for VoIP push notifications, does not report any call to CallKit, and does
-> not request any CallKit call action. This is the behaviour of build 37, which
-> is the build currently under review.
+> locale, SIM, time zone or IP address. The calling capability starts in a
+> withheld state and is enabled only once a storefront has been established and
+> is permitted. When the storefront is China mainland, the app creates no
+> CXProvider, performs no PushKit VoIP registration, reports no call to CallKit,
+> and requests no CallKit call action. This is the behaviour of build 37, the
+> build currently under review.
 >
-> Calling itself remains available to people in mainland China through Aura's
-> own in-app call experience and the app's ordinary notification path. Outside
+> Calling itself remains available to users in mainland China through Aura's own
+> in-app calling experience and the app's ordinary notification path. Outside
 > mainland China the standard CallKit experience is unchanged.
 >
-> If it would help, we are happy to provide any further detail you need.
+> Please let us know if you would like any further detail.
 
 ---
 
-## What this reply asserts, and what backs each assertion
+## What each sentence rests on
 
 | Sentence | Evidence |
 |---|---|
-| determined from the App Store storefront | `CallCapabilityPolicy.swift` at `cbdaab24`; the only country comparison in the app |
-| withheld until established and permitted | `capability: CallKitCapability = .withheld`, `allowsCallKit` true only for `.available` |
-| no CXProvider on CHN | constructed only inside `activateCallKitStack()`, reached only when `allowsCallKit` |
-| no VoIP registration on CHN | `PKPushRegistry` and `desiredPushTypes` in the same branch |
+| determined from the App Store storefront | `CallCapabilityPolicy.swift` at `cbdaab24`; the token `CHN` occurs exactly once in the shipped 3.5 MB binary |
+| starts withheld, enabled only by an established permitted storefront | `capability: CallKitCapability = .withheld`; `allowsCallKit` true only for `.available` |
+| no CXProvider under CHN | constructed only inside `activateCallKitStack()`, whose sole caller is the `allowsCallKit` branch |
+| no VoIP registration under CHN | `PKPushRegistry` and `desiredPushTypes` in that same branch; plus two further stops on the token path |
 | no call reported to CallKit | every `provider.reportCall` site behind `guard callKitAllowed, let provider` |
-| no CallKit call action requested | both `callController.request` sites behind `guard callKitAllowed` |
-| this is build 37's behaviour | all of the above read from `cbdaab24`, the commit built as `aura.ipa` 37 |
+| no CallKit action requested | both `callController.request` sites behind `guard callKitAllowed` |
+| in-app calling unaffected | native returns `false`; Dart discards it at the only call site |
+| this is build 37 | all of the above read from `cbdaab24` and its own artifact |
 
-## What this reply deliberately does NOT assert
+## What this reply deliberately does not say
 
-- **That no CallKit object is constructed at all.** Build 37 allocates one
-  `CXCallController` as a stored property at launch, on every storefront, and
-  clears its observer once while tearing the stack down. Nothing is requested
-  through it on CHN. Current `main` removes even that allocation, but build 37
-  is what Apple has, and the reply describes build 37.
-- **That we tested this on a real China storefront.** We have not. See
-  `docs/IOS_RELEASE_GATE.md` for what the simulator harness can and cannot
-  prove.
-- **Anything about the sign-in report.** That was raised against build 36 under
-  Guideline 2.1(a) and is not the current rejection. Server records show the
-  reviewer authenticated successfully on build 37. If Apple raises it again,
-  it is answered separately.
+- **Not** "no CallKit object is ever constructed." Build 37 eagerly constructs an
+  inert `CXCallController` and clears a call observer's delegate during
+  teardown. Neither can present a call, write to the system call log, or receive
+  a VoIP push. The stronger sentence is true only of current `main`, and is not
+  needed.
+- **Not** anything about testing on a real China storefront. We have not done
+  that.
+- **Not** our debugging history, certification runs, or simulator limitations.
+- **Not** anything about the earlier sign-in report. That was raised against
+  build 36 under Guideline 2.1(a), is not the current rejection, and is answered
+  separately if raised.
 
 ## If Apple asks for a new binary anyway
 
-Then the hardening already on `main` — the lazy `CXCallController`, the
-StoreKit 2 storefront read that can observe a change — ships as build 38, and
-the reply's second sentence can become the stronger one. That is a better
-build. It is not needed to make this reply true.
+The hardening already on `main` — the lazy `CXCallController`, the StoreKit 2
+storefront read, `Storefront.updates` — ships as build 38, and the first bullet
+above becomes assertable. That is a better build. It is not what makes this
+reply true.
