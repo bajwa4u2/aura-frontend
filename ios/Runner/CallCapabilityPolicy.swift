@@ -145,6 +145,9 @@ final class StorefrontAuthority {
     2.0, 2.0, 2.0, 2.0, 2.0,
   ]
 
+  /// Cancelled with the authority so a torn-down instance stops observing.
+  private var storefrontUpdatesTask: Task<Void, Never>?
+
   private let source: StorefrontSource
   private let notificationCenter: NotificationCenter
   private var onChange: ((CallKitCapability) -> Void)?
@@ -172,6 +175,7 @@ final class StorefrontAuthority {
     if let observer = foregroundObserver {
       notificationCenter.removeObserver(observer)
     }
+    storefrontUpdatesTask?.cancel()
   }
 
   /// Begin resolving, and call `onChange` on every capability TRANSITION.
@@ -199,7 +203,37 @@ final class StorefrontAuthority {
       self?.resolve()
     }
 
+    observeStorefrontUpdates()
+
     resolve()
+  }
+
+  /// THE PLATFORM'S OWN CHANGE SIGNAL, IN ADDITION TO FOREGROUNDING.
+  ///
+  /// Foregrounding catches every storefront change we can construct — the
+  /// change is made in Settings or the App Store, so the app is always
+  /// backgrounded across it. That argument is sound and the observer above
+  /// stays, because it also covers the case where this stream is unavailable.
+  ///
+  /// But a legally consequential gate should not rest on a behavioural
+  /// argument alone when the platform publishes the fact directly.
+  /// `Storefront.updates` is StoreKit 2's supported signal, and subscribing to
+  /// it costs nothing on the launch path: it is observed on a detached task
+  /// while the authoritative first read stays synchronous, so nothing about a
+  /// healthy launch gets later and the `withheld` window does not widen.
+  ///
+  /// Each emission re-runs the same `resolve()` every other trigger uses.
+  /// There is exactly one capability policy and one source boundary; this adds
+  /// a way to be told, not a second way to decide.
+  private func observeStorefrontUpdates() {
+    if #available(iOS 15.0, *) {
+      storefrontUpdatesTask = Task { [weak self] in
+        for await _ in Storefront.updates {
+          if Task.isCancelled { return }
+          await MainActor.run { self?.resolve() }
+        }
+      }
+    }
   }
 
   /// Re-read the storefront now, and keep retrying while it is unresolved.
