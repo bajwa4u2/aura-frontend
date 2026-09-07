@@ -257,6 +257,11 @@ void main() {
         'platform',
         'record',
         'discovery',
+        // EIGHTH AREA, added deliberately 2026-09-06 for the Meetings
+        // External API operator surface — consumers, tenants and
+        // credentials. Recorded here because this gate exists to catch
+        // areas that appear WITHOUT a decision, not to forbid decisions.
+        'external',
       ]);
       final paths = OperatorArea.values.map((a) => a.path).toSet();
       expect(paths.length, OperatorArea.values.length);

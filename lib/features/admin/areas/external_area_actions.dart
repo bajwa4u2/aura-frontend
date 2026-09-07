@@ -379,15 +379,21 @@ Future<bool?> _form(
 
 /// THE ONE TIME THESE VALUES EXIST.
 ///
-/// Not dismissible by tapping outside, and the only way out says "I have
-/// copied these". Aura keeps the API secret as a hash and seals the signing
-/// secret, so a dialog closed by accident does not lose A copy — it loses the
-/// ONLY copy there will ever be, and the remedy is a rotation that invalidates
-/// whatever the customer was already given.
+/// Aura keeps the API secret as a hash and seals the signing secret, so a
+/// dialog closed early does not lose A copy — it loses the ONLY copy there
+/// will ever be, and the remedy is a rotation that invalidates whatever the
+/// customer was already given.
+///
+/// That was the case for making it undismissable, and the product rule
+/// overrules it: the undismissable form is right exactly once, on the
+/// terminal acknowledgement after an account has been deleted, where "did you
+/// mean to dismiss that" is not a question worth asking. Here it is worth
+/// asking — the remedy exists, it is one rotation away, and a trap is worse
+/// than a re-issue. The prominent way out still says "I have copied these".
 Future<void> _showOnce(BuildContext context, ExternalShowOnce once) {
   return showDialog<void>(
     context: context,
-    barrierDismissible: false,
+    barrierDismissible: true,
     builder: (ctx) => AlertDialog(
       title: const Text('Copy these now'),
       content: SingleChildScrollView(

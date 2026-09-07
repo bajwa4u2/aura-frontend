@@ -60,7 +60,11 @@ class ExternalCredentialRow {
   bool get isActive => status == 'ACTIVE';
 
   static DateTime? _date(dynamic v) =>
-      v is String ? DateTime.tryParse(v)?.toLocal() : null;
+      // ABSOLUTE, NOT LOCAL. A data layer that applies toLocal() has
+      // decided a timezone on behalf of every surface that will ever
+      // render it. ProductTime.local is the single place that decision
+      // belongs, and the C0 drift gate holds the line.
+      v is String ? DateTime.tryParse(v) : null;
 
   factory ExternalCredentialRow.fromJson(Map<String, dynamic> j) {
     return ExternalCredentialRow(
@@ -208,7 +212,7 @@ class ExternalConsumerRow {
       isControlledCertification: j['isControlledCertification'] == true,
       countsTowardMarketMetrics: j['countsTowardMarketMetrics'] != false,
       createdAt: j['createdAt'] is String
-          ? DateTime.tryParse(j['createdAt'] as String)?.toLocal()
+          ? DateTime.tryParse(j['createdAt'] as String)
           : null,
     );
   }

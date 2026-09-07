@@ -39,6 +39,7 @@
 /// rather than trusting anyone to remember which one it was.
 library;
 
+import '../../../core/product/temporal.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -300,7 +301,8 @@ class _CredentialLine extends StatelessWidget {
           // that is believed to.
           credential.lastUsedAt == null
               ? 'Never used — issued but not yet installed'
-              : 'Last used ${_ago(credential.lastUsedAt!)}',
+              : 'Last used '
+                  '${AuraTemporal.humanize(ProductTime(credential.lastUsedAt!, TimeEvent.occurred))}',
           style: theme.textTheme.labelSmall?.copyWith(
             color: credential.lastUsedAt == null
                 ? AuraSurface.muted
@@ -440,10 +442,4 @@ class _Note extends StatelessWidget {
   }
 }
 
-String _ago(DateTime when) {
-  final d = DateTime.now().difference(when);
-  if (d.inMinutes < 1) return 'just now';
-  if (d.inHours < 1) return '${d.inMinutes}m ago';
-  if (d.inDays < 1) return '${d.inHours}h ago';
-  return '${d.inDays}d ago';
-}
+
