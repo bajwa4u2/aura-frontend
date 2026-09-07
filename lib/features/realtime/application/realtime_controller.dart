@@ -13,6 +13,7 @@ import '../data/realtime_event_parser.dart';
 import '../data/realtime_media_service.dart';
 import '../data/realtime_repository.dart';
 import '../data/sfu_realtime_transport.dart';
+import 'single_flight.dart';
 import '../data/realtime_socket_service.dart';
 import '../domain/realtime_enums.dart';
 import '../domain/realtime_models.dart';
@@ -3890,7 +3891,64 @@ class RealtimeController extends StateNotifier<RealtimeState>
     });
   }
 
-  Future<void> _ensureStageConnected(String reason) async {
+  /// ONE CONNECTION OPERATION, HOWEVER MANY CALLERS ASK FOR ONE.
+  ///
+  /// `_reconcileRtcPeers` is reached from nine places — hydrate, join, resume,
+  /// media-ready, participant.joined, media.published, track-change and
+  /// friends — and several of them are unawaited. Every one of those is a
+  /// legitimate reason to ASK whether the stage is connected. None of them is
+  /// a reason to build a second transport.
+  ///
+  /// The old body tested `_stage == null` and then awaited a server round trip
+  /// and a full SDP negotiation before `_stage` was finally set inside
+  /// `attachStage`. Any trigger arriving in that window passed the same test.
+  /// Production, 2026-09-07: transports opened 2 and 3 seconds apart, five
+  /// healthy ones reclaimed in forty seconds, and every peer subscription to
+  /// the discarded provider sessions failed with 410 Gone.
+  ///
+  /// Ownership is claimed BEFORE the first await, so a concurrent caller joins
+  /// the operation already in flight instead of starting its own. The gate
+  /// lives at the media boundary rather than at the nine call sites, because a
+  /// tenth caller will be added one day and it must be safe by construction.
+  Future<void> _ensureStageConnected(String reason) => _stageGate.run(
+        () => _ensureStageConnectedOnce(reason),
+        onJoin: () => _report('stage.connect_joined reason=$reason'),
+      );
+
+  /// The ownership token for a connection attempt: it exists from before the
+  /// first await until the attempt finishes, which is exactly the window the
+  /// race lived in. This is the SAME unit proven in single_flight_test.dart,
+  /// not a second copy of the idea — a tested copy of a boundary that the
+  /// product does not use proves nothing about the product.
+  final SingleFlight _stageGate = SingleFlight();
+
+  /// Identifies THIS client media attempt to the server, so it can tell "the
+  /// same client asking again" from "a genuinely new client instance". Minted
+  /// once per controller, which is once per real client media lifetime.
+  final String _mediaAttemptNonce =
+      'att-${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}'
+      '-${_attemptSeq++}';
+
+  /// Two controllers created in the same microsecond must still be two
+  /// attempts, or the server would read them as one client and let one
+  /// adopt the other's media.
+  static int _attemptSeq = 0;
+
+  void _report(String line) {
+    final id = _managedSessionId;
+    if (id.isEmpty) return;
+    unawaited(_repository
+        .reportStageDiagnostic(
+          id,
+          phase: 'ownership',
+          code: 'single_flight',
+          message: line,
+          platform: _clientPlatform,
+        )
+        .catchError((_) {}));
+  }
+
+  Future<void> _ensureStageConnectedOnce(String reason) async {
     final sessionId = _managedSessionId;
     if (sessionId.isEmpty) return;
     if (!state.isMediaReady) {
@@ -3915,6 +3973,11 @@ class RealtimeController extends StateNotifier<RealtimeState>
         late final SfuRealtimeTransport transport;
         transport = SfuRealtimeTransport(
           _repository,
+          // The server tells "this client asking again" from "a new client
+          // instance" by this nonce, and adopts rather than destroys in the
+          // first case. Minted once per controller: once per real client
+          // media lifetime.
+          clientNonce: _mediaAttemptNonce,
           // The transport identifies ITSELF, so recovery can tell whether the
           // thing that died is still the live one.
           onLost: (reason, iceHealthy) =>
@@ -3954,6 +4017,19 @@ class RealtimeController extends StateNotifier<RealtimeState>
         await _mediaService.refreshStageRemoteMedia(trigger: trigger);
       }
 
+    } on StageTransportAdopted catch (adopted) {
+      // NOT A FAILURE. This attempt raced one that already owns the
+      // participant's media and the server kept the incumbent, which is the
+      // ownership model working rather than breaking. Recording it as a
+      // failure would bury the very signal that tells churn from recovery.
+      unawaited(_repository.reportStageDiagnostic(
+        sessionId,
+        phase: 'ownership',
+        code: 'stage_adopted',
+        message: 'reason=$reason generation=${adopted.generation} '
+            'transport=${adopted.transportId}',
+        platform: _clientPlatform,
+      ));
     } catch (e) {
       // Never let a transport failure take the call down silently — the
       // product should show honest state rather than a frozen screen. But

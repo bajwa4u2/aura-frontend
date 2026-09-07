@@ -21,7 +21,33 @@ import 'stage_remote_binding.dart';
 /// not reach another Aura session's media if it tried: a subscribe carries
 /// AURA track ids, which the server resolves inside the caller's own session.
 class SfuRealtimeTransport implements RealtimeTransport {
-  SfuRealtimeTransport(this._repository, {this.onLost, this.onMediaFlowing});
+  SfuRealtimeTransport(
+    this._repository, {
+    this.onLost,
+    this.onMediaFlowing,
+    this.clientNonce,
+    this.openReason,
+    this.replacesGeneration,
+  });
+
+  /// Identifies one client media attempt to the server; see
+  /// RealtimeRepository.openStageTransport.
+  final String? clientNonce;
+
+  /// A reason from the closed replacement list, when this attempt believes it
+  /// may legitimately succeed a previous generation. Null means it makes no
+  /// replacement claim at all, which is the correct default.
+  final String? openReason;
+
+  /// Compare-and-act: the generation this attempt believes it replaces.
+  final int? replacesGeneration;
+
+  /// The generation the server says this transport is, once open.
+  int? generation;
+
+  /// True when the server kept an incumbent and this attempt stood down.
+  bool _adopted = false;
+  bool get adopted => _adopted;
 
   final RealtimeRepository _repository;
 
@@ -271,7 +297,27 @@ class SfuRealtimeTransport implements RealtimeTransport {
     final opened = await _repository.openStageTransport(
       sessionId,
       offerSdp: offer.sdp ?? '',
+      clientNonce: clientNonce,
+      reason: openReason,
+      replacesGeneration: replacesGeneration,
     );
+
+    // ADOPTED: this attempt raced one that already owns the participant's
+    // media, and the server kept the incumbent. That is the correct outcome —
+    // the alternative is the defect, where arriving second destroyed working
+    // media and stranded the peer on a session that no longer existed.
+    //
+    // Nothing here is retried: the winner is already connected, and this
+    // attempt exists only because two triggers overlapped. It gives up its own
+    // peer connection rather than running a second one.
+    if (opened['adopted'] == true) {
+      _adopted = true;
+      throw StageTransportAdopted(
+        (opened['transportId'] ?? '').toString(),
+        (opened['generation'] as num?)?.toInt() ?? 0,
+      );
+    }
+    generation = (opened['generation'] as num?)?.toInt();
     final negotiation = (opened['negotiation'] as Map?)?.cast<String, dynamic>();
     final answer = negotiation?['sdp'];
     if (answer is! String || answer.isEmpty) {
@@ -817,4 +863,17 @@ class SfuRealtimeTransport implements RealtimeTransport {
         _report('op=ICE state=lost reason=$reason iceHealthy=$iceHealthy'));
     onLost?.call(reason, iceHealthy);
   }
+}
+
+/// Raised when the server kept an existing media generation and this attempt
+/// stood down. Not an error in any meaningful sense: it is the ownership model
+/// working, and the caller should discard this transport and leave the
+/// incumbent alone.
+class StageTransportAdopted implements Exception {
+  StageTransportAdopted(this.transportId, this.generation);
+  final String transportId;
+  final int generation;
+  @override
+  String toString() =>
+      'stage transport adopted by generation \$generation';
 }

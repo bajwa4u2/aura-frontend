@@ -395,13 +395,30 @@ class RealtimeRepository {
   // Nothing here sends or receives a provider identifier: a subscribe names
   // AURA track ids, and the response says which m-line carries whose track.
 
+  /// Open a media transport, stating what this caller believes it owns.
+  ///
+  /// [clientNonce] identifies ONE client media attempt. The server uses it to
+  /// tell "the same client asking again" — which must adopt what already
+  /// exists — from "a genuinely new client instance", which may legitimately
+  /// succeed it. [reason] must come from the closed replacement list, and
+  /// [replacesGeneration] makes replacement compare-and-act: a caller that is
+  /// stale is refused rather than allowed to close a successor.
   Future<Map<String, dynamic>> openStageTransport(
     String sessionId, {
     required String offerSdp,
+    String? clientNonce,
+    String? reason,
+    int? replacesGeneration,
   }) async {
     final res = await _dio.post(
       '/realtime/sessions/$sessionId/stage/transport',
-      data: <String, dynamic>{'offerSdp': offerSdp},
+      data: <String, dynamic>{
+        'offerSdp': offerSdp,
+        if (clientNonce != null && clientNonce.isNotEmpty)
+          'clientNonce': clientNonce,
+        if (reason != null && reason.isNotEmpty) 'reason': reason,
+        if (replacesGeneration != null) 'replacesGeneration': replacesGeneration,
+      },
     );
     return _unwrapMap(res.data);
   }
