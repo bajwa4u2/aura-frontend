@@ -1,37 +1,50 @@
-# Draft reply — Guideline 5, China mainland CallKit
+# Reply sent — Guideline 5, China mainland CallKit
 
-STATUS: **DRAFTED, NOT SENT.** The founder sends; nothing here goes to Apple
-without that.
+STATUS: **SENT** 2026-09-07, on submission `472dba81-4065-4648-8a29-12ff48549ce4`
+(Aura iOS 1.4.2 (37)). No binary uploaded; no build 38; no resubmission.
 
-Basis: `docs/BUILD_37_CHINA_FORENSICS.md`. Every sentence below is supported by
-build 37 (`cbdaab24`, `aura.ipa` 37) and not by current `main`.
+`APP_REVIEW = WAITING FOR APPLE.` Not PASS. Apple has not cleared it.
 
-BEFORE SENDING: re-read Apple's message in App Store Connect and confirm this
-answers the question they actually asked, in their terms.
+## What Apple asked, verbatim
 
----
-
-## The reply
-
-> Thank you for the follow-up. We can confirm that Aura does not activate its
-> CallKit and VoIP calling integration for users whose App Store storefront is
-> mainland China.
+> Recently, the Chinese Ministry of Industry and Information Technology (MIIT)
+> requested that CallKit functionality be deactivated in all apps available on
+> the China App Store. During our review, we found that the app currently
+> includes CallKit functionality and has China listed as an available territory
+> in App Store Connect.
 >
-> The app determines this from the App Store storefront, not from the device's
-> locale, SIM, time zone or IP address. The calling capability starts in a
+> If you have already ensured that CallKit functionality is not active in China,
+> you may reply to this message in App Store Connect to confirm.
+
+Their finding is *presence*; the remedy they offer is confirming *non-activation*.
+The reply therefore addresses both, and separates them.
+
+## What was sent, verbatim
+
+> Hello, and thank you for the guidance.
+>
+> We confirm that CallKit functionality is not active in mainland China in the
+> build under review, 1.4.2 (37).
+>
+> Aura determines this from the App Store storefront, not from the device's
+> locale, SIM, time zone or IP address. The app's call capability starts in a
 > withheld state and is enabled only once a storefront has been established and
 > is permitted. When the storefront is China mainland, the app creates no
 > CXProvider, performs no PushKit VoIP registration, reports no call to CallKit,
-> and requests no CallKit call action. This is the behaviour of build 37, the
-> build currently under review.
+> and requests no CallKit call action.
 >
-> Calling itself remains available to users in mainland China through Aura's own
-> in-app calling experience and the app's ordinary notification path. Outside
-> mainland China the standard CallKit experience is unchanged.
+> The CallKit framework is linked in the binary because the same binary serves
+> territories outside mainland China, where CallKit remains available and
+> unchanged. Linking it does not activate it: for the China mainland storefront
+> the CallKit and VoIP push path is never initialized.
+>
+> Users in mainland China continue to have VoIP calling through Aura's own
+> in-app calling experience and the app's standard notification path.
 >
 > Please let us know if you would like any further detail.
 
----
+Basis: `docs/BUILD_37_CHINA_FORENSICS.md`. Every sentence is supported by build
+37 (`cbdaab24`, `aura.ipa` 37), not by current `main`.
 
 ## What each sentence rests on
 
