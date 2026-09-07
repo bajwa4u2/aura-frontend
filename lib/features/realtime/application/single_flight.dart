@@ -50,3 +50,24 @@ class SingleFlight {
     return started;
   }
 }
+
+/// A NONCE THAT IS NOT A CONSTANT.
+///
+/// This exists as a function so it can be proven, because it was very nearly
+/// shipped as a compile-time constant. Written first as an interpolated
+/// string with an ESCAPED dollar, it compiled, analyzed clean, and evaluated
+/// to the same literal for every client on earth.
+///
+/// The consequence would have been worse than the defect being fixed: the
+/// server reads a matching nonce as THE SAME CLIENT ASKING AGAIN and adopts
+/// the incumbent transport. With one constant nonce, every participant would
+/// have been read as the same client attempt, and a stranger's media
+/// generation would have been handed to whoever asked next.
+///
+/// Time alone is not enough: two controllers can be constructed inside the
+/// same microsecond, so a sequence is mixed in.
+String mintMediaAttemptNonce() =>
+    'att-${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}'
+    '-${_attemptSeq++}';
+
+int _attemptSeq = 0;

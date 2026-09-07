@@ -141,5 +141,38 @@ void main() {
 
       expect(runs, 1);
     });
+  
+  group('the media attempt nonce', () {
+    // REGRESSION CASE, founder-preserved 2026-09-07.
+    //
+    // This was very nearly shipped as a compile-time constant: written as an
+    // interpolated string with an ESCAPED dollar, it compiled, analyzed clean,
+    // and evaluated to the same literal for every client on earth.
+    //
+    // A constant nonce collapses transport ownership ACROSS clients. The
+    // server reads a matching nonce as "the same client asking again" and
+    // adopts the incumbent, so every participant would have been read as one
+    // client attempt and handed a stranger's media generation. That is worse
+    // than the churn the nonce exists to prevent, and it must never recur.
+    test('IS NOT A CONSTANT — two attempts are never the same client', () {
+      expect(mintMediaAttemptNonce(), isNot(equals(mintMediaAttemptNonce())));
+    });
+
+    test('stays distinct across many attempts minted in the same instant', () {
+      // Time alone is not enough: controllers can be constructed inside the
+      // same microsecond, which is exactly when this would silently collapse.
+      final minted = List.generate(500, (_) => mintMediaAttemptNonce());
+      expect(minted.toSet().length, 500);
+    });
+
+    test('carries no interpolation left unevaluated', () {
+      // The literal failure mode, asserted directly: an escaped dollar leaves
+      // the expression in the string rather than its value.
+      final nonce = mintMediaAttemptNonce();
+      expect(nonce, isNot(contains(r'$')));
+      expect(nonce, isNot(contains('DateTime')));
+      expect(nonce, startsWith('att-'));
+    });
   });
+});
 }

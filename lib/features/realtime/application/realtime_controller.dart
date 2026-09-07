@@ -3925,14 +3925,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
   /// Identifies THIS client media attempt to the server, so it can tell "the
   /// same client asking again" from "a genuinely new client instance". Minted
   /// once per controller, which is once per real client media lifetime.
-  final String _mediaAttemptNonce =
-      'att-${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}'
-      '-${_attemptSeq++}';
-
-  /// Two controllers created in the same microsecond must still be two
-  /// attempts, or the server would read them as one client and let one
-  /// adopt the other's media.
-  static int _attemptSeq = 0;
+  final String _mediaAttemptNonce = mintMediaAttemptNonce();
 
   void _report(String line) {
     final id = _managedSessionId;
