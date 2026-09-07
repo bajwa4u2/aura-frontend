@@ -74,7 +74,23 @@ func notificationBelongsToCall(
 @objc class AppDelegate: FlutterAppDelegate {
   private var voipRegistry: PKPushRegistry?
   private var provider: CXProvider?
-  private let callController = CXCallController()
+  /// THE LAST CALLKIT OBJECT THAT WAS BUILT REGARDLESS OF JURISDICTION.
+  ///
+  /// `CXCallController` is a CallKit type, and a stored `let` instantiated it
+  /// at launch on every device including the China mainland storefront. Every
+  /// USE of it was already gated, so nothing it did was unlawful — but "we do
+  /// not activate CallKit in the China storefront" is a representation to
+  /// Apple, and it is stronger when no CallKit object is constructed there at
+  /// all.
+  ///
+  /// Lazy, so it comes into existence only when something permitted reaches
+  /// for it. Under a prohibited storefront nothing does.
+  private lazy var callController = CXCallController()
+
+  /// Whether `callController` was ever built, so teardown can avoid creating
+  /// the very object it is trying not to have. Touching a lazy var to clean it
+  /// up would instantiate it.
+  private var callControllerRealized = false
   private var channel: FlutterMethodChannel?
 
   /// The one place the jurisdiction question is asked. Every CallKit path in
@@ -252,6 +268,7 @@ func notificationBelongsToCall(
     // The delegate is set here rather than at launch because `callObserver`
     // is CallKit, and in a prohibited jurisdiction there is no CallKit stack
     // to observe.
+    callControllerRealized = true
     callController.callObserver.setDelegate(self, queue: nil)
 
     if voipRegistry == nil {
@@ -281,7 +298,12 @@ func notificationBelongsToCall(
     voipRegistry?.delegate = nil
     voipRegistry = nil
 
-    callController.callObserver.setDelegate(nil as CXCallObserverDelegate?, queue: nil)
+    // Only if it exists. Reaching for the lazy var here would construct a
+    // CallKit object during the very transition that forbids one — the
+    // unknown-to-prohibited step every China launch takes.
+    if callControllerRealized {
+      callController.callObserver.setDelegate(nil as CXCallObserverDelegate?, queue: nil)
+    }
 
     if let p = provider {
       for (_, uuid) in uuidBySession {

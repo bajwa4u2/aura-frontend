@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -77,11 +78,48 @@ class PublicShell extends StatelessWidget {
 // PUBLIC HEADER
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _PublicHeader extends ConsumerWidget {
+/// How long the public header may show no entry affordance while auth
+/// resolves. Exported so a test asserts the SAME value the product uses.
+const Duration publicHeaderAuthGraceWindow = Duration(milliseconds: 900);
+
+class _PublicHeader extends ConsumerStatefulWidget {
   const _PublicHeader({required this.isDesktop, required this.isTablet});
 
   final bool isDesktop;
   final bool isTablet;
+
+  /// How long the header may show nothing while auth resolves.
+  ///
+  /// Long enough to cover the ordinary bootstrap round trip, so a signed-in
+  /// person never sees "Join | Sign in" flash past. Short enough that a slow
+  /// network cannot leave a visitor with no way into the product — the
+  /// bootstrap itself allows 15s to connect and 30s to receive.
+  static const Duration authGraceWindow = publicHeaderAuthGraceWindow;
+
+  @override
+  ConsumerState<_PublicHeader> createState() => _PublicHeaderState();
+}
+
+class _PublicHeaderState extends ConsumerState<_PublicHeader> {
+  bool _authGraceElapsed = false;
+  Timer? _graceTimer;
+
+  bool get isDesktop => widget.isDesktop;
+  bool get isTablet => widget.isTablet;
+
+  @override
+  void initState() {
+    super.initState();
+    _graceTimer = Timer(_PublicHeader.authGraceWindow, () {
+      if (mounted) setState(() => _authGraceElapsed = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _graceTimer?.cancel();
+    super.dispose();
+  }
 
   static bool _worthRedirecting(String path) =>
       path != '/' &&
@@ -90,12 +128,29 @@ class _PublicHeader extends ConsumerWidget {
       !path.startsWith('/register');
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     // Header auth state must mirror the canonical bootstrap-aware status so
     // the page does not flash "Join | Sign in" for an authed user during the
     // /auth/refresh round-trip on web reload. While bootstrap is in flight we
     // render neither the authed nor the unauthed CTA — the wordmark stays.
     final authStatus = ref.watch(authStatusProvider);
+    // ANTI-FLASH IS WORTH A MOMENT, NOT A DEAD END.
+    //
+    // Rendering nothing while auth bootstraps avoids showing a signed-in
+    // person "Join | Sign in" for one frame. That reasoning is sound and is
+    // kept. What was not sound is how long it can last: the bootstrap allows
+    // 15s to connect and 30s to receive, and for all of that time a
+    // signed-out visitor has NO way into the product — no Sign in, no Join.
+    // On a fresh install over a slow or proxied network, which is exactly a
+    // reviewer's situation, the app simply cannot be entered.
+    //
+    // After the grace, the signed-out actions appear and stay usable while
+    // resolution continues. If a session then turns out to exist, the header
+    // transitions to "Open Aura" legitimately — a corrected affordance is
+    // strictly better than none.
+    //
+    // APPLE_ROOT_CAUSE = NOT YET PROVEN. This is fixed because it is a
+    // defect, not because it is known to be the rejection's cause.
     final isAuthed = authStatus == AuthStatus.authed;
     final isAuthLoading = authStatus == AuthStatus.loading;
     final currentUri = GoRouterState.of(context).uri;
@@ -175,10 +230,10 @@ class _PublicHeader extends ConsumerWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (isAuthLoading) ...[
-                      // Bootstrap settles within one round-trip. Render nothing
-                      // rather than a misleading "Join | Sign in" or a premature
-                      // "Open Aura" — the moment authStatus settles we re-render.
+                    if (isAuthLoading && !_authGraceElapsed) ...[
+                      // Within the grace: render nothing, so a signed-in person
+                      // does not see "Join | Sign in" flash past. Bounded by
+                      // _authGraceWindow — never by how long the network takes.
                     ] else if (isAuthed) ...[
                       if (isTablet) ...[
                         // C3 — founder-frozen public navigation: Home · Discover.
