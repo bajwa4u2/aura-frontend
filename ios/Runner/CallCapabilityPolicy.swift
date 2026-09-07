@@ -93,17 +93,22 @@ protocol StorefrontSource: AnyObject {
 
   /// A SECOND WAY TO LOOK, ASKED AT THE MOMENT OF ASKING.
   ///
-  /// This was introduced on 2026-09-07 under a stated reason that later
-  /// certification DISPROVED, and the wrong reason is recorded here rather
-  /// than quietly replaced. The claim was that the synchronous StoreKit 1
-  /// read is cached for the process, so it could never observe a storefront
-  /// change. Certification #15 showed the synchronous read returning USA
-  /// correctly and repeatedly, in one process, after CHN had already been
-  /// set — which a cached value could not do. What that environment will not
-  /// do is present CHN at all, through either read.
+  /// This was introduced on 2026-09-07 under a stated reason that was never
+  /// established, and the history is kept here rather than quietly replaced.
+  /// The claim was that the synchronous StoreKit 1 read is cached for the
+  /// process and so could never observe a storefront change. It was asserted
+  /// from three observations a cache would explain — and so would several
+  /// other things. The retraction that followed was then also over-stated: it
+  /// argued USA had been read after CHN was set, which assumed a CHN read
+  /// that was never demonstrated.
   ///
-  /// So this method is NOT a fix for a proven staleness defect; no such
-  /// defect has been demonstrated. It is a second, independent observation
+  /// What is actually established: a fresh StoreKit test session set to USA
+  /// reads as USA; one set to CHN does not read as CHN. Whether a storefront
+  /// CHANGE is observed is open, and RunnerTests settles it with a
+  /// fresh-session control across four territories.
+  ///
+  /// So this method is NOT a fix for a demonstrated staleness defect. It is a
+  /// second, independent observation
   /// path — StoreKit 2 reports the storefront as it is now, and pairs with
   /// `Storefront.updates` to hear a change rather than wait to be asked. Both
   /// reads feed the same policy and the same `apply`, so agreeing costs
@@ -299,10 +304,14 @@ final class StorefrontAuthority {
     // The synchronous read keeps the launch path synchronous, which is what
     // keeps the withheld window narrow. Asking again asynchronously costs a
     // launch nothing and gives re-evaluation a second, independent source
-    // that reports the storefront as it is now. Not a fix for a proven
+    // that reports the storefront as it is now. Not a fix for a demonstrated
     // staleness defect — see `currentCountryCode()` for what was and was not
     // established — a second way to look, applied through the same policy and
     // the same `apply`.
+    //
+    // Worth keeping either way: if the storefront read ever IS stale, this is
+    // the path that would notice, and the gate is withheld-by-default so a
+    // wrong answer here can only ever withhold CallKit, never grant it.
     refreshFromCurrentStorefront()
 
     guard next == .withheld, retryIndex < Self.retrySchedule.count else { return }

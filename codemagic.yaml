@@ -492,7 +492,25 @@ workflows:
             echo "  target=RunnerTests executed=$EXECUTED passed=${PASSED:-0} failed=${FAILED_CASES:-0} skipped=${SKIPPED_CASES:-0} xcodebuild_rc=$XC_RC"
           } | tee -a certification/run-manifest.txt
 
+          # SAY WHY, NOT JUST WHICH.
+          #
+          # xcodebuild prints "Test case '...' failed" and nothing more.
+          # The assertion text — and anything a test printed — live inside
+          # the .xcresult bundle and never reach this log. Build 16 failed
+          # on one storefront test whose two possible causes have OPPOSITE
+          # meanings: "this simulator will not present that storefront"
+          # versus "the product cannot observe a storefront change". The
+          # log could not tell them apart, and the answer had to be chased
+          # through a downloaded 57 MB artifact. A gate that cannot say why
+          # it went red teaches people to stop reading it.
+          #
+          # Diagnosis only. The whole pipeline ends in `|| true`: a
+          # diagnostic that can itself fail the build would be a new way to
+          # lose the real verdict, which the counts above still decide.
           if [ "${FAILED_CASES:-0}" -ne 0 ]; then
+            echo "" | tee -a certification/run-manifest.txt
+            echo "  WHY THE NATIVE LAYER FAILED" | tee -a certification/run-manifest.txt
+            xcrun xcresulttool get test-results summary --path certification/native-tests.xcresult --format json 2>/dev/null | python3 -c "import json,sys;d=json.load(sys.stdin);f=d.get('testFailures') or [];print('    (the bundle reported no failure detail)') if not f else None;[print('    '+(x.get('testName') or '?')+chr(10)+chr(10).join('      '+l for l in (x.get('failureText') or '(no text)').splitlines())) for x in f]" 2>/dev/null | tee -a certification/run-manifest.txt || true
             echo "  NATIVE VERDICT=FAILED — ${FAILED_CASES} native test(s) failed" | tee -a certification/run-manifest.txt
             exit 1
           fi

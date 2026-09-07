@@ -434,46 +434,57 @@ final class StorefrontTestAuthorityTests: XCTestCase {
 
     /// A CONTROL FIRST, AND ONLY THEN THE CLAIM.
     ///
-    /// Certification #15 settled a question this test used to get wrong.
-    /// In one process, with the storefront driven by SKTestSession:
+    /// Certification #16 caught this test being wrong about itself, which is
+    /// worth more than the answer it was reaching for.
     ///
-    ///   CHN set, read first of all  ->  not CHN
-    ///   USA set                     ->  USA
-    ///   CHN set                     ->  not CHN
-    ///   USA set                     ->  USA
-    ///   USA then CHN                ->  USA read fine, CHN never arrived
+    /// The first version created ONE SKTestSession and then assigned
+    /// `session.storefront` four times, expecting each assignment to be a
+    /// storefront change. It failed. But every StoreKit read that has ever
+    /// WORKED in this suite — the USA ones — creates a FRESH session first
+    /// (see `observedCode`). So "the reads never followed the change" and
+    /// "assigning `.storefront` on a live session does not take effect" both
+    /// produce exactly the same failure, and the second is a defect in the
+    /// test rather than in Aura.
     ///
-    /// USA was read correctly, repeatedly, through BOTH the synchronous and
-    /// the StoreKit 2 path, in the same process, after CHN had been set first.
-    /// So the earlier explanation written here — "the value is cached for the
-    /// process" — is disproven: a cached value could not have tracked USA.
-    /// What this environment does is present every storefront asked of it
-    /// EXCEPT China mainland.
+    /// That was very nearly reported as a product defect. The instrument now
+    /// matches the one that is known to work: a fresh session per territory,
+    /// which from the app's side is a real storefront change, observed inside
+    /// one process.
     ///
-    /// That is an environment limit, not a product defect, and the difference
-    /// is only worth anything if it is PROVEN rather than assumed. So this
-    /// test now changes the storefront to a third, non-China territory and
-    /// ASSERTS that the read follows it. That control is not skippable: if the
-    /// read cannot follow USA -> JPN, then the product genuinely cannot
-    /// observe a storefront change and this test fails, which is the outcome
-    /// it exists to produce.
+    /// The shape stays as it was:
     ///
-    /// Only with the control passing does an absent CHN get recorded as an
-    /// environment limit instead of a failure. There is no path here that
-    /// turns a real staleness defect into a skip.
+    ///   any control observed        -> the read follows a change. PASS.
+    ///   every control read the same -> the value is stuck at whatever this
+    ///                                  process first read. That is the
+    ///                                  staleness signature, and it FAILS.
+    ///   anything else (nil, junk)   -> the authority is not reachable for
+    ///                                  control territories. SKIP.
+    ///
+    /// Every message below carries the readings that produced it, because the
+    /// build log does not carry `print` and the answer to this question is the
+    /// difference between an environment limit and a shipping defect.
     func testAStorefrontChangeIsObservedAndChinaProhibitsWhenPresented() async throws {
       guard #available(iOS 15.4, *) else {
         throw XCTSkip("SKTestSession storefront control needs iOS 15.4 or newer")
       }
-      let session = try makeSession()
       let source = StoreKitStorefrontSource()
 
-      session.storefront = "USA"
-      let permitted = await source.currentCountryCode()
+      // Sessions are held for the duration: a deallocated SKTestSession stops
+      // overriding, which would silently turn every later read into a read of
+      // nothing in particular.
+      var held: [SKTestSession] = []
+      func read(_ territory: String) async throws -> String? {
+        let session = try makeSession()
+        session.storefront = territory
+        held.append(session)
+        return await source.currentCountryCode()
+      }
+
+      let permitted = try await read("USA")
       guard permitted == "USA" else {
         throw XCTSkip(
           "StoreKit test authority did not reach the storefront read at all "
-            + "(reported \(permitted ?? "nil")); nothing here is provable."
+            + "(USA reported \(permitted ?? "nil")); nothing here is provable."
         )
       }
       XCTAssertEqual(
@@ -484,46 +495,33 @@ final class StorefrontTestAuthorityTests: XCTestCase {
 
       // THE CONTROL.
       //
-      // Several territories, not one, because a single control cannot tell
-      // "this environment will not present JPN" apart from "the product
-      // cannot observe a change" — and blaming the product for the harness
-      // is the mistake this whole test exists to stop repeating.
-      //
-      //   any control observed          -> the read follows a change. PASS.
-      //   every control read back USA   -> the value is stuck at the first
-      //                                    storefront. That is the staleness
-      //                                    signature, and it FAILS.
-      //   anything else (nil, junk)     -> the authority is not reachable for
-      //                                    control territories, and this test
-      //                                    can prove nothing. SKIP.
+      // Several territories, because one cannot tell "this environment will
+      // not present JPN" apart from "the read does not follow a change".
       var observedControl: String?
-      var controlReads: [String?] = []
+      var controlReads: [String] = []
       for territory in ["GBR", "JPN", "DEU", "FRA"] {
-        session.storefront = territory
-        let read = await source.currentCountryCode()
-        controlReads.append(read)
-        if read == territory {
-          observedControl = read
+        let got = try await read(territory)
+        controlReads.append("\(territory)->\(got ?? "nil")")
+        if got == territory {
+          observedControl = got
           break
         }
       }
+      let trail = controlReads.joined(separator: ", ")
 
       guard let observedControl else {
-        if controlReads.allSatisfy({ $0 == "USA" }) {
-          XCTFail(
-            "the storefront was changed four times and the read still "
-              + "reported USA every time — the value is stuck at the first "
-              + "storefront of the process, and a person moving into the "
-              + "China storefront would keep CallKit until restart"
-          )
-          return
-        }
-        let reads = controlReads.map { $0 ?? "nil" }.joined(separator: ", ")
+        XCTAssertFalse(
+          controlReads.allSatisfy { $0.hasSuffix("->USA") },
+          "four storefront changes and every read still reported USA [\(trail)] "
+            + "— the value is stuck at the first storefront this process read, "
+            + "so a person moving into the China storefront would keep CallKit "
+            + "until the app restarts"
+        )
         throw XCTSkip(
-          "no control territory could be presented through the read "
-            + "(\(reads)). USA resolved, so the authority is partly reachable, "
-            + "but this environment cannot demonstrate a change and nothing "
-            + "about the China read is provable here."
+          "no control territory could be presented through the read [\(trail)]. "
+            + "USA resolved, so the authority is partly reachable, but this "
+            + "environment cannot demonstrate a change and nothing about the "
+            + "China read is provable here."
         )
       }
 
@@ -534,17 +532,16 @@ final class StorefrontTestAuthorityTests: XCTestCase {
       )
 
       // THE CLAIM. Provable only where the environment will present CHN.
-      session.storefront = "CHN"
-      let prohibited = await source.currentCountryCode()
+      let prohibited = try await read("CHN")
 
       guard prohibited == "CHN" else {
         throw XCTSkip(
           "This environment presented USA and \(observedControl) through the "
-            + "same read and would not present CHN (reported \(prohibited ?? "nil")). The "
-            + "control above proves the read observes a change, so this is a "
-            + "limit of Apple's storefront test authority, not a staleness "
-            + "defect in Aura. A real China storefront read remains UNPROVEN "
-            + "here and must not be claimed to App Review."
+            + "same read [\(trail)] and would not present CHN (reported "
+            + "\(prohibited ?? "nil")). The control proves the read observes a "
+            + "change, so this is a limit of Apple's storefront test authority, "
+            + "not a staleness defect in Aura. A real China storefront read "
+            + "remains UNPROVEN here and must not be claimed to App Review."
         )
       }
 
@@ -553,6 +550,10 @@ final class StorefrontTestAuthorityTests: XCTestCase {
         .prohibited,
         "moving into the China storefront must end prohibited, not merely changed"
       )
+
+      // The sessions must outlive the reads; a deallocated one stops
+      // overriding, and every reading above would then be about nothing.
+      withExtendedLifetime(held) {}
     }
 
     /// The synchronous read is kept for the launch path, and this records what
