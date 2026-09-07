@@ -1331,6 +1331,17 @@
   "verdict": "COMPLIANT"
  },
  {
+  "route": "/admin/external",
+  "sample": "/admin/external",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "parentReturn",
+  "deepLinkDestination": "/admin",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
   "route": "/admin/subjects",
   "sample": "/admin/subjects",
   "renders": true,
