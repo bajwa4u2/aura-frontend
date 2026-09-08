@@ -690,8 +690,21 @@ class RealtimeRepository {
     }
   }
 
-  Future<void> closeStageTransport(String sessionId) async {
-    await _dio.post('/realtime/sessions/$sessionId/stage/transport/close', data: const {});
+  /// Close this client's stage transport, SAYING WHY.
+  ///
+  /// The server used to record every close as EXPLICIT_LEAVE because it had
+  /// nothing else to go on, so an attach unwind and a dead-media rejoin were
+  /// both filed as "the person left". Recovery keys off that record, so the
+  /// lie was not cosmetic: a stage retired as a leave is not eligible to be
+  /// rebuilt, and the call stayed dead.
+  Future<void> closeStageTransport(
+    String sessionId, {
+    required String reason,
+  }) async {
+    await _dio.post(
+      '/realtime/sessions/$sessionId/stage/transport/close',
+      data: <String, dynamic>{'reason': reason},
+    );
   }
 
   Future<RealtimePolicy> getPolicy(String sessionId) async {

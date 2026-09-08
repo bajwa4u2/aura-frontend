@@ -66,7 +66,14 @@ abstract class RealtimeTransport {
 
   /// Tear down transport state. Must be idempotent and must not throw on a
   /// leave — a failed cleanup must never strand the person in the call.
-  Future<void> close();
+  /// Tear this transport down, SAYING WHY.
+  ///
+  /// The reason reaches the server and becomes the transport's recorded
+  /// `closedReason`. It must be a real account of what happened: recovery
+  /// eligibility is decided from it, so calling an unwind a "leave" strands
+  /// the participant in a call with no media and nothing willing to rebuild
+  /// it. See `CLIENT_CLOSE_REASONS` for the closed vocabulary.
+  Future<void> close({String reason = 'EXPLICIT_LEAVE'});
 
   /// Report one client-side fact about this transport, for the operator.
   ///

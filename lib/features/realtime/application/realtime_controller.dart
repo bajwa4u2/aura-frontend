@@ -820,7 +820,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
       if (!_mediaService.stageMediaHealthy) {
         _reportRecovery(
             trimmed, 'rejoin_media_unhealthy', 'detaching=true');
-        await _mediaService.detachStage();
+        await _mediaService.detachStage(reason: 'MEDIA_UNHEALTHY');
       } else {
         _reportRecovery(
             trimmed, 'rejoin_media_healthy', 'detaching=false generation=kept');
@@ -1317,7 +1317,42 @@ class RealtimeController extends StateNotifier<RealtimeState>
     _heartbeatTimer = Timer.periodic(_heartbeatInterval, (_) {
       _sendHeartbeat(isFirst: firstBeat);
       firstBeat = false;
+      _ensureStagePresentWhileJoined();
     });
+  }
+
+  /// BEING IN THE ROOM WITH NO MEDIA IS NOT A STATE THE PRODUCT MAY REST IN.
+  ///
+  /// Recovery is guarded by `ownsStage(lost)`, which asks whether the
+  /// transport that died is still MINE. That is right for a transport that
+  /// failed underneath us, and silently wrong for one that was TORN DOWN:
+  /// the stage is already detached, recovery returns at the first line, and
+  /// nothing else re-attaches. The person stays `joinState: ACTIVE` in a room
+  /// they can neither see nor be seen in, for the rest of the call.
+  ///
+  /// Production, 2026-09-08: a signalling interruption was recorded as
+  /// EXPLICIT_LEAVE, the host's transport was destroyed, and the host sat in
+  /// the meeting with no transport at all while the other participant went on
+  /// publishing. Nothing was broken enough to notice, because every component
+  /// was individually behaving: the socket had reconnected, the session was
+  /// ACTIVE, and there was no transport left to report itself unhealthy.
+  ///
+  /// So the invariant is asserted from the outside, on the beat that already
+  /// runs for exactly as long as we are joined: JOINED IMPLIES A STAGE. This
+  /// deliberately does not ask why the stage is missing -- every reason is a
+  /// defect, and the repair is identical.
+  void _ensureStagePresentWhileJoined() {
+    if (!state.isJoined) return;
+    if (_terminating || _endingCall) return;
+    if (_managedSessionId.isEmpty) return;
+    // A recovery already in flight owns the problem; a second attempt would
+    // race it. `_ensureStageConnected` is single-flighted too, so this is a
+    // belt-and-braces check rather than the only guard.
+    if (_recoveringStage) return;
+    if (_mediaService.usesStageTransport) return;
+
+    _report('stage.absent_while_joined action=reattach');
+    unawaited(_ensureStageConnected('absent_while_joined'));
   }
 
   void _sendHeartbeat({required bool isFirst}) {
@@ -3867,7 +3902,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
         }
 
         try {
-          await _mediaService.detachStage();
+          await _mediaService.detachStage(reason: 'MEDIA_UNHEALTHY');
           await _ensureStageConnected('recover');
         } catch (error) {
           _reportRecovery(sessionId, 'stage_recovery_failed',

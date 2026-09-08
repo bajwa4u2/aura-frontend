@@ -1308,7 +1308,11 @@ class RealtimeMediaService {
       //
       // Unwinding makes the failure recoverable: the next attempt starts from
       // no transport instead of an unusable one.
-      await detachStage();
+      //
+      // This is emphatically NOT a leave. Recording it as one told the server
+      // a person had left a call they were still in, and left the retry with
+      // nothing willing to rebuild the stage.
+      await detachStage(reason: 'ATTACH_UNWIND');
       rethrow;
     }
     await ensureStageRemoteMedia(trigger: trigger);
@@ -1633,7 +1637,14 @@ class RealtimeMediaService {
     return true;
   }
 
-  Future<void> detachStage() async {
+  /// Tear the stage down, SAYING WHY.
+  ///
+  /// Three callers reach this for three different facts -- a person leaving,
+  /// an attach unwinding after it half-succeeded, and a rejoin that found the
+  /// media already dead -- and every one of them used to arrive at the server
+  /// as EXPLICIT_LEAVE. Recovery decides eligibility from that record, so two
+  /// of the three were being told "the user left, do not rebuild this".
+  Future<void> detachStage({String reason = 'EXPLICIT_LEAVE'}) async {
     final transport = _stage;
     _stage = null;
     _remoteByParticipant = const <String, RemoteParticipantMedia>{};
@@ -1649,7 +1660,7 @@ class RealtimeMediaService {
     if (transport == null) return;
     // Must never throw on a leave.
     try {
-      await transport.close();
+      await transport.close(reason: reason);
     } catch (e) {
       debugPrint('[rtc] stage detach failed: $e');
     }
@@ -2147,7 +2158,7 @@ class RealtimeMediaService {
     // Stage teardown rides the SAME reset the product already calls on leave,
     // so cleanup semantics are unchanged: one place ends a session's media,
     // whichever transport carried it.
-    await detachStage();
+    await detachStage(reason: 'SESSION_RESET');
     await disposeAllPeers();
     await _resetLocalMediaOnly();
     if (_screenStream != null) {

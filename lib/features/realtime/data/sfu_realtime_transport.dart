@@ -94,6 +94,24 @@ class SfuRealtimeTransport implements RealtimeTransport {
   Timer? _liveness;
   int _lastLivenessBytes = -1;
   int _stallTicks = 0;
+
+  /// PER-KIND LIVENESS, BECAUSE AN AGGREGATE HIDES THE COMMON FAILURE.
+  ///
+  /// The probe summed every `inbound-rtp` report into one number. In a
+  /// two-party call that total carries the peer's audio AND their video, so a
+  /// video stream that dies while audio keeps flowing never makes the total
+  /// stop rising. The stall never arms, loss is never declared, and the tile
+  /// stays frozen for the rest of the call while the person can still be
+  /// heard.
+  ///
+  /// That is not a hypothetical: it is the "I can't see you, you can see me"
+  /// report, the tile reading "Camera off" while the server holds the track
+  /// ACTIVE, and the frozen remotes observed live on 2026-09-08. Audio was
+  /// healthy in every one of them, which is precisely why nothing fired.
+  ///
+  /// Each kind therefore arms and stalls on its own evidence.
+  final Map<String, int> _lastBytesByKind = <String, int>{};
+  final Map<String, int> _stallTicksByKind = <String, int>{};
   int _ticks = 0;
   bool _probing = false;
   bool _lostReported = false;
@@ -273,6 +291,8 @@ class SfuRealtimeTransport implements RealtimeTransport {
     _mediaFlowingReported = false;
     _lastLivenessBytes = -1;
     _stallTicks = 0;
+    _lastBytesByKind.clear();
+    _stallTicksByKind.clear();
     return _traced('OPEN', trigger, () => _open(sessionId: sessionId, local: local));
   }
 
@@ -634,7 +654,7 @@ class SfuRealtimeTransport implements RealtimeTransport {
   }
 
   @override
-  Future<void> close() async {
+  Future<void> close({String reason = 'EXPLICIT_LEAVE'}) async {
     // Deliberate teardown. Set BEFORE anything can change ICE state, so the
     // watch above cannot mistake a leave for a failure.
     _closing = true;
@@ -648,7 +668,7 @@ class SfuRealtimeTransport implements RealtimeTransport {
     final sessionId = _sessionId;
     if (sessionId != null) {
       try {
-        await _repository.closeStageTransport(sessionId);
+        await _repository.closeStageTransport(sessionId, reason: reason);
       } catch (e) {
         // A failed server-side cleanup must never strand someone in a call
         // they are trying to leave. Aura reaps the transport regardless.
@@ -750,6 +770,8 @@ class SfuRealtimeTransport implements RealtimeTransport {
     _lastLivenessBytes = -1;
     _stallTicks = 0;
     _ticks = 0;
+    _lastBytesByKind.clear();
+    _stallTicksByKind.clear();
     _liveness = Timer.periodic(const Duration(seconds: 3), (_) async {
       if (_closing || _lostReported) return;
       // NO OVERLAPPING PROBES. Timer.periodic does not await its callback, so
@@ -758,11 +780,26 @@ class SfuRealtimeTransport implements RealtimeTransport {
       // and tearing down a healthy call.
       if (_probing) return;
       _probing = true;
-      final int bytes;
+      final Map<String, int>? byKind;
       try {
-        bytes = await _mediaBytesReceived(pc);
+        byKind = await _mediaBytesByKind(pc);
       } finally {
         _probing = false;
+      }
+      final int bytes =
+          byKind == null ? -1 : byKind.values.fold<int>(0, (a, b) => a + b);
+
+      if (byKind != null) {
+        final stalled = stalledKindAfterTick(
+          lastBytesByKind: _lastBytesByKind,
+          stallTicksByKind: _stallTicksByKind,
+          sample: byKind,
+        );
+        if (stalled != null) {
+          _declareLost('media_stalled_'
+              '${(_stallTicksByKind[stalled] ?? 0) * 3}s_kind_$stalled');
+          return;
+        }
       }
       _ticks += 1;
       if (bytes < 0) return; // unreadable tick; not evidence of anything
@@ -811,17 +848,25 @@ class SfuRealtimeTransport implements RealtimeTransport {
     });
   }
 
-  /// Bytes of MEDIA received, or -1 when stats cannot be read.
-  Future<int> _mediaBytesReceived(RTCPeerConnection pc) async {
+  /// Bytes of MEDIA received PER KIND, or null when stats cannot be read.
+  ///
+  /// Split by `kind` (`audio` / `video`) so one live stream cannot vouch for a
+  /// dead one. Reports without a usable kind are folded under `other` rather
+  /// than dropped: an unattributable byte is still evidence that something is
+  /// arriving, and silently discarding it could arm a stall on a healthy call.
+  Future<Map<String, int>?> _mediaBytesByKind(RTCPeerConnection pc) async {
     try {
-      var rtp = 0;
+      final out = <String, int>{};
       for (final report in await pc.getStats()) {
         if (report.type != 'inbound-rtp') continue;
-        rtp += ((report.values['bytesReceived'] as num?) ?? 0).toInt();
+        final v = report.values;
+        final kind = (v['kind'] ?? v['mediaType'] ?? 'other').toString();
+        final bytes = ((v['bytesReceived'] as num?) ?? 0).toInt();
+        out[kind] = (out[kind] ?? 0) + bytes;
       }
-      return rtp;
+      return out;
     } catch (_) {
-      return -1;
+      return null;
     }
   }
 
@@ -919,6 +964,51 @@ class StageTransportAdopted implements Exception {
 /// usually heals, and the transport's own grace timer decides. Callers must
 /// therefore require a definite `true` before preserving media, and rely on
 /// the media plane's own loss declaration before replacing it.
+/// ONE PROBE TICK, PER KIND, AS A DECISION THAT CAN BE TESTED.
+///
+/// Returns the kind that has stalled, or null. `lastBytesByKind` and
+/// `stallTicksByKind` carry the arming state between ticks and are updated in
+/// place, exactly as the probe needs them.
+///
+/// The rule this encodes, and the reason it is per kind:
+///
+///   * A kind ARMS only once it has itself delivered bytes. A call with no
+///     video -- everyone camera-off, or audio-only by design -- never arms
+///     video and can never be torn down for having no picture.
+///   * Once armed, a kind must keep counting UP on its own. It may not borrow
+///     health from another kind.
+///
+/// The second clause is the whole point. Summing every `inbound-rtp` report
+/// into one number meant a peer's live audio kept the total rising while their
+/// video was frozen, so the stall never armed and the tile stayed dead for the
+/// rest of the call. Frozen picture with working sound was, by construction,
+/// the one failure this probe could not see -- and it is the one users
+/// actually reported.
+String? stalledKindAfterTick({
+  required Map<String, int> lastBytesByKind,
+  required Map<String, int> stallTicksByKind,
+  required Map<String, int> sample,
+  int threshold = 6,
+}) {
+  String? stalled;
+  for (final entry in sample.entries) {
+    final kind = entry.key;
+    final seen = entry.value;
+    final last = lastBytesByKind[kind] ?? -1;
+    if (seen > last) {
+      lastBytesByKind[kind] = seen;
+      stallTicksByKind[kind] = 0;
+      continue;
+    }
+    // Never delivered anything, so nothing has stopped.
+    if (last <= 0) continue;
+    final ticks = (stallTicksByKind[kind] ?? 0) + 1;
+    stallTicksByKind[kind] = ticks;
+    if (ticks >= threshold && stalled == null) stalled = kind;
+  }
+  return stalled;
+}
+
 bool mediaHealthFrom({
   required bool closing,
   required bool lostReported,
