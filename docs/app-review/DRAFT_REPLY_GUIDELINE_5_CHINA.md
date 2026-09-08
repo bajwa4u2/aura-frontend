@@ -79,3 +79,33 @@ The hardening already on `main` — the lazy `CXCallController`, the StoreKit 2
 storefront read, `Storefront.updates` — ships as build 38, and the first bullet
 above becomes assertable. That is a better build. It is not what makes this
 reply true.
+
+---
+
+## OUTCOME — 2026-09-08: ACCEPTED. The app is live.
+
+Apple accepted this reply against the binary they already had. **No new binary
+was required**, which is what the forensics concluded and what the reply was
+written to establish:
+
+    BUILD_37_CHINA_COMPLIANCE = YES
+    NEW_BINARY_REQUIRED       = NO
+
+Two things are worth keeping, because they are the reusable part.
+
+**The narrow reply was the right instrument.** Everything in the table above is
+a fact read from build 37 and its own artifact, at a named commit. Nothing was
+argued, nothing was promised, and nothing was said about a storefront we had
+never tested on. The section "What this reply deliberately does not say" is why
+the reply held: every sentence in it would have been either unprovable or an
+invitation to a question we could not answer.
+
+**The stronger sentence was correctly withheld.** We could not say "no CallKit
+object is ever constructed" — build 37 eagerly constructs an inert
+`CXCallController`. That sentence is true of `main`, not of the reviewed
+binary, and it was not needed. Reaching for it would have put an unprovable
+claim in front of a reviewer holding the binary.
+
+The `main` hardening (lazy `CXCallController`, StoreKit 2 storefront read,
+`Storefront.updates`) remains a better build and remains unshipped. It ships
+when there is a release reason for it, not as a response to this.

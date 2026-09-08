@@ -141,7 +141,31 @@ starting `withheld` and reading the storefront at launch, so an account already
 on `CHN` gets the China read first. Caching could only make a stale value
 persist; it could never invent a permitted storefront that was never read.
 
-## Rule
+## 2026-09-08 — App Review accepted the reply. The app is live.
+
+The rejection is discharged **without a new binary**, on the strength of what
+build 37 provably does. The classification table above stands as written: the
+two OPEN / NOT AVAILABLE rows were never closed, and the reply never depended
+on them.
+
+That is the point worth keeping. The gate had genuinely unproven rows at the
+moment the external obligation was discharged, and saying so plainly — rather
+than letting a run go green over them — is what left the reply defensible. The
+one line that was tempting and unprovable ("no CallKit object is ever
+constructed") was withheld for the same reason, and would have been false of
+the reviewed binary.
+
+**Still open, and not made less open by shipping:**
+
+- A storefront CHANGE observed through the production read.
+- A real `CHN` runtime read. Not available in this environment, and no local
+  result substitutes for it.
+
+Neither blocks a release. Both remain the honest state of the native gate, and
+a future submission that needs to assert more than build 37 asserts will need
+them closed first.
+
+## Rule (unchanged)
 
 Run this workflow, on the candidate commit, before every iOS submission. A red
 gate is not a formality to override — both times it went red, it was right.
