@@ -106,7 +106,14 @@ class _InstitutionSpaceScreenState
     return _SpaceBundle(space: space, conversationId: conversationId);
   }
 
-  void _reload() => setState(() => _future = _load());
+  // A BLOCK BODY, DELIBERATELY. As an arrow body this expression evaluates to
+  // the assigned value -- a Future -- and Flutter asserts on a setState
+  // callback that returns one, taking the surface down to a red screen.
+  void _reload() {
+    setState(() {
+      _future = _load();
+    });
+  }
 
   void _openMembers(_SpaceBundle bundle) {
     showModalBottomSheet<void>(
