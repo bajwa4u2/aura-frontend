@@ -795,9 +795,36 @@ class RealtimeController extends StateNotifier<RealtimeState>
       // worse half of the same outcome: session recovery that leaves the media
       // plane dead.
       //
-      // Detaching first costs a re-open on a transport that might have
-      // survived. Keeping a dead one costs the call.
-      await _mediaService.detachStage();
+      // SIGNALLING LOSS IS NOT MEDIA LOSS, AND IS NEVER AN EXPLICIT LEAVE.
+      //
+      // This used to detach unconditionally, and the reasoning above was
+      // honest about the trade: "detaching first costs a re-open on a
+      // transport that might have survived; keeping a dead one costs the
+      // call." Both halves were true and the conclusion was still wrong,
+      // because it accepted destroying healthy media as the price of not
+      // keeping dead media -- when the two are distinguishable.
+      //
+      // The signalling socket and the media transport fail independently. A
+      // websocket can drop on a backgrounded phone while the SFU transport is
+      // perfectly alive, and tearing that down interrupts a working call to
+      // repair a plane that was never broken. It also reached the server as
+      // EXPLICIT_LEAVE, which is a lie about what happened: nobody left.
+      //
+      // The media plane already reports its own death -- ICE failure, a ten
+      // second disconnect grace, and a byte-stall probe all end in
+      // `_declareLost`, which runs real recovery with a real reason. So the
+      // honest sequence is: restore signalling, then ask the media plane
+      // whether it needs anything. Only a transport that is NOT healthy is
+      // detached here; a healthy one keeps its generation, and a dead one is
+      // replaced by the recovery path that exists for exactly that.
+      if (!_mediaService.stageMediaHealthy) {
+        _reportRecovery(
+            trimmed, 'rejoin_media_unhealthy', 'detaching=true');
+        await _mediaService.detachStage();
+      } else {
+        _reportRecovery(
+            trimmed, 'rejoin_media_healthy', 'detaching=false generation=kept');
+      }
       // No standalone connect() call here — _performJoin's own connect()
       // (delegating to RealtimeSocketService.ensureConnected(), single-
       // flight) is the sole transport-establishment owner. A second call

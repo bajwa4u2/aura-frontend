@@ -99,6 +99,32 @@ class SfuRealtimeTransport implements RealtimeTransport {
   bool _lostReported = false;
   bool _closing = false;
 
+  /// The last thing the ICE stack said about this transport.
+  ///
+  /// Kept so somebody OUTSIDE the transport can ask whether the media plane
+  /// is alive, instead of assuming it died because a different plane did.
+  RTCIceConnectionState _lastIceState =
+      RTCIceConnectionState.RTCIceConnectionStateNew;
+
+  /// IS THE MEDIA PLANE ALIVE?
+  ///
+  /// Deliberately conservative in one direction only: it answers `true` while
+  /// ICE is connected or completed, and `false` once it has failed, closed or
+  /// this transport is being torn down. `new`/`checking`/`disconnected` are
+  /// NOT healthy and NOT dead -- a disconnect usually heals, and the ten
+  /// second grace timer above is what decides. So this reports the state, and
+  /// callers that must not destroy working media should require a definite
+  /// `true` before keeping it and a definite loss before replacing it.
+  ///
+  /// This exists because the signalling socket reconnecting told the app
+  /// nothing whatsoever about the media, and the app tore the media down
+  /// anyway.
+  bool get isMediaHealthy => mediaHealthFrom(
+        closing: _closing,
+        lostReported: _lostReported,
+        ice: _lastIceState,
+      );
+
   @override
   String get id => 'sfu';
 
@@ -809,6 +835,7 @@ class SfuRealtimeTransport implements RealtimeTransport {
   /// already knows.
   void _armTransportWatch(RTCPeerConnection pc) {
     pc.onIceConnectionState = (RTCIceConnectionState state) {
+      _lastIceState = state;
       switch (state) {
         case RTCIceConnectionState.RTCIceConnectionStateConnected:
         case RTCIceConnectionState.RTCIceConnectionStateCompleted:
@@ -877,3 +904,27 @@ class StageTransportAdopted implements Exception {
   String toString() =>
       'stage transport adopted by generation \$generation';
 }
+
+/// THE PREDICATE ITSELF, SO A TEST CAN USE THE PRODUCT'S OWN UNIT.
+///
+/// `isMediaHealthy` needs a live peer connection to reach, which would leave
+/// a test no choice but to re-implement the rule and assert against its own
+/// copy. This file already says elsewhere that a tested copy of a boundary
+/// the product does not use proves nothing about the product, and that
+/// applies here more than anywhere: this predicate is the whole difference
+/// between keeping a working call and killing it on a websocket reconnect.
+///
+/// Healthy means ICE has actually connected. `new`, `checking` and
+/// `disconnected` are NOT healthy and NOT proof of death -- a disconnect
+/// usually heals, and the transport's own grace timer decides. Callers must
+/// therefore require a definite `true` before preserving media, and rely on
+/// the media plane's own loss declaration before replacing it.
+bool mediaHealthFrom({
+  required bool closing,
+  required bool lostReported,
+  required RTCIceConnectionState ice,
+}) =>
+    !closing &&
+    !lostReported &&
+    (ice == RTCIceConnectionState.RTCIceConnectionStateConnected ||
+        ice == RTCIceConnectionState.RTCIceConnectionStateCompleted);

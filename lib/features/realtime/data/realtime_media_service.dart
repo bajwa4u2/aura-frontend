@@ -8,6 +8,7 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import '../../../core/media/device_permission.dart';
 import '../domain/remote_media_presentation.dart';
 import 'realtime_transport.dart';
+import 'sfu_realtime_transport.dart';
 
 /// What a camera request ACTUALLY achieved.
 ///
@@ -1257,6 +1258,21 @@ class RealtimeMediaService {
   ///
   /// Identity is the question actually being asked.
   bool ownsStage(Object transport) => identical(_stage, transport);
+
+  /// IS THE STAGE'S MEDIA PLANE ALIVE?
+  ///
+  /// `usesStageTransport` answers PRESENCE, which has already been the wrong
+  /// question twice: a dead transport is still present, and a recovery guard
+  /// that asked presence concluded there was nothing to recover. This asks
+  /// the transport itself what ICE last said.
+  ///
+  /// A missing stage answers `false`, which is correct: there is no healthy
+  /// media if there is no media.
+  bool get stageMediaHealthy {
+    final stage = _stage;
+    if (stage is SfuRealtimeTransport) return stage.isMediaHealthy;
+    return false;
+  }
 
   /// Which transport is carrying media, for observability (§2).
   String get transportId => _stage?.id ?? 'mesh';
