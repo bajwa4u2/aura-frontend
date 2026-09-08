@@ -682,6 +682,43 @@ class _HeldDraftHint extends StatelessWidget {
 /// where they land. Shows the single nearest live-or-upcoming meeting
 /// (booked, attended, or hosted) with a truthful action: join when live,
 /// open the record otherwise. Self-hides while loading, on error, or when
+/// WHICH MEETING IS "NEXT", WHEN SOME OF THEM ARE OVERDUE.
+///
+/// A live meeting always wins. Otherwise the answer is the soonest one whose
+/// booked window has not already run out.
+///
+/// The distinction earns its place: a meeting whose scheduled time has passed
+/// without starting is no longer terminal in Aura -- it stays actionable, and
+/// deliberately so, because a late meeting is still a meeting. But "still
+/// holdable" is not the same as "next". Sorting by `scheduledAt` ascending and
+/// taking the first put the OLDEST overdue meeting at the top of the day: a
+/// July booking, two months stale, presented on Home as what is coming up.
+///
+/// Overdue meetings belong in needs-attention on the Meetings surface, where
+/// they are offered a Start. They do not belong in the up-next slot, which is
+/// answering a different question.
+///
+/// A meeting is still "next" while its own window is running -- one that began
+/// five minutes ago and has not been started yet is exactly what a person is
+/// about to walk into.
+@visibleForTesting
+Meeting? nextMeetingForHome(List<Meeting> meetings, DateTime now) {
+  final ahead = meetings.where((m) => !m.isEnded).toList()
+    ..sort((a, b) => (a.scheduledAt ?? now).compareTo(b.scheduledAt ?? now));
+
+  final live = ahead.where((m) => m.isActive).toList();
+  if (live.isNotEmpty) return live.first;
+
+  for (final m in ahead) {
+    final at = m.scheduledAt;
+    // No booked time at all cannot be overdue.
+    if (at == null) return m;
+    final windowEnd = at.add(Duration(minutes: m.durationMinutes));
+    if (!windowEnd.isBefore(now)) return m;
+  }
+  return null;
+}
+
 /// nothing is ahead — a quiet day costs no vertical space.
 class _NextMeetingSection extends ConsumerWidget {
   const _NextMeetingSection();
@@ -692,10 +729,7 @@ class _NextMeetingSection extends ConsumerWidget {
     return upcoming.maybeWhen(
       data: (meetings) {
         final now = DateTime.now();
-        final ahead = meetings.where((m) => !m.isEnded).toList()
-          ..sort((a, b) => (a.scheduledAt ?? now).compareTo(b.scheduledAt ?? now));
-        final live = ahead.where((m) => m.isActive).toList();
-        final next = live.isNotEmpty ? live.first : (ahead.isNotEmpty ? ahead.first : null);
+        final next = nextMeetingForHome(meetings, now);
         if (next == null) return const SizedBox.shrink();
         // Realtime Architecture Correction — Phase 6, Meeting Attendee-
         // Context Restoration: this personal home dashboard is never
