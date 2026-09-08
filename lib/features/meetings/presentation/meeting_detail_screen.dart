@@ -561,6 +561,108 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
     ).showSnackBar(const SnackBar(content: Text('Meeting link copied')));
   }
 
+  // INVITING IS NOT SHARING THE ADDRESS.
+  //
+  // `_copyLink` above hands out `meeting.joinUrl` — the room's address. It
+  // carries no evidence about who is arriving, so a person who has only that
+  // is refused at the guest door. That refusal is correct.
+  //
+  // An invitation is the evidence. The server mints a token bound to this
+  // meeting and this address and emails a link carrying it. That already
+  // happened for anyone named while the meeting was being created, and there
+  // was no way to do it afterwards, which is what this restores.
+  Future<void> _inviteByEmail() async {
+    final emailCtrl = TextEditingController();
+    final nameCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Invite by email'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: emailCtrl,
+                autofocus: true,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Email address',
+                  hintText: 'name@example.com',
+                ),
+                validator: (v) {
+                  final value = (v ?? '').trim();
+                  if (value.isEmpty) return 'An email address is required.';
+                  // Deliberately permissive: the server is the authority on
+                  // deliverability. This only catches an obvious slip before
+                  // a round trip.
+                  if (!value.contains('@') || value.startsWith('@')) {
+                    return 'That does not look like an email address.';
+                  }
+                  return null;
+                },
+                onFieldSubmitted: (_) {
+                  if (formKey.currentState?.validate() ?? false) {
+                    Navigator.of(ctx).pop(true);
+                  }
+                },
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              TextFormField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Their name (optional)',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.of(ctx).pop(true);
+              }
+            },
+            child: const Text('Send invitation'),
+          ),
+        ],
+      ),
+    );
+
+    final email = emailCtrl.text.trim();
+    final name = nameCtrl.text.trim();
+    emailCtrl.dispose();
+    nameCtrl.dispose();
+    if (confirmed != true || email.isEmpty || !mounted) return;
+
+    setState(() => _actioning = true);
+    try {
+      await ref
+          .read(meetingsRepositoryProvider)
+          .inviteToMeeting(meeting.id, email: email, name: name);
+      _invalidateLists();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Invitation sent to $email')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to send the invitation. Try again.')),
+      );
+    } finally {
+      if (mounted) setState(() => _actioning = false);
+    }
+  }
+
   Future<void> _addToCalendar() async {
     final url = Uri.parse(
       '${AppConfig.apiBaseUrl}/public/meetings/${meeting.meetingCode}/calendar.ics',
@@ -704,6 +806,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
           onEnter: () => _enterRoom(),
           onEdit: _editMeeting,
           onCopy: _copyLink,
+          onInvite: (isHost && !ended) ? _inviteByEmail : null,
           onCalendar: _addToCalendar,
           onCancel: _cancelMeeting,
         );
@@ -771,7 +874,11 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
           ];
 
           final sideColumn = <Widget>[
-            _ParticipantsSection(meeting: meeting, ended: ended),
+            _ParticipantsSection(
+              meeting: meeting,
+              ended: ended,
+              onInvite: (isHost && !ended) ? _inviteByEmail : null,
+            ),
             const SizedBox(height: AuraSpace.s18),
             if (!meeting.isDraft) ...[
               MeetingContinuitySection(meeting: meeting),
@@ -832,6 +939,10 @@ class _RecordHeader extends StatelessWidget {
   final VoidCallback onEnter;
   final VoidCallback onEdit;
   final VoidCallback onCopy;
+
+  /// Issues a real invitation. Host of a live-or-future meeting only; null
+  /// everywhere else, and the control is absent rather than misleading.
+  final Future<void> Function()? onInvite;
   final VoidCallback onCalendar;
   final VoidCallback onCancel;
 
@@ -844,6 +955,7 @@ class _RecordHeader extends StatelessWidget {
     required this.onEnter,
     required this.onEdit,
     required this.onCopy,
+    this.onInvite,
     required this.onCalendar,
     required this.onCancel,
   });
@@ -934,10 +1046,24 @@ class _RecordHeader extends StatelessWidget {
                   label: const Text('Enter room'),
                   onPressed: actioning ? null : onEnter,
                 ),
-              if (!ended)
+              // POSSESSION OF THE URL IS NOT ADMISSION.
+              //
+              // This was labelled "Invite", with a person-add icon, and it
+              // copied the bare join link -- an address that carries no
+              // invitation authority. Anyone given it who was not already
+              // recognised is refused at the guest door, correctly, and the
+              // host had no way to see why. Inviting mints a durable
+              // invitation; copying a link does not.
+              if (!ended && onInvite != null)
                 OutlinedButton.icon(
                   icon: const Icon(Icons.person_add_alt_rounded),
-                  label: const Text('Invite'),
+                  label: const Text('Invite by email'),
+                  onPressed: actioning ? null : onInvite,
+                ),
+              if (!ended)
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.link_rounded),
+                  label: const Text('Copy meeting link'),
                   onPressed: onCopy,
                 ),
               if (scheduled)
@@ -1017,7 +1143,15 @@ class _ParticipantsSection extends StatelessWidget {
   final Meeting meeting;
   final bool ended;
 
-  const _ParticipantsSection({required this.meeting, required this.ended});
+  /// Present only for a host of a meeting that has not ended. Null everywhere
+  /// else, which is also how the empty line knows what to say.
+  final Future<void> Function()? onInvite;
+
+  const _ParticipantsSection({
+    required this.meeting,
+    required this.ended,
+    this.onInvite,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1028,17 +1162,38 @@ class _ParticipantsSection extends StatelessWidget {
 
     return MeetingSection(
       title: ended ? 'Attendance' : 'Participants',
-      trailing: participants.isEmpty
+      trailing: (participants.isEmpty && onInvite == null)
           ? null
-          : Text(
-              '${participants.length}',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: AuraSurface.muted),
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (participants.isNotEmpty)
+                  Text(
+                    '${participants.length}',
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: AuraSurface.muted),
+                  ),
+                if (onInvite != null) ...[
+                  const SizedBox(width: AuraSpace.s10),
+                  TextButton.icon(
+                    onPressed: onInvite,
+                    icon: const Icon(Icons.mail_outline_rounded, size: 18),
+                    label: const Text('Invite by email'),
+                  ),
+                ],
+              ],
             ),
       child: participants.isEmpty
           ? MeetingSection.emptyLine(
               context,
-              'No participants yet — share the meeting link to invite people.',
+              onInvite == null
+                  ? 'No participants yet.'
+                  // The old line here said to share the meeting link. The link
+                  // is only an address: a person holding nothing else is
+                  // refused at the guest door, correctly, because no
+                  // invitation was ever recorded for them.
+                  : 'No participants yet — invite someone by email and they '
+                      'will receive a link that admits them.',
             )
           : Column(
               children: [

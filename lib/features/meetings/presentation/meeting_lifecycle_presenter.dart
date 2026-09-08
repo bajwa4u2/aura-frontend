@@ -8,7 +8,13 @@ enum MeetingLifecycleStatus {
   hostWaiting,
   inProgress,
   ended,
+
+  /// Positive admitted evidence of a no-show. Never inferred from a clock.
   missed,
+
+  /// Booked window passed, nothing ever started. Derived presentation only:
+  /// not terminal, and the host may still hold a meeting that is late.
+  scheduledTimePassed,
   cancelled,
   connectionIssue,
   unknown,
@@ -102,6 +108,22 @@ class MeetingLifecyclePresenter {
         canRetryTransport = false;
         isTerminal = true;
         break;
+      case MeetingRoomStatus.scheduledTimePassed:
+        // NOT TERMINAL. The booked window has gone by and nothing started,
+        // which says something about the calendar and nothing about whether
+        // this meeting will happen. A late meeting is still a meeting, so the
+        // host keeps the ability to hold it.
+        status = MeetingLifecycleStatus.scheduledTimePassed;
+        label = 'Scheduled time passed';
+        subtitle = 'The booked time has gone by and the meeting has not started.';
+        cue = isHost
+            ? 'You can still start this meeting.'
+            : 'The meeting has not started yet.';
+        primaryAction = isHost ? 'Start meeting' : 'Wait for host';
+        canStart = true;
+        canEnter = true;
+        canRetryTransport = false;
+        break;
       case MeetingRoomStatus.connectionIssue:
         status = MeetingLifecycleStatus.connectionIssue;
         label = 'Connection issue';
@@ -116,8 +138,18 @@ class MeetingLifecyclePresenter {
       case MeetingRoomStatus.live:
       case MeetingRoomStatus.inProgress:
         status = MeetingLifecycleStatus.inProgress;
+        // IN PROGRESS STAYS THE PRIMARY STATE, however far past the booked
+        // window the meeting runs. The overrun is worth saying once, in the
+        // subtitle, because a person may want to know they are over — it is
+        // never allowed to change what the meeting IS.
         label = 'In progress';
-        subtitle = 'The meeting is live.';
+        final overrunMinutes = scheduledEnd == null
+            ? 0
+            : current.difference(scheduledEnd).inMinutes;
+        subtitle = overrunMinutes >= 1
+            ? 'The meeting is live, running $overrunMinutes min past the '
+                'scheduled end.'
+            : 'The meeting is live.';
         cue = '${room?.activeParticipantCount ?? 0} participants in the room.';
         primaryAction = 'Enter room';
         canStart = false;
@@ -146,15 +178,23 @@ class MeetingLifecyclePresenter {
         break;
       case MeetingRoomStatus.startingSoon:
         if (isPastScheduledEnd) {
-          status = MeetingLifecycleStatus.missed;
-          label = 'Missed';
-          subtitle = 'The scheduled time passed without an active meeting.';
-          cue = 'Review the meeting and decide whether to follow up.';
-          primaryAction = 'View summary';
-          canStart = false;
-          canEnter = false;
+          // A CLOCK READING IS NOT A NO-SHOW AND NOT AN END.
+          //
+          // This used to declare the meeting Missed and terminal the instant
+          // the booked window elapsed, which took the Start control away from
+          // the host of a meeting that was merely running late. NO_SHOW needs
+          // positive admitted evidence; the calendar is not evidence.
+          status = MeetingLifecycleStatus.scheduledTimePassed;
+          label = 'Scheduled time passed';
+          subtitle =
+              'The booked time has gone by and the meeting has not started.';
+          cue = isHost
+              ? 'You can still start this meeting.'
+              : 'The meeting has not started yet.';
+          primaryAction = isHost ? 'Start meeting' : 'Wait for host';
+          canStart = true;
+          canEnter = true;
           canRetryTransport = false;
-          isTerminal = true;
         } else {
           status = MeetingLifecycleStatus.startingSoon;
           label = 'Starting soon';
@@ -215,15 +255,23 @@ class MeetingLifecyclePresenter {
           break;
         }
         if (isPastScheduledEnd) {
-          status = MeetingLifecycleStatus.missed;
-          label = 'Missed';
-          subtitle = 'The scheduled time passed without an active meeting.';
-          cue = 'Review the meeting and decide whether to follow up.';
-          primaryAction = 'View summary';
-          canStart = false;
-          canEnter = false;
+          // A CLOCK READING IS NOT A NO-SHOW AND NOT AN END.
+          //
+          // This used to declare the meeting Missed and terminal the instant
+          // the booked window elapsed, which took the Start control away from
+          // the host of a meeting that was merely running late. NO_SHOW needs
+          // positive admitted evidence; the calendar is not evidence.
+          status = MeetingLifecycleStatus.scheduledTimePassed;
+          label = 'Scheduled time passed';
+          subtitle =
+              'The booked time has gone by and the meeting has not started.';
+          cue = isHost
+              ? 'You can still start this meeting.'
+              : 'The meeting has not started yet.';
+          primaryAction = isHost ? 'Start meeting' : 'Wait for host';
+          canStart = true;
+          canEnter = true;
           canRetryTransport = false;
-          isTerminal = true;
         } else if (scheduledStart != null &&
             minutesToStart != null &&
             minutesToStart <= 15 &&

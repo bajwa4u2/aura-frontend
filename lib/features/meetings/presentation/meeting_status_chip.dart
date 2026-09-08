@@ -40,6 +40,12 @@ class MeetingStatusChip extends StatelessWidget {
       ),
       MeetingLifecycleStatus.ended => ('Ended', const Color(0xFF9CA3AF)),
       MeetingLifecycleStatus.missed => ('Missed', const Color(0xFF9CA3AF)),
+      // Amber, not grey: this is a meeting still waiting to happen, not a
+      // closed one.
+      MeetingLifecycleStatus.scheduledTimePassed => (
+        'Scheduled time passed',
+        const Color(0xFFF59E0B),
+      ),
       MeetingLifecycleStatus.cancelled => (
         'Cancelled',
         const Color(0xFFEF4444),

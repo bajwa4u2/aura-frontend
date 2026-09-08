@@ -7,7 +7,15 @@ enum MeetingRoomStatus {
   live,
   inProgress,
   ended,
+
+  /// Positive admitted evidence that nobody attended. NOT derived from the
+  /// clock — see [scheduledTimePassed].
   missed,
+
+  /// The booked window has passed and no session ever started. This is a
+  /// derived presentation state, not a terminal one: nothing ended, and a
+  /// meeting that is merely late may still be held.
+  scheduledTimePassed,
   cancelled,
   connectionIssue,
   unknown,
@@ -33,6 +41,8 @@ MeetingRoomStatus meetingRoomStatusFromString(dynamic value) {
       return MeetingRoomStatus.ended;
     case 'MISSED':
       return MeetingRoomStatus.missed;
+    case 'SCHEDULED_TIME_PASSED':
+      return MeetingRoomStatus.scheduledTimePassed;
     case 'CANCELLED':
       return MeetingRoomStatus.cancelled;
     case 'CONNECTION_ISSUE':

@@ -115,6 +115,11 @@ MeetingPhase phaseFromRoomStatus(MeetingRoomStatus? status) =>
         MeetingPhase.active,
       MeetingRoomStatus.ended => MeetingPhase.ended,
       MeetingRoomStatus.missed => MeetingPhase.missed,
+      // The booked window elapsed with nothing started. That is still a
+      // SCHEDULED meeting — it has not ended, and nobody has been recorded
+      // as failing to attend. Mapping it to `missed` here would smuggle a
+      // terminal phase back in through the projection.
+      MeetingRoomStatus.scheduledTimePassed => MeetingPhase.scheduled,
       MeetingRoomStatus.cancelled => MeetingPhase.cancelled,
       MeetingRoomStatus.unknown => MeetingPhase.unknown,
     };

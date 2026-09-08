@@ -1119,6 +1119,12 @@ bool _isAttentionItem(Meeting meeting, String meId) {
       room == MeetingRoomStatus.waiting) {
     return true;
   }
+  // THE BOOKED TIME WENT BY AND NOBODY STARTED IT. That is the definition of
+  // something wanting a decision, and it must be stated before the time
+  // window below gets a chance to drop it: that window ends 15 minutes after
+  // the scheduled start, so a meeting late by more than that would otherwise
+  // vanish from the surface entirely while still being startable.
+  if (room == MeetingRoomStatus.scheduledTimePassed) return true;
   if (_relationshipLabel(meeting, meId: meId, institutionId: null) == 'Invited') {
     return true;
   }
@@ -1141,6 +1147,10 @@ String _meetingActionLabel(Meeting meeting) {
       room == MeetingRoomStatus.hostWaiting ||
       room == MeetingRoomStatus.guestWaiting) {
     return 'Open meeting';
+  }
+  // Late, not lost. The offer is the one that resolves it.
+  if (room == MeetingRoomStatus.scheduledTimePassed) {
+    return 'Start meeting';
   }
   if (meeting.isInstant) {
     return 'Open meeting';

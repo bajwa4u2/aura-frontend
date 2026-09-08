@@ -553,6 +553,12 @@ class _WaitingCard extends StatelessWidget {
         message = 'This meeting has ended.';
       case MeetingLifecycleStatus.missed:
         message = 'This meeting was missed.';
+      case MeetingLifecycleStatus.scheduledTimePassed:
+        // A guest holding a valid invitation is not turned away because the
+        // calendar moved on. The meeting has not ended; it is late.
+        message =
+            'The scheduled time has passed. The host can still start this '
+            'meeting, and this link will work when they do.';
       case MeetingLifecycleStatus.connectionIssue:
         message = 'The room is active but needs a reconnect.';
       case MeetingLifecycleStatus.scheduled:
@@ -688,6 +694,10 @@ class _StatusBadge extends StatelessWidget {
         const Color(0xFF9CA3AF),
       ),
       MeetingLifecycleStatus.missed => ('Missed', const Color(0xFF9CA3AF)),
+      MeetingLifecycleStatus.scheduledTimePassed => (
+        'Scheduled time passed',
+        const Color(0xFFF59E0B),
+      ),
       MeetingLifecycleStatus.cancelled => (
         'Cancelled',
         const Color(0xFFEF4444),

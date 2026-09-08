@@ -706,6 +706,32 @@ class MeetingsRepository {
       data: {'participantId': participantId},
     );
   }
+
+  // INVITING SOMEONE IS NOT SHARING A LINK.
+  //
+  // The meeting link is an address: it names the room and proves nothing about
+  // who is arriving. An invitation is evidence — the server mints a token
+  // bound to this meeting and this email, and the emailed link carries it as
+  // `?in=`. A person holding only the bare address is correctly refused at the
+  // guest door, because nothing about them was ever recorded.
+  //
+  // This existed on the server and at meeting creation, and nowhere else, so
+  // a host who wanted to add someone afterwards had only the address to give
+  // away — which the participants panel actively recommended. That was the
+  // whole of the gap.
+  Future<void> inviteToMeeting(
+    String meetingId, {
+    required String email,
+    String? name,
+  }) async {
+    await _dio.post<void>(
+      '/meetings/$meetingId/invite',
+      data: {
+        'email': email,
+        if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
+      },
+    );
+  }
 }
 
 class GuestAuthResult {
