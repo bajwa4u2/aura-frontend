@@ -54,7 +54,34 @@ class RealtimeEventParser {
         ? RealtimePolicy.fromJson(policyJson)
         : (_looksLikePolicyPayload(payload) ? RealtimePolicy.fromJson(payload) : state.policy);
 
-    final nextParticipants = participantsJson != null
+    // A JOINED CLIENT IS ALWAYS IN ITS OWN ROSTER.
+    //
+    // The merge replaces `participants` wholesale whenever the payload carries
+    // the key at all, so ANY broadcast arriving with an empty array empties
+    // the roster — and nothing here distinguished "the key was absent" from
+    // "the key said nobody is here". A roster of nobody, received by a client
+    // that is itself in the session, cannot be true: it does not even contain
+    // the receiver.
+    //
+    // Observed in production on 2026-09-08: the founder's client joined with
+    // `participants=2`, and eighteen seconds later reported
+    // `roster=0 ids=[] byPart=0 legacy=0` while still joined — no join-state
+    // change, so nothing had disconnected it. An empty roster is what that
+    // looks like, and this is the only path that can produce one without
+    // touching `joinState`.
+    //
+    // Deliberately narrow. It rejects ONLY the empty case, and only while
+    // joined, so a genuine roster change of any size still applies. The
+    // legitimate "everyone left" state is not this: the receiver is still
+    // there, so a true roster is never empty for them.
+    final wipesOwnRoster = participantsJson != null &&
+        participantsJson.isEmpty &&
+        state.isJoined &&
+        state.participants.isNotEmpty;
+
+    final nextParticipants = wipesOwnRoster
+        ? state.participants
+        : participantsJson != null
         ? _oneEntryPerIdentity(
             participantsJson
                 .map((json) => _carryForwardIdentity(

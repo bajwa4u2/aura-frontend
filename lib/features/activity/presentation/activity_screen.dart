@@ -155,17 +155,22 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         deeplink.startsWith('/realtime') ||
         realtimeSessionId.isNotEmpty;
 
+    // See `callRowIsTerminal`: a concluded call must not be navigated to with
+    // a join intent, and `isRealtimeActivity` cannot tell the difference
+    // because it is true for every row that carries a session id at all.
+    final isTerminalCall = callRowIsTerminal(item);
+
     if (communicationTarget.owner == CommunicationOwner.thread &&
         (communicationTarget.threadId ?? '').isNotEmpty) {
       await _openThreadTarget(
         threadId: communicationTarget.threadId!,
         spaceIdHint: communicationTarget.spaceId,
         sessionIdHint: communicationTarget.sessionId,
-        shouldJoin:
-            isRealtimeActivity ||
-            (communicationTarget.attention ?? '').toUpperCase() ==
-                'INTERRUPT' ||
-            (communicationTarget.mode ?? '').toUpperCase().contains('LIVE'),
+        shouldJoin: !isTerminalCall &&
+            (isRealtimeActivity ||
+                (communicationTarget.attention ?? '').toUpperCase() ==
+                    'INTERRUPT' ||
+                (communicationTarget.mode ?? '').toUpperCase().contains('LIVE')),
       );
       return;
     }
@@ -183,7 +188,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           threadId: threadId,
           spaceIdHint: spaceId,
           sessionIdHint: realtimeSessionId,
-          shouldJoin: true,
+          shouldJoin: !isTerminalCall,
         );
         return;
       }
@@ -191,7 +196,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         final route = _withLiveQuery(
           NavigationAuthority.messagesRoute,
           sessionId: realtimeSessionId,
-          shouldJoin: true,
+          shouldJoin: !isTerminalCall,
         );
         context.push(route);
         return;
@@ -202,7 +207,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       // SESSION, so a live one still opens; otherwise this row is simply no
       // longer actionable, which is the honest outcome.
       if (deeplink.startsWith('/me/correspondence/')) {
-        if (realtimeSessionId.trim().isNotEmpty) {
+        if (realtimeSessionId.trim().isNotEmpty && !isTerminalCall) {
           context.push(
             NavigationAuthority.realtimeSessionJoinRoute(realtimeSessionId.trim()),
           );
@@ -1144,6 +1149,72 @@ String _resolveCallType(Map<String, dynamic> data) {
   }
 }
 
+/// WHAT ACTUALLY HAPPENED TO A CALL, IN A SENTENCE ABOUT THE PERSON'S OWN CALL.
+///
+/// THE CANONICAL OUTCOME OUTRANKS THE COARSE KIND. `CALL_CANCELLED` is a
+/// bucket, and genuinely different things land in it: a call that never
+/// reached the person at all, a call they answered before hearing silence, a
+/// call their phone rang for and nobody picked up.
+///
+/// This screen handled three of the seven outcomes the backend produces
+/// (`deriveOutcome`: CONNECTED_ENDED, DECLINED, CANCELED_BEFORE_ANSWER,
+/// FAILED, ACCEPTED_NOT_CONNECTED, MISSED, NOT_PRESENTED). The other four fell
+/// through to "You cancelled a call" — so a call the other person genuinely
+/// missed was reported to the caller as something the caller did, and a
+/// declined call said the same. Observed by the founder, 2026-09-08, as calls
+/// reading "failed" when they had not failed.
+///
+/// The room screen has carried the full vocabulary all along
+/// (`_endedLabel`), which is why the same call could be described two ways
+/// depending on where you looked at it. These sentences say the same things
+/// that labels do, with direction, because a history row is about a specific
+/// person.
+///
+/// Note the spelling: the enum is `CANCELED_BEFORE_ANSWER` (one L) while the
+/// notification kind is `CALL_CANCELLED` (two). Both are matched deliberately.
+String? _outcomeTitle({
+  required String outcome,
+  required String actorName,
+  required String callType,
+  required bool outgoing,
+}) {
+  switch (outcome) {
+    case 'CONNECTED_ENDED':
+      return outgoing ? 'You made a $callType' : '$actorName called you';
+    case 'DECLINED':
+      return outgoing
+          ? '$actorName declined your $callType'
+          : 'You declined a $callType from $actorName';
+    case 'MISSED':
+      // Their phone rang and nobody answered. NOT "cancelled": the caller did
+      // not withdraw it, and NOT "failed": nothing was broken.
+      return outgoing
+          ? '$actorName did not answer your $callType'
+          : 'Missed $callType from $actorName';
+    case 'NOT_PRESENTED':
+      // Nothing ever rang them. Telling someone they ignored a call their
+      // phone never announced is a lie about them.
+      return outgoing
+          ? 'Could not reach $actorName'
+          : '$actorName tried to call you';
+    case 'CANCELED_BEFORE_ANSWER':
+      return outgoing
+          ? 'You cancelled a $callType'
+          : '$actorName cancelled a $callType';
+    case 'ACCEPTED_NOT_CONNECTED':
+      // Answered, then no usable media path. The one case where both ends
+      // read the same, because it happened to both of them.
+      return 'Your $callType with $actorName could not connect';
+    case 'FAILED':
+      return outgoing
+          ? 'Your $callType to $actorName failed'
+          : 'A $callType from $actorName failed';
+    case 'UNKNOWN_LEGACY':
+      return outgoing ? 'You called $actorName' : '$actorName called you';
+  }
+  return null;
+}
+
 String _buildTitle(Map<String, dynamic> item) {
   final type = _stringOf(item['type']).toUpperCase();
   final data = _mapOf(item['data']);
@@ -1166,6 +1237,21 @@ String _buildTitle(Map<String, dynamic> item) {
     if (notifKind == 'CALL_RINGING' || notifKind == 'REALTIME_INVITE') {
       return '$actorName invited you to an $callType';
     }
+
+    // THE OUTCOME OUTRANKS THE KIND WHEREVER IT IS PRESENT — not only inside
+    // CALL_CANCELLED, which is where that rule used to stop.
+    //
+    // `CALL_MISSED` carries no direction, so the caller's own row read "Missed
+    // call from Mrs Bajwa" when it was Mrs Bajwa who had not answered. The
+    // outcome knows which end you are on; the kind does not.
+    final resolved = _outcomeTitle(
+      outcome: _stringOf(data['callOutcome']).toUpperCase(),
+      actorName: actorName,
+      callType: callType,
+      outgoing: outgoing,
+    );
+    if (resolved != null) return resolved;
+
     if (notifKind == 'CALL_MISSED') {
       return 'Missed $callType from $actorName';
     }
@@ -1176,28 +1262,9 @@ String _buildTitle(Map<String, dynamic> item) {
       return 'You declined a call from $actorName';
     }
     if (notifKind == 'CALL_CANCELLED') {
-      // THE CANONICAL OUTCOME OUTRANKS THE COARSE ONE.
-      //
-      // `CALL_CANCELLED` is a four-value bucket, and two genuinely different
-      // things land in it: a call that never reached the person at all, and a
-      // call they answered before hearing silence. Rendering either as
-      // "cancelled" tells them a false story about their own call — and the
-      // first one, told as "missed", would blame them for ignoring a call
-      // their phone never announced.
-      switch (_stringOf(data['callOutcome']).toUpperCase()) {
-        case 'NOT_PRESENTED':
-          return outgoing
-              ? 'Could not reach $actorName'
-              : '$actorName tried to call you';
-        case 'ACCEPTED_NOT_CONNECTED':
-          return outgoing
-              ? 'Your $callType with $actorName could not connect'
-              : 'Your $callType with $actorName could not connect';
-        case 'FAILED':
-          return outgoing
-              ? 'Your $callType to $actorName failed'
-              : 'A $callType from $actorName failed';
-      }
+      // Reached only when the row carries no outcome at all — a legacy row, or
+      // one written before the outcome was resolved. The coarse kind is then
+      // the best truth available.
       return outgoing
           ? 'You cancelled a $callType'
           : '$actorName cancelled a $callType';
@@ -1291,6 +1358,42 @@ String _buildSubtitle(Map<String, dynamic> item) {
     default:
       return '';
   }
+}
+
+/// A CALL THAT IS OVER IS NOT A CALL YOU CAN WALK INTO.
+///
+/// Every row in this list that carries a `sessionId` was treated as live:
+/// `isRealtimeActivity` is true whenever one is present, and the two branches
+/// under it push `shouldJoin: true` unconditionally. A call from last week
+/// therefore navigated to its conversation ASKING TO JOIN a session that ended
+/// days ago.
+///
+/// The screen already knew better. `_ctaLabel` renders "Join" only for a
+/// ringing call and "View" for everything else, so the button said View while
+/// the handler tried to join — one screen holding two answers. Both now read
+/// this, so they cannot drift apart again.
+///
+/// Deliberately POSITIVE evidence, in the shape the founder froze for call
+/// truth: a row is unjoinable only when it STATES a terminal outcome. A row
+/// that says nothing about how it ended keeps exactly the behaviour it has
+/// today — Go Live rows included, which are joinable and carry no call
+/// outcome at all. Absence of evidence does not close a call.
+bool callRowIsTerminal(Map<String, dynamic> item) {
+  final data = _mapOf(item['data']);
+  final kind = _firstNonEmpty([
+    _stringOf(data['notificationKind']).toUpperCase(),
+    _stringOf(data['realtimeType']).toUpperCase(),
+  ]);
+  const terminalKinds = <String>{
+    'CALL_MISSED',
+    'CALL_COMPLETED',
+    'CALL_DECLINED',
+    'CALL_CANCELLED',
+  };
+  if (terminalKinds.contains(kind)) return true;
+  // The canonical outcome outranks the coarse kind, and a row may carry it
+  // without a terminal kind at all.
+  return _stringOf(data['callOutcome']).trim().isNotEmpty;
 }
 
 String _ctaLabel(Map<String, dynamic> item) {

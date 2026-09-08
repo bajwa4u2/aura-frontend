@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
@@ -157,6 +158,15 @@ class SfuRealtimeTransport implements RealtimeTransport {
   /// called repeatedly, and without this it would re-subscribe to the same
   /// tracks every time and pile up duplicate receivers.
   final Set<String> _subscribed = <String>{};
+
+  /// How many times each track has been asked for without binding.
+  ///
+  /// The retry exists for a race (the publisher had not created the track at
+  /// the provider yet), and a race ends. This bounds it so a track that will
+  /// never bind cannot drive a renegotiation on every reconcile for the whole
+  /// call.
+  final Map<String, int> _subscribeAttempts = <String, int>{};
+  static const int _maxSubscribeAttempts = 6;
 
   /// What is currently bound, so a refresh that finds nothing new is free and
   /// still returns the media already being received.
@@ -500,8 +510,37 @@ class SfuRealtimeTransport implements RealtimeTransport {
         trackIds.where((id) => !_subscribed.contains(id)).toList(growable: false);
     if (fresh.isEmpty) return _remote;
 
-    final subscribed =
-        await _repository.subscribeStageTracks(sessionId, trackIds: fresh);
+    // NOT PUBLISHED YET IS NOT A FAILURE.
+    //
+    // When every requested track is refused there is no offer to answer and
+    // the provider session is untouched, so the server says 409
+    // `stage:tracks_not_ready` rather than pretending to have negotiated. That
+    // is a WAIT, not a broken stage: the reconcile that runs next will ask
+    // again, and nothing about this transport needs rebuilding. Letting it
+    // throw would escalate a two-second race into media recovery.
+    final Map<String, dynamic> subscribed;
+    try {
+      subscribed =
+          await _repository.subscribeStageTracks(sessionId, trackIds: fresh);
+    } on DioException catch (e) {
+      final body = e.response?.data;
+      final detail = body is Map ? '${body['message'] ?? body['error'] ?? ''}' : '';
+      if (e.response?.statusCode == 409 &&
+          detail.contains('stage:tracks_not_ready')) {
+        for (final id in fresh) {
+          _subscribeAttempts[id] = (_subscribeAttempts[id] ?? 0) + 1;
+          // Same bound as a partial refusal: a race ends, so stop asking
+          // eventually rather than renegotiating for the rest of the call.
+          if (_subscribeAttempts[id]! >= _maxSubscribeAttempts) {
+            _subscribed.add(id);
+          }
+        }
+        unawaited(_report('op=SUBSCRIBE_WAIT tracks=${fresh.length} '
+            'reason=tracks_not_ready'));
+        return _remote;
+      }
+      rethrow;
+    }
     final negotiation =
         (subscribed['negotiation'] as Map?)?.cast<String, dynamic>();
 
@@ -521,17 +560,63 @@ class SfuRealtimeTransport implements RealtimeTransport {
     // Android, it does not fire for receivers created by this renegotiation
     // while inbound RTP is already arriving, so a client waiting for it would
     // paint a blank tile over live media.
-    _subscribed.addAll(fresh);
+
+    // ONLY WHAT ACTUALLY BOUND COUNTS AS SUBSCRIBED.
+    //
+    // This line used to be `_subscribed.addAll(fresh)`, and that unconditional
+    // add is the half of the 2026-09-08 call failure that lived on the client.
+    //
+    // A subscribe can be REFUSED per track: the provider answers 200, binds
+    // what it could, and marks the rest `empty_track_error` — the publisher had
+    // not created that track yet. A race, and one that resolves in seconds.
+    // But marking the refused track subscribed made the race permanent: `fresh`
+    // is computed by excluding `_subscribed`, so the retry that would have
+    // succeeded was never sent. The peer published a moment later and this
+    // client never asked again for the rest of the call.
+    //
+    // That is the observed shape exactly — one side saw the other fine, the
+    // other sat on "connecting" until the call was abandoned.
+    //
+    // A track we could not attach is a track we are not receiving. It stays
+    // OUT of `_subscribed` so the next reconcile asks again, bounded by
+    // `_subscribeAttempts` so a genuinely unbindable track cannot renegotiate
+    // forever.
+    final serverBindings = ((subscribed['bindings'] as List?) ?? const [])
+        .whereType<Map>()
+        .map((e) => e.cast<String, dynamic>())
+        .toList(growable: false);
+    final bound = boundTrackIds(serverBindings);
+    final unbound =
+        fresh.where((id) => !bound.contains(id)).toList(growable: false);
+
+    _subscribed.addAll(fresh.where(bound.contains));
+
+    if (unbound.isNotEmpty) {
+      final exhausted = <String>[];
+      for (final id in unbound) {
+        final attempts = (_subscribeAttempts[id] ?? 0) + 1;
+        _subscribeAttempts[id] = attempts;
+        if (attempts >= _maxSubscribeAttempts) exhausted.add(id);
+      }
+      // Give up ON THE RETRY, not on the call. Admitting it to `_subscribed`
+      // stops the reconcile loop re-negotiating for a track that is never
+      // going to arrive; the rest of the media is unaffected.
+      _subscribed.addAll(exhausted);
+      unawaited(_report(
+        'op=SUBSCRIBE_UNBOUND unbound=${unbound.length}/${fresh.length} '
+        'exhausted=${exhausted.length} will_retry=${unbound.length - exhausted.length}',
+      ));
+    }
+    for (final id in bound) {
+      _subscribeAttempts.remove(id);
+    }
 
     // Bind across ALL receiving m-lines, not just this batch: earlier
     // subscriptions are still carried on the same peer connection, and a
     // partial map would blank tiles that were working a moment ago.
     final bindings = await bindRemoteMedia(
       pc: pc,
-      serverBindings: ((subscribed['bindings'] as List?) ?? const [])
-          .whereType<Map>()
-          .map((e) => e.cast<String, dynamic>())
-          .toList(growable: false),
+      serverBindings: serverBindings,
     );
     // REPORT WHAT THE BIND ACTUALLY DID.
     //
@@ -546,10 +631,7 @@ class SfuRealtimeTransport implements RealtimeTransport {
     try {
       final audit = auditRemoteBindings(
         lines: lastReceivingLines,
-        serverBindings: ((subscribed['bindings'] as List?) ?? const [])
-            .whereType<Map>()
-            .map((e) => e.cast<String, dynamic>())
-            .toList(growable: false),
+        serverBindings: serverBindings,
       );
       unawaited(_repository.reportStageDiagnostic(
         sessionId,
@@ -684,6 +766,7 @@ class SfuRealtimeTransport implements RealtimeTransport {
     _sessionId = null;
     _publishedTracks.clear();
     _subscribed.clear();
+    _subscribeAttempts.clear();
     _remote = const <String, RemoteParticipantMedia>{};
   }
 
@@ -984,6 +1067,31 @@ class StageTransportAdopted implements Exception {
 /// rest of the call. Frozen picture with working sound was, by construction,
 /// the one failure this probe could not see -- and it is the one users
 /// actually reported.
+/// WHICH TRACKS THE SERVER ACTUALLY GAVE US A PLACE TO RECEIVE ON.
+///
+/// A binding without a `mid` names no m-line, so there is no transceiver to
+/// attach and nothing can arrive on it. It is a REFUSAL wearing the shape of a
+/// result, and treating it as a subscription is what turned a two-second
+/// publication race into a call that never connected (2026-09-08).
+///
+/// Kept pure and separate so the rule can be argued about without a peer
+/// connection: a track counts as subscribed only when it has a real mid.
+Set<String> boundTrackIds(List<Map<String, dynamic>> serverBindings) {
+  final bound = <String>{};
+  for (final binding in serverBindings) {
+    final mid = binding['mid'];
+    if (mid == null) continue;
+    final asString = '$mid';
+    // The provider can name m-line zero, so emptiness -- not falsiness -- is
+    // the test. `'0'` is a perfectly good mid.
+    if (asString.isEmpty || asString == 'null') continue;
+    final trackId = '${binding['trackId']}';
+    if (trackId.isEmpty || trackId == 'null') continue;
+    bound.add(trackId);
+  }
+  return bound;
+}
+
 String? stalledKindAfterTick({
   required Map<String, int> lastBytesByKind,
   required Map<String, int> stallTicksByKind,
