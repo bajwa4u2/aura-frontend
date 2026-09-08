@@ -1,4 +1,5 @@
 import '../../core/ui/aura_window.dart';
+import '../../core/ui/aura_responsive.dart';
 import '../../core/ui/nav_posture_preference.dart';
 import '../../features/conversation/data/conversation_unread_authority.dart';
 import '../../features/updates/providers.dart';
@@ -338,7 +339,19 @@ class InstitutionShell extends ConsumerWidget {
         // drawer still opens the full institution navigation on demand.
         final isMeetingFocus = isMeetingFocusPath(path);
         final isDesktop = win.windowClass.canHoldSelection && !isMeetingFocus;
-        final isTablet = win.isDesktopClass && !isMeetingFocus;
+        // AGREE WITH THE SURFACE THAT ACTUALLY DRAWS THE RAIL.
+        //
+        // This asked `isDesktopClass`, which is merely "not a handset" — 600 —
+        // while `AuraSurfaceScaffold` refuses a `tabletUp` rail below the
+        // tablet break. Between those two numbers the shell believed the rail
+        // was showing, so it passed `contextBar: null` and withheld the mobile
+        // bar, while the surface drew no rail. Two components each doing the
+        // right thing on a different threshold left a band of window widths
+        // with no navigation at all.
+        //
+        // One number, asked once, shared by the decision to SHOW the rail and
+        // the decision to REPLACE it.
+        final isTablet = win.width >= kTabletBreak && !isMeetingFocus;
 
         // Workspace navigation doctrine (institution workspace only):
         //   * DESKTOP / TABLET (≥900): the persistent LEFT RAIL is the single

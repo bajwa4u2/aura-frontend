@@ -42,6 +42,40 @@ void main() {
         exists: registry.exists,
       );
 
+  group('the workspace landing offers a way OUT of the workspace', () {
+    // Explore IS the institution's landing screen. Offering "Back to
+    // Institution" there named the place the person was already standing,
+    // and the destination resolved to the same path — the only route in the
+    // app whose return went to itself.
+    //
+    // Both exits were dead at once: entered directly there is nothing to pop,
+    // so the in-app stackReturn silently no-ops, and go(here) moves nothing.
+    // The institution surfaces carry no primary rail, so that left the
+    // landing screen with no exit at all.
+    test('explore does not return to itself', () {
+      final action = out('/institution/\$inst/explore');
+      expect(action.destination, isNot('/institution/\$inst/explore'),
+          reason: 'a return that lands where the person stands is not a return');
+    });
+
+    test('explore leaves the institution, and says so', () {
+      final action = out('/institution/\$inst/explore');
+      expect(action.destination, '/institutions');
+      // The label must name where it actually goes. "Institution" on a
+      // control that leaves the institution is the same untruth as the
+      // wrong target, just harder to notice.
+      expect(action.label, 'Institutions');
+    });
+
+    test('a section BELOW the landing still returns to the landing', () {
+      // The fix must not flatten the workspace. Sections inside an
+      // institution still owe their way back to the institution itself.
+      final action = out('/institution/\$inst/members');
+      expect(action.destination, '/institution/\$inst/explore');
+      expect(action.label, 'Institution');
+    });
+  });
+
   group('a direct entry never loses the institution', () {
     const chain = [
       '/institution/$inst/spaces',

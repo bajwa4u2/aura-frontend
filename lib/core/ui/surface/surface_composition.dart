@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../aura_radius.dart';
+import 'package:flutter/foundation.dart';
 import '../aura_responsive.dart';
 import '../aura_window.dart';
 import '../aura_space.dart';
@@ -391,6 +392,17 @@ class AuraSurfaceScaffold extends StatelessWidget {
     );
   }
 
+  /// WHETHER A RAIL OF THIS VISIBILITY RENDERS IN THIS WINDOW.
+  ///
+  /// Public because the rule is worth testing directly and a test that
+  /// re-implemented it would prove nothing about what actually renders. The
+  /// band where the institution workspace had no navigation at all existed
+  /// precisely because this predicate and the shell's own answer were
+  /// written twice and drifted apart.
+  @visibleForTesting
+  static bool railAllowed(AuraRailVisibility v, AuraWindowInfo win) =>
+      _allowed(v, win);
+
   static bool _allowed(AuraRailVisibility v, AuraWindowInfo win) {
     switch (v) {
       case AuraRailVisibility.always:
@@ -402,7 +414,22 @@ class AuraSurfaceScaffold extends StatelessWidget {
         return win.windowClass.canHoldInspector;
       case AuraRailVisibility.tabletUp:
         // Structural navigation for a surface that has no other nav home.
-        return win.windowClass.canHoldSelection;
+        //
+        // THE NAME, THE DOC AND THE THRESHOLD MUST AGREE.
+        //
+        // This asked `canHoldSelection`, which is desktop-or-wider — 1040 —
+        // while the case is called `tabletUp` and documented as
+        // "tablet and above (>= kTabletBreak)", which is 900. Between 900 and
+        // 1039 the institution workspace therefore rendered no left rail, and
+        // because the shell believed the rail WAS showing it also suppressed
+        // the mobile bar that exists to replace it. The result was a surface
+        // with no navigation of any kind, which is exactly what the line above
+        // promises cannot happen.
+        //
+        // A 150% display scale on an ordinary laptop lands at about 950 CSS
+        // px. This was not an exotic window size; it was the default setting
+        // on a common machine.
+        return win.width >= kTabletBreak;
       case AuraRailVisibility.never:
         return false;
     }

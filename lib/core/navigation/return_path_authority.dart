@@ -297,10 +297,34 @@ class ReturnPathAuthority {
       // context loss this chapter exists to remove.
       final address = institutionRoot.group(1)!;
       final workspace = '/institution/$address/explore';
+
+      // EXPLORE IS THE WORKSPACE, NOT A ROOM INSIDE IT.
+      //
+      // `_institutionSectionRoot` matches `explore` along with every other
+      // section, so this offered the workspace as the way out OF the
+      // workspace: on `/institution/x/explore` the destination resolved to
+      // `/institution/x/explore`, labelled "Back to Institution". The census
+      // shows it as the only route in the app whose return destination is
+      // itself.
+      //
+      // Both routes out were then dead. Entered directly there is nothing to
+      // pop, so the in-app `stackReturn` no-ops silently; and `go(here)` moves
+      // nothing. With the institution surfaces carrying no primary rail, that
+      // left the landing screen with no exit at all — which is what a person
+      // reported as "the institution workspace lost its navigation".
+      //
+      // A landing screen's way out is out. The sibling resolver already knew
+      // this and settles to `/institutions` when a candidate equals the path;
+      // this one simply never asked.
+      final atWorkspaceRoot = workspace == p;
+      final destination =
+          (!atWorkspaceRoot && exists(workspace)) ? workspace : '/institutions';
       return ReturnAction(
         semantic: ReturnSemantic.contextReturn,
-        destination: exists(workspace) ? workspace : '/institutions',
-        label: 'Institution',
+        destination: destination,
+        // Name where it actually goes. "Institution" on a control that leaves
+        // the institution is the same untruth in the label as in the target.
+        label: destination == workspace ? 'Institution' : 'Institutions',
       );
     }
 
