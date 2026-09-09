@@ -1,8 +1,10 @@
+import 'dart:async';
 import '../../../core/media/aura_media_viewer.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/link_preview/link_preview_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/navigation/navigation_authority.dart';
@@ -76,11 +78,69 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
     final posts = await repo.getUserPosts(widget.handle);
     final followDetail = await repo.getFollowStateDetail(widget.handle);
 
+    // After the bundle is built, not before: warming must never delay the
+    // profile appearing.
+    unawaited(_warmMissingPreviews(profile));
+
     return _ProfileBundle(
       profile: profile,
       posts: posts,
       followState: followDetail.state,
     );
+  }
+
+  /// Guard so a profile warms its previews at most once per mount.
+  bool _warmedPreviews = false;
+
+  /// MAKE HYDRATION SELF-STARTING.
+  ///
+  /// Covers and site marks are served from the preview cache, and resolution
+  /// happened only when someone SAVED their profile. A profile that already
+  /// exists is never saved again, so its works stayed permanently bare --
+  /// which is exactly what was reported: everything else working, links not
+  /// hydrating. Waiting for an edit that may never come is not a mechanism.
+  ///
+  /// So a VIEW warms what it finds missing. The server read stays cache-only
+  /// and never fetches during a render; this is the client asking the
+  /// canonical resolver, the same seam the composers already use.
+  ///
+  /// Bounded three ways: once per mount, only for items with nothing to show,
+  /// and the resolver caches -- an image-less preview is not refetched more
+  /// than once a day. Resolve is authenticated, so an anonymous reader simply
+  /// sees whatever is already cached.
+  Future<void> _warmMissingPreviews(Profile profile) async {
+    if (_warmedPreviews) return;
+    _warmedPreviews = true;
+
+    final pending = <String>{
+      for (final publication in profile.publications)
+        if ((publication.coverUrl ?? '').isEmpty &&
+            (publication.url ?? '').isNotEmpty)
+          publication.url!,
+      for (final link in profile.links)
+        if ((link.iconUrl ?? '').isEmpty) link.url,
+    };
+    if (pending.isEmpty) return;
+
+    final service = ref.read(linkPreviewServiceProvider);
+    var resolvedAny = false;
+    for (final url in pending) {
+      try {
+        final preview = await service.resolve(url);
+        if ((preview?.imageUrl ?? '').isNotEmpty ||
+            (preview?.faviconUrl ?? '').isNotEmpty) {
+          resolvedAny = true;
+        }
+      } catch (_) {
+        // Enrichment must never disturb a profile that already rendered
+        // correctly without it.
+      }
+    }
+
+    // Only reload when something actually arrived. Reloading regardless would
+    // refetch the whole profile on every view for a person whose links have no
+    // images at all.
+    if (resolvedAny && mounted) _reload();
   }
 
   void _reload() {

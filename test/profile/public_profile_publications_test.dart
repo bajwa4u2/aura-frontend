@@ -276,4 +276,38 @@ void main() {
           isNot(contains("title: 'Public record'")));
     });
   });
+
+  group('hydration starts itself', () {
+    final screen = File(
+      'lib/features/profile/presentation/author_profile_screen.dart',
+    ).readAsStringSync();
+
+    test('a view warms what it finds missing', () {
+      // Resolution used to happen only on SAVE. A profile that already exists
+      // is never saved again, so its works stayed permanently bare. Waiting
+      // for an edit that may never come is not a mechanism.
+      expect(screen, contains('_warmMissingPreviews'));
+      expect(screen, contains('linkPreviewServiceProvider'));
+    });
+
+    test('it only asks for what has nothing to show', () {
+      expect(screen, contains("(publication.coverUrl ?? '').isEmpty"));
+      expect(screen, contains("(link.iconUrl ?? '').isEmpty"));
+    });
+
+    test('it runs at most once per mount', () {
+      expect(screen, contains('if (_warmedPreviews) return;'));
+      expect(screen, contains('_warmedPreviews = true;'));
+    });
+
+    test('it reloads only when something actually arrived', () {
+      // Reloading regardless would refetch the whole profile on every view
+      // for a person whose links have no images at all.
+      expect(screen, contains('if (resolvedAny && mounted) _reload();'));
+    });
+
+    test('warming never delays the profile appearing', () {
+      expect(screen, contains('unawaited(_warmMissingPreviews(profile));'));
+    });
+  });
 }
