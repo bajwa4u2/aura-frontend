@@ -101,3 +101,9 @@ test/**/failures/
 
 # Python bytecode from repo tooling scripts
 __pycache__/
+
+# Store asset RAW captures — working intermediates, not release inputs.
+# The finished store/ and screenshots/{phone,tablet} assets are committed; the
+# raw device captures they were cut from are 20MB+ of transient material that
+# the build_*.py generators reproduce, and that each release supersedes.
+store_assets/**/raw/
