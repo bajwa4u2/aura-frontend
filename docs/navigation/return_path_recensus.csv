@@ -122,6 +122,7 @@ route,sample,renders,protected,deeplink_semantic,deeplink_destination,in_app_sem
 /admin/platform,/admin/platform,true,false,parentReturn,/admin,stackReturn,true,COMPLIANT
 /admin/record,/admin/record,true,false,parentReturn,/admin,stackReturn,true,COMPLIANT
 /admin/external,/admin/external,true,false,parentReturn,/admin,stackReturn,true,COMPLIANT
+/admin/finance,/admin/finance,true,false,parentReturn,/admin,stackReturn,true,COMPLIANT
 /admin/subjects,/admin/subjects,true,false,parentReturn,/admin,stackReturn,true,COMPLIANT
 /admin/subjects/person/:id,/admin/subjects/person/x-id,true,false,parentReturn,/admin/subjects,stackReturn,true,COMPLIANT
 /admin/subjects/institution/:id,/admin/subjects/institution/x-id,true,false,parentReturn,/admin/subjects,stackReturn,true,COMPLIANT

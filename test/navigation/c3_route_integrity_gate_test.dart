@@ -23,11 +23,42 @@ void main() {
 
   // Declared route patterns from the router (single source of truth) —
   // both literal `path: '...'` and constant-declared `path: kName` forms.
+  //
+  // CONSTANTS ARE COLLECTED FROM ALL OF `lib`, NOT ONLY FROM `router.dart`.
+  //
+  // Scanning the router alone left this gate quietly incomplete. A route
+  // declared as `path: kSomething` whose constant lives in the domain file that
+  // owns the surface resolved to null, was discarded by `whereType<String>()`
+  // below, and never entered the declared table at all — so the route existed
+  // in the router while being UNKNOWN to the registry this gate enforces, and
+  // the gate reported a pass for a table it knew was short.
+  //
+  // Measured when this was corrected: `/admin/finance` and
+  // `/institution/standing` were both absent for exactly this reason.
+  // Declaring a route constant beside the surface that owns it is right; the
+  // registry simply has to follow it there.
+  final constantRe = RegExp(r"const String (k\w+) =[\s\r\n]*'([^']+)'");
   final constants = <String, String>{
-    for (final m in RegExp(r"const String (k\w+) =[\s\r\n]*'([^']+)'")
-        .allMatches(routerSrc))
-      m.group(1)!: m.group(2)!,
+    for (final m in constantRe.allMatches(routerSrc)) m.group(1)!: m.group(2)!,
   };
+  for (final file in Directory('lib')
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((f) => f.path.endsWith('.dart'))) {
+    for (final m in constantRe.allMatches(file.readAsStringSync())) {
+      // The router's own declaration wins if a name is ever repeated.
+      constants.putIfAbsent(m.group(1)!, () => m.group(2)!);
+    }
+  }
+
+  // A `path: kName` this gate cannot resolve is a HOLE, not a pass. Named and
+  // asserted below rather than dropped, because silent dropping is precisely
+  // what let the two routes above sit outside the registry.
+  final unresolvedRouteConstants = RegExp(r'path:\s*(k\w+)')
+      .allMatches(routerSrc)
+      .map((m) => m.group(1)!)
+      .where((name) => !constants.containsKey(name))
+      .toSet();
   String substituteConstants(String raw) {
     var out = raw;
     constants.forEach((name, value) {
@@ -45,6 +76,17 @@ void main() {
         .map((m) => constants[m.group(1)!])
         .whereType<String>(),
   };
+
+  test('every route constant the router references resolves to a path', () {
+    expect(
+      unresolvedRouteConstants,
+      isEmpty,
+      reason: 'router.dart declares `path: <constant>` for these names, but no '
+          'matching `const String <name>` was found anywhere in lib/. Those '
+          'routes are therefore absent from the declared table this gate '
+          'enforces, and navigation to them cannot be validated.',
+    );
+  });
 
   // GoRouter nests paths; a feature literal is valid when its segments
   // match a declared ABSOLUTE pattern. Nested relative patterns are rare

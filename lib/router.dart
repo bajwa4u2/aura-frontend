@@ -15,6 +15,8 @@ import 'features/admin/areas/integrity_area.dart';
 import 'features/admin/areas/now_area.dart';
 import 'features/admin/areas/platform_area.dart';
 import 'features/admin/areas/external_area.dart';
+import 'features/admin/areas/finance_area.dart';
+import 'features/admin/domain/finance_entry.dart';
 import 'features/admin/areas/record_area.dart';
 import 'features/admin/areas/subject_institution_area.dart';
 import 'features/admin/areas/subject_person_area.dart';
@@ -1882,6 +1884,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/admin/external',
             pageBuilder: (_, __) => _operatorPage(const ExternalArea()),
+          ),
+          // THE FINANCE DOORWAY. Aura Admin is the way in; it does not hold the
+          // books. The screen itself re-checks Finance authority, because
+          // hiding the navigation item is user experience and never a security
+          // boundary — this route must be safe to reach directly.
+          GoRoute(
+            path: kFinanceDestinationPath,
+            pageBuilder: (_, __) => _operatorPage(const FinanceArea()),
           ),
           GoRoute(
             path: '/admin/subjects',

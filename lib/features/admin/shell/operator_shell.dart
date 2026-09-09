@@ -33,6 +33,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
+import '../domain/finance_entry.dart';
 import '../runtime/admin_runtime_coordinator.dart';
 import '../../../core/auth/admin_access_provider.dart';
 import '../domain/operator_area.dart';
@@ -163,6 +164,23 @@ class _OperatorShellState extends ConsumerState<OperatorShell> {
         final path = GoRouterState.of(context).uri.path;
         final current = OperatorArea.forPath(path) ?? areas.first;
 
+        // THE FINANCE DOORWAY, NAMED IN THE CHROME ONLY WHEN IT IS THEIRS.
+        //
+        // `/admin/finance` matches no OperatorArea by design, so `current`
+        // falls back to `areas.first` and the header would otherwise announce
+        // "Now" above the Finance screen — chrome that contradicts its own
+        // content.
+        //
+        // Gated on the SAME authority bit as the destination itself, never on
+        // the route alone. A principal without a grant who reaches this path
+        // directly keeps the ordinary fallback: the body says "Not available"
+        // and the header says nothing about Finance, because a header reading
+        // "Finance" would itself disclose that there is a Finance to be denied.
+        final financeVisible = ref.watch(financeDestinationVisibleProvider);
+        final onFinance = path == kFinanceDestinationPath ||
+            path.startsWith('$kFinanceDestinationPath/');
+        final namesFinance = onFinance && financeVisible;
+
         // THE OPERATOR CONSOLE IS A REALM OF AURA, NOT A SEPARATE PRODUCT.
         //
         // This shell drew its own chrome from top to bottom: no Aura platform
@@ -203,7 +221,8 @@ class _OperatorShellState extends ConsumerState<OperatorShell> {
               // shell already knows how to carry — the same slot the member
               // shell uses — instead of a second top-level header.
               contextBar: _OperatorHeader(
-                area: current,
+                icon: namesFinance ? FinanceDestination.icon : current.icon,
+                label: namesFinance ? FinanceDestination.label : current.label,
                 authority: authority,
                 dense: !hasRail,
               ),
@@ -260,12 +279,17 @@ class _OperatorFrame extends StatelessWidget {
 
 class _OperatorHeader extends StatelessWidget {
   const _OperatorHeader({
-    required this.area,
+    required this.icon,
+    required this.label,
     required this.authority,
     required this.dense,
   });
 
-  final OperatorArea area;
+  /// Presentation values rather than an [OperatorArea], for the same reason
+  /// [_RailItem] takes them: the Finance doorway must be able to name itself in
+  /// the chrome without being modelled as an operator area.
+  final IconData icon;
+  final String label;
   final OperatorAuthority authority;
   final bool dense;
 
@@ -280,10 +304,10 @@ class _OperatorHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(area.icon, size: dense ? 18 : 20, color: AuraSurface.accent),
+          Icon(icon, size: dense ? 18 : 20, color: AuraSurface.accent),
           const SizedBox(width: AuraSpace.s10),
           Text(
-            area.label,
+            label,
             style: TextStyle(
               color: AuraSurface.ink,
               fontSize: dense ? 16 : 18,
@@ -355,10 +379,20 @@ class _OperatorRail extends StatelessWidget {
         children: [
           for (final area in areas)
             _RailItem(
-              area: area,
+              icon: area.icon,
+              label: area.label,
+              path: area.path,
               selected: area == current,
               expanded: expanded,
             ),
+          // THE FINANCE DOORWAY, and the reason it is last and separate.
+          //
+          // Finance is not an operator area. It renders only when Finance
+          // itself says this principal holds an active grant, and it renders
+          // NOTHING otherwise — not disabled, not a teaser, not a request-access
+          // affordance. An unauthorised operator learns nothing here, including
+          // that a Finance system exists.
+          _FinanceRailItem(expanded: expanded),
         ],
       ),
     );
@@ -367,12 +401,21 @@ class _OperatorRail extends StatelessWidget {
 
 class _RailItem extends StatelessWidget {
   const _RailItem({
-    required this.area,
+    required this.icon,
+    required this.label,
+    required this.path,
     required this.selected,
     required this.expanded,
   });
 
-  final OperatorArea area;
+  /// Presentation values rather than an [OperatorArea], so the FINANCE
+  /// destination can reuse this exact rendering without being modelled as an
+  /// operator area. Every area gates on [OperatorCapability], and an area with
+  /// an empty `anyOf` is visible to any operator at all — which is precisely
+  /// the forbidden `if isAdmin then show Finance`.
+  final IconData icon;
+  final String label;
+  final String path;
   final bool selected;
   final bool expanded;
 
@@ -382,14 +425,14 @@ class _RailItem extends StatelessWidget {
         ? Row(
             children: [
               Icon(
-                area.icon,
+                icon,
                 size: 20,
                 color: selected ? AuraSurface.accent : AuraSurface.muted,
               ),
               const SizedBox(width: AuraSpace.s12),
               Expanded(
                 child: Text(
-                  area.label,
+                  label,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: selected ? AuraSurface.ink : AuraSurface.muted,
@@ -407,7 +450,7 @@ class _RailItem extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                area.icon,
+                icon,
                 size: 20,
                 color: selected ? AuraSurface.accent : AuraSurface.muted,
               ),
@@ -419,7 +462,7 @@ class _RailItem extends StatelessWidget {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  area.label,
+                  label,
                   maxLines: 1,
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -438,13 +481,13 @@ class _RailItem extends StatelessWidget {
       child: Semantics(
         selected: selected,
         button: true,
-        label: area.label,
+        label: label,
         child: Material(
           color: selected ? AuraSurface.elevated : Colors.transparent,
           borderRadius: BorderRadius.circular(AuraRadius.md),
           child: InkWell(
             borderRadius: BorderRadius.circular(AuraRadius.md),
-            onTap: () => context.go(area.path),
+            onTap: () => context.go(path),
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: expanded ? AuraSpace.s12 : AuraSpace.s4,
@@ -459,21 +502,72 @@ class _RailItem extends StatelessWidget {
   }
 }
 
+/// The Finance destination in the rail.
+///
+/// AURA_ADMIN != FINANCE_AUTHORITY. Visibility comes from Finance's own
+/// authority, resolved server-side from FinanceGrant, and from nothing this
+/// console knows: not the operator role, not identity completeness, not
+/// admissionBasis, not a verification badge, not a name or email match.
+///
+/// FAILS CLOSED. Unknown, loading, errored and unauthenticated all render
+/// nothing at all.
+class _FinanceRailItem extends ConsumerWidget {
+  const _FinanceRailItem({required this.expanded});
+
+  final bool expanded;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(financeDestinationVisibleProvider)) {
+      return const SizedBox.shrink();
+    }
+    final path = GoRouterState.of(context).uri.path;
+    return _RailItem(
+      icon: FinanceDestination.icon,
+      label: FinanceDestination.label,
+      path: kFinanceDestinationPath,
+      selected: path == kFinanceDestinationPath ||
+          path.startsWith('$kFinanceDestinationPath/'),
+      expanded: expanded,
+    );
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // MOBILE BAR — primary areas plus a sheet, never fourteen crushed columns
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _OperatorBar extends StatelessWidget {
+class _OperatorBar extends ConsumerWidget {
   const _OperatorBar({required this.areas, required this.current});
 
   final List<OperatorArea> areas;
   final OperatorArea current;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final primary = areas.take(kMobilePrimaryAreas).toList();
     final overflow = areas.skip(kMobilePrimaryAreas).toList();
-    final inOverflow = overflow.contains(current);
+
+    // NO CAPABILITY DISAPPEARS BECAUSE THE VIEWPORT DID — rule 3 of this shell,
+    // and the reason Finance is resolved here rather than only in the rail.
+    // A routed destination reachable on desktop and from nowhere on a phone is
+    // the failure this estate has already shipped once: a complete surface,
+    // routed, and linked from nothing.
+    //
+    // Resolved by this widget rather than passed in, so a future caller cannot
+    // render the Finance entry by forgetting the gate. Fails closed with every
+    // other non-eligible state.
+    final financeVisible = ref.watch(financeDestinationVisibleProvider);
+    final path = GoRouterState.of(context).uri.path;
+    final onFinance = path == kFinanceDestinationPath ||
+        path.startsWith('$kFinanceDestinationPath/');
+
+    // The sheet is the only place Finance can go on a phone — it must never
+    // take one of the three primary slots from an operator area. So the sheet
+    // has to EXIST whenever Finance does, even for an operator whose authority
+    // grants three areas or fewer and would otherwise see no "More" at all.
+    final hasSheet = overflow.isNotEmpty || financeVisible;
+    final inSheet = overflow.contains(current) || (onFinance && financeVisible);
 
     return Container(
       decoration: const BoxDecoration(
@@ -492,13 +586,14 @@ class _OperatorBar extends StatelessWidget {
                 onTap: () => context.go(area.path),
               ),
             ),
-          if (overflow.isNotEmpty)
+          if (hasSheet)
             Expanded(
               child: _BarItem(
                 icon: Icons.more_horiz_rounded,
                 label: 'More',
-                selected: inOverflow,
-                onTap: () => _showMore(context, overflow, current),
+                selected: inSheet,
+                onTap: () =>
+                    _showMore(context, overflow, current, onFinance),
               ),
             ),
         ],
@@ -510,6 +605,7 @@ class _OperatorBar extends StatelessWidget {
     BuildContext context,
     List<OperatorArea> overflow,
     OperatorArea current,
+    bool selected,
   ) {
     showModalBottomSheet<void>(
       context: context,
@@ -541,10 +637,72 @@ class _OperatorBar extends StatelessWidget {
                   context.go(area.path);
                 },
               ),
+            // THE FINANCE DOORWAY on mobile. Last and separate, exactly as in
+            // the rail: not an operator area, rendered only on Finance's own
+            // authority, and rendering NOTHING otherwise — not disabled, not a
+            // teaser, no request-access affordance.
+            //
+            // Its own Consumer rather than the outer widget's bool, because the
+            // sheet is a separate subtree with its own lifetime: a grant that
+            // is revoked while the sheet is open must take the entry with it.
+            //
+            // SELECTION AND NAVIGATION COME FROM THE SHELL'S CONTEXT, NOT THE
+            // SHEET'S. A modal route is pushed on the root navigator, outside
+            // the GoRouter subtree that publishes route state — `GoRouterState.of`
+            // throws there. Riverpod is unaffected (its scope is above the app),
+            // which is why the authority check can still live inside the entry.
+            _FinanceSheetEntry(
+              selected: selected,
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                context.go(kFinanceDestinationPath);
+              },
+            ),
             const SizedBox(height: AuraSpace.s8),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The Finance doorway inside the mobile overflow sheet.
+///
+/// The bar's counterpart to [_FinanceRailItem], and it holds the same line:
+/// visibility comes from Finance's own authority — an active FinanceGrant
+/// resolved server-side — and from nothing this console knows. Not the operator
+/// role, not identity completeness, not admissionBasis, not a name or email
+/// match.
+///
+/// FAILS CLOSED. Unknown, loading, errored and unauthenticated render nothing
+/// at all, so no failure mode can disclose that a Finance system exists.
+class _FinanceSheetEntry extends ConsumerWidget {
+  const _FinanceSheetEntry({required this.selected, required this.onTap});
+
+  /// Resolved by the shell, which stands inside the GoRouter subtree. A modal
+  /// sheet does not.
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(financeDestinationVisibleProvider)) {
+      return const SizedBox.shrink();
+    }
+
+    return ListTile(
+      leading: Icon(
+        FinanceDestination.icon,
+        color: selected ? AuraSurface.accent : AuraSurface.muted,
+      ),
+      title: Text(
+        FinanceDestination.label,
+        style: TextStyle(
+          color: AuraSurface.ink,
+          fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+        ),
+      ),
+      onTap: onTap,
     );
   }
 }

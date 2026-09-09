@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../domain/finance_entry.dart';
 import '../domain/platform_health.dart';
 import 'admin_models.dart';
 
@@ -38,6 +39,27 @@ class AdminRepository {
   Future<AdminConvergenceReport> fetchDirectThreadConvergence() async {
     final res = await _dio.get('/v1/admin/migrations/direct-thread-convergence');
     return AdminConvergenceReport.fromJson(_asMap(res.data));
+  }
+
+  /// Does this principal have a Finance destination?
+  ///
+  /// AURA ADMIN IS NOT THE AUTHORITY FOR THIS. The backend asks Finance, which
+  /// resolves it from FinanceGrant, and returns ONE bit. Aura Admin never
+  /// computes Finance eligibility from an operator role, identity completeness,
+  /// admissionBasis or anything else it happens to know.
+  ///
+  /// Returns exactly `{ eligible: bool }`. Anything richer would let an
+  /// unauthorised operator learn that books exist. A malformed or unexpected
+  /// payload is read as NOT eligible, because the only safe interpretation of
+  /// an answer we cannot understand is the one that reveals nothing.
+  Future<FinanceEntry> fetchFinanceEntry() async {
+    // NOT under `/v1/admin/`. Finance entry is not an administrative resource
+    // of Aura and Aura Admin is not its authority; the path says so, and the
+    // endpoint behind it is gated on authentication alone, never on an admin
+    // permission. The console merely happens to be where the door is drawn.
+    final res = await _dio.get('/v1/finance/entry');
+    final body = _asMap(res.data);
+    return FinanceEntry(eligible: body['eligible'] == true);
   }
 
   Future<AdminAccess> fetchMe() async {

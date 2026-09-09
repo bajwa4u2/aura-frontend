@@ -1576,6 +1576,18 @@
   "parent": ""
  },
  {
+  "path": "/admin/finance",
+  "segments": 2,
+  "params": [],
+  "renders": true,
+  "hasRedirect": false,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
   "path": "/admin/subjects",
   "segments": 2,
   "params": [],

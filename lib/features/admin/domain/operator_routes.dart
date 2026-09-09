@@ -49,3 +49,16 @@ String operatorSupportRoute(String caseId) =>
 /// somebody's identity without looking at what they submitted.
 String operatorIdentityReviewRoute(String submissionId) =>
     '/admin/integrity/identity/$submissionId';
+
+/// THE FINANCE DOORWAY.
+///
+/// Declared here with every other operator destination so it is classifiable
+/// and checkable, NOT typed as a literal at a call site. A route added without
+/// an entry alongside the others does not fail loudly; it takes a default and
+/// the damage surfaces somewhere else entirely.
+///
+/// The canonical path lives on [kFinanceDestinationPath] in
+/// `domain/finance_entry.dart`, beside the authority that decides whether it is
+/// reachable, so neither can be changed without seeing the other. This constant
+/// exists so the route inventory is complete in the one file that lists routes.
+const String kOperatorFinanceRoot = '/admin/finance';
