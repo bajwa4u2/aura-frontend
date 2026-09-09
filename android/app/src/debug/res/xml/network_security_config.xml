@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  CERTIFICATION-ONLY CLEARTEXT EXCEPTION. DEBUG SOURCE SET.
+
+  This file lives in src/debug/ and is therefore compiled into the DEBUG build
+  type only. It cannot reach a release APK or AAB: release builds resolve
+  src/main/ and src/release/, neither of which references it, and the release
+  manifest declares no networkSecurityConfig at all. That is the structural
+  guarantee — not a comment asking someone to be careful.
+
+  WHY IT EXISTS. Certifying the identity branch on a real device requires the
+  branch BACKEND, whose endpoints (/users/me/personal-details,
+  /users/me/verification) do not exist in production. The isolated
+  certification stack speaks plain HTTP on the development host, and Android
+  blocks cleartext by default for targetSdk 28+. Without this the device
+  cannot reach the stack at all.
+
+  WHAT IT PERMITS, and nothing more:
+
+    127.0.0.1 / localhost   reached through `adb reverse tcp:34999 tcp:34999`,
+                            so the traffic never leaves the USB cable.
+    10.0.0.193              the development host on the local network, kept as
+                            a fallback for when adb reverse is unavailable.
+
+  Every other destination — including all of Aura's real hosts — remains
+  cleartext-forbidden even in this debug build, because cleartextTrafficPermitted
+  is false at the base. A debug build that quietly allowed plaintext everywhere
+  would be a worse tool for finding real defects, not a more convenient one.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">10.0.0.193</domain>
+    </domain-config>
+</network-security-config>

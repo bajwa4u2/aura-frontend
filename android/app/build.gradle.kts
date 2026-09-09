@@ -49,6 +49,29 @@ android {
         release {
             signingConfig = signingConfigs.getByName("release")
         }
+
+        // CERTIFICATION BUILD — INSTALLS ALONGSIDE PRODUCTION, NEVER OVER IT.
+        //
+        // Certifying the identity branch on a real device needs the branch
+        // BACKEND: /users/me/personal-details and /users/me/verification do not
+        // exist in production, so a build pointed at production could only 404
+        // on the surfaces under test.
+        //
+        // The suffix is what makes that safe. The debug build gets its own
+        // applicationId, so Android treats it as a DIFFERENT APPLICATION: it
+        // installs next to the shipped app instead of replacing it, and the
+        // production package keeps its data and its signed-in session. No
+        // uninstall, no wipe, nothing to restore afterwards.
+        //
+        // Paired with src/debug/ overrides that cannot reach a release build:
+        // a network security config permitting cleartext ONLY to the local
+        // certification backend, and a placeholder google-services.json,
+        // required because the Google Services plugin resolves its client by
+        // applicationId and would otherwise fail the build.
+        debug {
+            applicationIdSuffix = ".certification"
+            versionNameSuffix = "-certification"
+        }
     }
 }
 
