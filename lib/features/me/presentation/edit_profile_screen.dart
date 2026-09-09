@@ -1713,7 +1713,19 @@ class _EditablePublication {
       return <String, dynamic>{};
     }
 
-    return {'title': title, 'link': link, 'description': description};
+    // CANONICAL NAMES ON THE WIRE.
+    //
+    // This sent `link`. The server has only ever known `url`, so the address
+    // was accepted and discarded on every save — and `description` was
+    // discarded too, because the server had no such field at all. Two
+    // publications sit in production with no URL for exactly this reason.
+    //
+    // The READER above stays tolerant (`link`/`url`/`href`), which is right:
+    // it has to understand what older clients wrote. The WRITER is now strict,
+    // which is the half that was missing. A tolerant reader over a strict
+    // writer turns a contract break into empty fields instead of an error, and
+    // that asymmetry is what hid this for as long as it hid.
+    return {'title': title, 'url': link, 'description': description};
   }
 
   void dispose() {
