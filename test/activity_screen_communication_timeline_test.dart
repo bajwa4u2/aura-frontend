@@ -43,7 +43,10 @@ void main() {
       await tester.pumpWidget(_wrap(dio));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('You made a audio call'), findsOneWidget);
+      // "an audio", not "a audio": the article is chosen at runtime from the
+      // call type, and these assertions encoded the ungrammatical output the
+      // article fix corrected.
+      expect(find.textContaining('You made an audio call'), findsOneWidget);
     },
   );
 
@@ -88,7 +91,7 @@ void main() {
       await tester.pumpWidget(_wrap(dio));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('You cancelled a audio call'), findsOneWidget);
+      expect(find.textContaining('You cancelled an audio call'), findsOneWidget);
     },
   );
 
@@ -109,9 +112,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Missed audio call from Caller One'), findsOneWidget);
-      expect(find.textContaining('You made a audio call'), findsOneWidget);
+      expect(find.textContaining('You made an audio call'), findsOneWidget);
       expect(find.textContaining('You declined a call from Caller One'), findsOneWidget);
-      expect(find.textContaining('Caller One cancelled a audio call'), findsOneWidget);
+      expect(find.textContaining('Caller One cancelled an audio call'), findsOneWidget);
     },
   );
 }

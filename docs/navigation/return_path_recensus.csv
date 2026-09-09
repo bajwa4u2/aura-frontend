@@ -166,7 +166,7 @@ route,sample,renders,protected,deeplink_semantic,deeplink_destination,in_app_sem
 /institution/:institutionId/members,/institution/x-institutionid/members,true,false,contextReturn,/institution/x-institutionid/explore,stackReturn,true,COMPLIANT
 /institution/:institutionId/invites,/institution/x-institutionid/invites,true,false,deepLinkFallback,/institution/x-institutionid/explore,stackReturn,true,COMPLIANT
 /institution/:institutionId/join-requests,/institution/x-institutionid/join-requests,true,false,deepLinkFallback,/institution/x-institutionid/explore,stackReturn,true,COMPLIANT
-/institution/:institutionId/explore,/institution/x-institutionid/explore,true,false,contextReturn,/institution/x-institutionid/explore,stackReturn,true,COMPLIANT
+/institution/:institutionId/explore,/institution/x-institutionid/explore,true,false,contextReturn,/institutions,stackReturn,true,COMPLIANT
 /institution/:institutionId/posts/new,/institution/x-institutionid/posts/new,true,false,flowCancel,/institution/x-institutionid/explore,flowCancel,true,COMPLIANT
 /institution/:institutionId/posts/:postId,/institution/x-institutionid/posts/x-postid,true,false,deepLinkFallback,/institution/x-institutionid/explore,stackReturn,true,COMPLIANT
 /direct/:threadId,/direct/x-threadid,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT
@@ -182,4 +182,5 @@ route,sample,renders,protected,deeplink_semantic,deeplink_destination,in_app_sem
 /institution/:institutionId/messages/direct,/institution/x-institutionid/messages/direct,false,false,parentReturn,/institution/x-institutionid/messages,stackReturn,true,NOT_A_SURFACE
 /institution/:institutionId/messages/direct/archived,/institution/x-institutionid/messages/direct/archived,false,false,parentReturn,/institution/x-institutionid/messages,stackReturn,true,NOT_A_SURFACE
 /realtime,/realtime,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT
+/calls/:sessionId,/calls/x-sessionid,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT
 /realtime/:sessionId,/realtime/x-sessionid,true,true,parentReturn,/realtime,stackReturn,true,PROTECTED_BOUNDARY

@@ -1842,7 +1842,7 @@
   "renders": true,
   "protected": false,
   "deepLinkSemantic": "contextReturn",
-  "deepLinkDestination": "/institution/x-institutionid/explore",
+  "deepLinkDestination": "/institutions",
   "inAppSemantic": "stackReturn",
   "affordance": true,
   "verdict": "COMPLIANT"
@@ -2004,6 +2004,17 @@
  {
   "route": "/realtime",
   "sample": "/realtime",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "deepLinkFallback",
+  "deepLinkDestination": "/home",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
+  "route": "/calls/:sessionId",
+  "sample": "/calls/x-sessionid",
   "renders": true,
   "protected": false,
   "deepLinkSemantic": "deepLinkFallback",

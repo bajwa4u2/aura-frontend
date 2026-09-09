@@ -337,6 +337,11 @@ bool isMemberShellPath(String path) {
       path == '/change-password' ||
       path == '/invite/import' ||
       RegExp(r'^/meetings/[^/]+/prep$').hasMatch(path) ||
+      // A call's own record. MEMBER, and not public for a specific reason:
+      // the page states who called whom, when it rang, whether it was
+      // answered and how long it lasted. That is one person's communication
+      // history, and it must never be reachable by trying a URL.
+      RegExp(r'^/calls/[^/]+$').hasMatch(path) ||
       // Meeting DETAIL pages are member surfaces, but the same shape also
       // matches guest recovery screens (`/meetings/join`,
       // `/meetings/join-error`). Excluding every GUEST_REACHABLE path here

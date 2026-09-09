@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
 import '../../../core/navigation/navigation_authority.dart';
+import '../../../core/product/product_state.dart';
+import '../../../core/product/product_state_view.dart';
+import '../../../core/product/temporal.dart';
 import '../../../core/ui/aura_scaffold.dart';
 import '../application/realtime_providers.dart';
 import '../domain/call_occurrence.dart';
@@ -60,7 +63,14 @@ class _CallDetailScreenState extends ConsumerState<CallDetailScreen> {
         future: _future,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
+            // Through the state authority, not a bare spinner: a whole
+            // surface waiting is a product state with copy of its own, and
+            // deciding that locally is how one condition ends up looking
+            // like five different things across the app.
+            // No `subject`: the canonical vocabulary has no "call" noun, and
+            // adding one is a decision about Aura's language, not something a
+            // screen gets to do on its way past.
+            return const AuraProductState(state: ProductState.loading);
           }
           final bundle = snap.data;
           final call = bundle?.session.call;
@@ -210,24 +220,35 @@ class _CallBody extends StatelessWidget {
         const SizedBox(height: 24),
         const Divider(height: 1),
         const SizedBox(height: 16),
-        _Fact(label: 'Started', value: _timestamp(o.call.initiatedAt)),
+        _Fact(
+          label: 'Started',
+          value: _timestamp(o.call.initiatedAt, TimeEvent.started),
+        ),
         // ABSENCE IS A FACT HERE. "Their phone rang" and "their phone never
         // rang" are the difference between ignoring a call and never being
         // offered one, so the ring is stated either way.
         _Fact(
           label: 'Rang',
-          value: o.everRang ? _timestamp(o.call.ringPresentedAt) : 'Never rang',
+          value: o.everRang
+              ? _timestamp(o.call.ringPresentedAt, TimeEvent.invited)
+              : 'Never rang',
         ),
         if (o.call.acceptedAt != null)
-          _Fact(label: 'Answered', value: _timestamp(o.call.acceptedAt)),
+          _Fact(
+          label: 'Answered',
+          value: _timestamp(o.call.acceptedAt, TimeEvent.occurred),
+        ),
         _Fact(
           label: 'Connected',
           value: o.everConnected
-              ? _timestamp(o.call.connectedAt)
+              ? _timestamp(o.call.connectedAt, TimeEvent.started)
               : 'Never connected',
         ),
         if (o.call.endedAt != null)
-          _Fact(label: 'Ended', value: _timestamp(o.call.endedAt)),
+          _Fact(
+          label: 'Ended',
+          value: _timestamp(o.call.endedAt, TimeEvent.ended),
+        ),
         // No duration rather than a fabricated one: a call that was declined,
         // missed or cancelled did not last zero seconds — it had no duration.
         _Fact(
@@ -259,12 +280,15 @@ class _CallBody extends StatelessWidget {
     );
   }
 
-  static String _timestamp(DateTime? value) {
+  /// Exact, through the temporal authority.
+  ///
+  /// A call's record is the audit-sensitive case `absolute` exists for — the
+  /// question here is "when precisely did this happen", never "how long ago".
+  /// The event travels with the instant so the authority, and not this
+  /// screen, owns what local time means.
+  static String _timestamp(DateTime? value, TimeEvent event) {
     if (value == null) return '—';
-    final local = value.toLocal();
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${local.year}-${two(local.month)}-${two(local.day)} '
-        '${two(local.hour)}:${two(local.minute)}';
+    return AuraTemporal.absolute(ProductTime(value, event));
   }
 
   static String _duration(Duration d) {
