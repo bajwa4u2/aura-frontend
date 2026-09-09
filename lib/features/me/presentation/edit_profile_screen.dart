@@ -69,7 +69,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _displayNameController = TextEditingController();
   final _titleController = TextEditingController();
   final _bioController = TextEditingController();
-  final _locationController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _countryController = TextEditingController();
   final _websiteController = TextEditingController();
   late final ProfileMediaPipeline _media = ProfileMediaPipeline(
     dio: ref.read(dioProvider),
@@ -96,7 +97,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   String _initialDisplayName = '';
   String _initialTitle = '';
   String _initialBio = '';
-  String _initialLocation = '';
+  String _initialCity = '';
+  String _initialCountry = '';
   String _initialWebsite = '';
   String? _initialAvatarUrl;
   String? _initialCoverUrl;
@@ -113,7 +115,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _displayNameController.addListener(_onChanged);
     _titleController.addListener(_onChanged);
     _bioController.addListener(_onChanged);
-    _locationController.addListener(_onChanged);
+    _cityController.addListener(_onChanged);
+    _countryController.addListener(_onChanged);
     _websiteController.addListener(_onChanged);
     _load();
   }
@@ -123,13 +126,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _displayNameController.removeListener(_onChanged);
     _titleController.removeListener(_onChanged);
     _bioController.removeListener(_onChanged);
-    _locationController.removeListener(_onChanged);
+    _cityController.removeListener(_onChanged);
+    _countryController.removeListener(_onChanged);
     _websiteController.removeListener(_onChanged);
 
     _displayNameController.dispose();
     _titleController.dispose();
     _bioController.dispose();
-    _locationController.dispose();
+    _cityController.dispose();
+    _countryController.dispose();
     _websiteController.dispose();
 
     for (final item in _publications) {
@@ -153,7 +158,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     return _displayNameController.text.trim() != _initialDisplayName ||
         _titleController.text.trim() != _initialTitle ||
         _bioController.text.trim() != _initialBio ||
-        _locationController.text.trim() != _initialLocation ||
+        _cityController.text.trim() != _initialCity ||
+        _countryController.text.trim() != _initialCountry ||
         _websiteController.text.trim() != _initialWebsite ||
         (_avatarUrl ?? '') != (_initialAvatarUrl ?? '') ||
         (_coverUrl ?? '') != (_initialCoverUrl ?? '') ||
@@ -173,7 +179,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   String get _bio => _bioController.text.trim();
-  String get _location => _locationController.text.trim();
+  String get _city => _cityController.text.trim();
+  String get _country => _countryController.text.trim();
+
+  /// City and country are SEPARATE canonical fields on the person record.
+  /// This joins them for display only; nothing writes the joined string.
+  String get _placeLabel =>
+      [_city, _country].where((e) => e.isNotEmpty).join(', ');
   String get _website => _websiteController.text.trim();
 
   String get _initials {
@@ -223,15 +235,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       _initialDisplayName = person.displayName;
       _initialTitle = _readString(data, const ['title']);
       _initialBio = _readString(data, const ['bio', 'headline', 'summary']);
-      _initialLocation = _readString(data, const ['location', 'place']);
-      if (_initialLocation.isEmpty) {
-        final city = _readString(data, const ['city']);
-        final country = _readString(data, const ['country']);
-        _initialLocation = [
-          city,
-          country,
-        ].where((e) => e.isNotEmpty).join(', ');
-      }
+      // CANONICAL FIELDS, READ DIRECTLY.
+      //
+      // This used to prefer a free-form `location` / `place` and only fall back
+      // to composing city + country. No person endpoint has ever returned
+      // either — `location` is a column on Institution, not on User — so the
+      // fallback did all the work while the editor wrote a joined string back
+      // to a field the server does not accept. Read what is actually stored.
+      _initialCity = _readString(data, const ['city']);
+      _initialCountry = _readString(data, const ['country']);
 
       _initialWebsite = _readString(data, const [
         'website',
@@ -247,7 +259,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       _displayNameController.text = _initialDisplayName;
       _titleController.text = _initialTitle;
       _bioController.text = _initialBio;
-      _locationController.text = _initialLocation;
+      _cityController.text = _initialCity;
+      _countryController.text = _initialCountry;
       _websiteController.text = _initialWebsite;
       _avatarUrl = _initialAvatarUrl;
       _coverUrl = _initialCoverUrl;
@@ -435,7 +448,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     try {
       final dio = ref.read(dioProvider);
 
-      final location = _emptyToNull(_locationController.text);
+      final city = _emptyToNull(_cityController.text);
+      final country = _emptyToNull(_countryController.text);
       final website = _emptyToNull(_websiteController.text);
       final publications = _normalizedPublicationsPayload();
       final links = _normalizedLinksPayload();
@@ -446,12 +460,20 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           'displayName': _displayNameController.text.trim(),
           'title': _titleController.text.trim(),
           'bio': _bioController.text.trim(),
-          'location': location,
-          'website': website,
+          // ONLY WHAT PATCH /users/me UNDERSTANDS.
+          //
+          // `location`, `website` and `bannerUrl` were all sent and none is a
+          // field that endpoint accepts. `website` and `bannerUrl` were
+          // harmless duplicates of the canonical keys beside them, but
+          // `location` had no canonical counterpart: the person typed a place,
+          // the save reported success, and the value was dropped on the floor.
+          // The endpoint now REFUSES an unknown key rather than ignoring it,
+          // so sending one would fail loudly instead of silently.
+          'city': city,
+          'country': country,
           'websiteUrl': website,
           'avatarUrl': _emptyToNull(_avatarUrl),
           'coverUrl': _emptyToNull(_coverUrl),
-          'bannerUrl': _emptyToNull(_coverUrl),
           'publications': publications,
           'links': links,
         },
@@ -460,7 +482,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       _initialDisplayName = _displayNameController.text.trim();
       _initialTitle = _titleController.text.trim();
       _initialBio = _bioController.text.trim();
-      _initialLocation = _locationController.text.trim();
+      _initialCity = _cityController.text.trim();
+      _initialCountry = _countryController.text.trim();
       _initialWebsite = _websiteController.text.trim();
       _initialAvatarUrl = _emptyToNull(_avatarUrl);
       _initialCoverUrl = _emptyToNull(_coverUrl);
@@ -517,7 +540,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       _displayNameController.text = _initialDisplayName;
       _titleController.text = _initialTitle;
       _bioController.text = _initialBio;
-      _locationController.text = _initialLocation;
+      _cityController.text = _initialCity;
+      _countryController.text = _initialCountry;
       _websiteController.text = _initialWebsite;
       _avatarUrl = _initialAvatarUrl;
       _coverUrl = _initialCoverUrl;
@@ -895,15 +919,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             ),
           ),
         ],
-        if (_location.isNotEmpty || _website.isNotEmpty) ...[
+        if (_placeLabel.isNotEmpty || _website.isNotEmpty) ...[
           const SizedBox(height: AuraSpace.s12),
           Wrap(
             spacing: AuraSpace.s12,
             runSpacing: AuraSpace.s8,
             alignment: WrapAlignment.center,
             children: [
-              if (_location.isNotEmpty)
-                EditProfilePreviewChip(label: _location),
+              if (_placeLabel.isNotEmpty)
+                EditProfilePreviewChip(label: _placeLabel),
               if (_website.isNotEmpty) EditProfilePreviewChip(label: _website),
             ],
           ),
@@ -959,8 +983,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           ),
           const SizedBox(height: AuraSpace.s18),
           EditProfileField(
-            label: 'Location',
-            controller: _locationController,
+            label: 'City',
+            controller: _cityController,
+            textInputAction: TextInputAction.next,
+            maxLines: 1,
+          ),
+          const SizedBox(height: AuraSpace.s16),
+          EditProfileField(
+            label: 'Country',
+            controller: _countryController,
             textInputAction: TextInputAction.next,
             maxLines: 1,
           ),
