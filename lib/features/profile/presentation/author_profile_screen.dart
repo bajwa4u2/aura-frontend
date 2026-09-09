@@ -335,6 +335,60 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
     return meta;
   }
 
+  /// THE PROFILE TAB, COMPOSED FOR THE ROOM IT HAS.
+  ///
+  /// Everything used to stack into one column: published record, then links,
+  /// then the whole posts feed. On a wide window that is a narrow ribbon of
+  /// content running a very long way down, and the finite things a reader
+  /// actually came for — the books, where else this person is — get pushed
+  /// further away the more the person posts.
+  ///
+  /// So on a wide surface the FINITE sections move beside the feed rather
+  /// than on top of it. They are short and bounded; the feed is not. A reader
+  /// sees the works and the destinations without scrolling at all, and the
+  /// feed still gets the width it needs to read comfortably.
+  ///
+  /// Narrow keeps the stacked order, works first, because there is no second
+  /// column to move them into and they still matter more than the feed.
+  ///
+  /// 900 is the same threshold the owner's own presence view uses. One
+  /// number, one behaviour, two surfaces.
+  Widget _profileTab(Profile profile, List<Post> posts) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final aside = <Widget>[
+          _publishedRecordSection(profile.publications),
+          _elsewhereSection(profile.links),
+        ];
+        final hasAside = profile.publications.isNotEmpty || profile.links.isNotEmpty;
+
+        if (constraints.maxWidth < 900 || !hasAside) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [...aside, _workSection(posts)],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _workSection(posts)),
+            const SizedBox(width: AuraSpace.s24),
+            // Bounded so the feed keeps the majority of the room: this column
+            // holds reference material, not the thing being read.
+            SizedBox(
+              width: 320,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: aside,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   /// PUBLISHED RECORD — the works a person declares on their own profile.
   ///
   /// The API has sent these all along (`publicSelect` includes `publications`
@@ -835,14 +889,8 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
                 const SizedBox(height: AuraSpace.s16),
                 _buildTabBar(),
                 const SizedBox(height: AuraSpace.s20),
-                if (_tabController.index == 0) ...[
-                  // A person's declared works come BEFORE the posts feed.
-                  // "Works" below is that feed; the published record is the
-                  // thing a reader came for.
-                  _publishedRecordSection(profile.publications),
-                  _elsewhereSection(profile.links),
-                  _workSection(posts),
-                ]
+                if (_tabController.index == 0)
+                  _profileTab(profile, posts)
                 else
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

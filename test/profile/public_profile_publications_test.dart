@@ -122,13 +122,23 @@ void main() {
       expect(source, contains('_elsewhereSection(profile.links)'));
     });
 
-    test('the published record comes before the posts feed', () {
-      final record = source.indexOf('_publishedRecordSection(profile.publications)');
-      final feed = source.indexOf('_workSection(posts),');
-      expect(record, greaterThan(-1));
-      expect(feed, greaterThan(-1));
-      expect(record, lessThan(feed),
-          reason: 'a reader came for the works, not for the feed');
+    test('the works come before the feed when they must share a column', () {
+      // On a narrow surface there is no second column, so order is the only
+      // way to say which matters more — and a reader came for the works.
+      final narrow = source.indexOf('children: [...aside, _workSection(posts)]');
+      expect(narrow, greaterThan(-1));
+    });
+
+    test('the finite sections move beside the feed on a wide surface', () {
+      // The whole point of the recompose: published record and links are
+      // short and bounded, the feed is not. Stacking them made a reader
+      // scroll past a growing feed to reach a fixed list.
+      expect(source, contains('constraints.maxWidth < 900'));
+      expect(source, contains('Expanded(child: _workSection(posts))'));
+    });
+
+    test('a profile with no works does not reserve an empty column', () {
+      expect(source, contains('|| !hasAside'));
     });
 
     test('external destinations are scheme-checked on the way out', () {

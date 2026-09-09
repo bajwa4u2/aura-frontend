@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/link_preview/link_preview_service.dart';
 
 import '../../../core/identity/person_identity_model.dart';
 import '../../../core/net/dio_provider.dart';
@@ -388,6 +391,31 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     }
   }
 
+  /// Ask the canonical resolver to fetch each destination once.
+  ///
+  /// Only the IMAGE is ever used from the result — a work's cover, a link's
+  /// site mark. The title and description on a publication are the person's
+  /// own assertion and are never replaced by what the page says about itself.
+  Future<void> _warmLinkPreviews(
+    List<Map<String, dynamic>> publications,
+    List<Map<String, dynamic>> links,
+  ) async {
+    final service = ref.read(linkPreviewServiceProvider);
+    final urls = <String>{
+      for (final item in [...publications, ...links])
+        (item['url'] ?? '').toString().trim(),
+    }..removeWhere((url) => url.isEmpty);
+
+    for (final url in urls) {
+      try {
+        await service.resolve(url);
+      } catch (_) {
+        // Enrichment must never be able to disturb a save that already
+        // succeeded.
+      }
+    }
+  }
+
   Future<void> _save() async {
     if (_busy || !_hasChanges) return;
 
@@ -438,6 +466,26 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       _initialCoverUrl = _emptyToNull(_coverUrl);
       _initialPublicationsData = publications;
       _initialLinksData = links;
+
+      // WARM THE PREVIEWS THIS PROFILE WILL RENDER FROM.
+      //
+      // The client resolves and the server hydrates from cache. That is the
+      // pattern every other surface already uses — announcements, institution
+      // posts and direct threads all resolve through this endpoint before
+      // submitting — and it is the pattern for a reason: the server's read
+      // path must never fetch during a render, or a slow publisher page
+      // becomes a slow profile.
+      //
+      // Doing it server-side instead is what took production down on
+      // 2026-09-09. Importing LinkIntelligenceModule into UsersModule closed
+      // a cycle (Users -> LinkIntelligence -> InternalReference -> Users) that
+      // Nest could not scan, and both API and media died on boot. The seam
+      // belongs here, where it already existed.
+      //
+      // Fire and forget, after the save has succeeded: a publisher's site
+      // being slow is not a reason to make someone wait, and a resolve that
+      // fails just means no cover yet.
+      unawaited(_warmLinkPreviews(publications, links));
 
       if (!mounted) return;
       setState(() {
