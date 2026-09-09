@@ -108,6 +108,15 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  # TEST-ONLY, AND NAMED DELIBERATELY.
+  #
+  # The Finance doorway tests replace the url_launcher PLATFORM to capture what
+  # the app tried to open — which is the only way to assert that a native
+  # client hands the browser Aura's start endpoint rather than Finance's
+  # sign-in. Both are already in the lock file transitively; naming them here
+  # is what stops a transitive change from breaking the certification silently.
+  plugin_platform_interface: ^2.1.8
+  url_launcher_platform_interface: ^2.3.2
   # RELEASE GATE, NOT SHIPPED CODE.
   #
   # `tool/windows/package_windows.dart` opens the finished .msix and reads its
