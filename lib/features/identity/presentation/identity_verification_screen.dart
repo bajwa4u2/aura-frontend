@@ -286,6 +286,14 @@ class _IdentityVerificationScreenState
         ),
         const SizedBox(height: AuraSpace.s20),
 
+        // WHAT AURA HAS ALREADY VERIFIED, AND IT IS NOT ONE THING.
+        //
+        // Placed above the submission form on purpose: someone arriving here
+        // wants to know where they stand before being asked to do anything,
+        // and an expired class is exactly the thing they came to find out.
+        const _VerifiedClassesCard(),
+        const SizedBox(height: AuraSpace.s20),
+
         if (_error != null) ...[
           _Banner(message: _error!, tone: _BannerTone.bad),
           const SizedBox(height: AuraSpace.s14),
@@ -349,6 +357,106 @@ class _IdentityVerificationScreenState
 }
 
 // ── Pieces ──────────────────────────────────────────────────────────────────
+
+/// The three governed classes, each with its own standing.
+///
+/// Never rendered as a single badge. The classes substantiate different
+/// claims, and one tick covering all of them would assert something nobody
+/// checked.
+class _VerifiedClassesCard extends ConsumerWidget {
+  const _VerifiedClassesCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(personVerificationClassesProvider);
+
+    return async.when(
+      // Silent while unknown and silent on failure. This card reports what
+      // Aura has verified; an error here means Aura does not currently know,
+      // and guessing in either direction would be worse than saying nothing.
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (classes) {
+        if (classes.isEmpty) return const SizedBox.shrink();
+        return AuraCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('What Aura has verified', style: AuraText.subtitle),
+              const SizedBox(height: AuraSpace.s10),
+              for (final c in classes) ...[
+                _ClassRow(view: c),
+                if (c != classes.last) const SizedBox(height: AuraSpace.s10),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ClassRow extends StatelessWidget {
+  const _ClassRow({required this.view});
+
+  final PersonVerificationClassView view;
+
+  String get _label {
+    switch (view.verificationClass) {
+      case PersonVerificationClass.identity:
+        return 'Who you are';
+      case PersonVerificationClass.institutionAffiliation:
+        return 'Your institution';
+      case PersonVerificationClass.roleOrCredential:
+        return view.classSubtype ?? 'A role or credential';
+    }
+  }
+
+  /// Says WHY a class is not held, because absence and lapse are different
+  /// facts and only one of them is worth acting on.
+  String get _status {
+    switch (view.state) {
+      case PersonVerificationClassState.verified:
+        final by = view.issuingAuthority;
+        return by == null ? 'Verified' : 'Verified by $by';
+      case PersonVerificationClassState.expired:
+        return 'Expired';
+      case PersonVerificationClassState.revoked:
+        return 'No longer valid';
+      case PersonVerificationClassState.notVerified:
+        return 'Not verified';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final held = view.state == PersonVerificationClassState.verified;
+    final lapsed = view.state == PersonVerificationClassState.expired ||
+        view.state == PersonVerificationClassState.revoked;
+
+    return Row(
+      children: [
+        Icon(
+          held
+              ? Icons.verified_rounded
+              : lapsed
+                  ? Icons.history_toggle_off_rounded
+                  : Icons.radio_button_unchecked,
+          size: 18,
+          color: held
+              ? AuraSurface.accentText
+              : AuraSurface.muted,
+        ),
+        const SizedBox(width: AuraSpace.s10),
+        Expanded(child: Text(_label, style: AuraText.body)),
+        Text(
+          _status,
+          style: AuraText.small.copyWith(color: AuraSurface.muted),
+        ),
+      ],
+    );
+  }
+}
 
 class _EvidenceTile extends StatelessWidget {
   const _EvidenceTile({required this.kind, this.pending, this.onPick});

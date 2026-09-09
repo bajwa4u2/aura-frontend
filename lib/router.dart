@@ -73,6 +73,7 @@ import 'features/me/presentation/me_screen.dart';
 import 'features/me/presentation/edit_profile_screen.dart';
 import 'features/me/presentation/blocked_people_screen.dart';
 import 'features/me/presentation/preferences_screen.dart';
+import 'features/me/presentation/personal_details_screen.dart';
 import 'features/me/presentation/security_screen.dart';
 import 'features/devices/presentation/devices_screen.dart';
 import 'features/me/presentation/change_password_screen.dart';
@@ -1780,6 +1781,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const IdentityVerificationScreen(),
           ),
           GoRoute(path: '/devices', builder: (_, __) => const DevicesScreen()),
+          GoRoute(
+            path: NavigationAuthority.personalDetailsRoute,
+            builder: (_, __) => const PersonalDetailsScreen(),
+          ),
           GoRoute(
             path: '/change-password',
             builder: (_, __) => const ChangePasswordScreen(),

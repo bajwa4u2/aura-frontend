@@ -1360,6 +1360,18 @@
   "parent": ""
  },
  {
+  "path": "/personal-details",
+  "segments": 1,
+  "params": [],
+  "renders": true,
+  "hasRedirect": false,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
   "path": "/change-password",
   "segments": 1,
   "params": [],

@@ -258,3 +258,87 @@ final identityVerificationStatusProvider =
     FutureProvider.autoDispose<IdentityVerificationStatus>(
   (ref) => ref.watch(identityVerificationRepositoryProvider).mine(),
 );
+
+/// ── WHAT AURA HAS VERIFIED, BY CLASS ──────────────────────────────────────
+///
+/// Verification is LAYERED and the classes are INDEPENDENT. A person may hold
+/// none, one or several, and they are never collapsed into a single "verified"
+/// truth, because each substantiates a different claim: holding an institution
+/// affiliation says nothing about whether anyone ever checked who the person
+/// is, and one badge covering both would state something untrue.
+///
+/// Distinct from [IdentityVerificationStatus], which is the SUBMISSION
+/// lifecycle for the IDENTITY class alone — where a request stands with a
+/// reviewer. This is the standing grant across all three classes, including
+/// the two that have no submission flow at all.
+enum PersonVerificationClass { identity, institutionAffiliation, roleOrCredential }
+
+enum PersonVerificationClassState { notVerified, verified, revoked, expired }
+
+class PersonVerificationClassView {
+  const PersonVerificationClassView({
+    required this.verificationClass,
+    required this.state,
+    required this.classSubtype,
+    required this.issuingAuthority,
+    required this.expiresAt,
+  });
+
+  final PersonVerificationClass verificationClass;
+  final PersonVerificationClassState state;
+  final String? classSubtype;
+  final String? issuingAuthority;
+  final DateTime? expiresAt;
+
+  static PersonVerificationClassView fromJson(Map<String, dynamic> json) {
+    PersonVerificationClass cls() {
+      switch ((json['verificationClass'] ?? '').toString()) {
+        case 'INSTITUTION_AFFILIATION':
+          return PersonVerificationClass.institutionAffiliation;
+        case 'ROLE_OR_CREDENTIAL':
+          return PersonVerificationClass.roleOrCredential;
+        default:
+          return PersonVerificationClass.identity;
+      }
+    }
+
+    PersonVerificationClassState state() {
+      switch ((json['state'] ?? '').toString()) {
+        case 'VERIFIED':
+          return PersonVerificationClassState.verified;
+        case 'REVOKED':
+          return PersonVerificationClassState.revoked;
+        case 'EXPIRED':
+          return PersonVerificationClassState.expired;
+        default:
+          return PersonVerificationClassState.notVerified;
+      }
+    }
+
+    String? text(Object? v) {
+      final s = (v ?? '').toString().trim();
+      return s.isEmpty ? null : s;
+    }
+
+    final expires = text(json['expiresAt']);
+    return PersonVerificationClassView(
+      verificationClass: cls(),
+      state: state(),
+      classSubtype: text(json['classSubtype']),
+      issuingAuthority: text(json['issuingAuthority']),
+      expiresAt: expires == null ? null : DateTime.tryParse(expires),
+    );
+  }
+}
+
+final personVerificationClassesProvider =
+    FutureProvider.autoDispose<List<PersonVerificationClassView>>((ref) async {
+  final res = await ref.watch(dioProvider).get('/users/me/verification');
+  final data = res.data;
+  final inner = data is Map && data['data'] is Map ? data['data'] : data;
+  final classes = (inner as Map)['classes'] as List? ?? const [];
+  return [
+    for (final c in classes)
+      PersonVerificationClassView.fromJson(Map<String, dynamic>.from(c as Map)),
+  ];
+});

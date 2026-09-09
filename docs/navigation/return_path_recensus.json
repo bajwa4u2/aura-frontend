@@ -1155,6 +1155,17 @@
   "verdict": "COMPLIANT"
  },
  {
+  "route": "/personal-details",
+  "sample": "/personal-details",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "deepLinkFallback",
+  "deepLinkDestination": "/home",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
   "route": "/change-password",
   "sample": "/change-password",
   "renders": true,

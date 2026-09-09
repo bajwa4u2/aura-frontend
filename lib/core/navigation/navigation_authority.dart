@@ -237,6 +237,11 @@ class NavigationAuthority {
   static const String devicesRoute = '/devices';
   static const String changePasswordRoute = '/change-password';
   static const String editProfileRoute = '/me/edit';
+
+  /// PERSONAL DETAILS — the private canonical identity, deliberately a
+  /// different address from the profile editor. One is who a person is; the
+  /// other is what they choose to show.
+  static const String personalDetailsRoute = '/personal-details';
   static const String accountDeletionRoute = '/account-deletion';
 
   /// MESSAGES — the conversation primary's canonical address (used by

@@ -66,6 +66,7 @@ class PreferencesScreen extends ConsumerWidget {
 
     final groups = <Widget>[
       _account(context),
+      _verification(context),
       _notifications(context),
       _security(context),
       _privacy(context),
@@ -107,10 +108,41 @@ class PreferencesScreen extends ConsumerWidget {
             onTap: () => context.push(NavigationAuthority.editProfileRoute),
           ),
           MeSectionRow(
+            leading: Icons.badge_outlined,
+            title: 'Personal details',
+            // Says the distinction out loud, because the two entries sit next
+            // to each other and "Profile" already claimed the obvious word.
+            subtitle: 'Your legal name and date of birth — private, never shown',
+            onTap: () => context.push(NavigationAuthority.personalDetailsRoute),
+          ),
+          MeSectionRow(
             leading: Icons.lock_outline_rounded,
             title: 'Password',
             subtitle: 'Change the password you sign in with',
             onTap: () => context.push(NavigationAuthority.changePasswordRoute),
+          ),
+        ],
+      );
+
+  /// THE SURFACE THAT EXISTED AND COULD NOT BE REACHED.
+  ///
+  /// `/verify-identity` was fully built — submission, evidence, status, the
+  /// retry window — routed, and linked from nowhere at all. A person could
+  /// not find it, so in practice Aura had no identity verification: the
+  /// difference between a capability and a reachable capability is the whole
+  /// difference to the person holding the phone.
+  Widget _verification(BuildContext context) => MeSection(
+        title: 'Verification',
+        children: [
+          MeSectionRow(
+            leading: Icons.verified_outlined,
+            title: 'Identity verification',
+            // Says what it is FOR. Aura verifies several different things and
+            // they are deliberately not one badge, so the entry point should
+            // not imply it is.
+            subtitle: 'Confirm you are who you say you are, and see where it stands',
+            onTap: () =>
+                context.push(NavigationAuthority.identityVerificationRoute),
           ),
         ],
       );

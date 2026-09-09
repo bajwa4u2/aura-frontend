@@ -293,6 +293,10 @@ bool isMemberShellPath(String path) {
       path == '/me/blocked' ||
       path == '/settings/communications' ||
       path == '/security' ||
+      // The private canonical identity: legal name, date of birth, declared
+      // jurisdiction, sign-in address. MEMBER, and not merely by convention —
+      // there is nothing here to render to anyone but the person themselves.
+      path == '/personal-details' ||
       // Identity verification. MEMBER, emphatically not public: the screen
       // reads this account's own submission history and offers to upload a
       // government document. An unauthenticated visitor reaching it would get
