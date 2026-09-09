@@ -24,7 +24,6 @@ import 'dart:convert';
 
 import 'package:aura/features/admin/areas/finance_area.dart';
 import 'package:aura/features/admin/data/admin_providers.dart';
-import 'package:aura/features/admin/domain/finance_entry.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
