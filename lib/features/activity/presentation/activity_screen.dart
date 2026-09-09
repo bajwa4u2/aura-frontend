@@ -1148,6 +1148,17 @@ class _ActivityLeadingIcon extends StatelessWidget {
   }
 }
 
+/// "a video call", but "an audio call".
+///
+/// The call type is chosen at runtime, so the article cannot be written into
+/// the sentence. Both spellings shipped wrong: "You made a audio call"
+/// (founder-visible in production, 2026-09-09) and "invited you to an video
+/// call", which hardcoded the opposite article for the same slot.
+String articleForCallType(String callType) =>
+    RegExp(r'^[aeiou]', caseSensitive: false).hasMatch(callType.trim())
+        ? 'an'
+        : 'a';
+
 String _resolveCallType(Map<String, dynamic> data) {
   final raw = _firstNonEmpty([
     _stringOf(data['mediaMode']),
@@ -1196,11 +1207,13 @@ String? _outcomeTitle({
 }) {
   switch (outcome) {
     case 'CONNECTED_ENDED':
-      return outgoing ? 'You made a $callType' : '$actorName called you';
+      return outgoing
+          ? 'You made ${articleForCallType(callType)} $callType'
+          : '$actorName called you';
     case 'DECLINED':
       return outgoing
           ? '$actorName declined your $callType'
-          : 'You declined a $callType from $actorName';
+          : 'You declined ${articleForCallType(callType)} $callType from $actorName';
     case 'MISSED':
       // Their phone rang and nobody answered. NOT "cancelled": the caller did
       // not withdraw it, and NOT "failed": nothing was broken.
@@ -1215,8 +1228,8 @@ String? _outcomeTitle({
           : '$actorName tried to call you';
     case 'CANCELED_BEFORE_ANSWER':
       return outgoing
-          ? 'You cancelled a $callType'
-          : '$actorName cancelled a $callType';
+          ? 'You cancelled ${articleForCallType(callType)} $callType'
+          : '$actorName cancelled ${articleForCallType(callType)} $callType';
     case 'ACCEPTED_NOT_CONNECTED':
       // Answered, then no usable media path. The one case where both ends
       // read the same, because it happened to both of them.
@@ -1224,7 +1237,7 @@ String? _outcomeTitle({
     case 'FAILED':
       return outgoing
           ? 'Your $callType to $actorName failed'
-          : 'A $callType from $actorName failed';
+          : '${articleForCallType(callType) == 'an' ? 'An' : 'A'} $callType from $actorName failed';
     case 'UNKNOWN_LEGACY':
       return outgoing ? 'You called $actorName' : '$actorName called you';
   }
@@ -1251,7 +1264,7 @@ String _buildTitle(Map<String, dynamic> item) {
     final direction = _stringOf(data['direction']).toUpperCase();
     final outgoing = direction == 'OUTGOING';
     if (notifKind == 'CALL_RINGING' || notifKind == 'REALTIME_INVITE') {
-      return '$actorName invited you to an $callType';
+      return '$actorName invited you to ${articleForCallType(callType)} $callType';
     }
 
     // THE OUTCOME OUTRANKS THE KIND WHEREVER IT IS PRESENT — not only inside
@@ -1272,7 +1285,9 @@ String _buildTitle(Map<String, dynamic> item) {
       return 'Missed $callType from $actorName';
     }
     if (notifKind == 'CALL_COMPLETED') {
-      return outgoing ? 'You made a $callType' : '$actorName called you';
+      return outgoing
+          ? 'You made ${articleForCallType(callType)} $callType'
+          : '$actorName called you';
     }
     if (notifKind == 'CALL_DECLINED') {
       return 'You declined a call from $actorName';
@@ -1282,10 +1297,10 @@ String _buildTitle(Map<String, dynamic> item) {
       // one written before the outcome was resolved. The coarse kind is then
       // the best truth available.
       return outgoing
-          ? 'You cancelled a $callType'
-          : '$actorName cancelled a $callType';
+          ? 'You cancelled ${articleForCallType(callType)} $callType'
+          : '$actorName cancelled ${articleForCallType(callType)} $callType';
     }
-    return '$actorName started a $callType';
+    return '$actorName started ${articleForCallType(callType)} $callType';
   }
 
   // TWO DOMAINS LIVE IN THIS TIMELINE, AND ONLY ONE OF THEM IS NOTIFICATION.

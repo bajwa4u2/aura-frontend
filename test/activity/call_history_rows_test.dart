@@ -76,4 +76,15 @@ void main() {
       expect(NavigationAuthority.callHistoryRoute, isNot(contains('messages')));
     });
   });
+
+  group('the article matches the call type', () {
+    // Both spellings shipped wrong: "You made a audio call", visible to the
+    // founder in production on 2026-09-09, and "invited you to an video call",
+    // which hardcoded the opposite article for the same runtime-chosen slot.
+    test('audio takes "an", video takes "a"', () {
+      expect(articleForCallType('audio call'), 'an');
+      expect(articleForCallType('video call'), 'a');
+      expect(articleForCallType('screen share'), 'a');
+    });
+  });
 }
