@@ -187,6 +187,97 @@ the doorway's state on return; the full transition IS certified on desktop, and
 the genuine background is the adb observation above. Ordering that case last was
 not a fix and is not presented as one.
 
+## 5b. THE JOINT RUN — two real implementations, one live journey
+
+The founder's rule is that a cross-product contract is not PASS until both
+owners prove the same live journey. This is that run. Not a stub of Finance
+written from their controller: **their service, their database, their session,
+their FinanceGrant**, against this stack, in a real Chromium.
+
+Configuration, both directions, moved together — a stack that asks the real
+service whether to draw the door and then sends the browser to a stub is a
+third configuration nobody is certifying:
+
+    FINANCE_SIGN_IN_URL          http://localhost:8081/api/auth/sign-in
+    FINANCE_INTROSPECTION_URL    http://host.docker.internal:8081/api/access/introspect
+    FINANCE_REDIRECT_URIS        …,http://localhost:8081/api/auth/callback
+
+**Named deviation, agreed by both sides in advance:** Finance ran its API
+directly rather than behind its front door. Including the proxy would have
+tested their nginx-equivalent rather than the contract, and they verified it
+separately. The 404 at `http://localhost:8081/` after redemption is that
+deviation — their SPA is not served on an API-only instance — and is not a
+failure in the chain.
+
+### Pass 1 — identity succeeds, authority is absent
+
+    localhost:8081/api/auth/sign-in            their service
+    localhost:34999/v1/auth/finance/authorize  this service
+    localhost:8081/api/auth/callback?code&state their service
+    localhost:8081/                            their redirect after redemption
+
+    cookies afterwards:  __Host-finance_state    (set, then cleared)
+                         __Host-finance_session  (minted from this document)
+
+Their own session endpoint:
+
+    identityVerified   true
+    hasFinanceAccess   false
+    principal          prn_01M248YSY27XB6Z1KRX1H9RMGN
+    books              []
+
+**That is the architecture's whole point, observed rather than described.**
+Identity succeeded and authority is absent, reported as two distinct facts. A
+system that collapsed them would tell a founder Aura could not identify him,
+and send him to debug the wrong system.
+
+### Pass 2 — a real grant, and a real book — 10/10
+
+With `grt_01M24933BT5129HVK1R6H04HFF` issued on their side:
+
+    /v1/finance/entry   alice -> {"eligible":true}    their grant
+                        bob   -> {"eligible":false}   no grant, same endpoint
+
+Bob is the control that makes the rest mean anything: same endpoint, same
+client, same code path, different answer, because their database says so.
+
+    the console asked Finance whether to draw it, and Aura where Finance lives
+    the destination appeared
+    pressing it minted a browser-entry ticket
+    the browser went to AURA first and Finance second
+    identityVerified true · hasFinanceAccess TRUE
+    books  bok_01M2492QGMM26DE79V29YQ23J1  STEWARD
+
+Screenshot `joint_01_door_from_real_grant.png` — the door drawn by their grant,
+with the destination line reading `http://localhost:8081`, their real address,
+named by Aura's configuration and not compiled into any client.
+
+### What the other side's evidence adds
+
+Their audit trail recorded `auth.signed_in_without_grant` **twice as a SUCCESS
+action**, not as a failure — the separation present in the audit surface and not
+only in the API. And there is no `access.introspected` row despite many
+successful probes including this stack's, which is their audit-polarity fix
+holding under real traffic; without it a five-line trail a founder can read
+would already be buried.
+
+Their bootstrap dry run reported the principal as *already known to Finance*
+rather than *would be created* — the cleanest available proof that the Principal
+came from **this** document rather than from their own tool.
+
+Nothing was posted and nothing could be: both books are in SETUP and
+`REAL_POSTED_JOURNAL_ENTRIES = 0` in the joint run and in production.
+
+### Still owed on the joint run
+
+Revocation: the grant revoked, the destination going ABSENT on the next entry,
+and the journey still completing with `identityVerified: true` and
+`hasFinanceAccess: false`. That is the one claim in this boundary neither owner
+has yet seen proven against the other's real implementation, and it is the
+distinction the whole design exists for.
+
+---
+
 ## 5a. iOS — stated, not inferred
 
 **iOS/iPadOS is EVIDENCE_LIMITED** for the standing reason: no macOS host here,
