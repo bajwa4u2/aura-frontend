@@ -160,6 +160,22 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     // because it is true for every row that carries a session id at all.
     final isTerminalCall = callRowIsTerminal(item);
 
+    // A CALL HISTORY ITEM RESOLVES TO THE CALL.
+    //
+    // Founder ruling, 2026-09-09: the specific call occurrence is the
+    // destination; the related Conversation is secondary context, reachable
+    // FROM the call detail and never restored as the primary target.
+    //
+    // This is placed ahead of every other branch on purpose. The thread and
+    // realtime branches below both resolve a call row to `/messages`, which
+    // answers "what have we said to each other" when the person asked "what
+    // happened on that call". Leaving them first and special-casing later is
+    // how the wrong destination survived in the first place.
+    if (isTerminalCall && realtimeSessionId.trim().isNotEmpty) {
+      _safePush(NavigationAuthority.callDetailRoute(realtimeSessionId.trim()));
+      return;
+    }
+
     if (communicationTarget.owner == CommunicationOwner.thread &&
         (communicationTarget.threadId ?? '').isNotEmpty) {
       await _openThreadTarget(

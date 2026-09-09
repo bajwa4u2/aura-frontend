@@ -3039,7 +3039,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
           }
         }
 
-        final merged = RealtimeEventParser.mergeSnapshot(state, event.payload);
+        final merged = _mergeWatchingRoster(event);
         final modeFromEvent =
             ((event.payload['videoState'] ?? '').toString().toUpperCase() ==
                     'ON' ||
@@ -3546,7 +3546,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
           state = state.copyWith(lastSocketEvent: event.name);
           return;
         }
-        final merged = RealtimeEventParser.mergeSnapshot(state, event.payload);
+        final merged = _mergeWatchingRoster(event);
         state = merged.copyWith(lastSocketEvent: event.name);
         return;
       default:
@@ -3728,6 +3728,46 @@ class RealtimeController extends StateNotifier<RealtimeState>
       message: message,
       platform: _clientPlatform,
     ));
+  }
+
+  /// Sessions this client has already reported an empty-roster refusal for.
+  ///
+  /// Once per session. The condition is impossible, so it should never fire at
+  /// all — but if the sender is a loop, an unbounded report would be a loop
+  /// too, and instrumentation that can flood production is instrumentation
+  /// that gets turned off.
+  final Set<String> _rosterWipeReported = <String>{};
+
+  /// Merge a payload, and say so if it tried to empty a joined roster.
+  ///
+  /// The refusal itself lives in the parser, next to the rule it enforces.
+  /// This exists because a defensive invariant is NOT a discovered root cause:
+  /// nothing has yet identified what emitted `participants: []` for a client
+  /// sitting in a two-person call (production, 2026-09-09). If it happens
+  /// again, this names the event that carried it, the roster we held, and the
+  /// canonical joined count — enough to identify the sender without guessing.
+  ///
+  /// Counts and one event name. No display names, no identifiers.
+  RealtimeState _mergeWatchingRoster(RealtimeParsedEvent event) {
+    if (RealtimeEventParser.wouldWipeJoinedRoster(state, event.payload)) {
+      final sessionId = _managedSessionId;
+      if (sessionId.isNotEmpty && _rosterWipeReported.add(sessionId)) {
+        final joined = state.participants
+            .where((p) => p.isPresent)
+            .length;
+        unawaited(_repository.reportStageDiagnostic(
+          sessionId,
+          phase: 'roster',
+          code: 'roster_wipe_refused',
+          message:
+              'event=${event.name} held=${state.participants.length} '
+              'joined=$joined incoming=0 join=${state.joinState.name} '
+              'action=kept_previous_roster',
+          platform: _clientPlatform,
+        ));
+      }
+    }
+    return RealtimeEventParser.mergeSnapshot(state, event.payload);
   }
 
   /// Canonical trigger label for the stage trace (§6).

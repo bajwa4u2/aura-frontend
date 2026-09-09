@@ -128,6 +128,7 @@ import 'features/invitations/presentation/invitations_screen.dart';
 import 'features/invitations/presentation/invite_accept_screen.dart';
 import 'features/invitations/presentation/invite_create_screen.dart';
 import 'features/invitations/presentation/contact_import_screen.dart';
+import 'features/realtime/presentation/call_detail_screen.dart';
 import 'features/realtime/presentation/realtime_lobby_screen.dart';
 import 'features/realtime/presentation/realtime_room_screen.dart';
 import 'features/meetings/presentation/booking_cancel_screen.dart';
@@ -2672,6 +2673,22 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/realtime',
             builder: (_, __) => const RealtimeLobbyScreen(),
+          ),
+
+          // A CALL THAT HAPPENED IS A DESTINATION, NOT A CALL.
+          //
+          // Deliberately INSIDE the shell, unlike `/realtime/:sessionId`.
+          // Entering a live session suppresses chrome because the call takes
+          // the screen; reading the record of one is ordinary navigation, and
+          // it must keep the app's hierarchy so Back returns to the history
+          // it was opened from. The Live directory learned this same lesson
+          // by sitting with the call routes and inheriting their chrome
+          // suppression.
+          GoRoute(
+            path: '/calls/:sessionId',
+            builder: (_, state) => CallDetailScreen(
+              sessionId: state.pathParameters['sessionId'] ?? '',
+            ),
           ),
         ],
       ),

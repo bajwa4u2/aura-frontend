@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:aura/core/navigation/navigation_authority.dart';
 import 'package:aura/features/activity/presentation/activity_screen.dart';
 
 /// CALL HISTORY MUST DESCRIBE THE CALL THAT HAPPENED, AND MUST NOT TRY TO
@@ -60,6 +61,19 @@ void main() {
       // is still something you can walk into.
       expect(callRowIsTerminal(row(kind: 'REALTIME_STARTED')), isFalse);
       expect(callRowIsTerminal(row(kind: '')), isFalse);
+    });
+  });
+
+  group('a call history item resolves to the call', () {
+    test('the destination is the occurrence, not the conversation', () {
+      final route = NavigationAuthority.callDetailRoute('sess-1');
+      expect(route, '/calls/sess-1');
+      expect(route, isNot(contains('messages')),
+          reason: 'the conversation is secondary context, not the target');
+    });
+
+    test('the fallback return lands on call history, not a conversation', () {
+      expect(NavigationAuthority.callHistoryRoute, isNot(contains('messages')));
     });
   });
 }

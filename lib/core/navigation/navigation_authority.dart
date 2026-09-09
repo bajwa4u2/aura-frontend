@@ -323,6 +323,22 @@ class NavigationAuthority {
   static String directThreadRoute(String id) => '/direct/$id';
   static String postRoute(String id) => '/posts/$id';
 
+  /// ONE CALL THAT HAPPENED, addressed on its own.
+  ///
+  /// Founder ruling 2026-09-09: a Call History item resolves to the SPECIFIC
+  /// CALL OCCURRENCE. The related Conversation is secondary context reachable
+  /// from there, and must not be restored as the primary destination.
+  ///
+  /// Addressed by the realtime session id because a Call is 1:1 with its
+  /// session (`Call.realtimeSessionId` is unique) and the session id is what
+  /// the communication timeline already carries. The path names the CALL,
+  /// which is the thing a person is opening.
+  static String callDetailRoute(String sessionId) => '/calls/$sessionId';
+
+  /// Where a call detail returns to when there is no stack to pop — the
+  /// timeline the call was opened from, never the conversation.
+  static const String callHistoryRoute = '/activity';
+
   /// Realtime session entry (Conversation calls, Go Live broadcasts) —
   /// capabilities attach; the session screen is the one transport surface.
   static String realtimeSessionRoute(String sessionId) =>

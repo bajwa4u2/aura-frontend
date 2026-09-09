@@ -31,6 +31,27 @@ class RealtimeEventParser {
     );
   }
 
+  /// Would this payload empty the roster of a client that is in the call?
+  ///
+  /// Exposed so the refusal can be REPORTED as well as applied. The founder's
+  /// direction on this is explicit: the invariant repair is legitimate, but it
+  /// is not a discovered root cause, and if an impossible empty roster happens
+  /// again we must be able to say what sent it. The controller reports the
+  /// event name, the roster before, and the roster the payload proposed.
+  ///
+  /// Kept as the single definition of the condition so the thing reported and
+  /// the thing refused cannot drift apart.
+  static bool wouldWipeJoinedRoster(
+    RealtimeState state,
+    Map<String, dynamic> payload,
+  ) {
+    final list = _pickList(payload, const ['participants', 'sessionParticipants']);
+    return list != null &&
+        list.isEmpty &&
+        state.isJoined &&
+        state.participants.isNotEmpty;
+  }
+
   static RealtimeState mergeSnapshot(
     RealtimeState state,
     Map<String, dynamic> payload,
@@ -74,10 +95,7 @@ class RealtimeEventParser {
     // joined, so a genuine roster change of any size still applies. The
     // legitimate "everyone left" state is not this: the receiver is still
     // there, so a true roster is never empty for them.
-    final wipesOwnRoster = participantsJson != null &&
-        participantsJson.isEmpty &&
-        state.isJoined &&
-        state.participants.isNotEmpty;
+    final wipesOwnRoster = wouldWipeJoinedRoster(state, payload);
 
     final nextParticipants = wipesOwnRoster
         ? state.participants
