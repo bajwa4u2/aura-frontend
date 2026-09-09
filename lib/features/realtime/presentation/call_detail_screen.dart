@@ -150,17 +150,21 @@ class _CallBody extends StatelessWidget {
     final counterpart = o.counterpart;
     final title = o.title?.trim() ?? '';
 
-    // THE PAGE MUST OWN ITS SCROLL.
+    // Scrollable even when the content fits, so the page cannot become a dead
+    // end when one more fact, one more participant or a shorter window pushes
+    // it over the fold.
     //
-    // This shipped as a bare `ListView` and did not scroll at all: everything
-    // below the fold — the second participant and the conversation link — was
-    // unreachable on a normal window. Proven by comparison, not assumed: a
-    // drag scrolls Home and did nothing here.
+    // CORRECTION, and worth keeping: this replaced a bare `ListView` that I
+    // believed did not scroll at all. It did. My evidence was a drag gesture
+    // that moved Home and not this page — but Flutter's default ScrollBehavior
+    // disables mouse-DRAG scrolling on desktop and web, and the one place it
+    // works is `adaptive_card_grid.dart`, which opts `PointerDeviceKind.mouse`
+    // back in. That grid is the Spaces cards on Home, which is exactly where I
+    // dragged. A real wheel event scrolls both pages fine.
     //
-    // `AlwaysScrollableScrollPhysics` is the load-bearing part. It makes the
-    // surface scrollable even when the content happens to fit, so the page
-    // does not silently become a dead end the moment one more fact, one more
-    // participant, or a smaller window pushes it over.
+    // So the change stands on its own small merit and nothing here was ever
+    // broken. Left as a caution: a comparison is only a control when both
+    // sides are actually comparable.
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(20),
