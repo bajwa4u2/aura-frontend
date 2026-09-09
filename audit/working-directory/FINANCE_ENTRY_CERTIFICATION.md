@@ -60,10 +60,10 @@ pinned the identity DOCUMENT and was silent on the ENVELOPE, the join rule, the
 redirect-must-be-routed rule and the introspection leg — a blind spot exactly
 the size of the bug that bit three times.
 
-**Still owed:** the joint live run, both implementations end to end, with a real
-FinanceGrant and a real Finance session. Both sides are staged for it. A
+**The joint live run is DONE** — three passes, both implementations, a real
+FinanceGrant, a real Finance session and a real revocation. See §5b. A
 cross-product contract is not PASS until both owners prove the same live
-journey, and until that run happens this column records Aura's half.
+journey; this one now has.
 
 ---
 
@@ -268,13 +268,66 @@ came from **this** document rather than from their own tool.
 Nothing was posted and nothing could be: both books are in SETUP and
 `REAL_POSTED_JOURNAL_ENTRIES = 0` in the joint run and in production.
 
-### Still owed on the joint run
+### Pass 3 — REVOCATION — 10/10
 
-Revocation: the grant revoked, the destination going ABSENT on the next entry,
-and the journey still completing with `identityVerified: true` and
-`hasFinanceAccess: false`. That is the one claim in this boundary neither owner
-has yet seen proven against the other's real implementation, and it is the
-distinction the whole design exists for.
+The claim neither owner had seen proven against the other's real
+implementation. Finance revoked `grt_01M24933BT5129HVK1R6H04HFF` in its own
+database. Nothing changed on the Aura side and nothing was restarted.
+
+    /v1/finance/entry   alice -> {"eligible":false}      immediately
+    /v1/auth/finance/destination  unchanged              the address is not the authority
+
+    the founder is still signed in to Aura
+    the console re-asked Finance on entry
+    THERE IS NOTHING TO PRESS — no ticket minted, no handoff begun
+    the journey still completes through Aura
+    Finance still minted a session
+    identityVerified  TRUE
+    hasFinanceAccess  FALSE
+    books             []
+    the principal is still known by name
+
+Screenshot `joint_03_revoked_absent.png`, and it is the single clearest frame in
+this whole record. The Finance rail item is **gone** — the rail ends at
+External. The header has fallen back to "Now · Aura operator" rather than
+announcing Finance over a refusal, because header presentation is gated on the
+same authority bit as the destination. The direct route says only *"Not
+available. This area is not available for your account."* — nothing naming
+Finance, no "request access", no teaser.
+
+And the **`Owner 29`** chip is still sitting in the corner. The most powerful
+principal this console can model, holding twenty-nine Aura permissions, and it
+buys nothing. `AURA_ADMIN != FINANCE_AUTHORITY` in one frame.
+
+### What the other side confirmed, which cannot be asserted from outside
+
+    grant rows      1  (unchanged — nothing deleted)
+    status          REVOKED
+    revokedAt/ById  set
+    grantedAt       preserved
+    reason          preserved
+    principal       disabledAt: null — still known, not disabled
+
+Revoking removes FUTURE access and erases nothing, so what that holder
+previously authorised stays attributable. Disabling a principal is a different
+act for a different reason: that removes the person, this removed the authority.
+
+Their audit trail did something neither of us designed. The ACTION NAME changes
+with the authority state — `auth.signed_in_without_grant` before the grant,
+`auth.signed_in` after, same person and same code path — so the trail
+distinguishes "signed in with authority" from "signed in without" without anyone
+reading metadata. It falls out of recording the distinction rather than a
+boolean.
+
+### Named deviation on the revocation
+
+Finance executed it through `FinanceGrantService.revoke` from an operator shell
+rather than through `DELETE /api/access/grants/:grantId`, because the HTTP path
+is capability-gated on a Finance session that lives in a browser. So this run
+proves the revocation SEMANTICS — atomic update requiring an active grant, row
+preserved, doorway closed, identity intact. It does **not** prove the HTTP
+endpoint's capability gate, which is proven separately in their suite against
+real PostgreSQL. Recorded so no reader assumes this run covered it.
 
 ---
 
