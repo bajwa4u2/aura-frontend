@@ -348,6 +348,34 @@
             <action android:name="android.intent.action.PROCESS_TEXT" />
             <data android:mimeType="text/plain" />
         </intent>
+        <!--
+          THE APP MUST BE ABLE TO SEE A BROWSER.
+
+          Android 11 and later filter which packages an application can see.
+          Without this declaration `url_launcher` cannot RESOLVE a browser, so
+          `canLaunch` answers false and any code that checks before opening
+          decides there is nowhere to go. The Finance doorway hands the system
+          browser an https URL and is the surface where that would show up
+          first — as "Finance could not be opened" on a phone that has a
+          browser sitting on its home screen.
+
+          Found while certifying the doorway on a physical Pixel. The launch DID
+          fail there, but for a different reason worth writing down so nobody
+          re-derives it: that device has no browser installed at all — `pm list
+          packages` shows none, and `am start -a VIEW` fails from the SHELL,
+          which is not subject to package visibility. So the observed failure
+          was the device, and this declaration is the documented requirement
+          that was missing anyway. Two separate facts; neither one explains the
+          other away.
+        -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="http" />
+        </intent>
     </queries>
 
 </manifest>

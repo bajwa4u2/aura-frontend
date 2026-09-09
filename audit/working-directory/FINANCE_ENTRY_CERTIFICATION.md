@@ -29,14 +29,41 @@ production.
 | `AURA_ADMIN_AUTHORITY_DOES_NOT_GRANT_FINANCE` | **PASS** | same grant answer, very different operators, identical outcome |
 | `WEB_FINANCE_ENTRY` | **PASS** | Chrome, real console, journey completed |
 | `WINDOWS_FINANCE_ENTRY` | **PASS** | 5/5 on the real Windows binary |
-| `ANDROID_FINANCE_ENTRY` | **EVIDENCE_LIMITED** | the Pixel disconnected mid-session; see below |
+| `ANDROID_FINANCE_ENTRY` | **PASS** | 11/11 on the physical Pixel, plus a real OS background |
 | `IOS/IPADOS_FINANCE_ENTRY` | **EVIDENCE_LIMITED** | no macOS host; the lane is behind the push |
 | `ACCESSIBILITY` | **PASS** | header semantics, button label, live-region failure, 48px target, autofocus |
 | `RELEASE_CONFIGURATION` | **PASS** | unset is absent; nothing hardcoded |
 
-Claude-3 confirming Finance-side compatibility is **owed and not yet given**.
-The contract fixture is byte-identical and both suites pin the same hash, which
-is evidence but is not the confirmation.
+**Claude-3 has confirmed the Finance side directly**, workstream to workstream,
+and the coordination found four further defects that neither suite could see —
+three of them theirs, one of them mine:
+
+* their exchange URL was composed with `new URL('/auth/finance/exchange', base)`,
+  and an absolute path REPLACES the base's path, silently dropping the `/v1`
+  this API requires;
+* their `returnTo` named `{origin}/auth/callback` while the route they serve is
+  `{origin}/api/auth/callback` — verified against the live origin as 404 and 401
+  respectively. That dead address would have been reached AFTER a successful
+  authorization;
+* their callback ignored the `error=login_required` I introduced and reported
+  "that sign-in link is no longer valid", sending the reader to the wrong
+  system;
+* **mine**: `POST /v1/auth/finance/exchange` was wrapped in Aura's global
+  `{ok, data}` envelope while the shared fixture specifies a BARE document and
+  their reader parses the body directly. Every real exchange would have failed
+  at the subject identifier.
+
+The golden fixture is now **version 2**, authored by the Finance workstream and
+adopted here byte-identically rather than retyped, re-pinned in both suites at
+`c24b7c53c5d652e8855135cce24774a46694fed82b498ed019a84ae1450c4128`. Version 1
+pinned the identity DOCUMENT and was silent on the ENVELOPE, the join rule, the
+redirect-must-be-routed rule and the introspection leg — a blind spot exactly
+the size of the bug that bit three times.
+
+**Still owed:** the joint live run, both implementations end to end, with a real
+FinanceGrant and a real Finance session. Both sides are staged for it. A
+cross-product contract is not PASS until both owners prove the same live
+journey, and until that run happens this column records Aura's half.
 
 ---
 
@@ -101,19 +128,66 @@ contract v1`. With no grant there is nothing to press.
 
 Screenshots: `ui_02_finance_door.png`, `ui_03_arrived_in_finance.png`.
 
-## 5. Android and iOS — stated, not inferred
+## 5. Android — 11/11 on the physical Pixel, plus a real OS background
 
-**Android is EVIDENCE_LIMITED because the device is not attached**, not because
-anything failed. The Pixel 9a was connected earlier in this session and
-disconnected before this work reached it. The certification is one command once
-it is plugged in, and needs no new code:
+Pixel 9a, Android 17, the certification variant installed **alongside**
+production Aura, which stayed at 1.4.2 (37) with `lastUpdateTime` unchanged
+throughout and was left as found.
 
-    adb reverse tcp:34999 tcp:34999
-    adb reverse tcp:35080 tcp:35080
-    flutter test integration_test/finance_doorway_certification_test.dart -d <device>
+    with a grant, the destination is drawn
+    without a grant it is ABSENT — not disabled, not explained, no teaser
+    the handoff begins at AURA, and the URL is walked hop by hop to the workspace
+    a duplicate tap does not strand the person
+    an expired ticket is refused, without explaining itself
+    a replayed ticket names nobody the second time
+    a provider outage leaves Aura stable and the destination absent
+    no financial metadata reaches the doorway
+    a revoked grant removes the destination on the next entry
+    the destination shown is the one AURA names
+    background and resume does not lose or leak the doorway
 
-The debug source set already permits cleartext to `localhost` and to nothing
-else, and the release manifest declares no `networkSecurityConfig` at all.
+**By hand, on the real device**, after signing in through the app's own form:
+the drawer shows `Version 1.4.3-certification` and an `Aura Admin` entry; the
+operator shell's mobile **More** sheet carries Finance with its own icon,
+natively composed rather than bolted on; the doorway renders phone-shaped copy
+and the destination line reads `http://localhost:35080` — the address **Aura
+named**, which a client holding a compiled-in hostname could not have shown.
+
+**The real OS background**, which the test harness cannot do: HOME to the
+launcher (foreground became `NexusLauncherActivity`, the Aura process stayed
+alive), then brought forward again — and the doorway came back intact, same
+destination, same authority chip. Screenshots `android_01_more_sheet.png`,
+`android_02_doorway.png`, `android_03_resumed.png`.
+
+### Two Android findings, and they are different from each other
+
+**The launch failed on this device, and it is the device.** Pressing *Open
+Finance* produced "Finance could not be opened. Try again." — which is the
+correct failure behaviour: one message, no cause named, no fallback to a weaker
+path. The cause is that **this Pixel has no browser installed at all**:
+`pm list packages` lists none, and `am start -a VIEW` fails from the SHELL,
+which is not subject to package visibility. Not a product defect.
+
+**The manifest was missing the browser query, and that IS a product fix.**
+Separately from the above, the release manifest declared `<queries>` for
+`PROCESS_TEXT` and `GET_CONTENT` and nothing for `VIEW`/`https`. Android 11 and
+later filter which packages an app can see; without that declaration
+`url_launcher` cannot resolve a browser. Added for `https` and `http`, and the
+merge verified in the packaged manifest. Two separate facts — neither one
+explains the other away, and reporting only the first would have shipped the
+second.
+
+### The harness limit, stated rather than hidden
+
+Driving the binding's lifecycle on a physical handset detaches the test
+harness: the run stalled at that line and never returned, costing four later
+cases twice before it was understood. It is not `paused` alone — omitting that
+transition did not help. On the device the test asserts the half that governs
+the doorway's state on return; the full transition IS certified on desktop, and
+the genuine background is the adb observation above. Ordering that case last was
+not a fix and is not presented as one.
+
+## 5a. iOS — stated, not inferred
 
 **iOS/iPadOS is EVIDENCE_LIMITED** for the standing reason: no macOS host here,
 and Codemagic builds from GitHub, so the lane sits behind the unpushed commits.
