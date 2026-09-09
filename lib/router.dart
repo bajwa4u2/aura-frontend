@@ -470,7 +470,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         'router.refresh',
         'identityState',
         data: {
-          'admission': nextValue?.admission.name,
+          'admissionBasis': nextValue?.admissionBasis.name,
           'complete': nextValue?.baselineComplete,
         },
       );

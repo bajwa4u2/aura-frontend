@@ -247,7 +247,7 @@ final emailVerifiedProvider = FutureProvider<bool?>((ref) async {
 /// How this account came to be admitted.
 ///
 /// BOTH VALUES MEAN ADMITTED. They differ only in which policy answered.
-enum AccountAdmission {
+enum AdmissionBasis {
   /// Admitted by the prospective floor, evaluated before the row existed.
   /// Registration collects every baseline fact, so such an account arrives
   /// complete by construction.
@@ -272,8 +272,10 @@ enum AccountAdmission {
 /// baseline completeness.* They are different facts and each gets its own
 /// field.
 ///
-///   [admission]         May this account operate? Decided by the policy that
-///                       applied when it was admitted. Never re-decided here.
+///   [admissionBasis]    WHICH POLICY admitted this account. Provenance, not
+///                       status: both values mean admitted, so this never
+///                       answers "may they operate?" and never carries
+///                       suspension, revocation or session validity.
 ///   [baselineComplete]  Does Aura know the required facts, today, honestly?
 ///   [missingFields]     Which ones it does not know. A PROMPT, not a block.
 ///
@@ -282,12 +284,12 @@ enum AccountAdmission {
 /// before the question was asked.
 class IdentityState {
   const IdentityState({
-    required this.admission,
+    required this.admissionBasis,
     required this.baselineComplete,
     required this.missingFields,
   });
 
-  final AccountAdmission admission;
+  final AdmissionBasis admissionBasis;
   final bool baselineComplete;
   final List<String> missingFields;
 
@@ -300,7 +302,7 @@ class IdentityState {
   /// A continuity account is NEVER held here. Aura may invite that person to
   /// fill the gaps; it does not make their account conditional on it.
   bool get mustCompleteBeforeUse =>
-      !baselineComplete && admission == AccountAdmission.prospective;
+      !baselineComplete && admissionBasis == AdmissionBasis.prospective;
 
   /// Worth inviting the person to complete, without standing in their way.
   bool get shouldInviteCompletion => !baselineComplete && !mustCompleteBeforeUse;
@@ -308,14 +310,14 @@ class IdentityState {
   @override
   bool operator ==(Object other) =>
       other is IdentityState &&
-      other.admission == admission &&
+      other.admissionBasis == admissionBasis &&
       other.baselineComplete == baselineComplete &&
       other.missingFields.length == missingFields.length &&
       other.missingFields.join(',') == missingFields.join(',');
 
   @override
   int get hashCode =>
-      Object.hash(admission, baselineComplete, missingFields.join(','));
+      Object.hash(admissionBasis, baselineComplete, missingFields.join(','));
 }
 
 /// Identity Foundation — the canonical client view of person identity state.
@@ -341,7 +343,7 @@ final identityStateProvider = FutureProvider<IdentityState?>((ref) async {
     final accountType = (inner['accountType'] ?? '').toString().toUpperCase();
     if (accountType == 'INSTITUTION') {
       return const IdentityState(
-        admission: AccountAdmission.continuity,
+        admissionBasis: AdmissionBasis.continuity,
         baselineComplete: true,
         missingFields: [],
       );
@@ -351,11 +353,11 @@ final identityStateProvider = FutureProvider<IdentityState?>((ref) async {
     // response that does not say a floor was applied is not evidence that one
     // was, and the consequence of guessing `prospective` is holding a legacy
     // member at a door they should never have seen.
-    final admission =
-        (inner['accountAdmission'] ?? '').toString().toUpperCase() ==
+    final admissionBasis =
+        (inner['admissionBasis'] ?? '').toString().toUpperCase() ==
             'PROSPECTIVE'
-        ? AccountAdmission.prospective
-        : AccountAdmission.continuity;
+        ? AdmissionBasis.prospective
+        : AdmissionBasis.continuity;
 
     final missing = <String>[
       for (final field in (inner['identityMissingFields'] as List? ?? const []))
@@ -369,7 +371,7 @@ final identityStateProvider = FutureProvider<IdentityState?>((ref) async {
     final complete = reported is bool ? reported : missing.isEmpty;
 
     return IdentityState(
-      admission: admission,
+      admissionBasis: admissionBasis,
       baselineComplete: complete,
       missingFields: missing,
     );

@@ -60,7 +60,7 @@ Future<ProviderContainer> _authedContainer(Map<String, dynamic> authMe) async {
 /// here: admitted long ago, and Aura knows none of the facts it now asks for.
 const _legacyMember = <String, dynamic>{
   'accountType': 'PUBLIC',
-  'accountAdmission': 'CONTINUITY',
+  'admissionBasis': 'CONTINUITY',
   'identityBaselineComplete': false,
   'identityMissingFields': [
     'firstName',
@@ -78,7 +78,7 @@ void main() {
 
       final state = await container.read(identityStateProvider.future);
 
-      expect(state!.admission, AccountAdmission.continuity);
+      expect(state!.admissionBasis, AdmissionBasis.continuity);
       // Honest: Aura genuinely does not know these facts.
       expect(state.baselineComplete, false);
       expect(state.missingFields, hasLength(4));
@@ -93,7 +93,7 @@ void main() {
         () async {
       final container = await _authedContainer({
         'accountType': 'PUBLIC',
-        'accountAdmission': 'CONTINUITY',
+        'admissionBasis': 'CONTINUITY',
         'identityBaselineComplete': false,
       });
       addTearDown(container.dispose);
@@ -107,14 +107,14 @@ void main() {
     test('is settled when the baseline is complete', () async {
       final container = await _authedContainer({
         'accountType': 'PUBLIC',
-        'accountAdmission': 'PROSPECTIVE',
+        'admissionBasis': 'PROSPECTIVE',
         'identityBaselineComplete': true,
         'identityMissingFields': <String>[],
       });
       addTearDown(container.dispose);
 
       final state = await container.read(identityStateProvider.future);
-      expect(state!.admission, AccountAdmission.prospective);
+      expect(state!.admissionBasis, AdmissionBasis.prospective);
       expect(state.mustCompleteBeforeUse, false);
       expect(state.shouldInviteCompletion, false);
     });
@@ -126,7 +126,7 @@ void main() {
       // make the registration floor optional after the fact.
       final container = await _authedContainer({
         'accountType': 'PUBLIC',
-        'accountAdmission': 'PROSPECTIVE',
+        'admissionBasis': 'PROSPECTIVE',
         'identityBaselineComplete': false,
         'identityMissingFields': ['jurisdiction'],
       });
@@ -179,7 +179,7 @@ void main() {
       addTearDown(container.dispose);
 
       final state = await container.read(identityStateProvider.future);
-      expect(state!.admission, AccountAdmission.continuity);
+      expect(state!.admissionBasis, AdmissionBasis.continuity);
       expect(state.mustCompleteBeforeUse, false);
     });
 
