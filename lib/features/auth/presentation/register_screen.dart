@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/auth/session_providers.dart';
 import '../../../core/compliance/terms_version.dart';
+import '../../../core/eligibility/jurisdiction_confirm_sheet.dart';
+import '../../../core/eligibility/jurisdictions.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -35,6 +38,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _confirmPassword = TextEditingController();
+
+  /// ESTABLISHED BEFORE THE ACCOUNT EXISTS, NOT AFTER.
+  ///
+  /// Registration used to collect neither, so the age floor had no fact to
+  /// apply and could "only ever refuse everyone or no one". Asking here is
+  /// what turns account creation into a place the policy can actually be
+  /// applied — an ineligible applicant is refused before any row is written,
+  /// rather than admitted and then blocked at the first thing they try.
+  ///
+  /// Held as a calendar date. A `DateTime` is used only because that is what
+  /// the picker returns; it is formatted as `YYYY-MM-DD` and never sent as an
+  /// instant, because a birthday rendered through a timezone moves by a day —
+  /// and at a threshold that day is the whole decision.
+  DateTime? _dateOfBirth;
+
+  /// ISO-3166 alpha-2, DECLARED. Never inferred from locale, SIM or IP; the
+  /// picker's initial value is a starting point the person must confirm, not
+  /// an answer supplied on their behalf.
+  String? _jurisdiction;
 
   bool _loading = false;
   bool _obscurePassword = true;
@@ -189,6 +211,45 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return 'We could not create your account right now. Please try again.';
   }
 
+  static final DateTime _earliestPlausible = DateTime.utc(1900, 1, 1);
+
+  Future<void> _pickDateOfBirth() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate:
+          _dateOfBirth ?? DateTime(now.year - 25, now.month, now.day),
+      firstDate: _earliestPlausible,
+      lastDate: now,
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _dateOfBirth = picked;
+      _error = null;
+    });
+  }
+
+  Future<void> _pickJurisdiction() async {
+    final picked = await showJurisdictionPicker(
+      context,
+      ref,
+      title: 'Where are you?',
+      explanation:
+          'Age rules differ by country. This is only used to apply the right ones — it is never shown on your profile.',
+      // A STARTING POINT, NOT AN ANSWER. The device's locale opens the list
+      // near where the person probably is; nothing is submitted until they
+      // choose, so eligibility is never decided on a fact they did not state.
+      initial:
+          _jurisdiction ??
+          WidgetsBinding.instance.platformDispatcher.locale.countryCode,
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _jurisdiction = picked;
+      _error = null;
+    });
+  }
+
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
     setState(() => _error = null);
@@ -204,6 +265,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     // before any account is created. The backend rejects the request
     // without it; we surface the message here so users don't even
     // round-trip when they haven't ticked the box.
+    if (_dateOfBirth == null) {
+      setState(() => _error = 'Please enter your date of birth.');
+      return;
+    }
+
+    if (!isKnownJurisdiction(_jurisdiction)) {
+      setState(() => _error = 'Please select where you are.');
+      return;
+    }
+
     if (!_termsAccepted) {
       setState(
         () => _error =
@@ -235,6 +306,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         lastName: lastName,
         handle: handle,
         displayName: displayName,
+        dateOfBirth: DateFormat('yyyy-MM-dd').format(_dateOfBirth!),
+        jurisdiction: _jurisdiction!,
         termsAccepted: true,
         termsAcceptedVersion: kTermsVersion,
       );
@@ -308,6 +381,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                   formKey: _formKey,
                                   firstName: _firstName,
                                   lastName: _lastName,
+                                  dateOfBirth: _dateOfBirth,
+                                  jurisdiction: _jurisdiction,
+                                  onPickDateOfBirth: _pickDateOfBirth,
+                                  onPickJurisdiction: _pickJurisdiction,
                                   displayName: _displayName,
                                   handle: _handle,
                                   email: _email,
@@ -349,6 +426,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 formKey: _formKey,
                                 firstName: _firstName,
                                 lastName: _lastName,
+                                dateOfBirth: _dateOfBirth,
+                                jurisdiction: _jurisdiction,
+                                onPickDateOfBirth: _pickDateOfBirth,
+                                onPickJurisdiction: _pickJurisdiction,
                                 displayName: _displayName,
                                 handle: _handle,
                                 email: _email,
@@ -523,6 +604,10 @@ class _RegisterFormCard extends StatelessWidget {
     required this.formKey,
     required this.firstName,
     required this.lastName,
+    required this.dateOfBirth,
+    required this.jurisdiction,
+    required this.onPickDateOfBirth,
+    required this.onPickJurisdiction,
     required this.displayName,
     required this.handle,
     required this.email,
@@ -549,6 +634,10 @@ class _RegisterFormCard extends StatelessWidget {
   final GlobalKey<FormState> formKey;
   final TextEditingController firstName;
   final TextEditingController lastName;
+  final DateTime? dateOfBirth;
+  final String? jurisdiction;
+  final VoidCallback onPickDateOfBirth;
+  final VoidCallback onPickJurisdiction;
   final TextEditingController displayName;
   final TextEditingController handle;
   final TextEditingController email;
@@ -624,6 +713,62 @@ class _RegisterFormCard extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              // Grouped with the name, and above the public fields, because
+              // these are the same kind of fact: who this person is, not how
+              // they present. Neither is ever shown on a profile.
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: loading ? null : onPickDateOfBirth,
+                      borderRadius: BorderRadius.circular(AuraRadius.r12),
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Date of birth',
+                        ),
+                        child: Text(
+                          dateOfBirth == null
+                              ? 'Select'
+                              : DateFormat('MMM d, yyyy').format(dateOfBirth!),
+                          style: AuraText.body.copyWith(
+                            color: dateOfBirth == null
+                                ? AuraSurface.muted
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AuraSpace.s10),
+                  Expanded(
+                    child: InkWell(
+                      onTap: loading ? null : onPickJurisdiction,
+                      borderRadius: BorderRadius.circular(AuraRadius.r12),
+                      child: InputDecorator(
+                        decoration: const InputDecoration(
+                          labelText: 'Where you are',
+                        ),
+                        child: Text(
+                          jurisdiction == null
+                              ? 'Select'
+                              : jurisdictionName(jurisdiction),
+                          style: AuraText.body.copyWith(
+                            color: jurisdiction == null
+                                ? AuraSurface.muted
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AuraSpace.s4),
+              Text(
+                'Private. Used to apply the right age rules, and never shown on your profile.',
+                style: AuraText.small.copyWith(color: AuraSurface.muted),
               ),
               const SizedBox(height: AuraSpace.s10),
               TextFormField(

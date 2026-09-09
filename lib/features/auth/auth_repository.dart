@@ -24,6 +24,18 @@ class AuthRepository {
     required String displayName,
     required String firstName,
     required String lastName,
+    /// Calendar date, `YYYY-MM-DD`. NOT a timestamp: a date of birth is a
+    /// date a person states about themselves, and sending an instant is how a
+    /// birthday moves by a day across a timezone — which, at a threshold, is
+    /// the difference between an account and a refusal.
+    required String dateOfBirth,
+    /// ISO-3166 alpha-2, DECLARED by the person.
+    ///
+    /// Never inferred from IP, SIM, device locale, browser locale or
+    /// timezone. Age rules differ by country, so this decides which floor
+    /// applies; a guess here decides someone's eligibility on a fact nobody
+    /// asserted.
+    required String jurisdiction,
     // Apple Store §1.2 UGC compliance — caller must affirm acceptance
     // of the Terms / EULA at the version named in `kTermsVersion`.
     required bool termsAccepted,
@@ -39,6 +51,11 @@ class AuthRepository {
           'displayName': displayName.trim(),
           'firstName': firstName.trim(),
           'lastName': lastName.trim(),
+          // Both facts travel with the account request itself. The server
+          // applies the age floor BEFORE creating anything, so an ineligible
+          // applicant leaves no admitted person behind to clean up.
+          'dateOfBirth': dateOfBirth.trim(),
+          'jurisdiction': jurisdiction.trim().toUpperCase(),
           'termsAccepted': termsAccepted,
           'termsAcceptedVersion': termsAcceptedVersion,
         },
@@ -487,7 +504,29 @@ class AuthRepository {
     }
 
     final code = e.response?.statusCode;
+    final backendCode = _extractServerCode(e).toUpperCase();
     final server = _extractServerMessage(e).toLowerCase();
+
+    // AN AGE REFUSAL IS FINAL, AND IS SAID ONCE.
+    //
+    // The server refuses before any account row exists. Repeating the form
+    // back at someone as though a detail needed fixing would invite them to
+    // enter a different date, so the server's own sentence is passed straight
+    // through and nothing suggests a retry.
+    if (backendCode == 'ACCOUNT_AGE_INELIGIBLE') {
+      final message = _extractServerMessage(e).trim();
+      return message.isEmpty
+          ? 'You are not old enough to have an Aura account.'
+          : message;
+    }
+
+    if (backendCode == 'DOB_REQUIRED') {
+      return 'Enter your date of birth to create an account.';
+    }
+
+    if (backendCode == 'JURISDICTION_REQUIRED') {
+      return 'Select where you are to create an account.';
+    }
 
     if (server.contains('email already') ||
         server.contains('email is already') ||

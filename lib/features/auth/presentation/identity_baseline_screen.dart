@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/auth/session_providers.dart';
@@ -16,11 +17,20 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 
-/// Identity Foundation Phase 1 — required identity baseline.
+/// Identity Foundation — the identity baseline completion path.
 ///
-/// The first identity field. Reached only via router redirect
-/// (see `kCompleteIdentityRoute` in router.dart) when
-/// `identityBaselineCompleteProvider` reports false. Mirrors
+/// Reached TWO ways, and the difference matters to what this screen says:
+///
+///   REQUIRED    A prospective account missing baseline facts. The router
+///               sends it here, and "before continuing" is literally true.
+///   INVITED     A member admitted before Aura asked. They are never sent
+///               here; they arrive because they chose to. Telling that person
+///               they cannot continue would be false, and implying their
+///               account is deficient would be worse — they joined under the
+///               rules that existed, and those rules still hold for them.
+///
+/// Founder direction: provide a respectful completion path, without false
+/// urgency and without suggesting an account is invalid. Mirrors
 /// VerifyPendingScreen's shape: a full-screen interstitial, not a modal,
 /// carrying `redirectTo` so the original destination resumes after
 /// completion. The router itself handles navigating away once the backend
@@ -167,6 +177,12 @@ class _IdentityBaselineScreenState
         ? 'Select date of birth'
         : DateFormat('MMMM d, yyyy').format(selected);
 
+    // Unknown state reads as INVITED, not REQUIRED. If Aura cannot currently
+    // tell whether this person is obliged to be here, it does not assert that
+    // they are.
+    final identity = ref.watch(identityStateProvider).valueOrNull;
+    final required = identity?.mustCompleteBeforeUse ?? false;
+
     return AuraScaffold(
       showHeader: false,
       body: SafeArea(
@@ -196,10 +212,20 @@ class _IdentityBaselineScreenState
                       ),
                     ),
                     const SizedBox(height: AuraSpace.s14),
-                    const Text('Complete your profile', style: AuraText.title),
+                    Text(
+                      required
+                          ? 'Complete your profile'
+                          : 'Add your date of birth',
+                      style: AuraText.title,
+                    ),
                     const SizedBox(height: AuraSpace.s8),
                     Text(
-                      'Before continuing, please confirm your date of birth and where you are. Both are part of Aura\'s identity baseline for every member, and neither is shown on your profile.',
+                      required
+                          ? 'Before continuing, please confirm your date of birth and where you are. Both are part of Aura\'s identity baseline for every member, and neither is shown on your profile.'
+                          // No deadline, no warning, and no suggestion that
+                          // the account is lacking. An invitation that reads
+                          // as a threat is not a respectful completion path.
+                          : 'Aura did not ask for these when you joined. Adding them keeps your account details complete, and neither is shown on your profile.',
                       style: AuraText.body.copyWith(
                         color: AuraSurface.muted,
                         height: 1.5,
@@ -256,10 +282,34 @@ class _IdentityBaselineScreenState
                       )
                     else
                       AuraPrimaryButton(
-                        label: 'Continue',
+                        label: required ? 'Continue' : 'Save',
                         onPressed: _submit,
                         icon: Icons.arrow_forward_rounded,
                       ),
+                    // A way out exists ONLY for the invited. Offering it to a
+                    // prospective account would quietly reopen the door the
+                    // registration floor exists to hold.
+                    if (!required && !_busy) ...[
+                      const SizedBox(height: AuraSpace.s10),
+                      Center(
+                        child: TextButton(
+                          onPressed: () {
+                            final router = GoRouter.of(context);
+                            if (router.canPop()) {
+                              router.pop();
+                            } else {
+                              router.go(widget.redirectTo ?? '/home');
+                            }
+                          },
+                          child: Text(
+                            'Not now',
+                            style: AuraText.body.copyWith(
+                              color: AuraSurface.muted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

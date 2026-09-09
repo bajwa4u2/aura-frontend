@@ -460,15 +460,18 @@ final routerProvider = Provider<GoRouter>((ref) {
     }
   });
 
-  ref.listen<AsyncValue<bool?>>(identityBaselineCompleteProvider, (prev, next) {
+  ref.listen<AsyncValue<IdentityState?>>(identityStateProvider, (prev, next) {
     final prevValue = prev?.valueOrNull;
     final nextValue = next.valueOrNull;
     if (prevValue != nextValue) {
       refresh.value++;
       RuntimeTrace.emit(
         'router.refresh',
-        'identityBaselineComplete',
-        data: {'next': nextValue},
+        'identityState',
+        data: {
+          'admission': nextValue?.admission.name,
+          'complete': nextValue?.baselineComplete,
+        },
       );
     }
   });
@@ -656,7 +659,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final bootstrap = ref.read(sessionBootstrapProvider);
       final authStatus = ref.read(authStatusProvider);
       final emailVerifiedAsync = ref.read(emailVerifiedProvider);
-      final identityBaselineAsync = ref.read(identityBaselineCompleteProvider);
+      final identityStateAsync = ref.read(identityStateProvider);
       final institutionAsync = ref.read(institutionAccessProvider);
 
       // Admin probe gating: only allow `/v1/admin/me` to fire when the
@@ -703,19 +706,36 @@ final routerProvider = Provider<GoRouter>((ref) {
               emailVerifiedAsync.isRefreshing ||
               isVerified == null);
 
-      // Identity Foundation Phase 1 — same null-means-wait discipline as
-      // isVerified above, independent gate.
-      final bool? isIdentityBaselineComplete = identityBaselineAsync.when(
+      // Identity Foundation — same null-means-wait discipline as isVerified
+      // above, independent gate.
+      final IdentityState? identityState = identityStateAsync.when(
         data: (value) => value,
         error: (_, __) => null,
         loading: () => null,
       );
 
+      // ── WHAT GATES ACCESS, AND WHAT ONLY PROMPTS ──────────────────────
+      //
+      // This gate used to be `identityBaselineComplete == false`. Once the
+      // backend contract stopped overstating completeness — reporting `true`
+      // off a date of birth alone while the same response listed the surname
+      // and jurisdiction as missing — that condition became true for every
+      // member who joined before Aura asked, and this line would have
+      // redirected essentially the whole platform to a completion wall.
+      //
+      // Founder direction: continuity accounts stay admitted and are never
+      // retroactively suspended because standards were raised after they
+      // arrived. So ACCESS is gated on ADMISSION, and completeness only
+      // decides whether the person is INVITED to fill a gap.
+      final mustCompleteIdentity = identityState?.mustCompleteBeforeUse == true;
+      final identityBaselineIncomplete =
+          identityState?.baselineComplete == false;
+
       final isIdentityBaselineLoading =
           isLoggedIn &&
-          (identityBaselineAsync.isLoading ||
-              identityBaselineAsync.isRefreshing ||
-              isIdentityBaselineComplete == null);
+          (identityStateAsync.isLoading ||
+              identityStateAsync.isRefreshing ||
+              identityState == null);
 
       final institutionAccess = institutionAsync.maybeWhen(
         data: (value) => value,
@@ -803,11 +823,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           return '/login?redirect=$encoded';
         }
 
-        // Identity Foundation Phase 1 — the first identity field, checked
-        // before email verification so the two independent "authed but
-        // incomplete" gates never fight over which one wins on a cold
-        // boot/reopen/refresh.
-        if (isIdentityBaselineComplete == false) {
+        // Identity Foundation — checked before email verification so the two
+        // independent "authed but incomplete" gates never fight over which
+        // one wins on a cold boot/reopen/refresh. Only a prospective account
+        // is held; a legacy member boots straight to where they were going.
+        if (mustCompleteIdentity) {
           final encoded = Uri.encodeComponent(
             _normalizeRedirectDest(redirectDest, fallback: '/home'),
           );
@@ -835,13 +855,23 @@ final routerProvider = Provider<GoRouter>((ref) {
         return null;
       }
 
-      // Identity Foundation Phase 1 — required identity baseline. Checked
-      // before email verification (see the boot-path block above for why),
-      // and before any deep-link/navigation target so an incomplete member
-      // never reaches normal app content first.
-      if (isIdentityBaselineComplete == false) {
-        if (isCompleteIdentity) return null;
+      // ANYONE INCOMPLETE MAY SIT ON THE COMPLETION SCREEN.
+      //
+      // Including a legacy member who navigated there deliberately to fill in
+      // what Aura is missing. Bouncing that person away from the screen they
+      // asked for would make the "respectful completion path" unreachable.
+      if (isCompleteIdentity && identityBaselineIncomplete) {
+        return null;
+      }
 
+      // Identity Foundation — checked before email verification (see the
+      // boot-path block above for why), and before any deep-link target so a
+      // prospective account missing baseline facts does not reach ordinary
+      // app content first.
+      //
+      // A CONTINUITY account never enters this branch. It is invited to
+      // complete its baseline in place, and is not redirected anywhere.
+      if (mustCompleteIdentity) {
         if (requiresIdentityBaseline(path)) {
           final encoded = Uri.encodeComponent(
             _normalizeRedirectDest(currentLocation, fallback: '/home'),
@@ -854,7 +884,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
       }
 
-      if (isIdentityBaselineComplete == true && isCompleteIdentity) {
+      if (identityState?.baselineComplete == true && isCompleteIdentity) {
         return redirectDest;
       }
 

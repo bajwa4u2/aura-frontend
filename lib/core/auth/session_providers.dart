@@ -244,40 +244,147 @@ final emailVerifiedProvider = FutureProvider<bool?>((ref) async {
   }
 });
 
-/// Identity Foundation Phase 1 — required identity baseline (Date of Birth).
+/// How this account came to be admitted.
 ///
-/// Mirrors [emailVerifiedProvider] exactly: an independent "authed but
-/// incomplete" gate, not layered on top of email verification, so an
-/// unverified member is not blocked from completing DOB by a different
-/// unrelated gate.
+/// BOTH VALUES MEAN ADMITTED. They differ only in which policy answered.
+enum AccountAdmission {
+  /// Admitted by the prospective floor, evaluated before the row existed.
+  /// Registration collects every baseline fact, so such an account arrives
+  /// complete by construction.
+  prospective,
+
+  /// Admitted before Aura asked for these facts. Continuity, never
+  /// re-litigated, never retroactively suspended.
+  continuity,
+}
+
+/// The person identity state `/auth/me` reports.
 ///
-/// Returns:
-/// - true  — confirmed complete (backend said identityBaselineComplete: true)
-/// - false — confirmed incomplete
-/// - null  — unknown: /auth/me failed, empty response, or unexpected error;
-///           router must treat null as "stay/wait", NOT redirect.
+/// ── WHY THIS IS NOT ONE BOOLEAN ─────────────────────────────────────────
 ///
-/// Institution accounts bypass this requirement — same rule as email
-/// verification, since they authenticate via a separate institution flow.
-final identityBaselineCompleteProvider = FutureProvider<bool?>((ref) async {
+/// It used to be, and the boolean was doing the work of three separate
+/// questions at once, so the router asked the wrong one. It gated ACCESS on
+/// COMPLETENESS. Applied honestly — and the backend contract is honest now —
+/// that locks out every member who joined before Aura asked for a date of
+/// birth and a jurisdiction, which is nearly everyone on the platform today.
+///
+/// Founder correction, 2026-09-09: *legacy account continuity is not identity
+/// baseline completeness.* They are different facts and each gets its own
+/// field.
+///
+///   [admission]         May this account operate? Decided by the policy that
+///                       applied when it was admitted. Never re-decided here.
+///   [baselineComplete]  Does Aura know the required facts, today, honestly?
+///   [missingFields]     Which ones it does not know. A PROMPT, not a block.
+///
+/// A legacy member is `continuity` + incomplete. That is not a defect and not
+/// a contradiction — it is the ordinary condition of someone who joined
+/// before the question was asked.
+class IdentityState {
+  const IdentityState({
+    required this.admission,
+    required this.baselineComplete,
+    required this.missingFields,
+  });
+
+  final AccountAdmission admission;
+  final bool baselineComplete;
+  final List<String> missingFields;
+
+  /// THE ONLY CONDITION THAT MAY HOLD SOMEONE AT THE DOOR.
+  ///
+  /// A prospective account is expected to be complete the moment it exists,
+  /// because registration establishes the baseline before the account row is
+  /// created. If one is somehow incomplete, asking once is right.
+  ///
+  /// A continuity account is NEVER held here. Aura may invite that person to
+  /// fill the gaps; it does not make their account conditional on it.
+  bool get mustCompleteBeforeUse =>
+      !baselineComplete && admission == AccountAdmission.prospective;
+
+  /// Worth inviting the person to complete, without standing in their way.
+  bool get shouldInviteCompletion => !baselineComplete && !mustCompleteBeforeUse;
+
+  @override
+  bool operator ==(Object other) =>
+      other is IdentityState &&
+      other.admission == admission &&
+      other.baselineComplete == baselineComplete &&
+      other.missingFields.length == missingFields.length &&
+      other.missingFields.join(',') == missingFields.join(',');
+
+  @override
+  int get hashCode =>
+      Object.hash(admission, baselineComplete, missingFields.join(','));
+}
+
+/// Identity Foundation — the canonical client view of person identity state.
+///
+/// Returns null when the state is UNKNOWN (/auth/me failed, was empty, or
+/// errored). The router must treat null as "stay/wait", never as a reason to
+/// redirect: guessing in either direction is how a transient network failure
+/// becomes either a lockout or an unguarded account.
+///
+/// Institution accounts authenticate through a separate flow and carry no
+/// person baseline, so they are reported as settled and never gated.
+final identityStateProvider = FutureProvider<IdentityState?>((ref) async {
   final authed = ref.watch(isAuthedProvider);
-  if (!authed) return false;
+  // No session, no person to describe — and deliberately no /auth/me call.
+  // The router consults identity only for a signed-in member, so unknown is
+  // both honest and inert here.
+  if (!authed) return null;
 
   try {
     final inner = await ref.watch(authMeDataProvider.future);
-
     if (inner.isEmpty) return null;
 
     final accountType = (inner['accountType'] ?? '').toString().toUpperCase();
-    if (accountType == 'INSTITUTION') return true;
+    if (accountType == 'INSTITUTION') {
+      return const IdentityState(
+        admission: AccountAdmission.continuity,
+        baselineComplete: true,
+        missingFields: [],
+      );
+    }
 
-    final direct = inner['identityBaselineComplete'];
-    if (direct is bool) return direct;
+    // Absent means CONTINUITY. Deliberately the conservative direction: a
+    // response that does not say a floor was applied is not evidence that one
+    // was, and the consequence of guessing `prospective` is holding a legacy
+    // member at a door they should never have seen.
+    final admission =
+        (inner['accountAdmission'] ?? '').toString().toUpperCase() ==
+            'PROSPECTIVE'
+        ? AccountAdmission.prospective
+        : AccountAdmission.continuity;
 
-    return false;
+    final missing = <String>[
+      for (final field in (inner['identityMissingFields'] as List? ?? const []))
+        field.toString(),
+    ];
+
+    final reported = inner['identityBaselineComplete'];
+    // A server that does not report completeness at all leaves nothing to
+    // prompt about — and nothing that could justify holding anyone. It is not
+    // treated as incomplete.
+    final complete = reported is bool ? reported : missing.isEmpty;
+
+    return IdentityState(
+      admission: admission,
+      baselineComplete: complete,
+      missingFields: missing,
+    );
   } catch (_) {
     return null;
   }
+});
+
+/// Completeness alone, for surfaces that only need the prompt signal.
+///
+/// NOT AN ACCESS GATE — see [IdentityState.mustCompleteBeforeUse] for the one
+/// condition that is. null still means unknown.
+final identityBaselineCompleteProvider = FutureProvider<bool?>((ref) async {
+  final state = await ref.watch(identityStateProvider.future);
+  return state?.baselineComplete;
 });
 
 /// Derived session values used by Dio and other layers.
