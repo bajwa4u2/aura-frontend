@@ -150,9 +150,24 @@ class _CallBody extends StatelessWidget {
     final counterpart = o.counterpart;
     final title = o.title?.trim() ?? '';
 
-    return ListView(
+    // THE PAGE MUST OWN ITS SCROLL.
+    //
+    // This shipped as a bare `ListView` and did not scroll at all: everything
+    // below the fold — the second participant and the conversation link — was
+    // unreachable on a normal window. Proven by comparison, not assumed: a
+    // drag scrolls Home and did nothing here.
+    //
+    // `AlwaysScrollableScrollPhysics` is the load-bearing part. It makes the
+    // surface scrollable even when the content happens to fit, so the page
+    // does not silently become a dead end the moment one more fact, one more
+    // participant, or a smaller window pushes it over.
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(20),
-      children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
         Row(
           children: [
             Icon(
@@ -235,7 +250,8 @@ class _CallBody extends StatelessWidget {
             onTap: () => context.push(NavigationAuthority.messagesRoute),
           ),
         ],
-      ],
+        ],
+      ),
     );
   }
 
