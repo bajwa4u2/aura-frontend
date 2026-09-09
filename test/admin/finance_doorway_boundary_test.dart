@@ -608,6 +608,99 @@ void main() {
   });
 
   // ───────────────────────────────────────────────────────────────────────────
+  // FROZEN — isOperator != FinanceGrant
+  // ───────────────────────────────────────────────────────────────────────────
+  //
+  // The operator check answers exactly ONE question: can this principal reach
+  // the Aura Admin shell, which is where the doorway happens to be rendered
+  // today. It is REACHABILITY, never Finance authority.
+  //
+  // Once inside that surface, FinanceGrant alone decides. The distinction has
+  // to be frozen now, while the doorway lives in Admin, because the moment
+  // accountants and auditors enter Finance directly — without ever being Aura
+  // administrators — an `isOperator` that had quietly become a Finance
+  // precondition would lock out exactly the people the system is for.
+
+  group('Finance visibility is a function of the grant, and of nothing else', () {
+    testWidgets('the SAME grant answer yields the SAME visibility for very '
+        'different operators', (tester) async {
+      // A principal holding six permissions including OWNER, and one holding a
+      // single AUDIT_READ. If operator breadth leaked into Finance visibility
+      // at all, these two would not agree.
+      for (final eligible in [true, false]) {
+        final entry = eligible ? _Entry.eligible : _Entry.notEligible;
+
+        await _mount(tester, adminMe: _fullOperator(), entry: entry);
+        final full = _financeIsMentioned(tester);
+        await _unmount(tester);
+
+        await _mount(tester, adminMe: _narrowOperator(), entry: entry);
+        final narrow = _financeIsMentioned(tester);
+        await _unmount(tester);
+
+        expect(full, equals(eligible),
+            reason: 'A broad operator must see Finance exactly when Finance '
+                'says they hold a grant.');
+        expect(narrow, equals(full),
+            reason: 'isOperator != FinanceGrant. Operator breadth must not '
+                'move Finance visibility by one pixel.');
+      }
+    });
+
+    testWidgets('the OWNER role buys nothing', (tester) async {
+      // Named separately because "owner" is the specific shortcut the founder
+      // forbade: never `if (owner) show Finance`.
+      await _mount(tester, adminMe: _fullOperator(), entry: _Entry.notEligible);
+
+      final authority = _fullOperator();
+      expect(authority['roles'], contains('OWNER'));
+      expect(_financeIsMentioned(tester), isFalse);
+
+      await _unmount(tester);
+    });
+
+    test('the shell resolves Finance from the grant provider alone', () {
+      // The behavioural tests above prove the two agree today. This proves WHY,
+      // so a future edit that starts consulting authority fails here rather
+      // than passing until somebody happens to test the narrow operator.
+      final source =
+          File('lib/features/admin/shell/operator_shell.dart').readAsStringSync();
+
+      // The two widgets that render the destination, and the header gate.
+      for (final region in ['_FinanceRailItem', '_FinanceSheetEntry']) {
+        final start = source.indexOf('class $region');
+        expect(start, greaterThan(-1), reason: '$region must exist to be checked.');
+        // To the end of the class: the next top-level `class ` declaration.
+        final next = RegExp(r'^class ', multiLine: true)
+            .allMatches(source)
+            .map((m) => m.start)
+            .firstWhere((i) => i > start, orElse: () => source.length);
+        final body = source.substring(start, next);
+
+        expect(body, contains('financeDestinationVisibleProvider'),
+            reason: '$region must resolve Finance authority from the grant.');
+        for (final forbidden in [
+          'authority',
+          'isOperator',
+          'OperatorCapability',
+          'OperatorAuthority',
+          'OperatorArea',
+          'appAdminAccess',
+        ]) {
+          expect(body.contains(forbidden), isFalse,
+              reason: '$region must not consult "$forbidden". The operator '
+                  'check is reachability; FinanceGrant is authority.');
+        }
+      }
+
+      // And the header names Finance only on the grant bit, never on the route
+      // alone and never on authority.
+      expect(source, contains('final financeVisible = ref.watch(financeDestinationVisibleProvider)'));
+      expect(source, contains('final namesFinance = onFinance && financeVisible'));
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────────────────────
   // §6.8 — STRUCTURAL. THE FORBIDDEN IMPLEMENTATIONS CANNOT BE WRITTEN HERE.
   // ───────────────────────────────────────────────────────────────────────────
 
