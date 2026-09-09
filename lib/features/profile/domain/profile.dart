@@ -17,6 +17,7 @@ class Profile {
     this.verification = const PersonVerification.none(),
     this.followState = 'none',
     this.accountStatus = 'ACTIVE',
+    this.websiteUrl,
     this.publications = const <ProfilePublication>[],
     this.links = const <ProfileLink>[],
   });
@@ -48,6 +49,13 @@ class Profile {
   /// truthfully represent that instead of presenting every resolvable
   /// profile as fully active. Never carries a moderation reason.
   final String accountStatus;
+
+  /// The person's own site.
+  ///
+  /// The API has always sent it and this model never read it, so a member's
+  /// website was invisible on their public profile — the same "stored but not
+  /// shown" gap as publications, in the same payload.
+  final String? websiteUrl;
 
   /// WORKS THE PERSON DECLARES, AND WHERE ELSE THEY ARE.
   ///
@@ -98,6 +106,7 @@ class Profile {
       verification: PersonVerification.fromJson(j['verification']),
       followState: state.isEmpty ? (following ? 'following' : 'none') : state,
       accountStatus: (j['accountStatus'] ?? 'ACTIVE').toString().trim().toUpperCase(),
+      websiteUrl: asNullableString(j['websiteUrl'] ?? j['website']),
       publications: ProfilePublication.listFrom(j['publications']),
       links: ProfileLink.listFrom(j['links']),
     );

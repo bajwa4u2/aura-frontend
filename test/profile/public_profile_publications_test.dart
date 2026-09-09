@@ -133,7 +133,7 @@ void main() {
       // The whole point of the recompose: published record and links are
       // short and bounded, the feed is not. Stacking them made a reader
       // scroll past a growing feed to reach a fixed list.
-      expect(source, contains('constraints.maxWidth < 900'));
+      expect(source, contains('constraints.maxWidth < 760'));
       expect(source, contains('Expanded(child: _workSection(posts))'));
     });
 
@@ -218,6 +218,62 @@ void main() {
       expect(service, contains('withLinkHydration'));
       expect(service, contains('LinkPreviewStatus.READY'));
       expect(service, isNot(contains('await this.linkIntelligence.resolve')));
+    });
+  });
+
+  group('the public profile shows the person, not just their posts', () {
+    final screen = File(
+      'lib/features/profile/presentation/author_profile_screen.dart',
+    ).readAsStringSync();
+
+    test('a member website reaches the public profile', () {
+      // The API has always sent websiteUrl and the model never read it, so a
+      // member's own site was invisible to every reader — the same
+      // stored-but-not-shown gap as publications, in the same payload.
+      final profile = parse({'websiteUrl': 'https://bajwa.auraplatform.org'});
+      expect(profile.websiteUrl, 'https://bajwa.auraplatform.org');
+      expect(screen, contains('profile.websiteUrl'));
+    });
+
+    test('place and site are presented as the same kind of fact', () {
+      // They were drifting: location was an inline Container and the website
+      // did not exist. Both are identity facts and should not look like two
+      // different ideas.
+      expect(screen, contains('_MetaChip(label: location'));
+      expect(screen, contains('_MetaChip('));
+    });
+
+    test('the two-column gate is measured against the content column', () {
+      // Shipped at 900 to match the owner's presence view and never engaged:
+      // that surface compares against the window, this LayoutBuilder sits
+      // inside the constrained content column, which is ~795 logical px on a
+      // 1142px window. The page stayed one long scroll — the exact thing the
+      // recompose existed to fix.
+      expect(screen, contains('constraints.maxWidth < 760'));
+      expect(screen, isNot(contains('constraints.maxWidth < 900')));
+    });
+  });
+
+  group('a person owns their works on their own profile too', () {
+    final me = File(
+      'lib/features/me/presentation/me_screen.dart',
+    ).readAsStringSync();
+
+    test('published record sits with identity, not with participation', () {
+      // Participation is the projection of INSTITUTIONAL meeting
+      // participation; nothing there is user-owned. A book someone wrote is
+      // the opposite. Reported as "you removed publications from me" — they
+      // were never removed, just filed where nobody would look, which for the
+      // person whose profile it is amounts to the same thing.
+      final identity = me.indexOf('Widget _identityTab');
+      final authority = me.indexOf('Widget _authorityTab');
+      final identityBody = me.substring(identity, authority);
+      expect(identityBody, contains("title: 'Published record'"));
+
+      final participation = me.indexOf('Widget _participationTab');
+      final network = me.indexOf('Widget _networkTab');
+      expect(me.substring(participation, network),
+          isNot(contains("title: 'Public record'")));
     });
   });
 }

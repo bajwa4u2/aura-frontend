@@ -1120,8 +1120,28 @@ class _MeScreenState extends ConsumerState<MeScreen>
 
   Widget _identityTab(bool wide) {
     final links = _linksFromUser(_resolvedUser);
+    final publications = _publicationsFromUser(_resolvedUser);
     final left = <Widget>[
       _buildProfileSummaryCard(),
+      // A PERSON'S DECLARED WORKS ARE PART OF WHO THEY ARE.
+      //
+      // This lived under Participation, which is the projection of
+      // INSTITUTIONAL meeting participation -- nothing there is user-owned.
+      // A book someone wrote is the opposite: it is theirs, it is an
+      // assertion about themselves, and it belongs beside their name.
+      //
+      // Founder-reported as "you removed publications from me". They were
+      // never removed; they were filed somewhere nobody would look, which
+      // for the person whose profile it is amounts to the same thing. The
+      // public profile already presents them this way, so Identity and the
+      // public view now agree.
+      if (publications.isNotEmpty) ...[
+        const SizedBox(height: AuraSpace.lg),
+        MeSection(
+          title: 'Published record',
+          children: _buildPublicationItems(publications),
+        ),
+      ],
       if (links.isNotEmpty) ...[
         const SizedBox(height: AuraSpace.lg),
         MeSection(title: 'Elsewhere', children: _buildLinkItems(links)),
@@ -1155,7 +1175,6 @@ class _MeScreenState extends ConsumerState<MeScreen>
   }
 
   Widget _participationTab(bool wide) {
-    final publications = _publicationsFromUser(_resolvedUser);
     // Participation continuity home — a projection of the member's
     // institutional meeting participation. Items resolve back into the
     // owning institution's meeting record; nothing here is user-owned.
@@ -1167,18 +1186,6 @@ class _MeScreenState extends ConsumerState<MeScreen>
     ];
     final right = <Widget>[
       _buildPersonalRecordSection(),
-      const SizedBox(height: AuraSpace.lg),
-      if (publications.isNotEmpty)
-        MeSection(
-          title: 'Public record',
-          children: _buildPublicationItems(publications),
-        )
-      else
-        _emptyStateCard(
-          icon: Icons.menu_book_outlined,
-          title: 'No public record yet',
-          body: 'Publications and released work will be listed here.',
-        ),
     ];
     return _twoColumn(wide, left, right);
   }

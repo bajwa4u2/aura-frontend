@@ -316,18 +316,24 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
     }
 
     final location = _cleanValue(profile.location);
+
     if (location.isNotEmpty) {
+      meta.add(_MetaChip(label: location, icon: Icons.place_outlined));
+    }
+    // THE PERSON'S OWN SITE BELONGS WITH WHO THEY ARE.
+    //
+    // It sat in the payload unread, so a member's website was invisible on
+    // their public profile. It goes here rather than in "Elsewhere" because
+    // it is not a bookmark among others — it is where this person is, and the
+    // owner's own presence view already presents it this way. One thing, one
+    // treatment, both surfaces.
+    final website = _cleanValue(profile.websiteUrl);
+    if (website.isNotEmpty) {
       meta.add(
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            border: Border.all(color: AuraSurface.divider),
-            borderRadius: BorderRadius.circular(AuraRadius.pill),
-          ),
-          child: Text(
-            location,
-            style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
-          ),
+        _MetaChip(
+          label: _hostOf(website),
+          icon: Icons.language_outlined,
+          onTap: () => _openExternalUrl(website),
         ),
       );
     }
@@ -351,8 +357,19 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
   /// Narrow keeps the stacked order, works first, because there is no second
   /// column to move them into and they still matter more than the feed.
   ///
-  /// 900 is the same threshold the owner's own presence view uses. One
-  /// number, one behaviour, two surfaces.
+  /// THE THRESHOLD IS MEASURED AGAINST THIS COLUMN, NOT THE WINDOW.
+  ///
+  /// This first shipped at 900 to match the owner's presence view, and never
+  /// engaged: that surface compares against the whole window, while this
+  /// LayoutBuilder sits inside the page's constrained content column. On a
+  /// 1142px window the column is about 795 logical pixels, so the gate could
+  /// not be reached and the page stayed a single long scroll — which is the
+  /// thing it was written to fix. Founder-observed, by looking at the page I
+  /// had shipped without looking at.
+  ///
+  /// 760 is chosen against what the column actually measures, and it still
+  /// leaves the feed the larger share: the aside is bounded and the feed
+  /// takes the rest.
   Widget _profileTab(Profile profile, List<Post> posts) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -362,7 +379,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
         ];
         final hasAside = profile.publications.isNotEmpty || profile.links.isNotEmpty;
 
-        if (constraints.maxWidth < 900 || !hasAside) {
+        if (constraints.maxWidth < 760 || !hasAside) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [...aside, _workSection(posts)],
@@ -375,9 +392,14 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
             Expanded(child: _workSection(posts)),
             const SizedBox(width: AuraSpace.s24),
             // Bounded so the feed keeps the majority of the room: this column
-            // holds reference material, not the thing being read.
+            // holds reference material, not the thing being read. It grows a
+            // little with the window and stops well before it competes.
             SizedBox(
-              width: 320,
+              width: constraints.maxWidth * 0.34 < 260
+                  ? 260
+                  : (constraints.maxWidth * 0.34 > 320
+                      ? 320
+                      : constraints.maxWidth * 0.34),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: aside,
@@ -1025,3 +1047,49 @@ String _cleanValue(String? value) {
   return (value ?? '').trim();
 }
 
+/// One identity fact, presented the same way wherever it appears.
+///
+/// Location and website were drifting apart — location was an inline
+/// Container, website did not exist at all. A person's place and a person's
+/// site are the same KIND of fact about them and should not look like two
+/// different ideas.
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({required this.label, this.icon, this.onTap});
+
+  final String label;
+  final IconData? icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final chip = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        border: Border.all(color: AuraSurface.divider),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 13, color: AuraSurface.muted),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            label,
+            style: AuraText.small.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+    if (onTap == null) return chip;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
+        child: chip,
+      ),
+    );
+  }
+}
