@@ -207,6 +207,15 @@ const Size _desktop = Size(1440, 900);
 /// Phone: the bottom bar and its sheet.
 const Size _phone = Size(390, 844);
 
+/// iPad in portrait, and iPad in landscape.
+///
+/// A TABLET IS NOT A BIG PHONE OR A SMALL DESKTOP, and this estate has shipped
+/// surfaces that composed correctly at 390 and at 1440 and were adrift at 1024.
+/// Both orientations are checked because the rail/sheet decision flips between
+/// them on some breakpoints.
+const Size _tabletPortrait = Size(834, 1194);
+const Size _tabletLandscape = Size(1194, 834);
+
 class _Mounted {
   _Mounted(this.container, this.transport);
 
@@ -588,6 +597,97 @@ void main() {
     expect(find.text(FinanceDestination.label), findsOneWidget);
 
     await _unmount(tester);
+  });
+
+  testWidgets('the destination is reachable at TABLET geometry, both orientations',
+      (tester) async {
+    // Whether an iPad gets the rail or the sheet is a layout decision this test
+    // deliberately does not assert. What it asserts is the thing that matters:
+    // by ONE of those routes the door is reachable, at both orientations, and
+    // the founder is never handed a tablet with no way in.
+    for (final size in [_tabletPortrait, _tabletLandscape]) {
+      await _mount(
+        tester,
+        adminMe: _fullOperator(),
+        entry: _Entry.eligible,
+        size: size,
+      );
+
+      var found = find.text(FinanceDestination.label).evaluate().isNotEmpty;
+      if (!found && find.text('More').evaluate().isNotEmpty) {
+        await tester.tap(find.text('More'));
+        for (var i = 0; i < 6; i++) {
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+        found = find.text(FinanceDestination.label).evaluate().isNotEmpty;
+      }
+
+      expect(found, isTrue,
+          reason: 'no route to Finance at ${size.width}x${size.height}');
+      await _unmount(tester);
+    }
+  });
+
+  testWidgets('a tablet without a grant is told nothing, in either orientation',
+      (tester) async {
+    // The control. Without it the test above would pass on a build that showed
+    // Finance to everyone at tablet width.
+    for (final size in [_tabletPortrait, _tabletLandscape]) {
+      await _mount(
+        tester,
+        adminMe: _fullOperator(),
+        entry: _Entry.notEligible,
+        size: size,
+      );
+      if (find.text('More').evaluate().isNotEmpty) {
+        await tester.tap(find.text('More'));
+        for (var i = 0; i < 6; i++) {
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+      }
+      expect(find.text(FinanceDestination.label), findsNothing,
+          reason: 'Finance leaked at ${size.width}x${size.height}');
+      await _unmount(tester);
+    }
+  });
+
+  test('the doorway measure composes for a tablet, not for a phone or a desktop', () {
+    // THE PART OF THE TABLET STORY THAT CAN BE ASSERTED EXACTLY.
+    //
+    // An earlier version of this measured the laid-out paragraph and compared
+    // it to the pane. It could not tell a full-bleed layout from a correctly
+    // constrained one — 998 against 966 once the rail and the card padding had
+    // taken their share — so it passed under the very mutation it existed to
+    // catch. The rule itself has no such ambiguity.
+    const phone = 390.0;
+    const tabletPortrait = 834.0;
+    const tabletLandscape = 1194.0;
+    const desktop = 1440.0;
+
+    // A phone gets the whole pane; there is nothing to centre it in.
+    expect(financeDoorwayMeasure(phone), phone);
+
+    // A tablet gets a real gutter AND a measure wider than a phone column.
+    for (final pane in [tabletPortrait, tabletLandscape]) {
+      final m = financeDoorwayMeasure(pane);
+      expect(m, greaterThan(phone),
+          reason: 'a phone column adrift in a \$pane pane');
+      expect(pane - m, greaterThanOrEqualTo(64),
+          reason: 'prose running to the edge of a \$pane pane');
+    }
+
+    // Beyond a point the measure stops growing, or a wide desktop turns the
+    // body copy into a single unreadable line.
+    expect(financeDoorwayMeasure(desktop), financeDoorwayMeasure(2560));
+    expect(financeDoorwayMeasure(desktop), lessThan(desktop / 1.5));
+
+    // Monotonic: a wider pane never yields a narrower measure.
+    var previous = 0.0;
+    for (var w = 320.0; w <= 2000; w += 10) {
+      final m = financeDoorwayMeasure(w);
+      expect(m, greaterThanOrEqualTo(previous), reason: 'measure shrank at \$w');
+      previous = m;
+    }
   });
 
   testWidgets('a narrow operator WITHOUT a grant gains no sheet',

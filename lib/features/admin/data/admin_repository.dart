@@ -62,6 +62,61 @@ class AdminRepository {
     return FinanceEntry(eligible: body['eligible'] == true);
   }
 
+  /// Ask Aura for a browser-entry ticket, so a NATIVE client can open the
+  /// system browser AS ITSELF.
+  ///
+  /// WHY THIS EXISTS AT ALL. On the web the browser already carries Aura's
+  /// session cookie, so it can walk into Finance's sign-in unaided. On Android,
+  /// Windows and iOS the session lives in the APP and the system browser has
+  /// never heard of it, so without this the founder would be asked to sign in
+  /// to Aura a second time inside a browser — which is exactly what the
+  /// doorway is supposed to make unnecessary.
+  ///
+  /// The ticket is single-use and expires in two minutes. It names a principal
+  /// at the Finance doorway and nothing else: it is not an Aura token, cannot
+  /// call any Aura API, and confers no Aura authority.
+  ///
+  /// Returns an ABSOLUTE url, resolved here against the origin this repository
+  /// actually talks to. Resolving it at the call site instead would read the
+  /// configured base from a second place, and two sources for one origin
+  /// eventually disagree — the failure being a handoff that opens the wrong
+  /// host, which looks like a Finance outage.
+  Future<String> beginFinanceBrowserEntry() async {
+    final res = await _dio.post('/v1/auth/finance/ticket');
+    final body = _asMap(res.data);
+    final entry = body['entryUrl'];
+    if (entry is! String || entry.isEmpty) {
+      throw StateError('finance entry ticket did not name a destination');
+    }
+    return _resolveAgainstApiOrigin(entry);
+  }
+
+  /// Where Finance lives, according to Aura's configuration.
+  ///
+  /// NOT A CONSTANT IN THIS BINARY, deliberately. A hostname compiled into a
+  /// mobile client is a hostname that needs an app store release to change,
+  /// and Finance must be able to move — a new origin, a staging environment, a
+  /// rename — without Aura shipping a client. The server holds the address;
+  /// this asks for it.
+  ///
+  /// Discloses only a public DNS name, and says nothing about whether this
+  /// principal may enter: every signed-in caller gets the same string.
+  Future<String> fetchFinanceDestination() async {
+    final res = await _dio.get('/v1/auth/finance/destination');
+    final origin = _asMap(res.data)['origin'];
+    if (origin is! String || origin.isEmpty) {
+      throw StateError('finance destination was not named');
+    }
+    return origin;
+  }
+
+  String _resolveAgainstApiOrigin(String path) {
+    final base = Uri.parse(_dio.options.baseUrl);
+    final origin =
+        Uri(scheme: base.scheme, host: base.host, port: base.hasPort ? base.port : null);
+    return origin.resolve(path).toString();
+  }
+
   Future<AdminAccess> fetchMe() async {
     final res = await _dio.get('/v1/admin/me');
     return AdminAccess.fromJson(_asMap(res.data));
