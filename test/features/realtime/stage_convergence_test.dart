@@ -66,7 +66,10 @@ class _FlakyTransport implements RealtimeTransport {
   @override
   Future<void> setCameraEnabled(bool enabled) async {}
   @override
-  Future<void> close() async {}
+  // Mirrors RealtimeTransport.close, which now carries WHY it closed.
+  // Without the parameter this file does not compile, and a test file
+  // that does not compile is not a passing test — it is no test at all.
+  Future<void> close({String reason = 'EXPLICIT_LEAVE'}) async {}
   @override
   Future<RealtimeTransportStats> stats() async =>
       const RealtimeTransportStats(
