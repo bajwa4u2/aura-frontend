@@ -97,7 +97,10 @@ class _Transport {
               Response<dynamic>(
                 requestOptions: options,
                 statusCode: 200,
-                data: {'origin': 'https://finance.example.test'},
+                // ENVELOPED, exactly as the API answers. An unwrapped
+                // fake is what let the doorway ship reading `body['origin']`
+                // off `{ok, data}` and always finding null.
+                data: {'ok': true, 'data': {'origin': 'https://finance.example.test'}},
               ),
             );
           }
@@ -107,7 +110,7 @@ class _Transport {
               Response<dynamic>(
                 requestOptions: options,
                 statusCode: 200,
-                data: {'eligible': eligible},
+                data: {'ok': true, 'data': {'eligible': eligible}},
               ),
             );
           }
@@ -127,8 +130,12 @@ class _Transport {
                 requestOptions: options,
                 statusCode: 201,
                 data: {
-                  'entryUrl': '/v1/auth/finance/start?ticket=abc123def456',
-                  'expiresIn': 120,
+                  'ok': true,
+                  'data': {
+                    'entryUrl': '/v1/auth/finance/start?ticket=abc123def456',
+                    'destination': 'https://finance.example.test',
+                    'expiresIn': 120,
+                  },
                 },
               ),
             );

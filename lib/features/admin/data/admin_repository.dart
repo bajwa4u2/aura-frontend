@@ -17,6 +17,23 @@ class AdminRepository {
     return const {};
   }
 
+  /// The PAYLOAD, not the envelope.
+  ///
+  /// The API answers `{ ok, data }`. Every model in this feature strips that in
+  /// its own `fromJson` (`admin_models.dart:_unwrap`), but a response read
+  /// inline at a call site does not, and reading `body['eligible']` off the
+  /// envelope yields null — which the Finance doorway interpreted as "no
+  /// destination". The door could never have drawn against a real backend, and
+  /// no client test could see it, because the fakes returned unwrapped bodies
+  /// and so certified the fake. Found on Windows, against the real stack.
+  static Map<String, dynamic> _payload(dynamic v) {
+    final outer = _asMap(v);
+    final data = outer['data'];
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return outer;
+  }
+
   static List<T> _parseList<T>(
     dynamic raw,
     T Function(Map<String, dynamic>) parser,
@@ -58,8 +75,7 @@ class AdminRepository {
     // endpoint behind it is gated on authentication alone, never on an admin
     // permission. The console merely happens to be where the door is drawn.
     final res = await _dio.get('/v1/finance/entry');
-    final body = _asMap(res.data);
-    return FinanceEntry(eligible: body['eligible'] == true);
+    return FinanceEntry(eligible: _payload(res.data)['eligible'] == true);
   }
 
   /// Ask Aura for a browser-entry ticket, so a NATIVE client can open the
@@ -83,8 +99,7 @@ class AdminRepository {
   /// host, which looks like a Finance outage.
   Future<String> beginFinanceBrowserEntry() async {
     final res = await _dio.post('/v1/auth/finance/ticket');
-    final body = _asMap(res.data);
-    final entry = body['entryUrl'];
+    final entry = _payload(res.data)['entryUrl'];
     if (entry is! String || entry.isEmpty) {
       throw StateError('finance entry ticket did not name a destination');
     }
@@ -103,7 +118,7 @@ class AdminRepository {
   /// principal may enter: every signed-in caller gets the same string.
   Future<String> fetchFinanceDestination() async {
     final res = await _dio.get('/v1/auth/finance/destination');
-    final origin = _asMap(res.data)['origin'];
+    final origin = _payload(res.data)['origin'];
     if (origin is! String || origin.isEmpty) {
       throw StateError('finance destination was not named');
     }

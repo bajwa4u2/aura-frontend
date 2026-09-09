@@ -134,12 +134,17 @@ class _Transport {
           if (path.contains('/finance/entry')) {
             financeRequests.add(path);
             switch (entry) {
+              // ENVELOPED, exactly as the API answers `{ ok, data }`. The
+              // unwrapped version of this fake certified the fake: the
+              // repository read `body['eligible']` off the envelope, always
+              // found null, and the door could never have drawn against a real
+              // backend while every test here passed.
               case _Entry.eligible:
-                return handler.resolve(_ok(options, {'eligible': true}));
+                return handler.resolve(_ok(options, {'ok': true, 'data': {'eligible': true}}));
               case _Entry.notEligible:
-                return handler.resolve(_ok(options, {'eligible': false}));
+                return handler.resolve(_ok(options, {'ok': true, 'data': {'eligible': false}}));
               case _Entry.eligibleWithExtraPayload:
-                return handler.resolve(_ok(options, {
+                return handler.resolve(_ok(options, {'ok': true, 'data': {
                   'eligible': true,
                   // None of this may reach a rendered pixel.
                   'books': ['AURA_PLATFORM_LLC'],
@@ -149,7 +154,7 @@ class _Transport {
                   'cashMinor': '1234567',
                   'currency': 'USD',
                   'lastPostedAt': '2026-09-01T00:00:00.000Z',
-                }));
+                }}));
               case _Entry.unauthenticated:
                 return handler.reject(
                   DioException(
@@ -883,7 +888,11 @@ void main() {
       expect(method, isNotNull, reason: 'fetchFinanceEntry must exist to read.');
 
       final body = method!.group(0)!;
-      final fields = RegExp(r"body\['([^']+)'\]")
+      // Matches however the payload is named at the call site. The scan used to
+      // hard-code `body['…']` and went silent the moment the read was written
+      // as `_payload(res.data)['…']` — a source-shape assertion that stops
+      // matching stops asserting, so it looks for the subscript itself.
+      final fields = RegExp(r"\['([A-Za-z_][A-Za-z0-9_]*)'\]")
           .allMatches(body)
           .map((m) => m.group(1)!)
           .toSet();
