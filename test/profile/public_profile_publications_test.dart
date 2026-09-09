@@ -137,4 +137,77 @@ void main() {
       expect(source, contains("uri.scheme != 'http' && uri.scheme != 'https'"));
     });
   });
+
+  group('a link hydrates with its own content', () {
+    test('a publication carries the cover the destination served', () {
+      final profile = parse({
+        'publications': [
+          {
+            'title': 'The Burden of Knowing',
+            'url': 'https://bajwawrites.com/books/the-burden-of-knowing',
+            'coverUrl': 'https://api.auraplatform.org/v1/link-previews/p1/image',
+          },
+        ],
+      });
+      expect(profile.publications.single.coverUrl, contains('link-previews'));
+    });
+
+    test('a link carries its site mark, not a cover', () {
+      // A favicon, not a banner. A link needs the identity of where it goes;
+      // a full-width image would make a bookmark look like an authored work.
+      final profile = parse({
+        'links': [
+          {
+            'url': 'https://github.com/bajwa4u2',
+            'label': 'github',
+            'iconUrl': 'https://api.auraplatform.org/v1/link-previews/l1/favicon',
+          },
+        ],
+      });
+      expect(profile.links.single.iconUrl, contains('favicon'));
+    });
+
+    test('no cover is an absence, not an error', () {
+      final profile = parse({
+        'publications': [
+          {'title': 'Uncovered', 'url': 'https://example.org/x'},
+        ],
+      });
+      expect(profile.publications.single.coverUrl, isNull);
+    });
+
+    test('enrichment never speaks for the person', () {
+      // The founder's own words must survive whatever the page says about
+      // itself. bajwawrites.com currently answers every book URL with the
+      // publishing house's name and blurb; if that were allowed to win, three
+      // descriptions would collapse into one sentence.
+      final profile = parse({
+        'publications': [
+          {
+            'title': 'The Burden of Knowing',
+            'description': 'A reflection on the distance between knowing and applying.',
+            'url': 'https://bajwawrites.com/books/the-burden-of-knowing',
+            'coverUrl': 'https://api.auraplatform.org/v1/link-previews/p1/image',
+          },
+        ],
+      });
+      final publication = profile.publications.single;
+      expect(publication.title, 'The Burden of Knowing');
+      expect(publication.description, startsWith('A reflection'));
+    });
+  });
+
+  group('hydration never happens during a render', () {
+    final service = File(
+      '../aura-backend/src/users/users.service.ts',
+    ).readAsStringSync();
+
+    test('the profile read consults the cache and does not fetch', () {
+      // A profile render must not make a network call as a side effect, or a
+      // slow publisher page becomes a slow profile.
+      expect(service, contains('withLinkHydration'));
+      expect(service, contains('LinkPreviewStatus.READY'));
+      expect(service, isNot(contains('await this.linkIntelligence.resolve')));
+    });
+  });
 }

@@ -185,6 +185,9 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
     String? trailing,
     required VoidCallback? onTap,
     IconData? leading,
+    /// A real image in the leading slot -- a work's cover, a site's mark.
+    /// Takes precedence over [leading] when both are given.
+    Widget? leadingWidget,
     bool enabled = true,
   }) {
     final active = enabled && onTap != null;
@@ -200,7 +203,10 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
           ),
           child: Row(
             children: [
-              if (leading != null) ...[
+              if (leadingWidget != null) ...[
+                leadingWidget,
+                const SizedBox(width: AuraSpace.s12),
+              ] else if (leading != null) ...[
                 Icon(
                   leading,
                   size: 18,
@@ -352,17 +358,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
         title: 'Published record',
         children: [
           for (final publication in publications)
-            _sectionRow(
-              title: publication.title,
-              // The person's own words. Never truncated to a label, never
-              // replaced by a scraped summary.
-              subtitle: publication.description,
-              trailing: publication.year?.toString(),
-              leading: Icons.menu_book_outlined,
-              onTap: (publication.url ?? '').isEmpty
-                  ? null
-                  : () => _openExternalUrl(publication.url!),
-            ),
+            _publicationRow(publication),
         ],
       ),
     );
@@ -377,17 +373,83 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
       child: _surfaceSection(
         title: 'Elsewhere',
         children: [
-          for (final link in links)
-            _sectionRow(
-              title: (link.label ?? '').isNotEmpty
-                  ? link.label!
-                  : _hostOf(link.url),
-              subtitle: _hostOf(link.url),
-              leading: Icons.link_outlined,
-              onTap: () => _openExternalUrl(link.url),
-            ),
+          for (final link in links) _linkRow(link),
         ],
       ),
+    );
+  }
+
+  /// A WORK, WITH ITS OWN COVER WHERE ONE EXISTS.
+  ///
+  /// The cover is the destination's Open Graph image, resolved on save and
+  /// served through Aura's proxy. It is ENRICHMENT: the title and description
+  /// beside it are the person's own and are never replaced by what the page
+  /// says about itself.
+  ///
+  /// A publication with no cover keeps the book icon rather than a grey
+  /// placeholder. An empty frame promising an image that will never arrive is
+  /// worse than an honest mark.
+  Widget _publicationRow(ProfilePublication publication) {
+    final cover = (publication.coverUrl ?? '').trim();
+    return _sectionRow(
+      title: publication.title,
+      // The person's own words. Never truncated to a label, never replaced by
+      // a scraped summary.
+      subtitle: publication.description,
+      trailing: publication.year?.toString(),
+      leading: cover.isEmpty ? Icons.menu_book_outlined : null,
+      leadingWidget: cover.isEmpty
+          ? null
+          : ClipRRect(
+              borderRadius: BorderRadius.circular(AuraRadius.r10),
+              child: Image.network(
+                cover,
+                width: 34,
+                height: 46,
+                fit: BoxFit.cover,
+                // A cover that fails to load falls back to the mark rather
+                // than to a broken-image glyph.
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.menu_book_outlined,
+                  size: 18,
+                  color: AuraSurface.ink,
+                ),
+              ),
+            ),
+      onTap: (publication.url ?? '').isEmpty
+          ? null
+          : () => _openExternalUrl(publication.url!),
+    );
+  }
+
+  /// A DESTINATION, WITH THE MARK OF WHERE IT GOES.
+  ///
+  /// A favicon, not a banner. What a link needs is the identity of the site
+  /// it points at; a full-width image here would make a bookmark look like an
+  /// authored work.
+  Widget _linkRow(ProfileLink link) {
+    final icon = (link.iconUrl ?? '').trim();
+    return _sectionRow(
+      title: (link.label ?? '').isNotEmpty ? link.label! : _hostOf(link.url),
+      subtitle: _hostOf(link.url),
+      leading: icon.isEmpty ? Icons.link_outlined : null,
+      leadingWidget: icon.isEmpty
+          ? null
+          : ClipRRect(
+              borderRadius: BorderRadius.circular(AuraRadius.r10),
+              child: Image.network(
+                icon,
+                width: 18,
+                height: 18,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.link_outlined,
+                  size: 18,
+                  color: AuraSurface.ink,
+                ),
+              ),
+            ),
+      onTap: () => _openExternalUrl(link.url),
     );
   }
 

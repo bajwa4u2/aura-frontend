@@ -136,6 +136,7 @@ class ProfilePublication {
     this.description,
     this.publisher,
     this.year,
+    this.coverUrl,
   });
 
   final String title;
@@ -143,6 +144,15 @@ class ProfilePublication {
   final String? description;
   final String? publisher;
   final int? year;
+
+  /// The work's own cover, resolved from the destination's Open Graph image
+  /// and served through Aura's proxy — never hotlinked, so a viewer is not
+  /// exposed to the third-party host.
+  ///
+  /// ENRICHMENT ONLY. The title and description above are the person's
+  /// assertion about their own work and are never replaced by what the page
+  /// says about itself.
+  final String? coverUrl;
 
   static List<ProfilePublication> listFrom(dynamic raw) {
     final out = <ProfilePublication>[];
@@ -160,6 +170,7 @@ class ProfilePublication {
           description: description,
           publisher: _pickString(item, const ['publisher', 'venue']),
           year: item['year'] is num ? (item['year'] as num).toInt() : null,
+          coverUrl: _pickString(item, const ['coverUrl', 'imageUrl']),
         ),
       );
     }
@@ -170,10 +181,15 @@ class ProfilePublication {
 /// A general external destination. Deliberately NOT a publication: it carries
 /// no description, publisher or year, and it is presented differently.
 class ProfileLink {
-  const ProfileLink({required this.url, this.label});
+  const ProfileLink({required this.url, this.label, this.iconUrl});
 
   final String url;
   final String? label;
+
+  /// The destination's own mark — its favicon, proxied. A link needs the
+  /// identity of where it goes, not a banner: giving it a publication's cover
+  /// would erase the difference between an authored work and a bookmark.
+  final String? iconUrl;
 
   static List<ProfileLink> listFrom(dynamic raw) {
     final out = <ProfileLink>[];
@@ -183,6 +199,7 @@ class ProfileLink {
       out.add(ProfileLink(
         url: url,
         label: _pickString(item, const ['label', 'title', 'name']),
+        iconUrl: _pickString(item, const ['iconUrl', 'faviconUrl']),
       ));
     }
     return out;
