@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/navigation/navigation_authority.dart';
 
@@ -326,6 +327,94 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
     }
 
     return meta;
+  }
+
+  /// PUBLISHED RECORD — the works a person declares on their own profile.
+  ///
+  /// The API has sent these all along (`publicSelect` includes `publications`
+  /// and `links`); the public profile simply never rendered them, so a
+  /// person's books were stored and invisible. Founder-reported 2026-09-09 —
+  /// and the whole point of storing them is that a reader reaches the work.
+  ///
+  /// A PUBLICATION IS NOT A LINK. It carries a title that is its identity and
+  /// the person's own description, so it is presented as a work: the
+  /// description is shown and the destination is a trailing detail. Links keep
+  /// their own quieter section. Both share a card; neither borrows the other's
+  /// meaning.
+  ///
+  /// It is an ASSERTION, not a verified credential. Nothing here renders a
+  /// trust mark, and nothing infers authorship from it.
+  Widget _publishedRecordSection(List<ProfilePublication> publications) {
+    if (publications.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s24),
+      child: _surfaceSection(
+        title: 'Published record',
+        children: [
+          for (final publication in publications)
+            _sectionRow(
+              title: publication.title,
+              // The person's own words. Never truncated to a label, never
+              // replaced by a scraped summary.
+              subtitle: publication.description,
+              trailing: publication.year?.toString(),
+              leading: Icons.menu_book_outlined,
+              onTap: (publication.url ?? '').isEmpty
+                  ? null
+                  : () => _openExternalUrl(publication.url!),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// ELSEWHERE — general external destinations. Same name the owner's own
+  /// presence view uses, so one thing has one vocabulary.
+  Widget _elsewhereSection(List<ProfileLink> links) {
+    if (links.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s24),
+      child: _surfaceSection(
+        title: 'Elsewhere',
+        children: [
+          for (final link in links)
+            _sectionRow(
+              title: (link.label ?? '').isNotEmpty
+                  ? link.label!
+                  : _hostOf(link.url),
+              subtitle: _hostOf(link.url),
+              leading: Icons.link_outlined,
+              onTap: () => _openExternalUrl(link.url),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// The bare host, for a calm secondary line. A full URL in a subtitle reads
+  /// as debug output rather than as a destination.
+  String _hostOf(String url) {
+    final uri = Uri.tryParse(url.trim());
+    final host = (uri?.host ?? '').replaceFirst(RegExp(r'^www\.'), '');
+    return host.isEmpty ? url.trim() : host;
+  }
+
+  /// Open an external destination.
+  ///
+  /// The scheme is checked rather than assumed. The canonical contract already
+  /// refuses anything but http(s) on write; this refuses it again on the way
+  /// out, so no legacy row can ever become a `javascript:` navigation.
+  Future<void> _openExternalUrl(String raw) async {
+    final value = raw.trim();
+    if (value.isEmpty) return;
+    final normalized =
+        value.startsWith('http://') || value.startsWith('https://')
+            ? value
+            : 'https://$value';
+    final uri = Uri.tryParse(normalized);
+    if (uri == null) return;
+    if (uri.scheme != 'http' && uri.scheme != 'https') return;
+    await launchUrl(uri, mode: LaunchMode.platformDefault);
   }
 
   Widget _workSection(List<Post> posts) {
@@ -684,8 +773,14 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
                 const SizedBox(height: AuraSpace.s16),
                 _buildTabBar(),
                 const SizedBox(height: AuraSpace.s20),
-                if (_tabController.index == 0)
-                  _workSection(posts)
+                if (_tabController.index == 0) ...[
+                  // A person's declared works come BEFORE the posts feed.
+                  // "Works" below is that feed; the published record is the
+                  // thing a reader came for.
+                  _publishedRecordSection(profile.publications),
+                  _elsewhereSection(profile.links),
+                  _workSection(posts),
+                ]
                 else
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

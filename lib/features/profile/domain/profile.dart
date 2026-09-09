@@ -17,6 +17,8 @@ class Profile {
     this.verification = const PersonVerification.none(),
     this.followState = 'none',
     this.accountStatus = 'ACTIVE',
+    this.publications = const <ProfilePublication>[],
+    this.links = const <ProfileLink>[],
   });
 
   final String id;
@@ -46,6 +48,19 @@ class Profile {
   /// truthfully represent that instead of presenting every resolvable
   /// profile as fully active. Never carries a moderation reason.
   final String accountStatus;
+
+  /// WORKS THE PERSON DECLARES, AND WHERE ELSE THEY ARE.
+  ///
+  /// The API has always sent both — `publicSelect` includes `links` and
+  /// `publications` — and this model simply never read them, so the public
+  /// profile could not show a person's own books however carefully they were
+  /// stored. Founder-reported 2026-09-09: stored and invisible.
+  ///
+  /// A publication is the person's ASSERTION about an authored work, never a
+  /// verified credential. See
+  /// `aura-backend/docs/PROFILE_COLLECTIONS_CONTRACT.md`.
+  final List<ProfilePublication> publications;
+  final List<ProfileLink> links;
 
   bool get isActive => accountStatus == 'ACTIVE';
 
@@ -83,7 +98,94 @@ class Profile {
       verification: PersonVerification.fromJson(j['verification']),
       followState: state.isEmpty ? (following ? 'following' : 'none') : state,
       accountStatus: (j['accountStatus'] ?? 'ACTIVE').toString().trim().toUpperCase(),
+      publications: ProfilePublication.listFrom(j['publications']),
+      links: ProfileLink.listFrom(j['links']),
     );
+  }
+}
+
+/// Read tolerantly, exactly as the canonical contract prescribes.
+///
+/// `url` is canonical; `link` and `href` are documented legacy aliases that
+/// older payloads may still carry. Reading them costs nothing and refusing
+/// them would blank a person's own work.
+String? _pickString(Map<String, dynamic> j, List<String> names) {
+  for (final name in names) {
+    final value = (j[name] ?? '').toString().trim();
+    if (value.isNotEmpty && value != 'null') return value;
+  }
+  return null;
+}
+
+List<Map<String, dynamic>> _asMaps(dynamic raw) {
+  if (raw is! List) return const [];
+  return raw
+      .whereType<Map>()
+      .map((m) => m.cast<String, dynamic>())
+      .toList(growable: false);
+}
+
+/// AN AUTHORED WORK A PERSON DECLARES ON THEIR OWN PROFILE.
+///
+/// An assertion, not a verified credential and not an Aura Article. The title
+/// is its identity; the URL is a destination, not the work itself.
+class ProfilePublication {
+  const ProfilePublication({
+    required this.title,
+    this.url,
+    this.description,
+    this.publisher,
+    this.year,
+  });
+
+  final String title;
+  final String? url;
+  final String? description;
+  final String? publisher;
+  final int? year;
+
+  static List<ProfilePublication> listFrom(dynamic raw) {
+    final out = <ProfilePublication>[];
+    for (final item in _asMaps(raw)) {
+      final title = _pickString(item, const ['title', 'name']);
+      final url = _pickString(item, const ['url', 'link', 'href']);
+      final description =
+          _pickString(item, const ['description', 'summary', 'note']);
+      // A row with nothing in it is a row nobody filled in.
+      if (title == null && url == null && description == null) continue;
+      out.add(
+        ProfilePublication(
+          title: title ?? 'Publication',
+          url: url,
+          description: description,
+          publisher: _pickString(item, const ['publisher', 'venue']),
+          year: item['year'] is num ? (item['year'] as num).toInt() : null,
+        ),
+      );
+    }
+    return out;
+  }
+}
+
+/// A general external destination. Deliberately NOT a publication: it carries
+/// no description, publisher or year, and it is presented differently.
+class ProfileLink {
+  const ProfileLink({required this.url, this.label});
+
+  final String url;
+  final String? label;
+
+  static List<ProfileLink> listFrom(dynamic raw) {
+    final out = <ProfileLink>[];
+    for (final item in _asMaps(raw)) {
+      final url = _pickString(item, const ['url', 'link', 'href']);
+      if (url == null) continue;
+      out.add(ProfileLink(
+        url: url,
+        label: _pickString(item, const ['label', 'title', 'name']),
+      ));
+    }
+    return out;
   }
 }
 
