@@ -10,7 +10,7 @@ publish_to: "none"
 # X.Y.Z parts of `version` and zero out the build component to satisfy
 # the store rule. A pre-build script could enforce this automatically;
 # for now it's a manual sync.
-version: 1.4.2+37
+version: 1.4.3+38
 
 environment:
   sdk: ^3.10.8
@@ -242,7 +242,13 @@ msix_config:
   # Core-Telecom call lifecycle, first-party secure token storage) plus the
   # Feedback / Rate / Version capability on both widths. MUST equal the X.Y.Z
   # of `version:` above with a trailing .0.
-  msix_version: 1.4.2.0
+  # 2026-09-09 bump (1.4.3.0): Aura 1.4.3 identity reconstruction — prospective
+  # registration establishes date of birth and declared jurisdiction before the
+  # account row, admission/completeness/capability are separated so a legacy
+  # member is never held at a completion wall, Personal Details owns the private
+  # canonical identity apart from the public profile, and verification reports
+  # its three classes distinctly.
+  msix_version: 1.4.3.0
   description: "Aura — a platform for purposeful public and personal communication, where conversations keep their context and people and institutions speak under clear, accountable identity."
   publisher: CN=3E4027A7-4D4D-4492-B8DE-BBE425E307E5
 
