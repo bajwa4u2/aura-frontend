@@ -82,9 +82,48 @@ String? identityVerificationDestination(String? notificationType) {
   if (t == null || !t.startsWith('IDENTITY_VERIFICATION')) return null;
   // The reviewer's queue notice and the subject's decision notices are the
   // same family and must not resolve to the same place.
+  //
+  // The reviewer half pointed at `/admin/identity-review`, WHICH THE ROUTER HAS
+  // NEVER DECLARED. A reviewer tapping "a verification is waiting for review"
+  // was sent to a path that does not exist — the same phantom-destination
+  // shape this function was written to prevent, on the other side of the same
+  // family. `/admin/integrity` is where the Identity lane actually lives.
   return t == 'IDENTITY_VERIFICATION_SUBMITTED'
-      ? '/admin/identity-review'
+      ? '/admin/integrity'
       : '/verify-identity';
+}
+
+/// Where an INSTITUTION verification notice belongs, derived from its TYPE.
+///
+/// Same rule as identity, for the same reason: minted where the route exists
+/// rather than read from a stored path, so a build without the screen resolves
+/// nothing instead of showing a route-not-found page to somebody who has just
+/// been told their institution was refused.
+///
+/// The subject notices need to know WHICH institution, because a person may
+/// represent several and "your authority was withdrawn" is useless without it.
+/// The backend sets the INSTITUTION as the notification's actor precisely so
+/// this is available; where it is somehow absent, this resolves to null and the
+/// tap is inert rather than landing on somebody else's institution.
+String? institutionVerificationDestination(
+  String? notificationType,
+  String? institutionRef,
+) {
+  final t = _clean(notificationType)?.toUpperCase();
+  if (t == null) return null;
+  if (!t.startsWith('INSTITUTION_VERIFICATION') &&
+      !t.startsWith('INSTITUTION_AUTHORITY')) {
+    return null;
+  }
+
+  // The reviewer's queue notice goes to the queue, never to an institution's
+  // own page: a reviewer arrives wanting the next thing waiting.
+  if (t == 'INSTITUTION_VERIFICATION_SUBMITTED') {
+    return '/admin/integrity/institution-verification';
+  }
+
+  final ref = _clean(institutionRef);
+  return ref == null ? null : '/institution/$ref/verification';
 }
 
 /// The media id carried by a quarantine or quarantine-lifted notice.

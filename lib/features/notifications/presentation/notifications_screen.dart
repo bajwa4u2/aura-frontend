@@ -123,6 +123,16 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     final identityDestination = identityVerificationDestination(n.type);
     if (identityDestination != null) return identityDestination;
 
+    // Institution verification, by the same rule and ahead of the stored
+    // shortcut. The institution comes from the notice's ACTOR, which the
+    // backend sets to the institution precisely so a person representing
+    // several can tell which one a decision is about.
+    final institutionVerification = institutionVerificationDestination(
+      n.type,
+      n.actorInstitutionId,
+    );
+    if (institutionVerification != null) return institutionVerification;
+
     // Phase 3 — backend stores a canonical deeplink in payload.deeplink
     // for every notification kind that has a target. Honor it first; every
     // resolver below is the legacy fallback for rows written before it.

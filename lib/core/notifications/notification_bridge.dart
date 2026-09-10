@@ -335,6 +335,19 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
     );
     if (identityDestination != null) return identityDestination;
 
+    // Institution verification, same rule. A push payload carries the
+    // institution alongside the type; without one this resolves to null and
+    // the tap opens the app rather than landing on somebody else's
+    // institution.
+    final institutionVerification = institutionVerificationDestination(
+      _stringOf(payload['type']),
+      _firstNonEmpty([
+        _stringOf(payload['institutionId']),
+        _stringOf(payload['actorInstitutionId']),
+      ]),
+    );
+    if (institutionVerification != null) return institutionVerification;
+
     // Prefer explicit deeplink/route from backend, except call payloads must
     // not auto-navigate straight into /realtime — a still-ringing call is
     // handled by the incoming-call bridge registration in `_onFcmTap`
