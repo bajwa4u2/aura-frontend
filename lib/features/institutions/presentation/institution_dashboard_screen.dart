@@ -392,6 +392,26 @@ class _InstitutionDashboardScreenState
       ));
     }
 
+    // VERIFICATION HAS AN ENTRY POINT.
+    //
+    // `/verify-identity` shipped in an earlier release with no way to reach it
+    // from anywhere in the product. A route nobody can find and a route that
+    // was never built are the same thing to the person looking for it, so this
+    // card exists before the screen is considered done.
+    if (_isAdmin && _institutionId.isNotEmpty) {
+      items.add(InsActionCard(
+        icon: Icons.verified_outlined,
+        title: 'Institution verification',
+        body:
+            'Show that this institution is real, and that you may speak for it. '
+            'Two separate questions, answered separately.',
+        cta: 'Open verification',
+        tone: InsTone.info,
+        onTap: () => _go(institutionWorkspacePath(
+            _institutionId, InstitutionSection.verification)),
+      ));
+    }
+
     if (_isAdmin && _institutionId.isNotEmpty) {
       items.add(InsActionCard(
         icon: Icons.group_add_outlined,

@@ -22,6 +22,7 @@ enum InstitutionSection {
   profile('profile'),
   editProfile('edit-profile'),
   requestVerification('request-verification'),
+  verification('verification'),
   correspondence('correspondence'),
   domains('domains'),
   announcements('announcements'),

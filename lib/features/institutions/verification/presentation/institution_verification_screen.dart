@@ -4,7 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/attachments/aura_media_upload.dart';
 import '../../../../core/media/media_acquisition.dart';
 import '../../../../core/net/dio_provider.dart';
+import '../../../../core/product/product_language.dart';
+import '../../../../core/product/product_state.dart';
+import '../../../../core/product/product_state_view.dart';
+import '../../../../core/product/temporal.dart';
 import '../../../../core/ui/aura_card.dart';
+import '../../../../core/ui/aura_radius.dart';
 import '../../../../core/ui/aura_scaffold.dart';
 import '../../../../core/ui/aura_platform_components.dart';
 import '../../../../core/ui/aura_space.dart';
@@ -78,15 +83,20 @@ class _InstitutionVerificationScreenState
     return AuraScaffold(
       title: 'Verification',
       body: standing.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        // A failure to LOAD is not a failure of the verification. Retry is
-        // offered rather than leaving somebody on a dead screen.
-        error: (e, _) => _LoadFailure(
-          message: e is InstitutionVerificationException
-              ? e.message
-              : 'We could not load this verification just now.',
-          onRetry: () => ref.invalidate(
-            institutionVerificationStandingProvider(widget.institutionId),
+        loading: () => const AuraProductState(state: ProductState.loading),
+        // A failure to LOAD is not a failure of the verification, so this is
+        // retryable and says so. C0 — state what is true and let the authority
+        // decide what that looks like.
+        error: (e, _) => AuraProductState(
+          state: ProductState.retryableError,
+          headline: 'We could not load this verification',
+          detail: e is InstitutionVerificationException ? e.message : null,
+          action: AuraSecondaryButton(
+            label: ProductLabels.of(ProductAction.retry),
+            onPressed: () => ref.invalidate(
+              institutionVerificationStandingProvider(widget.institutionId),
+            ),
+            icon: Icons.refresh_rounded,
           ),
         ),
         data: _body,
@@ -609,7 +619,7 @@ class _StandingChip extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: colour.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
           ),
           child: Text(label, style: AuraText.small),
         ),
@@ -633,7 +643,7 @@ class _Banner extends StatelessWidget {
       padding: const EdgeInsets.all(AuraSpace.md),
       decoration: BoxDecoration(
         color: colour.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AuraRadius.sm),
       ),
       child: Text(message, style: AuraText.body),
     );
@@ -653,29 +663,6 @@ class _SeparateProofsNote extends StatelessWidget {
   }
 }
 
-class _LoadFailure extends StatelessWidget {
-  const _LoadFailure({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AuraSpace.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(message, style: AuraText.body),
-            const SizedBox(height: AuraSpace.md),
-            AuraSecondaryButton(label: 'Try again', onPressed: onRetry),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 /// The closed taxonomy, offered as a choice rather than a free-text box.
 /// §1.1 — "expandable later only by deliberate decision, never open/free-text".
@@ -859,8 +846,8 @@ class _MigrationCard extends StatelessWidget {
             if (date != null)
               Text(
                 elapsed
-                    ? 'The date for this was ${_formatted(date)}.'
-                    : 'Please complete this by ${_formatted(date)}.',
+                    ? 'The date for this was ${AuraTemporal.absolute(ProductTime(date, TimeEvent.scheduled))}.'
+                    : 'Please complete this by ${AuraTemporal.absolute(ProductTime(date, TimeEvent.scheduled))}.',
                 style: AuraText.body,
               ),
             const SizedBox(height: AuraSpace.sm),
@@ -890,14 +877,4 @@ class _MigrationCard extends StatelessWidget {
     );
   }
 
-  /// An unambiguous date. Not a locale-shortened one that reads as a different
-  /// day in another country, and not a relative phrase that ages.
-  static String _formatted(DateTime d) {
-    const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
-    ];
-    final local = d.toLocal();
-    return '${local.day} ${months[local.month - 1]} ${local.year}';
-  }
 }

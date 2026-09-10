@@ -424,6 +424,11 @@ const Map<String, InstitutionRoutePolicy> kInstitutionSectionPolicy = {
   // and proving ownership of its domains.
   'edit-profile': InstitutionRoutePolicy.admin,
   'domains': InstitutionRoutePolicy.admin,
+  // Establishing that the institution is real and that this person may speak
+  // for it. ADMIN, not adminOrSpeaker: supplying evidence and answering a
+  // reviewer is configuration of the institution's standing, not an act of
+  // speaking in its voice.
+  'verification': InstitutionRoutePolicy.admin,
 
   // Speaking in the institution's voice, or administering what it says.
   'announcements': InstitutionRoutePolicy.adminOrSpeaker,

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/product/product_language.dart';
+import '../../../core/product/product_state.dart';
+import '../../../core/product/product_state_view.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_space.dart';
@@ -36,24 +39,27 @@ class InstitutionVerificationReviewArea extends ConsumerWidget {
     final queue = ref.watch(institutionVerificationQueueProvider);
 
     return queue.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => AuraErrorState(
-        title: 'The queue could not be loaded',
-        // The service's own words where it gave any. A reviewer told "try
-        // again" cannot tell a refusal from an outage.
-        body: e is InstitutionVerificationException
-            ? e.message
-            : 'The verification queue could not be loaded.',
+      loading: () => const AuraProductState(state: ProductState.loading),
+      // C0 — say what is TRUE and let the state authority decide how that
+      // looks and whether retry is an honest offer.
+      error: (e, _) => AuraProductState(
+        state: ProductState.retryableError,
+        headline: 'The queue could not be loaded',
+        // The service's own words where it gave any. A reviewer told only to
+        // try again cannot tell a refusal from an outage.
+        detail: e is InstitutionVerificationException ? e.message : null,
         action: AuraSecondaryButton(
-          label: 'Try again',
+          label: ProductLabels.of(ProductAction.retry),
           onPressed: () => ref.invalidate(institutionVerificationQueueProvider),
+          icon: Icons.refresh_rounded,
         ),
       ),
       data: (q) {
         if (q.isEmpty) {
-          return const AuraEmptyState(
-            title: 'Nothing waiting',
-            body: 'No institution verification is currently in review.',
+          return const AuraProductState(
+            state: ProductState.empty,
+            headline: 'Nothing waiting',
+            detail: 'No institution verification is currently in review.',
           );
         }
         return ListView(
@@ -185,7 +191,7 @@ class _ExistenceCaseCardState extends ConsumerState<_ExistenceCaseCard> {
               TextField(
                 controller: _reason,
                 minLines: 2,
-                maxLines: 4,
+                maxLines: null,
                 decoration: const InputDecoration(
                   labelText: 'Reason, or what is still needed',
                   helperText:
@@ -315,7 +321,7 @@ class _AuthorityCaseCardState extends ConsumerState<_AuthorityCaseCard> {
               TextField(
                 controller: _reason,
                 minLines: 2,
-                maxLines: 4,
+                maxLines: null,
                 decoration: const InputDecoration(
                   labelText: 'Reason, or what is still needed',
                   helperText:

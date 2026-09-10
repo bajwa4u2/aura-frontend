@@ -29,10 +29,20 @@ void main() {
   test('the reviewer queue notice does NOT land on the member surface', () {
     // Same family, different person, different place. Collapsing them would
     // send a reviewer to their own verification instead of the queue.
-    expect(
-      identityVerificationDestination('IDENTITY_VERIFICATION_SUBMITTED'),
-      '/admin/identity-review',
-    );
+    //
+    // THIS ASSERTED `/admin/identity-review`, WHICH THE ROUTER HAS NEVER
+    // DECLARED. The intent was right and the value was a phantom: the test
+    // pinned the destination apart from the member surface, and nothing
+    // checked that the place it pinned it to existed. A reviewer tapping "a
+    // verification is waiting for review" was sent nowhere.
+    //
+    // The Identity lane lives inside `/admin/integrity`.
+    final destination =
+        identityVerificationDestination('IDENTITY_VERIFICATION_SUBMITTED');
+    expect(destination, '/admin/integrity');
+    expect(destination, isNot('/verify-identity'));
+    // The phantom specifically, so it cannot come back.
+    expect(destination, isNot('/admin/identity-review'));
   });
 
   test('it claims nothing outside its own family', () {
