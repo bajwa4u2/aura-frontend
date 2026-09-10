@@ -11,6 +11,8 @@ import 'app/route_classification.dart';
 import 'features/admin/areas/discovery_area.dart';
 import 'features/admin/areas/integrity_detail.dart';
 import 'features/admin/areas/identity_review.dart';
+import 'features/admin/areas/institution_verification_review.dart';
+import 'features/admin/domain/operator_routes.dart';
 import 'features/admin/areas/integrity_area.dart';
 import 'features/admin/areas/now_area.dart';
 import 'features/admin/areas/platform_area.dart';
@@ -1942,6 +1944,17 @@ final routerProvider = Provider<GoRouter>((ref) {
                 submissionId: state.pathParameters['id'] ?? '',
               ),
             ),
+          ),
+
+          // INSTITUTION VERIFICATION REVIEW. Beside identity review and for
+          // the same reason: a human is being asked to look at evidence and
+          // decide something consequential. It is a QUEUE rather than a
+          // per-case route because a reviewer arrives wanting the next thing
+          // waiting, not a specific proof id they already know.
+          GoRoute(
+            path: kOperatorInstitutionVerificationRoot,
+            pageBuilder: (_, __) =>
+                _operatorPage(const InstitutionVerificationReviewArea()),
           ),
           GoRoute(
             path: '/admin/integrity/moderation/:id',

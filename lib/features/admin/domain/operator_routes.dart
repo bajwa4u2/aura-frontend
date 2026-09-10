@@ -50,6 +50,16 @@ String operatorSupportRoute(String caseId) =>
 String operatorIdentityReviewRoute(String submissionId) =>
     '/admin/integrity/identity/$submissionId';
 
+/// WHERE INSTITUTION VERIFICATION IS REVIEWED.
+///
+/// A queue root rather than a per-case route: a reviewer arrives wanting the
+/// next thing waiting, not a proof id they already know. Declared here with
+/// every other operator destination so the inventory stays complete -- a route
+/// added without an entry alongside the others does not fail loudly, it takes
+/// a default and the damage surfaces somewhere else.
+const String kOperatorInstitutionVerificationRoot =
+    '/admin/integrity/institution-verification';
+
 /// THE FINANCE DOORWAY.
 ///
 /// Declared here with every other operator destination so it is classifiable
