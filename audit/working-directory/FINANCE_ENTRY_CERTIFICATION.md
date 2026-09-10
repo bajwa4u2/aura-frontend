@@ -319,6 +319,26 @@ distinguishes "signed in with authority" from "signed in without" without anyone
 reading metadata. It falls out of recording the distinction rather than a
 boolean.
 
+### Teardown, and one asymmetry worth recording
+
+Both sides were torn down. They were **not** disposable in the same way, and
+this record does not claim they were: the Aura stack's database was tmpfs and
+died with its container, while the Finance instance sat on a named volume that
+PERSISTS — its throwaway book, principal and revoked grant outlived the run and
+were removed deliberately at teardown. The Finance workstream reported that its
+first removal attempt failed (`volume is in use`, because the stack had been
+stopped rather than brought down) and that its record briefly claimed the volume
+was gone while it was not; corrected there, and noted here so the two records
+agree on a joint fact.
+
+Attributed to the Finance workstream rather than claimed here: production
+Finance now holds **two** audit events — the canonical `book.bootstrapped`, and
+an `auth.callback DENIED` from their own diagnostic probe of the live origin
+while finding the `returnTo` defect. A callback arriving with no state is
+malformed rather than ordinary, so recording it is correct; they disclosed it
+rather than letting a reader wonder about it months from now. Nothing in this
+run touched production on either side.
+
 ### Named deviation on the revocation
 
 Finance executed it through `FinanceGrantService.revoke` from an operator shell
