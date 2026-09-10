@@ -524,6 +524,80 @@ workflows:
           fi
           echo "  NATIVE VERDICT=PASSED" | tee -a certification/run-manifest.txt
 
+      # ── THE MANDATORY iPAD REVIEWER JOURNEY ──────────────────────────────
+      #
+      # Apple reviews on an iPad. This lane has only ever selected an iPhone,
+      # so every prior "iOS is certified" statement in this repository was
+      # silent about the geometry a reviewer actually uses — and a tablet is
+      # not a big phone. This estate has shipped surfaces that composed
+      # correctly at 390 and at 1440 and were adrift at 1024.
+      #
+      # PLACED BEFORE the iPhone suites deliberately. Those end with an explicit
+      # non-zero exit for FAILED and for INCOMPLETE, which would stop the
+      # workflow and silently cost the mandatory journey. The mandatory thing
+      # runs first.
+      #
+      # Captures are taken at the DEVICE level with `simctl io`, which is what a
+      # store listing would use, alongside the surface-level captures the test
+      # itself writes — so the evidence says both what was on screen and which
+      # widget tree put it there.
+      - name: Certify the REVIEWER JOURNEY on an iPad
+        script: |
+          set -uo pipefail
+          mkdir -p certification/ipad
+
+          # One line on purpose: a YAML literal block cannot contain lines at
+          # column 0, and a multi-line heredoc here silently breaks the file.
+          IPAD=$(xcrun simctl list devices available --json | python3 -c "import json,sys;d=json.load(sys.stdin)['devices'];c=[(r,x['name'],x['udid']) for r,v in d.items() if 'iOS' in r for x in v if x.get('isAvailable') and 'iPad' in x['name']];print('') if not c else print(*sorted(c)[-1][::-1][0:1], sorted(c)[-1][1].replace(' ','_'), sorted(c)[-1][0].split('.')[-1])")
+          if [ -z "$IPAD" ]; then
+            echo "IPAD=EVIDENCE_LIMITED no iPad simulator on this image" | tee certification/ipad/RESULT.txt
+            exit 0
+          fi
+          set -- $IPAD
+          UDID="$1"; NAME="$2"; RUNTIME="$3"
+          echo "iPad: $NAME  runtime=$RUNTIME  udid=$UDID" | tee certification/ipad/RESULT.txt
+
+          xcrun simctl boot "$UDID" 2>/dev/null || true
+          xcrun simctl bootstatus "$UDID" -b || true
+
+          # Booted and visible to Flutter are two different facts; this lane has
+          # already been burned by asserting the first and needing the second.
+          VISIBLE=0
+          for _ in $(seq 1 30); do
+            if flutter devices --machine 2>/dev/null | grep -q "$UDID"; then VISIBLE=1; break; fi
+            sleep 2
+          done
+          if [ "$VISIBLE" -ne 1 ]; then
+            echo "IPAD=EVIDENCE_LIMITED simulator booted but never appeared to Flutter" | tee -a certification/ipad/RESULT.txt
+            flutter devices --machine || true
+            exit 1
+          fi
+
+          xcrun simctl io "$UDID" screenshot certification/ipad/device_00_before.png || true
+
+          set +e
+          flutter test integration_test/ipad_reviewer_journey_test.dart               -d "$UDID" --reporter expanded 2>&1 | tee certification/ipad/journey.log
+          rc=${PIPESTATUS[0]}
+          set -e
+
+          xcrun simctl io "$UDID" screenshot certification/ipad/device_01_after.png || true
+
+          # A green exit with no assertions is the failure mode this repository
+          # keeps rediscovering, so the count is read out of the run rather than
+          # inferred from the exit code.
+          RAN=$(grep -cE "^[0-9]{2}:[0-9]{2} \+[0-9]+" certification/ipad/journey.log || true)
+          {
+            echo "exit=$rc"
+            echo "assertion_lines=$RAN"
+            if [ "$rc" -eq 0 ] && [ "$RAN" -gt 0 ]; then
+              echo "IPAD=PASS"
+            else
+              echo "IPAD=FAILED"
+            fi
+          } | tee -a certification/ipad/RESULT.txt
+
+          [ "$rc" -eq 0 ] || exit 1
+
       - name: Certify — every suite iOS can run
         script: |
           set -uo pipefail
@@ -638,6 +712,7 @@ workflows:
 
     artifacts:
       - certification/*
+      - certification/ipad/*
       - certification/native-tests.xcresult
 
   # ANDROID AND WEB — the two platforms the iOS lane structurally cannot cover.
