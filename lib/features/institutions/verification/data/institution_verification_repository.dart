@@ -193,6 +193,51 @@ enum AuthorityEvidenceKind {
   }
 }
 
+/// THE 120-DAY MIGRATION STANDING, for this person at this institution.
+///
+/// `NOT_ANCHORED` is the state worth being careful about and the one a client
+/// is most likely to get wrong: no notice has been DELIVERED, so nothing is
+/// running. Rendering a countdown from today would invent a deadline against
+/// somebody who was never told.
+class MigrationPosture {
+  const MigrationPosture({
+    required this.reason,
+    required this.deadlineAt,
+    required this.daysRemaining,
+    required this.authorityGovernanceBlocked,
+    required this.institutionVoiceBlocked,
+  });
+
+  /// NOT_ANCHORED | SATISFIED | IN_WINDOW | WINDOW_ELAPSED
+  final String reason;
+
+  /// §6 — the specific date, never relative phrasing. Null while unanchored.
+  final DateTime? deadlineAt;
+  final int? daysRemaining;
+
+  /// §3.2 — blocked from the moment the notice lands.
+  final bool authorityGovernanceBlocked;
+
+  /// §3.3 — blocked only once the window has run out. Day-to-day work
+  /// continues for the whole window, deliberately.
+  final bool institutionVoiceBlocked;
+
+  bool get running => reason == 'IN_WINDOW' || reason == 'WINDOW_ELAPSED';
+
+  static MigrationPosture fromJson(Map<String, dynamic>? json) {
+    final j = json ?? const <String, dynamic>{};
+    return MigrationPosture(
+      // An unreadable posture is treated as NOT running rather than as a
+      // deadline nobody can see the date of.
+      reason: (j['reason'] ?? 'NOT_ANCHORED').toString(),
+      deadlineAt: DateTime.tryParse(j['deadlineAt']?.toString() ?? ''),
+      daysRemaining: j['daysRemaining'] is int ? j['daysRemaining'] as int : null,
+      authorityGovernanceBlocked: j['authorityGovernanceBlocked'] == true,
+      institutionVoiceBlocked: j['institutionVoiceBlocked'] == true,
+    );
+  }
+}
+
 /// One proof's standing, and what this person may do about it right now.
 class ProofStanding<S> {
   const ProofStanding({
@@ -231,6 +276,7 @@ class InstitutionVerificationStanding {
     required this.authority,
     required this.authorityEvidenceKind,
     required this.menu,
+    required this.migration,
   });
 
   final String institutionId;
@@ -253,6 +299,9 @@ class InstitutionVerificationStanding {
 
   /// The whole §2.7 menu. Always offered, never narrowed to a suggestion.
   final List<AuthorityEvidenceKind> menu;
+
+  /// The 120-day standing, delivered with everything else.
+  final MigrationPosture migration;
 
   static InstitutionVerificationStanding fromJson(Map<String, dynamic> json) {
     final existence = (json['existence'] as Map?)?.cast<String, dynamic>() ?? {};
@@ -289,6 +338,9 @@ class InstitutionVerificationStanding {
           .map(AuthorityEvidenceKind.parse)
           .where((k) => k != AuthorityEvidenceKind.unknown)
           .toList(growable: false),
+      migration: MigrationPosture.fromJson(
+        (json['migration'] as Map?)?.cast<String, dynamic>(),
+      ),
     );
   }
 }

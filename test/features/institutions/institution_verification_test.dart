@@ -231,6 +231,67 @@ void main() {
       );
     });
   });
+
+  group('the 120-day deadline is shown only when one is running', () {
+    MigrationPosture posture(Map<String, dynamic>? json) =>
+        MigrationPosture.fromJson(json);
+
+    test('NOT_ANCHORED IS NOT A COUNTDOWN', () {
+      // No notice has been DELIVERED, so nothing runs. A card that appeared as
+      // soon as a migration record existed would show a deadline to somebody
+      // who was never told anything.
+      final p = posture({
+        'reason': 'NOT_ANCHORED',
+        'deadlineAt': null,
+        'daysRemaining': null,
+        'authorityGovernanceBlocked': false,
+        'institutionVoiceBlocked': false,
+      });
+      expect(p.running, isFalse);
+      expect(p.deadlineAt, isNull);
+    });
+
+    test('IN_WINDOW RUNS, AND CARRIES THE DATE', () {
+      final p = posture({
+        'reason': 'IN_WINDOW',
+        'deadlineAt': '2027-01-08T09:00:00.000Z',
+        'daysRemaining': 110,
+        'authorityGovernanceBlocked': true,
+        'institutionVoiceBlocked': false,
+      });
+      expect(p.running, isTrue);
+      // §6 -- the specific date, which the client can only show if given it.
+      expect(p.deadlineAt, DateTime.parse('2027-01-08T09:00:00.000Z'));
+      // §3.2/§3.3 -- two blocks at two different moments, never collapsed.
+      expect(p.authorityGovernanceBlocked, isTrue);
+      expect(p.institutionVoiceBlocked, isFalse);
+    });
+
+    test('SATISFIED IS NOT RUNNING, whatever the date says', () {
+      final p = posture({
+        'reason': 'SATISFIED',
+        'deadlineAt': '2026-01-01T00:00:00.000Z',
+        'authorityGovernanceBlocked': false,
+        'institutionVoiceBlocked': false,
+      });
+      // §3.4 -- restoration is immediate on verification. A person who has
+      // finished must not still be shown a deadline that has passed.
+      expect(p.running, isFalse);
+    });
+
+    test('AN UNREADABLE POSTURE IS NOT A DEADLINE', () {
+      // Failing towards "no deadline" is the safe direction: the alternative
+      // is telling somebody they are out of time on the strength of a payload
+      // this build could not read.
+      for (final raw in [null, <String, dynamic>{}]) {
+        final p = posture(raw);
+        expect(p.running, isFalse);
+        expect(p.reason, 'NOT_ANCHORED');
+        expect(p.authorityGovernanceBlocked, isFalse);
+        expect(p.institutionVoiceBlocked, isFalse);
+      }
+    });
+  });
 }
 
 /// Answers every request with a failure, so refusal mapping can be driven

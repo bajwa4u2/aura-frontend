@@ -127,6 +127,10 @@ class _InstitutionVerificationScreenState
                 infoRequested: s.authority.infoRequested,
                 child: _authorityActions(s),
               ),
+              if (s.migration.running) ...[
+                const SizedBox(height: AuraSpace.lg),
+                _MigrationCard(posture: s.migration),
+              ],
               const SizedBox(height: AuraSpace.lg),
               const _SeparateProofsNote(),
             ],
@@ -821,5 +825,79 @@ class _EvidenceListState extends State<_EvidenceList> {
         ),
       ],
     );
+  }
+}
+
+/// THE 120-DAY DEADLINE, SHOWN ONLY WHEN ONE IS ACTUALLY RUNNING.
+///
+/// Rendered from `running`, which is false until a notice has been DELIVERED.
+/// A card that appeared as soon as a migration record existed would show a
+/// countdown to somebody who was never told anything — the exact thing §6's
+/// delivery anchor exists to prevent, reintroduced at the last layer.
+///
+/// The DATE is shown, never "in 43 days". §6: "the specific deadline date is
+/// always shown, computed from each population's own anchor — never relative
+/// phrasing." Relative phrasing also drifts: a screen left open overnight
+/// starts lying.
+class _MigrationCard extends StatelessWidget {
+  const _MigrationCard({required this.posture});
+
+  final MigrationPosture posture;
+
+  @override
+  Widget build(BuildContext context) {
+    final elapsed = posture.reason == 'WINDOW_ELAPSED';
+    final date = posture.deadlineAt;
+    return AuraCard(
+      child: Padding(
+        padding: const EdgeInsets.all(AuraSpace.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('Completing your verification', style: AuraText.title),
+            const SizedBox(height: AuraSpace.xs),
+            if (date != null)
+              Text(
+                elapsed
+                    ? 'The date for this was ${_formatted(date)}.'
+                    : 'Please complete this by ${_formatted(date)}.',
+                style: AuraText.body,
+              ),
+            const SizedBox(height: AuraSpace.sm),
+            // PLAIN AND SPECIFIC about the actual consequence, and non-punitive
+            // throughout: §6 forbids both vagueness and any language implying
+            // wrongdoing. Nothing here says the person did something wrong,
+            // because they did not -- the standard changed.
+            Text(
+              elapsed
+                  ? 'Until this is complete you cannot post as this institution, '
+                      'and you cannot transfer ownership or change who represents '
+                      'it. The institution, its content, its members and its '
+                      'history are unaffected.'
+                  : 'Until this is complete you cannot transfer ownership or '
+                      'change who represents this institution. Posting as the '
+                      'institution and everyday work carry on as normal.',
+              style: AuraText.body,
+            ),
+            const SizedBox(height: AuraSpace.sm),
+            const Text(
+              'Nothing is deleted and no past post stops being yours.',
+              style: AuraText.small,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// An unambiguous date. Not a locale-shortened one that reads as a different
+  /// day in another country, and not a relative phrase that ages.
+  static String _formatted(DateTime d) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December',
+    ];
+    final local = d.toLocal();
+    return '${local.day} ${months[local.month - 1]} ${local.year}';
   }
 }
