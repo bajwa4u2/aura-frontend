@@ -100,6 +100,7 @@ import 'features/institutions/units/institution_units_screen.dart';
 import 'features/institutions/profile/institution_profile_screen.dart';
 import 'features/institutions/profile/institution_edit_profile_screen.dart';
 import 'features/institutions/verification/institution_request_verification_screen.dart';
+import 'features/institutions/verification/presentation/institution_verification_screen.dart';
 import 'features/institutions/announcements/institution_announcements_screen.dart';
 import 'features/institutions/announcements/institution_announcement_composer.dart';
 import 'features/institutions/presentation/institution_spaces_screen.dart';
@@ -2160,6 +2161,28 @@ final routerProvider = Provider<GoRouter>((ref) {
               address: state.pathParameters['institutionId'],
               builder: (institutionId) =>
                   InstitutionDomainsScreen(institutionId: institutionId),
+            ),
+          ),
+
+          // VERIFICATION — the institution's own three-proof standing.
+          //
+          // Inside the institution's address space, not a second workspace,
+          // because verifying the organisation is something you do WHILE
+          // administering it. The screen renders its affordances from the
+          // server's projection of the frozen transition table, so this route
+          // can never offer a step the backend would refuse.
+          GoRoute(
+            path: '/institution/:institutionId/verification',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'verification',
+            ),
+            builder: (_, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  InstitutionVerificationScreen(institutionId: institutionId),
             ),
           ),
 
