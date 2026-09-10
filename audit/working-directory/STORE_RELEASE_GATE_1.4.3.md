@@ -28,8 +28,37 @@ The order is fixed and is not the intuitive one:
     2. deploy the web client      (first surface on the new contract)
     3. submit the store builds    (Apple, Microsoft; Play separately — see G6)
 
-The backend accepts the old client's registration as well as the new one, so
-step 1 is safe on its own. The reverse order is not.
+**CORRECTION — this document asserted the opposite and was wrong.** It said the
+backend accepts the old client's registration as well as the new one, and that
+step 1 was therefore safe on its own. That was never verified. Checked directly:
+
+    v1.4.2 client sends   email, password, handle, displayName,
+                          firstName, lastName, termsAccepted, termsAcceptedVersion
+
+    RegisterDto requires  …the same, PLUS dateOfBirth and jurisdiction,
+                          both @IsString() with no @IsOptional()
+
+So deploying the backend **breaks NEW-ACCOUNT REGISTRATION for every client
+still on 1.4.2**, with a 400 naming the two missing fields. The reverse order is
+worse — it breaks registration on the new client instead — but neither order is
+free, and saying one of them was cost nothing was the error.
+
+WHAT DOES NOT BREAK, and it is most of the product: existing members stay signed
+in, sign-in itself is untouched, and every other surface is unaffected. `LoginDto`
+does not carry the new fields, and every certification run today signed in
+against the merged backend with email and password alone.
+
+WHAT THE WINDOW ACTUALLY IS, per surface:
+
+    Web            minutes — the client deploy follows the backend immediately
+    Windows        until the Microsoft submission clears
+    iOS            until Apple review clears
+    Android        UNBOUNDED — Play production access is not granted (G6)
+
+Founder ruling, 2026-09-10: the 1.4.2 client is not performing as intended, every
+resolution is in 1.4.3, and it is being replaced regardless — so this window is
+accepted rather than engineered around. Recorded as a known effect with a real
+cost, not as an absence of one.
 
 ## G2 — Both repositories are pushed
 
