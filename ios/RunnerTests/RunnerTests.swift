@@ -469,14 +469,30 @@ final class StorefrontTestAuthorityTests: XCTestCase {
       }
       let source = StoreKitStorefrontSource()
 
-      // Sessions are held for the duration: a deallocated SKTestSession stops
-      // overriding, which would silently turn every later read into a read of
-      // nothing in particular.
-      var held: [SKTestSession] = []
+      // ONE SESSION, RE-POINTED — not a new session per territory.
+      //
+      // This is a correction to the method, not to the claim. The previous
+      // version created a FRESH SKTestSession for each read and held them all
+      // alive at once, on the reasoning that a deallocated session stops
+      // overriding. But several simultaneous sessions is not a supported
+      // arrangement, and it introduced a second explanation the test could not
+      // then tell apart from the one it was hunting: if the first session keeps
+      // winning, every later read reports USA whether or not the product's read
+      // is stale — which is exactly the signature the assertion below treats as
+      // proof of staleness.
+      //
+      // Certification #16 hit precisely that: four territories, all reporting
+      // USA, and the failure message asserting a stuck value. It may be right.
+      // It was not established, and this repository has already asserted and
+      // retracted this same claim twice on evidence that had more than one
+      // reading.
+      //
+      // A single session, re-pointed, has one explanation. If a storefront
+      // change through it is still read as USA, the value IS stuck and the
+      // assertion below is earned.
+      let session = try makeSession()
       func read(_ territory: String) async throws -> String? {
-        let session = try makeSession()
         session.storefront = territory
-        held.append(session)
         return await source.currentCountryCode()
       }
 
