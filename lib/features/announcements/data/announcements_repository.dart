@@ -195,6 +195,36 @@ class AnnouncementsRepository {
     _invalidateCache();
   }
 
+  /// WHAT THE SERVER ACTUALLY DID, when the client did not find out.
+  ///
+  /// `TIMEOUT != FAILURE` (founder freeze, 2026-09-10). A publish request that
+  /// times out has an UNKNOWN outcome, not a failed one — on 2026-09-10 the
+  /// founder's client gave up after the server had already published AND
+  /// notified 32 people, was told publishing failed, retried, and produced a
+  /// duplicate plus a second round of notifications.
+  ///
+  /// `GET /announcements/:slug` filters to `status: PUBLISHED`, so it answers
+  /// this question exactly: a hit means published, a 404 means not. Nothing new
+  /// had to be built on the server to reconcile.
+  Future<PublicationOutcome> reconcilePublication(String slug) async {
+    final s = slug.trim();
+    if (s.isEmpty) return PublicationOutcome.unknown;
+    try {
+      final res = await _dio.get('/announcements/$s');
+      return _unwrapMap(res.data).isEmpty
+          ? PublicationOutcome.notPublished
+          : PublicationOutcome.published;
+    } on DioException catch (e) {
+      final code = e.response?.statusCode;
+      // A 404 is an ANSWER: the row is not published. Anything else leaves the
+      // question open, and an open question must never be reported as a no.
+      if (code == 404) return PublicationOutcome.notPublished;
+      return PublicationOutcome.unknown;
+    } catch (_) {
+      return PublicationOutcome.unknown;
+    }
+  }
+
   Future<void> unpublish(String id) async {
     await _dio.post('/admin/announcements/$id/unpublish');
     _invalidateCache();
@@ -229,4 +259,20 @@ class AnnouncementsRepository {
     _listInFlight = null;
     _pinnedInFlight = null;
   }
+}
+
+/// The three answers a publish attempt can have. UNKNOWN is not a failure.
+enum PublicationOutcome { published, notPublished, unknown }
+
+/// Did this error leave the outcome UNKNOWN?
+///
+/// No response at all — timeout, connection error — obviously did. So did a
+/// 5xx: the publish path commits the row and THEN fans out, so a server error
+/// can be raised after the announcement is already public. Only a 4xx is a
+/// definite pre-commit refusal, and only that is safely retryable as a failure.
+bool publishOutcomeIsUnknown(Object error) {
+  if (error is! DioException) return true;
+  final code = error.response?.statusCode;
+  if (code == null) return true;
+  return code >= 500;
 }

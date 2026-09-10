@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
+import '../../../core/composition/content_intake.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/media/media_acquisition.dart';
 import '../../../core/net/dio_provider.dart';
@@ -141,24 +142,45 @@ class _IdentityVerificationScreenState
     await _stage(kind, resolution);
   }
 
-  Future<void> _stage(IdentityEvidenceKind kind, dynamic resolution) async {
+  /// TYPED, not `dynamic`.
+  ///
+  /// This took `dynamic` and reached `resolution.rejectionMessage` through it,
+  /// so the compiler could not check that a rejection carries a message at all
+  /// — and a rename would have failed at runtime, in front of somebody, as a
+  /// screen that does nothing. The web picker defect of 2026-09-10 was silence
+  /// of exactly that shape, and untyped plumbing is how silence survives.
+  Future<void> _stage(IdentityEvidenceKind kind, IntakeResolution? resolution) async {
+    // `null` means CANCELLED and nothing else. Every failure path now returns a
+    // rejection carrying a reason, so silence here can only ever mean the
+    // person changed their mind.
     if (resolution == null || !mounted) return;
 
     final attachment = resolution.attachment;
     if (attachment == null) {
-      setState(() => _error = resolution.rejectionMessage as String?);
+      setState(
+        () => _error = resolution.rejectionMessage ??
+            'That file could not be added. Try another.',
+      );
       return;
     }
-    final bytes = attachment.bytes as Uint8List?;
+    final bytes = attachment.bytes;
     if (bytes == null) {
       setState(() => _error = 'That file could not be read. Try another.');
       return;
     }
 
+    // `attachment.fileName`, NOT `attachment.name`.
+    //
+    // `Attachment` has no `name`. This line read one through a `dynamic`
+    // resolution, so it compiled, shipped, and threw NoSuchMethodError on EVERY
+    // successful pick — unhandled, because `_pick` has no catch. The person
+    // chose their document and the screen did nothing at all: no preview, no
+    // error, no upload. That is the defect the founder reported on 2026-09-10,
+    // and typing this method is what surfaced it.
     final pending = _PendingEvidence(
       kind: kind,
       bytes: bytes,
-      name: (attachment.name as String?) ?? 'evidence',
+      name: attachment.fileName ?? 'evidence',
     );
     setState(() {
       _staged[kind] = pending;
@@ -174,7 +196,7 @@ class _IdentityVerificationScreenState
         dio: ref.read(dioProvider),
         bytes: bytes,
         fileName: pending.name,
-        mimeType: (attachment.mimeType as String?) ?? 'image/jpeg',
+        mimeType: attachment.mimeType ?? 'image/jpeg',
         kind: 'IMAGE',
         source: 'UPLOAD',
       );

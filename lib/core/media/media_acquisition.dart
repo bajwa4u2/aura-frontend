@@ -32,11 +32,13 @@ library;
 
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_picker_android/image_picker_android.dart';
 import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
 
 import '../composition/content_intake.dart';
+import '../composition/attachment_lifecycle.dart';
 import 'attachment.dart';
 
 /// How many items one acquisition may contribute.
@@ -244,6 +246,25 @@ Future<IntakeResolution?> acquireSingleImage({
   int? imageQuality,
   ImagePicker? picker,
 }) async {
+  // THE WEB TAKES A DIFFERENT PICKER, AND THIS IS NOT A PREFERENCE.
+  //
+  // Production defect, 2026-09-10, reported by the founder and then reproduced
+  // deterministically: on Chrome, `image_picker` created its detached
+  // `<input type="file" accept="image/*">`, the person chose a file, and
+  // NOTHING happened — no preview, no error banner, no network call, no console
+  // error. The change never reached Dart, so the whole verification surface was
+  // unusable on the one platform where it is actually shipped.
+  //
+  // `file_picker` with `withData: true` is what the rest of this estate already
+  // uses on the web and it works there — the announcement composer, the
+  // conversation composer and the meeting rooms all acquire through it. Using
+  // the picker that demonstrably works is not a workaround; continuing to use
+  // the one that silently drops the file would be.
+  //
+  // Mobile keeps `image_picker`: it is the path that reaches the OS photo
+  // picker and the camera, and it is not the broken one.
+  if (kIsWeb) return _acquireSingleImageOnWeb();
+
   ensureAndroidPhotoPicker();
   final file = await (picker ?? ImagePicker()).pickImage(
     source: ImageSource.gallery,
@@ -256,6 +277,62 @@ Future<IntakeResolution?> acquireSingleImage({
     source: AttachmentSource.gallery,
   );
   return acquired.resolutions.isEmpty ? null : acquired.resolutions.first;
+}
+
+/// Web image acquisition, where a chosen file NEVER resolves to silence.
+///
+/// `null` means one thing only: the person cancelled. Every other outcome
+/// returns a rejection carrying a reason, because the defect this replaces was
+/// not that acquisition failed — it was that failing and cancelling were
+/// indistinguishable, and both showed nothing at all.
+Future<IntakeResolution?> _acquireSingleImageOnWeb() async {
+  final FilePickerResult? result;
+  try {
+    result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: false,
+      // Required on the web: there is no path to read from afterwards, so a
+      // picker that does not carry the bytes back carries nothing.
+      withData: true,
+    );
+  } catch (_) {
+    return const IntakeResolution.rejected(
+      path: IntakePath.picker,
+      rejection: AttachmentRejection.empty,
+    );
+  }
+
+  // Cancelled. The one legitimate silence.
+  if (result == null || result.files.isEmpty) return null;
+
+  final picked = result.files.first;
+  final bytes = picked.bytes;
+  if (bytes == null || bytes.isEmpty) {
+    return const IntakeResolution.rejected(
+      path: IntakePath.picker,
+      rejection: AttachmentRejection.empty,
+    );
+  }
+
+  // Intake decides what this IS from the bytes. The name is carried so it can
+  // infer when the browser declines to declare a type, which it often does for
+  // images taken off a phone.
+  final acquired = await resolveAcquired(
+    files: [XFile.fromData(bytes, name: picked.name)],
+    remainingSlots: 1,
+    source: AttachmentSource.gallery,
+  );
+
+  if (acquired.resolutions.isEmpty) {
+    // Unreachable today — `resolveAcquired` adds one resolution per admitted
+    // file — but returning null here would resurrect exactly the silence this
+    // function exists to remove, so it refuses instead.
+    return const IntakeResolution.rejected(
+      path: IntakePath.picker,
+      rejection: AttachmentRejection.empty,
+    );
+  }
+  return acquired.resolutions.first;
 }
 
 /// Turn already-selected files into ordered intake resolutions.

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/announcements_repository.dart';
 import '../../../core/product/product_state.dart';
 import '../../../core/product/product_state_view.dart';
 import '../../../config.dart';
@@ -97,6 +98,17 @@ class _AnnouncementEditorScreenState
 
   bool _submitting = false;
   String? _submitError;
+
+  /// A draft that EXISTS on the server but whose publication state this client
+  /// could not confirm. Survives across attempts so a retry reuses it instead
+  /// of creating a second announcement — which is exactly how the founder ended
+  /// up with two live duplicates on 2026-09-10.
+  String? _pendingDraftId;
+
+  /// UNKNOWN OUTCOME, not failure. Rendered differently from `_submitError`
+  /// because "we are checking" and "it did not work" are different facts and
+  /// only one of them invites a retry.
+  String? _uncertainOutcome;
 
   bool _reviewing = false;
   String? _reviewError;
@@ -821,11 +833,16 @@ class _AnnouncementEditorScreenState
     setState(() {
       _submitting = true;
       _submitError = null;
+      _uncertainOutcome = null;
     });
 
     // Held outside the try so a refusal on the publish step can hand the
     // retry the draft that already exists.
-    String? pendingDraftId;
+    //
+    // ANY retry reuses it, not only an eligibility retry. Reusing it solely for
+    // one refusal class is what let a timeout produce a SECOND draft, publish
+    // that too, and notify everybody twice.
+    String? pendingDraftId = reuseDraftId ?? _pendingDraftId;
 
     try {
       if (!_isPlatformMode) {
@@ -855,7 +872,7 @@ class _AnnouncementEditorScreenState
       // An explicit edit target takes precedence over the in-flight draft id:
       // when this screen was opened on an existing announcement, EVERY save is
       // an update to that announcement, including the first one.
-      final reuse = (_editingId ?? reuseDraftId ?? '').trim();
+      final reuse = (_editingId ?? pendingDraftId ?? '').trim();
       // Updating rather than merely re-reading the draft: the person may have
       // adjusted the text while the confirmation sheet was open, and the
       // announcement they publish should be the one on their screen.
@@ -876,9 +893,49 @@ class _AnnouncementEditorScreenState
               mediaIds: mediaIds,
             );
       pendingDraftId = draft.id;
+      _pendingDraftId = draft.id;
 
       if (_publishToAura) {
-        await repo.publish(draft.id);
+        // TIMEOUT != FAILURE.
+        //
+        // Publishing commits the row and THEN fans out to every member, which
+        // on 2026-09-10 took about fifteen seconds. The client stopped waiting,
+        // reported failure, and the founder — reasonably — tried again. Both
+        // attempts had already succeeded: two live duplicates, and 64
+        // notifications to 32 people.
+        //
+        // An attempt that does not return an answer is not an answer. The
+        // canonical server state is consulted before anything is claimed.
+        try {
+          await repo.publish(draft.id);
+        } catch (e) {
+          if (!publishOutcomeIsUnknown(e)) rethrow;
+
+          final outcome = await repo.reconcilePublication(draft.slug);
+          switch (outcome) {
+            case PublicationOutcome.published:
+              // It worked. The RESPONSE was lost, not the publication. Continue
+              // to the success path exactly as if the reply had arrived.
+              break;
+            case PublicationOutcome.notPublished:
+              // A real failure, before the commit. Retryable — and the retry
+              // reuses this draft rather than making a second one.
+              rethrow;
+            case PublicationOutcome.unknown:
+              // Still cannot tell. Say THAT. Claiming failure is what produced
+              // the duplicate; claiming success would be worse.
+              if (mounted) {
+                setState(() {
+                  _uncertainOutcome =
+                      'We could not confirm whether this was published. Nothing '
+                      'has been sent twice. Open Announcements to check before '
+                      'trying again.';
+                  _submitError = null;
+                });
+              }
+              return;
+          }
+        }
       }
 
       if (_pinNotice) {
@@ -1783,6 +1840,19 @@ class _AnnouncementEditorScreenState
               Text(
                 _submitError!,
                 style: const TextStyle(color: Colors.redAccent),
+              ),
+            ],
+            // UNKNOWN_OUTCOME != FAILURE_COPY.
+            //
+            // Rendered separately and NOT in the failure colour, because the
+            // two say different things to the person reading them. Red text
+            // saying publishing failed is an instruction to try again — and
+            // trying again is precisely what turned one announcement into two.
+            if ((_uncertainOutcome ?? '').trim().isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Text(
+                _uncertainOutcome!,
+                style: const TextStyle(color: Color(0xFFB58900)),
               ),
             ],
             // WHY PUBLISH IS OFF, WHERE IT CAN ACTUALLY BE READ.

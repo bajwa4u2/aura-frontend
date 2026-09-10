@@ -236,6 +236,7 @@ class _OperatorShellState extends ConsumerState<OperatorShell> {
                           _OperatorRail(
                             areas: areas,
                             current: current,
+                            authority: authority,
                             expanded: isDesktop,
                           ),
                         // The same content measure every other realm uses.
@@ -344,11 +345,18 @@ class _OperatorRail extends StatelessWidget {
   const _OperatorRail({
     required this.areas,
     required this.current,
+    required this.authority,
     required this.expanded,
   });
 
   final List<OperatorArea> areas;
   final OperatorArea current;
+
+  /// Carried so destinations OUTSIDE the console's own path space can be gated
+  /// on the same authority the areas are. Announcements lives at
+  /// `/announcements`, so it is not an area and cannot be filtered by
+  /// `visibleFor`.
+  final OperatorAuthority authority;
   final bool expanded;
 
   @override
@@ -385,6 +393,26 @@ class _OperatorRail extends StatelessWidget {
               selected: area == current,
               expanded: expanded,
             ),
+          // ANNOUNCEMENTS — reachable from the console that operates them.
+          //
+          // Platform announcements are written, published, pinned and withdrawn
+          // by an operator holding ANNOUNCEMENTS_WRITE, and until 2026-09-10
+          // the console offered no way to reach them. `routes.json` advertised
+          // `/admin/communications`, which had never been built, so the founder
+          // went looking there, found nothing, and could not pin the 1.4.3
+          // release announcement.
+          //
+          // It is NOT an OperatorArea, for the same reason Finance is not: the
+          // surface lives at `/announcements`, outside the console's own path
+          // space, and an area is defined by owning a `/admin/*` route. Adding
+          // a fake `/admin/*` alias would have put the phantom route back, this
+          // time with a screen behind it.
+          //
+          // Gated on ANNOUNCEMENTS_READ — the same authority the backend
+          // requires — so an operator without it sees nothing rather than a
+          // door that refuses.
+          _AnnouncementsRailItem(authority: authority, expanded: expanded),
+
           // THE FINANCE DOORWAY, and the reason it is last and separate.
           //
           // Finance is not an operator area. It renders only when Finance
@@ -511,6 +539,38 @@ class _RailItem extends StatelessWidget {
 ///
 /// FAILS CLOSED. Unknown, loading, errored and unauthenticated all render
 /// nothing at all.
+/// The route platform announcements actually live at.
+///
+/// Deliberately NOT under `/admin`. The console reaches out to it rather than
+/// claiming it, because inventing `/admin/announcements` would recreate the
+/// phantom-route problem this fix exists to close.
+const String kAnnouncementsDestinationPath = '/announcements';
+
+class _AnnouncementsRailItem extends StatelessWidget {
+  const _AnnouncementsRailItem({required this.authority, required this.expanded});
+
+  final OperatorAuthority authority;
+  final bool expanded;
+
+  @override
+  Widget build(BuildContext context) {
+    // The same bit the backend enforces on every announcement write. An
+    // operator without it is not shown a door that would refuse them.
+    if (!authority.canAny(const [OperatorCapability.announcementsRead])) {
+      return const SizedBox.shrink();
+    }
+    final path = GoRouterState.of(context).uri.path;
+    return _RailItem(
+      icon: Icons.campaign_rounded,
+      label: 'Announcements',
+      path: kAnnouncementsDestinationPath,
+      selected: path == kAnnouncementsDestinationPath ||
+          path.startsWith('$kAnnouncementsDestinationPath/'),
+      expanded: expanded,
+    );
+  }
+}
+
 class _FinanceRailItem extends ConsumerWidget {
   const _FinanceRailItem({required this.expanded});
 

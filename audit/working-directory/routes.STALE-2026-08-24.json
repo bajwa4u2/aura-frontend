@@ -1,0 +1,1559 @@
+[
+ {
+  "path": "/",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "PublicHomeScreen"
+ },
+ {
+  "path": "/auth",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": false,
+  "redirect_only": true,
+  "has_redirect": true,
+  "screen": null
+ },
+ {
+  "path": "/public",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "PublicHomeScreen"
+ },
+ {
+  "path": "/mission",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "MissionScreen"
+ },
+ {
+  "path": "/white-paper",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "WhitePaperScreen"
+ },
+ {
+  "path": "/founder",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "FounderMessageScreen"
+ },
+ {
+  "path": "/privacy",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "PrivacyPolicyScreen"
+ },
+ {
+  "path": "/terms",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "TermsScreen"
+ },
+ {
+  "path": "/child-safety",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "ChildSafetyScreen"
+ },
+ {
+  "path": "/safety",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": false,
+  "redirect_only": true,
+  "has_redirect": true,
+  "screen": null
+ },
+ {
+  "path": "/trust-safety",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": false,
+  "redirect_only": true,
+  "has_redirect": true,
+  "screen": null
+ },
+ {
+  "path": "/contact",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "ContactScreen"
+ },
+ {
+  "path": "/support/agent",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "SupportAgentScreen"
+ },
+ {
+  "path": "/account-deletion",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AccountDeletionScreen"
+ },
+ {
+  "path": "/investors",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InvestorsHubScreen"
+ },
+ {
+  "path": "/institutions",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionsHubScreen"
+ },
+ {
+  "path": "/institutions/get-started",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionOnboardingWizard"
+ },
+ {
+  "path": "/institutions/sector/:classId",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionSectorScreen"
+ },
+ {
+  "path": "/institutions/:slug",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionDetailScreen"
+ },
+ {
+  "path": "/institutions/:slug/units",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "PublicInstitutionUnitsScreen"
+ },
+ {
+  "path": "/institutions/:slug/units/:unitSlug",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "PublicUnitDetailScreen"
+ },
+ {
+  "path": "/institution/sign-in",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": false,
+  "redirect_only": true,
+  "has_redirect": true,
+  "screen": null
+ },
+ {
+  "path": "/institution/create",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": false,
+  "redirect_only": true,
+  "has_redirect": true,
+  "screen": null
+ },
+ {
+  "path": "/patrons",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "PatronsHubScreen"
+ },
+ {
+  "path": "/supporters",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "SupportersHubScreen"
+ },
+ {
+  "path": "/announcements",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AnnouncementsScreen"
+ },
+ {
+  "path": "/announcements/create",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AnnouncementEditorScope"
+ },
+ {
+  "path": "/announcements/:slug",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AnnouncementDetailScreen"
+ },
+ {
+  "path": "/meet/:slug",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "PublicBookingScreen"
+ },
+ {
+  "path": "/meet/:slug/book",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "BookingRouteEntry"
+ },
+ {
+  "path": "/search",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "_DiscoverSearchEntryPoint"
+ },
+ {
+  "path": "/discover",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "DiscoverScreen"
+ },
+ {
+  "path": "/posts/:id",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "PostDetailScreen"
+ },
+ {
+  "path": "/media/:id/restricted",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "RestrictedMediaScreen"
+ },
+ {
+  "path": "/thread/:id",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "ThreadScreen"
+ },
+ {
+  "path": "/spaces",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "SpacesDiscoveryScreen"
+ },
+ {
+  "path": "/spaces/:slug",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "SpaceDetailScreen"
+ },
+ {
+  "path": "/aura/participation",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "TransparencyScreen"
+ },
+ {
+  "path": "/author/:handle",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": false,
+  "redirect_only": true,
+  "has_redirect": true,
+  "screen": null
+ },
+ {
+  "path": "/u/:handle",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AuthorProfileScreen"
+ },
+ {
+  "path": "/u/:handle/followers",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "FollowersScreen"
+ },
+ {
+  "path": "/u/:handle/following",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "FollowingScreen"
+ },
+ {
+  "path": "/support/:handle",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "SupportFallbackScreen"
+ },
+ {
+  "path": "/login",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AuthScreen"
+ },
+ {
+  "path": "/register",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "RegisterScreen"
+ },
+ {
+  "path": "/forgot-password",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "ForgotPasswordScreen"
+ },
+ {
+  "path": "/reset-password",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "ResetPasswordScreen"
+ },
+ {
+  "path": "/verify-email",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "VerifyEmailScreen"
+ },
+ {
+  "path": "/verify-pending",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "VerifyPendingScreen"
+ },
+ {
+  "path": "/complete-identity",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "IdentityBaselineScreen"
+ },
+ {
+  "path": "/home",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "MemberHomeScreen"
+ },
+ {
+  "path": "/institution/:institutionId/meetings",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/meetings/new",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/meetings/join",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "MeetingJoinFallbackScreen"
+ },
+ {
+  "path": "/meetings/keep",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "KeepMeetingScreen"
+ },
+ {
+  "path": "/meetings/join-error",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "MeetingJoinErrorScreen"
+ },
+ {
+  "path": "/meetings/join/:code",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "PreJoinScreen"
+ },
+ {
+  "path": "/meetings/:id",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "MeetingDetailScreen"
+ },
+ {
+  "path": "/meetings/:meetingId/prep",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "MeetingDetailScreen"
+ },
+ {
+  "path": "/meetings/:meetingId/room",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "MeetingDetailScreen"
+ },
+ {
+  "path": "/meetings/:meetingId/waiting",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "GuestWaitingRoomScreen"
+ },
+ {
+  "path": "/meetings/:meetingId/live",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "MeetingLiveRoomScreen"
+ },
+ {
+  "path": "/meetings/:meetingId/summary",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "MeetingDetailScreen"
+ },
+ {
+  "path": "/meetings/:meetingId/post-meeting",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "MeetingDetailScreen"
+ },
+ {
+  "path": "/institution/:institutionId/meetings/:meetingId",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/meetings/:meetingId/prep",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/meetings/:meetingId/room",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/meetings/:meetingId/waiting",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/meetings/:meetingId/live",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/meetings/:meetingId/summary",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/meetings/:meetingId/post-meeting",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/availability",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/i/:institutionSlug/meet/:bookingSlug",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionPublicBookingScreen"
+ },
+ {
+  "path": "/i/:institutionSlug/meet/cancel/:token",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "BookingCancelScreen"
+ },
+ {
+  "path": "/meet/cancel/:token",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "BookingCancelScreen"
+ },
+ {
+  "path": "/i/:institutionSlug/meet/reschedule/:token",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "RescheduleRouteEntry"
+ },
+ {
+  "path": "/i/:institutionSlug/meet/:bookingSlug/book",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "BookingRouteEntry"
+ },
+ {
+  "path": "/messages",
+  "depth": 0,
+  "shell": "AppShell",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "MessagesScreen"
+ },
+ {
+  "path": "/_boot",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "_RouterBootScreen"
+ },
+ {
+  "path": "/messages/c/:conversationId",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "ConversationScreen"
+ },
+ {
+  "path": "/discover/people",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "PeopleDiscoveryScreen"
+ },
+ {
+  "path": "/discover/articles",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "ArticlesDiscoveryScreen"
+ },
+ {
+  "path": "/discover/institutions",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionsDiscoveryScreen"
+ },
+ {
+  "path": "/articles/write",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "ArticleEditorScreen"
+ },
+ {
+  "path": "/articles/write/:articleId",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "ArticleEditorScreen"
+ },
+ {
+  "path": "/articles/:slug",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "ArticleScreen"
+ },
+ {
+  "path": "/i/:token",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "ClaimInvitationScreen"
+ },
+ {
+  "path": "/messages/direct",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": false,
+  "redirect_only": true,
+  "has_redirect": true,
+  "screen": null
+ },
+ {
+  "path": "/messages/direct/archived",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": false,
+  "redirect_only": true,
+  "has_redirect": true,
+  "screen": null
+ },
+ {
+  "path": "/create",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "CreateHubScreen"
+ },
+ {
+  "path": "/saved",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "SavedScreen"
+ },
+ {
+  "path": "/updates",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "UpdatesScreen"
+ },
+ {
+  "path": "/conversations",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": false,
+  "redirect_only": true,
+  "has_redirect": true,
+  "screen": null
+ },
+ {
+  "path": "/activity",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "ActivityScreen"
+ },
+ {
+  "path": "/ai/claim-audit",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "ClaimAuditScreen"
+ },
+ {
+  "path": "/me",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "MeScreen"
+ },
+ {
+  "path": "/me/edit",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "EditProfileScreen"
+ },
+ {
+  "path": "/security",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "SecurityScreen"
+ },
+ {
+  "path": "/devices",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "DevicesScreen"
+ },
+ {
+  "path": "/change-password",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "ChangePasswordScreen"
+ },
+ {
+  "path": "/settings/communications",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": false,
+  "redirect_only": true,
+  "has_redirect": true,
+  "screen": null
+ },
+ {
+  "path": "/me/settings/communications",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "CommunicationsCenterScreen"
+ },
+ {
+  "path": "/me/follow-requests",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "FollowRequestsScreen"
+ },
+ {
+  "path": "/me/invitations",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InvitationsScreen"
+ },
+ {
+  "path": "/invite",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InviteHubScreen"
+ },
+ {
+  "path": "/invite/create",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InviteCreateScreen"
+ },
+ {
+  "path": "/invite/accept",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InviteAcceptScreen"
+ },
+ {
+  "path": "/invite/import",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "ContactImportScreen"
+ },
+ {
+  "path": "/admin",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AdminWorkspaceScreen"
+ },
+ {
+  "path": "/admin/communications",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AdminCommunicationsScreen"
+ },
+ {
+  "path": "/admin/institutions",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AdminInstitutionsScreen"
+ },
+ {
+  "path": "/admin/institutions/:id/members",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AdminInstitutionMembersScreen"
+ },
+ {
+  "path": "/admin/users",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AdminUsersScreen"
+ },
+ {
+  "path": "/admin/grants",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AdminGrantsScreen"
+ },
+ {
+  "path": "/admin/audit-logs",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AdminAuditLogsScreen"
+ },
+ {
+  "path": "/admin/settings",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AdminSettingsScreen"
+ },
+ {
+  "path": "/admin/feature-flags",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AdminFeatureFlagsScreen"
+ },
+ {
+  "path": "/admin/institution-domains",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AdminInstitutionDomainsScreen"
+ },
+ {
+  "path": "/admin/review-queue",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AdminReviewQueueScreen"
+ },
+ {
+  "path": "/admin/migrations",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AdminMigrationsScreen"
+ },
+ {
+  "path": "/admin/policies",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AdminPoliciesScreen"
+ },
+ {
+  "path": "/admin/moderation",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AdminModerationScreen"
+ },
+ {
+  "path": "/admin/media-appeals",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AdminMediaAppealsScreen"
+ },
+ {
+  "path": "/admin/support",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "AdminSupportConsoleScreen"
+ },
+ {
+  "path": "/compose",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "ComposeScreen"
+ },
+ {
+  "path": "/posts/:postId/edit",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "ComposeScreen"
+ },
+ {
+  "path": "/enter-institution",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionSignInScreen"
+ },
+ {
+  "path": "/institution/standing",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionStandingScreen"
+ },
+ {
+  "path": "/institution/dashboard",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "Scaffold"
+ },
+ {
+  "path": "/institution/:institutionId/dashboard",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/domains",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "Scaffold"
+ },
+ {
+  "path": "/institution/:institutionId/domains",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/units/:unitId",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/units",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/public-engagement",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/public-engagement/participation",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/public-engagement/:recordId",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/profile",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "Scaffold"
+ },
+ {
+  "path": "/institution/:institutionId/profile",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/edit-profile",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "Scaffold"
+ },
+ {
+  "path": "/institution/:institutionId/edit-profile",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/request-verification",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "Scaffold"
+ },
+ {
+  "path": "/institution/:institutionId/request-verification",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionRequestVerificationScreen"
+ },
+ {
+  "path": "/institution/correspondence",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": false,
+  "redirect_only": true,
+  "has_redirect": true,
+  "screen": null
+ },
+ {
+  "path": "/institution/:institutionId/correspondence",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": false,
+  "redirect_only": true,
+  "has_redirect": true,
+  "screen": null
+ },
+ {
+  "path": "/institution/announcements",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": false,
+  "redirect_only": true,
+  "has_redirect": true,
+  "screen": null
+ },
+ {
+  "path": "/institution/live-rooms",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": false,
+  "redirect_only": true,
+  "has_redirect": true,
+  "screen": null
+ },
+ {
+  "path": "/institution/:institutionId/live-rooms",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/announcements",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/announcements/new",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/announcements/:announcementId/edit",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/spaces",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/spaces/:spaceAddress",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/members",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/invites",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/join-requests",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/explore",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/posts/new",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/posts/:postId",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/direct/:threadId",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "DirectThreadCutoverScope"
+ },
+ {
+  "path": "/direct-intent",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "DirectIntentScreen"
+ },
+ {
+  "path": "/notifications",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": false,
+  "redirect_only": true,
+  "has_redirect": true,
+  "screen": null
+ },
+ {
+  "path": "/institution/:institutionId/u/:handle",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": false,
+  "redirect_only": true,
+  "has_redirect": true,
+  "screen": null
+ },
+ {
+  "path": "/institution/:institutionId/institutions/:slug",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": false,
+  "redirect_only": true,
+  "has_redirect": true,
+  "screen": null
+ },
+ {
+  "path": "/<?>",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": false,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": null
+ },
+ {
+  "path": "/institution/:institutionId/posts/:postId/edit",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/activity",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/billing",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/messages",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "InstitutionRouteScope"
+ },
+ {
+  "path": "/institution/:institutionId/messages/direct",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": false,
+  "redirect_only": true,
+  "has_redirect": true,
+  "screen": null
+ },
+ {
+  "path": "/institution/:institutionId/messages/direct/archived",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": false,
+  "redirect_only": true,
+  "has_redirect": true,
+  "screen": null
+ },
+ {
+  "path": "/realtime",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": false,
+  "screen": "RealtimeLobbyScreen"
+ },
+ {
+  "path": "/realtime/:sessionId",
+  "depth": 0,
+  "shell": "ROOT",
+  "renders": true,
+  "redirect_only": false,
+  "has_redirect": true,
+  "screen": "RealtimeRoomScreen"
+ }
+]

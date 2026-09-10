@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,7 +61,60 @@ class _IdentityBaselineScreenState
   bool _busy = false;
   String? _error;
 
+  /// THE CANONICAL DATE OF BIRTH, IF AURA ALREADY HOLDS ONE.
+  ///
+  /// Founder requirement, 2026-09-10: "If canonical DOB already exists, the new
+  /// identity/completion experience should not ask for DOB as though Aura
+  /// doesn't know it. Read the canonical value/state first."
+  ///
+  /// This screen used to ask unconditionally. A person whose date of birth was
+  /// already recorded was invited to enter one again — and if they typed
+  /// anything different, the prompt would have replaced a canonical identity
+  /// fact in the background. The product was manufacturing the contradiction it
+  /// then had to refuse.
+  DateTime? _canonicalDob;
+  bool _loadingCanonical = true;
+
+  /// Aura already knows it, so this screen must not ask for it.
+  bool get _dobIsKnown => _canonicalDob != null;
+
   static final DateTime _earliestPlausible = DateTime.utc(1900, 1, 1);
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_readCanonicalState());
+  }
+
+  /// Read what Aura already holds BEFORE asking for anything.
+  ///
+  /// A failure here is not fatal and must not block the screen: the person can
+  /// still complete what is missing, and the backend refuses a conflicting date
+  /// regardless. It degrades to asking, which is the old behaviour — never to
+  /// silently overwriting, which the server now prevents.
+  Future<void> _readCanonicalState() async {
+    try {
+      final res = await ref.read(dioProvider).get('/users/me/identity-baseline');
+      final data = res.data;
+      final body = data is Map && data['data'] is Map ? data['data'] : data;
+      final iso = body is Map ? body['dateOfBirth'] : null;
+      final jurisdiction = body is Map ? body['jurisdiction'] : null;
+      if (!mounted) return;
+      setState(() {
+        if (iso is String && iso.trim().isNotEmpty) {
+          _canonicalDob = DateTime.tryParse(iso.trim());
+          _selected = _canonicalDob;
+        }
+        if (jurisdiction is String && isKnownJurisdiction(jurisdiction)) {
+          _jurisdiction = jurisdiction;
+        }
+        _loadingCanonical = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingCanonical = false);
+    }
+  }
 
   Future<void> _pickJurisdiction() async {
     final picked = await showJurisdictionPicker(
@@ -80,6 +135,19 @@ class _IdentityBaselineScreenState
   }
 
   Future<void> _pickDate() async {
+    // AURA DOES NOT ASK FOR WHAT IT ALREADY KNOWS.
+    //
+    // If a canonical date exists, changing it is an identity CORRECTION and
+    // belongs to Personal Details under canonical identity authority — not to a
+    // completion prompt. Offering a picker here would invite exactly the
+    // conflicting entry the backend now refuses, which is a worse experience
+    // than not offering it: the person does the work and is then told no.
+    if (_dobIsKnown) {
+      if (!mounted) return;
+      setState(() => _error = null);
+      context.push('/personal-details');
+      return;
+    }
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
@@ -236,12 +304,25 @@ class _IdentityBaselineScreenState
                       _ErrorBanner(message: _error!),
                       const SizedBox(height: AuraSpace.s14),
                     ],
+                    // WHILE READING WHAT AURA ALREADY HOLDS.
+                    //
+                    // Shown rather than skipped, because a field that appears
+                    // empty and then fills in a moment later invites somebody
+                    // to start typing over their own record.
+                    if (_loadingCanonical) ...[
+                      const LinearProgressIndicator(minHeight: 2),
+                      const SizedBox(height: AuraSpace.s14),
+                    ],
                     InkWell(
-                      onTap: _busy ? null : _pickDate,
+                      onTap: (_busy || _loadingCanonical) ? null : _pickDate,
                       borderRadius: BorderRadius.circular(AuraRadius.r12),
                       child: InputDecorator(
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Date of birth',
+                          // Aura states what it holds instead of asking again.
+                          helperText: _dobIsKnown
+                              ? 'Already recorded. Tap to correct it in Personal Details.'
+                              : null,
                         ),
                         child: Text(
                           label,
