@@ -33,9 +33,11 @@ step 1 is safe on its own. The reverse order is not.
 
 ## G2 — Both repositories are pushed
 
-**NOT MET.** 26 unpushed commits on `aura-backend`, 12 on `aura_final`. Both
+**NOT MET.** 30 unpushed commits on `aura-backend`, 24 on `aura_final`. Both
 merges completed locally as fast-forwards; `git push origin main` was **denied
-by the permission classifier** and has not been worked around.
+by the permission classifier** and has not been worked around. The counts have
+only grown since this document was written, because the work continued while the
+blocker did not move.
 
 This single condition blocks G1 (Railway deploys from GitHub), the web deploy,
 and the entire iOS lane (Codemagic builds from GitHub), and therefore every
@@ -48,9 +50,9 @@ the founder, not more engineering.
 
 | Platform | Artifact | State |
 |---|---|---|
-| Android | `app-release.aab`, signed, versionCode 38, target API 36 | MET |
-| Windows | `aura.msix` 1.4.3.0, name "AURA PLATFORM" verbatim | MET |
-| Web | `build/web` | MET |
+| Android | `app-release.aab`, signed, versionCode 38, target API 36 | MET — rebuilt from the re-frozen tree |
+| Windows | `aura.msix` 1.4.3.0, name "AURA PLATFORM" verbatim | MET — rebuilt |
+| Web | `build/web` | MET — rebuilt |
 | iOS | none | **NOT MET** — no macOS host here; needs G2 first |
 
 ## G4 — Store numbers are legal and unspent
@@ -59,8 +61,11 @@ the founder, not more engineering.
 build 38 absent; Play versionCode 38 unused; Microsoft 1.4.3.0 above the live
 1.4.2.0.
 
-This condition is time-sensitive. It stays MET only while the frozen trees stay
-frozen. Any further commit to either tree spends 38 and the next build is 39.
+This condition is time-sensitive in a narrower way than first written. A build
+number is spent when a **store accepts an artifact under it**, not when a commit
+lands. Moving the tree does not cost 38; it costs the artifacts, which must be
+rebuilt from the tree named in the freeze before anything is submitted. That
+happened once already, for the Finance doorway, and the artifacts were rebuilt.
 
 ## G5 — Store listing assets represent the product being submitted
 

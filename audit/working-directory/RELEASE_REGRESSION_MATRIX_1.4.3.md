@@ -97,7 +97,7 @@ Notes on the entries that are easy to misread:
 
 | Check | Verdict | Evidence |
 |---|---|---|
-| One frozen source for all artifacts | PASS | backend `d27169a`, client `b71e97bd` lineage from `f9464912` |
+| One frozen source for all artifacts | PASS | re-frozen after the Finance doorway; artifacts rebuilt, none submitted from the stale pair |
 | AAB builds, signed, versionCode 38 | PASS | upload key, valid to 2053 |
 | Android target API 36 | PASS | packaged release manifest |
 | Certification cleartext absent from release | PASS | 0 occurrences of three markers |
@@ -106,8 +106,8 @@ Notes on the entries that are easy to misread:
 | Apple build 38 unused | PASS | App Store Connect |
 | Play versionCode 38 unused | PASS | Play Console |
 | iOS IPA exists | **FAIL** | never built |
-| Backend deployed | **FAIL** | 26 commits unpushed; `git push` denied |
-| Web app deployed | **FAIL** | 12 commits unpushed |
+| Backend deployed | **FAIL** | 30 commits unpushed; `git push` denied |
+| Web app deployed | **FAIL** | 24 commits unpushed |
 | Play production access granted | **FAIL** | Play Console: *"Apply for access to production"* |
 
 ## C. What was never in scope for this pass
