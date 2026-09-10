@@ -96,14 +96,57 @@ happened once already, for the Finance doorway, and the artifacts were rebuilt.
 
 ## G5 — Store listing assets represent the product being submitted
 
-**NOT MET.**
+**NOT MET — and for a more concrete reason than this document first gave.**
 
-`store_assets/` is now claimed and committed, and its screenshots are the
-2026-09-06 capture. They depict the **pre-1.4.3** product: registration,
-Personal Details, verification and the profile editor's place fields all
-changed in this release and none of those changes are represented. They must be
-re-captured, not resubmitted. A `STORE_LISTING_RECORD_2026-09-09.md` successor
-is owed at closeout and should supersede rather than edit the 09-06 record.
+The original entry said the screenshots depict the pre-1.4.3 product because
+"registration, Personal Details, verification and the profile editor's place
+fields all changed in this release and none of those changes are represented."
+That reasoning does not survive contact with the actual files. **None of those
+four surfaces is in the screenshot set at all** — the set is Home, Institutions,
+a verified institution, Messages and Discover, and those surfaces did not
+meaningfully change in 1.4.3. Judged on that argument alone, G5 would arguably
+pass.
+
+The real defect is visible in the images and is worse:
+
+    store_assets/android/screenshots/phone/1_home.png
+    store_assets/ios/store/1_home.png
+
+Both display a pinned announcement card reading, in the product, at the top of
+the first screenshot a reviewer sees:
+
+    Pinned announcement                                  2026-09-04
+    Aura 1.4.2 — Communication Should Be Able to Continue
+
+**The listing for 1.4.3 would advertise 1.4.2 as on-screen content.** This is not
+a subtle staleness. It is a version number, rendered large, in the hero shot, on
+both stores.
+
+WHY IT IS NOT FIXABLE BY RE-CAPTURING TODAY. The card is server-driven and the
+production announcement feed still returns exactly that item:
+
+    GET https://api.auraplatform.org/v1/announcements
+    -> slug "aura-1-4-2-communication-should-be-able-to-continue"
+       title "Aura 1.4.2 — Communication Should Be Able to Continue"
+
+So a re-capture right now reproduces the same card. The screenshots cannot be
+correct until a **1.4.3 announcement is published**, which is a communications
+act governed by the public-voice rules, not an engineering task. That is a real
+dependency and it was not previously recorded anywhere:
+
+    publish the 1.4.3 announcement  ->  re-capture Home  ->  G5 can clear
+
+Two lesser observations from the same images, recorded rather than acted on:
+
+* The Android Home shot carries a personal draft prompt — *"Resume your draft:
+  my Roblox"* — and the iOS shot does not. A half-written personal draft in a
+  store hero shot is not a defect, but it is not the product's best face either.
+* Both shots show the founder's own account and content. That is legitimate —
+  it is the founder's product and their own posts — but it means the listing is
+  one person's timeline rather than a demonstration of the product's range.
+
+Recorded, not corrected: a `STORE_LISTING_RECORD_2026-09-09.md` successor is
+still owed at closeout and should supersede rather than edit the 09-06 record.
 
 ## G6 — Google Play production access
 
