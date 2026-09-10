@@ -199,15 +199,28 @@ void main() {
         find.textContaining('Aura is being built in an environment'),
         findsOneWidget,
       );
+      // EACH MARK IS PRESENT AND CARRIES AN ACCESSIBLE NAME.
+      //
+      // Asserted from the WIDGET tree, not the semantics tree and not the
+      // rendered text, because the three marks are not the same kind of thing:
+      // Microsoft is an image badge, the other two are wordmarks drawn as
+      // text. `find.text` therefore finds nothing for the badge — correctly —
+      // and `bySemanticsLabel` returned nothing for it either, so neither
+      // finder could tell an absent mark from a mark it cannot see. What every
+      // mark does share is a `Semantics(label: …)` wrapper, which is the thing
+      // the accessibility claim is actually about.
       for (final m in const [
         'Microsoft for Startups',
         'Google for Startups',
         'AWS Activate',
       ]) {
         expect(
-          find.bySemanticsLabel(m),
+          find.byWidgetPredicate(
+            (w) => w is Semantics && w.properties.label == m,
+          ),
           findsOneWidget,
-          reason: '$m mark missing from the support band',
+          reason: '$m is missing from the support band, or carries no '
+              'accessible name',
         );
       }
     });
