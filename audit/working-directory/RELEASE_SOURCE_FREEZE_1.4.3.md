@@ -18,18 +18,36 @@ backend older than the identity merge. The two are frozen together.
 
 | Repo | Commit | Tree |
 |---|---|---|
-| `aura-backend` | `d27169a` | `2dd5d90cb0f16efcb855823172c9374e46233bff` |
-| `aura_final` | `f9464912` | `8600ef9f293b042fd3c3e19fbdbe4dfca75c397e` |
+| `aura-backend` | `0b92237` | re-frozen after the permanent Finance doorway |
+| `aura_final` | `90b4383e` | re-frozen after the permanent Finance doorway |
+
+Superseded, and left standing rather than overwritten: the first freeze was
+`aura-backend d27169a` / `aura_final f9464912`, taken before the Finance entry
+work. The shipped-code difference between them is four files — the Finance
+doorway screen and its repository, the Android `<queries>` declaration that lets
+the app resolve a browser, and two test-only dependencies named in
+`pubspec.yaml`. **The artifacts built from the first freeze are therefore stale
+and must be rebuilt before submission; none of them was submitted.**
 
 Client version line, single source for all three stores:
 
     version: 1.4.3+38          → Android versionCode 38, iOS build 38
     msix_version: 1.4.3.0      → Microsoft Store package version
 
-Every artifact submitted under 1.4.3 (38) must be built from these trees. If
-either tree moves, the build number is spent and the next one is 39 — a rebuilt
-artifact under a reused number is the failure mode this freeze exists to
-prevent.
+Every artifact submitted under 1.4.3 (38) must be built from these trees.
+
+**A CORRECTION TO THIS DOCUMENT'S OWN RULE.** It first said that if either tree
+moves the build number is spent and the next is 39. That is wrong, and stating
+it wrongly would have cost a build number for no reason. A build number is spent
+when a **store accepts an artifact under it** — that is the identifier a store
+will never take twice. Before any submission, rebuilding under the same number
+is ordinary and correct.
+
+What the freeze actually buys is narrower and still worth having: an artifact
+must not be submitted unless it was built from the tree named here, so a
+submitted binary can always be traced to a commit. If the tree moves before
+submission, the artifacts are rebuilt and this record is re-frozen — which is
+what happened below.
 
 ### Store-number legality, verified in the real consoles (not from repo notes)
 

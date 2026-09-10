@@ -32,6 +32,12 @@ Platforms as exercised:
 | Age floor refuses an ineligible applicant | PASS | EVIDENCE_LIMITED | EVIDENCE_LIMITED | EVIDENCE_LIMITED |
 | Identity: admitted, never walled | PASS | PASS | PASS | EVIDENCE_LIMITED |
 | Identity through the shipped `IdentityState` computation | EVIDENCE_LIMITED | EVIDENCE_LIMITED | PASS | EVIDENCE_LIMITED |
+| Finance doorway — drawn from a real FinanceGrant | PASS | PASS | PASS | EVIDENCE_LIMITED |
+| Finance doorway — absent with no grant | PASS | PASS | PASS | EVIDENCE_LIMITED |
+| Finance doorway — absent after revocation, identity intact | PASS | EVIDENCE_LIMITED | EVIDENCE_LIMITED | EVIDENCE_LIMITED |
+| Finance handoff — completes into the Finance workspace | PASS | PASS (chain walked) | PASS (chain walked) | EVIDENCE_LIMITED |
+| Finance handoff — expired, replayed and duplicate-tap refusals | PASS | PASS | PASS | EVIDENCE_LIMITED |
+| Finance — provider outage leaves Aura stable | PASS | PASS | PASS | EVIDENCE_LIMITED |
 | Profile — Location (City / Country / Website) | PASS | PASS (read) | EVIDENCE_LIMITED | EVIDENCE_LIMITED |
 | Profile tabs (Identity/Authority/Participation/Network/Account) | PASS | PASS | EVIDENCE_LIMITED | EVIDENCE_LIMITED |
 | Member core navigation (24 routes) | PASS | PASS | EVIDENCE_LIMITED | EVIDENCE_LIMITED |
@@ -66,6 +72,14 @@ Notes on the entries that are easy to misread:
 * **Windows synthetic input.** Three scripted clicks on the left navigation
   produced no navigation. Reported as it happened rather than retried until it
   looked better, and not promoted from the Web column.
+* **The Finance rows are the only ones proven against another product's real
+  implementation.** Three passes with the Finance workstream — no grant, a real
+  grant, and a revocation — using their service, their database, their session
+  and their FinanceGrant. Every other row in this matrix is Aura proving
+  something about Aura. The revocation row is Web-only because the grant can be
+  revoked once per run and the browser is where the chain was observed
+  end to end; the underlying refusal is proven on every platform by the
+  outage and no-grant rows.
 * **Windows carries the one PASS for the shipped identity computation.**
   `integration_test/identity_certification_test.dart` ran on the Windows
   desktop against the merged backend and passed 4/4, including *"and is NEVER

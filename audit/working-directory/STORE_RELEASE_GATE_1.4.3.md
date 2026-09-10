@@ -91,11 +91,17 @@ model for 1.4.3.
 
 ## G7 — Certification is complete enough to submit
 
-**PARTIALLY MET.** Web, Android and Windows all boot, sign in and navigate on
-their real platforms; the identity contract, the age floor and the Public
-Profile Location repair are certified end to end. iOS is uncertified at every
-level, and Meetings, realtime and institution administration are
-EVIDENCE_LIMITED on every platform. See `RELEASE_REGRESSION_MATRIX_1.4.3.md`.
+**PARTIALLY MET, and further along than it was.** Web, Android and Windows all
+boot, sign in and navigate on their real platforms. The identity contract, the
+age floor and the Public Profile Location repair are certified end to end. The
+permanent Finance doorway is certified on Web, Windows and a physical Pixel, and
+— uniquely in this release — against **another product's real implementation**,
+in three passes with the Finance workstream covering no grant, a real grant and
+a revocation.
+
+Still open: iOS is uncertified at every level, and Meetings, realtime,
+institution administration and messaging are EVIDENCE_LIMITED on every platform.
+See `RELEASE_REGRESSION_MATRIX_1.4.3.md`.
 
 Whether EVIDENCE_LIMITED on Meetings is acceptable for a release is a founder
 judgement, not an engineering one. It is recorded here rather than quietly
@@ -103,10 +109,16 @@ rounded up to PASS.
 
 ## G8 — Finance stays dormant
 
-**MET.** `POST /v1/auth/finance/authorize` returns 404 in production: the
-doorway is not deployed. When the backend is deployed it becomes reachable but
-still grants nothing — it requires a FinanceGrant that does not exist.
-Deploying 1.4.3 does not activate Finance authority.
+**MET, and now demonstrated rather than asserted.** Every `FINANCE_*` variable
+is unset in production, so all four doorway routes 404 there. When the backend
+is deployed they become reachable and still grant nothing: the destination is
+drawn only by an active FinanceGrant resolved from Finance's own database, and
+production Finance holds one canonical book in SETUP, **zero principals and zero
+grants**. The revocation pass proved the shape of the dormant case directly —
+identity succeeds, the door is absent, and full Aura authority buys nothing.
+
+Deploying 1.4.3 does not activate Finance authority, and activation is the
+Finance workstream's to perform, not Aura's.
 
 ---
 
