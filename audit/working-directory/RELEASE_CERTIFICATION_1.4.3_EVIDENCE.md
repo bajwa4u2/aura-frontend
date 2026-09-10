@@ -108,6 +108,134 @@ No account was created by this probe: the request was refused at validation.
 
 ---
 
+## 2b. THE FINDING IS DISCHARGED — production cutover, 2026-09-10
+
+§2 was written against a backend that did not yet know the fields. It has been
+deployed, and the claim is retired by observation rather than by argument.
+
+    aura-backend  main  d08d2eb..0b92237
+    GET /v1/health  build.commit = 0b92237d      <- the deploy marker, queried
+                                                     live; Railway's own status
+                                                     was not accepted as proof
+    12 live checks against the deployed service  ->  12 passed, 0 failed
+
+    aura_final    main  51eabc3e..c1d79e3f
+    https://auraplatform.org/version.json  1.4.3 (38)
+    flutter_bootstrap.js  Last-Modified  Thu, 10 Sep 2026 03:18:01 GMT
+                          (control value  Wed, 09 Sep 2026 06:34:17 GMT, pinned
+                           at download time BEFORE the deploy)
+
+The `Last-Modified` control matters because a marker string does not reliably
+survive dart2js. To prove the bundle is this release rather than a
+same-versioned rebuild, `main.dart.js` was searched for literals only this
+release contains:
+
+    "Bajwa Writes" -> https://bajwawrites.com   the corrected footer link
+    "/v1/auth/finance/ticket"                   the doorway, ticket leg
+    "/v1/auth/finance/destination"              the doorway, address leg
+    "/v1/finance/entry"                         the one-bit eligibility probe
+
+all four present, and all three doorway calls routed through the `{ok,data}`
+unwrap helper — which is the envelope fix, in production, observable from
+outside.
+
+### 2b.1 The registration contract, driven three times on the real form
+
+Not a curl against the API: the actual Join form on `auraplatform.org`, in
+Chromium, filled and submitted.
+
+| Date of birth | Declared jurisdiction | Bucket | Floor | Result |
+|---|---|---|---|---|
+| 2012-09-09 (14) | Germany `DE` | EU/EEA | 16 | **403** `ACCOUNT_AGE_INELIGIBLE` — "You need to be at least 16 to have an Aura account." |
+| 2012-09-09 (14) | United States `US` | US | 13 | **201** created → `/verify-pending` |
+| 2014-09-09 (12) | United States `US` | US | 13 | **403** `ACCOUNT_AGE_INELIGIBLE` — "You need to be at least 13 to have an Aura account." |
+
+The live payload:
+
+    {"email":…,"password":…,"handle":…,"displayName":…,"firstName":…,
+     "lastName":…,"dateOfBirth":"2012-09-09","jurisdiction":"DE",
+     "termsAccepted":true,"termsAcceptedVersion":"2026-05-26"}
+
+The middle row is the one that carries the argument. The SAME date of birth is
+refused under one jurisdiction and admitted under another, which is the only
+way to show that the declared jurisdiction is deciding rather than being
+collected and ignored. A field that is captured, transmitted and then not used
+looks exactly like a working one until you vary it.
+
+`details.resolvable` is `false` on both refusals, and no account row was
+created for either — the refusal happens before any write.
+
+### 2b.2 A DEFECT THE CONTRACT PROOF DID NOT COVER
+
+The backend named the floor. The deployed client showed:
+
+> **Registration failed** — We could not create your account right now. Please
+> try again.
+
+The reason was erased and replaced with an invitation to retry, on a refusal
+the policy records as `resolvable: false`. "Please try again" on an age floor
+is the precise prompt that teaches an applicant to enter a different date of
+birth.
+
+Cause: two error mappers in series, each correct alone.
+`AuthRepository._mapRegisterError` maps the error CODE to the right sentence;
+`RegisterScreen._humanizeRegisterError` then re-maps that SENTENCE through its
+own `contains(...)` ladder, matches nothing, and returns the generic fallback.
+The same pair on sign-in silently ate two more of the repository's own outputs:
+
+    403 -> "This account is not available right now."   (contains none of
+            disabled / locked / suspended / forbidden)
+    5xx -> "Something went wrong on our side. …"        (contains neither
+            "500" nor "server error")
+
+Fixed by making the already-mapped answer final: an `AuthException` is the
+repository's finished sentence and is passed through unchanged, with the old
+ladder kept only for raw platform errors.
+
+Covered by `test/auth/auth_error_copy_pair_test.dart` — a real `Dio` adapter
+answering with the real production envelope, the real repository, and the real
+screen copy, so the test holds BOTH halves at once. 8 tests pass. With the fix
+mutated out, **6 fail**; the 2 that still pass are deliberate controls — one
+that must keep working, and one asserting an unrecognised error does NOT leak
+raw server text, which is the over-correction the fix could otherwise have
+introduced.
+
+This is why §2's proof was not enough on its own: it proved the CONTRACT and
+said nothing about the SURFACE. Neither repo's green suite could see it,
+because each mapper is correct in isolation and only the pair is wrong.
+
+### 2b.3 Authenticated smoke, signed in through the app's own form
+
+Signed in on production as the standing review account and walked every route
+the founder named. All resolved; a hard reload kept the session.
+
+| Surface | Route | Result |
+|---|---|---|
+| Sign in | `/login` | PASS — `201`, landed on `/home` |
+| Session refresh | reload `/home` | PASS — still `/home`, still signed in |
+| Feed / discovery | `/discover` | PASS |
+| Conversations | `/messages` | PASS (routes resolve; no message sent) |
+| Meetings | `/meetings/join` | PASS (route resolves; no meeting held) |
+| Profile | `/me`, `/me/edit` | PASS |
+| Personal Details | `/personal-details` | PASS — DOB stored, jurisdiction unset, and the notice reads "Aura does not have all of these yet. You can add them whenever you like." Admitted, incomplete, never walled |
+| Verification | `/verify-identity` | PASS |
+| Security | `/security` | PASS |
+| Admin | `/admin` | PASS (refusal) — `GET /v1/admin/me` → `403`, redirected to `/home` |
+
+Named deviation: the run drew `429` on `/v1/auth/me` and on a batch of
+`/v1/media/:id/url` calls. That is this harness navigating ten routes in under
+a minute tripping the production rate limiter — a property of the script, not
+of the product. Recorded rather than retried until it looked clean.
+
+### 2b.4 Founder observation, same day
+
+The founder refreshed an existing signed-in session in Chrome, was prompted for
+age and country, entered them, and it resolved cleanly. That is the legacy
+completeness path on production: an already-admitted member asked to complete,
+not walled.
+
+---
+
 ## 3. Web — certified
 
 Real Chromium 148, the frozen `build/web` bundle served with a SPA fallback,
@@ -257,6 +385,22 @@ production API. The fallback is not theoretical; it is what is running.
 Two empty article drafts were created on the review account by the navigation
 passes (opening `/articles/write` creates one). Both were deleted. One
 pre-existing draft from 2026-08-31 was left alone.
+
+**OWED — one real account exists on production because of the §2b.1 proof.**
+The eligible row of that table creates an account, by design; a boundary you
+can only observe being refused is only half a boundary.
+
+    email    cert-us-14@auraplatform.org
+    handle   certus14
+    id       cmtuyzglz0035o20cw0r5cdca
+    created  2026-09-10, unverified email, never signed in
+
+The other two rows created nothing — the age refusal happens before any write,
+which is itself part of what §2b.1 proves. This one is left in place rather
+than removed silently: deleting a member row is an operator action on live
+production data, it is the founder's to authorise, and an undisclosed cleanup
+would also destroy the evidence that the eligible path completed. Flagged here
+so it is removed deliberately, not discovered later.
 
 ---
 

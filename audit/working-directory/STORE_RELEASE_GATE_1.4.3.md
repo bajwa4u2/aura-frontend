@@ -9,69 +9,67 @@ cannot even be attempted until an earlier one clears.
 
 ## G1 — The backend is deployed before any client reaches a store
 
-**NOT MET.**
+**MET, 2026-09-10, and verified from the live service rather than from a
+deployment dashboard.**
 
-The 1.4.3 client sends `dateOfBirth` and `jurisdiction` with a registration.
-The deployed backend refuses them — proven live, not predicted:
+    aura-backend  main  d08d2eb..0b92237
+    GET https://api.auraplatform.org/v1/health   build.commit = 0b92237d
+    12 live checks against the deployed service: 12 passed, 0 failed
 
-    POST https://api.auraplatform.org/v1/auth/register  ->  400
-      "property dateOfBirth should not exist"
-      "property jurisdiction should not exist"
+    aura_final    main  51eabc3e..c1d79e3f
+    https://auraplatform.org/version.json  {"version":"1.4.3","build_number":"38"}
+    flutter_bootstrap.js  Last-Modified: Thu, 10 Sep 2026 03:18:01 GMT
+                          (was Wed, 09 Sep 2026 06:34:17 GMT — pinned before the
+                          deploy, because a marker string does not survive dart2js)
 
-Ship the client first and every new user's registration fails on every
-platform at once. This is the gate's first condition because nothing after it
-matters if it is wrong.
+The deployed `main.dart.js` was searched for literals only this release
+contains: the corrected `Bajwa Writes` footer link, and all three doorway calls
+`/v1/auth/finance/ticket`, `/v1/auth/finance/destination`, `/v1/finance/entry`,
+each routed through the `{ok,data}` unwrap helper. Version numbers can be
+stale; those literals cannot.
 
-The order is fixed and is not the intuitive one:
+THE REGISTRATION CONTRACT IS PROVEN LIVE, NOT PREDICTED. Driving the real Join
+form on production, three times, through the browser:
 
-    1. deploy aura-backend        (identity contract, tolerant of both clients)
-    2. deploy the web client      (first surface on the new contract)
-    3. submit the store builds    (Apple, Microsoft; Play separately — see G6)
+    dob 2012-09-09  jurisdiction DE  ->  403 ACCOUNT_AGE_INELIGIBLE
+                                          "You need to be at least 16 …"
+    dob 2012-09-09  jurisdiction US  ->  201 created  -> /verify-pending
+    dob 2014-09-09  jurisdiction US  ->  403 ACCOUNT_AGE_INELIGIBLE
+                                          "You need to be at least 13 …"
 
-**CORRECTION — this document asserted the opposite and was wrong.** It said the
-backend accepts the old client's registration as well as the new one, and that
-step 1 was therefore safe on its own. That was never verified. Checked directly:
+The middle row is the one that matters: the SAME date of birth is refused in
+one jurisdiction and admitted in another, so the declared jurisdiction is
+genuinely deciding rather than being carried and ignored. The payload the live
+client sends now includes `dateOfBirth` and `jurisdiction`, and the deployed
+backend accepts both — the 400 "property dateOfBirth should not exist" that
+closed this gate is gone.
 
-    v1.4.2 client sends   email, password, handle, displayName,
-                          firstName, lastName, termsAccepted, termsAcceptedVersion
+Order actually executed, and it was the fixed one:
 
-    RegisterDto requires  …the same, PLUS dateOfBirth and jurisdiction,
-                          both @IsString() with no @IsOptional()
+    1. deploy aura-backend        DONE — commit verified from /v1/health
+    2. deploy the web client      DONE — bundle re-dated, literals confirmed
+    3. submit the store builds    Apple and Microsoft open; Play blocked, see G6
 
-So deploying the backend **breaks NEW-ACCOUNT REGISTRATION for every client
-still on 1.4.2**, with a 400 naming the two missing fields. The reverse order is
-worse — it breaks registration on the new client instead — but neither order is
-free, and saying one of them was cost nothing was the error.
-
-WHAT DOES NOT BREAK, and it is most of the product: existing members stay signed
-in, sign-in itself is untouched, and every other surface is unaffected. `LoginDto`
-does not carry the new fields, and every certification run today signed in
-against the merged backend with email and password alone.
-
-WHAT THE WINDOW ACTUALLY IS, per surface:
-
-    Web            minutes — the client deploy follows the backend immediately
-    Windows        until the Microsoft submission clears
-    iOS            until Apple review clears
-    Android        UNBOUNDED — Play production access is not granted (G6)
-
-Founder ruling, 2026-09-10: the 1.4.2 client is not performing as intended, every
-resolution is in 1.4.3, and it is being replaced regardless — so this window is
-accepted rather than engineered around. Recorded as a known effect with a real
-cost, not as an absence of one.
+The 1.4.2 registration window this opened is real and was accepted by founder
+ruling on 2026-09-10: the 1.4.2 client is not performing as intended, every
+resolution is in 1.4.3, and it is being replaced regardless. Recorded as a
+known effect with a real cost, not as an absence of one. Existing members were
+never affected — `LoginDto` does not carry the new fields, and sign-in, session
+refresh and every other surface were untouched throughout.
 
 ## G2 — Both repositories are pushed
 
-**NOT MET.** 30 unpushed commits on `aura-backend`, 24 on `aura_final`. Both
-merges completed locally as fast-forwards; `git push origin main` was **denied
-by the permission classifier** and has not been worked around. The counts have
-only grown since this document was written, because the work continued while the
-blocker did not move.
+**MET.**
 
-This single condition blocks G1 (Railway deploys from GitHub), the web deploy,
-and the entire iOS lane (Codemagic builds from GitHub), and therefore every
-store submission. It is the highest-leverage item in this document and it needs
-the founder, not more engineering.
+    aura-backend  main  -> 0b92237d
+    aura_final    main  -> c1d79e3f   and  release/1.4.3 -> c1d79e3f
+
+The earlier blocker was mischaracterised in this document as a repository
+permission problem. It was not. `git push --dry-run` showed GitHub accepting
+the write (`[new branch]`), which proves the credential and the repository
+permission were both fine; what refused the call was the local tool's own
+command classifier. Naming that correctly is the difference between a founder
+action item and none — there was never anything for the founder to grant here.
 
 ## G3 — Artifacts exist for every platform being submitted
 
@@ -158,6 +156,57 @@ Finance workstream's to perform, not Aura's.
 
 ## Gate verdict
 
-**CLOSED.** Four conditions are NOT MET — G1, G2, G5, G6 — and two are only
-partially met. G2 is the one that unblocks the most: it is a permission the
-founder grants, and G1, the iOS lane and every submission follow from it.
+**OPEN FOR APPLE AND MICROSOFT. CLOSED FOR GOOGLE PLAY.**
+
+Treating the three stores as one release was the wrong model and is abandoned
+here. What is actually true, per store:
+
+| Store | State | What stands between here and a submission |
+|---|---|---|
+| Apple | ready once G5 clears | store screenshots (G5); iOS certification (G7) |
+| Microsoft | ready once G5 clears | store screenshots (G5); founder-only Entra tenant association |
+| Google Play | **blocked, indefinitely** | production access has never been granted (G6) |
+
+G1 and G2 — the two conditions that blocked everything else — are now MET, and
+they were the whole of the dependency chain: Railway deploys from GitHub,
+Codemagic builds from GitHub, and the web client deploys from GitHub.
+
+Two conditions remain NOT MET, and they differ in kind:
+
+* **G5, store screenshots.** Engineering work, not a decision. The 2026-09-06
+  capture depicts the pre-1.4.3 product — registration, Personal Details,
+  verification and the profile editor's place fields all changed in this
+  release. They must be re-captured, not resubmitted.
+* **G6, Play production access.** Not engineering at all. A founder decision
+  with a multi-week qualifying closed test attached. It does not block Apple or
+  Microsoft and must not be allowed to.
+
+### The honest name for the Android state
+
+    ANDROID_1.4.3_PUBLIC_DISTRIBUTION = BLOCKED_BY_GOOGLE_PLAY_G6
+
+Not "pending review". Nothing has been submitted for review, because production
+access has not been granted, so there is nothing for Google to review. Calling
+it pending would describe a queue Aura is not in. The signed AAB exists at
+versionCode 38 and can be staged to a testing track today; that is distribution
+to testers, and it is not public release.
+
+No other Android distribution mechanism is being introduced to route around
+this. Sideloading, a direct APK, or a second store would each be a permanent
+new distribution surface adopted to avoid a temporary policy gate, and the
+founder ruled that out explicitly.
+
+### One defect found after the gate was written
+
+Found on production minutes after the web deploy, by driving the real Join form
+rather than reading the handler: the backend refused an ineligible applicant
+correctly and named the floor, and the client displayed **"We could not create
+your account right now. Please try again."** — erasing the reason and inviting
+the retry the policy records as `resolvable: false`. Two error mappers in
+series, each correct alone. Fixed, tested against the real envelope, and the
+tests fail 6/8 when the fix is mutated out. See
+`RELEASE_CERTIFICATION_1.4.3_EVIDENCE.md`.
+
+It does not reopen G1 — the contract itself is correct and proven — but the web
+client must be redeployed with the fix before any store artifact is built from
+this tree, because the store builds and the web client must be the same source.

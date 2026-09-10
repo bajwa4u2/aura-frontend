@@ -149,67 +149,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return v == '/enter-institution' || v.startsWith('/enter-institution?');
   }
 
-  String _humanizeRegisterError(Object error) {
-    final raw = error.toString().trim();
-    final msg = raw.toLowerCase();
-
-    if (msg.isEmpty)
-      return 'We could not create your account right now. Please try again.';
-
-    if (msg.contains('email already') ||
-        msg.contains('email is already') ||
-        msg.contains('already exists') && msg.contains('email') ||
-        msg.contains('duplicate') && msg.contains('email') ||
-        msg.contains('unique') && msg.contains('email')) {
-      return 'That email is already in use. Try signing in instead.';
-    }
-
-    if (msg.contains('handle already') ||
-        msg.contains('username already') ||
-        msg.contains('duplicate') && msg.contains('handle') ||
-        msg.contains('unique') && msg.contains('handle') ||
-        msg.contains('unique') && msg.contains('username')) {
-      return 'That handle is already taken. Please choose another one.';
-    }
-
-    if (msg.contains('invalid email') ||
-        msg.contains('email is invalid') ||
-        msg.contains('must be a valid email')) {
-      return 'Please enter a valid email address.';
-    }
-
-    if (msg.contains('password') && msg.contains('weak')) {
-      return 'Please choose a stronger password.';
-    }
-
-    if (msg.contains('handle') &&
-        (msg.contains('lowercase') || msg.contains('underscores'))) {
-      return 'Handle can only use lowercase letters, numbers, and underscores.';
-    }
-
-    if (msg.contains('some details need another look') ||
-        msg.contains('review the form')) {
-      return raw;
-    }
-
-    if (msg.contains('network error') ||
-        msg.contains('socketexception') ||
-        msg.contains('connection error') ||
-        msg.contains('failed host lookup') ||
-        msg.contains('timed out')) {
-      return 'We could not reach the server. Check your connection and try again.';
-    }
-
-    if (msg.contains('500') || msg.contains('internal server error')) {
-      return 'Something went wrong on our side. Please try again in a moment.';
-    }
-
-    if (msg.contains('429') || msg.contains('too many requests')) {
-      return 'Too many attempts in a short time. Please wait a little and try again.';
-    }
-
-    return 'We could not create your account right now. Please try again.';
-  }
+  String _humanizeRegisterError(Object error) =>
+      humanizeRegisterError(error);
 
   static final DateTime _earliestPlausible = DateTime.utc(1900, 1, 1);
 
@@ -948,4 +889,96 @@ class _RegisterFormCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The join form's error copy, as a top level function so the PAIR that
+/// actually broke in production -- `AuthRepository`'s code-to-sentence mapping
+/// feeding this sentence-to-sentence mapping -- can be driven by a test with
+/// no widget tree in between. Each half was correct alone; only the pair was
+/// wrong, which is precisely the shape a per-file test never sees.
+@visibleForTesting
+String humanizeRegisterError(Object error) {
+  final raw = error.toString().trim();
+  final msg = raw.toLowerCase();
+
+  if (msg.isEmpty)
+    return 'We could not create your account right now. Please try again.';
+
+  // AN ALREADY-MAPPED REFUSAL IS FINAL. SAY IT, DO NOT RE-DERIVE IT.
+  //
+  // `AuthRepository` has already turned the server's error CODE into the
+  // sentence a person should read — including the three refusals this
+  // release introduced, which have no other spelling: ACCOUNT_AGE_INELIGIBLE
+  // ("You need to be at least 16 to have an Aura account."), DOB_REQUIRED
+  // and JURISDICTION_REQUIRED. What follows this line is a SECOND mapper
+  // that works on the sentence rather than the code, and a sentence it does
+  // not recognise falls through to "Please try again."
+  //
+  // That is what happened in production on 2026-09-10: the backend refused
+  // an ineligible applicant correctly and named the floor, and the screen
+  // showed "We could not create your account right now. Please try again."
+  // — erasing the reason and inviting a retry that the policy states is not
+  // resolvable, which is exactly the prompt that teaches someone to enter a
+  // different date of birth. Found by driving the real form against the real
+  // service; no unit test could see it, because each mapper is correct on
+  // its own and only the PAIR is wrong.
+  //
+  // So: an AuthException is the repository's finished answer. Pass it
+  // through. The mapping below stays for raw platform errors, which are the
+  // only thing it was ever needed for.
+  if (error is AuthException) return raw;
+
+  if (msg.contains('email already') ||
+      msg.contains('email is already') ||
+      msg.contains('already exists') && msg.contains('email') ||
+      msg.contains('duplicate') && msg.contains('email') ||
+      msg.contains('unique') && msg.contains('email')) {
+    return 'That email is already in use. Try signing in instead.';
+  }
+
+  if (msg.contains('handle already') ||
+      msg.contains('username already') ||
+      msg.contains('duplicate') && msg.contains('handle') ||
+      msg.contains('unique') && msg.contains('handle') ||
+      msg.contains('unique') && msg.contains('username')) {
+    return 'That handle is already taken. Please choose another one.';
+  }
+
+  if (msg.contains('invalid email') ||
+      msg.contains('email is invalid') ||
+      msg.contains('must be a valid email')) {
+    return 'Please enter a valid email address.';
+  }
+
+  if (msg.contains('password') && msg.contains('weak')) {
+    return 'Please choose a stronger password.';
+  }
+
+  if (msg.contains('handle') &&
+      (msg.contains('lowercase') || msg.contains('underscores'))) {
+    return 'Handle can only use lowercase letters, numbers, and underscores.';
+  }
+
+  if (msg.contains('some details need another look') ||
+      msg.contains('review the form')) {
+    return raw;
+  }
+
+  if (msg.contains('network error') ||
+      msg.contains('socketexception') ||
+      msg.contains('connection error') ||
+      msg.contains('failed host lookup') ||
+      msg.contains('timed out')) {
+    return 'We could not reach the server. Check your connection and try again.';
+  }
+
+  if (msg.contains('500') || msg.contains('internal server error')) {
+    return 'Something went wrong on our side. Please try again in a moment.';
+  }
+
+  if (msg.contains('429') || msg.contains('too many requests')) {
+    return 'Too many attempts in a short time. Please wait a little and try again.';
+  }
+
+  return 'We could not create your account right now. Please try again.';
 }

@@ -27,9 +27,11 @@ Platforms as exercised:
 | Public marketing / legal / trust (15 routes) | PASS | EVIDENCE_LIMITED | EVIDENCE_LIMITED | EVIDENCE_LIMITED |
 | Sign in (real credentials, real API) | PASS | PASS | PASS (session restored) | EVIDENCE_LIMITED |
 | Sign out | EVIDENCE_LIMITED | PASS | EVIDENCE_LIMITED | EVIDENCE_LIMITED |
-| **Registration against today's production** | **FAIL** | **FAIL** | **FAIL** | **FAIL** |
+| **Registration against today's production** | **PASS** | EVIDENCE_LIMITED | EVIDENCE_LIMITED | EVIDENCE_LIMITED |
 | Registration against the merged backend | PASS | EVIDENCE_LIMITED | EVIDENCE_LIMITED | EVIDENCE_LIMITED |
-| Age floor refuses an ineligible applicant | PASS | EVIDENCE_LIMITED | EVIDENCE_LIMITED | EVIDENCE_LIMITED |
+| Jurisdiction actually decides the age floor | PASS | EVIDENCE_LIMITED | EVIDENCE_LIMITED | EVIDENCE_LIMITED |
+| The refusal REASON reaches the person | **FAIL, fixed, not yet redeployed** | EVIDENCE_LIMITED | EVIDENCE_LIMITED | EVIDENCE_LIMITED |
+| Age floor refuses an ineligible applicant | PASS (live prod) | EVIDENCE_LIMITED | EVIDENCE_LIMITED | EVIDENCE_LIMITED |
 | Identity: admitted, never walled | PASS | PASS | PASS | EVIDENCE_LIMITED |
 | Identity through the shipped `IdentityState` computation | EVIDENCE_LIMITED | EVIDENCE_LIMITED | PASS | EVIDENCE_LIMITED |
 | Finance doorway — drawn from a real FinanceGrant | PASS | PASS | PASS | EVIDENCE_LIMITED |
@@ -58,11 +60,33 @@ Platforms as exercised:
 
 Notes on the entries that are easy to misread:
 
-* **Registration / today's production = FAIL on every platform.** This is one
-  defect, not four: `POST /auth/register` carrying the 1.4.3 payload is refused
-  by the deployed backend with *"property dateOfBirth should not exist"*. It is
-  a property of the client-plus-backend pair, so it fails wherever the client
-  runs. It is cleared by deploying the backend, not by changing the client.
+* **Registration / today's production = PASS on Web, 2026-09-10.** Cleared by
+  deploying the backend, exactly as predicted. Proven by driving the real Join
+  form on production three times, not by re-reading the DTO:
+
+      dob 2012-09-09  DE  ->  403 ACCOUNT_AGE_INELIGIBLE  "at least 16"
+      dob 2012-09-09  US  ->  201 created -> /verify-pending
+      dob 2014-09-09  US  ->  403 ACCOUNT_AGE_INELIGIBLE  "at least 13"
+
+  The other three platforms are EVIDENCE_LIMITED rather than PASS because this
+  is a client-plus-backend fact and the backend half is now common to all of
+  them — but nobody registered from Android, Windows or iOS after the deploy,
+  and inheriting the Web result would be exactly the inheritance this matrix
+  forbids.
+* **Jurisdiction actually decides.** The middle row above is the whole point:
+  the SAME date of birth is refused in one jurisdiction and admitted in
+  another. A field that is captured, transmitted and ignored looks identical to
+  one that works until you vary it.
+* **"The refusal REASON reaches the person" = FAIL.** The backend named the
+  floor; the client showed "We could not create your account right now. Please
+  try again." Two error mappers in series, each correct alone, composing into
+  erasure — and "try again" is an invitation to re-enter a different date of
+  birth, on a refusal the policy records as `resolvable: false`. Fixed in
+  `register_screen.dart` and `auth_screen.dart`, covered by
+  `test/auth/auth_error_copy_pair_test.dart` (8 tests; 6 fail when the fix is
+  mutated out, 2 are deliberate controls). The row stays FAIL until the web
+  client carrying the fix is deployed and the refusal is observed on production
+  again — a fix in the tree is not a fix on the surface.
 * **Platform administration = PASS (refusal).** What was certified is that a
   non-operator is refused: `GET /v1/admin/me` returned 403. The operator
   surfaces themselves are untouched.
@@ -106,8 +130,8 @@ Notes on the entries that are easy to misread:
 | Apple build 38 unused | PASS | App Store Connect |
 | Play versionCode 38 unused | PASS | Play Console |
 | iOS IPA exists | **FAIL** | never built |
-| Backend deployed | **FAIL** | 30 commits unpushed; `git push` denied |
-| Web app deployed | **FAIL** | 24 commits unpushed |
+| Backend deployed | PASS | `/v1/health` build.commit = 0b92237d, queried live |
+| Web app deployed | PASS | version.json 1.4.3+38; bundle re-dated 2026-09-10 03:18:01 GMT; release-only literals present in main.dart.js |
 | Play production access granted | **FAIL** | Play Console: *"Apply for access to production"* |
 
 ## C. What was never in scope for this pass
