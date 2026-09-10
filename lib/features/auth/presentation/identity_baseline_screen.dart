@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/eligibility/jurisdiction_confirm_sheet.dart';
 import '../../../core/eligibility/jurisdictions.dart';
+import '../../../core/navigation/navigation_authority.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -145,7 +146,7 @@ class _IdentityBaselineScreenState
     if (_dobIsKnown) {
       if (!mounted) return;
       setState(() => _error = null);
-      context.push('/personal-details');
+      context.push(NavigationAuthority.personalDetailsRoute);
       return;
     }
     final now = DateTime.now();
