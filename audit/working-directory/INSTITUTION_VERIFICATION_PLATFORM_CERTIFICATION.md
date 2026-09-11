@@ -200,38 +200,75 @@ database.
 **EVIDENCE_LIMITED for evidence acquisition.** The file picker, cancellation,
 an oversized file, an upload failure and a retry were NOT driven in the browser.
 
-## iOS / iPadOS — IN PROGRESS
+## iOS / iPadOS — IN PROGRESS, and substantially repaired
 
-Codemagic, workflows `ios-certification` and `ios-testflight`, both triggered
-against the exact release-branch commit `ee645031`.
+Codemagic, `ios-certification` and `ios-testflight`, both against the exact
+release-branch commit.
 
-**The certification workflow has never succeeded**, on any branch, since
-2026-09-07 — so its failures are not something the release branch introduced.
-Two causes were found and repaired on 2026-09-11, and both are in the source
-under certification:
+**This lane had not succeeded once since 2026-09-07, on any branch** — so its
+failures were never something the release branch introduced. Chasing that
+produced four findings, each of which had been hidden by the one before it.
 
-1. **It asserted an affordance it never tried to reach.** The iPad journey
-   failed on `no verification or policy surface is reachable signed out`. The
-   product is fine — `ShellFooter` renders Privacy and Terms on the signed-out
-   home — but on a tablet fold those sit below the viewport inside a lazy
-   scrollable, so their widgets were never built. The test now scrolls, which
-   is the *stronger* assertion: a genuinely absent policy link still fails.
+**1. The lane could never reach its own evidence.** The iPad step ran unbounded
+and consumed the entire 60-minute budget on every run, so the two steps behind
+it — the native XCTest layer and the full suite sweep — had **never executed
+once**. Most of the iOS evidence was never gathered, and nothing said so.
 
-2. **A 12-second failure cost a 60-minute build.** After that assertion failed,
-   `flutter test` never exited, because this app boots its real router whose
-   timers and socket outlive the test. Codemagic killed the whole build at its
-   limit and the three steps after it never ran, so the result was reported as
-   `timeout` rather than as the assertion it actually was. The step is now
-   bounded, and a hang is reported as a hang, in the step that caused it.
+Bounded now, with a shell-native watchdog rather than `timeout(1)`: the image
+has neither `timeout` nor `gtimeout`, which an earlier attempt discovered the
+expensive way by logging `running unbounded` and then sitting for 37 minutes.
+The step records its verdict and lets the build continue; a gate at the END
+reads every recorded verdict and fails the build if any is not PASS, and fails
+CLOSED on a missing verdict file. A failure still goes red — it now does so
+having collected the rest of the evidence first.
 
-The TestFlight workflow failed separately at `flutter analyze
---no-fatal-infos`, on exactly one warning, which was ours — see the commit
-`Make the Windows positive control prove reach, not merely an answer`. That
-gate now exits 0 locally: zero errors, zero warnings, 45 style infos which it
-deliberately permits.
+**2. The native test target had not compiled in weeks.**
 
-**No iOS or iPadOS claim is made until those builds report.** Nothing here may
-be promoted by inference from Android, Windows or web.
+    ios/RunnerTests/RunnerTests.swift:572: error: cannot find 'held' in scope
+    target=RunnerTests executed=0 passed=0 failed=0
+
+A single-session refactor removed an array of `SKTestSession`s and left the line
+extending its lifetime naming the deleted variable. No test failed, because no
+test could be built. The first run that got past the iPad step found it.
+
+Fixed — and the next run executed **28 native tests, 27 passed, 1 skipped**,
+the first native iOS coverage this branch has ever produced.
+
+**3. The one failing native test was not entitled to its conclusion.**
+
+    four storefront changes and every read still reported USA
+    [GBR->USA, JPN->USA, DEU->USA, FRA->USA] — the value is stuck
+
+That is the China/CallKit jurisdiction gate, the area that caused the 1.4.0
+Guideline 5 rejection, so it matters a great deal whether it is true.
+
+It was not established. The test proved "the authority is reachable" by setting
+the storefront to `USA` and reading `USA` back — but **USA is the simulator's
+default**, so that read returns USA whether the override works or does nothing
+at all. Two explanations fit identically: the product caches a stale value, or
+`SKTestSession`'s override has no observable effect here. The product code
+decides it, and it is not the defect — `currentCountryCode()` holds no cache;
+on iOS 15+ it is `await Storefront.current?.countryCode`, which reports the
+storefront as it is now. There is nowhere for a stale value to live.
+
+The file's own comments record that this claim has been **asserted and retracted
+twice before** on evidence with more than one reading. The control now comes
+first and is never the default: if no non-default territory can be presented the
+test SKIPS and says so in both directions, and only once a real change has been
+observed is a refusal to move back treated as staleness. Stricter, not looser.
+
+**4. The suite sweep would have failed seven ways on its first run.** Seven
+integration suites drive the isolated stack on `127.0.0.1:34999`, which exists
+only on the certification host. Three of the seven predate this release. They
+are now labelled `SKIPPED_NO_BACKEND`, kept distinct from `SKIPPED_PLATFORM`,
+because "needs a backend this machine does not run" and "asserts another
+platform's semantics" are different facts. **Neither is a pass, and neither
+means uncertified** — every one of those suites IS exercised against that stack
+on the certification host.
+
+**No iOS or iPadOS PASS is claimed here.** The iPad reviewer journey has not
+produced a result on any run: it either hung or reported `No tests ran`, and it
+is recorded as such rather than inferred from Android, Windows or web.
 
 ---
 
