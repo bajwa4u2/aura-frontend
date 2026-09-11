@@ -61,7 +61,8 @@ evidence of an actual product defect.
 ## Apple artifact
 
     APPLE_BUILD_38              ACCEPTED INTO ASC
-    APP_REVIEW                  PENDING
+    APP_REVIEW                  SUBMITTED — AWAITING APPLE
+    submitted                   2026-09-11, by the founder
     ASC build                   adf9d5ea-314b-4904-87c0-4839a8d5f616  (app 6772071135)
     artefact                    aura.ipa  37,917,528 bytes
     sha256                      cc61b21f76aa334b0e4868bafb94e48e43acd1a02dfbaa8e3b97f7f52e9d9d10
@@ -74,8 +75,11 @@ evidence of an actual product defect.
     BYTE_EQUALITY               FALSE
     BEHAVIOURAL_EQUIVALENCE     ESTABLISHED TO CURRENT EVIDENCE
 
-**Acceptance into App Store Connect is not App Review approval.** `APP_REVIEW`
-stays `PENDING` until reviewers act.
+**Acceptance into App Store Connect is not App Review approval**, and neither is
+submission. Build 38 was submitted for App Review by the founder on 2026-09-11;
+`APP_REVIEW` stays `SUBMITTED — AWAITING APPLE` until reviewers act, and becomes
+`APPROVED` or `REJECTED` only on their word. Three distinct states that are easy
+to collapse into one: uploaded, submitted, approved.
 
 **Build 38 is consumed.** Another iOS binary would require build 39 and should
 happen only if App Review identifies an actual defect, a production or runtime
@@ -156,18 +160,27 @@ Separately: neither Aura nor Orchestrate is currently returned by Play search
 (verified with a control query). Orchestrate is genuinely live by direct URL;
 Aura has never been published. Play state is to be reported as it changes.
 
-## Outstanding — founder action
+## Submission
 
-Store submission is the founder's action by standing doctrine, and is also
+    APPLE   DONE — build 38 submitted for App Review by the founder, 2026-09-11
+            App Store Connect -> Aura Platform (6772071135) -> 1.4.3
+            build adf9d5ea-314b-4904-87c0-4839a8d5f616
+
+    PLAY    NO ACTION. Release 37 (1.4.2) is already in Google review. Build 38
+            is NOT to be submitted as a probe for the listing problem.
+
+Store submission is the founder's action by standing doctrine, and was also
 outside this session's credentials: the Codemagic integration uploaded the build
 to App Store Connect, but submitting for App Review is a separate App Store
 Connect action for which no key is held here.
 
-    1. App Store Connect -> Aura Platform (6772071135) -> 1.4.3
-       select build 38 (adf9d5ea-314b-4904-87c0-4839a8d5f616) -> Submit for Review
-    2. Google Play — no action. Release 37 is already in Google review; build 38
-       is NOT to be submitted as a probe for the listing problem.
+**Nothing further is owed on iOS unless reviewers ask for it.** If they raise an
+issue — sign-in, China/CallKit, completeness or anything else — the response
+works from their exact evidence, not from anticipation, and build 39 is created
+only if their finding requires an executable change.
 
-Until reviewers act: `APP_REVIEW = PENDING`. If they raise an issue — sign-in,
-China/CallKit, completeness or anything else — the response works from their
-exact evidence, not from anticipation.
+One thing worth having ready rather than discovered under time pressure: the
+China/CallKit storefront cases **abstain** on the simulator, so a real China
+storefront read is UNPROVEN and must not be claimed to App Review. The
+jurisdiction gate's decision table is separately proven — 27/27 native — but
+that is the table, not a live storefront observation.
