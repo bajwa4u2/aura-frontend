@@ -706,6 +706,27 @@ workflows:
           # which is a different statement from "did not run".
           EXCLUDE="android_return_path_test|av_android_certification_test|desktop_lifecycle_test"
 
+          # SUITES THAT NEED THE ISOLATED CERTIFICATION STACK.
+          #
+          # These drive 127.0.0.1:34999 — an ephemeral docker stack with a
+          # tmpfs database and throwaway secrets, which exists only on the
+          # certification host. Nothing listens on that port here, so each
+          # would fail at setUpAll with a connection error that says nothing
+          # whatever about iOS.
+          #
+          # Kept SEPARATE from EXCLUDE deliberately. "Asserts another
+          # platform's semantics" and "needs a backend this machine does not
+          # run" are different statements about why a suite did not run, and
+          # one label for both would make this report say less than it knows.
+          #
+          # THREE OF THESE ARE NOT NEW. finance_doorway, identity_certification
+          # and institution_verification have always needed that stack; nobody
+          # noticed because this step had never once executed — every run of
+          # the lane died at the iPad step above it.
+          #
+          # Neither skip is a pass, and both are printed into the manifest.
+          NEEDS_BACKEND="android_institution_|finance_doorway_certification_test|identity_certification_test|institution_verification_certification_test"
+
           FAILED=0
           NOCOV=0
           echo "" >> certification/run-manifest.txt
@@ -730,6 +751,10 @@ workflows:
             base=$(basename "$f" .dart)
             if echo "$base" | grep -qE "$EXCLUDE"; then
               echo "  SKIPPED_PLATFORM $base (asserts another platform's semantics)"                 | tee -a certification/run-manifest.txt
+              continue
+            fi
+            if echo "$base" | grep -qE "$NEEDS_BACKEND"; then
+              echo "  SKIPPED_NO_BACKEND $base (needs the isolated certification stack on 34999)"                 | tee -a certification/run-manifest.txt
               continue
             fi
 
