@@ -72,10 +72,20 @@ void main() {
   });
 
   group('the offer reflects real distribution truth', () {
-    test('Android offers nothing while Play access is closed testing', () {
+    test('Android offers nothing while its listing does not serve', () {
       // The Play link is real, but a general visitor cannot install from it.
       // Offering "Get Aura" there advertises distribution that, for the person
       // being offered it, does not exist.
+      //
+      // THE REASON CHANGED ON 2026-09-11 AND THE NAME OF THIS TEST WITH IT.
+      // Closed testing is retired: production access is granted and the
+      // production track carries a completed release of versionCode 37. What
+      // keeps this false is that the listing itself answers HTTP 404 to a
+      // general visitor — verified by fetching it, with a known-good Play
+      // listing returning 200 from the same client as the control.
+      //
+      // A test still passing under a premise that has become false is how a
+      // suite comes to certify something nobody believes any more.
       expect(kAndroidGenerallyAvailable, isFalse);
       expect(acquisitionActionFor(TargetPlatform.android),
           AcquisitionAction.none);

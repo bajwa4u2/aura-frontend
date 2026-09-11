@@ -62,11 +62,28 @@ const bool kAndroidContinuationShipped = false;
 const bool kIosContinuationShipped = false;
 const bool kWindowsContinuationShipped = false;
 
-/// Android is in CLOSED TESTING; Play production access has not been granted.
+/// A general visitor sent to that Play page cannot install from it.
 ///
-/// A general visitor sent to that Play page cannot install from it. Offering
-/// "Get Aura" on Android would be advertising distribution that does not exist
-/// for the person being offered it.
+/// STILL FALSE, BUT NO LONGER FOR THE OLD REASON — checked 2026-09-11, and the
+/// distinction matters because the old reason has genuinely been retired.
+///
+/// Closed testing is no longer the gate: Play production access IS granted,
+/// and the Play Developer API reports the production track carrying a
+/// COMPLETED release of versionCode 37. On that evidence alone this flag would
+/// flip to true.
+///
+/// It does not, because the page itself was fetched and answers **HTTP 404,
+/// "Not Found"**. A known-good Play listing returned 200 from the same client
+/// in the same minute, so that 404 is this app's own state and not a blocked
+/// request. A track record is not a served page, and this flag is about what
+/// a person receives, not about what the console says.
+///
+/// Offering "Get Aura" on Android would therefore still be advertising
+/// distribution that does not exist for the person being offered it.
+///
+/// WHAT WOULD CHANGE IT: the listing serving. Re-fetch the URL before flipping
+/// this — do not flip it from a track status, which is what would have been
+/// wrong today.
 const bool kAndroidGenerallyAvailable = false;
 
 /// True when this path may offer native continuation at all.

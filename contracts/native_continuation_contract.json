@@ -179,7 +179,7 @@
     "neverShowFakeOpenState": true,
     "neverForceInterstitial": true,
     "publicWebRemainsUsable": true,
-    "androidDistributionNote": "Play production access has NOT been granted; the app is in closed testing. A general visitor cannot obtain it from that link, so Android must not be advertised as generally available."
+    "androidDistributionNote": "Closed testing is NO LONGER the gate: Play production access is granted and the production track carries a completed release (Play Developer API, 2026-09-11: production = completed, versionCodes [37]). BUT the public listing for org.auraplatform.app still answers HTTP 404 'Not Found' to a general visitor, verified by fetching it on 2026-09-11 with a positive control (a known-good Play listing returned 200 from the same client, so this is the app's own state and not a blocked request). A track record is not a served page. Android therefore must still not be advertised as generally available, and kAndroidGenerallyAvailable stays false -- for this reason, not the retired closed-testing one."
   },
   "destinationPreservation": {
     "queryParam": "redirect",
