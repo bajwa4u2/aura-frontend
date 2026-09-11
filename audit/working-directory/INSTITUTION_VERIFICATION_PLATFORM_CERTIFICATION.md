@@ -144,7 +144,33 @@ A pinned release artifact, built against the isolated stack and served on
 `localhost:35080` — the origin that stack's CORS actually allows — driven in
 Chrome 152.
 
-    artifact  sha256(main.dart.js) = 160f3fa24a79dce800956692597ef02c5fcf9456e705e73008a8582ad670e79d
+    artifact  sha256(main.dart.js) = 4d2743cb53296c4aff6c041f5dce0f1b133eb47712a82699e7117fb95885adc2
+
+**RE-BUILT AND RE-RUN at the final release commit on 2026-09-11**, not carried
+forward. The earlier web PASS was earned at `4aae0990`, and the client has
+changed materially since — the standing now carries `mayAct` and the screen
+renders a different block when it is false. "No inherited PASS" applies to my
+own earlier result as much as to another platform's, so the artifact was built
+again and the lane re-run: 6/6.
+
+What that re-run proves, in a real Chromium against the isolated stack:
+
+* the migration owner — who holds NO elevated tier — **can read their own
+  standing**, which is the exact request that used to be refused
+  `ASSURANCE_REQUIRED`;
+* they are told they may not yet act, and the tier is named;
+* the verified owner IS permitted, so the two genuinely differ — without which
+  both screens could be identical and both would pass;
+* a cold deep link to the verification route bounces to
+  `/login?redirect=/institution/<id>/verification` and keeps the destination.
+
+**What it does NOT prove, stated rather than implied.** This run did not sign in
+through the form and photograph the verification screen. The rendering of the
+`mayAct = false` path — the deadline as a date, and "Verify my identity" offered
+in place of an action that would refuse — is certified **on the physical Pixel**,
+in `android_institution_migration_certification_test.dart`, and is not claimed
+for web.
+
 
 **Reproducibility caveat on that hash.** It was produced from a checkout with
 LF line endings (this repo sets `core.autocrlf=false` and carries no
