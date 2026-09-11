@@ -1006,6 +1006,20 @@ workflows:
           # different statement from "did not run".
           EXCLUDE="desktop_lifecycle_test"
 
+          # SUITES THAT NEED THE ISOLATED CERTIFICATION STACK.
+          #
+          # Same reason as the iOS lane: these drive 127.0.0.1:34999, an
+          # ephemeral docker stack that exists only on the certification host.
+          # An Android emulator on a CI machine has nothing on that port, so
+          # each would fail at setUpAll with a connection error that says
+          # nothing about Android.
+          #
+          # THEY ARE NOT UNCERTIFIED. Every one of them is run against that
+          # stack on the certification host — the Android institution lanes on
+          # a physical Pixel 9a through `adb reverse`, the others on Windows
+          # and in Chrome. This exclusion says "not here", not "not proven".
+          NEEDS_BACKEND="android_institution_|finance_doorway_certification_test|identity_certification_test|institution_verification_certification_test"
+
           FAILED=0
           NOCOV=0
           echo "" >> certification/android-web-manifest.txt
@@ -1015,6 +1029,10 @@ workflows:
             base=$(basename "$f" .dart)
             if echo "$base" | grep -qE "$EXCLUDE"; then
               echo "  SKIPPED_PLATFORM $base (asserts another platform's semantics)" | tee -a certification/android-web-manifest.txt
+              continue
+            fi
+            if echo "$base" | grep -qE "$NEEDS_BACKEND"; then
+              echo "  SKIPPED_NO_BACKEND $base (needs the isolated certification stack on 34999)" | tee -a certification/android-web-manifest.txt
               continue
             fi
 
