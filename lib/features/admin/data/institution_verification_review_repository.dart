@@ -171,8 +171,22 @@ class InstitutionVerificationReviewRepository {
     } on DioException catch (e) {
       final data = e.response?.data;
       if (data is Map) {
-        final message = data['message'];
-        final code = data['code'];
+        // THE ENVELOPE NESTS UNDER `error`.
+        //
+        // This read the TOP level, where the API carries only `ok` and
+        // `error` -- so `message` was always null and EVERY server refusal
+        // fell through to the offline sentence below. A person refused for a
+        // specific, actionable reason would have read "we could not reach
+        // verification just now" instead.
+        //
+        // The unit tests did not catch it because they hand-built the payload
+        // at the top level: a double of a shape nobody checked. The Windows
+        // certification against the real stack did.
+        final envelope = data['error'] is Map
+            ? (data['error'] as Map)
+            : data;
+        final message = envelope['message'];
+        final code = envelope['code'];
         if (message is String && message.trim().isNotEmpty) {
           return Future<T>.error(
             InstitutionVerificationException(message, code: code?.toString()),

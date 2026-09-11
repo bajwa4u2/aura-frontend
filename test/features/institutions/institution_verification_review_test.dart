@@ -108,9 +108,14 @@ void main() {
     }
 
     test('THE SERVER MESSAGE SURVIVES', () async {
+      // THE REAL ENVELOPE, nested under `error` as the API sends it.
       final repo = InstitutionVerificationReviewRepository(failing({
-        'code': 'VERIFICATION_ACTOR_NOT_PERMITTED',
-        'message': 'That step is part of this process, but not one you can take.',
+        'ok': false,
+        'error': {
+          'code': 'VERIFICATION_ACTOR_NOT_PERMITTED',
+          'message': 'That step is part of this process, but not one you can take.',
+          'details': null,
+        },
       }));
 
       await expectLater(

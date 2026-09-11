@@ -201,9 +201,16 @@ void main() {
       // Two correct mappers in series already cost this release one reason:
       // the repository turned a specific sentence into a generic one and the
       // screen re-mapped it again, so the person read "Please try again".
+      // THE REAL ENVELOPE. The API nests under `error`; a double that put the
+      // fields at the top level is exactly what hid a defect where every
+      // refusal reached the person as the offline sentence.
       final repo = InstitutionVerificationRepository(dioThatFails({
-        'code': 'VERIFICATION_EVIDENCE_REQUIRED',
-        'message': 'That step needs supporting evidence, and none has been supplied.',
+        'ok': false,
+        'error': {
+          'code': 'VERIFICATION_EVIDENCE_REQUIRED',
+          'message': 'That step needs supporting evidence, and none has been supplied.',
+          'details': null,
+        },
       }));
 
       await expectLater(
