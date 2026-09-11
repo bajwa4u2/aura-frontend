@@ -424,11 +424,20 @@ const Map<String, InstitutionRoutePolicy> kInstitutionSectionPolicy = {
   // and proving ownership of its domains.
   'edit-profile': InstitutionRoutePolicy.admin,
   'domains': InstitutionRoutePolicy.admin,
-  // Establishing that the institution is real and that this person may speak
-  // for it. ADMIN, not adminOrSpeaker: supplying evidence and answering a
-  // reviewer is configuration of the institution's standing, not an act of
-  // speaking in its voice.
-  'verification': InstitutionRoutePolicy.admin,
+  // ADMIN WOULD BE CIRCULAR HERE, and driving the real build proved it.
+  //
+  // `InstitutionRoutePolicy.admin` resolves to `authorizedSpeaker`, which an
+  // institution only confers once it is VERIFIED. So gating verification on it
+  // means: you need to be verified to reach the screen that gets you verified.
+  // An OWNER of an unverified institution -- exactly the population this whole
+  // program exists for -- was refused at their own verification page, with the
+  // role card beside it reading "Founder".
+  //
+  // adminOrSpeaker matches `request-verification`, the same subject under the
+  // legacy pipeline, and the SERVER remains the authority: every route behind
+  // this screen independently asserts ADMIN role and ELEVATED assurance, so a
+  // member who reaches the page still cannot act on it.
+  'verification': InstitutionRoutePolicy.adminOrSpeaker,
 
   // Speaking in the institution's voice, or administering what it says.
   'announcements': InstitutionRoutePolicy.adminOrSpeaker,

@@ -104,6 +104,24 @@ class VerificationQueue {
   }
 }
 
+/// THE SUCCESS ENVELOPE ALSO NESTS.
+///
+/// Responses arrive as `{ok: true, data: {...}}`. Passing the whole body to a
+/// parser finds none of its keys and every field falls to its "unknown"
+/// default -- which, for the queue, is an empty queue that looks like
+/// a quiet day.
+///
+/// It is the same mistake as reading the refusal at the top level, on the other
+/// side of the same response. `identity_verification_repository.dart` has done
+/// this correctly since it was written; this is that `_unwrap`.
+Map<String, dynamic> _unwrap(dynamic data) {
+  if (data is Map && data['data'] is Map) {
+    return Map<String, dynamic>.from(data['data'] as Map);
+  }
+  if (data is Map) return Map<String, dynamic>.from(data);
+  return <String, dynamic>{};
+}
+
 class InstitutionVerificationReviewRepository {
   InstitutionVerificationReviewRepository(this._dio);
 
@@ -114,7 +132,7 @@ class InstitutionVerificationReviewRepository {
   Future<VerificationQueue> queue() async {
     return _call(() async {
       final res = await _dio.get<Map<String, dynamic>>('$_base/queue');
-      return VerificationQueue.fromJson(res.data ?? const {});
+      return VerificationQueue.fromJson(_unwrap(res.data));
     });
   }
 

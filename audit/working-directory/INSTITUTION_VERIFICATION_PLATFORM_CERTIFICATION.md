@@ -13,7 +13,7 @@ platform that could not be exercised says so rather than borrowing another's.
 |---|---|---|
 | **Runtime contract** (isolated stack, real HTTP) | **PASS** | 17/17 |
 | **Windows desktop** | **PASS** (logic) / **EVIDENCE_LIMITED** (UI input) | 5/5 |
-| **Web / Chrome** | **EVIDENCE_LIMITED** | see below |
+| **Web / Chrome** | **PASS** (journey) / **EVIDENCE_LIMITED** (acquisition) | pinned artifact, real browser |
 | **Android / physical Pixel** | **EVIDENCE_LIMITED** | no device attached |
 | **iOS / iPadOS** | **EVIDENCE_LIMITED** | not buildable on this host |
 
@@ -67,16 +67,57 @@ desktop window is unreliable on this host: clicks land wrongly after layout
 reflow and Tab does not move focus between fields. Windows UI interaction is
 therefore **not** claimed, and is **not** inferred from the web build.
 
-## Web / Chrome — EVIDENCE_LIMITED
+## Web / Chrome — PASS (journey), EVIDENCE_LIMITED (acquisition)
 
-The build target is available (`flutter devices` lists Chrome 152 and Edge 152)
-and the web picker path is the one this release already repaired. What has NOT
-been done is a driven browser pass of the new surfaces against the isolated
-stack.
+A pinned release artifact, built against the isolated stack and served on
+`localhost:35080` — the origin that stack's CORS actually allows — driven in
+Chrome 152.
 
-Reported EVIDENCE_LIMITED rather than PASS, because the founder's own rule is
-that a browser check is not a proxy for anything and a PASS must be earned by
-exercising the journey.
+    artifact  sha256(main.dart.js) = 160f3fa24a79dce800956692597ef02c5fcf9456e705e73008a8582ad670e79d
+
+What was exercised end to end, in a real browser:
+
+* sign-in against the isolated stack (so CORS, auth and the real transport);
+* a deep link to the verification route, which correctly bounced to `/login`
+  with a `redirect`, and then **honoured it** after sign-in;
+* the screen rendering the institution's ACTUAL standing — "Not started", the
+  closed-taxonomy picker, a Start disabled until a category is chosen;
+* both proofs shown as SEPARATE questions with the third named and kept apart;
+* pressing Start, and **the write landing in the database**
+  (`NOT_STARTED / GOVERNMENT_CIVIC`).
+
+**THIS LANE FOUND TWO DEFECTS THAT NO TEST HAD.** See below.
+
+**EVIDENCE_LIMITED for evidence acquisition.** The file picker, cancellation,
+an oversized file, an upload failure and a retry were NOT driven in the browser.
+The screen's acquisition path is the one this release already repaired and
+unit-tested, but it has not been exercised here, so it is not claimed.
+
+## What driving the real product found
+
+Three defects, none of which any unit test could see, all in code I had written
+and believed correct:
+
+1. **The refusal envelope was read at the wrong level.** `code` and `message`
+   nest under `error`; both new repositories read the top level, so EVERY server
+   refusal would have reached a person as the generic offline sentence. Found by
+   the Windows lane.
+
+2. **The success envelope was read at the wrong level too.** Responses arrive as
+   `{ok, data}`; the parser was handed the whole body, found none of its keys,
+   and fell to every "unknown" default — so the screen showed BOTH proofs as
+   "In review" for an institution that had never started one, and offered no
+   action at all. Found by the web lane, on screen, in a browser.
+
+3. **The route policy was circular.** `InstitutionRoutePolicy.admin` resolves to
+   `authorizedSpeaker`, which an institution only confers once VERIFIED. So
+   reaching the verification screen required being verified. An OWNER of an
+   unverified institution — exactly the population the program exists for — was
+   refused at their own verification page with the role card beside it reading
+   "Founder". Found by the web lane.
+
+Seventeen unit tests, a route-registry gate and eight doctrine gates all passed
+over the top of all three.
 
 ## Android / physical Pixel — EVIDENCE_LIMITED
 
@@ -101,10 +142,9 @@ is not evidence for these surfaces.
 
 ## What must happen before any of these becomes PASS
 
-1. **Web** — serve the built client against the isolated stack and drive the
-   owner journey, the reviewer queue and the NEEDS_INFO loop in a browser,
-   including real file acquisition, cancellation, an oversized file, an upload
-   failure and a retry.
+1. **Web** — the remaining half: real file acquisition, cancellation, an
+   oversized file, an upload failure and a retry; and the reviewer queue driven
+   in a browser.
 2. **Android** — the same, on the attached Pixel, including the system picker
    and share flow.
 3. **iOS/iPadOS** — the same through the Codemagic lane.

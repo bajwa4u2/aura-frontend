@@ -376,6 +376,24 @@ class InstitutionVerificationException implements Exception {
   String toString() => message;
 }
 
+/// THE SUCCESS ENVELOPE ALSO NESTS.
+///
+/// Responses arrive as `{ok: true, data: {...}}`. Passing the whole body to a
+/// parser finds none of its keys and every field falls to its "unknown"
+/// default -- which, for this screen, rendered BOTH proofs as "In review" for
+/// an institution that had never started one, and offered no action at all.
+///
+/// It is the same mistake as reading the refusal at the top level, on the other
+/// side of the same response. `identity_verification_repository.dart` has done
+/// this correctly since it was written; this is that `_unwrap`.
+Map<String, dynamic> _unwrap(dynamic data) {
+  if (data is Map && data['data'] is Map) {
+    return Map<String, dynamic>.from(data['data'] as Map);
+  }
+  if (data is Map) return Map<String, dynamic>.from(data);
+  return <String, dynamic>{};
+}
+
 class InstitutionVerificationRepository {
   InstitutionVerificationRepository(this._dio);
 
@@ -386,7 +404,7 @@ class InstitutionVerificationRepository {
   Future<InstitutionVerificationStanding> standing(String institutionId) async {
     return _call(() async {
       final res = await _dio.get<Map<String, dynamic>>(_base(institutionId));
-      return InstitutionVerificationStanding.fromJson(res.data ?? const {});
+      return InstitutionVerificationStanding.fromJson(_unwrap(res.data));
     });
   }
 
@@ -400,7 +418,7 @@ class InstitutionVerificationRepository {
         '${_base(institutionId)}/start',
         data: {'category': category},
       );
-      return InstitutionVerificationStanding.fromJson(res.data ?? const {});
+      return InstitutionVerificationStanding.fromJson(_unwrap(res.data));
     });
   }
 
@@ -413,7 +431,7 @@ class InstitutionVerificationRepository {
         '${_base(institutionId)}/existence',
         data: {'evidence': evidence.map((e) => e.toJson()).toList()},
       );
-      return InstitutionVerificationStanding.fromJson(res.data ?? const {});
+      return InstitutionVerificationStanding.fromJson(_unwrap(res.data));
     });
   }
 
@@ -432,7 +450,7 @@ class InstitutionVerificationRepository {
           'evidence': evidence.map((e) => e.toJson()).toList(),
         },
       );
-      return InstitutionVerificationStanding.fromJson(res.data ?? const {});
+      return InstitutionVerificationStanding.fromJson(_unwrap(res.data));
     });
   }
 

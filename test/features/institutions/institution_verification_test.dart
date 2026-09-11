@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:aura/features/institutions/verification/data/institution_verification_repository.dart';
@@ -299,6 +300,80 @@ void main() {
       }
     });
   });
+
+  group('the response envelope is unwrapped, both directions', () {
+    // THE DEFECT THIS GROUP EXISTS FOR.
+    //
+    // Responses arrive as `{ok: true, data: {...}}` and refusals as
+    // `{ok: false, error: {...}}`. Reading either at the top level finds none
+    // of its keys: the success path fell to every "unknown" default and
+    // rendered BOTH proofs as "In review" for an institution that had never
+    // started one, and the refusal path fell to the offline sentence.
+    //
+    // Neither showed up in a unit test until the doubles carried the real
+    // envelope, because the doubles were built from the shape I expected.
+    Dio dioReturning(Object? body) {
+      final dio = Dio();
+      dio.httpClientAdapter = _RespondingAdapter(body: body);
+      return dio;
+    }
+
+    test('A WRAPPED SUCCESS IS READ, not mistaken for an unknown state', () async {
+      final repo = InstitutionVerificationRepository(dioReturning({
+        'ok': true,
+        'data': {
+          'institutionId': 'inst_1',
+          'category': 'CORPORATE_BUSINESS',
+          'requiresManualReview': false,
+          'existence': {
+            'state': 'NOT_STARTED',
+            'available': <String>[],
+            'infoRequested': null,
+            'acceptsEvidence': false,
+            'confidence': null,
+            'accepted': <String>[],
+            'requirementNotEnumerated': false,
+          },
+          'authority': {
+            'state': 'NOT_STARTED',
+            'available': <String>[],
+            'infoRequested': null,
+            'acceptsEvidence': false,
+            'evidenceKind': null,
+            'menu': <String>[],
+          },
+          'migration': {
+            'reason': 'NOT_ANCHORED',
+            'deadlineAt': null,
+            'daysRemaining': null,
+            'authorityGovernanceBlocked': false,
+            'institutionVoiceBlocked': false,
+          },
+        },
+      }));
+
+      final standing = await repo.standing('inst_1');
+
+      // NOT_STARTED, not unknown. "In review" for an institution nobody has
+      // started reviewing is a lie the person cannot act on.
+      expect(standing.existence.state, ExistenceState.notStarted);
+      expect(standing.authority.state, AuthorityState.notStarted);
+      expect(standing.institutionId, 'inst_1');
+    });
+
+    test('AN UNWRAPPED BODY STILL WORKS', () async {
+      // Tolerated on purpose: not every endpoint in this estate wraps, and a
+      // parser that only understood one shape would be a second contract.
+      final repo = InstitutionVerificationRepository(dioReturning({
+        'institutionId': 'inst_2',
+        'existence': {'state': 'CONFIRMED', 'available': <String>[], 'acceptsEvidence': false},
+        'authority': {'state': 'CONFIRMED', 'available': <String>[], 'acceptsEvidence': false},
+      }));
+
+      final standing = await repo.standing('inst_2');
+      expect(standing.existence.state, ExistenceState.confirmed);
+    });
+  });
 }
 
 /// Answers every request with a failure, so refusal mapping can be driven
@@ -326,6 +401,31 @@ class _FailingAdapter implements HttpClientAdapter {
         data: data,
       ),
       type: DioExceptionType.badResponse,
+    );
+  }
+}
+
+/// Answers every request with a 200 and the given body.
+class _RespondingAdapter implements HttpClientAdapter {
+  _RespondingAdapter({required this.body});
+
+  final Object? body;
+
+  @override
+  void close({bool force = false}) {}
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    return ResponseBody.fromString(
+      jsonEncode(body),
+      200,
+      headers: {
+        Headers.contentTypeHeader: [Headers.jsonContentType],
+      },
     );
   }
 }
