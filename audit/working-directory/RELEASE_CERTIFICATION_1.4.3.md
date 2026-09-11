@@ -19,6 +19,26 @@ The phrase `FREEZE_READY = BLOCKED` is retired and is not used here.
     MAIN                   UNTOUCHED  — 491db357 / 0b92237d
     TREES                  clean (tracked files)
 
+## Commits after the freeze — records only
+
+Both branches carry commits made AFTER the frozen commits above. None of them
+changes what ships, and that is measured rather than asserted, because a reader
+comparing HEAD to the frozen SHA would otherwise be right to suspect drift.
+
+    client   0bfea435..HEAD    0 files under lib/ ios/ android/ assets/ web/,
+                               pubspec.yaml, pubspec.lock
+    backend  4856728e..HEAD    0 non-spec files under src/,
+                               0 under prisma/ or the package manifests
+
+What they add: the release records themselves, the iOS certification result,
+the Operator Hub repair and its goldens, and the vendored finance-step-up
+contract with its conformance spec. `tsconfig.build.json` excludes
+`**/*spec.ts`, so the spec reaches no build output, and `contracts/*.json` is a
+vendored reference read by tests rather than at runtime.
+
+**The frozen SHAs above remain the shipping truth.** Anything that would change
+that belongs on a branch off the freeze, not on it.
+
 ## The evidence set
 
     ANDROID_PIXEL          60/60 x2       physical Pixel 9a, Android 17 / API 37, arm64
