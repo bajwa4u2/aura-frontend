@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:aura/app/route_classification.dart';
+import 'package:aura/core/navigation/navigation_authority.dart';
 import 'package:aura/features/institutions/verification/data/institution_verification_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -203,6 +205,36 @@ void main() {
       final s = InstitutionVerificationStanding.fromJson(const {});
       expect(s.mayAct, isTrue);
       expect(s.actionRequiredTier, 'ELEVATED');
+    });
+  });
+
+  group('the way out of the gate is itself reachable', () {
+    test('THE ROUTE THE SCREEN OFFERS IS NOT GATED ON WHAT IT ASKS FOR', () {
+      // The verification screen shows "Verify my identity" to somebody who does
+      // not hold the elevated tier, and sends them to this route. If that route
+      // required the same tier, the screen would be handing them a door locked
+      // with the key they came to collect — the identical dead end this release
+      // repaired one layer up, recreated one layer down.
+      //
+      // MEMBER is the correct class: signed in, nothing more. Asserted rather
+      // than trusted, because it is a one-word change away from being wrong and
+      // nothing else in the suite would notice.
+      expect(
+        classifyRoute(NavigationAuthority.identityVerificationRoute),
+        RouteClass.member,
+      );
+    });
+
+    test('AND IT IS NOT PUBLIC EITHER', () {
+      // The other direction matters too: the screen reads this account's own
+      // submissions and invites a government document. An unauthenticated
+      // visitor reaching it would get an empty shell asking for a passport.
+      expect(
+        routeAllowsUnauthenticatedEntry(
+          NavigationAuthority.identityVerificationRoute,
+        ),
+        isFalse,
+      );
     });
   });
 
