@@ -567,9 +567,16 @@ final class StorefrontTestAuthorityTests: XCTestCase {
         "moving into the China storefront must end prohibited, not merely changed"
       )
 
-      // The sessions must outlive the reads; a deallocated one stops
+      // The session must outlive the reads; a deallocated one stops
       // overriding, and every reading above would then be about nothing.
-      withExtendedLifetime(held) {}
+      //
+      // `session`, not `held`. The single-session correction described above
+      // removed the array of per-territory sessions and this line kept naming
+      // it, so the whole RunnerTests target stopped COMPILING — which is why
+      // `executed=0` rather than any test failing. It went unnoticed because
+      // the iPad step above consumed the entire build budget on every run and
+      // this step had never once executed.
+      withExtendedLifetime(session) {}
     }
 
     /// The synchronous read is kept for the launch path, and this records what
