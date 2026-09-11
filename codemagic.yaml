@@ -291,7 +291,14 @@ workflows:
   ios-certification:
     name: Aura iOS — Certification (simulator)
     instance_type: mac_mini_m2
-    max_build_duration: 60
+    # 120, RAISED FROM 60 ON 2026-09-11, AND ONLY NOW MEANINGFUL.
+    #
+    # Until the iPad step was bounded it consumed the entire budget on every
+    # run, so the native XCTest layer and the full suite sweep behind it had
+    # never executed once. With the bound in place they will, and the sweep
+    # runs every integration suite on the simulator. 60 minutes was never
+    # tested against that reality because nothing ever got there.
+    max_build_duration: 120
     environment:
       flutter: stable
       xcode: latest
@@ -480,25 +487,30 @@ workflows:
           xcrun simctl io "$UDID" screenshot certification/ipad/device_00_before.png || true
 
           set +e
-          # BOUNDED. This app boots its real router, whose periodic timers and
-          # realtime socket outlive the test, so `flutter test` can fail in
-          # seconds and then never exit. On 2026-09-11 that turned a 12-second
-          # assertion failure into a 60-minute build timeout and the three
-          # steps after this one never ran.
+          # BOUNDED, WITHOUT DEPENDING ON A BINARY THIS IMAGE DOES NOT HAVE.
           #
-          # 900s is many times a healthy run, so it can only fire on a hang,
-          # and the log is already on disk when it does.
-          TIMEOUT=$(command -v timeout || command -v gtimeout || true)
-          flutter_test_ipad() {
-            if [ -n "$TIMEOUT" ]; then
-              "$TIMEOUT" --signal=TERM --kill-after=30s 900s "$@"
-            else
-              echo "NOTE: no timeout(1) on this image; running unbounded" >&2
-              "$@"
-            fi
-          }
-          flutter_test_ipad flutter test integration_test/ipad_reviewer_journey_test.dart               -d "$UDID" --reporter expanded 2>&1 | tee certification/ipad/journey.log
-          rc=${PIPESTATUS[0]}
+          # This app boots its real router, whose periodic timers and realtime
+          # socket outlive the test, so `flutter test` can finish its work and
+          # never exit. The first attempt at a bound used timeout(1); build
+          # 6aa36a61 logged "no timeout(1) on this image; running unbounded"
+          # and then sat here for 37 minutes until the whole build was killed.
+          #
+          # So: background the run, have a subshell signal it after the
+          # deadline, and let `wait` report the real status. Nothing external
+          # is required. 900s is many times a healthy run, so it can only fire
+          # on a hang -- and a hang is then REPORTED as one, with the log
+          # already on disk, instead of silently consuming the build.
+          IPAD_DEADLINE=900
+          flutter test integration_test/ipad_reviewer_journey_test.dart               -d "$UDID" --reporter expanded > certification/ipad/journey.log 2>&1 &
+          test_pid=$!
+          ( sleep "$IPAD_DEADLINE"; kill -TERM "$test_pid" 2>/dev/null; sleep 30; kill -KILL "$test_pid" 2>/dev/null ) &
+          watchdog_pid=$!
+          wait "$test_pid"; rc=$?
+          kill "$watchdog_pid" 2>/dev/null
+          cat certification/ipad/journey.log
+          if [ "$rc" -ge 124 ] || [ "$rc" -eq 143 ]; then
+            echo "IPAD=TIMEOUT the run did not finish within ${IPAD_DEADLINE}s"               | tee -a certification/ipad/RESULT.txt
+          fi
           set -e
 
           xcrun simctl io "$UDID" screenshot certification/ipad/device_01_after.png || true
@@ -517,7 +529,25 @@ workflows:
             fi
           } | tee -a certification/ipad/RESULT.txt
 
-          [ "$rc" -eq 0 ] || exit 1
+          # RECORDED, NOT FATAL -- and the gate is at the end instead.
+          #
+          # This step used to `exit 1`, which aborted the build, which meant the
+          # native XCTest layer and the full suite sweep behind it had NEVER
+          # run on this branch: the iPad step consumed the entire 60-minute
+          # budget every time. Most of the iOS evidence lives in those two.
+          #
+          # The verdict is written down and the build continues. "Certification
+          # verdict" at the end reads every recorded verdict and fails the
+          # build if any is not PASS, so a real failure still goes red -- it
+          # just does so having collected the rest of the evidence. A lane that
+          # reports one failure and hides three others is not stricter.
+          mkdir -p certification
+          if [ "$rc" -eq 0 ] && [ "$RAN" -gt 0 ]; then
+            echo "IPAD=PASS" >> certification/VERDICTS.txt
+          else
+            echo "IPAD=FAILED exit=$rc assertions=$RAN" >> certification/VERDICTS.txt
+          fi
+          exit 0
 
       - name: Certify the NATIVE layer — XCTest on the Runner target
         script: |
@@ -728,6 +758,34 @@ workflows:
           [ "$FAILED" -ne 0 ] && exit 1
           [ "$NOCOV" -ne 0 ] && exit 2
           exit 0
+
+      # ── THE GATE, DELIBERATELY LAST ──────────────────────────────────────
+      #
+      # Steps above record their verdict and keep going, so one failure cannot
+      # hide the others behind it. This reads what they recorded and decides.
+      #
+      # It fails CLOSED: an absent or unreadable verdict file is a failure, not
+      # a pass, because "no lane reported" and "every lane passed" must never
+      # be the same outcome. That is the mistake this whole lane was built to
+      # stop making.
+      - name: Certification verdict
+        script: |
+          set -uo pipefail
+          echo "RECORDED VERDICTS"
+          if [ ! -s certification/VERDICTS.txt ]; then
+            echo "  none recorded — failing closed, because no report and a"
+            echo "  clean report must never look the same."
+            exit 1
+          fi
+          cat certification/VERDICTS.txt
+          if grep -qvE "=PASS$" certification/VERDICTS.txt; then
+            echo ""
+            echo "VERDICT=FAILED — at least one lane did not pass:"
+            grep -vE "=PASS$" certification/VERDICTS.txt
+            exit 1
+          fi
+          echo ""
+          echo "VERDICT=ALL RECORDED LANES PASSED"
 
     artifacts:
       - certification/*
