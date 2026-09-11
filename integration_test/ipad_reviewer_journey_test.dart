@@ -97,21 +97,40 @@ void main() {
     // — which is a fact about where the reader is, not about whether the
     // surface exists.
     //
-    // So the test does what a reviewer does: it scrolls. That is the stronger
+    // So the test scrolls, as a reviewer would. That is the stronger
     // assertion, not the weaker one — a policy link that is genuinely absent
     // still fails here, and one that is merely below the fold is correctly
     // reported as reachable.
+    //
+    // THE POSITION IS MOVED DIRECTLY, NOT DRAGGED.
+    //
+    // The first version of this used `tester.drag`, and on the iPad simulator
+    // that took the whole 15-minute budget without finishing: under
+    // `LiveTestWidgetsFlutterBinding` every drag dispatches real pointer events
+    // and each `pump` waits real wall-clock time, so twelve of them cost more
+    // than the rest of the build put together. The run was killed mid-test and
+    // certified nothing.
+    //
+    // `jumpTo` moves the same viewport with no gesture, no animation and no
+    // per-frame cost, and a lazy sliver builds its tail exactly the same way.
+    // Repeated because `maxScrollExtent` on a lazy list is an estimate that
+    // grows as more of the list is realised.
     final legal = find.textContaining(
         RegExp('privacy|terms|safety', caseSensitive: false));
 
     if (legal.evaluate().isEmpty) {
       final scrollable = find.byType(Scrollable);
       if (scrollable.evaluate().isNotEmpty) {
-        for (var i = 0; i < 12 && legal.evaluate().isEmpty; i++) {
-          await tester.drag(scrollable.first, const Offset(0, -600));
+        for (var i = 0; i < 6 && legal.evaluate().isEmpty; i++) {
+          final position =
+              tester.state<ScrollableState>(scrollable.first).position;
+          if (!position.hasContentDimensions) break;
+          final target = position.maxScrollExtent;
+          if (target <= position.pixels) break;
+          position.jumpTo(target);
           // Bounded, like every other wait in this file: `pumpAndSettle` never
           // returns in this app.
-          await settle(tester, frames: 6);
+          await settle(tester, frames: 4);
         }
       }
     }
