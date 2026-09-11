@@ -1430,6 +1430,17 @@
   "verdict": "COMPLIANT"
  },
  {
+  "route": "/admin/integrity/institution-verification",
+  "sample": "/admin/integrity/institution-verification",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "parentReturn",
+  "deepLinkDestination": "/admin/integrity",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
   "route": "/admin/integrity/moderation/:id",
   "sample": "/admin/integrity/moderation/x-id",
   "renders": true,
@@ -1586,6 +1597,17 @@
  {
   "route": "/institution/:institutionId/domains",
   "sample": "/institution/x-institutionid/domains",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "deepLinkFallback",
+  "deepLinkDestination": "/institution/x-institutionid/explore",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
+  "route": "/institution/:institutionId/verification",
+  "sample": "/institution/x-institutionid/verification",
   "renders": true,
   "protected": false,
   "deepLinkSemantic": "deepLinkFallback",

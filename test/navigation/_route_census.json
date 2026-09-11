@@ -1672,6 +1672,18 @@
   "parent": ""
  },
  {
+  "path": "/admin/integrity/institution-verification",
+  "segments": 3,
+  "params": [],
+  "renders": true,
+  "hasRedirect": false,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
   "path": "/admin/integrity/moderation/:id",
   "segments": 4,
   "params": [
@@ -1853,6 +1865,20 @@
  },
  {
   "path": "/institution/:institutionId/domains",
+  "segments": 3,
+  "params": [
+   "institutionId"
+  ],
+  "renders": true,
+  "hasRedirect": true,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
+  "path": "/institution/:institutionId/verification",
   "segments": 3,
   "params": [
    "institutionId"

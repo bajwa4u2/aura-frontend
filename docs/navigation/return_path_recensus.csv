@@ -129,6 +129,7 @@ route,sample,renders,protected,deeplink_semantic,deeplink_destination,in_app_sem
 /admin/subjects/person/:id/:focus,/admin/subjects/person/x-id/x-focus,true,false,parentReturn,/admin/subjects/person/x-id,stackReturn,true,COMPLIANT
 /admin/subjects/institution/:id/:focus,/admin/subjects/institution/x-id/x-focus,true,false,parentReturn,/admin/subjects/institution/x-id,stackReturn,true,COMPLIANT
 /admin/integrity/identity/:id,/admin/integrity/identity/x-id,true,false,parentReturn,/admin/integrity,stackReturn,true,COMPLIANT
+/admin/integrity/institution-verification,/admin/integrity/institution-verification,true,false,parentReturn,/admin/integrity,stackReturn,true,COMPLIANT
 /admin/integrity/moderation/:id,/admin/integrity/moderation/x-id,true,false,parentReturn,/admin/integrity,stackReturn,true,COMPLIANT
 /admin/integrity/appeals/:id,/admin/integrity/appeals/x-id,true,false,parentReturn,/admin/integrity,stackReturn,true,COMPLIANT
 /admin/integrity/feedback/:id,/admin/integrity/feedback/x-id,true,false,parentReturn,/admin/integrity,stackReturn,true,COMPLIANT
@@ -144,6 +145,7 @@ route,sample,renders,protected,deeplink_semantic,deeplink_destination,in_app_sem
 /institution/:institutionId/dashboard,/institution/x-institutionid/dashboard,true,false,contextReturn,/institution/x-institutionid/explore,stackReturn,true,COMPLIANT
 /institution/domains,/institution/domains,true,false,deepLinkFallback,/institution/domains/explore,stackReturn,true,COMPLIANT
 /institution/:institutionId/domains,/institution/x-institutionid/domains,true,false,deepLinkFallback,/institution/x-institutionid/explore,stackReturn,true,COMPLIANT
+/institution/:institutionId/verification,/institution/x-institutionid/verification,true,false,deepLinkFallback,/institution/x-institutionid/explore,stackReturn,true,COMPLIANT
 /institution/:institutionId/units/:unitId,/institution/x-institutionid/units/x-unitid,true,false,parentReturn,/institution/x-institutionid/units,stackReturn,true,COMPLIANT
 /institution/:institutionId/units,/institution/x-institutionid/units,true,false,deepLinkFallback,/institution/x-institutionid/explore,stackReturn,true,COMPLIANT
 /institution/:institutionId/public-engagement,/institution/x-institutionid/public-engagement,true,false,deepLinkFallback,/institution/x-institutionid/explore,stackReturn,true,COMPLIANT
