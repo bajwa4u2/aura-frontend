@@ -16,6 +16,8 @@
 // FOUNDER RULE: mobile is not a reduced subset. These assertions are how that
 // claim stops being a claim.
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,10 +28,11 @@ import 'package:aura/features/admin/domain/operator_capability.dart';
 import 'package:aura/features/admin/ui/operator_kit.dart';
 
 /// An operator holding everything, and one holding almost nothing.
-OperatorAuthority _owner() => OperatorAuthority.fromMe(const {
-      'userId': 'op-1',
-      'roles': ['OWNER'],
-      'effectivePermissions': [
+/// The OWNER permission catalogue, as this test believes it to be.
+///
+/// Named so the guard at the bottom of this file can compare it against the
+/// backend instead of against other tests that share the same assumption.
+const List<String> _ownerPermissions = [
         'USERS_READ', 'USERS_WRITE', 'MODERATION_READ', 'MODERATION_WRITE',
         'VERIFICATION_READ', 'VERIFICATION_WRITE',
         'IDENTITY_VERIFICATION_READ', 'IDENTITY_VERIFICATION_WRITE',
@@ -41,7 +44,17 @@ OperatorAuthority _owner() => OperatorAuthority.fromMe(const {
         'SYSTEM_HEALTH_READ', 'SUPPORT_READ', 'SUPPORT_WRITE',
         'PRODUCT_FEEDBACK_READ', 'PRODUCT_FEEDBACK_WRITE',
         'DISCOVERY_READ', 'DISCOVERY_EVIDENCE_READ',
-      ],
+        // Added 2026-09-06 with the External area and missing here until
+        // 2026-09-11. This list is a hand-copy of the backend's OWNER set and
+        // drifted from it silently; the guard at the bottom of this file now
+        // makes that impossible to repeat.
+        'EXTERNAL_CONSUMERS_READ', 'EXTERNAL_CONSUMERS_WRITE',
+];
+
+OperatorAuthority _owner() => OperatorAuthority.fromMe(const {
+      'userId': 'op-1',
+      'roles': ['OWNER'],
+      'effectivePermissions': _ownerPermissions,
     });
 
 OperatorAuthority _moderator() => OperatorAuthority.fromMe(const {
@@ -67,11 +80,19 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('OPERATOR AUTHORITY on the real platform', () {
-    test('the seven areas are frozen, in order', () {
+    test('THE AREAS ARE FROZEN, IN ORDER', () {
+      // EIGHT. `external` was added on 2026-09-06 and this freeze was not
+      // updated with it, so the list said seven for five days while the
+      // product had eight — and the first run that ever reached this test
+      // reported it as a product failure.
+      //
+      // The title no longer names the count. "the seven areas" had to be
+      // wrong before anybody noticed the list was, which is a second failure
+      // the first one hid.
       expect(
         OperatorArea.values.map((a) => a.id).toList(),
         ['now', 'work', 'subjects', 'integrity', 'platform', 'record',
-            'discovery'],
+            'discovery', 'external'],
       );
     });
 
@@ -99,9 +120,23 @@ void main() {
       expect(visible, isNot(contains('discovery')));
     });
 
-    test('an owner sees all seven', () {
+    test('AN OWNER SEES EVERY AREA', () {
+      // This compares the fixture against the enum, so it can only fail when
+      // an area exists that the owner fixture cannot reach — which is exactly
+      // what happened when `external` shipped and the fixture did not gain
+      // EXTERNAL_CONSUMERS_READ.
       expect(OperatorArea.visibleFor(_owner()).length,
           OperatorArea.values.length);
+    });
+
+    test('AND EVERY AREA IS REACHABLE BY SOMEBODY', () {
+      // The opposite direction, which nothing asserted. An area gated on a
+      // capability no role can hold would be invisible to every operator
+      // alive, and would look exactly like a correctly-secured area.
+      for (final area in OperatorArea.values) {
+        expect(area.isVisibleTo(_owner()), isTrue,
+            reason: '${area.id} is unreachable even for an owner');
+      }
     });
   });
 
@@ -199,6 +234,56 @@ void main() {
         expect(size.width, greaterThanOrEqualTo(48),
             reason: 'three primaries fit; fourteen never did');
       }
+    });
+  });
+
+  // ── THE FIXTURE IS CHECKED AGAINST THE REAL CATALOGUE ────────────────────
+  //
+  // OWNER is founder-frozen (2026-09-06) as "the complete CURRENT admin
+  // permission catalogue" — `effectivePermissionsForGrant` returns
+  // ALL_ADMIN_PERMISSIONS for OWNER, before any stored list. So an owner
+  // fixture that omits a catalogue entry is describing somebody who does not
+  // exist.
+  //
+  // That is exactly what happened: EXTERNAL_CONSUMERS_READ/WRITE entered the
+  // catalogue on 2026-09-06 and this hand-copy did not gain them for five
+  // days. Nothing noticed, because every test using the fixture agreed with
+  // every other test using the fixture. Comparing against ourselves can never
+  // catch that; comparing against the source can.
+  //
+  // Reads the other repository, so it SKIPS WITH A REASON where that is not
+  // checked out rather than failing everywhere.
+  group('the owner fixture matches the catalogue it imitates', () {
+    test('EVERY CATALOGUE PERMISSION IS IN THE OWNER FIXTURE', () {
+      final source = File('../aura-backend/src/admin/admin-permissions.ts');
+      if (!source.existsSync()) {
+        markTestSkipped(
+          'aura-backend is not checked out beside this repository, so the '
+          'owner fixture could not be compared against ALL_ADMIN_PERMISSIONS.',
+        );
+        return;
+      }
+
+      final block = RegExp(r'ALL_ADMIN_PERMISSIONS[^=]*=\s*\[(.*?)\n\]',
+              dotAll: true)
+          .firstMatch(source.readAsStringSync());
+      expect(block, isNotNull,
+          reason: 'ALL_ADMIN_PERMISSIONS not found in the backend');
+
+      final catalogue = RegExp(r'AdminPermission\.([A-Z_]+)')
+          .allMatches(block!.group(1)!)
+          .map((m) => m.group(1)!)
+          .toSet();
+      expect(catalogue.length, greaterThan(20),
+          reason: 'the catalogue parsed suspiciously small; the guard would '
+              'pass without proving anything');
+
+      final missing = catalogue.difference(_ownerPermissions.toSet());
+      expect(missing, isEmpty,
+          reason: 'the owner fixture is missing catalogue permissions: '
+              '${missing.toList()..sort()}. Add them — and check whether a new '
+              'operator area arrived with them, because that is how the '
+              'External area shipped uncovered.');
     });
   });
 }

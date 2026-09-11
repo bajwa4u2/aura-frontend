@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:aura/core/auth/admin_access_provider.dart';
 import 'package:aura/core/net/dio_provider.dart';
+import 'package:aura/features/admin/areas/external_area.dart';
 import 'package:aura/features/admin/areas/discovery_area.dart';
 import 'package:aura/features/admin/areas/identity_review.dart';
 import 'package:aura/features/admin/areas/integrity_area.dart';
@@ -85,11 +86,16 @@ void main() {
     'w320': const Size(320, 720),
   };
 
-  /// The seven areas plus the destinations the worklist addresses. Every one
-  /// is rendered at every width — no area is desktop-only and none is a
-  /// reduced mobile subset.
+  /// EVERY area plus the destinations the worklist addresses. Every one is
+  /// rendered at every width — no area is desktop-only and none is a reduced
+  /// mobile subset.
+  ///
+  /// The count is deliberately not written down here any more. This said
+  /// "seven" while the product had eight, and External went unrendered at
+  /// every width for five days behind a comment that read as completeness.
   final surfaces = <String, ({String path, Widget widget})>{
     'now': (path: '/admin', widget: const NowArea()),
+    'external': (path: '/admin/external', widget: const ExternalArea()),
     'work': (path: '/admin/work', widget: const WorkArea()),
     'subjects': (path: '/admin/subjects', widget: const SubjectsArea()),
     'subject_person': (
@@ -925,6 +931,10 @@ const _ownerMe = <String, dynamic>{
     'SYSTEM_HEALTH_READ', 'SUPPORT_READ', 'SUPPORT_WRITE',
     'PRODUCT_FEEDBACK_READ', 'PRODUCT_FEEDBACK_WRITE',
     'DISCOVERY_READ', 'DISCOVERY_EVIDENCE_READ',
+    // Added to the catalogue 2026-09-06 with the External area, and missing
+    // from this hand-copy until 2026-09-11. OWNER is frozen as the COMPLETE
+    // catalogue, so an owner fixture short of one entry describes nobody.
+    'EXTERNAL_CONSUMERS_READ', 'EXTERNAL_CONSUMERS_WRITE',
   ],
 };
 
