@@ -496,23 +496,24 @@ final class StorefrontTestAuthorityTests: XCTestCase {
         return await source.currentCountryCode()
       }
 
-      let permitted = try await read("USA")
-      guard permitted == "USA" else {
-        throw XCTSkip(
-          "StoreKit test authority did not reach the storefront read at all "
-            + "(USA reported \(permitted ?? "nil")); nothing here is provable."
-        )
-      }
-      XCTAssertEqual(
-        CallCapabilityPolicy.capability(forStorefront: permitted),
-        .available,
-        "a non-China storefront must permit CallKit"
-      )
-
-      // THE CONTROL.
+      // THE CONTROL COMES FIRST, AND IT IS NEVER THE DEFAULT STOREFRONT.
       //
-      // Several territories, because one cannot tell "this environment will
-      // not present JPN" apart from "the read does not follow a change".
+      // The previous order established "the authority is reachable" by setting
+      // USA and reading USA back — but USA is the simulator's DEFAULT, so that
+      // read returns USA whether the override works or does nothing whatever.
+      // Every later territory then failing to take was read as the product
+      // caching a stale value, when "the override has no effect here" fits the
+      // same evidence exactly.
+      //
+      // The product code settles which is more likely and it is not the
+      // defect: `currentCountryCode()` holds no cache at all — on iOS 15+ it
+      // is `await Storefront.current?.countryCode`, which reports the
+      // storefront as it is now. There is nowhere for a stale value to live.
+      //
+      // This file has already asserted and retracted this same claim twice.
+      // So the control is now a territory that CANNOT be confused with the
+      // default: if none of them can be presented, the authority does nothing
+      // here and nothing is provable — a skip, not a failure.
       var observedControl: String?
       var controlReads: [String] = []
       for territory in ["GBR", "JPN", "DEU", "FRA"] {
@@ -526,20 +527,36 @@ final class StorefrontTestAuthorityTests: XCTestCase {
       let trail = controlReads.joined(separator: ", ")
 
       guard let observedControl else {
-        XCTAssertFalse(
-          controlReads.allSatisfy { $0.hasSuffix("->USA") },
-          "four storefront changes and every read still reported USA [\(trail)] "
-            + "— the value is stuck at the first storefront this process read, "
-            + "so a person moving into the China storefront would keep CallKit "
-            + "until the app restarts"
-        )
         throw XCTSkip(
-          "no control territory could be presented through the read [\(trail)]. "
-            + "USA resolved, so the authority is partly reachable, but this "
-            + "environment cannot demonstrate a change and nothing about the "
-            + "China read is provable here."
+          "SKTestSession's storefront override produced no observable change "
+            + "in this environment [\(trail)]. Every read returned the "
+            + "simulator default, which is what an override that does nothing "
+            + "looks like — and is indistinguishable from a stale read, so "
+            + "NOTHING is claimed here in either direction. Aura's own read "
+            + "holds no cache (Storefront.current, no stored value), so a "
+            + "staleness claim would need evidence this environment cannot "
+            + "produce. The China storefront read remains UNPROVEN here and "
+            + "must not be claimed to App Review."
         )
       }
+
+      // From here the authority is EARNED: a non-default territory was
+      // presented and read back, so this process can observe a change. A value
+      // that now refuses to move is genuine staleness, and still fails.
+      let permitted = try await read("USA")
+      XCTAssertEqual(
+        permitted,
+        "USA",
+        "the read followed a change into \(observedControl) [\(trail)] and "
+          + "then would not follow one back to USA (got \(permitted ?? "nil")) "
+          + "— that is a value stuck after the first change, and a person "
+          + "moving storefronts would keep the wrong capability"
+      )
+      XCTAssertEqual(
+        CallCapabilityPolicy.capability(forStorefront: permitted),
+        .available,
+        "a non-China storefront must permit CallKit"
+      )
 
       XCTAssertEqual(
         CallCapabilityPolicy.capability(forStorefront: observedControl),
