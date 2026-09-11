@@ -746,6 +746,22 @@ workflows:
           # at once: if it passes and the next suite still kills the device,
           # the failure belongs to what the app loads at startup rather than to
           # the emulator's ability to run a Flutter app at all.
+          # BOUNDED, PER SUITE AND OVERALL.
+          #
+          # On 2026-09-11 this loop ran past an hour without finishing and the
+          # build was cancelled with 21 minutes left — and the TestFlight
+          # build, which produces the shippable IPA, sat QUEUED BEHIND IT for
+          # 1h59m and never started. One unbounded step cost two hours of the
+          # only macOS slot there is.
+          #
+          # Per suite so one slow suite cannot eat the run; overall because
+          # nineteen well-behaved suites at four minutes each still exceed the
+          # budget. The watchdog is shell-native: this image has neither
+          # timeout(1) nor gtimeout.
+          SUITE_DEADLINE=300
+          SWEEP_BUDGET=2700
+          SWEEP_STARTED=$(date +%s)
+
           ORDERED="integration_test/operator_hub_certification_test.dart"
           for f in $ORDERED $(ls integration_test/*.dart | grep -v operator_hub_certification); do
             base=$(basename "$f" .dart)
@@ -758,9 +774,32 @@ workflows:
               continue
             fi
 
+            SPENT=$(( $(date +%s) - SWEEP_STARTED ))
+            if [ "$SPENT" -ge "$SWEEP_BUDGET" ]; then
+              # NOT_RUN is neither a pass nor a failure. It is "this lane ran
+              # out of time before reaching here", and it is written down
+              # because a sweep that silently covered twelve of nineteen
+              # suites while reporting green is the false-coverage claim this
+              # whole lane exists to prevent.
+              echo "  NOT_RUN $base (sweep budget of ${SWEEP_BUDGET}s spent)"                 | tee -a certification/run-manifest.txt
+              NOCOV=1
+              continue
+            fi
+
             echo "──────────────────────────────────────────────────────────"
-            python3 scripts/certify_suite.py "$f" --device "$UDID"               --out certification 2>&1 | tee -a certification/run-manifest.txt
-            rc=${PIPESTATUS[0]}
+            python3 scripts/certify_suite.py "$f" --device "$UDID"               --out certification > certification/_suite.log 2>&1 &
+            suite_pid=$!
+            ( sleep "$SUITE_DEADLINE"; kill -TERM "$suite_pid" 2>/dev/null; sleep 20; kill -KILL "$suite_pid" 2>/dev/null ) &
+            suite_watchdog=$!
+            wait "$suite_pid"; rc=$?
+            kill "$suite_watchdog" 2>/dev/null
+            cat certification/_suite.log | tee -a certification/run-manifest.txt
+
+            if [ "$rc" -ge 124 ] || [ "$rc" -eq 143 ]; then
+              # A suite that could not finish has not passed.
+              echo "  TIMED_OUT $base (exceeded ${SUITE_DEADLINE}s)"                 | tee -a certification/run-manifest.txt
+              FAILED=1
+            fi
             [ "$rc" = "1" ] && FAILED=1
             [ "$rc" = "2" ] && NOCOV=1
           done
