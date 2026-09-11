@@ -480,7 +480,24 @@ workflows:
           xcrun simctl io "$UDID" screenshot certification/ipad/device_00_before.png || true
 
           set +e
-          flutter test integration_test/ipad_reviewer_journey_test.dart               -d "$UDID" --reporter expanded 2>&1 | tee certification/ipad/journey.log
+          # BOUNDED. This app boots its real router, whose periodic timers and
+          # realtime socket outlive the test, so `flutter test` can fail in
+          # seconds and then never exit. On 2026-09-11 that turned a 12-second
+          # assertion failure into a 60-minute build timeout and the three
+          # steps after this one never ran.
+          #
+          # 900s is many times a healthy run, so it can only fire on a hang,
+          # and the log is already on disk when it does.
+          TIMEOUT=$(command -v timeout || command -v gtimeout || true)
+          flutter_test_ipad() {
+            if [ -n "$TIMEOUT" ]; then
+              "$TIMEOUT" --signal=TERM --kill-after=30s 900s "$@"
+            else
+              echo "NOTE: no timeout(1) on this image; running unbounded" >&2
+              "$@"
+            fi
+          }
+          flutter_test_ipad flutter test integration_test/ipad_reviewer_journey_test.dart               -d "$UDID" --reporter expanded 2>&1 | tee certification/ipad/journey.log
           rc=${PIPESTATUS[0]}
           set -e
 

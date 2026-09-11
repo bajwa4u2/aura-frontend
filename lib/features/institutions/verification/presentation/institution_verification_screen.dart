@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/attachments/aura_media_upload.dart';
 import '../../../../core/media/media_acquisition.dart';
 import '../../../../core/net/dio_provider.dart';
+import '../../../../core/navigation/navigation_authority.dart';
 import '../../../../core/product/product_language.dart';
 import '../../../../core/product/product_state.dart';
 import '../../../../core/product/product_state_view.dart';
@@ -245,6 +247,14 @@ class _InstitutionVerificationScreenState
   }
 
   Widget _existenceActions(InstitutionVerificationStanding s) {
+    // BEFORE THE TRANSITION TABLE: may this person act at all?
+    //
+    // Reading this standing needs institution ADMIN; submitting a proof needs
+    // the elevated identity tier. The 120-day migration population holds the
+    // first and not the second by definition, so without this check they would
+    // be shown their own deadline beside a button the server refuses.
+    if (!s.mayAct) return const _IdentityFirstNote();
+
     // RENDERED FROM THE SERVER'S PROJECTION, never from the state. A button
     // exists here only where the transition table has an edge.
     final canSubmit = s.existence.canSubmit('SUBMITTED');
@@ -354,6 +364,11 @@ class _InstitutionVerificationScreenState
   }
 
   Widget _authorityActions(InstitutionVerificationStanding s) {
+    // Same gate as the existence proof above, and stated once per card rather
+    // than once per screen: these are two separate questions and a person
+    // reading only one of them still needs the answer.
+    if (!s.mayAct) return const _IdentityFirstNote();
+
     final canSubmit = s.authority.canSubmit('SUBMITTED');
     if (!canSubmit && !s.authority.acceptsEvidence) {
       return const SizedBox.shrink();
@@ -646,6 +661,43 @@ class _Banner extends StatelessWidget {
         borderRadius: BorderRadius.circular(AuraRadius.sm),
       ),
       child: Text(message, style: AuraText.body),
+    );
+  }
+}
+
+/// WHAT IS ACTUALLY REQUIRED, AND THE WAY TO IT.
+///
+/// Shown in place of the proof actions when this person has not yet verified
+/// their own identity to the tier those actions need. It states the
+/// requirement, says plainly that nothing has been lost, and offers the one
+/// route that resolves it.
+///
+/// Non-punitive, matching the refusal copy the server sends for the same
+/// situation: the person has done nothing wrong, and general Aura use is
+/// unaffected.
+class _IdentityFirstNote extends StatelessWidget {
+  const _IdentityFirstNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: AuraSpace.sm),
+        const Text(
+          'Verifying your own identity comes first. Once that is done, this '
+          'step opens here — nothing is lost in the meantime, and the rest of '
+          'Aura is unaffected.',
+          style: AuraText.body,
+        ),
+        const SizedBox(height: AuraSpace.sm),
+        AuraSecondaryButton(
+          label: 'Verify my identity',
+          icon: Icons.badge_outlined,
+          onPressed: () =>
+              context.push(NavigationAuthority.identityVerificationRoute),
+        ),
+      ],
     );
   }
 }

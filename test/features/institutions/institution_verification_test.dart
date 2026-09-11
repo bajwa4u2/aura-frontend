@@ -173,6 +173,37 @@ void main() {
       expect(s.menu, isEmpty);
       expect(s.accepted, isEmpty);
     });
+
+    test('WHETHER THIS PERSON MAY ACT IS READ, NEVER GUESSED', () {
+      // Reading this standing needs institution ADMIN; acting on a proof needs
+      // the elevated identity tier. The client cannot compute the second, and a
+      // client that guessed would guess wrong for exactly the 120-day migration
+      // population — who would then be shown their deadline beside a button the
+      // server refuses.
+      final blocked = InstitutionVerificationStanding.fromJson(const {
+        'actorAssurance': {
+          'meetsActionRequirement': false,
+          'requiredTier': 'ELEVATED',
+        },
+      });
+      expect(blocked.mayAct, isFalse);
+      expect(blocked.actionRequiredTier, 'ELEVATED');
+
+      final allowed = InstitutionVerificationStanding.fromJson(const {
+        'actorAssurance': {'meetsActionRequirement': true},
+      });
+      expect(allowed.mayAct, isTrue);
+    });
+
+    test('AND AN ABSENT FIELD MEANS AN OLDER SERVER, NOT A REFUSAL', () {
+      // The default is deliberately permissive. An absent field means a server
+      // older than this build, whose behaviour was to offer the actions;
+      // defaulting to false would strip every action from everybody the moment
+      // a client shipped ahead of a deploy.
+      final s = InstitutionVerificationStanding.fromJson(const {});
+      expect(s.mayAct, isTrue);
+      expect(s.actionRequiredTier, 'ELEVATED');
+    });
   });
 
   group('evidence carries no submitter', () {

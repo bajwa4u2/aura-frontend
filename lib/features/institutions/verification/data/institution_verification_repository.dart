@@ -277,6 +277,8 @@ class InstitutionVerificationStanding {
     required this.authorityEvidenceKind,
     required this.menu,
     required this.migration,
+    required this.mayAct,
+    required this.actionRequiredTier,
   });
 
   final String institutionId;
@@ -303,9 +305,24 @@ class InstitutionVerificationStanding {
   /// The 120-day standing, delivered with everything else.
   final MigrationPosture migration;
 
+  /// WHETHER THIS PERSON MAY ACT, as opposed to merely look.
+  ///
+  /// Reading this standing needs only institution ADMIN; submitting a proof
+  /// needs the elevated identity tier. Those are different, and the difference
+  /// matters most for exactly the people the 120-day migration addresses —
+  /// who by definition do not hold the tier yet, and who would otherwise be
+  /// shown their deadline beside a button that refuses.
+  final bool mayAct;
+
+  /// The tier the ACTIONS need, named so the screen can say what is required
+  /// rather than only that something is.
+  final String actionRequiredTier;
+
   static InstitutionVerificationStanding fromJson(Map<String, dynamic> json) {
     final existence = (json['existence'] as Map?)?.cast<String, dynamic>() ?? {};
     final authority = (json['authority'] as Map?)?.cast<String, dynamic>() ?? {};
+    final assurance =
+        (json['actorAssurance'] as Map?)?.cast<String, dynamic>() ?? {};
 
     List<String> strings(dynamic v) =>
         (v as List?)?.map((e) => e.toString()).toList(growable: false) ?? const [];
@@ -341,6 +358,13 @@ class InstitutionVerificationStanding {
       migration: MigrationPosture.fromJson(
         (json['migration'] as Map?)?.cast<String, dynamic>(),
       ),
+      // TRUE when absent, deliberately. An absent field means a server older
+      // than this build, whose behaviour was to offer the actions; defaulting
+      // to false would strip every action from everybody the moment a client
+      // shipped ahead of a deploy.
+      mayAct: assurance['meetsActionRequirement'] != false,
+      actionRequiredTier:
+          (assurance['requiredTier'] ?? 'ELEVATED').toString(),
     );
   }
 }

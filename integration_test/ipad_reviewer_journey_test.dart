@@ -89,10 +89,36 @@ void main() {
     // WITHOUT an account. Reaching them and coming back is the half that
     // actually fails in practice: a one-way trip into a legal page with no way
     // back is a rejection.
+    // REACHED, NOT MERELY PRESENT.
+    //
+    // These links live in `ShellFooter`, which the signed-out home appends
+    // below its own content. On a tablet fold that is off-screen and inside a
+    // lazy scrollable, so its widgets are not built and `find` cannot see them
+    // — which is a fact about where the reader is, not about whether the
+    // surface exists.
+    //
+    // So the test does what a reviewer does: it scrolls. That is the stronger
+    // assertion, not the weaker one — a policy link that is genuinely absent
+    // still fails here, and one that is merely below the fold is correctly
+    // reported as reachable.
     final legal = find.textContaining(
         RegExp('privacy|terms|safety', caseSensitive: false));
+
+    if (legal.evaluate().isEmpty) {
+      final scrollable = find.byType(Scrollable);
+      if (scrollable.evaluate().isNotEmpty) {
+        for (var i = 0; i < 12 && legal.evaluate().isEmpty; i++) {
+          await tester.drag(scrollable.first, const Offset(0, -600));
+          // Bounded, like every other wait in this file: `pumpAndSettle` never
+          // returns in this app.
+          await settle(tester, frames: 6);
+        }
+      }
+    }
+
     expect(legal.evaluate().isNotEmpty, isTrue,
-        reason: 'no verification or policy surface is reachable signed out');
+        reason: 'no verification or policy surface is reachable signed out, '
+            'even after scrolling the page to its end');
     await shot(tester, '03_verification_reachable');
 
     // ── SIGN IN ─────────────────────────────────────────────────────────────
