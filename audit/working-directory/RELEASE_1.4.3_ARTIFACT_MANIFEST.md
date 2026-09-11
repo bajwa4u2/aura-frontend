@@ -3,8 +3,8 @@
 **Date:** 2026-09-11
 **Branch:** `release/aura-1.4.3-38` on both remotes. `main` untouched on both.
 
-    client   b0b1c411fd2de77c8b425365cee8ffb45312bde4   github.com/bajwa4u2/aura-frontend
-    backend  649fad720e4e80aa07b7711a2478b25b3fe1174a   github.com/bajwa4u2/aura-backend
+    client   191642d3562ab4f3f7418c90d9ccc9814103f2b5   github.com/bajwa4u2/aura-frontend
+    backend  4856728e641ebe4f7029c5079295682f75005343   github.com/bajwa4u2/aura-backend
 
 Both trees clean (tracked files) at build time, asserted in the same command
 that produced the artifact rather than checked separately afterwards.
@@ -14,7 +14,7 @@ that produced the artifact rather than checked separately afterwards.
 ## Android — app bundle
 
     path        build/app/outputs/bundle/release/app-release.aab
-    sha256      cae409bce6a54dfb0330e0c9e714fa8fd7881168726cb3e8d11d6e037d1bb720
+    sha256      a1887009fc1bff076ae7031111a601dfa0d8fa9b1de6b82f64cdb574dc231fb2
     size        80,741,457 bytes
     signed by   META-INF/UPLOAD.RSA  (Play upload key, not debug)
 
@@ -27,14 +27,20 @@ manifest**, not taken from `pubspec.yaml`:
 **38 is free**, confirmed against Google Play on 2026-09-11 rather than
 assumed. Accepted `versionCode`s are `[1, 3, 24, 25, 27, 35, 36, 37]`.
 
-**A note on reproducibility, offered as an observation and not a guarantee.**
-This bundle was built twice, at `b78bf3ef` and again at `b0b1c411`, and came out
-byte-identical — the commits between them touched only tests and records, never
-`lib/`. That is a useful signal, not a claim of reproducible builds.
+**Reproducibility, measured rather than assumed.** This bundle was built at
+four commits across the session. It came out byte-identical wherever `lib/` was
+untouched, and CHANGED when `lib/` gained fifteen lines of **comment** — Dart's
+AOT snapshot embeds source metadata that a comment moves. The web artifact did
+NOT change on that same commit, because `dart2js` drops it.
+
+That matters for one claim in particular, so it is written down: **byte
+equality is not available as a proof that two commits produce the same app.**
+Where that question arises below, it is answered by showing that no executable
+statement differs, which is the stronger answer anyway.
 
 ## Web — pinned certification artifact
 
-    output      build/web_cert2   (built against the isolated stack, not production)
+    output      build/web_final   (built against the isolated stack, not production)
     sha256      4d2743cb53296c4aff6c041f5dce0f1b133eb47712a82699e7117fb95885adc2
                 (main.dart.js)
 
@@ -47,7 +53,36 @@ web certification lane must name the bytes it exercised.
 `core.autocrlf` is true would check the Dart sources out with CRLF and could
 produce a different hash for identical content.
 
-## iOS — see the platform certification record
+## iOS — ACCEPTED BY APPLE AS BUILD 38
+
+    artefact    aura.ipa                      37,917,528 bytes
+    sha256      cc61b21f76aa334b0e4868bafb94e48e43acd1a02dfbaa8e3b97f7f52e9d9d10
+    CFBundleShortVersionString   1.4.3
+    CFBundleVersion              38          <- read from the artifact Apple processed
+    extension   org.auraplatform.app.ShareExtension  1.4.3 + 38
+    SDK         iphoneos26.5  ·  Xcode 26.6  ·  MinimumOSVersion 15.0
+    Flutter     3.47.3  ·  Dart 3.13.3  ·  mac_mini_m2
+    signing     AURA PLATFORM App Store Profile 5762789e-82c5-4d66-adb9-eaba498c83a9
+                + Aura ShareExtension App Store Profile, both ACTIVE
+    ASC build   adf9d5ea-314b-4904-87c0-4839a8d5f616  (app 6772071135)
+    verdict     accepted and processed, no error
+
+**BUILD 38 IS NOW CONSUMED ON APPLE'S SIDE.** Any further iOS artifact for
+1.4.3 must carry 39 or higher. Apple rejects a duplicate outright, which is
+also why this acceptance is the authoritative answer that 38 was free.
+
+**THE ONE DEVIATION FROM "ALL ARTIFACTS FROM THE EXACT COMMIT", stated plainly
+rather than smoothed over.** This IPA was built from `5d9bfcdd`, not from the
+freeze commit. Between the two, `lib/` changed by exactly **fifteen comment
+lines and no executable statement** — measured, by counting every added or
+removed line in `lib/` that is not a comment or blank, and finding zero. The
+remaining commits touched tests, goldens, CI configuration and records, none of
+which ship.
+
+Byte equality was attempted as the proof and failed, for a reason worth
+knowing: a comment moves the AOT snapshot. So the claim made here is the
+behavioural one — no executable statement differs — and it is not dressed up as
+a byte claim. Founder accepted build 38 on this basis, 2026-09-11.
 
 The IPA is produced by Codemagic (`ios-testflight`) from the same release
 branch. Its provenance — source commit, Flutter/Dart, Xcode/iOS SDK, signing
