@@ -208,17 +208,33 @@ void main() {
   });
 
   group('hydration never happens during a render', () {
-    final service = File(
-      '../aura-backend/src/users/users.service.ts',
-    ).readAsStringSync();
+    // THIS GUARD READS THE OTHER REPOSITORY, AND SAYS SO WHEN IT CANNOT.
+    //
+    // `../aura-backend` exists only where both repositories are checked out
+    // side by side. In CI — which clones aura-frontend alone — this threw
+    // `Cannot open file` at LOAD time, which is not a failing test but a
+    // failing FILE: the whole suite stopped, and on 2026-09-11 that took the
+    // entire iOS TestFlight lane down with it.
+    //
+    // Reading it at all is deliberate and worth keeping: this is a
+    // cross-product invariant, and the client cannot observe it any other way.
+    // So it runs where it can and SKIPS WITH A REASON where it cannot, rather
+    // than either failing everywhere or quietly asserting nothing.
+    final backendService = File('../aura-backend/src/users/users.service.ts');
+    final available = backendService.existsSync();
 
     test('the profile read consults the cache and does not fetch', () {
       // A profile render must not make a network call as a side effect, or a
       // slow publisher page becomes a slow profile.
+      final service = backendService.readAsStringSync();
       expect(service, contains('withLinkHydration'));
       expect(service, contains('LinkPreviewStatus.READY'));
       expect(service, isNot(contains('await this.linkIntelligence.resolve')));
-    });
+    }, skip: available
+        ? false
+        : 'aura-backend is not checked out beside this repository, so this '
+            'cross-product guard cannot read it. It runs on a developer '
+            'machine with both repositories present.');
   });
 
   group('the public profile shows the person, not just their posts', () {

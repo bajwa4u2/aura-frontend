@@ -31,7 +31,13 @@ void main() {
   group('the reaction vocabulary is the one that persists', () {
     test('it matches the backend ReactionType enum exactly', () {
       final schema = File('../aura-backend/prisma/schema.prisma');
-      if (!schema.existsSync()) return; // backend not beside this repo
+      // SKIPPED OUT LOUD, NOT RETURNED SILENTLY. A guard that returns
+      // early reports PASS while asserting nothing, which is worse than
+      // reporting nothing at all.
+      if (!schema.existsSync()) {
+        markTestSkipped('aura-backend is not checked out beside this repository, so this cross-product guard could not read it.');
+        return;
+      }
       final src = schema.readAsStringSync();
       final block = RegExp(r'enum ReactionType \{([^}]*)\}').firstMatch(src);
       expect(block, isNotNull);

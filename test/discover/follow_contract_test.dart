@@ -91,7 +91,12 @@ void main() {
       // Read from the backend so this fails if the product rule changes,
       // rather than encoding a copy that drifts.
       final svc = File('../aura-backend/src/follows/follows.service.ts');
-      if (!svc.existsSync()) return; // backend not checked out beside this repo
+      // Skipped out loud rather than returned silently: a guard that
+      // returns early reports PASS while asserting nothing.
+      if (!svc.existsSync()) {
+        markTestSkipped('aura-backend is not checked out beside this repository, so this cross-product guard could not read it.');
+        return;
+      }
       final src = svc.readAsStringSync();
       expect(src, contains('Aura follow requires a request'));
       expect(src, contains('/users/:handle/follow/request'));
@@ -103,7 +108,10 @@ void main() {
       final dto = File(
         '../aura-backend/src/follows/dto/follow-pair.dto.ts',
       );
-      if (!dto.existsSync()) return; // backend not checked out beside this repo
+      if (!dto.existsSync()) {
+        markTestSkipped('aura-backend is not checked out beside this repository, so this cross-product guard could not read it.');
+        return;
+      }
       final src = dto.readAsStringSync();
       final actorType = src.indexOf('actorType!');
       expect(actorType, greaterThan(0));
