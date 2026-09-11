@@ -59,7 +59,9 @@ standing is refused carrying the server's own words AND its machine code;
 submitting to somebody else's institution is refused; the reviewer queue is
 unreadable without the permission; start is idempotent and never moves a
 category already recorded; evidence submitted from the phone moves the proof;
-every notification destination resolves to that institution and no other; the
+every notification DESTINATION resolves to that institution and no other —
+that is route resolution, and this record makes no claim anywhere that a
+notification was DELIVERED on any platform; the
 mobile layout does not overflow; the three proofs are not collapsed; a deadline
 is shown as a date and an unstarted clock is not shown at all.
 
