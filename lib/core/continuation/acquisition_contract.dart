@@ -78,6 +78,21 @@ const bool kWindowsContinuationShipped = false;
 /// request. A track record is not a served page, and this flag is about what
 /// a person receives, not about what the console says.
 ///
+/// THE CAUSE, established in Play Console on 2026-09-11 rather than inferred:
+/// the production release 37 (1.4.2) "Start full rollout" is IN GOOGLE REVIEW.
+/// The app's overall status is still "Closed testing", and Play's own dashboard
+/// checklist reads "4 of 5 complete" with the incomplete step being "Publish
+/// your app on Google Play".
+///
+/// Ruled out, each checked: countries/regions (177 selected), device catalogue
+/// (phones, tablets, Chrome OS, Android XR), managed publishing (off, so
+/// nothing is held by us), store listing (present), package identity (matches
+/// the shipped applicationId), and any policy gate or rejection (none).
+///
+/// The API and the page disagreed for a reason worth remembering: the Play
+/// Developer API's track status `completed` describes the developer-side
+/// ROLLOUT reaching 100%, NOT Google having approved and published the app.
+///
 /// Offering "Get Aura" on Android would therefore still be advertising
 /// distribution that does not exist for the person being offered it.
 ///
