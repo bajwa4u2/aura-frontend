@@ -97,12 +97,18 @@ void main() {
     test('THE PLATFORM CAN REACH THE VERIFICATION CONTRACT AT ALL', () async {
       // A positive control for everything below. If the stack were unreachable
       // from Windows, every refusal assertion would pass for the wrong reason.
+      //
+      // Asked of the owner's OWN institution, deliberately. Probing a stranger
+      // here proved only that SOMETHING answered, which a refusal also
+      // satisfies — so the control could not tell "the contract works" from
+      // "everything is refused". A 200 on the caller's own standing can only
+      // come from the contract actually working.
       final res = await dio.get<Map<String, dynamic>>(
-        '/institutions/$strangerInstitutionId/verification',
+        '/institutions/$institutionId/verification',
         options: Options(validateStatus: (_) => true),
       );
-      expect(res.statusCode, isNotNull);
-      expect(res.statusCode, isNot(0));
+      expect(res.statusCode, 200, reason: '${res.data}');
+      expect((res.data?['data'] as Map?)?['institutionId'], institutionId);
     });
 
     test('AN ACCOUNT WITHOUT STANDING IS REFUSED, and told why', () async {
