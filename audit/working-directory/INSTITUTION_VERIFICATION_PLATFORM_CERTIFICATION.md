@@ -2,9 +2,18 @@
 
 **Date:** 2026-09-11
 **Subject:** the three-proof institution verification program, client and runtime
-**Source under certification:**
-`release/aura-1.4.3-38` — client `ee6450311dbc11e9c9357b8da7535ee414f22932`,
-backend `e375a5baafcba2308c3e522cb6cafae2b4244cc1`
+**Source under certification:** `release/aura-1.4.3-38` on both remotes.
+`main` untouched on both.
+
+    client   26f6e882  github.com/bajwa4u2/aura-frontend
+    backend  649fad72  github.com/bajwa4u2/aura-backend
+    trees    clean (tracked files)
+
+**Not deployed.** Production runs `0b92237d` — `origin/main` — confirmed from
+`api.auraplatform.org/health`, and both verification routes answer `404` there
+while `/health` answers `200`. The entire program awaits the founder's cutover,
+which is the frozen state, and the migration defect below is therefore not live
+in production because the feature containing it is not either.
 **Rule applied:** no inherited PASS. Each platform carries its own status, and a
 platform that could not be exercised says so rather than borrowing another's.
 
