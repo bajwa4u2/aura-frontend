@@ -15,7 +15,9 @@ that produced the artifact rather than checked separately afterwards.
 
     path        build/app/outputs/bundle/release/app-release.aab
     sha256      a1887009fc1bff076ae7031111a601dfa0d8fa9b1de6b82f64cdb574dc231fb2
-    size        80,741,457 bytes
+    size        80,741,455 bytes   (corrected 2026-09-11; the line read
+                …457, a transcription error. The sha256 above matches the
+                file exactly, so the bytes were always the pinned bytes.)
     signed by   META-INF/UPLOAD.RSA  (Play upload key, not debug)
 
 **versionCode and versionName were read out of the artifact's own protobuf
