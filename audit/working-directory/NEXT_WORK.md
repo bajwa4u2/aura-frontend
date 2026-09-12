@@ -1,5 +1,61 @@
 # Next Work - aura_final
 
+## OPEN AS OF 2026-09-11 — ordered, with what each is waiting on
+
+### Waiting on someone else. Do not act.
+
+1. **Play: first production publication.** Submission 23 (37 / 1.4.2) in Google
+   review since Sep 10; app status `Closed testing`; public listing 404s.
+   Everything owed by us is done — account policy clean, app policy clean, App
+   content "all caught up", managed publishing off, 177 countries selected.
+   **Founder ruling: give it time; do NOT supersede with 38.**
+2. **Apple: 1.4.3 (38) Waiting for Review.** Do not touch the submission unless
+   Apple responds. **If Apple rejects or asks for information, bring the exact
+   reviewer message back BEFORE modifying the binary or preparing build 39.**
+   `BUILD 39 = NOT REQUIRED.`
+
+### Owed by us, before Play 38 goes up
+
+3. **Read Play Data safety against what 1.4.3 collects** (date of birth,
+   self-declared country). Not read this session — the wizard would not jump to
+   a completed step and walking it edits a declaration under review. Apple's
+   analogue was wrong for exactly these two fields. Map to `Other Data`, never
+   `Location`.
+4. **The 37 → 38 Android update path has never been tested.** Every Android
+   certification to date has been a clean install. Eleven closed-testing users
+   would be the first to take the update.
+
+### Backend, shipped but incomplete
+
+5. **`MediaService` admits a DRAFT post to a follower.** `canAccessPost` never
+   consults `status`. The moderation reachability module deliberately diverges
+   and refuses it, and `report-target-reachability.db.spec.ts` asserts that is
+   the ONLY disagreement between the two. Fix media, then delete that test.
+6. **The shared reachability rules live in two places.** MediaService owns one
+   copy, `report-target-reachability.ts` the other, guarded by a real-database
+   agreement test. Extracting them into one authority is the right end state and
+   was deliberately not done inside a privacy fix.
+7. **Accepted permanent schema drift:** `InstitutionPost_authorUserId_fkey` is
+   `RESTRICT` in production and `NO ACTION` in schema. Identical on a
+   non-deferrable constraint. `migrate diff --from-url` will report this one item
+   forever and that is the reviewed answer. **Do not make the diff empty.**
+
+### Product findings, recorded not fixed
+
+8. **Mobile billing steering is latent.** `institution_billing_screen.dart`
+   renders "Manage your plan on the web" with real prices on mobile when
+   monetization is enabled. Production is `monetizationMode: disabled` with all
+   four providers false, so it is unreachable today — but **Windows is now a
+   published surface too**, and a server flag flip would expose it on three
+   stores at once with no build, review or release gate.
+9. **A refusal reaches the person as a network excuse.** The shipped 1.4.3
+   client catches every error from `POST /moderation/reports` and renders "Could
+   not submit. Please check your connection and try again." — including for
+   "you cannot report that". Harmless to the wire contract, wrong to the person.
+10. **`favicon.ico` is unhashed and `immutable` for 30 days.** Fix before any
+    icon change, not after.
+
+
 ## FRONTEND ARCHITECTURE & PRODUCT COHERENCE INVESTIGATION — READY FOR FOUNDER REVIEW, 2026-08-14
 
 Full report (backend-owned, referenced not duplicated): `../aura-backend/capability/AURA_FRONTEND_ARCHITECTURE_COHERENCE_INVESTIGATION.md`. Investigation-only — **no fixes were applied in this repo**, deliberately, so the systemic picture is decided before further surface-by-surface correction.

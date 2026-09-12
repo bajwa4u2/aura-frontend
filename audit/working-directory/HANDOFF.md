@@ -1,5 +1,88 @@
 # Handoff - aura_final
 
+## 2026-09-11 — 1.4.3 DISTRIBUTION: Windows LIVE, Apple in review, Play waiting on Google
+
+Read this before touching any store. Three platforms, three states, **none of
+them inferable from another** — that was the session's most expensive lesson.
+
+    MICROSOFT   1.4.3.0 PUBLISHED — LIVE. Submission 1152921505701875307.
+                The only platform on which 1.4.3 reaches people today.
+    APPLE       1.4.3 (38) APP_STORE_REVIEW_SUBMITTED, Waiting for Review.
+    PLAY        AAB 38 valid/signed/certified and READY. NOT submitted, because
+                Aura is not published on Play at all: the app is Closed testing
+                and its FIRST production publication (submission 23, 37/1.4.2)
+                has been in Google review since Sep 10.
+
+**Founder decision, 2026-09-11: do NOT supersede the pending Play review with
+38.** Superseding restarts the review on new content, and the review in flight
+is the heavy first-publication one — incremental reviews on this account clear
+in under an hour (22 of 23 submissions published; only #23 pends). Give it time.
+
+### The release-state vocabulary is now frozen. Use it verbatim.
+
+`BUILD_UPLOADED` / `TESTFLIGHT_BETA_REVIEW` / `APP_STORE_VERSION_PREPARED` /
+`APP_STORE_REVIEW_SUBMITTED` / `APP_STORE_REVIEW_IN_PROGRESS` /
+`APP_STORE_APPROVED` / `READY_FOR_DISTRIBUTION` — defined in
+`APPLE_BUILD_38_REVIEW_STATE.md`.
+
+**Why it exists:** build 38 was recorded as "submitted for App Review" for a
+day while it sat in TestFlight beta review. Codemagic's `ios-testflight` lane
+submits there automatically and it renders as "Waiting for Review", the same
+words the App Store queue uses. **THE CHECK THAT SEPARATES THEM: an App Store
+submission creates a VERSION RECORD and a HISTORY ENTRY. TestFlight creates
+neither.** Never record a store state from a build badge, a lane log, or a
+recollection of having pressed submit.
+
+### Two store declarations were wrong and are now right — check them per release
+
+Apple **App Privacy** is app-level, published once, and 1.4.3 silently falsified
+it by starting to collect a **date of birth** and a **self-declared country**
+(12 references in the 1.4.3 registration screen, zero in the 1.4.1/1.4.2 line).
+Now declared as `Other Data → Other Data Types`, App Functionality, linked YES,
+tracking NO. **Not** Sensitive Info, and **not** Coarse Location — calling a
+declared jurisdiction "location" claims a device capability Aura does not have.
+
+Apple **Age Assurance** was declared NO, which 1.4.3 also falsified:
+`auth.service.ts` demands DOB + jurisdiction, runs `decideAgeEligibility`, and
+refuses with `ACCOUNT_AGE_INELIGIBLE` before any write. Corrected to YES against
+the code. The calculated rating did not move (13+) — a truthfulness fix, not a
+rating change.
+
+**ORDER MATTERS AND IT IS NOT OPTIONAL: the public privacy policy ships and is
+verified live FIRST, then the store declaration, then the submission.** A
+declaration has to be true at the moment it is made. `/privacy` now states both
+fields and their purposes (`fea60f9d`).
+
+**OWED ON PLAY:** Data safety has NOT been read against what 1.4.3 collects. It
+could not be, because the wizard would not jump to a completed step and walking
+it would edit a declaration currently under Google review. **Read it before 38
+is submitted**, and expect the same gap Apple had.
+
+### Windows is a published surface again
+
+Certified 11/11 on the real platform (institution_verification 5/5 +
+desktop_lifecycle 6/6) against the isolated stack, isolation verified first.
+`flutter test -d windows` builds a DEBUG runner and never touches the Release
+MSIX — re-hash the artifact afterwards to prove the bytes you submit are the
+bytes you certified.
+
+**A provenance trap:** `aura.exe` in the Release directory can be days older
+than the MSIX and that is normal — it is the Flutter C++ runner, which only
+relinks when `windows/` changes. `data/app.so` is the compiled Dart and is what
+must be current. **A file date is evidence about a file, not about a build.**
+
+### The call investigation is on HOLD and its state is preserved
+
+`CALLS = HOLD`. The Pixel still carries the instrumented build `669cb776` and
+was not touched. The uncommitted diagnostic edit was separated into three
+patches in `audit/working-directory/call-instrumentation/` — combined-as-
+installed, diagnostic-only, and the behavioural `bind_complete` change, which is
+**deliberately NOT in product source**. They reconstruct the installed source
+byte-for-byte; the tracked tree is clean.
+
+Last updated: 2026-09-11 UTC.
+
+
 ## Roadmap authority — 2026-08-14
 
 The canonical roadmap for the whole platform is `../aura-backend/capability/AURA_ROADMAP_RECONCILIATION_AND_UPGRADED_ROADMAP.md` (backend-owned, referenced not duplicated, matching the existing doctrine-document convention). It reconciles the original Phase/Item 1-17 roadmap against what was actually built and replaces the flat item list with a CHAPTER/GATE structure. **"Items 1-17 complete" is false**: implementation is largely complete, but PRODUCT-BEHAVIOR / CROSS-SYSTEM / REAL-BOUNDARY / FOUNDER ACCEPTANCE are open on essentially every item. This repo's largest named debts inside that roadmap: **Cross-System Communication Identity Coherence** (roadmap item 4 — founder observed identity not coherently represented as it moves Thread <-> DM <-> Space <-> Call; two prior audits were explicitly status-corrected from "certification" to "architectural audit / initial findings", so this remains untraced), the owed **live rich-paste verification** (register domain 1 — the `PasteTextIntent` dispatch could not be exercised in this harness and the founder instructed that live verification is owed rather than more harness proof), the **composer toolbar UI** for Institution Posts/Announcements, and the **phantom `EDITOR` role** still selectable in `invite_create_screen.dart`. Next work is Chapter A (Runtime Stability Cluster, which includes this repo's Riverpod ref-after-dispose defect). Item 17 must not begin.
