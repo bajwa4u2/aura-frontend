@@ -1,5 +1,128 @@
 # Handoff - aura_final
 
+## 2026-09-12 — ANDROID 1.4.3 (38) SUBMITTED TO GOOGLE PLAY PRODUCTION
+
+    SUBMISSION ID    25   (Production + App Content)
+    RELEASE          38 (1.4.3), track 4697255688183791453
+    PLAY STATUS      Release 38 (1.4.3) IN REVIEW, submitted 2026-09-12 08:36 UTC
+                     (Console local time Sep 12, 2026, 4:36 AM)
+    ROLLOUT          100%, 177 countries / regions, managed publishing OFF
+    PUBLIC LISTING   200 and serving 1.4.2 — 1.4.3 is NOT public yet
+    LAST OBSERVED    2026-09-12 08:48 UTC — #25 still `In review`; public
+                     listing 200 and still serving 1.4.2
+    ANDROID 1.4.3 = GENERALLY AVAILABLE -> NOT YET. Do not declare it on
+    Console status alone; the public listing must serve 1.4.3 first.
+
+**THE CHECK THAT CLOSES THIS RELEASE, stated so it is not fudged later:** fetch
+`play.google.com/store/apps/details?id=org.auraplatform.app` and read the
+version it serves. `1.4.3` there — not "In review" gone from the Console, not a
+green tick — is what earns the GA sentence, and an install from that listing is
+what confirms it.
+
+### The blocker recorded on 2026-09-11 was gone before this session started
+
+Aura's FIRST production publication (submission 23, 37 / 1.4.2) had cleared.
+App status `Production`, public listing 200 against a live-app 200 control and
+a fake-package 404 control, last published Sep 12. Submission activity is
+explicit: **#23 (Sep 10, Production) reads `Published`** — the very submission
+the last session recorded as pending. **The founder ruling "do NOT
+supersede the pending Play review with 38" was therefore spent** — it protected
+a review that no longer existed. Three platforms, three states, none inferable
+from another: that lesson cuts both ways, and a recorded blocker is a fact
+about a moment, not a standing condition. **Re-observe before you obey it.**
+
+### The artifact was REUSED, not rebuilt, and Play proved the bytes
+
+    sha256 (local)   a1887009fc1bff076ae7031111a601dfa0d8fa9b1de6b82f64cdb574dc231fb2
+    sha256 (Play)    a1887009fc1bff076ae7031111a601dfa0d8fa9b1de6b82f64cdb574dc231fb2
+    size             80,741,455 bytes
+    package          org.auraplatform.app      } read from the artifact's OWN
+    versionCode      38                        } protobuf manifest, not pubspec
+    versionName      1.4.3                     }
+    minSdk/target    24 / 36
+    signing cert     84:39:92:54:A2:A1:CA:65:E2:35:17:4D:06:DF:EA:73:2A:B2:28:
+                     BB:B9:1A:1C:E9:3F:D8:1B:24:E3:6D:7B:8C
+    app signing key  9D:20:D5:B2:27:9B:7C:1A:DC:E9:63:51:4F:D2:DF:B8:AE:66:D1:
+                     D4:D8:20:CF:99:99:B9:7F:8E:0D:7D:9D:61   (Google-held)
+
+**Play's own reported sha256 for the uploaded bundle equals the local hash** —
+so the bytes Play holds are the bytes that were certified, proven rather than
+assumed. The signing certificate matches THREE ways: the cert inside
+`META-INF/UPLOAD.RSA`, the `upload` alias in `android/upload-keystore.jks`, and
+the upload certificate Play itself has registered. `jarsigner -verify` reports
+`jar verified`.
+
+Manifest carries no `debuggable`, no `networkSecurityConfig`, no
+`usesCleartextTraffic`, no `.debug` suffix. The AOT snapshot's only endpoints
+are `api.`/`app.`/`uploads.auraplatform.org` — no localhost, no staging. No
+BILLING permission and no IAP dependency. Permissions are **byte-identical to
+v1.4.2**. Shipped-source diff from the build commit `9ce85c44` to HEAD over
+`lib/`, `pubspec.*` and `android/` is **empty**.
+
+**HOW IT WAS UPLOADED, because the obvious route does not work.** The browser
+bridge caps a file upload at 10 MB and the bundle is 80 MB, so the Console's
+drag-and-drop is unusable from automation. It went up through
+`scripts/play_release_api.sh`'s identity (`aura-release-publisher`, short-lived
+impersonation, no key file): create edit -> upload bundle -> commit the edit
+with NO track assignment. That registers the artifact in the library and
+releases nothing. The Console then attached it via **Add from library**, so the
+production act stayed a Console act.
+
+### Data safety was falsified by 1.4.3 and is now corrected
+
+The gap the 2026-09-11 handoff predicted was real. 1.4.3 sends `dateOfBirth`
+and `jurisdiction` off-device in the registration request
+(`auth_repository.dart`), and Play's **Personal info -> Other info** was
+UNCHECKED. Google's own tooltip for that field reads "Any other personal
+information. For example, a user's date of birth..." — so this is Google's
+answer to Google's question, **not** an Apple answer transplanted.
+
+Declared to MATCH THE ESTABLISHED `Name` PATTERN rather than inventing one:
+Collected yes / Shared no / not ephemeral / **required** / purposes **App
+functionality + Account management**. `Location -> Approximate` and `Precise`
+were left UNCHECKED and must stay that way: a declared jurisdiction is not a
+device capability.
+
+**THE ORDER IS NOT OPTIONAL AND IT WAS FOLLOWED.** The public policy was
+verified live FIRST — `https://auraplatform.org/privacy` returns 200 and its
+served HTML states both fields and their purposes (`fea60f9d`, which lives in
+`tool/web/generate_route_metadata.dart`, not in a client screen) — then the
+declaration, then the submission.
+
+Submitting the release asked **"Do you want to restart your review?"**, visible
+in submission activity as **#24 `Canceled`** (App Content only, 4:29 AM)
+superseded by **#25 `In review`** (Production + App Content, 4:36 AM). The
+review in flight was the Data-safety change from minutes earlier, so restarting
+cost minutes and bundled the declaration with the build it describes. That is
+the opposite of the Sep-11 situation; read what is actually in review before
+answering that prompt.
+
+### What was checked and deliberately NOT changed
+
+Privacy policy URL, account-deletion URL (`/account-deletion`, 200), reviewer
+sign-in (the `review@auraplatform.org` account still authenticates against
+production, 201), permissions (identical to 1.4.2), ads (no ad SDK, no `AD_ID`),
+monetization (no billing permission, no IAP). App content reads "all caught up".
+
+**Target audience declares 16-17 and 18+ while `age-policy.ts` admits 13+ in the
+US bucket.** Left alone on purpose: 1.4.3 only tightened a previously ungated
+registration, the declaration predates it, and including 13-15 pulls the app
+into the Families policy. It is a founder policy call, not release mechanics.
+
+### The four Play recommendations are BACKLOG, not blockers
+
+Founder ruling. They attach to release 38 in the Console. **Every named call
+site is in a third-party plugin, not Aura source** — this is plugin-upgrade and
+build-configuration work. Full detail in `NEXT_WORK.md` items 5-8. Item 7
+(bitmap downsampling) sits inside `flutter_webrtc`; `CALLS = HOLD` still
+applies to it.
+
+`CALLS = HOLD` — no call placed, no live call testing, Pixel untouched.
+Apple build 38 untouched. No versionCode 39 created.
+
+Last updated: 2026-09-12 UTC.
+
+
 ## 2026-09-11 — 1.4.3 DISTRIBUTION: Windows LIVE, Apple in review, Play waiting on Google
 
 Read this before touching any store. Three platforms, three states, **none of

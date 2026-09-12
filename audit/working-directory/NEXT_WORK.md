@@ -1,29 +1,58 @@
 # Next Work - aura_final
 
-## OPEN AS OF 2026-09-11 — ordered, with what each is waiting on
+## OPEN AS OF 2026-09-12 — ordered, with what each is waiting on
 
-### Waiting on someone else. Do not act.
+### Waiting on Google. Do not act.
 
-1. **Play: first production publication.** Submission 23 (37 / 1.4.2) in Google
-   review since Sep 10; app status `Closed testing`; public listing 404s.
-   Everything owed by us is done — account policy clean, app policy clean, App
-   content "all caught up", managed publishing off, 177 countries selected.
-   **Founder ruling: give it time; do NOT supersede with 38.**
-2. **Apple: 1.4.3 (38) Waiting for Review.** Do not touch the submission unless
-   Apple responds. **If Apple rejects or asks for information, bring the exact
-   reviewer message back BEFORE modifying the binary or preparing build 39.**
+1. **Play: 1.4.3 (38) SUBMITTED TO PRODUCTION, IN REVIEW.** Submitted
+   2026-09-12 08:36 UTC at 100% rollout, 177 countries, managed publishing off
+   (so it publishes itself on approval). Track summary reads
+   `Active - Release 38 (1.4.3) in review`. **Do not change the release while it
+   is in review**, and do not create versionCode 39.
+   The Sep-10 first-publication review CLEARED before this session began: the
+   app status is `Production`, the public listing returns 200 (live-app control
+   200, fake package 404), and it currently serves 1.4.2. The 2026-09-11
+   "do NOT supersede the pending review" ruling is therefore SPENT — it was
+   about a review that no longer exists.
+2. **Apple: 1.4.3 (38) Waiting for Review.** Unchanged and untouched this
+   session. **If Apple rejects or asks for information, bring the exact reviewer
+   message back BEFORE modifying the binary or preparing build 39.**
    `BUILD 39 = NOT REQUIRED.`
 
-### Owed by us, before Play 38 goes up
+### Owed by us
 
-3. **Read Play Data safety against what 1.4.3 collects** (date of birth,
-   self-declared country). Not read this session — the wizard would not jump to
-   a completed step and walking it edits a declaration under review. Apple's
-   analogue was wrong for exactly these two fields. Map to `Other Data`, never
-   `Location`.
-4. **The 37 → 38 Android update path has never been tested.** Every Android
-   certification to date has been a clean install. Eleven closed-testing users
-   would be the first to take the update.
+3. **The 37 -> 38 Android update path has never been tested.** Every Android
+   certification to date has been a clean install. The existing install base
+   takes this update first.
+4. **Target audience excludes 13-15 while the US account floor is 13.** Play
+   declares 16-17 and 18+; `age-policy.ts` admits 13+ in the US bucket
+   (EU/EEA and RoW are 16). This is NOT a 1.4.3 regression — 1.4.3 only
+   tightened a previously ungated registration, and the declaration predates it
+   (Mar 11) — so it was deliberately left alone rather than changed mid-release.
+   It is a founder policy call, because including 13-15 pulls the app into the
+   Families policy. **Decide it deliberately, not inside a release.**
+
+### ANDROID QUALITY BACKLOG — post-1.4.3, MUST NOT contaminate this release
+
+Founder ruling 2026-09-12: these four Play recommendations are **not release
+blockers**. They now attach to release 38 (1.4.3) in the Console. Every named
+call site is in a THIRD-PARTY PLUGIN, not in Aura's source — so the work is
+plugin upgrades and build configuration, not product edits.
+
+5. `EDGE-TO-EDGE = NEXT ANDROID COMPATIBILITY WORK`. From Android 15, apps
+   targeting SDK 35+ display edge-to-edge by default and must handle insets.
+   Aura targets SDK 36. Either handle insets or call `enableEdgeToEdge()`.
+6. `DEPRECATED EDGE-TO-EDGE APIs = NEXT ANDROID COMPATIBILITY WORK`.
+   `Window.setStatusBarColor`, `setNavigationBarColor`,
+   `setNavigationBarDividerColor`, reached from
+   `com.mr.flutter.plugin.filepicker.FileUtils.createImageFile` and
+   `androidx.core.graphics.drawable.IconCompat.toIcon`.
+7. `BITMAP DOWNSAMPLING = MEASURE + OPTIMIZE`. `BitmapFactory` without
+   `inSampleSize` in `com.cloudwebrtc.webrtc.record.FrameCapturer.onFrame`
+   (flutter_webrtc). **Touching flutter_webrtc is RTC-adjacent — see
+   `CALLS = HOLD` below before going near it.**
+8. `R8 = MEASURE + OPTIMIZE`. Optimized resource shrinking is not enabled;
+   Play asks for Android Gradle Plugin 9.0+.
 
 ### Backend, shipped but incomplete
 

@@ -26,8 +26,11 @@ manifest**, not taken from `pubspec.yaml`:
     base/manifest/AndroidManifest.xml   versionCode = 38
                                         versionName = 1.4.3
 
-**38 is free**, confirmed against Google Play on 2026-09-11 rather than
-assumed. Accepted `versionCode`s are `[1, 3, 24, 25, 27, 35, 36, 37]`.
+**38 was free**, confirmed against Google Play on 2026-09-11 rather than
+assumed. Accepted `versionCode`s were `[1, 3, 24, 25, 27, 35, 36, 37]`.
+**38 IS NOW CONSUMED ON PLAY TOO** (uploaded 2026-09-12 — see *Submission
+state* below), so it is consumed on BOTH stores. Any further 1.4.3 artifact for
+either platform must carry 39 or higher.
 
 **Reproducibility, measured rather than assumed.** This bundle was built at
 four commits across the session. It came out byte-identical wherever `lib/` was
@@ -94,12 +97,30 @@ here, because a second copy of a fact is a second thing that can drift.
 
 ## What is NOT built here
 
-**Windows / Microsoft Store.** Unchanged for this release and blocked upstream
-on a founder identity action: Partner Center's Entra tenant association
-requires a Global Admin sign-in, which is not mine to perform. No Windows
-artifact is claimed.
+**Windows / Microsoft Store.** *(Superseded — the block was cleared later on
+2026-09-11 and Windows `1.4.3.0` is PUBLISHED and LIVE on the Microsoft Store,
+submission 1152921505701875307. No Windows artifact is pinned in THIS file,
+which is all this section ever meant.)* Original text: unchanged for this
+release and blocked upstream on a founder identity action — Partner Center's
+Entra tenant association requires a Global Admin sign-in, which is not mine to
+perform.
 
-## Not submitted, and not deployed
+## Submission state — AMENDED 2026-09-12
+
+**The Android bundle above IS now uploaded and submitted.** It went to Google
+Play production on 2026-09-12 (submission 25, versionCode 38, 100%, 177
+countries, in review) **unrebuilt** — and Play's own reported sha256 for the
+uploaded bundle came back as
+`a1887009fc1bff076ae7031111a601dfa0d8fa9b1de6b82f64cdb574dc231fb2`, identical to
+the pin above. That is the strongest form this manifest's central claim can
+take: the bytes pinned here are the bytes Google holds.
+
+The iOS IPA is with Apple (1.4.3 / 38, Waiting for Review). Windows 1.4.3.0 is
+published on the Microsoft Store.
+
+The original paragraph, true when written on 2026-09-11, follows.
+
+### Original — not submitted, and not deployed (2026-09-11)
 
 No artifact here has been uploaded to any store, and none of this is running in
 production — `api.auraplatform.org/health` reports `0b92237d`, which is

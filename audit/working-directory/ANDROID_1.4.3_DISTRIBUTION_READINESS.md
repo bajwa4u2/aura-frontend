@@ -4,11 +4,22 @@
 **Authorisation:** founder — *"Proceed read-first… Do not publish or start
 production rollout yet. Return with one founder boundary only."*
 
-    ANDROID 1.4.3 READY FOR PRODUCTION = NO
+> **SUPERSEDED 2026-09-12 — THIS VERDICT NO LONGER HOLDS.** 1.4.3 (38) was
+> submitted to Google Play production that day (submission 25, in review, 100%,
+> 177 countries) using **this exact artifact, unrebuilt**. The reason below
+> expired on its own: Aura's first production publication (submission 23)
+> reached `Published`, so the app IS on Play and no review was pending when the
+> upload happened. Everything in sections 1 onward — the artifact facts, the
+> hashes, the signing identity — was re-verified on 2026-09-12 and still holds.
+> Current state lives in `HANDOFF.md`; this file is kept as the record of what
+> was true on 2026-09-11.
+
+    ANDROID 1.4.3 READY FOR PRODUCTION = NO      <- AS OF 2026-09-11 ONLY
     REASON = AURA IS NOT PUBLISHED ON GOOGLE PLAY AND ITS PRODUCTION
              RELEASE IS CURRENTLY IN GOOGLE REVIEW
+             ^ both halves ceased to be true on 2026-09-12
 
-    NOTHING WAS UPLOADED, PUBLISHED OR ROLLED OUT.
+    NOTHING WAS UPLOADED, PUBLISHED OR ROLLED OUT.   <- true of THAT session
     NO ARTIFACT WAS REBUILT. NO CALL WAS PLACED.
 
 ---
