@@ -149,9 +149,13 @@ for source-hash aesthetics.
 
     IOS      accepted at Apple as build 38, provenance above
 
-    WINDOWS  not rebuilt for 1.4.3 and not claimed. Partner Center automation
-             became available on 2026-09-11 but no Windows artifact was produced
-             or certified for this release.
+    WINDOWS  CORRECTED 2026-09-11. An artifact WAS produced — aura.msix
+             1.4.3.0, packaged 05:31, nineteen minutes after this line was
+             written. It was then certified 11/11 on the real platform and
+             SUBMITTED to the Microsoft Store (submission 1152921505701875307,
+             status Certification). See
+             WINDOWS_1.4.3_CERTIFICATION_AND_SUBMISSION.md.
+             sha256 05c10922ee11b58a8c3f032c692df9adc9ff68d3bb9af2be259ea9bb65289225
 
 ## Operator Hub correction — accepted into release truth
 
