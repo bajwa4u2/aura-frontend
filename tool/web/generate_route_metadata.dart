@@ -209,11 +209,21 @@ const _routes = <_RouteMeta>[
           'private communications, and produce durable institutional records. '
           'We do not sell personal information.',
       'Information categories: account identity (name, handle, email, phone '
-          'where supplied for verification), authored content (public posts, '
+          'where supplied for verification, date of birth, and the country '
+          'whose rules you tell us apply), authored content (public posts, '
           'institutional announcements, private messages), interaction '
           'records (likes, replies, follows, reactions), media uploads, and '
           'operational metadata (timestamps, device identity for session '
           'continuity, audit logs of moderation actions).',
+      'Date of birth and country: date of birth is collected when an account '
+          'is created and is used for age eligibility and identity assurance. '
+          'The country is the jurisdiction you declare, so that the '
+          'applicable eligibility and legal rules can be applied. It is '
+          'something you tell us: Aura does not derive it from your '
+          'connection, your SIM, or device location, and asks for no location '
+          'permission. Both are stored against your account, are never shown '
+          'on your public profile, and are never used for advertising or '
+          'tracking.',
       'Data sharing: Aura does not share personal information with '
           'advertisers or data brokers. We share data with sub-processors '
           'we use to run the platform (cloud hosting, email delivery, '
