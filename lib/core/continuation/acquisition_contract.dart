@@ -62,44 +62,32 @@ const bool kAndroidContinuationShipped = false;
 const bool kIosContinuationShipped = false;
 const bool kWindowsContinuationShipped = false;
 
-/// A general visitor sent to that Play page cannot install from it.
+/// Whether a general visitor sent to that Play page can actually install.
 ///
-/// STILL FALSE, BUT NO LONGER FOR THE OLD REASON — checked 2026-09-11, and the
-/// distinction matters because the old reason has genuinely been retired.
+/// **TRUE since 2026-09-12, and the history is the useful part.**
 ///
-/// Closed testing is no longer the gate: Play production access IS granted,
-/// and the Play Developer API reports the production track carrying a
-/// COMPLETED release of versionCode 37. On that evidence alone this flag would
-/// flip to true.
+/// This was false for two different reasons in succession, and the second one
+/// is the one worth remembering. First it was closed testing. Then production
+/// access was granted and the Play Developer API reported the production track
+/// carrying a COMPLETED release of versionCode 37 — and on that evidence alone
+/// the flag would have flipped. It did not, because the page itself was
+/// fetched and answered **HTTP 404**, with a known-good Play listing returning
+/// 200 from the same client in the same minute.
 ///
-/// It does not, because the page itself was fetched and answers **HTTP 404,
-/// "Not Found"**. A known-good Play listing returned 200 from the same client
-/// in the same minute, so that 404 is this app's own state and not a blocked
-/// request. A track record is not a served page, and this flag is about what
-/// a person receives, not about what the console says.
+/// The API and the page disagreed for a reason: the Play Developer API's track
+/// status `completed` describes the developer-side ROLLOUT reaching 100%, NOT
+/// Google having approved and published the app. A track record is not a
+/// served page, and this flag has only ever been about what a person receives.
 ///
-/// THE CAUSE, established in Play Console on 2026-09-11 rather than inferred:
-/// the production release 37 (1.4.2) "Start full rollout" is IN GOOGLE REVIEW.
-/// The app's overall status is still "Closed testing", and Play's own dashboard
-/// checklist reads "4 of 5 complete" with the incomplete step being "Publish
-/// your app on Google Play".
+/// Re-fetched on 2026-09-12: the listing now serves and names the app
+/// ("Aura - Apps on Google Play"). Google's review completed. So the flag
+/// follows the page, exactly as it refused to follow the API.
 ///
-/// Ruled out, each checked: countries/regions (177 selected), device catalogue
-/// (phones, tablets, Chrome OS, Android XR), managed publishing (off, so
-/// nothing is held by us), store listing (present), package identity (matches
-/// the shipped applicationId), and any policy gate or rejection (none).
-///
-/// The API and the page disagreed for a reason worth remembering: the Play
-/// Developer API's track status `completed` describes the developer-side
-/// ROLLOUT reaching 100%, NOT Google having approved and published the app.
-///
-/// Offering "Get Aura" on Android would therefore still be advertising
-/// distribution that does not exist for the person being offered it.
-///
-/// WHAT WOULD CHANGE IT: the listing serving. Re-fetch the URL before flipping
-/// this — do not flip it from a track status, which is what would have been
-/// wrong today.
-const bool kAndroidGenerallyAvailable = false;
+/// **The rule this encodes, for whoever changes it next: flip it from a
+/// fetch, never from a console.** The estate's store-availability contract
+/// (`company/platform-contracts/store-availability/contract.json`) now holds
+/// the same rule for every product and every platform.
+const bool kAndroidGenerallyAvailable = true;
 
 /// True when this path may offer native continuation at all.
 bool isContinuationEligiblePath(String path) {
@@ -132,8 +120,9 @@ AcquisitionAction acquisitionActionFor(TargetPlatform platform) {
   switch (platform) {
     case TargetPlatform.android:
       if (kAndroidContinuationShipped) return AcquisitionAction.open;
-      // Closed testing: the Play link is real, but a visitor cannot install
-      // from it, so offering it would be advertising unavailable distribution.
+      // The listing serves now, so "Get Aura" is an honest offer. It was not
+      // while the page answered 404 — see kAndroidGenerallyAvailable for the
+      // two reasons that kept it false and the fetch that ended them.
       return kAndroidGenerallyAvailable
           ? AcquisitionAction.get
           : AcquisitionAction.none;

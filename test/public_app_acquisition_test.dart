@@ -72,24 +72,29 @@ void main() {
   });
 
   group('the offer reflects real distribution truth', () {
-    test('Android offers nothing while its listing does not serve', () {
-      // The Play link is real, but a general visitor cannot install from it.
-      // Offering "Get Aura" there advertises distribution that, for the person
-      // being offered it, does not exist.
+    test('Android offers the store now that its listing serves', () {
+      // THE PREMISE CHANGED AGAIN, ON 2026-09-12, AND SO DID THIS TEST.
       //
-      // THE REASON CHANGED ON 2026-09-11 AND THE NAME OF THIS TEST WITH IT.
-      // Closed testing is retired: production access is granted and the
-      // production track carries a completed release of versionCode 37. What
-      // keeps this false is that the listing itself answers HTTP 404 to a
-      // general visitor — verified by fetching it, with a known-good Play
-      // listing returning 200 from the same client as the control.
+      // It has been through three states, and the shape of the sequence is
+      // the point. Closed testing: false. Production access granted and the
+      // Play Developer API reporting the production track `completed`: still
+      // false, because the page answered HTTP 404 to a general visitor while
+      // a known-good Play listing returned 200 from the same client. Now:
+      // true, because the page serves and names the app.
       //
-      // A test still passing under a premise that has become false is how a
-      // suite comes to certify something nobody believes any more.
-      expect(kAndroidGenerallyAvailable, isFalse);
+      // The flag never followed the console and it never followed the API. It
+      // followed the fetch, which is the only thing that describes what a
+      // person actually receives. Whoever changes it next should change it
+      // the same way.
+      //
+      // The old comment here warned that a test still passing under a premise
+      // that has become false is how a suite certifies something nobody
+      // believes any more. That warning is why this was rewritten rather than
+      // left green.
+      expect(kAndroidGenerallyAvailable, isTrue);
       expect(acquisitionActionFor(TargetPlatform.android),
-          AcquisitionAction.none);
-      expect(storeUrlFor(TargetPlatform.android), isNull);
+          AcquisitionAction.get);
+      expect(storeUrlFor(TargetPlatform.android), kAndroidStoreUrl);
     });
 
     test('no platform claims Open before a client can route it', () {
