@@ -152,8 +152,8 @@ for source-hash aesthetics.
     WINDOWS  CORRECTED 2026-09-11. An artifact WAS produced — aura.msix
              1.4.3.0, packaged 05:31, nineteen minutes after this line was
              written. It was then certified 11/11 on the real platform and
-             SUBMITTED to the Microsoft Store (submission 1152921505701875307,
-             status Certification). See
+             PUBLISHED on the Microsoft Store — LIVE at 1.4.3.0 (submission
+             1152921505701875307). First platform 1.4.3 actually reaches. See
              WINDOWS_1.4.3_CERTIFICATION_AND_SUBMISSION.md.
              sha256 05c10922ee11b58a8c3f032c692df9adc9ff68d3bb9af2be259ea9bb65289225
 

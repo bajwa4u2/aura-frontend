@@ -5,10 +5,32 @@
 microsoft"*
 
     WINDOWS CERTIFICATION            PASS — 11/11 on the real platform
-    MICROSOFT STORE 1.4.3.0          SUBMITTED
+    MICROSOFT STORE 1.4.3.0          PUBLISHED — LIVE
     SUBMISSION                       1152921505701875307
-    STATUS                           Certification (Microsoft's queue), 0 errors
-    PREVIOUS PUBLISHED               1.4.2.0, now marked PendingDelete
+    STATUS                           Published (passed certification same day)
+    PREVIOUS PUBLISHED               1.4.2.0, retired
+
+**AURA IS LIVE ON THE MICROSOFT STORE AT 1.4.3.0.** Read back from the Store
+API after the founder said it had landed:
+
+    lastPublishedApplicationSubmission   1152921505701875307   <- this submission
+      status                             Published
+      packages                           version 1.4.3.0  x64   (1.4.2.0 gone)
+    pendingApplicationSubmission         NONE
+
+Corroborated publicly, with a control that discriminates:
+
+    apps.microsoft.com/detail/9N6CZR88F4NT   HTTP 200, names "AURA PLATFORM"
+    apps.microsoft.com/detail/9NONEXISTENT00 HTTP 410
+
+**This is the first platform on which 1.4.3 actually reaches people.** Apple is
+still Waiting for Review; Play cannot ship at all yet.
+
+An earlier line in this document said the status was `Certification`. That was
+true when it was read and stopped being true shortly afterwards -- Microsoft
+certified it the same day. The lesson is the ordinary one for a queue: a status
+is a reading with a timestamp, not a standing fact, and this one needed
+re-reading rather than repeating.
 
 ---
 
@@ -112,7 +134,7 @@ Logic, networking, plugin registration and the shipped parsers are what these
             RETIRE 1.4.2.0 marked PendingDelete
             SET PACKAGE HTTP 200
     commit  HTTP 202, CommitStarted
-    status  CommitStarted -> Certification, errors: []
+    status  CommitStarted -> Certification -> PUBLISHED, errors: []
 
 The one warning is `SalesUnsupportedWarning`, which says the sales resource
 moved to the dashboard. It is informational and unrelated.
@@ -145,7 +167,7 @@ irreversible step stayed behind its own explicit `--yes`.
 
 ## State
 
-    MICROSOFT   1.4.3.0 submitted, in Certification. Microsoft decides next.
+    MICROSOFT   1.4.3.0 PUBLISHED — LIVE. Done.
     APPLE       1.4.3 (38) submitted, Waiting for Review.
     PLAY        AAB 38 ready; blocked on Aura not being published at all.
 
