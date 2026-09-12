@@ -81,8 +81,16 @@ evidence of an actual product defect.
 ## Apple artifact
 
     APPLE_BUILD_38              ACCEPTED INTO ASC
-    APP_REVIEW                  SUBMITTED — AWAITING APPLE
-    submitted                   2026-09-11, by the founder
+    APP_REVIEW                  NOT SUBMITTED — CORRECTED 2026-09-11
+                                post-restart, by reading the console.
+                                What IS in a review queue is the TESTFLIGHT
+                                BETA submission ("Waiting for Review"). No
+                                1.4.3 App Store version record exists and
+                                there is no 1.4.3 entry in iOS History.
+                                Evidence: APPLE_BUILD_38_REVIEW_STATE.md
+    was recorded as             SUBMITTED — AWAITING APPLE
+    on                          2026-09-11, on the founder's statement,
+                                explicitly unverified at the time
     ASC build                   adf9d5ea-314b-4904-87c0-4839a8d5f616  (app 6772071135)
     artefact                    aura.ipa  37,917,528 bytes
     sha256                      cc61b21f76aa334b0e4868bafb94e48e43acd1a02dfbaa8e3b97f7f52e9d9d10
@@ -96,10 +104,23 @@ evidence of an actual product defect.
     BEHAVIOURAL_EQUIVALENCE     ESTABLISHED TO CURRENT EVIDENCE
 
 **Acceptance into App Store Connect is not App Review approval**, and neither is
-submission. Build 38 was submitted for App Review by the founder on 2026-09-11;
-`APP_REVIEW` stays `SUBMITTED — AWAITING APPLE` until reviewers act, and becomes
-`APPROVED` or `REJECTED` only on their word. Three distinct states that are easy
-to collapse into one: uploaded, submitted, approved.
+submission. Three distinct states that are easy to collapse into one: uploaded,
+submitted, approved.
+
+**CORRECTED 2026-09-11, post-restart, against the console.** Three states were
+not enough, and the missing one is inside "submitted". Codemagic's
+`ios-testflight` lane ends by submitting to **TestFlight beta review**, which
+renders as "Waiting for Review" and is a different queue from App Review. The
+console shows build 38 there, and shows **no 1.4.3 App Store version record and
+no 1.4.3 iOS History entry** — so the App Store submission did not happen:
+
+    UPLOADED          binary accepted into ASC                      TRUE
+    BETA-SUBMITTED    TestFlight review, "Waiting for Review"       TRUE
+    STORE-SUBMITTED   version created and sent to App Review        FALSE
+    APPROVED          reviewers acted                               FALSE
+
+Full evidence in `APPLE_BUILD_38_REVIEW_STATE.md`. Build 38 remains consumed —
+acceptance is what spends a build number — and no build 39 follows from this.
 
 **Build 38 is consumed.** Another iOS binary would require build 39 and should
 happen only if App Review identifies an actual defect, a production or runtime
@@ -182,9 +203,14 @@ Aura has never been published. Play state is to be reported as it changes.
 
 ## Submission
 
-    APPLE   DONE — build 38 submitted for App Review by the founder, 2026-09-11
-            App Store Connect -> Aura Platform (6772071135) -> 1.4.3
+    APPLE   NOT DONE — corrected 2026-09-11 post-restart against the console.
+            Build 38 is UPLOADED and in TESTFLIGHT BETA review; it was never
+            submitted to App Review and no 1.4.3 App Store version exists.
+            App Store Connect -> Aura Platform (6772071135)
             build adf9d5ea-314b-4904-87c0-4839a8d5f616
+            See APPLE_BUILD_38_REVIEW_STATE.md. Creating and submitting the
+            1.4.3 App Store version is a founder action, not taken by the
+            recovery pass that found this.
 
     PLAY    NO ACTION. Release 37 (1.4.2) is already in Google review. Build 38
             is NOT to be submitted as a probe for the listing problem.

@@ -21,6 +21,43 @@ backend older than the identity merge. The two are frozen together.
 | `aura-backend` | `0b92237` | re-frozen after the permanent Finance doorway |
 | `aura_final` | `90b4383e` | re-frozen after the permanent Finance doorway |
 
+> ### THIS TABLE IS A CHECKPOINT, NOT THE ARTIFACT AUTHORITY
+>
+> **Corrected 2026-09-11 post-restart. `90b4383e` is NOT the source the shipped
+> 1.4.3 artifacts were built from, and this document's opening claim — that it
+> names "one source that every 1.4.3 artifact is built from" — was no longer
+> true by the time the artifacts existed.**
+>
+> **The artifact-source authority is `191642d3`**, the commit pinned by
+> `RELEASE_1.4.3_ARTIFACT_MANIFEST.md`, which is the record that traces to the
+> bytes. Measured rather than asserted:
+>
+>     git diff --name-only 191642d3 HEAD -- lib/ pubspec.yaml pubspec.lock android/ assets/
+>     (empty)
+>
+> so the shipped tree is identical from `191642d3` through `main`.
+>
+> **The delta this table hides is not small: 22 files, 4095 insertions, 1401
+> deletions in `lib/` between `90b4383e` and `191642d3`** — the
+> institution-verification work among others, all of which ships. Measured with
+> `git diff --shortstat 90b4383e 191642d3 -- lib/`.
+>
+> `90b4383e` is kept, not erased, because it is a real checkpoint: it is where
+> the tree stood when the Finance doorway landed, and the freeze discipline that
+> produced it is what makes the later drift visible at all. Read it as "the
+> second of three freeze points", not as the shipping pin.
+>
+> The manifest remains the artifact authority wherever it is internally
+> consistent, and it is: it names its own deviation (`5d9bfcdd` -> `191642d3`,
+> fifteen comment lines, zero executable statements) rather than smoothing it
+> over.
+>
+> **Why this went stale, which is the reusable part.** A freeze document names a
+> commit; the tree then keeps moving for good reasons; nobody re-freezes,
+> because the document already says "frozen". A freeze is only true while
+> someone re-pins it, and the artifact manifest — written *from the artifacts* —
+> is the record that cannot drift the same way.
+
 Superseded, and left standing rather than overwritten: the first freeze was
 `aura-backend d27169a` / `aura_final f9464912`, taken before the Finance entry
 work. The shipped-code difference between them is four files — the Finance

@@ -1,0 +1,51 @@
+diff --git a/lib/features/realtime/data/sfu_realtime_transport.dart b/lib/features/realtime/data/sfu_realtime_transport.dart
+index d5fdf168..0967eaef 100644
+--- a/lib/features/realtime/data/sfu_realtime_transport.dart
++++ b/lib/features/realtime/data/sfu_realtime_transport.dart
+@@ -892,7 +892,8 @@ class SfuRealtimeTransport implements RealtimeTransport {
+       // one that was not running. It says where it stands every ~30s.
+       if (_ticks % 10 == 0) {
+         unawaited(_report('op=LIVE bytes=$bytes stall=$_stallTicks '
+-            'armed=${_lastLivenessBytes >= 0}'));
++            'armed=${_lastLivenessBytes >= 0} '
++            'kinds=${_kindSummary(byKind)}'));
+       }
+ 
+       if (bytes > _lastLivenessBytes) {
+@@ -905,7 +906,8 @@ class SfuRealtimeTransport implements RealtimeTransport {
+         // became audible.
+         if (!_mediaFlowingReported && bytes > 0) {
+           _mediaFlowingReported = true;
+-          unawaited(_report('op=LIVE state=media_flowing bytes=$bytes'));
++          unawaited(_report('op=LIVE state=media_flowing bytes=$bytes '
++              'kinds=${_kindSummary(byKind)}'));
+           try {
+             onMediaFlowing?.call(bytes);
+           } catch (_) {
+@@ -937,6 +939,26 @@ class SfuRealtimeTransport implements RealtimeTransport {
+   /// dead one. Reports without a usable kind are folded under `other` rather
+   /// than dropped: an unattributable byte is still evidence that something is
+   /// arriving, and silently discarding it could arm a stall on a healthy call.
++  /// DIAGNOSTIC (2026-09-11): the breakdown was being computed and thrown away.
++  ///
++  /// `_armLivenessProbe` folded this map to a single sum before reporting, so
++  /// the one question a one-way-audio defect turns on — IS THERE AN INBOUND
++  /// AUDIO STREAM AT ALL — was measured every three seconds and never written
++  /// down. An ABSENT kind and a kind sitting at zero bytes have different
++  /// causes: absent means no receiving audio track was ever negotiated, zero
++  /// means one was and no packets arrive on it. Printing them the same way is
++  /// what made the two indistinguishable from the server side.
++  String _kindSummary(Map<String, int>? byKind) {
++    if (byKind == null) return 'unreadable';
++    String of(String kind) =>
++        byKind.containsKey(kind) ? '${byKind[kind]}b' : 'ABSENT';
++    final extra = byKind.keys
++        .where((k) => k != 'audio' && k != 'video')
++        .map((k) => ' $k=${byKind[k]}b')
++        .join();
++    return 'audio=${of('audio')} video=${of('video')}$extra';
++  }
++
+   Future<Map<String, int>?> _mediaBytesByKind(RTCPeerConnection pc) async {
+     try {
+       final out = <String, int>{};

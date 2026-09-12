@@ -1,0 +1,27 @@
+diff --git a/lib/features/realtime/data/sfu_realtime_transport.dart b/lib/features/realtime/data/sfu_realtime_transport.dart
+index 0967eaef..5e240e1d 100644
+--- a/lib/features/realtime/data/sfu_realtime_transport.dart
++++ b/lib/features/realtime/data/sfu_realtime_transport.dart
+@@ -636,10 +636,18 @@ class SfuRealtimeTransport implements RealtimeTransport {
+       unawaited(_repository.reportStageDiagnostic(
+         sessionId,
+         phase: 'bind',
+-        code: audit.bound == audit.serverBindings
+-            ? 'bind_complete'
+-            : audit.bound == 0
+-                ? 'bind_none'
++        // COMPLETE MEANS EVERY RECEIVING LINE IS CARRYING SOMETHING, not
++        // merely that we bound everything the server happened to offer.
++        // Judging only against `serverBindings` let a client with two
++        // receiving m-lines and one binding report `bind_complete`, which is
++        // exactly the state a one-way call sits in. A receiving line with no
++        // binding is an m-line negotiated to receive that nothing was attached
++        // to, and that is not a complete bind by any reading.
++        code: audit.bound == 0
++            ? 'bind_none'
++            : (audit.bound == audit.serverBindings &&
++                    audit.bound >= audit.receivingLines)
++                ? 'bind_complete'
+                 : 'bind_partial',
+         message: audit.summary,
+         platform: kIsWeb ? 'web' : defaultTargetPlatform.name,
