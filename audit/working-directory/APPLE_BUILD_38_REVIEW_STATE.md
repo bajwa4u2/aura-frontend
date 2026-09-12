@@ -17,13 +17,24 @@ restart. Read only. Nothing was submitted, created, edited or saved.
                      NOT SUBMITTED TO APP STORE REVIEW
                      NO 1.4.3 APP STORE VERSION RECORD EXISTS
 
-**As it stands now, after the founder authorised submission the same day:**
+**As it stands now — SUBMITTED, 2026-09-11 21:25:**
 
-    APPLE_BUILD_38 = APP_STORE_VERSION_PREPARED
-                     version 1.4.3 created, build 38 attached, metadata saved
-                     NOT YET SUBMITTED — held on one open question, below
+    APPLE_BUILD_38 = APP_STORE_REVIEW_SUBMITTED
+                     iOS App Version 1.4.3, build 1.4.3 (38)
+                     sidebar: "1.4.3 Waiting for Review"
+                     dialog:  "1 Item Submitted"
 
-### Held: the App Privacy declaration does not cover what 1.4.3 newly collects
+**Proven by the check this document exists to define** — a version record AND a
+History entry, which TestFlight never creates:
+
+    iOS History -> Version 1.4.3
+      Waiting for Review        Sep 11, 2026 at 9:25 PM
+      Ready for Review          Sep 11, 2026 at 9:25 PM
+      Prepare for Submission    Sep 11, 2026 at 8:40 PM
+
+Build 38 was used unchanged. No build 39. No executable content was touched.
+
+### RESOLVED before submission: the App Privacy gap that held it
 
 The submission was prepared to the point of one click and deliberately stopped
 there. Every condition the founder set holds except this one, which is not a
@@ -47,14 +58,50 @@ defensible mapping is `Other Data` — `Sensitive Info` is for race, health,
 beliefs and biometrics, and `Location` would be actively wrong, since the
 country is declared by the person and explicitly never read from the device.
 
-**This is not a call to make on the founder's behalf.** App Privacy is a public
+**This was not a call to make on the founder's behalf.** App Privacy is a public
 disclosure on the product page about what the company collects, and an
 inaccurate one is both a rejection vector and a statement to users. Submitting
 first and amending later would mean asserting something not true at the moment
-of assertion.
+of assertion — so the submission stopped one click short and the founder decided
+the classification.
 
-**One click remains** — `Add for Review` — once the declaration question is
-settled.
+**Founder decision, 2026-09-11:** `Other Data -> Other Data Types`, purpose
+`App Functionality`, linked to the user `YES`, used for tracking `NO`. Not
+`Sensitive Info`. Not `Coarse Location` — that would claim a device-location
+capability Aura does not have, which is a worse disclosure than the omission.
+
+**Executed in this order, deliberately:**
+
+  1. **The policy first, because the declaration has to be true when made.**
+     `/privacy` listed account identity as "name, handle, email, phone" and said
+     nothing about either field. Two narrow additions shipped
+     (`fea60f9d`) and were verified LIVE at
+     `https://auraplatform.org/privacy` before Apple was told anything.
+  2. **App Privacy updated and published** — now **9 data types**, adding
+     `Other Data Types`. Confirmed by reload: *"Published a few seconds ago"*,
+     no "finish setting up" warning, `Sensitive Info` and `Coarse Location`
+     still unselected.
+  3. **Age rating re-verified**, and one answer corrected — see below.
+
+### The age-rating answer that had also gone stale
+
+Checking the September 2026 questionnaire as instructed found the social
+capabilities already declared truthfully — User-Generated Content YES, Social
+Media YES, Messaging and Chat YES, Advertising NO, Unrestricted Web Access NO,
+Social Media Disabled for Users Under 13 NO (correct: Aura does not call
+Apple's Declared Age Range API).
+
+**But `Age Assurance` was NO, and 1.4.3 made that false.** Apple's definition is
+*"mechanism to confirm an individual's age meets the age requirement for
+accessing specific content or services"*, and `auth.service.ts` does exactly
+that: registration requires a date of birth and a jurisdiction, runs
+`decideAgeEligibility(...)`, and REFUSES the account with
+`ACCOUNT_AGE_INELIGIBLE` and a per-jurisdiction `minimumAge` before any write.
+
+Corrected to YES. Nothing else in the questionnaire was touched, and **the
+calculated rating did not move: 13+ before and after** — which is the point. It
+was a truthfulness correction, not a rating change. Persistence confirmed by
+reload (`Age Assurance` radio reads `true`).
 
 ## What the console actually shows
 
