@@ -295,43 +295,54 @@ class _SupportMarks extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      alignment: compact ? WrapAlignment.start : WrapAlignment.end,
-      spacing: compact ? 12 : 22,
-      runSpacing: 16,
-      children: [
-        // A MARK MAY STAND FOR A PROGRAMME ONLY IF IT IS THAT PROGRAMME'S
-        // MARK. Two of these were not, and were removed rather than redrawn.
-        //
-        //   google-for-startups.svg was the plain Google "G" from the Simple
-        //   Icons set — its own <title> said `Google` — sitting under a label
-        //   naming a programme it does not represent.
-        //
-        //   aws-activate.svg was an AWS ARCHITECTURE DIAGRAM icon,
-        //   `Icon-Architecture/48/Arch_AWS-Activate_48`, drawn on the magenta
-        //   #C925D1 "Customer Enablement" category tile that set uses inside
-        //   diagrams. At 42px it read as a magenta square. That icon set is
-        //   not licensed as programme badges.
-        //
-        // The relationships are real and recorded, so the WORDS stay. Only the
-        // pictures were untrue, and a fabricated replacement would have been
-        // the same offence with better craft. Where an official asset is
-        // established, a mark can return here.
-        _SupportMark(
-          asset: 'assets/branding/support/microsoft-for-startups-badge.png',
-          label: 'Microsoft for Startups',
-          url: 'https://www.microsoft.com/en-us/startups/',
-          width: compact ? 110 : 132,
-        ),
-        const _SupportWordmark(
-          label: 'Google for Startups',
-          url: 'https://startup.google.com/',
-        ),
-        const _SupportWordmark(
-          label: 'AWS Activate',
-          url: 'https://aws.amazon.com/activate/',
-        ),
-      ],
+    // ONE ROW, ALWAYS. Orchestrate and Colophon both scale this strip down
+    // rather than let it wrap, and Aura was the one product that did not:
+    // a Wrap dropped "AWS Activate" onto a second line on a phone, so the
+    // same three relationships read as three entries on two products and a
+    // ragged two-line block on the third. Scaling keeps the row intact at
+    // every width instead of re-flowing it.
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: compact ? Alignment.centerLeft : Alignment.centerRight,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // A MARK MAY STAND FOR A PROGRAMME ONLY IF IT IS THAT PROGRAMME'S
+          // MARK. Two of these were not, and were removed rather than redrawn.
+          //
+          //   google-for-startups.svg was the plain Google "G" from the Simple
+          //   Icons set — its own <title> said `Google` — sitting under a label
+          //   naming a programme it does not represent.
+          //
+          //   aws-activate.svg was an AWS ARCHITECTURE DIAGRAM icon,
+          //   `Icon-Architecture/48/Arch_AWS-Activate_48`, drawn on the magenta
+          //   #C925D1 "Customer Enablement" category tile that set uses inside
+          //   diagrams. At 42px it read as a magenta square. That icon set is
+          //   not licensed as programme badges.
+          //
+          // The relationships are real and recorded, so the WORDS stay. Only the
+          // pictures were untrue, and a fabricated replacement would have been
+          // the same offence with better craft. Where an official asset is
+          // established, a mark can return here.
+          _SupportMark(
+            asset: 'assets/branding/support/microsoft-for-startups-badge.png',
+            label: 'Microsoft for Startups',
+            url: 'https://www.microsoft.com/en-us/startups/',
+            width: compact ? 110 : 132,
+          ),
+          SizedBox(width: compact ? 16 : 26),
+          const _SupportWordmark(
+            label: 'Google for Startups',
+            url: 'https://startup.google.com/',
+          ),
+          SizedBox(width: compact ? 16 : 26),
+          const _SupportWordmark(
+            label: 'AWS Activate',
+            url: 'https://aws.amazon.com/activate/',
+          ),
+        ],
+      ),
     );
   }
 }

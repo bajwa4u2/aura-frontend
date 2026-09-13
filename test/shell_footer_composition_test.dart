@@ -175,6 +175,27 @@ void main() {
       );
     });
 
+    testWidgets('the support marks stay on one row at phone width',
+        (tester) async {
+      // Orchestrate and Colophon both wrap this strip in a scale-down
+      // FittedBox so the three programmes read as one row at every width.
+      // Aura used a Wrap, which dropped "AWS Activate" onto a second line on
+      // a phone -- the same three relationships presented two different ways
+      // across the estate. Parity here is behavioural, not cosmetic.
+      await _pumpFooter(tester, 390);
+
+      // The badge is an image with a semantic label, so the two wordmarks
+      // carry the row: same centre line, and left-to-right in order.
+      final google = tester.getRect(find.text('Google for Startups').first);
+      final aws = tester.getRect(find.text('AWS Activate').first);
+
+      expect((aws.center.dy - google.center.dy).abs() < google.height, isTrue,
+          reason: 'support marks wrapped onto a second line at 390px');
+      expect(aws.left, greaterThan(google.left),
+          reason: 'support marks are not left-to-right in one row');
+
+    });
+
     testWidgets('the bottom row is at parity with the estate', (tester) async {
       // Orchestrate and Colophon both close on company-name-left,
       // sibling-products-right, each omitting itself. Aura does the same.
