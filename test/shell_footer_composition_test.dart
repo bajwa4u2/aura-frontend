@@ -176,12 +176,20 @@ void main() {
     });
 
     testWidgets('the bottom row is at parity with the estate', (tester) async {
-      // Orchestrate and Bajwa Writes both close on company-name-left,
+      // Orchestrate and Colophon both close on company-name-left,
       // sibling-products-right, each omitting itself. Aura does the same.
+      //
+      // The portfolio names CURRENT products. This footer shipped the label
+      // "Bajwa Writes" until 2026-09-13, and it survived the estate-wide
+      // rename because Aura's shell renders on canvas -- the string never
+      // reaches served HTML, so fetching the page could not reveal it. A
+      // rendered-widget assertion is the only thing that can.
       await _pumpFooter(tester, 1440);
-      for (final s in const ['Orchestrate', 'Bajwa Writes', 'Founder']) {
+      for (final s in const ['Orchestrate', 'Colophon', 'Founder']) {
         expect(find.text(s), findsOneWidget, reason: '$s missing');
       }
+      expect(find.text('Bajwa Writes'), findsNothing,
+          reason: 'the footer names a retired product name as current');
       // Aura does not link to itself, and the whole-estate directory (which
       // led with "Company" and included Aura) is not what parity restores.
       expect(find.text('Company'), findsNothing);
