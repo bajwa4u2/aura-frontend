@@ -149,7 +149,7 @@ const _routes = <_RouteMeta>[
     path: '/investors',
     title: 'Investors & Partners — Aura Platform LLC',
     description:
-        'Aura Platform LLC builds continuity infrastructure: Aura (public-first civic discourse and accountable communication), Orchestrate (commercial execution infrastructure), and Bajwa Writes (continuity & preservation). One identity, one record, one accountable surface.',
+        'Aura Platform LLC builds continuity infrastructure: Aura (purposeful communication, continuity, identity, participation and institutional accountability), Orchestrate (AI participating in consequential organizational work under explicit authority, evidence and human responsibility), and Colophon (reading, authorship and publishing built on Works, Editions, preservation and provenance). One identity, one record, one accountable surface.',
     image: 'og-investors.png',
     imageAlt: 'Aura Platform LLC — investors and partners',
   ),
