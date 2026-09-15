@@ -468,6 +468,33 @@ $contactBlock
   </noscript>''';
 }
 
+/// Crawler-visible summary for the ROOT document only. Public-first order:
+/// people and their public matters first; institutions answer. Plain words a
+/// text-only reader can use to say what Aura is, who it is for and where to go.
+String _buildRootCrawlerVisibleBlock() {
+  const heading = 'Aura: public communication with accountable answers';
+  const paragraphs = <String>[
+    'Aura is a public platform where people raise and discuss public matters under their own name, in threads and spaces that keep their history.',
+    'The institutions those matters concern, such as chambers, associations, civic organizations and public offices, can join, verify who they are and respond officially in their own name, so what was said and what was promised stays on the record.',
+    'Aura is free for people and for verified institutions, and it is available on the web and in the major app stores.',
+    'Aura is one of three products from Aura Platform LLC, alongside Orchestrate and Colophon.',
+  ];
+  final body = paragraphs
+      .map((p) => '      <p style="margin:0 0 1.1em 0;line-height:1.7;color:#d4dbe5;font-size:15px;">${_htmlEscape(p)}</p>')
+      .join('\n');
+  return '''
+  <noscript>
+    <main style="background:#0d1520;color:#e2ecf5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;min-height:100vh;padding:48px 24px;">
+      <article style="max-width:720px;margin:0 auto;">
+        <p style="margin:0 0 8px 0;color:#c9a55c;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;font-weight:700;">Aura Platform LLC</p>
+        <h1 style="margin:0 0 24px 0;font-size:32px;line-height:1.2;font-weight:700;letter-spacing:-0.2px;">${_htmlEscape(heading)}</h1>
+$body
+        <p style="margin:1.6em 0 0 0;color:#8fa3bf;font-size:14px;"><a href="https://auraplatform.org/demo" style="color:#c9a55c;text-decoration:underline;">Explore the product</a> · <a href="https://auraplatform.org/deck" style="color:#c9a55c;text-decoration:underline;">Business case</a> · <a href="https://company.auraplatform.org/overview" style="color:#c9a55c;text-decoration:underline;">Company overview</a></p>
+      </article>
+    </main>
+  </noscript>''';
+}
+
 String _htmlEscape(String s) => s
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
@@ -503,7 +530,15 @@ Future<int> main(List<String> args) async {
   // variants would leave the most-served page pointing at an unversioned image
   // -- the one URL whose cached copy matters most.
   final stampedRoot = _stampSocialAssets(canonical);
-  await rootIndex.writeAsString(stampedRoot);
+  // THE ROOT GETS ITS OWN CRAWLER-VISIBLE BLOCK, AND ONLY THE ROOT.
+  //
+  // A text-only visitor to auraplatform.org (a search engine, a link preview,
+  // an AI assistant) received a title and nothing else. The block is written
+  // into the root file only; route variants below still clone `stampedRoot`
+  // without it, so no route carries two <noscript> blocks.
+  await rootIndex.writeAsString(
+    stampedRoot.replaceFirst('</body>', '${_buildRootCrawlerVisibleBlock()}\n</body>'),
+  );
   stdout.writeln(
     'generate_route_metadata: stamped social assets in '
     '$_outputRoot/index.html as v=$_socialAssetVersion.',
