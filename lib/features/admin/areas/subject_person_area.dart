@@ -28,6 +28,7 @@ import '../domain/operator_capability.dart';
 import '../domain/operator_routes.dart';
 import '../ui/operator_action.dart';
 import '../ui/operator_kit.dart';
+import '../ui/grant_authority_sheet.dart';
 import 'record_area.dart' show readableReason;
 
 final personVerificationProvider = FutureProvider.autoDispose
@@ -1064,19 +1065,37 @@ class _OperatorAuthorityBlock extends ConsumerWidget {
       ),
       error: (_, __) => const SizedBox.shrink(),
       data: (p) {
+        final canWrite = authority.can(OperatorCapability.usersWrite);
+
         if (p.grants.isEmpty) {
-          return const OperatorSection(
+          return OperatorSection(
             title: 'Operator authority',
             child: OperatorPanel(
-              child: OperatorClear(
-                title: 'Holds no operator authority',
-                icon: Icons.shield_outlined,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const OperatorClear(
+                    title: 'Holds no operator authority',
+                    icon: Icons.shield_outlined,
+                  ),
+                  // APPOINTMENT LIVES HERE OR NOWHERE. Until 2026-09-17 the
+                  // console could narrow and revoke authority but never create
+                  // it, so a person with no grant was a dead end — which is how
+                  // Aura arrived at having exactly one operator and no way to
+                  // appoint a second.
+                  if (canWrite) ...[
+                    const SizedBox(height: AuraSpace.s12),
+                    _GrantAuthorityButton(
+                      userId: userId,
+                      personLabel: p.person.displayName,
+                    ),
+                  ],
+                ],
               ),
             ),
           );
         }
 
-        final canWrite = authority.can(OperatorCapability.usersWrite);
         // SELF-AUTHORITY. Removing your own grant is a legitimate act — an
         // operator may stand down — but it is not the same act as removing
         // somebody else's, and the console must not present it as if it were.
@@ -1493,6 +1512,44 @@ class _WaitingOnEvidence extends StatelessWidget {
             child: const Text('Review it'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Appoint an operator.
+///
+/// Gated on `USERS_WRITE` at the call site and again by the server. The button
+/// only opens the ceremony — the decision, the permission choice and the reason
+/// all happen inside it, and the authority is what finally decides.
+class _GrantAuthorityButton extends ConsumerWidget {
+  const _GrantAuthorityButton({
+    required this.userId,
+    required this.personLabel,
+  });
+
+  final String userId;
+  final String personLabel;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: () async {
+          final done = await runGrantAuthority(
+            context,
+            ref,
+            userId: userId,
+            personLabel: personLabel,
+          );
+          if (done) {
+            ref.invalidate(personDetailProvider(userId));
+          }
+        },
+        icon: const Icon(Icons.shield_moon_outlined, size: 16),
+        label: const Text('Grant operator authority'),
+        style: TextButton.styleFrom(foregroundColor: AuraSurface.accent),
       ),
     );
   }
