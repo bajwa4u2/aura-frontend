@@ -1,7 +1,10 @@
-/// THE SEVEN OPERATOR AREAS.
+/// THE OPERATOR AREAS.
 ///
 /// Frozen architecture: NOW → WORK → SUBJECTS → INTEGRITY → PLATFORM → RECORD
-/// → DISCOVERY.
+/// → DISCOVERY → OPERATORS → EXTERNAL.
+///
+/// The order is frozen and `operator_conformance_test.dart` holds it. The gate
+/// exists to catch an area appearing WITHOUT a decision, never to forbid one.
 ///
 /// Each area is a RESPONSIBILITY an operator would name, not a backend module.
 /// The console it replaces was a flat list of fourteen nouns — Queue, Appeals,
@@ -103,6 +106,20 @@ enum OperatorArea {
     label: 'Discovery',
     icon: Icons.travel_explore_rounded,
     anyOf: [OperatorCapability.discoveryRead],
+  ),
+
+  /// WHO MAY ACT AS AURA. Operator grants, and appointing them.
+  ///
+  /// ITS OWN AREA, not a button on a person. Appointing an operator is an
+  /// estate-level governance act; attaching it to member rows put it beside
+  /// every ordinary person in the estate and still only appeared for people
+  /// who held no authority, so a second grant could never be added.
+  operators(
+    id: 'operators',
+    path: '/admin/operators',
+    label: 'Operators',
+    icon: Icons.shield_moon_rounded,
+    anyOf: [OperatorCapability.usersWrite],
   ),
 
   /// The systems that build on Aura Meetings, and the credentials they hold.

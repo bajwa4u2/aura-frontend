@@ -257,6 +257,16 @@ void main() {
         'platform',
         'record',
         'discovery',
+        // NINTH AREA, added deliberately 2026-09-17. Operator governance —
+        // who may act as Aura, and with what authority. It sits beside
+        // External on purpose: External is who ELSE may act as Aura, and the
+        // two answer the same question about different kinds of actor.
+        //
+        // It replaced an "appoint operator" button that sat on every person's
+        // page, which put an estate-level governance act beside every
+        // ordinary member and still only appeared for people holding no
+        // authority, so a second grant could never be added.
+        'operators',
         // EIGHTH AREA, added deliberately 2026-09-06 for the Meetings
         // External API operator surface — consumers, tenants and
         // credentials. Recorded here because this gate exists to catch

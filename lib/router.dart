@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'app/app_shell.dart';
 import 'app/route_classification.dart';
 import 'features/admin/areas/discovery_area.dart';
+import 'features/admin/areas/operators_area.dart';
 import 'features/admin/areas/integrity_detail.dart';
 import 'features/admin/areas/identity_review.dart';
 import 'features/admin/areas/institution_verification_review.dart';
@@ -1887,6 +1888,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/admin/external',
             pageBuilder: (_, __) => _operatorPage(const ExternalArea()),
+          ),
+          // OPERATOR GOVERNANCE. The surface re-checks authority itself —
+          // hiding a navigation item is user experience, never a security
+          // boundary, so this route must be safe to reach directly.
+          GoRoute(
+            path: '/admin/operators',
+            pageBuilder: (_, __) => _operatorPage(const OperatorsArea()),
           ),
           // THE FINANCE DOORWAY. Aura Admin is the way in; it does not hold the
           // books. The screen itself re-checks Finance authority, because

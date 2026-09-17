@@ -28,7 +28,6 @@ import '../domain/operator_capability.dart';
 import '../domain/operator_routes.dart';
 import '../ui/operator_action.dart';
 import '../ui/operator_kit.dart';
-import '../ui/grant_authority_sheet.dart';
 import 'record_area.dart' show readableReason;
 
 final personVerificationProvider = FutureProvider.autoDispose
@@ -1068,29 +1067,17 @@ class _OperatorAuthorityBlock extends ConsumerWidget {
         final canWrite = authority.can(OperatorCapability.usersWrite);
 
         if (p.grants.isEmpty) {
-          return OperatorSection(
+          // APPOINTMENT IS NOT AN ATTRIBUTE OF A PERSON. It briefly lived here
+          // as a button on every member row, which put an estate-level
+          // governance act beside every ordinary person and still only
+          // appeared for somebody holding no authority — so a second grant
+          // could never be added. It moved to /admin/operators.
+          return const OperatorSection(
             title: 'Operator authority',
             child: OperatorPanel(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const OperatorClear(
-                    title: 'Holds no operator authority',
-                    icon: Icons.shield_outlined,
-                  ),
-                  // APPOINTMENT LIVES HERE OR NOWHERE. Until 2026-09-17 the
-                  // console could narrow and revoke authority but never create
-                  // it, so a person with no grant was a dead end — which is how
-                  // Aura arrived at having exactly one operator and no way to
-                  // appoint a second.
-                  if (canWrite) ...[
-                    const SizedBox(height: AuraSpace.s12),
-                    _GrantAuthorityButton(
-                      userId: userId,
-                      personLabel: p.person.displayName,
-                    ),
-                  ],
-                ],
+              child: OperatorClear(
+                title: 'Holds no operator authority',
+                icon: Icons.shield_outlined,
               ),
             ),
           );
@@ -1517,40 +1504,3 @@ class _WaitingOnEvidence extends StatelessWidget {
   }
 }
 
-/// Appoint an operator.
-///
-/// Gated on `USERS_WRITE` at the call site and again by the server. The button
-/// only opens the ceremony — the decision, the permission choice and the reason
-/// all happen inside it, and the authority is what finally decides.
-class _GrantAuthorityButton extends ConsumerWidget {
-  const _GrantAuthorityButton({
-    required this.userId,
-    required this.personLabel,
-  });
-
-  final String userId;
-  final String personLabel;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: TextButton.icon(
-        onPressed: () async {
-          final done = await runGrantAuthority(
-            context,
-            ref,
-            userId: userId,
-            personLabel: personLabel,
-          );
-          if (done) {
-            ref.invalidate(personDetailProvider(userId));
-          }
-        },
-        icon: const Icon(Icons.shield_moon_outlined, size: 16),
-        label: const Text('Grant operator authority'),
-        style: TextButton.styleFrom(foregroundColor: AuraSurface.accent),
-      ),
-    );
-  }
-}

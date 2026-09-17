@@ -47,6 +47,76 @@ final adminPermissionCatalogueProvider =
   return ref.read(adminRepositoryProvider).fetchPermissionCatalogue();
 });
 
+/// WHAT A CAPABILITY FAMILY ACTUALLY GOVERNS.
+///
+/// Presentation only. The CATALOGUE is still the server's — a family absent
+/// from this map renders with its raw name and no description rather than
+/// being hidden, because hiding a scope nobody wrote a line for is how the
+/// identity scopes came to be ungrantable in the first place.
+///
+/// Descriptions state what the server actually enforces. Nothing here invents
+/// a semantic the routes do not have.
+const _familyDescription = <String, String>{
+  'IDENTITY_VERIFICATION':
+      'Is this person really who they say they are. The identity review queue, '
+      'the government ID and selfie evidence behind it, and the decision.',
+  'VERIFICATION':
+      'Is this institution legitimate, and does this person hold the authority '
+      'they claim over it. Institution domains, existence and authority proofs, '
+      'and revoking institution authority.',
+  'USERS':
+      'People. Accounts, standing, and appointing operators — USERS_WRITE is '
+      'what allows granting authority to somebody else.',
+  'AUDIT':
+      'The estate record. The admin audit log, every grant in the estate, and '
+      'the migration reports.',
+  'MODERATION': 'Reported content and moderation decisions.',
+  'COMMUNICATIONS':
+      'Institutional communication — drafting, approving and sending.',
+  'ANNOUNCEMENTS': 'Announcements and their publication.',
+  'INSTITUTIONS': 'Institution records and settings.',
+  'SETTINGS': 'Platform configuration.',
+  'ANALYTICS': 'Usage and platform analytics.',
+  'SYSTEM_HEALTH': 'Platform health and service status.',
+  'PRODUCT_FEEDBACK': 'Product feedback submitted by members.',
+  'SUPPORT': 'Support requests.',
+  'DISCOVERY': 'Whether what Aura published is reachable and being found.',
+  'DISCOVERY_EVIDENCE':
+      'The search text people actually typed. Person-identifying at low '
+      'volume, and a separate grant from Discovery for that reason.',
+  'EXTERNAL_CONSUMERS':
+      'Systems that build on Aura Meetings, and the credentials they hold.',
+};
+
+/// Families close enough in name to be mistaken for one another.
+///
+/// `IDENTITY_VERIFICATION_*` and `VERIFICATION_*` are four near-identical
+/// names governing two unrelated questions. In a flat alphabetical list they
+/// sit adjacent with nothing to separate them.
+const _confusableWith = <String, String>{
+  'VERIFICATION': 'IDENTITY_VERIFICATION',
+  'IDENTITY_VERIFICATION': 'VERIFICATION',
+};
+
+/// Read or act, from the verb the permission ends in.
+String? _verbOf(String permission) {
+  if (permission.endsWith('_READ')) return 'read only';
+  if (permission.endsWith('_WRITE')) return 'can act';
+  if (permission.endsWith('_APPROVE')) return 'can approve';
+  if (permission.endsWith('_SEND')) return 'can send';
+  return null;
+}
+
+/// The family a permission belongs to: everything before the trailing verb.
+String _familyOf(String permission) {
+  for (final suffix in const ['_READ', '_WRITE', '_APPROVE', '_SEND']) {
+    if (permission.endsWith(suffix)) {
+      return permission.substring(0, permission.length - suffix.length);
+    }
+  }
+  return permission;
+}
+
 /// What the operator chose, once they have chosen it.
 class _Proposed {
   const _Proposed({required this.role, required this.permissions});
@@ -210,7 +280,8 @@ class _GrantAuthoritySheetState extends ConsumerState<_GrantAuthoritySheet> {
               ),
               const SizedBox(height: 2),
               const Text(
-                'From the server catalogue. Only what you tick is granted.',
+                'From the server catalogue, grouped by what they govern. Only '
+                'what you tick is granted.',
                 style: TextStyle(color: AuraSurface.muted, fontSize: 12),
               ),
               const SizedBox(height: AuraSpace.s8),
@@ -223,35 +294,113 @@ class _GrantAuthoritySheetState extends ConsumerState<_GrantAuthoritySheet> {
                         'Without it this surface would be guessing at what can '
                         'be granted, so it will not offer a choice.',
                   ),
-                  data: (all) => ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: all.length,
-                    itemBuilder: (_, i) {
-                      final p = all[i];
-                      final on = _chosen.contains(p);
-                      return CheckboxListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        controlAffinity: ListTileControlAffinity.leading,
-                        value: on,
-                        onChanged: (v) => setState(() {
-                          if (v == true) {
-                            _chosen.add(p);
-                          } else {
-                            _chosen.remove(p);
-                          }
-                        }),
-                        title: Text(
-                          p,
-                          style: const TextStyle(
-                            color: AuraSurface.ink,
-                            fontSize: 12.5,
-                            fontFamily: 'monospace',
+                  data: (all) {
+                    // GROUPED BY WHAT THEY GOVERN. A flat alphabetical list
+                    // put VERIFICATION_* directly beneath
+                    // IDENTITY_VERIFICATION_* with nothing to tell them apart
+                    // — four near-identical names, two unrelated questions,
+                    // and no way to know which was which without reading the
+                    // source.
+                    final families = <String, List<String>>{};
+                    for (final perm in all) {
+                      families.putIfAbsent(_familyOf(perm), () => []).add(perm);
+                    }
+                    final ordered = families.keys.toList()..sort();
+                    return ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: ordered.length,
+                      itemBuilder: (_, i) {
+                        final family = ordered[i];
+                        final members = families[family]!..sort();
+                        final description = _familyDescription[family];
+                        final confusable = _confusableWith[family];
+                        final anyChosen =
+                            members.any((m) => _chosen.contains(m));
+
+                        return Padding(
+                          padding:
+                              const EdgeInsets.only(bottom: AuraSpace.s16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                family.replaceAll('_', ' '),
+                                style: const TextStyle(
+                                  color: AuraSurface.ink,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.6,
+                                ),
+                              ),
+                              if (description != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Text(
+                                    description,
+                                    style: const TextStyle(
+                                      color: AuraSurface.muted,
+                                      fontSize: 11.5,
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                ),
+                              // The warning appears once this family is
+                              // actually being granted. A caution on every
+                              // family every time is a caution nobody reads.
+                              if (confusable != null && anyChosen)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    'This is NOT '
+                                    '${confusable.replaceAll('_', ' ')}. '
+                                    'Check you mean this one.',
+                                    style: const TextStyle(
+                                      color: AuraSurface.dangerInk,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.35,
+                                    ),
+                                  ),
+                                ),
+                              const SizedBox(height: 2),
+                              for (final perm in members)
+                                CheckboxListTile(
+                                  dense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                  controlAffinity:
+                                      ListTileControlAffinity.leading,
+                                  value: _chosen.contains(perm),
+                                  onChanged: (v) => setState(() {
+                                    if (v == true) {
+                                      _chosen.add(perm);
+                                    } else {
+                                      _chosen.remove(perm);
+                                    }
+                                  }),
+                                  title: Text(
+                                    perm,
+                                    style: const TextStyle(
+                                      color: AuraSurface.ink,
+                                      fontSize: 12.5,
+                                      fontFamily: 'monospace',
+                                    ),
+                                  ),
+                                  subtitle: _verbOf(perm) == null
+                                      ? null
+                                      : Text(
+                                          _verbOf(perm)!,
+                                          style: const TextStyle(
+                                            color: AuraSurface.muted,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                ),
+                            ],
                           ),
-                        ),
-                      );
-                    },
-                  ),
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: AuraSpace.s12),
