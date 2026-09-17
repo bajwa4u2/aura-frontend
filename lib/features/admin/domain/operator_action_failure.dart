@@ -61,20 +61,90 @@ OperatorActionFailure classifyActionFailure(Object error) {
   return OperatorActionFailure.ambiguous;
 }
 
+/// WHY A REFUSAL WAS REFUSED.
+///
+/// The server already answers this. Every governed refusal comes back as
+/// `{ ok: false, error: { code, message, ... } }` with a code naming the rule
+/// that fired and a message written to be safe to show. The console used to
+/// throw all of it away and say only "Aura refused this action", which is true
+/// of every 4xx and therefore tells the operator nothing.
+///
+/// That is not a cosmetic gap. An operator looking at complete evidence, on a
+/// record in a reviewable state, holding every permission, was told only that
+/// Aura refused — and offered a Retry that could never succeed. A correct
+/// policy refusal read as a broken system.
+class OperatorRefusal {
+  const OperatorRefusal({required this.code, required this.message});
+
+  /// The machine-readable rule that fired, e.g. `IDENTITY_VERIFICATION_SELF_REVIEW`.
+  final String code;
+
+  /// The server's own operator-safe sentence. Already written for a human, and
+  /// already scrubbed of policy internals by the API boundary.
+  final String message;
+
+  /// Whether repeating this action could EVER succeed without something else
+  /// changing first.
+  ///
+  /// Distinct from [OperatorActionFailure.mayRetry], which asks whether a retry
+  /// is *safe* — this asks whether it is *useful*. Self-review and an
+  /// already-decided submission are safe to retry and will refuse identically
+  /// forever, so offering Retry on them is the console lying about the remedy.
+  bool get isTerminal => const {
+        'IDENTITY_VERIFICATION_SELF_REVIEW',
+        'IDENTITY_VERIFICATION_ALREADY_DECIDED',
+        'FORBIDDEN',
+      }.contains(code);
+}
+
+/// Pull the structured refusal out of a thrown error, when there is one.
+///
+/// Returns null for anything that is not a server refusal carrying the standard
+/// envelope — an ambiguous failure has no reason to report, and inventing one
+/// would be worse than silence.
+OperatorRefusal? refusalReasonFrom(Object error) {
+  if (error is! DioException) return null;
+  final status = error.response?.statusCode;
+  if (status == null || status < 400 || status >= 500) return null;
+
+  final data = error.response?.data;
+  if (data is! Map) return null;
+  final envelope = data['error'];
+  if (envelope is! Map) return null;
+
+  final code = envelope['code'];
+  final message = envelope['message'];
+  if (code is! String || code.isEmpty) return null;
+
+  return OperatorRefusal(
+    code: code,
+    message: message is String && message.trim().isNotEmpty
+        ? message.trim()
+        : 'Aura did not accept this action.',
+  );
+}
+
 /// What to tell the operator, written about the ACTION rather than the wire.
 ///
 /// The previous version rendered `e.toString()`, which puts a Dio exception in
 /// front of someone deciding whether a person is suspended. It also said "Try
 /// again" for every failure, including the ones where trying again is the
 /// wrong instruction.
+///
+/// When the server named a reason, that reason leads. The generic sentence
+/// stays underneath it, because "nothing has changed" is the fact the operator
+/// most needs and is true regardless of which rule fired.
 String operatorActionFailureSentence(
   OperatorActionFailure failure, {
   required String actionLabel,
+  OperatorRefusal? refusal,
 }) =>
     switch (failure) {
-      OperatorActionFailure.refused =>
-        'Aura refused this action, so nothing has changed. '
-            '$actionLabel has not been recorded.',
+      OperatorActionFailure.refused => refusal == null
+          ? 'Aura refused this action, so nothing has changed. '
+              '$actionLabel has not been recorded.'
+          : '${refusal.message} Nothing has changed, and $actionLabel has not '
+              'been recorded.',
       OperatorActionFailure.ambiguous =>
         'Aura could not confirm the outcome, so this may already have taken '
             'effect. Check the current state before acting again — repeating '

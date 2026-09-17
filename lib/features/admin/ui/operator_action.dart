@@ -132,6 +132,7 @@ class _ActionSheetState extends State<_ActionSheet> {
   _Phase _phase = _Phase.preview;
   String? _outcome;
   OperatorActionFailure? _failure;
+  OperatorRefusal? _refusal;
 
   @override
   void dispose() {
@@ -170,6 +171,10 @@ class _ActionSheetState extends State<_ActionSheet> {
       setState(() {
         _phase = _Phase.failed;
         _failure = classifyActionFailure(e);
+        // The server names the rule that fired. Keep it: without it every
+        // refusal reads identically and the operator cannot tell an
+        // unfixable policy rule from a fixable mistake.
+        _refusal = refusalReasonFrom(e);
       });
     }
   }
@@ -409,6 +414,11 @@ class _ActionSheetState extends State<_ActionSheet> {
 
       case _Phase.failed:
         final failure = _failure ?? OperatorActionFailure.ambiguous;
+        final refusal = _refusal;
+        // A refusal the rule will give again forever must not offer Retry.
+        // Safe to repeat is not the same as capable of succeeding, and a
+        // button that cannot work is the console misdescribing the remedy.
+        final offerRetry = failure.mayRetry && !(refusal?.isTerminal ?? false);
         return [
           OperatorFailure(
             title: failure.mayRetry
@@ -417,6 +427,7 @@ class _ActionSheetState extends State<_ActionSheet> {
             detail: operatorActionFailureSentence(
               failure,
               actionLabel: action.title,
+              refusal: refusal,
             ),
           ),
           const SizedBox(height: AuraSpace.s16),
@@ -442,7 +453,7 @@ class _ActionSheetState extends State<_ActionSheet> {
                   // which is the only way to find out. That is the whole point:
                   // an operator whose response was ambiguous is sent to the
                   // current state, never to a second attempt.
-                  onPressed: failure.mayRetry
+                  onPressed: offerRetry
                       ? () => setState(() => _phase = _Phase.preview)
                       : () => Navigator.of(context).pop(true),
                   style: FilledButton.styleFrom(
@@ -453,7 +464,7 @@ class _ActionSheetState extends State<_ActionSheet> {
                     ),
                   ),
                   child: Text(
-                    failure.mayRetry
+                    offerRetry
                         ? ProductLabels.of(ProductAction.retry)
                         : 'Check current state',
                   ),
