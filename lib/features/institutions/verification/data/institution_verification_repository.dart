@@ -134,6 +134,11 @@ enum ExistenceConfidence {
 
 /// §2.7's menu. Any ONE item suffices, and the client says so.
 enum AuthorityEvidenceKind {
+  /// Founder, 2026-09-19: a business-registry record, formation document,
+  /// governing document, operating agreement or member record that NAMES the
+  /// person in their role. One such document may establish both that the
+  /// institution exists and that this person may speak for it.
+  institutionalRecordNamingPerson,
   existingHolderApproval,
   appointmentLetter,
   registryOfficerListing,
@@ -143,6 +148,8 @@ enum AuthorityEvidenceKind {
 
   static AuthorityEvidenceKind parse(String? raw) {
     switch ((raw ?? '').trim().toUpperCase()) {
+      case 'INSTITUTIONAL_RECORD_NAMING_PERSON':
+        return AuthorityEvidenceKind.institutionalRecordNamingPerson;
       case 'EXISTING_HOLDER_APPROVAL':
         return AuthorityEvidenceKind.existingHolderApproval;
       case 'APPOINTMENT_LETTER':
@@ -160,6 +167,8 @@ enum AuthorityEvidenceKind {
 
   String get wire {
     switch (this) {
+      case AuthorityEvidenceKind.institutionalRecordNamingPerson:
+        return 'INSTITUTIONAL_RECORD_NAMING_PERSON';
       case AuthorityEvidenceKind.existingHolderApproval:
         return 'EXISTING_HOLDER_APPROVAL';
       case AuthorityEvidenceKind.appointmentLetter:
@@ -177,6 +186,8 @@ enum AuthorityEvidenceKind {
 
   String get label {
     switch (this) {
+      case AuthorityEvidenceKind.institutionalRecordNamingPerson:
+        return 'A registration, formation or governing document that names you in your role';
       case AuthorityEvidenceKind.existingHolderApproval:
         return 'Approval from someone who already represents it';
       case AuthorityEvidenceKind.appointmentLetter:
@@ -191,52 +202,27 @@ enum AuthorityEvidenceKind {
         return 'Something else';
     }
   }
-}
 
-/// THE 120-DAY MIGRATION STANDING, for this person at this institution.
-///
-/// `NOT_ANCHORED` is the state worth being careful about and the one a client
-/// is most likely to get wrong: no notice has been DELIVERED, so nothing is
-/// running. Rendering a countdown from today would invent a deadline against
-/// somebody who was never told.
-class MigrationPosture {
-  const MigrationPosture({
-    required this.reason,
-    required this.deadlineAt,
-    required this.daysRemaining,
-    required this.authorityGovernanceBlocked,
-    required this.institutionVoiceBlocked,
-  });
-
-  /// NOT_ANCHORED | SATISFIED | IN_WINDOW | WINDOW_ELAPSED
-  final String reason;
-
-  /// §6 — the specific date, never relative phrasing. Null while unanchored.
-  final DateTime? deadlineAt;
-  final int? daysRemaining;
-
-  /// §3.2 — blocked from the moment the notice lands.
-  final bool authorityGovernanceBlocked;
-
-  /// §3.3 — blocked only once the window has run out. Day-to-day work
-  /// continues for the whole window, deliberately.
-  final bool institutionVoiceBlocked;
-
-  bool get running => reason == 'IN_WINDOW' || reason == 'WINDOW_ELAPSED';
-
-  static MigrationPosture fromJson(Map<String, dynamic>? json) {
-    final j = json ?? const <String, dynamic>{};
-    return MigrationPosture(
-      // An unreadable posture is treated as NOT running rather than as a
-      // deadline nobody can see the date of.
-      reason: (j['reason'] ?? 'NOT_ANCHORED').toString(),
-      deadlineAt: DateTime.tryParse(j['deadlineAt']?.toString() ?? ''),
-      daysRemaining: j['daysRemaining'] is int ? j['daysRemaining'] as int : null,
-      authorityGovernanceBlocked: j['authorityGovernanceBlocked'] == true,
-      institutionVoiceBlocked: j['institutionVoiceBlocked'] == true,
-    );
+  /// What the item is, in one line, where the label alone could be misread.
+  String? get help {
+    switch (this) {
+      case AuthorityEvidenceKind.institutionalRecordNamingPerson:
+        return 'For example a business registry record, articles or a '
+            'certificate of formation, an operating agreement or member '
+            'record, or a governing document — whichever names you in the '
+            'role you hold.';
+      case AuthorityEvidenceKind.appointmentLetter:
+        return 'A letter from the institution appointing or authorising you.';
+      default:
+        return null;
+    }
   }
 }
+
+// THE 120-DAY MIGRATION WINDOW IS RETIRED (founder, 2026-09-19). Speaking for
+// an institution needs confirmed authority for everyone, with no legacy grace
+// period, so there is no deadline to show. The server sends `migration: null`;
+// this build no longer reads it.
 
 /// One proof's standing, and what this person may do about it right now.
 class ProofStanding<S> {
@@ -276,9 +262,13 @@ class InstitutionVerificationStanding {
     required this.authority,
     required this.authorityEvidenceKind,
     required this.menu,
-    required this.migration,
     required this.mayAct,
     required this.actionRequiredTier,
+    this.identityVerified = false,
+    this.identityExpiresAt,
+    this.claimedRole,
+    this.claimedRelationship,
+    this.authorityEvidenceCount = 0,
   });
 
   final String institutionId;
@@ -302,27 +292,46 @@ class InstitutionVerificationStanding {
   /// The whole §2.7 menu. Always offered, never narrowed to a suggestion.
   final List<AuthorityEvidenceKind> menu;
 
-  /// The 120-day standing, delivered with everything else.
-  final MigrationPosture migration;
-
   /// WHETHER THIS PERSON MAY ACT, as opposed to merely look.
   ///
   /// Reading this standing needs only institution ADMIN; submitting a proof
-  /// needs the elevated identity tier. Those are different, and the difference
-  /// matters most for exactly the people the 120-day migration addresses —
-  /// who by definition do not hold the tier yet, and who would otherwise be
-  /// shown their deadline beside a button that refuses.
+  /// needs a CURRENT verified identity (founder, 2026-09-19 — the "elevated"
+  /// tier gates nothing any more). The two are different, and the screen says
+  /// which one is missing.
   final bool mayAct;
 
   /// The tier the ACTIONS need, named so the screen can say what is required
   /// rather than only that something is.
   final String actionRequiredTier;
 
+  /// THE PERSON'S OWN IDENTITY, RECOGNISED. When true, this screen says so and
+  /// asks only for institutional evidence — never for identity again.
+  final bool identityVerified;
+  final DateTime? identityExpiresAt;
+
+  /// The role claimed, in the person's own words, once they have said it.
+  final String? claimedRole;
+  final String? claimedRelationship;
+
+  /// How many documents or references are on the caller's authority claim.
+  final int authorityEvidenceCount;
+
+  /// Verification has been started: a category is recorded and the proofs
+  /// exist. Before this the only step is choosing what kind of organisation
+  /// this is.
+  bool get started => (category ?? '').trim().isNotEmpty;
+
   static InstitutionVerificationStanding fromJson(Map<String, dynamic> json) {
     final existence = (json['existence'] as Map?)?.cast<String, dynamic>() ?? {};
     final authority = (json['authority'] as Map?)?.cast<String, dynamic>() ?? {};
     final assurance =
         (json['actorAssurance'] as Map?)?.cast<String, dynamic>() ?? {};
+    final identity =
+        (assurance['identity'] as Map?)?.cast<String, dynamic>() ?? {};
+    String? text(Object? v) {
+      final s = (v ?? '').toString().trim();
+      return s.isEmpty ? null : s;
+    }
 
     List<String> strings(dynamic v) =>
         (v as List?)?.map((e) => e.toString()).toList(growable: false) ?? const [];
@@ -355,16 +364,17 @@ class InstitutionVerificationStanding {
           .map(AuthorityEvidenceKind.parse)
           .where((k) => k != AuthorityEvidenceKind.unknown)
           .toList(growable: false),
-      migration: MigrationPosture.fromJson(
-        (json['migration'] as Map?)?.cast<String, dynamic>(),
-      ),
       // TRUE when absent, deliberately. An absent field means a server older
       // than this build, whose behaviour was to offer the actions; defaulting
       // to false would strip every action from everybody the moment a client
       // shipped ahead of a deploy.
       mayAct: assurance['meetsActionRequirement'] != false,
-      actionRequiredTier:
-          (assurance['requiredTier'] ?? 'ELEVATED').toString(),
+      actionRequiredTier: (assurance['requiredTier'] ?? 'BASE').toString(),
+      identityVerified: identity['verified'] == true,
+      identityExpiresAt: DateTime.tryParse(identity['expiresAt']?.toString() ?? ''),
+      claimedRole: text(authority['claimedRole']),
+      claimedRelationship: text(authority['claimedRelationship']),
+      authorityEvidenceCount: (authority['evidenceCount'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -464,13 +474,20 @@ class InstitutionVerificationRepository {
     required AuthorityEvidenceKind evidenceKind,
     required List<SuppliedEvidence> evidence,
     String? relationship,
+    String? claimedRole,
+    bool alsoEstablishesInstitution = false,
   }) async {
     return _call(() async {
+      final role = claimedRole?.trim() ?? '';
       final res = await _dio.post<Map<String, dynamic>>(
         '${_base(institutionId)}/authority',
         data: {
           'evidenceKind': evidenceKind.wire,
           if (relationship != null) 'relationship': relationship,
+          if (role.isNotEmpty) 'claimedRole': role,
+          // ONE DOCUMENT MAY BE ENOUGH. When it also shows the institution
+          // exists, the server supplies it to that proof too.
+          if (alsoEstablishesInstitution) 'alsoEstablishesInstitution': true,
           'evidence': evidence.map((e) => e.toJson()).toList(),
         },
       );

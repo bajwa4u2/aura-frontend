@@ -104,6 +104,246 @@ class VerificationQueue {
   }
 }
 
+/// ONE AUTHORITY CLAIM, LAID OUT FOR COMPARISON (founder, 2026-09-19).
+///
+/// The reviewer must be able to say three things from one place: this is the
+/// already-verified person, this is the institution, and the evidence supports
+/// the role claimed. So the verified legal name, identity status and expiry,
+/// the institution, the claimed role, the evidence on both proofs and the
+/// claim's history arrive together. Files are LISTED, never fetched: opening
+/// one is a separate, audited act.
+class AuthorityClaimDetail {
+  const AuthorityClaimDetail({
+    required this.proofId,
+    required this.institutionId,
+    required this.claimantUserId,
+    required this.state,
+    required this.evidenceKind,
+    required this.claimedRole,
+    required this.claimedRelationship,
+    required this.infoRequested,
+    required this.decisionReason,
+    required this.submittedAt,
+    required this.reviewerIsClaimant,
+    required this.claimantName,
+    required this.claimantHandle,
+    required this.identityVerified,
+    required this.verifiedLegalName,
+    required this.identityVerifiedAt,
+    required this.identityExpiresAt,
+    required this.identityDocument,
+    required this.institutionName,
+    required this.institutionSlug,
+    required this.institutionDomain,
+    required this.institutionWebsite,
+    required this.institutionJurisdiction,
+    required this.existenceProofId,
+    required this.existenceState,
+    required this.existenceConfidence,
+    required this.existenceCategory,
+    required this.evidence,
+    required this.transitions,
+  });
+
+  final String proofId;
+  final String institutionId;
+  final String claimantUserId;
+  final AuthorityState state;
+  final AuthorityEvidenceKind? evidenceKind;
+  final String? claimedRole;
+  final String? claimedRelationship;
+  final String? infoRequested;
+  final String? decisionReason;
+  final DateTime? submittedAt;
+
+  /// The reviewer IS the claimant. Nobody decides their own authority; the
+  /// screen says so and offers no decision.
+  final bool reviewerIsClaimant;
+
+  final String? claimantName;
+  final String? claimantHandle;
+
+  /// Whether the claimant's identity is verified RIGHT NOW. Authority can
+  /// only be confirmed for a verified person.
+  final bool identityVerified;
+
+  /// The name the identity reviewer read on the document. Null for approvals
+  /// made before legal names were recorded — the reviewer is told so rather
+  /// than shown the profile name in its place.
+  final String? verifiedLegalName;
+  final DateTime? identityVerifiedAt;
+  final DateTime? identityExpiresAt;
+  final String? identityDocument;
+
+  final String? institutionName;
+  final String? institutionSlug;
+  final String? institutionDomain;
+  final String? institutionWebsite;
+  final String? institutionJurisdiction;
+
+  final String? existenceProofId;
+  final ExistenceState? existenceState;
+  final ExistenceConfidence? existenceConfidence;
+  final String? existenceCategory;
+
+  final List<AuthorityClaimEvidence> evidence;
+  final List<AuthorityClaimTransition> transitions;
+
+  static AuthorityClaimDetail fromJson(Map<String, dynamic> json) {
+    Map<String, dynamic> map(dynamic v) =>
+        v is Map ? Map<String, dynamic>.from(v) : <String, dynamic>{};
+    String? text(Object? v) {
+      final s = (v ?? '').toString().trim();
+      return s.isEmpty ? null : s;
+    }
+
+    DateTime? date(Object? v) => DateTime.tryParse(v?.toString() ?? '');
+    List<T> list<T>(dynamic raw, T Function(Map<String, dynamic>) f) =>
+        ((raw as List?) ?? const [])
+            .whereType<Map>()
+            .map((e) => f(Map<String, dynamic>.from(e)))
+            .toList(growable: false);
+
+    final proof = map(json['proof']);
+    final claimant = map(json['claimant']);
+    final person = map(claimant['person']);
+    final identity = map(claimant['identity']);
+    final institution = map(json['institution']);
+    final existence = json['existence'] is Map ? map(json['existence']) : null;
+    final kind = text(identity['documentKind']);
+
+    return AuthorityClaimDetail(
+      proofId: (proof['id'] ?? '').toString(),
+      institutionId: (proof['institutionId'] ?? '').toString(),
+      claimantUserId: (proof['userId'] ?? '').toString(),
+      state: AuthorityState.parse(proof['state']?.toString()),
+      evidenceKind: proof['evidenceKind'] == null
+          ? null
+          : AuthorityEvidenceKind.parse(proof['evidenceKind']?.toString()),
+      claimedRole: text(proof['claimedRole']),
+      claimedRelationship: text(proof['claimedRelationship']),
+      infoRequested: text(proof['infoRequested']),
+      decisionReason: text(proof['decisionReason']),
+      submittedAt: date(proof['submittedAt']),
+      reviewerIsClaimant: json['reviewerIsClaimant'] == true,
+      claimantName: text(person['displayName']),
+      claimantHandle: text(person['handle']),
+      identityVerified: (identity['status'] ?? '').toString() == 'VERIFIED',
+      verifiedLegalName: text(identity['verifiedLegalName']),
+      identityVerifiedAt: date(identity['verifiedAt']),
+      identityExpiresAt: date(identity['expiresAt']),
+      identityDocument: kind == null
+          ? text(identity['documentType'])
+          : switch (kind) {
+              'PASSPORT' => 'Passport',
+              'DRIVING_LICENCE' => 'Driving licence',
+              'IDENTITY_CARD' => 'Identity card',
+              'RESIDENCE_PERMIT' => 'Residence permit',
+              _ => kind,
+            },
+      institutionName: text(institution['name']),
+      institutionSlug: text(institution['slug']),
+      institutionDomain: text(institution['domain']),
+      institutionWebsite: text(institution['websiteUrl']),
+      institutionJurisdiction: text(institution['jurisdiction']),
+      existenceProofId: existence == null ? null : text(existence['id']),
+      existenceState: existence == null
+          ? null
+          : ExistenceState.parse(existence['state']?.toString()),
+      existenceConfidence: existence == null || existence['confidence'] == null
+          ? null
+          : ExistenceConfidence.parse(existence['confidence']?.toString()),
+      existenceCategory: existence == null ? null : text(existence['category']),
+      evidence: list(json['evidence'], AuthorityClaimEvidence.fromJson),
+      transitions: list(json['transitions'], AuthorityClaimTransition.fromJson),
+    );
+  }
+}
+
+/// One document or reference on the claim — never the file itself.
+class AuthorityClaimEvidence {
+  const AuthorityClaimEvidence({
+    required this.id,
+    required this.forAuthority,
+    required this.authorityKind,
+    required this.reference,
+    required this.hasFile,
+    required this.mimeType,
+    required this.fileName,
+    required this.submittedByClaimant,
+    required this.submittedAt,
+    required this.superseded,
+    required this.discarded,
+  });
+
+  final String id;
+
+  /// Supplied for the authority question (true) or the institution-exists
+  /// question (false). The same document supplied for both is two rows.
+  final bool forAuthority;
+  final AuthorityEvidenceKind? authorityKind;
+  final String? reference;
+  final bool hasFile;
+  final String? mimeType;
+  final String? fileName;
+  final bool submittedByClaimant;
+  final DateTime? submittedAt;
+  final bool superseded;
+  final bool discarded;
+
+  bool get isPdf => (mimeType ?? '').toLowerCase() == 'application/pdf';
+
+  static AuthorityClaimEvidence fromJson(Map<String, dynamic> json) {
+    String? text(Object? v) {
+      final s = (v ?? '').toString().trim();
+      return s.isEmpty ? null : s;
+    }
+
+    return AuthorityClaimEvidence(
+      id: (json['id'] ?? '').toString(),
+      forAuthority: (json['for'] ?? '').toString() != 'EXISTENCE',
+      authorityKind: json['authorityKind'] == null
+          ? null
+          : AuthorityEvidenceKind.parse(json['authorityKind']?.toString()),
+      reference: text(json['reference']),
+      hasFile: json['hasFile'] == true,
+      mimeType: text(json['mimeType']),
+      fileName: text(json['fileName']),
+      submittedByClaimant: json['submittedByClaimant'] == true,
+      submittedAt: DateTime.tryParse(json['submittedAt']?.toString() ?? ''),
+      superseded: json['superseded'] == true,
+      discarded: json['discarded'] == true,
+    );
+  }
+}
+
+class AuthorityClaimTransition {
+  const AuthorityClaimTransition({
+    required this.fromState,
+    required this.toState,
+    required this.actor,
+    required this.reason,
+    required this.at,
+  });
+
+  final String fromState;
+  final String toState;
+  final String actor;
+  final String? reason;
+  final DateTime? at;
+
+  static AuthorityClaimTransition fromJson(Map<String, dynamic> json) {
+    final reason = (json['reason'] ?? '').toString().trim();
+    return AuthorityClaimTransition(
+      fromState: (json['fromState'] ?? '').toString(),
+      toState: (json['toState'] ?? '').toString(),
+      actor: (json['actor'] ?? '').toString(),
+      reason: reason.isEmpty ? null : reason,
+      at: DateTime.tryParse(json['createdAt']?.toString() ?? ''),
+    );
+  }
+}
+
 /// THE SUCCESS ENVELOPE ALSO NESTS.
 ///
 /// Responses arrive as `{ok: true, data: {...}}`. Passing the whole body to a
@@ -154,6 +394,33 @@ class InstitutionVerificationReviewRepository {
       _post('$_base/existence/$proofId/needs-info', {'infoRequested': infoRequested});
 
   // ── authority ─────────────────────────────────────────────────────────────
+
+  /// The claim beside the verified person it belongs to.
+  Future<AuthorityClaimDetail> authorityDetail(String proofId) async {
+    return _call(() async {
+      final res = await _dio.get<Map<String, dynamic>>('$_base/authority/$proofId');
+      return AuthorityClaimDetail.fromJson(_unwrap(res.data));
+    });
+  }
+
+  /// Open ONE document. The server records who opened it BEFORE it signs the
+  /// file, so this is a POST and nothing prefetches it. Returns a short-lived
+  /// URL, which is never stored.
+  Future<String> openEvidence(String evidenceId) async {
+    return _call(() async {
+      final res = await _dio.post<Map<String, dynamic>>(
+        '$_base/evidence/$evidenceId/view',
+      );
+      final body = _unwrap(res.data);
+      final url = (body['url'] ?? body['deliveryUrl'] ?? '').toString();
+      if (url.isEmpty) {
+        throw const InstitutionVerificationException(
+          'That document could not be opened. Its opening was still recorded.',
+        );
+      }
+      return url;
+    });
+  }
 
   Future<void> takeAuthority(String proofId) =>
       _post('$_base/authority/$proofId/review');
@@ -224,6 +491,13 @@ final institutionVerificationReviewRepositoryProvider =
     Provider<InstitutionVerificationReviewRepository>(
   (ref) => InstitutionVerificationReviewRepository(ref.watch(dioProvider)),
 );
+
+final authorityClaimDetailProvider = FutureProvider.autoDispose
+    .family<AuthorityClaimDetail, String>((ref, proofId) {
+  return ref
+      .watch(institutionVerificationReviewRepositoryProvider)
+      .authorityDetail(proofId);
+});
 
 final institutionVerificationQueueProvider =
     FutureProvider.autoDispose<VerificationQueue>(

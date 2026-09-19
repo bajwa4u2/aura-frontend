@@ -3,7 +3,9 @@
   "state": "APPROVED",
   "tier": "BASE",
   "documentType": "Passport",
+  "documentKind": "PASSPORT",
   "documentExpiresAt": "2031-04-30T00:00:00.000Z",
+  "verifiedLegalName": "Jane Quinn Public",
   "submittedAt": "2026-08-22T09:12:00.000Z",
   "reviewedAt": "2026-05-01T10:00:00.000Z",
   "decisionReason": "Document and photograph match.",
@@ -21,13 +23,22 @@
     {
       "id": "cmoidev0001",
       "kind": "GOVERNMENT_ID",
+      "side": "PHOTO_PAGE",
       "discarded": true
     },
     {
       "id": "cmoidev0002",
       "kind": "SELFIE_COMPARISON",
+      "side": null,
       "discarded": true
     }
+  ],
+  "requiredSides": [
+    "PHOTO_PAGE"
+  ],
+  "missingEvidence": [
+    "GOVERNMENT_ID:PHOTO_PAGE",
+    "SELFIE_COMPARISON"
   ],
   "history": []
 }

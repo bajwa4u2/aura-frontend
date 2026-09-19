@@ -11,6 +11,7 @@
     "state": "PENDING_REVIEW",
     "tier": "BASE",
     "documentType": "Passport",
+    "documentKind": "PASSPORT",
     "submittedAt": "2026-08-22T09:12:00.000Z",
     "evidenceCount": 2
   },
@@ -26,6 +27,7 @@
     "state": "NEEDS_MORE_INFO",
     "tier": "BASE",
     "documentType": null,
+    "documentKind": "PASSPORT",
     "submittedAt": "2026-08-10T11:00:00.000Z",
     "evidenceCount": 1
   }

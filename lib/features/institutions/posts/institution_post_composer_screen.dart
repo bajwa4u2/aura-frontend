@@ -46,6 +46,7 @@ import '../../../core/composition/composition_authority.dart';
 import '../../../core/composition/content_intake.dart';
 import '../data/institutions_repository.dart';
 import '../domain/communication_type.dart';
+import '../verification/presentation/speaking_authority_notice.dart';
 import '../domain/institution_post.dart';
 import 'integrity/institution_post_integrity_review_sheet.dart';
 import '../ui/institution_ds.dart';
@@ -156,6 +157,10 @@ class _InstitutionPostComposerScreenState
   bool _busy = false;
   bool _loadingExisting = false;
   String? _error;
+
+  /// The last failure was the institution-authority refusal, so the banner
+  /// offers the way to the Verification page alongside the server's words.
+  bool _authorityRefused = false;
 
   // ── Local draft persistence state ─────────────────────────────────────────
   // The composer auto-saves a per-(institution, user, visibility) draft to
@@ -1236,6 +1241,10 @@ class _InstitutionPostComposerScreenState
   String _readError(Object e, String fallback) {
     final appError = AppErrorMapper.from(e, feature: 'publish this');
 
+    // A VERIFIED PERSON WITHOUT CONFIRMED AUTHORITY FOR THIS INSTITUTION. The
+    // server's sentence already names the step; the banner adds the way to it.
+    _authorityRefused = appError.code == kInstitutionAuthorityRequired;
+
     // Map well-known monetization codes to friendly UI copy so users see a
     // clear next step rather than the raw backend message.
     switch (appError.code) {
@@ -1279,6 +1288,29 @@ class _InstitutionPostComposerScreenState
         final uid = (user['id'] ?? '').toString().trim();
         if (uid.isNotEmpty) _bootstrapDraftsIfNeeded(uid);
       }
+    }
+
+    // HELD BACK BY AUTHORITY, NOT BY ROLE (founder, 2026-09-19). An owner or
+    // admin whose authority for this institution is not confirmed yet is told
+    // exactly that and given the one step — "not allowed" would read as if
+    // Aura did not recognise them. Any draft already saved stays saved: this
+    // branch reads nothing from and writes nothing to the draft store.
+    if (!canCreate && (identity?.awaitsSpeakingAuthority ?? false)) {
+      return AuraScaffold(
+        showHeader: false,
+        body: InsScreen(
+          children: [
+            Text('Speaking for ${identity!.name}', style: AuraText.title),
+            const SizedBox(height: AuraSpace.s12),
+            SpeakingAuthorityNotice(institutionAddress: identity.workspaceAddress),
+            const SizedBox(height: AuraSpace.s16),
+            AuraSecondaryButton(
+              label: 'Back',
+              onPressed: () => context.pop(),
+            ),
+          ],
+        ),
+      );
     }
 
     if (!canCreate) {
@@ -1363,6 +1395,14 @@ class _InstitutionPostComposerScreenState
                   if (_error != null) ...[
                     _ErrorBanner(message: _error!),
                     const SizedBox(height: AuraSpace.s14),
+                    if (_authorityRefused) ...[
+                      SpeakingAuthorityNotice(
+                        institutionAddress:
+                            identity?.workspaceAddress ?? widget.institutionId,
+                        compact: true,
+                      ),
+                      const SizedBox(height: AuraSpace.s14),
+                    ],
                   ],
                   _LabeledField(
                     label: 'Communication type',

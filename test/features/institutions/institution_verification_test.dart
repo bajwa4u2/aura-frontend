@@ -178,18 +178,18 @@ void main() {
 
     test('WHETHER THIS PERSON MAY ACT IS READ, NEVER GUESSED', () {
       // Reading this standing needs institution ADMIN; acting on a proof needs
-      // the elevated identity tier. The client cannot compute the second, and a
-      // client that guessed would guess wrong for exactly the 120-day migration
-      // population — who would then be shown their deadline beside a button the
-      // server refuses.
+      // a CURRENT verified identity (2026-09-19 — ELEVATED gates nothing). The
+      // client cannot compute the second, so it is read.
       final blocked = InstitutionVerificationStanding.fromJson(const {
         'actorAssurance': {
           'meetsActionRequirement': false,
-          'requiredTier': 'ELEVATED',
+          'requiredTier': 'BASE',
+          'identity': {'verified': false},
         },
       });
       expect(blocked.mayAct, isFalse);
-      expect(blocked.actionRequiredTier, 'ELEVATED');
+      expect(blocked.identityVerified, isFalse);
+      expect(blocked.actionRequiredTier, 'BASE');
 
       final allowed = InstitutionVerificationStanding.fromJson(const {
         'actorAssurance': {'meetsActionRequirement': true},
@@ -204,15 +204,69 @@ void main() {
       // a client shipped ahead of a deploy.
       final s = InstitutionVerificationStanding.fromJson(const {});
       expect(s.mayAct, isTrue);
-      expect(s.actionRequiredTier, 'ELEVATED');
+      expect(s.actionRequiredTier, 'BASE');
+    });
+
+    test('A VERIFIED PERSON IS RECOGNISED, with the claim they made', () {
+      // The defect of 2026-09-19: a verified owner was told their identity
+      // "comes first". The standing now carries the identity it recognised.
+      final s = InstitutionVerificationStanding.fromJson({
+        ...payload(),
+        'actorAssurance': {
+          'meetsActionRequirement': true,
+          'requiredTier': 'BASE',
+          'identity': {
+            'verified': true,
+            'verifiedAt': '2026-09-19T03:52:00.000Z',
+            'expiresAt': '2029-09-19T00:00:00.000Z',
+          },
+        },
+        'authority': {
+          'state': 'SUBMITTED',
+          'available': <String>[],
+          'acceptsEvidence': false,
+          'claimedRole': 'Founder and managing member',
+          'claimedRelationship': 'FOUNDER_FIRST_OWNER',
+          'evidenceCount': 1,
+          'menu': ['INSTITUTIONAL_RECORD_NAMING_PERSON', 'APPOINTMENT_LETTER'],
+        },
+        'migration': null,
+      });
+      expect(s.identityVerified, isTrue);
+      expect(s.identityExpiresAt, DateTime.parse('2029-09-19T00:00:00.000Z'));
+      expect(s.claimedRole, 'Founder and managing member');
+      expect(s.claimedRelationship, 'FOUNDER_FIRST_OWNER');
+      expect(s.authorityEvidenceCount, 1);
+      expect(s.started, isTrue);
+    });
+
+    test('THE DOCUMENT THAT NAMES THE PERSON LEADS THE MENU', () {
+      final s = InstitutionVerificationStanding.fromJson(payload(menu: const [
+        'INSTITUTIONAL_RECORD_NAMING_PERSON',
+        'EXISTING_HOLDER_APPROVAL',
+      ]));
+      expect(s.menu.first, AuthorityEvidenceKind.institutionalRecordNamingPerson);
+      expect(AuthorityEvidenceKind.institutionalRecordNamingPerson.wire,
+          'INSTITUTIONAL_RECORD_NAMING_PERSON');
+      expect(AuthorityEvidenceKind.institutionalRecordNamingPerson.label,
+          contains('names you'));
+    });
+
+    test('NOT STARTED UNTIL A CATEGORY IS RECORDED', () {
+      expect(InstitutionVerificationStanding.fromJson(const {}).started, isFalse);
+      expect(
+        InstitutionVerificationStanding.fromJson(const {'category': 'CORPORATE_BUSINESS'})
+            .started,
+        isTrue,
+      );
     });
   });
 
   group('the way out of the gate is itself reachable', () {
     test('THE ROUTE THE SCREEN OFFERS IS NOT GATED ON WHAT IT ASKS FOR', () {
-      // The verification screen shows "Verify my identity" to somebody who does
-      // not hold the elevated tier, and sends them to this route. If that route
-      // required the same tier, the screen would be handing them a door locked
+      // The verification screen shows "Verify my identity" to somebody with no
+      // current identity verification, and sends them to this route. If that
+      // route required the same verification, the screen would be handing them a door locked
       // with the key they came to collect — the identical dead end this release
       // repaired one layer up, recreated one layer down.
       //
@@ -303,66 +357,9 @@ void main() {
     });
   });
 
-  group('the 120-day deadline is shown only when one is running', () {
-    MigrationPosture posture(Map<String, dynamic>? json) =>
-        MigrationPosture.fromJson(json);
-
-    test('NOT_ANCHORED IS NOT A COUNTDOWN', () {
-      // No notice has been DELIVERED, so nothing runs. A card that appeared as
-      // soon as a migration record existed would show a deadline to somebody
-      // who was never told anything.
-      final p = posture({
-        'reason': 'NOT_ANCHORED',
-        'deadlineAt': null,
-        'daysRemaining': null,
-        'authorityGovernanceBlocked': false,
-        'institutionVoiceBlocked': false,
-      });
-      expect(p.running, isFalse);
-      expect(p.deadlineAt, isNull);
-    });
-
-    test('IN_WINDOW RUNS, AND CARRIES THE DATE', () {
-      final p = posture({
-        'reason': 'IN_WINDOW',
-        'deadlineAt': '2027-01-08T09:00:00.000Z',
-        'daysRemaining': 110,
-        'authorityGovernanceBlocked': true,
-        'institutionVoiceBlocked': false,
-      });
-      expect(p.running, isTrue);
-      // §6 -- the specific date, which the client can only show if given it.
-      expect(p.deadlineAt, DateTime.parse('2027-01-08T09:00:00.000Z'));
-      // §3.2/§3.3 -- two blocks at two different moments, never collapsed.
-      expect(p.authorityGovernanceBlocked, isTrue);
-      expect(p.institutionVoiceBlocked, isFalse);
-    });
-
-    test('SATISFIED IS NOT RUNNING, whatever the date says', () {
-      final p = posture({
-        'reason': 'SATISFIED',
-        'deadlineAt': '2026-01-01T00:00:00.000Z',
-        'authorityGovernanceBlocked': false,
-        'institutionVoiceBlocked': false,
-      });
-      // §3.4 -- restoration is immediate on verification. A person who has
-      // finished must not still be shown a deadline that has passed.
-      expect(p.running, isFalse);
-    });
-
-    test('AN UNREADABLE POSTURE IS NOT A DEADLINE', () {
-      // Failing towards "no deadline" is the safe direction: the alternative
-      // is telling somebody they are out of time on the strength of a payload
-      // this build could not read.
-      for (final raw in [null, <String, dynamic>{}]) {
-        final p = posture(raw);
-        expect(p.running, isFalse);
-        expect(p.reason, 'NOT_ANCHORED');
-        expect(p.authorityGovernanceBlocked, isFalse);
-        expect(p.institutionVoiceBlocked, isFalse);
-      }
-    });
-  });
+  // The 120-day migration window was retired on 2026-09-19 (founder): there
+  // is no legacy grace period, so there is no deadline to parse or show. The
+  // server sends `migration: null`, which the standing tolerates above.
 
   group('the response envelope is unwrapped, both directions', () {
     // THE DEFECT THIS GROUP EXISTS FOR.

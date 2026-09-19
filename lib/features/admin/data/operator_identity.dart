@@ -119,16 +119,40 @@ enum IdentitySubmissionState {
       this == IdentitySubmissionState.needsMoreInfo;
 }
 
+/// The document the person presented. Decides which sides were required.
+String? documentKindLabel(String? wire) => switch ((wire ?? '').trim().toUpperCase()) {
+      'PASSPORT' => 'Passport',
+      'DRIVING_LICENCE' => 'Driving licence',
+      'IDENTITY_CARD' => 'Identity card',
+      'RESIDENCE_PERMIT' => 'Residence permit',
+      '' => null,
+      final other => other,
+    };
+
+/// Which side of the document an image shows.
+String? documentSideLabel(String? wire) => switch ((wire ?? '').trim().toUpperCase()) {
+      'PHOTO_PAGE' => 'Photo page',
+      'FRONT' => 'Front',
+      'BACK' => 'Back',
+      '' => null,
+      final other => other,
+    };
+
 /// One piece of evidence — its ROLE and whether it still exists. Never bytes.
 class IdentityEvidence {
   const IdentityEvidence({
     required this.id,
     required this.kind,
     required this.discarded,
+    this.side,
   });
 
   final String id;
   final IdentityEvidenceKind kind;
+
+  /// Which side of the document this image shows (PHOTO_PAGE, FRONT, BACK).
+  /// Null for the photograph and for evidence captured before sides existed.
+  final String? side;
 
   /// The bytes were destroyed on schedule. The ROW survives as proof that
   /// evidence of this kind existed, which is a different fact from "there was
@@ -139,6 +163,7 @@ class IdentityEvidence {
       IdentityEvidence(
         id: (json['id'] ?? '').toString(),
         kind: IdentityEvidenceKind.parse(json['kind']?.toString()),
+        side: _text(json['side']),
         discarded: json['discarded'] == true,
       );
 }
@@ -233,7 +258,11 @@ class IdentitySubmission {
     required this.history,
     this.tier,
     this.documentType,
+    this.documentKind,
     this.documentExpiresAt,
+    this.verifiedLegalName,
+    this.requiredSides,
+    this.serverMissing,
     this.submittedAt,
     this.reviewedAt,
     this.decisionReason,
@@ -249,7 +278,22 @@ class IdentitySubmission {
 
   final String? tier;
   final String? documentType;
+
+  /// PASSPORT | DRIVING_LICENCE | IDENTITY_CARD | RESIDENCE_PERMIT. Null on a
+  /// submission made before documents were named.
+  final String? documentKind;
   final DateTime? documentExpiresAt;
+
+  /// The legal name the approving reviewer recorded. Retained after the
+  /// images are destroyed; institution-authority review compares against it.
+  final String? verifiedLegalName;
+
+  /// The sides this document needs, as the server states them.
+  final List<String>? requiredSides;
+
+  /// What the server says is still missing (`GOVERNMENT_ID:BACK`,
+  /// `SELFIE_COMPARISON`). Null from a server older than the sides rule.
+  final List<String>? serverMissing;
   final DateTime? submittedAt;
   final DateTime? reviewedAt;
   final String? decisionReason;
@@ -279,7 +323,23 @@ class IdentitySubmission {
     ].where((k) => !present.contains(k)).toList();
   }
 
-  bool get canApproveOnEvidence => missingForApproval.isEmpty;
+  /// WHAT IS MISSING, in the reviewer's words, sides included. The server's
+  /// own list when it sends one — it knows which sides this document needs —
+  /// and the role-only reading otherwise.
+  List<String> get missingDescribed {
+    final server = serverMissing;
+    if (server != null) {
+      return server.map((m) {
+        final parts = m.split(':');
+        if (parts.first == 'SELFIE_COMPARISON') return 'the photograph';
+        final side = parts.length > 1 ? documentSideLabel(parts[1]) : null;
+        return side == null ? 'the document' : 'the ${side.toLowerCase()} of the document';
+      }).toList();
+    }
+    return missingForApproval.map((k) => k.label.toLowerCase()).toList();
+  }
+
+  bool get canApproveOnEvidence => missingDescribed.isEmpty;
 
   static IdentitySubmission fromJson(Map<String, dynamic> json) {
     final body = json['data'] is Map
@@ -312,7 +372,15 @@ class IdentitySubmission {
           : const [],
       tier: _text(body['tier']),
       documentType: _text(body['documentType']),
+      documentKind: _text(body['documentKind']),
       documentExpiresAt: _date(body['documentExpiresAt']),
+      verifiedLegalName: _text(body['verifiedLegalName']),
+      requiredSides: body['requiredSides'] is List
+          ? (body['requiredSides'] as List).map((e) => e.toString()).toList()
+          : null,
+      serverMissing: body['missingEvidence'] is List
+          ? (body['missingEvidence'] as List).map((e) => e.toString()).toList()
+          : null,
       submittedAt: _date(body['submittedAt']),
       reviewedAt: _date(body['reviewedAt']),
       decisionReason: _text(body['decisionReason']),
@@ -409,11 +477,14 @@ class OperatorIdentityRepository {
   }
 
   /// The verdict. `reason` is required by the authority for every decision.
+  /// Approval also carries the legal name exactly as read on the document —
+  /// the verified RESULT, retained after the images are destroyed.
   Future<void> decide(
     String submissionId, {
     required String decision,
     required String reason,
     String? documentType,
+    String? verifiedLegalName,
   }) async {
     await _dio.post(
       '/v1/admin/identity-verification/$submissionId/decide',
@@ -422,6 +493,8 @@ class OperatorIdentityRepository {
         'reason': reason,
         if (documentType != null && documentType.isNotEmpty)
           'documentType': documentType,
+        if (verifiedLegalName != null && verifiedLegalName.trim().isNotEmpty)
+          'verifiedLegalName': verifiedLegalName.trim(),
       },
     );
   }

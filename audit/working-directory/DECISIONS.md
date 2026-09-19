@@ -1,5 +1,10 @@
 # Decisions — aura_final
 
+## Identity and institution authority are separate layers — founder decisions, 2026-09-19
+
+Founder: an already-verified person must be recognised and never asked for ID/selfie again to act for an institution; institution representation is a separate, institution-specific authority check on business evidence (PDF or image) that connects the verified person + institution + role; one document may be enough; no 120-day legacy speaking window; a new institution only by a verified person; verified legal name retained as a verification result; identity capture by document type with required sides; ELEVATED removed as the institution gate. Recorded in the three policy amendments above; history preserved in place.
+
+
 Last updated: 2026-08-14 UTC (Realtime Architecture Correction — Phase 1 conditionally approved, amended Gate 2 resolved in aura-backend, no decision made in this repo; Thread Call Lifecycle Convergence code fixes from earlier this session remain approved/landed)
 
 Founder-approved decisions governing this repository (recorded retroactively at continuity establishment, 2026-07-21).

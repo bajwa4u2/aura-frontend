@@ -1,5 +1,10 @@
 # Current State — aura_final
 
+## Identity ≠ institution authority — client, 2026-09-19
+
+Identity screen recognises a current verification (no first-time form) and captures by document type with one tile per required side. Institution Verification page recognises a verified person and asks only for authority evidence (role, evidence kind, PDF or image, "also shows the institution is registered"); the 120-day deadline UI is removed. Admin identity review requires the legal name to approve and shows sides/missing evidence; the institution-verification review has a comparison view (verified legal name, identity, institution, claimed role, evidence with audited Open, history). Composer and dashboard show the authority ask when speaking authority is not confirmed. Tests: 2941 pass, 1 pre-existing failure (`modal_and_flow_exit_test` full-height sheet census already 21 at HEAD vs expected 19). `flutter analyze`: 66 issues, unchanged from before this work.
+
+
 ## FRONTEND ARCHITECTURE & PRODUCT COHERENCE INVESTIGATION — READY FOR FOUNDER REVIEW, 2026-08-14
 
 Full report (backend-owned, referenced not duplicated): `../aura-backend/capability/AURA_FRONTEND_ARCHITECTURE_COHERENCE_INVESTIGATION.md`. Investigation-only — **no fixes were applied in this repo**, deliberately, so the systemic picture is decided before further surface-by-surface correction.

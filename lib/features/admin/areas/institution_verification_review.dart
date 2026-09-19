@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/product/product_language.dart';
 import '../../../core/product/product_state.dart';
 import '../../../core/product/product_state_view.dart';
+import '../../../core/product/temporal.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_space.dart';
@@ -27,6 +29,12 @@ import '../data/institution_verification_review_repository.dart';
 ///   They do NOT see a verdict suggested to them. There is no "looks fine"
 ///   affordance and no default-selected outcome. An interface that pre-selects
 ///   an answer is making the decision the policy reserves for a person.
+///
+///   An AUTHORITY claim is shown beside the verified person it belongs to —
+///   verified legal name, identity status and expiry — and beside the
+///   institution and every document supplied (founder, 2026-09-19), so the
+///   reviewer can match the name on a business document to the verified
+///   person before confirming anything.
 ///
 ///   A refusal or a request for information cannot be submitted empty, and the
 ///   floor is a real sentence rather than one character. §2.10 requires a
@@ -278,6 +286,11 @@ class _AuthorityCaseCardState extends ConsumerState<_AuthorityCaseCard> {
   String? _error;
   bool _busy = false;
 
+  /// How strongly the institution itself is confirmed, when it is decided
+  /// from this same claim. DOCUMENT_REVIEWED is where a reviewer who has just
+  /// read a registration document would land; they can change it.
+  String _existenceConfidence = 'DOCUMENT_REVIEWED';
+
   @override
   void dispose() {
     _reason.dispose();
@@ -290,6 +303,12 @@ class _AuthorityCaseCardState extends ConsumerState<_AuthorityCaseCard> {
   Widget build(BuildContext context) {
     final item = widget.item;
     final repo = ref.read(institutionVerificationReviewRepositoryProvider);
+    final detailAsync = ref.watch(authorityClaimDetailProvider(item.proofId));
+    final detail = detailAsync.valueOrNull;
+
+    // NOBODY DECIDES THEIR OWN AUTHORITY. The server refuses it; the console
+    // does not offer it, and says why.
+    final selfReview = detail?.reviewerIsClaimant ?? false;
 
     return AuraCard(
       child: Padding(
@@ -297,76 +316,152 @@ class _AuthorityCaseCardState extends ConsumerState<_AuthorityCaseCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(item.institutionId, style: AuraText.title),
+            Text(detail?.institutionName ?? item.institutionId, style: AuraText.title),
             const SizedBox(height: AuraSpace.xs),
-            // WHOSE claim. An authority decision is about one person and the
-            // reviewer must be able to see which.
-            Text('Claimant: ${item.userId}', style: AuraText.small),
             Text('State: ${item.state.name}', style: AuraText.small),
             if (item.evidenceKind != null)
               Text('Relying on: ${item.evidenceKind!.label}', style: AuraText.small),
+            const SizedBox(height: AuraSpace.md),
+            detailAsync.when(
+              loading: () => const LinearProgressIndicator(minHeight: 2),
+              error: (e, _) => Text(
+                e is InstitutionVerificationException
+                    ? e.message
+                    : 'The claim could not be read. Nothing was decided.',
+                style: AuraText.small,
+              ),
+              data: (d) => _AuthorityComparison(detail: d),
+            ),
             if (_error != null) ...[
               const SizedBox(height: AuraSpace.sm),
               Text(_error!, style: AuraText.small),
             ],
             const SizedBox(height: AuraSpace.md),
-            if (item.state == AuthorityState.submitted)
-              AuraSecondaryButton(
-                label: 'Take for review',
-                onPressed: _busy
-                    ? null
-                    : () => _run(() => repo.takeAuthority(item.proofId)),
-              ),
-            if (item.state == AuthorityState.underReview) ...[
-              TextField(
-                controller: _reason,
-                minLines: 2,
-                maxLines: null,
-                decoration: const InputDecoration(
-                  labelText: 'Reason, or what is still needed',
-                  helperText:
-                      'Required to refuse or to ask for more. At least a sentence.',
+            if (selfReview)
+              const Text(
+                'This is your own claim. Another reviewer must decide it — you '
+                'cannot review your own institution authority.',
+                style: AuraText.body,
+              )
+            else ...[
+              if (detail != null) ..._existenceActions(detail, repo),
+              if (item.state == AuthorityState.submitted)
+                AuraSecondaryButton(
+                  label: 'Take for review',
+                  onPressed: _busy
+                      ? null
+                      : () => _run(() => repo.takeAuthority(item.proofId)),
                 ),
-              ),
-              const SizedBox(height: AuraSpace.md),
-              Wrap(
-                spacing: AuraSpace.sm,
-                runSpacing: AuraSpace.sm,
-                children: [
-                  AuraPrimaryButton(
-                    label: 'Confirm authority',
-                    onPressed: _busy
-                        ? null
-                        : () => _run(() => repo.confirmAuthority(
-                              item.proofId,
-                              reason: _reason.text,
-                            )),
+              if (item.state == AuthorityState.underReview) ...[
+                if (detail != null && !detail.identityVerified)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: AuraSpace.sm),
+                    child: Text(
+                      'This person has no current identity verification, so '
+                      'their authority cannot be confirmed yet.',
+                      style: AuraText.body,
+                    ),
                   ),
-                  AuraSecondaryButton(
-                    label: 'Ask for more',
-                    onPressed: _busy || !_reasoned
-                        ? null
-                        : () => _run(() => repo.requestAuthorityInfo(
-                              item.proofId,
-                              _reason.text.trim(),
-                            )),
+                TextField(
+                  controller: _reason,
+                  minLines: 2,
+                  maxLines: null,
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration(
+                    labelText: 'Reason, or what is still needed',
+                    helperText:
+                        'Required to refuse or to ask for more. At least a sentence.',
                   ),
-                  AuraSecondaryButton(
-                    label: 'Refuse',
-                    onPressed: _busy || !_reasoned
-                        ? null
-                        : () => _run(() => repo.rejectAuthority(
-                              item.proofId,
-                              _reason.text.trim(),
-                            )),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: AuraSpace.md),
+                Wrap(
+                  spacing: AuraSpace.sm,
+                  runSpacing: AuraSpace.sm,
+                  children: [
+                    AuraPrimaryButton(
+                      label: 'Confirm authority',
+                      onPressed: _busy || (detail != null && !detail.identityVerified)
+                          ? null
+                          : () => _run(() => repo.confirmAuthority(
+                                item.proofId,
+                                reason: _reason.text,
+                              )),
+                    ),
+                    AuraSecondaryButton(
+                      label: 'Ask for more',
+                      onPressed: _busy || !_reasoned
+                          ? null
+                          : () => _run(() => repo.requestAuthorityInfo(
+                                item.proofId,
+                                _reason.text.trim(),
+                              )),
+                    ),
+                    AuraSecondaryButton(
+                      label: 'Refuse',
+                      onPressed: _busy || !_reasoned
+                          ? null
+                          : () => _run(() => repo.rejectAuthority(
+                                item.proofId,
+                                _reason.text.trim(),
+                              )),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ],
         ),
       ),
     );
+  }
+
+  /// THE INSTITUTION, DECIDED FROM THE SAME CLAIM when one document was sent
+  /// for both questions. The two are still decided separately — confirming
+  /// the institution exists says nothing about this person's authority.
+  List<Widget> _existenceActions(
+    AuthorityClaimDetail d,
+    InstitutionVerificationReviewRepository repo,
+  ) {
+    final proofId = d.existenceProofId;
+    final state = d.existenceState;
+    if (proofId == null || state == null) return const [];
+    if (state == ExistenceState.submitted || state == ExistenceState.automatedCheck) {
+      return [
+        AuraSecondaryButton(
+          label: 'Take the institution for review too',
+          onPressed: _busy ? null : () => _run(() => repo.takeExistence(proofId)),
+        ),
+        const SizedBox(height: AuraSpace.md),
+      ];
+    }
+    if (state != ExistenceState.manualReview) return const [];
+    return [
+      const Text('Does the institution exist?', style: AuraText.body),
+      const SizedBox(height: AuraSpace.xs),
+      DropdownButtonFormField<String>(
+        initialValue: _existenceConfidence,
+        decoration: const InputDecoration(labelText: 'How strongly is this confirmed?'),
+        items: const [
+          DropdownMenuItem(value: 'DOMAIN_ONLY', child: Text('Domain only')),
+          DropdownMenuItem(value: 'DOCUMENT_REVIEWED', child: Text('Document reviewed')),
+          DropdownMenuItem(
+            value: 'REGISTRY_CONFIRMED',
+            child: Text('Confirmed against a register'),
+          ),
+        ],
+        onChanged: _busy
+            ? null
+            : (v) => setState(() => _existenceConfidence = v ?? 'DOCUMENT_REVIEWED'),
+      ),
+      const SizedBox(height: AuraSpace.sm),
+      AuraSecondaryButton(
+        label: 'Confirm the institution exists',
+        onPressed: _busy
+            ? null
+            : () => _run(() => repo.confirmExistence(proofId, _existenceConfidence)),
+      ),
+      const SizedBox(height: AuraSpace.md),
+    ];
   }
 
   Future<void> _run(Future<void> Function() action) async {
@@ -376,6 +471,7 @@ class _AuthorityCaseCardState extends ConsumerState<_AuthorityCaseCard> {
     });
     try {
       await action();
+      ref.invalidate(authorityClaimDetailProvider(widget.item.proofId));
       widget.onChanged();
     } catch (e) {
       if (!mounted) return;
@@ -385,6 +481,184 @@ class _AuthorityCaseCardState extends ConsumerState<_AuthorityCaseCard> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+}
+
+/// THE VERIFIED PERSON, THE INSTITUTION, AND THE EVIDENCE — side by side.
+///
+/// The three things a reviewer must be able to say before confirming: this
+/// is the already-verified person, this is the institution, and the evidence
+/// names that person in the role they claim.
+class _AuthorityComparison extends ConsumerStatefulWidget {
+  const _AuthorityComparison({required this.detail});
+
+  final AuthorityClaimDetail detail;
+
+  @override
+  ConsumerState<_AuthorityComparison> createState() => _AuthorityComparisonState();
+}
+
+class _AuthorityComparisonState extends ConsumerState<_AuthorityComparison> {
+  final Set<String> _opening = {};
+  final Map<String, String> _failed = {};
+
+  Future<void> _open(AuthorityClaimEvidence e) async {
+    setState(() {
+      _opening.add(e.id);
+      _failed.remove(e.id);
+    });
+    try {
+      final url = await ref
+          .read(institutionVerificationReviewRepositoryProvider)
+          .openEvidence(e.id);
+      // Opened in the platform viewer, which reads PDFs and images alike. The
+      // signed URL is short-lived and never stored or copied anywhere.
+      final launched = await launchUrl(Uri.parse(url), mode: LaunchMode.platformDefault);
+      if (!launched && mounted) {
+        setState(() => _failed[e.id] =
+            'It could not be displayed here. Your opening it is still recorded.');
+      }
+    } catch (err) {
+      if (!mounted) return;
+      setState(() => _failed[e.id] = err is InstitutionVerificationException
+          ? err.message
+          : 'This could not be opened. Nothing was recorded as seen.');
+    } finally {
+      if (mounted) setState(() => _opening.remove(e.id));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final d = widget.detail;
+    String day(DateTime when) =>
+        AuraTemporal.calendar(ProductTime(when, TimeEvent.occurred));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text('The verified person', style: AuraText.subtitle),
+        const SizedBox(height: AuraSpace.xs),
+        _Fact('Verified legal name',
+            d.verifiedLegalName ??
+                (d.identityVerified
+                    ? 'Not recorded (verified before legal names were kept)'
+                    : '—')),
+        _Fact('Identity', d.identityVerified ? 'Verified' : 'Not verified'),
+        if (d.identityDocument != null) _Fact('Document', d.identityDocument!),
+        if (d.identityVerifiedAt != null) _Fact('Verified on', day(d.identityVerifiedAt!)),
+        if (d.identityExpiresAt != null) _Fact('Valid until', day(d.identityExpiresAt!)),
+        _Fact(
+          'Account',
+          [d.claimantName, if (d.claimantHandle != null) '@${d.claimantHandle}']
+              .whereType<String>()
+              .join(' · '),
+        ),
+        const SizedBox(height: AuraSpace.md),
+        const Text('The institution', style: AuraText.subtitle),
+        const SizedBox(height: AuraSpace.xs),
+        _Fact('Name', d.institutionName ?? d.institutionId),
+        if (d.institutionDomain != null) _Fact('Domain', d.institutionDomain!),
+        if (d.institutionWebsite != null) _Fact('Website', d.institutionWebsite!),
+        if (d.institutionJurisdiction != null)
+          _Fact('Jurisdiction', d.institutionJurisdiction!),
+        if (d.existenceCategory != null) _Fact('Category', d.existenceCategory!),
+        _Fact(
+          'Exists?',
+          d.existenceState == null
+              ? 'Not started'
+              : d.existenceState == ExistenceState.confirmed
+                  ? (d.existenceConfidence?.label ?? 'Confirmed')
+                  : d.existenceState!.name,
+        ),
+        const SizedBox(height: AuraSpace.md),
+        const Text('The claim', style: AuraText.subtitle),
+        const SizedBox(height: AuraSpace.xs),
+        _Fact('Role claimed', d.claimedRole ?? 'Not stated'),
+        if (d.claimedRelationship != null) _Fact('Relationship', d.claimedRelationship!),
+        if (d.evidenceKind != null) _Fact('Relying on', d.evidenceKind!.label),
+        if (d.infoRequested != null) _Fact('Asked for', d.infoRequested!),
+        const SizedBox(height: AuraSpace.md),
+        const Text('The evidence', style: AuraText.subtitle),
+        const SizedBox(height: AuraSpace.xs),
+        if (d.evidence.isEmpty)
+          const Text('Nothing has been supplied.', style: AuraText.small)
+        else
+          for (final e in d.evidence)
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                e.hasFile
+                    ? (e.isPdf ? Icons.picture_as_pdf_outlined : Icons.image_outlined)
+                    : Icons.tag_rounded,
+              ),
+              title: Text(
+                e.hasFile ? (e.fileName ?? 'Document') : (e.reference ?? 'Reference'),
+                style: AuraText.body,
+              ),
+              subtitle: Text(
+                [
+                  e.forAuthority ? 'For authority' : 'For the institution existing',
+                  if (!e.submittedByClaimant) 'supplied by someone else',
+                  if (e.superseded) 'superseded',
+                  if (e.discarded) 'destroyed',
+                  if (_failed[e.id] != null) _failed[e.id]!,
+                ].join(' · '),
+                style: AuraText.small,
+              ),
+              trailing: !e.hasFile || e.discarded
+                  ? null
+                  : _opening.contains(e.id)
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : TextButton(
+                          onPressed: () => _open(e),
+                          child: const Text('Open'),
+                        ),
+            ),
+        if (d.evidence.any((e) => e.hasFile))
+          const Text(
+            'Opening a document is recorded against your name.',
+            style: AuraText.small,
+          ),
+        if (d.transitions.isNotEmpty) ...[
+          const SizedBox(height: AuraSpace.md),
+          const Text('History', style: AuraText.subtitle),
+          const SizedBox(height: AuraSpace.xs),
+          for (final t in d.transitions)
+            Text(
+              '${t.at == null ? '' : '${day(t.at!)} · '}${t.fromState} → ${t.toState}'
+              ' (${t.actor.toLowerCase()})${t.reason == null ? '' : ' — ${t.reason}'}',
+              style: AuraText.small,
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+class _Fact extends StatelessWidget {
+  const _Fact(this.label, this.value);
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.xxs),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(width: 150, child: Text(label, style: AuraText.small)),
+          Expanded(child: Text(value, style: AuraText.body)),
+        ],
+      ),
+    );
   }
 }
 

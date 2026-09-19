@@ -92,7 +92,22 @@ class _InstitutionDashboardScreenState
       _state == 'AUTHORIZED_SPEAKER';
 
   bool get _canPublishAnnouncements =>
-      _isAdmin || _state == 'AUTHORIZED_SPEAKER';
+      (_isAdmin || _state == 'AUTHORIZED_SPEAKER') && !_awaitsSpeakingAuthority;
+
+  /// HELD BACK BY AUTHORITY, NOT BY ROLE (founder, 2026-09-19). The person's
+  /// role could speak for the institution, but no authority proof for it is
+  /// confirmed yet. Read from `/institutions/me`; absent on an older server,
+  /// where nothing is claimed either way.
+  bool get _awaitsSpeakingAuthority {
+    final authority = _membership?['speakingAuthority'];
+    if (authority is! Map) return false;
+    if (authority['confirmed'] == true) return false;
+    return _isAdmin || _membership?['canSpeakOfficiallyByRole'] == true;
+  }
+
+  static const String _authorityStep =
+      'To speak for this institution, provide evidence of your relationship '
+      'or authority. Your identity is not checked again.';
 
   bool get _isPending => _state == 'PENDING_REQUEST';
   bool get _isRejected => _state == 'REJECTED';
@@ -289,6 +304,13 @@ class _InstitutionDashboardScreenState
   }
 
   ({String value, InsTone tone, String helper}) get _officialSpeech {
+    if (_awaitsSpeakingAuthority) {
+      return (
+        value: 'Evidence needed',
+        tone: InsTone.warn,
+        helper: _authorityStep,
+      );
+    }
     if (_canSpeakOfficially) {
       return (
         value: 'Active',
@@ -389,6 +411,20 @@ class _InstitutionDashboardScreenState
             ? institutionWorkspacePath(
                 _institutionId, InstitutionSection.domains)
             : '/institution/dashboard'),
+      ));
+    }
+
+    // THE ONE STEP BETWEEN A ROLE AND THE INSTITUTION'S VOICE. First, because
+    // it is the thing an owner who cannot post has come here to find out.
+    if (_awaitsSpeakingAuthority && _institutionId.isNotEmpty) {
+      items.add(InsActionCard(
+        icon: Icons.verified_outlined,
+        title: 'Confirm your authority',
+        body: _authorityStep,
+        cta: 'Provide evidence',
+        tone: InsTone.warn,
+        onTap: () => _go(institutionWorkspacePath(
+            _institutionId, InstitutionSection.verification)),
       ));
     }
 

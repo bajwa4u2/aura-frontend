@@ -112,8 +112,8 @@ void main() {
     });
 
     test('AN ACCOUNT WITHOUT STANDING IS REFUSED, and told why', () async {
-      // The two gates that protect this route are ELEVATED assurance and the
-      // institution role. This account holds neither, so it must be refused —
+      // The two gates that protect this route are a current identity
+      // verification (ELEVATED until 2026-09-19) and the institution role. This account holds neither, so it must be refused —
       // and the refusal must arrive as a sentence a person could act on rather
       // than as a generic failure.
       Object? raised;
@@ -195,8 +195,9 @@ void main() {
       expect(standing.existence.infoRequested, 'Send the registration certificate.');
       // Never folded into CONFIRMED, on any platform.
       expect(standing.authority.state, AuthorityState.legacyUnverified);
-      // No notice delivered, so no countdown.
-      expect(standing.migration.running, isFalse);
+      // The 120-day window is retired (2026-09-19): a legacy role grants no
+      // speaking authority and there is no countdown to show.
+      expect(standing.authority.state, isNot(AuthorityState.confirmed));
     });
   });
 }

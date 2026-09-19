@@ -141,6 +141,9 @@ class InstitutionIdentity {
     this.institutionClass,
     this.institutionType,
     this.domainTags = const [],
+    this.speakingAuthorityConfirmed,
+    this.speakingAuthorityState,
+    this.canSpeakByRole = false,
   });
 
   final String id;
@@ -148,6 +151,28 @@ class InstitutionIdentity {
   final String slug;
   final String? logoUrl;
   final bool isAuthorizedSpeaker;
+
+  /// CONFIRMED AUTHORITY FOR THIS INSTITUTION (founder, 2026-09-19).
+  ///
+  /// A role says what a person may manage; only a confirmed authority proof
+  /// lets them speak as the institution. The server withholds the voice
+  /// capabilities until then, so this is what lets a surface say WHICH step is
+  /// missing instead of "not allowed". Null from a server older than the rule.
+  final bool? speakingAuthorityConfirmed;
+
+  /// The authority claim's state (NOT_STARTED, SUBMITTED, NEEDS_INFO, …).
+  final String? speakingAuthorityState;
+
+  /// The role flag on its own, before authority is applied — "would speak for
+  /// it once authority is confirmed".
+  final bool canSpeakByRole;
+
+  /// Holds a standing that could speak for the institution, and is held back
+  /// only by authority not yet being confirmed. Asked through the canonical
+  /// governance predicate rather than a role literal.
+  bool get awaitsSpeakingAuthority =>
+      speakingAuthorityConfirmed == false &&
+      (canActAsInstitution || canSpeakByRole);
 
   /// Effective institutional capability set (role-implied ∪ delegated),
   /// as reported by the backend. Source of truth for every visibility rule.
@@ -293,6 +318,7 @@ InstitutionIdentity? _identityFrom(InstitutionAccess? access) {
   // Effective capability is computed by InstitutionAuthorityService and
   // consumed here unchanged. Gate-enforced by the C1 anti-drift suite.
   final status = readStr(inst, ['status', 'verificationStatus']);
+  final authority = membership?['speakingAuthority'];
 
   String? readOpt(Map<String, dynamic> m, List<String> keys) {
     for (final k in keys) {
@@ -333,6 +359,9 @@ InstitutionIdentity? _identityFrom(InstitutionAccess? access) {
     institutionClass: readOpt(inst, ['institutionClass']),
     institutionType: readOpt(inst, ['institutionType']),
     domainTags: tagList,
+    speakingAuthorityConfirmed: authority is Map ? authority['confirmed'] == true : null,
+    speakingAuthorityState: authority is Map ? readOpt(Map<String, dynamic>.from(authority), ['state']) : null,
+    canSpeakByRole: membership?['canSpeakOfficiallyByRole'] == true,
   );
 }
 

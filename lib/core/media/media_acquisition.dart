@@ -31,7 +31,7 @@
 library;
 
 import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, kIsWeb, TargetPlatform;
+    show defaultTargetPlatform, kIsWeb, TargetPlatform, Uint8List;
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_picker_android/image_picker_android.dart';
@@ -41,6 +41,7 @@ import '../composition/content_intake.dart';
 import '../composition/attachment_lifecycle.dart';
 import 'attachment.dart';
 import 'media_capacity.dart';
+import 'media_mime.dart';
 
 /// How many items one acquisition may contribute.
 ///
@@ -387,4 +388,88 @@ String? acquisitionLimitMessage(int dropped, {int limit = kMaxComposableMedia}) 
   return dropped == 1
       ? 'One item was not added — up to $limit can be attached.'
       : '$dropped items were not added — up to $limit can be attached.';
+}
+
+// ── Institutional documents ─────────────────────────────────────────────────
+
+/// One document chosen as institutional evidence: its bytes, name and type.
+class AcquiredDocument {
+  const AcquiredDocument({
+    required this.bytes,
+    required this.fileName,
+    required this.mimeType,
+  });
+
+  final Uint8List bytes;
+  final String fileName;
+  final String mimeType;
+
+  bool get isPdf => mimeType == 'application/pdf';
+}
+
+/// The outcome of choosing a document. `null` from [acquireSingleDocument]
+/// means cancelled; everything else is a document or a reason it was refused.
+class DocumentAcquisition {
+  const DocumentAcquisition.accepted(AcquiredDocument this.document)
+      : rejectionMessage = null;
+  const DocumentAcquisition.rejected(String this.rejectionMessage)
+      : document = null;
+
+  final AcquiredDocument? document;
+  final String? rejectionMessage;
+}
+
+/// Choose ONE registration, formation, governing or authorisation document:
+/// a PDF or an image (founder, 2026-09-19).
+///
+/// Its own function because institutional evidence is not media: a
+/// certificate of formation usually arrives as a PDF, and the image pickers
+/// cannot offer one. The type is read from the BYTES first and the name
+/// second, and anything that is neither a PDF nor an image is refused here
+/// with a reason, before an upload the server would refuse anyway.
+///
+/// `file_picker` with `withData: true` works on every platform this ships to,
+/// and is the picker the web path already relies on.
+Future<DocumentAcquisition?> acquireSingleDocument() async {
+  final FilePickerResult? result;
+  try {
+    result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['pdf', 'png', 'jpg', 'jpeg', 'webp'],
+      allowMultiple: false,
+      withData: true,
+    );
+  } catch (_) {
+    return const DocumentAcquisition.rejected(
+      'That file could not be opened. Try another.',
+    );
+  }
+
+  // Cancelled. The one legitimate silence.
+  if (result == null || result.files.isEmpty) return null;
+
+  final picked = result.files.first;
+  final bytes = picked.bytes;
+  if (bytes == null || bytes.isEmpty) {
+    return const DocumentAcquisition.rejected(
+      'That file could not be read. Try another.',
+    );
+  }
+
+  final mime = sniffMimeFromBytes(bytes) ?? inferMimeFromFileName(picked.name) ?? '';
+  if (!isInstitutionDocumentMime(mime)) {
+    return const DocumentAcquisition.rejected(
+      'Evidence must be a PDF or an image.',
+    );
+  }
+  return DocumentAcquisition.accepted(
+    AcquiredDocument(bytes: bytes, fileName: picked.name, mimeType: mime),
+  );
+}
+
+/// What an institutional document may be: a PDF or an image. The same rule
+/// the server applies to institution evidence.
+bool isInstitutionDocumentMime(String mime) {
+  final m = mime.trim().toLowerCase();
+  return m == 'application/pdf' || m.startsWith('image/');
 }

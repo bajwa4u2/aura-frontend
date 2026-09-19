@@ -1,5 +1,12 @@
 # Next Work - aura_final
 
+## After the identity/authority separation (2026-09-19)
+
+1. Production follow-through: count institutions whose authority was CONFIRMED by the old onboarding bridge on a job title/domain only (they keep speaking under the new gate) and bring the result to the founder — do not revoke without a decision.
+2. Store builds: Aura 1.4.3 binaries cannot send `documentKind`, so mobile identity submissions are told to update until the next store release carries the new capture.
+3. Optional: `/institutions/me` could say when a member WOULD speak once authority is confirmed (admins without `canSpeakOfficially` still see the old "Not allowed" in the client).
+
+
 ## OPEN AS OF 2026-09-12 — ordered, with what each is waiting on
 
 ### Waiting on Google. Do not act.

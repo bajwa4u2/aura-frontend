@@ -44,6 +44,13 @@ import '../data/institution_verification_repository.dart';
 ///   IT DOES NOT REWORD A REFUSAL. The server's refusals are written for the
 ///   person who hit them. This release already lost one reason to two correct
 ///   mappers in series, where a specific sentence became "Please try again".
+///
+///   IT DOES NOT ASK A VERIFIED PERSON TO VERIFY AGAIN (founder, 2026-09-19).
+///   Who the person is and whether they may represent this institution are
+///   separate facts. A verified owner is told their identity is verified and
+///   is asked only for evidence of their relationship or authority — a
+///   registration, formation or governing document naming them, as a PDF or
+///   an image. One document may be enough.
 class InstitutionVerificationScreen extends ConsumerStatefulWidget {
   const InstitutionVerificationScreen({super.key, required this.institutionId});
 
@@ -71,10 +78,27 @@ class _InstitutionVerificationScreenState
     extends ConsumerState<InstitutionVerificationScreen> {
   final List<_Staged> _existenceEvidence = [];
   final List<_Staged> _authorityEvidence = [];
+  final TextEditingController _claimedRole = TextEditingController();
 
   AuthorityEvidenceKind? _chosenKind;
+
+  /// Whether the authority document also shows the institution exists. Null
+  /// until the person touches it, so the default can follow the standing.
+  bool? _alsoEstablishes;
   String? _error;
   bool _busy = false;
+
+  @override
+  void dispose() {
+    _claimedRole.dispose();
+    super.dispose();
+  }
+
+  /// WHO MAY ACT HERE, SPLIT BY WHAT IS MISSING. A person with no current
+  /// identity verification is sent to verify it first; a verified person is
+  /// never sent back there, whatever else the standing says.
+  bool _needsIdentityFirst(InstitutionVerificationStanding s) =>
+      !s.mayAct && !s.identityVerified;
 
   @override
   Widget build(BuildContext context) {
@@ -121,6 +145,42 @@ class _InstitutionVerificationScreenState
                 _Banner(message: _error!, tone: _Tone.problem),
                 const SizedBox(height: AuraSpace.md),
               ],
+              // RECOGNISED FIRST. The person's own identity is stated before
+              // anything is asked of them, so nobody reads the steps below as
+              // Aura failing to know who they are.
+              if (s.identityVerified) ...[
+                _IdentityRecognisedNote(expiresAt: s.identityExpiresAt),
+                const SizedBox(height: AuraSpace.lg),
+              ],
+              if (!s.started && !_needsIdentityFirst(s)) ...[
+                AuraCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AuraSpace.lg),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text('Start here', style: AuraText.title),
+                        const SizedBox(height: AuraSpace.sm),
+                        const Text(
+                          'Tell us what kind of organisation this is. The '
+                          'evidence asked for below follows from it.',
+                          style: AuraText.body,
+                        ),
+                        const SizedBox(height: AuraSpace.md),
+                        _StartRow(
+                          busy: _busy,
+                          onStart: (category) => _guard(() async {
+                            await ref
+                                .read(institutionVerificationRepositoryProvider)
+                                .start(widget.institutionId, category);
+                          }),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.lg),
+              ],
               _ProofCard(
                 title: 'Does this institution exist?',
                 // The vocabulary a reviewer uses, in words a person reads.
@@ -139,10 +199,6 @@ class _InstitutionVerificationScreenState
                 infoRequested: s.authority.infoRequested,
                 child: _authorityActions(s),
               ),
-              if (s.migration.running) ...[
-                const SizedBox(height: AuraSpace.lg),
-                _MigrationCard(posture: s.migration),
-              ],
               const SizedBox(height: AuraSpace.lg),
               const _SeparateProofsNote(),
             ],
@@ -182,9 +238,10 @@ class _InstitutionVerificationScreenState
       case AuthorityState.rejected:
       case AuthorityState.revoked:
         return _Tone.problem;
-      // SUSPENDED is a pause, not a severance, and LEGACY_UNVERIFIED still
-      // works today. Colouring either as a problem would tell somebody they
-      // had lost something they have not.
+      // SUSPENDED is a pause, not a severance, and LEGACY_UNVERIFIED is a
+      // role carried over that simply has not been evidenced yet. Colouring
+      // either as a problem would tell somebody they had lost something
+      // they have not — their role and history are untouched.
       case AuthorityState.suspended:
       case AuthorityState.legacyUnverified:
       case AuthorityState.needsInfo:
@@ -224,9 +281,16 @@ class _InstitutionVerificationScreenState
   }
 
   String _existenceDetail(InstitutionVerificationStanding s) {
-    if (s.existence.state == ExistenceState.notStarted) {
+    if (s.existence.state == ExistenceState.notStarted && !s.started) {
       return 'Tell us what kind of organisation this is, and what you can show '
           'us about it.';
+    }
+    if (s.existence.state == ExistenceState.notStarted && s.existence.acceptsEvidence) {
+      // The one-document path is said here too, so nobody hunts for a second
+      // document to prove the same institution twice.
+      return 'A registration or formation document usually shows this. If the '
+          'document you give below for your authority also shows the '
+          'institution is registered, that is enough for both.';
     }
     if (s.requirementNotEnumerated && s.existence.acceptsEvidence) {
       // Honest about a gap rather than presenting an empty list as guidance.
@@ -250,10 +314,13 @@ class _InstitutionVerificationScreenState
     // BEFORE THE TRANSITION TABLE: may this person act at all?
     //
     // Reading this standing needs institution ADMIN; submitting a proof needs
-    // the elevated identity tier. The 120-day migration population holds the
-    // first and not the second by definition, so without this check they would
-    // be shown their own deadline beside a button the server refuses.
-    if (!s.mayAct) return const _IdentityFirstNote();
+    // a current verified identity. Only somebody WITHOUT one is sent to verify
+    // it — a verified person is never sent back to identity for this.
+    if (_needsIdentityFirst(s)) return const _IdentityFirstNote();
+
+    // Nothing to attach until the organisation's kind is recorded; the start
+    // card above asks for it.
+    if (!s.started) return const SizedBox.shrink();
 
     // RENDERED FROM THE SERVER'S PROJECTION, never from the state. A button
     // exists here only where the transition table has an edge.
@@ -265,15 +332,6 @@ class _InstitutionVerificationScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (s.existence.state == ExistenceState.notStarted)
-          _StartRow(
-            busy: _busy,
-            onStart: (category) => _guard(() async {
-              await ref
-                  .read(institutionVerificationRepositoryProvider)
-                  .start(widget.institutionId, category);
-            }),
-          ),
         if (s.existence.acceptsEvidence) ...[
           const SizedBox(height: AuraSpace.md),
           _EvidenceList(
@@ -346,9 +404,12 @@ class _InstitutionVerificationScreenState
   String _authorityDetail(InstitutionVerificationStanding s) {
     switch (s.authority.state) {
       case AuthorityState.legacyUnverified:
-        return 'Your role here came across from the old system. It still works '
-            'today, and it has not been checked against the current standard '
-            'yet. Sending evidence below is what completes it.';
+        // No grace period any more (founder, 2026-09-19): a carried-over role
+        // does not speak for the institution until its authority is evidenced.
+        return 'Your role here came across from the old system and has not been '
+            'evidenced yet. Your role and history are unchanged; to speak for '
+            'this institution, provide evidence of your relationship or '
+            'authority below.';
       case AuthorityState.suspended:
         return 'This is a pause, not a removal. Your role and your history are '
             'untouched.';
@@ -357,7 +418,10 @@ class _InstitutionVerificationScreenState
             'itself is confirmed is the separate question above.';
       default:
         if (s.authority.acceptsEvidence) {
-          return 'Any ONE of these is enough.';
+          return 'To speak for this institution, provide evidence of your '
+              'relationship or authority. One document can be enough when it '
+              'names you in your role and identifies the institution — the '
+              'reviewer may ask for more.';
         }
         return '';
     }
@@ -367,28 +431,67 @@ class _InstitutionVerificationScreenState
     // Same gate as the existence proof above, and stated once per card rather
     // than once per screen: these are two separate questions and a person
     // reading only one of them still needs the answer.
-    if (!s.mayAct) return const _IdentityFirstNote();
+    if (_needsIdentityFirst(s)) return const _IdentityFirstNote();
+    if (!s.started) {
+      return const Text(
+        'Start above by saying what kind of organisation this is.',
+        style: AuraText.small,
+      );
+    }
 
     final canSubmit = s.authority.canSubmit('SUBMITTED');
     if (!canSubmit && !s.authority.acceptsEvidence) {
       return const SizedBox.shrink();
     }
 
+    // One document may prove both questions. Offered only where the
+    // institution's own proof can still take evidence, and ticked by default
+    // there, because for an ordinary owner the registration that names them
+    // is also the registration that shows the institution exists.
+    final canAlsoEstablish = s.existence.acceptsEvidence &&
+        s.existence.state != ExistenceState.confirmed;
+    final alsoEstablishes = canAlsoEstablish && (_alsoEstablishes ?? true);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (s.authority.acceptsEvidence && s.menu.isNotEmpty) ...[
           const SizedBox(height: AuraSpace.sm),
+          TextField(
+            controller: _claimedRole,
+            enabled: !_busy,
+            maxLength: 200,
+            decoration: InputDecoration(
+              labelText: 'Your role at this institution',
+              hintText: 'For example: Founder and managing member',
+              helperText: s.claimedRole == null
+                  ? 'The reviewer checks your evidence against this.'
+                  : 'On record: ${s.claimedRole}',
+            ),
+          ),
+          const SizedBox(height: AuraSpace.sm),
+          const Text('What does your evidence show?', style: AuraText.body),
           // THE WHOLE MENU, always. §2.7 says any one item suffices; a
           // dropdown showing only a suggested item would turn an advisory
           // mapping into a requirement -- a policy change made by a form.
-          ...s.menu.map(
-            (kind) => RadioListTile<AuthorityEvidenceKind>(
-              value: kind,
-              groupValue: _chosenKind,
-              onChanged: _busy ? null : (v) => setState(() => _chosenKind = v),
-              title: Text(kind.label, style: AuraText.body),
-              dense: true,
+          RadioGroup<AuthorityEvidenceKind>(
+            groupValue: _chosenKind,
+            onChanged: (v) {
+              if (!_busy) setState(() => _chosenKind = v);
+            },
+            child: Column(
+              children: [
+                for (final kind in s.menu)
+                  RadioListTile<AuthorityEvidenceKind>(
+                    value: kind,
+                    enabled: !_busy,
+                    title: Text(kind.label, style: AuraText.body),
+                    subtitle: kind.help == null
+                        ? null
+                        : Text(kind.help!, style: AuraText.small),
+                    dense: true,
+                  ),
+              ],
             ),
           ),
           const SizedBox(height: AuraSpace.sm),
@@ -399,6 +502,23 @@ class _InstitutionVerificationScreenState
             onRemove: (item) => setState(() => _authorityEvidence.remove(item)),
             onRetry: (item) => _retry(item),
           ),
+          if (canAlsoEstablish)
+            CheckboxListTile(
+              value: alsoEstablishes,
+              onChanged:
+                  _busy ? null : (v) => setState(() => _alsoEstablishes = v ?? false),
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: const Text(
+                'This document also shows the institution is registered',
+                style: AuraText.body,
+              ),
+              subtitle: const Text(
+                'It is then used for both questions, so you do not need a '
+                'second document. The reviewer decides each one.',
+                style: AuraText.small,
+              ),
+            ),
         ],
         if (canSubmit) ...[
           const SizedBox(height: AuraSpace.md),
@@ -411,21 +531,30 @@ class _InstitutionVerificationScreenState
                     !_anyReady(_authorityEvidence)
                 ? null
                 : () => _guard(() async {
-                      await ref
-                          .read(institutionVerificationRepositoryProvider)
-                          .submitAuthority(
-                            widget.institutionId,
-                            evidenceKind: _chosenKind!,
-                            evidence: _authorityEvidence
-                                .where((e) => e.ready)
-                                .map((e) => SuppliedEvidence(
-                                      mediaId: e.mediaId,
-                                      reference: e.reference,
-                                    ))
-                                .toList(),
-                          );
+                      final repo =
+                          ref.read(institutionVerificationRepositoryProvider);
+                      // The authority claim is created by `start`, which is
+                      // idempotent. A person whose institution was started
+                      // by somebody else has no claim of their own yet, so it
+                      // is opened here rather than refused as "not started".
+                      await repo.start(widget.institutionId, s.category!);
+                      await repo.submitAuthority(
+                        widget.institutionId,
+                        evidenceKind: _chosenKind!,
+                        claimedRole: _claimedRole.text,
+                        alsoEstablishesInstitution: alsoEstablishes,
+                        evidence: _authorityEvidence
+                            .where((e) => e.ready)
+                            .map((e) => SuppliedEvidence(
+                                  mediaId: e.mediaId,
+                                  reference: e.reference,
+                                ))
+                            .toList(),
+                      );
                       _authorityEvidence.clear();
                       _chosenKind = null;
+                      _alsoEstablishes = null;
+                      _claimedRole.clear();
                     }),
           ),
         ],
@@ -438,50 +567,45 @@ class _InstitutionVerificationScreenState
   bool _anyReady(List<_Staged> items) => items.any((e) => e.ready);
 
   Future<void> _addDocument(List<_Staged> into) async {
-    // No `imageQuality` downscale: a re-encoded document can lose exactly the
-    // small print a reviewer needs, and an unreadable one costs a whole
-    // NEEDS_INFO round trip.
-    final resolution = await acquireSingleImage();
+    // A PDF OR AN IMAGE (founder, 2026-09-19). A certificate of formation or a
+    // registry extract usually arrives as a PDF, which the image pickers could
+    // not offer. No re-encoding either way: a downscaled document can lose
+    // exactly the small print a reviewer needs.
+    final acquisition = await acquireSingleDocument();
     if (!mounted) return;
 
     // `null` means CANCELLED and nothing else. Every failure path returns a
     // rejection carrying a reason, so silence here can only be a person
     // changing their mind -- and changing your mind is not an error.
-    if (resolution == null) return;
+    if (acquisition == null) return;
 
-    final attachment = resolution.attachment;
-    if (attachment == null) {
-      setState(() => _error = resolution.rejectionMessage ??
+    final document = acquisition.document;
+    if (document == null) {
+      setState(() => _error = acquisition.rejectionMessage ??
           'That file could not be added. Try another.');
       return;
     }
-    final bytes = attachment.bytes;
-    if (bytes == null) {
-      setState(() => _error = 'That file could not be read. Try another.');
-      return;
-    }
 
-    // `attachment.fileName`, NOT `attachment.name` -- the latter does not
-    // exist, and reaching it through a `dynamic` is what made the identity
-    // picker throw on every successful pick while the screen showed nothing.
-    final staged = _Staged(label: attachment.fileName ?? 'Document');
+    final staged = _Staged(label: document.fileName);
     setState(() {
       into.add(staged);
       _error = null;
       staged.uploading = true;
     });
 
-    await _upload(staged, bytes, attachment.mimeType ?? 'image/jpeg');
+    await _upload(staged, document);
   }
 
-  Future<void> _upload(_Staged staged, dynamic bytes, String mimeType) async {
+  Future<void> _upload(_Staged staged, AcquiredDocument document) async {
     try {
       final result = await uploadAuraMedia(
         dio: ref.read(dioProvider),
-        bytes: bytes,
+        bytes: document.bytes,
         fileName: staged.label,
-        mimeType: mimeType,
-        kind: 'IMAGE',
+        mimeType: document.mimeType,
+        // The media door types a PDF as a DOCUMENT; the server admits either
+        // as institutional evidence and nothing else.
+        kind: document.isPdf ? 'DOCUMENT' : 'IMAGE',
         source: 'UPLOAD',
       );
       if (!mounted) return;
@@ -508,18 +632,18 @@ class _InstitutionVerificationScreenState
     });
     // Re-picking is the honest retry: the bytes are not held after a failure,
     // and pretending otherwise would produce a button that cannot work.
-    final resolution = await acquireSingleImage();
+    final acquisition = await acquireSingleDocument();
     if (!mounted) return;
-    final attachment = resolution?.attachment;
-    final bytes = attachment?.bytes;
-    if (bytes == null) {
+    final document = acquisition?.document;
+    if (document == null) {
       setState(() {
         staged.uploading = false;
-        staged.failure = 'That did not upload. Tap to try again.';
+        staged.failure = acquisition?.rejectionMessage ??
+            'That did not upload. Tap to try again.';
       });
       return;
     }
-    await _upload(staged, bytes, attachment?.mimeType ?? 'image/jpeg');
+    await _upload(staged, document);
   }
 
   void _addReference(List<_Staged> into, String value) {
@@ -652,7 +776,11 @@ class _Banner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final colour = tone == _Tone.problem ? scheme.error : scheme.tertiary;
+    final colour = switch (tone) {
+      _Tone.problem => scheme.error,
+      _Tone.good => scheme.primary,
+      _ => scheme.tertiary,
+    };
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(AuraSpace.md),
@@ -667,10 +795,11 @@ class _Banner extends StatelessWidget {
 
 /// WHAT IS ACTUALLY REQUIRED, AND THE WAY TO IT.
 ///
-/// Shown in place of the proof actions when this person has not yet verified
-/// their own identity to the tier those actions need. It states the
-/// requirement, says plainly that nothing has been lost, and offers the one
-/// route that resolves it.
+/// Shown in place of the proof actions ONLY when this person has no current
+/// identity verification at all. It is never shown to a verified person: the
+/// defect of 2026-09-19 was exactly that, a verified owner told their identity
+/// "comes first" because a stronger tier was being asked for. Institution
+/// authority is not a stronger identity; it is a separate question.
 ///
 /// Non-punitive, matching the refusal copy the server sends for the same
 /// situation: the person has done nothing wrong, and general Aura use is
@@ -685,9 +814,9 @@ class _IdentityFirstNote extends StatelessWidget {
       children: [
         const SizedBox(height: AuraSpace.sm),
         const Text(
-          'Verifying your own identity comes first. Once that is done, this '
-          'step opens here — nothing is lost in the meantime, and the rest of '
-          'Aura is unaffected.',
+          'Verify your identity first. Once that is done, this step opens '
+          'here — nothing is lost in the meantime, and the rest of Aura is '
+          'unaffected.',
           style: AuraText.body,
         ),
         const SizedBox(height: AuraSpace.sm),
@@ -698,6 +827,28 @@ class _IdentityFirstNote extends StatelessWidget {
               context.push(NavigationAuthority.identityVerificationRoute),
         ),
       ],
+    );
+  }
+}
+
+/// "Your identity is verified." Said first, so nothing below reads as Aura
+/// failing to recognise the person looking at it.
+class _IdentityRecognisedNote extends StatelessWidget {
+  const _IdentityRecognisedNote({required this.expiresAt});
+
+  final DateTime? expiresAt;
+
+  @override
+  Widget build(BuildContext context) {
+    final until = expiresAt == null
+        ? ''
+        : ' It is valid until '
+            '${AuraTemporal.calendar(ProductTime(expiresAt!, TimeEvent.scheduled))}.';
+    return _Banner(
+      message: 'Your identity is verified.$until To speak for this institution, '
+          'provide evidence of your relationship or authority below — your '
+          'identity is not checked again.',
+      tone: _Tone.good,
     );
   }
 }
@@ -834,7 +985,7 @@ class _EvidenceListState extends State<_EvidenceList> {
           ),
         const SizedBox(height: AuraSpace.sm),
         AuraSecondaryButton(
-          label: 'Add a document',
+          label: 'Add a document (PDF or image)',
           onPressed: () => widget.onAddDocument(),
         ),
         const SizedBox(height: AuraSpace.sm),
@@ -865,68 +1016,4 @@ class _EvidenceListState extends State<_EvidenceList> {
       ],
     );
   }
-}
-
-/// THE 120-DAY DEADLINE, SHOWN ONLY WHEN ONE IS ACTUALLY RUNNING.
-///
-/// Rendered from `running`, which is false until a notice has been DELIVERED.
-/// A card that appeared as soon as a migration record existed would show a
-/// countdown to somebody who was never told anything — the exact thing §6's
-/// delivery anchor exists to prevent, reintroduced at the last layer.
-///
-/// The DATE is shown, never "in 43 days". §6: "the specific deadline date is
-/// always shown, computed from each population's own anchor — never relative
-/// phrasing." Relative phrasing also drifts: a screen left open overnight
-/// starts lying.
-class _MigrationCard extends StatelessWidget {
-  const _MigrationCard({required this.posture});
-
-  final MigrationPosture posture;
-
-  @override
-  Widget build(BuildContext context) {
-    final elapsed = posture.reason == 'WINDOW_ELAPSED';
-    final date = posture.deadlineAt;
-    return AuraCard(
-      child: Padding(
-        padding: const EdgeInsets.all(AuraSpace.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text('Completing your verification', style: AuraText.title),
-            const SizedBox(height: AuraSpace.xs),
-            if (date != null)
-              Text(
-                elapsed
-                    ? 'The date for this was ${AuraTemporal.absolute(ProductTime(date, TimeEvent.scheduled))}.'
-                    : 'Please complete this by ${AuraTemporal.absolute(ProductTime(date, TimeEvent.scheduled))}.',
-                style: AuraText.body,
-              ),
-            const SizedBox(height: AuraSpace.sm),
-            // PLAIN AND SPECIFIC about the actual consequence, and non-punitive
-            // throughout: §6 forbids both vagueness and any language implying
-            // wrongdoing. Nothing here says the person did something wrong,
-            // because they did not -- the standard changed.
-            Text(
-              elapsed
-                  ? 'Until this is complete you cannot post as this institution, '
-                      'and you cannot transfer ownership or change who represents '
-                      'it. The institution, its content, its members and its '
-                      'history are unaffected.'
-                  : 'Until this is complete you cannot transfer ownership or '
-                      'change who represents this institution. Posting as the '
-                      'institution and everyday work carry on as normal.',
-              style: AuraText.body,
-            ),
-            const SizedBox(height: AuraSpace.sm),
-            const Text(
-              'Nothing is deleted and no past post stops being yours.',
-              style: AuraText.small,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
 }

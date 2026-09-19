@@ -204,8 +204,23 @@ class _Who extends StatelessWidget {
                   ProductTime(submission.submittedAt!, TimeEvent.received),
                 ),
               ),
+            if (documentKindLabel(submission.documentKind) != null)
+              _Row(
+                label: 'Document',
+                value: documentKindLabel(submission.documentKind)!,
+              ),
+            if (submission.requiredSides != null &&
+                submission.requiredSides!.isNotEmpty)
+              _Row(
+                label: 'Sides required',
+                value: submission.requiredSides!
+                    .map((s) => documentSideLabel(s) ?? s)
+                    .join(', '),
+              ),
             if (submission.documentType != null)
-              _Row(label: 'Document', value: submission.documentType!),
+              _Row(label: 'Described as', value: submission.documentType!),
+            if (submission.verifiedLegalName != null)
+              _Row(label: 'Legal name', value: submission.verifiedLegalName!),
             if (submission.documentExpiresAt != null)
               _Row(
                 label: 'Document expires',
@@ -224,9 +239,11 @@ class _Who extends StatelessWidget {
     );
   }
 
+  // ELEVATED gates nothing since 2026-09-19: institution authority is a
+  // separate, institution-specific review, not a stronger identity.
   static String _tier(String wire) => switch (wire.toUpperCase()) {
-        'BASE' => 'Base — general use',
-        'ELEVATED' => 'Elevated — required for institution onboarding',
+        'BASE' => 'Identity verification',
+        'ELEVATED' => 'Elevated (historical; no longer required for anything)',
         _ => wire,
       };
 }
@@ -387,7 +404,9 @@ class _EvidenceCard extends StatelessWidget {
               const SizedBox(width: AuraSpace.s10),
               Expanded(
                 child: Text(
-                  evidence.kind.label,
+                  documentSideLabel(evidence.side) == null
+                      ? evidence.kind.label
+                      : '${evidence.kind.label} — ${documentSideLabel(evidence.side)}',
                   style: TextStyle(
                     color: evidence.discarded
                         ? AuraSurface.muted
@@ -534,7 +553,7 @@ class _History extends StatelessWidget {
 // THE DECISION
 // ═════════════════════════════════════════════════════════════════════════════
 
-class _Decision extends ConsumerWidget {
+class _Decision extends ConsumerStatefulWidget {
   const _Decision({
     required this.submission,
     required this.authority,
@@ -546,7 +565,35 @@ class _Decision extends ConsumerWidget {
   final VoidCallback onDecided;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_Decision> createState() => _DecisionState();
+}
+
+class _DecisionState extends ConsumerState<_Decision> {
+  /// THE VERIFIED RESULT (founder, 2026-09-19). The legal name exactly as the
+  /// reviewer reads it on the document. It outlives the images, and a later
+  /// institution-authority review compares it with the name on a business
+  /// document — so it is typed from the document, never copied from the
+  /// profile.
+  final _legalName = TextEditingController();
+
+  IdentitySubmission get submission => widget.submission;
+  OperatorAuthority get authority => widget.authority;
+  VoidCallback get onDecided => widget.onDecided;
+
+  @override
+  void initState() {
+    super.initState();
+    _legalName.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _legalName.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     if (!authority.can(OperatorCapability.identityVerificationWrite)) {
       return const OperatorSection(
         title: 'What happens next',
@@ -603,7 +650,8 @@ class _Decision extends ConsumerWidget {
       );
     }
 
-    final missing = submission.missingForApproval;
+    final missing = submission.missingDescribed;
+    final hasName = _legalName.text.trim().isNotEmpty;
 
     return OperatorSection(
       title: 'What happens next',
@@ -623,7 +671,7 @@ class _Decision extends ConsumerWidget {
                   Expanded(
                     child: Text(
                       'This cannot be approved on the evidence present: '
-                      '${missing.map((k) => k.label.toLowerCase()).join(' and ')} '
+                      '${missing.join(' and ')} '
                       '${missing.length == 1 ? 'is' : 'are'} missing. Asking '
                       'for more is the honest move.',
                       style: const TextStyle(
@@ -638,6 +686,17 @@ class _Decision extends ConsumerWidget {
             ),
             const SizedBox(height: AuraSpace.s12),
           ],
+          if (submission.canApproveOnEvidence) ...[
+            TextField(
+              controller: _legalName,
+              decoration: const InputDecoration(
+                labelText: 'Legal name exactly as on the document',
+                helperText: 'Required to approve. Kept as the verified result '
+                    'after the images are destroyed.',
+              ),
+            ),
+            const SizedBox(height: AuraSpace.s12),
+          ],
           Wrap(
             spacing: AuraSpace.s8,
             runSpacing: AuraSpace.s8,
@@ -645,7 +704,7 @@ class _Decision extends ConsumerWidget {
               if (submission.canApproveOnEvidence)
                 _Verdict(
                   label: 'They are who they say',
-                  onPressed: () => _decide(context, ref, 'APPROVED'),
+                  onPressed: hasName ? () => _decide(context, ref, 'APPROVED') : null,
                 ),
               _Verdict(
                 label: 'Ask for more',
@@ -683,7 +742,9 @@ class _Decision extends ConsumerWidget {
           'REJECTED' => 'Refuse this claim',
           _ => 'Ask for more',
         },
-        subject: name,
+        subject: decision == 'APPROVED'
+            ? '$name — legal name “${_legalName.text.trim()}”'
+            : name,
         detail: 'The identity authority records this and applies it. Aura '
             'Admin invokes that authority; it does not decide here.',
         confirmLabel: switch (decision) {
@@ -736,6 +797,8 @@ class _Decision extends ConsumerWidget {
                 submission.id,
                 decision: decision,
                 reason: reason ?? '',
+                verifiedLegalName:
+                    decision == 'APPROVED' ? _legalName.text.trim() : null,
               );
           return switch (decision) {
             'APPROVED' => 'Verified. The person has been told.',
@@ -757,7 +820,7 @@ class _Verdict extends StatelessWidget {
   });
 
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool danger;
 
   @override

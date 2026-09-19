@@ -3,7 +3,9 @@
   "state": "PENDING_REVIEW",
   "tier": "BASE",
   "documentType": "Passport",
+  "documentKind": "PASSPORT",
   "documentExpiresAt": "2031-04-30T00:00:00.000Z",
+  "verifiedLegalName": null,
   "submittedAt": "2026-08-22T09:12:00.000Z",
   "reviewedAt": null,
   "decisionReason": null,
@@ -18,14 +20,20 @@
     {
       "id": "cmoidev0001",
       "kind": "GOVERNMENT_ID",
+      "side": "PHOTO_PAGE",
       "discarded": false
     },
     {
       "id": "cmoidev0002",
       "kind": "SELFIE_COMPARISON",
+      "side": null,
       "discarded": false
     }
   ],
+  "requiredSides": [
+    "PHOTO_PAGE"
+  ],
+  "missingEvidence": [],
   "history": [
     {
       "id": "cmoidsub0000priorxxxxxxx",
