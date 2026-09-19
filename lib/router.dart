@@ -373,7 +373,22 @@ String? _enforceCanonicalIdMatch(
   final required = institutionDestinationAuthority(section);
   if (required.isEmpty) return null;
 
+  // STANDING UNKNOWN IS NOT STANDING REFUSED.
+  //
+  // The snapshot above latches the last established membership, so it says
+  // resolved while institution access is being re-checked. Standing (the
+  // capabilities this person holds) is read from the LIVE access value, which
+  // is empty for that same moment. Asking the projection then answered "not
+  // granted" for an owner who holds every capability: a cold load of
+  // /institution/<slug>/posts/new sent a verified owner/admin to the denial
+  // page, while the same composer opened normally from Explore (2026-09-19).
+  // Stay put instead; the router re-evaluates when institution access settles,
+  // and a real refusal is still a refusal.
   final projection = ref.read(capabilityProjectionProvider);
+  if (projection.standing == null &&
+      ref.read(institutionAccessProvider).isLoading) {
+    return null;
+  }
   return institutionDestinationPermits(projection, section)
       ? null
       : kInstitutionDenialDestination;
