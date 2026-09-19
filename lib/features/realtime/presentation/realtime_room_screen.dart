@@ -1,4 +1,5 @@
 import '../../../core/product/product_language.dart';
+import '../../../core/notifications/android_call_service.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:math' as math;
@@ -315,10 +316,37 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   }
 
 
+  /// Start or stop the Android foreground call service to match the call.
+  ///
+  /// Called from the joined-state listener AND from build, because a callee
+  /// whose session is already hydrated when this screen mounts produces no
+  /// transition for the listener to see — the same gap the return-address
+  /// seeding below documents.
+  void _syncCallService(RealtimeState state) {
+    if (!AndroidCallService.instance.isSupported) return;
+    final sessionId = (state.sessionId ?? widget.sessionId).trim();
+    if (!state.isJoined || sessionId.isEmpty) return;
+    // The camera is a separate foreground-service type, so the service is
+    // told what this call is actually doing right now rather than what it
+    // was created as.
+    final video = state.isVideoMode || state.cameraEnabled;
+    unawaited(
+      AndroidCallService.instance.start(
+        sessionId,
+        video: video,
+        title: state.session?.title ?? '',
+      ),
+    );
+  }
+
   @override
   void dispose() {
     // The route watcher belongs to this surface, not to the app.
     ref.read(audioOutputControllerProvider.notifier).stop();
+    // AND THE CALL'S FOREGROUND SERVICE GOES WITH THE CALL SURFACE. A service
+    // that outlives its call holds the microphone; every exit from this
+    // screen — leave, remote end, error, navigation — passes through here.
+    unawaited(AndroidCallService.instance.stop());
     // WHY DID THE ROOM GO AWAY?
     //
     // Founder, 2026-08-28, during an induced outage: "call screen
@@ -940,9 +968,15 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         _wasJoined = true;
         _showJoinedToast();
       }
+      // KEEP THE CALL ALIVE IF AURA STOPS BEING THE APP ON SCREEN.
+      // Idempotent, and it decides nothing — see AndroidCallService.
+      _syncCallService(next);
     });
 
     final state = ref.watch(realtimeControllerProvider);
+    // A callee arriving already-joined produces no transition; see
+    // _syncCallService.  Idempotent.
+    _syncCallService(state);
 
     // SEED THE RETURN ADDRESS FROM WHAT IS TRUE NOW, NOT ONLY FROM CHANGES.
     //

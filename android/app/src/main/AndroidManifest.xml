@@ -24,30 +24,29 @@
         android:usesPermissionFlags="neverForLocation" />
 
     <!--
-      NO FOREGROUND SERVICE PERMISSIONS, BECAUSE THERE IS NO FOREGROUND SERVICE.
+      FOREGROUND SERVICE PERMISSIONS, BECAUSE THERE IS NOW A FOREGROUND SERVICE.
       ─────────────────────────────────────────────────────────────────────────
-      This block used to declare FOREGROUND_SERVICE, FOREGROUND_SERVICE_CAMERA
-      and FOREGROUND_SERVICE_MICROPHONE, with a comment saying they keep a
-      backgrounded call's capture alive. They do not, and never did. A
-      permission grants nothing on its own: capture survives backgrounding only
-      if the app actually starts a foreground service of that type, and Aura
-      starts none. The merged release manifest carries no <service> of ours, no
-      android:foregroundServiceType anywhere, and no plugin contributes either;
-      there is no startForeground call in the app. The permissions were inert.
+      These were declared in August and removed again, correctly: nothing ever
+      called startForeground, so they granted nothing while obliging Aura to
+      answer Play for a service it did not run. The comment that replaced them
+      set the condition for their return — "a real foreground service with the
+      matching type ... and these permissions come back WITH it, not before
+      it." AuraCallService is that service, and this is that commit.
 
-      They were added 2026-08-25 (33ae22d), AFTER the released 1.3.0 build
-      (version code 24), which shipped without them. Their only observable
-      effect was to make Google Play demand a foreground-service declaration
-      naming a task the app does not perform — and Play is explicit that
-      "you can only use foreground services if your app performs tasks
-      noticeable to the user when they're not directly interacting with your
-      app." Answering it would have been a false declaration; the honest fix is
-      to stop asking for what we do not use.
+      WHY A CALL NEEDS ONE. From Android 14 an app that is not on screen loses
+      the microphone and camera unless a foreground service of the matching
+      type is running. Measured consequence, 2026-09-09: HOME was pressed, the
+      Pixel's transport closed, no replacement was ever created, and both ends
+      kept displaying a call that was no longer carrying anything.
 
-      If a backgrounded call ever needs to keep capturing, the work is a real
-      foreground service with the matching type — a feature, implemented and
-      proven — and these permissions come back WITH it, not before it.
+      The types are declared per-use at startForeground — microphone always,
+      camera only when the call actually carries video — so Aura never claims
+      a capability the call in progress is not exercising. Play's declaration
+      for this is the ongoing-call case, which is exactly what it is.
     -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
 
     <!-- Keeps the connection alive while the screen is off during a call. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -339,6 +338,18 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="aura_calls" />
+
+        <!--
+          THE CALL'S OWN FOREGROUND SERVICE. Started when a call becomes
+          active and stopped when it ends; it holds no call state and decides
+          nothing. `stopWithTask` so a swiped-away app cannot leave a call
+          notification — or the microphone — behind it.
+        -->
+        <service
+            android:name=".AuraCallService"
+            android:exported="false"
+            android:stopWithTask="true"
+            android:foregroundServiceType="microphone|camera" />
 
     </application>
 

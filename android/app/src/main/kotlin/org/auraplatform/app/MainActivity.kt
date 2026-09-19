@@ -108,6 +108,15 @@ class MainActivity : FlutterActivity() {
             AuraTelecom.handle(applicationContext, call, result)
         }
 
+        // THE CALL'S FOREGROUND SERVICE. Registered beside Telecom because
+        // it is the other half of the same subject: Telecom makes an Aura
+        // call a call to the system, and this keeps its capture alive when
+        // the app is no longer the thing on screen.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, AuraCallService.CHANNEL)
+            .setMethodCallHandler { call, result ->
+                AuraCallService.handle(applicationContext, call, result)
+            }
+
         // SHARE INTAKE — the single door every Android share comes through.
         // Registered here so the handler exists before Dart drains the pending
         // share on its first frame; a missing handler there would read as

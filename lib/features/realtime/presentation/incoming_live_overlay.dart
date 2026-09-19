@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../../../core/calls/call_presentation_context.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback, SystemSound, SystemSoundType;
@@ -276,7 +277,12 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
             sessionId,
             state: 'ESTABLISHED',
             platform: kIsWeb ? 'web' : defaultTargetPlatform.name,
-            detail: 'in-app incoming call surface rendered',
+            // AND WHAT THE APP WAS DOING WHEN IT DREW IT. The 2026-09-16
+            // presentation 85 seconds after the ring said only that this
+            // surface rendered, which cannot separate a slow push from a
+            // slow app.
+            detail: CallPresentationContext.instance
+                .describe('in-app incoming call surface rendered'),
           )
           .catchError((_) {
             // A ring that could not be reported is still a ring. The latch is

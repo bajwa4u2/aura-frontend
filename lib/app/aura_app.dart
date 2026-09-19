@@ -24,6 +24,7 @@ import '../features/correspondence/data/correspondence_live_service.dart';
 import '../features/devices/device_providers.dart';
 import '../features/realtime/application/realtime_providers.dart';
 import '../features/realtime/domain/realtime_enums.dart';
+import '../core/calls/call_presentation_context.dart';
 import '../features/realtime/application/thread_call_lifecycle_controller.dart';
 import '../features/share_intake/application/share_intake_channel.dart';
 import '../features/share_intake/application/share_intake_inbox.dart';
@@ -144,7 +145,10 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
               sessionId,
               state: state,
               platform: 'iOS',
-              detail: detail,
+              // WHAT THE APP WAS DOING WHEN IT RANG. Without it an 85-second
+              // delay cannot be attributed to delivery or to presentation.
+              detail: CallPresentationContext.instance
+                  .describe(detail ?? 'callkit presentation'),
             ),
       );
     } catch (_) {
@@ -634,6 +638,10 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    // What the app was doing when a call arrives — recorded on every
+    // transition, because the question is asked from push handlers that run
+    // outside this widget's lifetime. See CallPresentationContext.
+    CallPresentationContext.instance.noteLifecycle(state);
     if (state == AppLifecycleState.resumed) {
       // Defensive auth gate: DeviceService also self-gates, but skipping the
       // call entirely on signed-out resumes keeps the network/console clean

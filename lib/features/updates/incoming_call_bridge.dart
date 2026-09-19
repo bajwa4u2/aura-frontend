@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/auth/session_providers.dart';
 import '../correspondence/data/correspondence_live_service.dart';
 import '../realtime/application/incoming_call_projection.dart';
 import '../realtime/application/realtime_providers.dart';
@@ -13,7 +14,26 @@ final incomingCallBridgeProvider =
       IncomingCallBridgeNotifier,
       List<Map<String, dynamic>>
     >((ref) {
-      final notifier = IncomingCallBridgeNotifier();
+      // THE SAME QUESTION THE RESUME PATH ALREADY ASKS, ASKED EARLIER.
+      //
+      // `isCallResolvedForUser` existed and was consulted only when the app
+      // resumed, which is minutes too late for a push that arrives after the
+      // caller has given up. Presentation asks it too, through the same
+      // repository, so there is one definition of "still ringing for me".
+      final notifier = IncomingCallBridgeNotifier(
+        verifyResolved: (sessionId) async {
+          final me = await ref.read(authMeDataProvider.future);
+          final myUserId = _str(
+            me['id'] ??
+                me['userId'] ??
+                (me['user'] is Map ? (me['user'] as Map)['id'] : null),
+          );
+          if (myUserId.isEmpty) return false;
+          return ref
+              .read(realtimeRepositoryProvider)
+              .isCallResolvedForUser(sessionId, myUserId);
+        },
+      );
 
       // C4+C6: listen on BOTH the correspondence-namespace socket AND the
       // /realtime-namespace socket. Either transport can deliver an incoming
@@ -66,9 +86,46 @@ final incomingCallBridgeProvider =
       return notifier;
     });
 
+/// Asks the ONE authority whether a ringing call is still ringing FOR ME.
+///
+/// Returns true when the card must be retracted — the session is gone, ended,
+/// cancelled, or my invite has resolved. Returns false for "still live" AND
+/// for "could not tell": that collapse is deliberate and belongs to
+/// `RealtimeRepository.isCallResolvedForUser`, whose doctrine is that a
+/// network blip must never silently dismiss a legitimately ringing call. The
+/// ring window still wins in that case, exactly as before.
+typedef CallLivenessProbe = Future<bool> Function(String sessionId);
+
 class IncomingCallBridgeNotifier
     extends StateNotifier<List<Map<String, dynamic>>> {
-  IncomingCallBridgeNotifier() : super(const <Map<String, dynamic>>[]);
+  IncomingCallBridgeNotifier({CallLivenessProbe? verifyResolved})
+      : _verifyResolved = verifyResolved,
+        super(const <Map<String, dynamic>>[]);
+
+  /// A LATE PUSH MUST NOT RING A CALL THAT IS OVER.
+  ///
+  /// Production, session …8gdacp, 2026-09-16: the ring pushes went out at
+  /// 04:23:22, the caller cancelled at 04:23:41, and the callee's device
+  /// presented an actionable incoming call at 04:24:48 — 85s after the ring,
+  /// 67s after the cancel — then tried to join the dead session and failed
+  /// twice.
+  ///
+  /// Both guards below it are LOCAL, and that is why the call presented:
+  /// `expiresAt` had not passed yet (the ring window still had seconds left),
+  /// and the precedence guard only knows about terminal events this device
+  /// actually received — and this device was asleep when the cancellation was
+  /// sent. A cancelled call passes both.
+  ///
+  /// So presentation now also asks the server. It does NOT block the healthy
+  /// path: a fresh call is admitted and drawn exactly as before, and the
+  /// answer arrives a round trip later, retracting the card through the same
+  /// choke point every other authoritative clear uses. A call that is still
+  /// live is untouched.
+  final CallLivenessProbe? _verifyResolved;
+
+  /// Sessions already asked about. One question per session per ring: the
+  /// dedupe in [addIncoming] means a retried push must not re-ask.
+  final Set<String> _verifiedSessionIds = <String>{};
 
   // Realtime Architecture Correction — Phase 4, Part G. Session-scoped
   // precedence: once a session has been authoritatively cleared, a late or
@@ -134,6 +191,9 @@ class IncomingCallBridgeNotifier
       );
     }
 
+    // AND ASK WHETHER THIS CALL IS STILL RINGING FOR ME. See [_verifyResolved].
+    if (sessionId.isNotEmpty) _verifyStillRinging(sessionId);
+
     // Dedup by both notification ID and session ID so two pushes for the same
     // session (e.g. delivery retry on a different notification ID) don't produce
     // two ring cards stacked on top of each other.
@@ -150,6 +210,25 @@ class IncomingCallBridgeNotifier
         return true;
       }),
     ];
+  }
+
+  /// The server's answer, applied through the ordinary terminal path.
+  ///
+  /// `ended` is the honest reason: the backend tells us the invitation has
+  /// resolved, not which of cancelled / answered-elsewhere / expired did it,
+  /// and inventing the difference would mislabel the system call log.
+  void _verifyStillRinging(String sessionId) {
+    final probe = _verifyResolved;
+    if (probe == null) return;
+    if (!_verifiedSessionIds.add(sessionId)) return;
+    unawaited(
+      probe(sessionId).then((resolved) {
+        if (!mounted) return;
+        if (resolved) removeBySession(sessionId);
+      }).catchError((_) {
+        // Unknown is not "gone". The ring window still owns the decision.
+      }),
+    );
   }
 
   /// EVERY AUTHORITATIVE CLEAR PASSES THROUGH HERE, INCLUDING THE NATIVE ONE.
@@ -343,6 +422,7 @@ class IncomingCallBridgeNotifier
   /// identity gets a clean slate.
   void clear() {
     _guard.reset();
+    _verifiedSessionIds.clear();
     if (state.isEmpty) return;
     state = const <Map<String, dynamic>>[];
   }

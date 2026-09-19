@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/utils/local_timezone.dart';
@@ -24,6 +25,44 @@ class DeviceService {
 
   static const _deviceIdKey = 'aura_device_id';
   static const _presenceDebounce = Duration(minutes: 30);
+
+  /// THE VERSION THIS DEVICE IS ACTUALLY RUNNING.
+  ///
+  /// Every device row in production reads `appVersion = 1.0.0` while the
+  /// sessions those same devices open report 1.4.3, so no question about a
+  /// call could ever be asked per version — "does this happen on the shipped
+  /// build?" had no answer. The cause is below: a `--dart-define` nobody
+  /// passes, falling back to a literal.
+  ///
+  /// The app already knows the truth — `PackageInfo` is what
+  /// `client_identity_provider` reads for the same fact — so the define
+  /// remains an override and the package is the source. Cached because
+  /// registration runs on every resume.
+  static String? _cachedAppVersion;
+
+  static const _appVersionOverride =
+      String.fromEnvironment('APP_VERSION', defaultValue: '');
+
+  static Future<String> resolveAppVersion() async {
+    if (_appVersionOverride.trim().isNotEmpty) return _appVersionOverride.trim();
+    final cached = _cachedAppVersion;
+    if (cached != null) return cached;
+    try {
+      final info = await PackageInfo.fromPlatform();
+      final version = info.version.trim();
+      final build = info.buildNumber.trim();
+      // The build number is what distinguishes two shipments of one version,
+      // and it is exactly what a release question turns on.
+      final resolved = version.isEmpty
+          ? 'unknown'
+          : (build.isEmpty ? version : '$version+$build');
+      _cachedAppVersion = resolved;
+      return resolved;
+    } catch (_) {
+      // Never block a registration on a version label.
+      return 'unknown';
+    }
+  }
 
   String? _cachedDeviceId;
   DateTime? _lastPresenceRefresh;
@@ -156,10 +195,7 @@ class DeviceService {
         'provider': 'APNS',
         'token': token.trim(),
         'deviceName': '${_resolveDeviceName()} (calls)',
-        'appVersion': const String.fromEnvironment(
-          'APP_VERSION',
-          defaultValue: '1.0.0',
-        ),
+        'appVersion': await resolveAppVersion(),
         'locale': _resolveLocale(),
         'timezone': _resolveTimezone(),
         'isActive': true,
@@ -302,7 +338,7 @@ class DeviceService {
       final sub = await WebPushService.subscribe(vapidKey);
       if (sub == null || sub.endpoint.isEmpty) return false;
 
-      final payload = _webPushPayload(sub);
+      final payload = await _webPushPayload(sub);
       await _upsertCurrentDevice(payload);
       return true;
     } catch (e) {
@@ -398,7 +434,7 @@ class DeviceService {
 
       final sub = await WebPushService.getExistingSubscription();
       if (sub != null && sub.endpoint.isNotEmpty) {
-        return _webPushPayload(sub);
+        return await _webPushPayload(sub);
       }
       return null;
     }
@@ -439,10 +475,7 @@ class DeviceService {
       'endpoint': channel.uri,
       'isActive': true,
       'deviceName': _resolveDeviceName(),
-      'appVersion': const String.fromEnvironment(
-        'APP_VERSION',
-        defaultValue: '1.0.0',
-      ),
+      'appVersion': await resolveAppVersion(),
       'locale': _resolveLocale(),
       'timezone': _resolveTimezone(),
     };
@@ -506,10 +539,7 @@ class DeviceService {
         'provider': 'FCM',
         'token': token,
         'deviceName': _resolveDeviceName(),
-        'appVersion': const String.fromEnvironment(
-          'APP_VERSION',
-          defaultValue: '1.0.0',
-        ),
+        'appVersion': await resolveAppVersion(),
         'locale': _resolveLocale(),
         'timezone': _resolveTimezone(),
       };
@@ -519,7 +549,7 @@ class DeviceService {
     }
   }
 
-  Map<String, dynamic> _webPushPayload(WebPushResult sub) {
+  Future<Map<String, dynamic>> _webPushPayload(WebPushResult sub) async {
     return {
       'platform': 'WEB',
       'provider': 'WEB_PUSH',
@@ -529,10 +559,7 @@ class DeviceService {
       'webPushAuth': sub.auth ?? '',
       'isActive': true,
       'deviceName': _resolveDeviceName(),
-      'appVersion': const String.fromEnvironment(
-        'APP_VERSION',
-        defaultValue: '1.0.0',
-      ),
+      'appVersion': await resolveAppVersion(),
       'locale': _resolveLocale(),
       'timezone': _resolveTimezone(),
     };
