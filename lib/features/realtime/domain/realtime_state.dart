@@ -37,6 +37,7 @@ class RealtimeState {
     this.acceptedByPeer = false,
     this.speakerphoneEnabled = false,
     this.connectionFailure,
+    this.mediaRecovering = false,
   });
 
   final RealtimeConnectionStatus connectionStatus;
@@ -55,6 +56,21 @@ class RealtimeState {
   final bool isBusy;
   final bool isMediaReady;
   final bool isMediaBusy;
+
+  /// THE MEDIA PLANE IS BEING REBUILT — a fact, deliberately not a sentence.
+  ///
+  /// The transport can die mid-call and be replaced while signalling stays
+  /// perfectly healthy: one session spent thirteen seconds with no transport
+  /// at all (production, 2026-09-16) and the UI went on saying Connected the
+  /// whole time, because recovery reported diagnostics to the server and
+  /// nothing to the state. `connectionStatus` cannot carry this — it belongs
+  /// to the SIGNALLING socket, and conflating the two planes is the mistake
+  /// this codebase has already paid for twice.
+  ///
+  /// True from the moment stage recovery begins until it succeeds or gives
+  /// up. What a person should be told while it is true is a presentation
+  /// decision, not this layer's.
+  final bool mediaRecovering;
   final RTCVideoRenderer? localRenderer;
   final Map<String, RTCVideoRenderer> remoteRenderers;
 
@@ -144,6 +160,7 @@ class RealtimeState {
       acceptedByPeer: false,
       speakerphoneEnabled: false,
       connectionFailure: null,
+      mediaRecovering: false,
     );
   }
 
@@ -189,6 +206,7 @@ class RealtimeState {
     Set<String>? reconnectingUserIds,
     bool? acceptedByPeer,
     bool? speakerphoneEnabled,
+    bool? mediaRecovering,
     CallConnectionFailure? connectionFailure,
     // A failure must be CLEARED deliberately — by a retry or a new attempt —
     // never by the next unrelated copyWith that happens not to mention it.
@@ -245,6 +263,7 @@ class RealtimeState {
       connectionFailure: clearConnectionFailure
           ? null
           : (connectionFailure ?? this.connectionFailure),
+      mediaRecovering: mediaRecovering ?? this.mediaRecovering,
     );
   }
 

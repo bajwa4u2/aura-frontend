@@ -29,7 +29,24 @@ class SfuRealtimeTransport implements RealtimeTransport {
     this.clientNonce,
     this.openReason,
     this.replacesGeneration,
+    this.iceServers = const <Map<String, dynamic>>[],
   });
+
+  /// AURA'S OWN RELAY, OFFERED TO THE STAGE AS WELL.
+  ///
+  /// The stage peer connection was created with one hard-coded STUN entry and
+  /// nothing else, while the backend issued short-lived HMAC TURN credentials
+  /// that only the mesh path ever consumed. STUN discovers a reflexive address
+  /// and cannot forward a packet: on a symmetric NAT or a network that blocks
+  /// UDP, a stage call had no relay to fall back to and simply never
+  /// connected.
+  ///
+  /// These are added ALONGSIDE the provider's STUN, and the transport policy
+  /// stays `all`, so a direct path is still preferred and TURN is used only
+  /// when ICE cannot do better. Empty is a legitimate value — it restores
+  /// exactly the previous behaviour — so a caller that could not obtain
+  /// credentials still gets a call rather than an exception.
+  final List<Map<String, dynamic>> iceServers;
 
   /// Identifies one client media attempt to the server; see
   /// RealtimeRepository.openStageTransport.
@@ -233,6 +250,20 @@ class SfuRealtimeTransport implements RealtimeTransport {
     });
   }
 
+  /// WAS A RELAY EVEN AVAILABLE on this transport?
+  ///
+  /// Counts only, never a credential or a host: `turn=n` is enough to tell a
+  /// call that had no fallback from one that had one and did not need it,
+  /// which is the difference the STUN-only defect turned on.
+  String _relayPolicy() {
+    final turns = iceServers.where((s) {
+      final urls = s['urls'] ?? s['url'];
+      final text = urls is List ? urls.join(',') : '$urls';
+      return text.contains('turn:') || text.contains('turns:');
+    }).length;
+    return 'turn=$turns';
+  }
+
   /// Compact, safe error label — never the provider's full body.
   String _shortError(Object e) {
     final text = e.toString();
@@ -303,6 +334,8 @@ class SfuRealtimeTransport implements RealtimeTransport {
     _stallTicks = 0;
     _lastBytesByKind.clear();
     _stallTicksByKind.clear();
+    _firstByteMsByKind.clear();
+    _openedAt = DateTime.now();
     return _traced('OPEN', trigger, () => _open(sessionId: sessionId, local: local));
   }
 
@@ -313,10 +346,13 @@ class SfuRealtimeTransport implements RealtimeTransport {
     _sessionId = sessionId;
 
     final pc = await createPeerConnection(<String, dynamic>{
-      // Relay credentials still come from Aura's own TURN issuance; STUN here
-      // is only the provider's own reflexive discovery.
-      'iceServers': [
-        {'urls': 'stun:stun.cloudflare.com:3478'}
+      // The provider's own reflexive discovery, plus Aura's issued relay when
+      // the caller supplied one. Direct paths still win: `iceTransportPolicy`
+      // is left at its default (`all`), so TURN is a fallback and never a
+      // requirement.
+      'iceServers': <dynamic>[
+        {'urls': 'stun:stun.cloudflare.com:3478'},
+        ...iceServers,
       ],
       // Cloudflare Realtime requires a single bundled transport.
       'bundlePolicy': 'max-bundle',
@@ -636,11 +672,11 @@ class SfuRealtimeTransport implements RealtimeTransport {
       unawaited(_repository.reportStageDiagnostic(
         sessionId,
         phase: 'bind',
-        code: audit.bound == audit.serverBindings
-            ? 'bind_complete'
-            : audit.bound == 0
-                ? 'bind_none'
-                : 'bind_partial',
+        code: bindLabel(
+          bound: audit.bound,
+          serverBindings: audit.serverBindings,
+          receivingLines: audit.receivingLines,
+        ),
         message: audit.summary,
         platform: kIsWeb ? 'web' : defaultTargetPlatform.name,
       ));
@@ -797,6 +833,7 @@ class SfuRealtimeTransport implements RealtimeTransport {
   }
 
   Future<void> _waitForIce(RTCPeerConnection pc) async {
+    final startedAt = DateTime.now();
     final done = Completer<void>();
     void check(RTCIceConnectionState s) {
       if ((s == RTCIceConnectionState.RTCIceConnectionStateConnected ||
@@ -816,6 +853,14 @@ class SfuRealtimeTransport implements RealtimeTransport {
             'stage transport never connected [sfu:ice_timeout]'),
       );
     } finally {
+      // HOW LONG ICE TOOK, as its own stage of the accept-to-connect wait.
+      // Reported whether it connected or timed out: a 30s failure and a 3s
+      // success are the same silence without it.
+      unawaited(_report(
+        'op=ICE state=${done.isCompleted ? 'connected' : 'not_connected'} '
+        'ms=${DateTime.now().difference(startedAt).inMilliseconds} '
+        'relay=${_relayPolicy()}',
+      ));
       // RE-ARM, ALWAYS. The connect wait replaced this handler with a closure
       // whose completer is already finished, so leaving it in place is the
       // same as having no monitor at all -- which is precisely what shipped.
@@ -873,6 +918,7 @@ class SfuRealtimeTransport implements RealtimeTransport {
           byKind == null ? -1 : byKind.values.fold<int>(0, (a, b) => a + b);
 
       if (byKind != null) {
+        _noteFirstBytes(byKind);
         final stalled = stalledKindAfterTick(
           lastBytesByKind: _lastBytesByKind,
           stallTicksByKind: _stallTicksByKind,
@@ -892,7 +938,8 @@ class SfuRealtimeTransport implements RealtimeTransport {
       // one that was not running. It says where it stands every ~30s.
       if (_ticks % 10 == 0) {
         unawaited(_report('op=LIVE bytes=$bytes stall=$_stallTicks '
-            'armed=${_lastLivenessBytes >= 0}'));
+            'armed=${_lastLivenessBytes >= 0} '
+            'kinds=${_kindSummary(byKind)}'));
       }
 
       if (bytes > _lastLivenessBytes) {
@@ -905,7 +952,9 @@ class SfuRealtimeTransport implements RealtimeTransport {
         // became audible.
         if (!_mediaFlowingReported && bytes > 0) {
           _mediaFlowingReported = true;
-          unawaited(_report('op=LIVE state=media_flowing bytes=$bytes'));
+          unawaited(_report('op=LIVE state=media_flowing bytes=$bytes '
+              'kinds=${_kindSummary(byKind)} '
+              'sinceOpenMs=${_sinceOpenMs()}'));
           try {
             onMediaFlowing?.call(bytes);
           } catch (_) {
@@ -929,6 +978,53 @@ class SfuRealtimeTransport implements RealtimeTransport {
         _declareLost('media_stalled_${_stallTicks * 3}s');
       }
     });
+  }
+
+  /// AN ABSENT KIND AND A KIND AT ZERO HAVE DIFFERENT CAUSES.
+  ///
+  /// The breakdown was being computed every three seconds and folded to a
+  /// single sum before anything was written down, so the one question a
+  /// one-way-audio defect turns on — IS THERE AN INBOUND AUDIO STREAM AT ALL —
+  /// was measured continuously and never recorded. ABSENT means no receiving
+  /// track of that kind was ever negotiated; `0b` means one was and no packets
+  /// arrive on it. Printing them the same way is what made the two
+  /// indistinguishable from the server, through three reproductions.
+  String _kindSummary(Map<String, int>? byKind) {
+    if (byKind == null) return 'unreadable';
+    String of(String kind) =>
+        byKind.containsKey(kind) ? '${byKind[kind]}b' : 'ABSENT';
+    final extra = byKind.keys
+        .where((k) => k != 'audio' && k != 'video')
+        .map((k) => ' $k=${byKind[k]}b')
+        .join();
+    return 'audio=${of('audio')} video=${of('video')}$extra';
+  }
+
+  /// WHEN THE FIRST BYTE OF EACH KIND ARRIVED, measured from open.
+  ///
+  /// Accept-to-connect was observed at 50s, 23s and 17s (production,
+  /// 2026-09-16) with no way to attribute the wait: signalling, ICE and first
+  /// media were one undivided gap. This closes the last stage of it — the
+  /// others are already timed by `_traced` (waitMs/runMs per operation) and by
+  /// the ICE report below.
+  final Map<String, int> _firstByteMsByKind = <String, int>{};
+  DateTime? _openedAt;
+
+  int _sinceOpenMs() {
+    final opened = _openedAt;
+    if (opened == null) return -1;
+    return DateTime.now().difference(opened).inMilliseconds;
+  }
+
+  void _noteFirstBytes(Map<String, int> byKind) {
+    for (final entry in byKind.entries) {
+      if (entry.value <= 0) continue;
+      if (_firstByteMsByKind.containsKey(entry.key)) continue;
+      final ms = _sinceOpenMs();
+      _firstByteMsByKind[entry.key] = ms;
+      unawaited(_report('op=MEDIA state=first_bytes kind=${entry.key} '
+          'sinceOpenMs=$ms bytes=${entry.value}'));
+    }
   }
 
   /// Bytes of MEDIA received PER KIND, or null when stats cannot be read.
@@ -1090,6 +1186,30 @@ Set<String> boundTrackIds(List<Map<String, dynamic>> serverBindings) {
     bound.add(trackId);
   }
   return bound;
+}
+
+/// WHAT THE BIND ACTUALLY ACHIEVED, as a rule a test can hold.
+///
+/// COMPLETE MEANS EVERY RECEIVING LINE IS CARRYING SOMETHING, not merely that
+/// we bound everything the server happened to offer. Judged only against
+/// `serverBindings`, a client with two receiving m-lines and one binding
+/// reported `bind_complete` — which is exactly the state a one-way call sits
+/// in. A receiving line with no binding is an m-line negotiated to receive
+/// that nothing was attached to, and that is not a complete bind by any
+/// reading.
+///
+/// Held out of product source on 2026-09-11 until the defect it claims to fix
+/// was independently established. Production has since shown `bind_complete`
+/// on calls that rendered nothing (2026-09-16), so the label was reporting
+/// success over precisely the failure it exists to expose.
+String bindLabel({
+  required int bound,
+  required int serverBindings,
+  required int receivingLines,
+}) {
+  if (bound == 0) return 'bind_none';
+  if (bound == serverBindings && bound >= receivingLines) return 'bind_complete';
+  return 'bind_partial';
 }
 
 String? stalledKindAfterTick({

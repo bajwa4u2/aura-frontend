@@ -1393,8 +1393,45 @@ class RealtimeMediaService {
     // inside.
     if (_sameRemoteMedia(_remoteByParticipant, next)) return;
     _remoteByParticipant = next;
-    await _syncParticipantRenderers(next);
+    final retired = await _syncParticipantRenderers(next);
     _publish();
+    // PUBLISH FIRST, THEN DISPOSE. See `_disposeRetired`: the snapshot the UI
+    // is drawing from still holds these objects until the line above runs.
+    await _disposeRetired(retired);
+  }
+
+  /// Renderers and streams that have LEFT the published snapshot.
+  ///
+  /// THE BLACK TILE (production, 2026-09-16). A renderer that has been
+  /// disposed still satisfies every test the grid makes of it — the map entry
+  /// exists, so a tile is drawn — while `srcObject` is null, `renderVideo` is
+  /// false and `videoWidth/Height` are zero. That is precisely the state two
+  /// sessions ended in after receiving 614,911 and 267,879 bytes of video:
+  ///
+  ///     tile=true src=false dim=0x0 renderVideo=false
+  ///
+  /// Bytes had arrived and frames had been drawn; the tile went black because
+  /// the object behind it was destroyed while the published snapshot still
+  /// pointed at it. Disposal is therefore ordered AFTER the publish that
+  /// removes the reference, never before it. The rule, stated once: nothing
+  /// disposes a renderer the current snapshot can still reach.
+  Future<void> _disposeRetired(_RetiredMedia retired) async {
+    for (final renderer in retired.renderers) {
+      try {
+        renderer.srcObject = null;
+        await renderer.dispose();
+      } catch (_) {
+        // A renderer that refuses to close must not fail the call; the tile
+        // it belonged to is already out of the snapshot.
+      }
+    }
+    for (final stream in retired.streams) {
+      try {
+        await stream.dispose();
+      } catch (_) {
+        // Same: the stream is unreferenced either way.
+      }
+    }
   }
 
   /// Build or retire a renderer per participant.
@@ -1445,7 +1482,7 @@ class RealtimeMediaService {
     }
   }
 
-  Future<void> _syncParticipantRenderers(
+  Future<_RetiredMedia> _syncParticipantRenderers(
     Map<String, RemoteParticipantMedia> media,
   ) async {
     var created = 0;
@@ -1455,15 +1492,16 @@ class RealtimeMediaService {
     var failures = 0;
     String? firstError;
     final withVideo = media.values.where((m) => m.hasVideo).length;
+    // Removed from the map here, destroyed by the caller AFTER it publishes.
+    final doomed = _RetiredMedia();
 
     // Retire anyone no longer present.
     for (final id in _remoteRenderersByParticipant.keys.toList()) {
       if (media.containsKey(id) && media[id]!.hasVideo) continue;
       final renderer = _remoteRenderersByParticipant.remove(id);
-      renderer?.srcObject = null;
-      await renderer?.dispose();
+      if (renderer != null) doomed.renderers.add(renderer);
       final stream = _remoteStreamsByParticipant.remove(id);
-      await stream?.dispose();
+      if (stream != null) doomed.streams.add(stream);
       retired += 1;
     }
 
@@ -1501,11 +1539,15 @@ class RealtimeMediaService {
         // Something genuinely changed. Retire the stale renderer so the
         // rebuild below attaches the live tracks — and so the dead m-line
         // stops being a candidate for anything.
+        //
+        // The stale objects are handed to the caller rather than destroyed
+        // here: this method runs between publishes, so destroying one now
+        // would blacken a tile the UI is still drawing from the previous
+        // snapshot (see `_disposeRetired`).
         _remoteRenderersByParticipant.remove(entry.key);
-        existingRenderer.srcObject = null;
-        await existingRenderer.dispose();
+        doomed.renderers.add(existingRenderer);
         final staleStream = _remoteStreamsByParticipant.remove(entry.key);
-        await staleStream?.dispose();
+        if (staleStream != null) doomed.streams.add(staleStream);
         rebuilt += 1;
       }
 
@@ -1576,6 +1618,7 @@ class RealtimeMediaService {
         _remoteStreamsByParticipant[entry.key] = stream;
         _remoteRenderersByParticipant[entry.key] = renderer;
         _watchRemoteVideoLiveness(video);
+        _watchRenderedFrames(entry.key, renderer);
         created += 1;
         // WHAT THE RENDERER ACTUALLY RECEIVED, not what we handed it.
         //
@@ -1610,6 +1653,50 @@ class RealtimeMediaService {
           'failures=$failures'
           '${firstError == null ? '' : ' err=${_shortRenderError(firstError)}'}',
     ));
+    return doomed;
+  }
+
+  /// A DECODED FRAME IS NOT A DELIVERED BYTE, AND NEITHER IS AN ATTACHMENT.
+  ///
+  /// `render_attached` says a track was put on a stream a renderer is showing.
+  /// It does not say a frame was ever decoded, and the two were
+  /// indistinguishable from the server: a call could report bytes received,
+  /// bind complete and render attached, and still have shown nobody anything.
+  ///
+  /// These two callbacks are the only client evidence that separates them —
+  /// `onFirstFrameRendered` fires when a frame reaches the surface, `onResize`
+  /// when the surface learns its dimensions. Reported once each per renderer,
+  /// counts and dimensions only.
+  void _watchRenderedFrames(String participantKey, RTCVideoRenderer renderer) {
+    var framed = false;
+    try {
+      renderer.onFirstFrameRendered = () {
+        if (_disposed || framed) return;
+        framed = true;
+        unawaited(_stage?.report(
+          phase: 'render',
+          code: 'render_first_frame',
+          message: 'participant=${_shortKey(participantKey)} '
+              'dim=${renderer.videoWidth}x${renderer.videoHeight} '
+              'renderVideo=${renderer.renderVideo}',
+        ));
+        // A first frame changes what the tile should show, and the grid reads
+        // liveness from the renderer it already holds.
+        _publish();
+      };
+      renderer.onResize = () {
+        if (_disposed) return;
+        _publish();
+      };
+    } catch (_) {
+      // A platform without these callbacks loses the evidence, not the call.
+    }
+  }
+
+  /// Enough of a key to correlate two reports, never enough to identify.
+  static String _shortKey(String value) {
+    final v = value.trim();
+    return v.isEmpty ? 'none' : (v.length <= 8 ? v : v.substring(0, 8));
   }
 
   /// Compact error label for a render report — never a full platform trace.
@@ -1648,15 +1735,27 @@ class RealtimeMediaService {
     final transport = _stage;
     _stage = null;
     _remoteByParticipant = const <String, RemoteParticipantMedia>{};
-    for (final r in _remoteRenderersByParticipant.values) {
-      r.srcObject = null;
-      await r.dispose();
-    }
+
+    // THE TILES GO WITH THE TRANSPORT, AND THE UI IS TOLD.
+    //
+    // This used to destroy every renderer and clear the maps WITHOUT
+    // publishing, so the snapshot the grid was drawing from kept pointing at
+    // objects that no longer had a source. Detach runs mid-call —
+    // ATTACH_UNWIND, MEDIA_UNHEALTHY, a rejoin — and recovery takes seconds
+    // (13 of them in session …ycs9j, 2026-09-16), during which the person sat
+    // looking at a tile that would never paint again. If the call ended first,
+    // that dead tile was the last thing the trace recorded:
+    // `tile=true src=false dim=0x0 renderVideo=false`.
+    //
+    // Remove, publish, THEN destroy: the snapshot loses the reference before
+    // the object loses its source.
+    final doomed = _RetiredMedia()
+      ..renderers.addAll(_remoteRenderersByParticipant.values)
+      ..streams.addAll(_remoteStreamsByParticipant.values);
     _remoteRenderersByParticipant.clear();
-    for (final st in _remoteStreamsByParticipant.values) {
-      await st.dispose();
-    }
     _remoteStreamsByParticipant.clear();
+    if (!_disposed) _publish();
+    await _disposeRetired(doomed);
     if (transport == null) return;
     // Must never throw on a leave.
     try {
@@ -2266,4 +2365,14 @@ class RealtimeMediaService {
     if (_snapshots.isClosed) return;
     _snapshots.add(currentSnapshot);
   }
+}
+
+/// Renderers and streams removed from the maps but not yet destroyed.
+///
+/// Exists so disposal can be ORDERED AFTER the publish that drops the last
+/// reference to them. Destroying a renderer the current snapshot still holds
+/// is what turns a working tile black — see `_disposeRetired`.
+class _RetiredMedia {
+  final List<RTCVideoRenderer> renderers = <RTCVideoRenderer>[];
+  final List<MediaStream> streams = <MediaStream>[];
 }

@@ -48,8 +48,32 @@ class RealtimeEventParser {
     final list = _pickList(payload, const ['participants', 'sessionParticipants']);
     return list != null &&
         list.isEmpty &&
-        state.isJoined &&
+        _inLiveSession(state) &&
         state.participants.isNotEmpty;
+  }
+
+  /// IN THE SESSION, not merely at the instant called `joined`.
+  ///
+  /// The guard was gated on `isJoined`, which is one value of an enum that
+  /// also carries `joining` and `locked` — states a client passes through
+  /// while it already holds a roster it was given. An empty roster arriving
+  /// then is no more true than one arriving a second later, and the narrower
+  /// test left a window where the same wipe went through unopposed.
+  ///
+  /// The legitimate empty state is preserved exactly: `idle` and every
+  /// terminal state (removed, rejected, banned, replaced, failed) still accept
+  /// an empty roster, and leaving a call routes through those. `requested` is
+  /// deliberately outside — a person in a waiting room is not in the session,
+  /// so an empty roster is a truthful answer for them.
+  static bool _inLiveSession(RealtimeState state) {
+    switch (state.joinState) {
+      case RealtimeJoinState.joining:
+      case RealtimeJoinState.joined:
+      case RealtimeJoinState.locked:
+        return true;
+      default:
+        return false;
+    }
   }
 
   static RealtimeState mergeSnapshot(

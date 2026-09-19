@@ -3498,11 +3498,36 @@ class RealtimeController extends StateNotifier<RealtimeState>
           lastSocketEvent: event.name,
         );
         return;
+      // THE ROSTER EVENTS MERGE AGAIN.
+      //
+      // These five carry the authoritative session, roster and policy, and
+      // every one of them fell through to a merge until `18ac001e` inserted
+      // `session:media.published` — with a body — into the middle of the
+      // fall-through group. Dart then routed all five into the media-published
+      // body, which sets `lastSocketEvent` and reconciles subscriptions and
+      // merges NOTHING. So since that commit `participants:updated` and
+      // `session:state`, whose entire job is to carry the current roster, have
+      // been no-ops: the roster could only be corrected by a participant
+      // joined/updated/removed event or a hydrate, and any roster that went
+      // wrong stayed wrong.
+      //
+      // The reconcile is kept, deliberately: it has been running for these
+      // events for eight days, it is idempotent, and removing it while
+      // restoring the merge would be two changes wearing one commit.
       case 'session:state':
       case 'participants:updated':
       case 'policy:updated':
       case 'session:policyUpdated':
       case 'session:updated':
+        if (state.joinState == RealtimeJoinState.idle) {
+          state = state.copyWith(lastSocketEvent: event.name);
+          return;
+        }
+        state = _mergeWatchingRoster(event).copyWith(
+          lastSocketEvent: event.name,
+        );
+        unawaited(_reconcileRtcPeers('roster.updated'));
+        return;
       // SOMEBODY'S PUBLISHED MEDIA CHANGED. THAT IS ITS OWN FACT.
       //
       // Re-subscription used to happen only when the roster changed, and a
@@ -3906,6 +3931,9 @@ class RealtimeController extends StateNotifier<RealtimeState>
     if (iceHealthy) {
       _reportRecovery(sessionId, 'stage_recovery_resubscribe', 'reason=$reason');
       try {
+        // Re-resolving who is publishing is not a rebuild: MY media never
+        // stopped, so the call is not in trouble and the state does not say
+        // it is.
         await _mediaService.refreshStageRemoteMedia(trigger: 'RECOVER');
       } catch (error) {
         _reportRecovery(
@@ -3915,6 +3943,10 @@ class RealtimeController extends StateNotifier<RealtimeState>
     }
 
     _recoveringStage = true;
+    // MY OWN MEDIA IS GONE AND IS BEING REBUILT. Said in the state, because
+    // until now it was said only to the server: the person kept seeing a
+    // connected call for as long as recovery took, and for good if it failed.
+    state = state.copyWith(mediaRecovering: true);
 
     try {
       for (var attempt = _stageRecoveries + 1;
@@ -3964,8 +3996,20 @@ class RealtimeController extends StateNotifier<RealtimeState>
 
       _reportRecovery(sessionId, 'stage_recovery_exhausted',
           'reason=$reason attempts=$_stageRecoveries');
+      // Bounded, and the end of it is said out loud. The call is still up on
+      // the signalling plane; its media is not coming back without a new
+      // attempt, and pretending otherwise is the defect this closes.
+      if (mounted) {
+        state = state.copyWith(
+          mediaRecovering: false,
+          connectionFailure: CallConnectionFailure.transportUnavailable,
+        );
+      }
     } finally {
       _recoveringStage = false;
+      if (mounted && state.mediaRecovering) {
+        state = state.copyWith(mediaRecovering: false);
+      }
     }
   }
 
@@ -4043,6 +4087,27 @@ class RealtimeController extends StateNotifier<RealtimeState>
         .catchError((_) {}));
   }
 
+  /// The issued relay, shaped for a peer connection — never a throw.
+  ///
+  /// `_resolveRtcConfiguration` is the one issuer and it caches per session,
+  /// so this is usually free. It fails soft on purpose: losing TURN costs the
+  /// fallback path, and refusing to open a transport over it would cost the
+  /// call outright — including on the networks where a direct path works
+  /// perfectly well.
+  Future<List<Map<String, dynamic>>> _stageIceServers(String sessionId) async {
+    try {
+      final configuration = await _resolveRtcConfiguration(sessionId);
+      final raw = configuration['iceServers'];
+      if (raw is! List) return const <Map<String, dynamic>>[];
+      return raw
+          .whereType<Map>()
+          .map((e) => e.cast<String, dynamic>())
+          .toList(growable: false);
+    } catch (_) {
+      return const <Map<String, dynamic>>[];
+    }
+  }
+
   Future<void> _ensureStageConnectedOnce(String reason) async {
     final sessionId = _managedSessionId;
     if (sessionId.isEmpty) return;
@@ -4065,9 +4130,18 @@ class RealtimeController extends StateNotifier<RealtimeState>
     try {
       final trigger = _stageTrigger(reason);
       if (!_mediaService.usesStageTransport) {
+        // AURA'S RELAY, FOR THE STAGE TOO.
+        //
+        // These credentials are already issued and already rotated for this
+        // session; only the mesh path consumed them, so a stage call on a
+        // network that blocks UDP had STUN and nothing else. Best-effort: a
+        // call must not fail because the relay could not be fetched, and the
+        // transport treats an empty list as the behaviour it had before.
+        final relayServers = await _stageIceServers(sessionId);
         late final SfuRealtimeTransport transport;
         transport = SfuRealtimeTransport(
           _repository,
+          iceServers: relayServers,
           // The server tells "this client asking again" from "a new client
           // instance" by this nonce, and adopts rather than destroys in the
           // first case. Minted once per controller: once per real client
