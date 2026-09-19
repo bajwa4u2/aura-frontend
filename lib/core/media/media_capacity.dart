@@ -54,15 +54,16 @@ class MediaCapacity {
   /// The 32 MiB buffer therefore does not bind them.
   static const int _streamedEnvelope = 150 * 1024 * 1024;
 
-  /// The longest native video Aura accepts: 180 s.
+  /// The longest native video Aura accepts: 10 minutes.
   ///
   /// Mirrors `DEFAULT_MAX_VIDEO_DURATION_MS` in the backend's
   /// `media-duration-policy.ts`, which is the authority; presign refuses
   /// anything longer with DURATION_EXCEEDED. Raised from 30 s on 2026-09-19
-  /// (founder: native video must run past 150 s, as a platform capability).
+  /// (founder decision, as a platform capability). The 150 MiB byte ceiling
+  /// still applies, and can bind first for a long, high-bitrate video.
   /// Camera capture stops here so a recording is never made that the
   /// server would then refuse.
-  static const Duration maxVideoDuration = Duration(seconds: 180);
+  static const Duration maxVideoDuration = Duration(minutes: 10);
 
   static const int image = _streamedEnvelope;
   static const int video = _streamedEnvelope;

@@ -3,13 +3,13 @@ import 'dart:io';
 import 'package:aura/core/media/media_capacity.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Native video runs to 180 s (founder decision 2026-09-19: more than 150 s,
-/// as a platform capability). The backend's `media-duration-policy.ts` is the
+/// Native video runs to 10 minutes (founder decision 2026-09-19, as a
+/// platform capability). The backend's `media-duration-policy.ts` is the
 /// authority; the client mirrors it so camera capture never records a video
 /// the server would refuse. No hidden 30-second cap may remain.
 void main() {
-  test('the client mirrors the server video limit of 180 s', () {
-    expect(MediaCapacity.maxVideoDuration, const Duration(seconds: 180));
+  test('the client mirrors the server video limit of 10 minutes', () {
+    expect(MediaCapacity.maxVideoDuration, const Duration(minutes: 10));
     expect(MediaCapacity.maxVideoDuration.inSeconds, greaterThan(150));
   });
 
