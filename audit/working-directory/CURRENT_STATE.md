@@ -1,5 +1,25 @@
 # Current State — aura_final
 
+## One evidence flow + reviewer path — 2026-09-19 (founder follow-up)
+
+Submitting authority evidence now STARTS the journey (no separate category gate); status carries
+`roleOnRecord`, `categoryRecorded` and the claim's `submittedAt`; `/institutions/me` adds
+`wouldSpeakOnceAuthorityConfirmed` so an eligible admin is routed to the evidence step instead of a
+generic refusal. Reviewer detail states `legalNameRetained` (false for pre-v1.2 approvals — never a
+name taken from the profile), the role on record beside the role claimed, and marks evidence supplied
+for both proofs. Client: one card ("Verify your authority for this institution"), role proposed and
+confirmed, naming-document path leading, one document answering both questions by default, and the
+form replaced after submission by the claim's standing. Admin Integrity links the authority queue.
+
+PRODUCTION READ 2026-09-19 (read-only): reviewers = bajwawrites (OWNER) + iffat13 (VERIFICATION_READ/
+WRITE + IDENTITY_VERIFICATION_WRITE since 09-17). Authority proofs: 1 total, SUBMITTED (founder,
+aura-platform-llc, 2 PDFs) — **zero confirmed anywhere, so no evidence-free legacy confirmations
+exist**. Institution evidence files: 4 rows with files, all PRIVATE under
+INSTITUTION_VERIFICATION_EVIDENCE, none public. Identity: 1 approved submission, 0 with a retained
+legal name (the founder's, pre-v1.2), 1 active identity record.
+
+Backend 8b1e8c3 + 40636ba, client fb2a8bda; both deployed and verified live.
+
 ## Identity ≠ institution authority — client, 2026-09-19
 
 Identity screen recognises a current verification (no first-time form) and captures by document type with one tile per required side. Institution Verification page recognises a verified person and asks only for authority evidence (role, evidence kind, PDF or image, "also shows the institution is registered"); the 120-day deadline UI is removed. Admin identity review requires the legal name to approve and shows sides/missing evidence; the institution-verification review has a comparison view (verified legal name, identity, institution, claimed role, evidence with audited Open, history). Composer and dashboard show the authority ask when speaking authority is not confirmed. Tests: 2941 pass, 1 pre-existing failure (`modal_and_flow_exit_test` full-height sheet census already 21 at HEAD vs expected 19). `flutter analyze`: 66 issues, unchanged from before this work.
