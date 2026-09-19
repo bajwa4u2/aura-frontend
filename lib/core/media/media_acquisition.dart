@@ -40,6 +40,7 @@ import 'package:image_picker_platform_interface/image_picker_platform_interface.
 import '../composition/content_intake.dart';
 import '../composition/attachment_lifecycle.dart';
 import 'attachment.dart';
+import 'media_capacity.dart';
 
 /// How many items one acquisition may contribute.
 ///
@@ -168,11 +169,12 @@ Future<MediaAcquisition> capturePhoto({
 
 /// Record ONE video.
 ///
-/// [maxDuration] is a product ceiling rather than a device limit: past it a
-/// share stops being a moment and becomes an upload the person waits on.
+/// [maxDuration] is a product ceiling rather than a device limit. It defaults
+/// to [MediaCapacity.maxVideoDuration], the server's own limit, so no camera
+/// path records a video the server would refuse, and none stops short of it.
 Future<MediaAcquisition> captureVideo({
   required int remainingSlots,
-  Duration maxDuration = const Duration(seconds: 60),
+  Duration maxDuration = MediaCapacity.maxVideoDuration,
   ImagePicker? picker,
 }) =>
     _capture(

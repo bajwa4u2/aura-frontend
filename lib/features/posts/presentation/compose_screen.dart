@@ -34,6 +34,7 @@ import '../../../core/composition/composition_authority.dart';
 import '../../../core/media/attachment.dart';
 import '../../share_intake/application/share_handoff.dart';
 import '../../../core/media/media_acquisition.dart';
+import '../../../core/media/media_capacity.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_design_system.dart';
@@ -1409,7 +1410,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     final acquired = await captureVideo(
       remainingSlots: _remainingAttachments,
-      maxDuration: const Duration(seconds: 30),
+      maxDuration: MediaCapacity.maxVideoDuration,
     );
     await _addAcquired(acquired, expect: AttachmentKind.video);
   }
