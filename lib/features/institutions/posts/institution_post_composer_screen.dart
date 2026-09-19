@@ -1302,7 +1302,10 @@ class _InstitutionPostComposerScreenState
           children: [
             Text('Speaking for ${identity!.name}', style: AuraText.title),
             const SizedBox(height: AuraSpace.s12),
-            SpeakingAuthorityNotice(institutionAddress: identity.workspaceAddress),
+            SpeakingAuthorityNotice(
+              institutionAddress: identity.workspaceAddress,
+              authorityState: identity.speakingAuthorityState,
+            ),
             const SizedBox(height: AuraSpace.s16),
             AuraSecondaryButton(
               label: 'Back',
@@ -1399,6 +1402,7 @@ class _InstitutionPostComposerScreenState
                       SpeakingAuthorityNotice(
                         institutionAddress:
                             identity?.workspaceAddress ?? widget.institutionId,
+                        authorityState: identity?.speakingAuthorityState,
                         compact: true,
                       ),
                       const SizedBox(height: AuraSpace.s14),

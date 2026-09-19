@@ -102,12 +102,34 @@ class _InstitutionDashboardScreenState
     final authority = _membership?['speakingAuthority'];
     if (authority is! Map) return false;
     if (authority['confirmed'] == true) return false;
+    // Governance standing, or the server's own statement that this person's
+    // role carries the institution's voice. The role-capability table is the
+    // backend's (C1), so this does not re-derive which roles publish — it
+    // reads what /institutions/me says about this member.
     return _isAdmin || _membership?['canSpeakOfficiallyByRole'] == true;
   }
+
+  /// The claim's own state, so a person who has already sent their evidence is
+  /// not told to send it again.
+  String get _authorityState {
+    final authority = _membership?['speakingAuthority'];
+    if (authority is! Map) return '';
+    return (authority['state'] ?? '').toString().toUpperCase();
+  }
+
+  bool get _authorityWithReviewer =>
+      _authorityState == 'SUBMITTED' || _authorityState == 'UNDER_REVIEW';
 
   static const String _authorityStep =
       'To speak for this institution, provide evidence of your relationship '
       'or authority. Your identity is not checked again.';
+
+  static const String _authorityPending =
+      'Your evidence is with a reviewer. Another authorised reviewer confirms '
+      'it — you cannot decide your own claim.';
+
+  String get _authorityHelper =>
+      _authorityWithReviewer ? _authorityPending : _authorityStep;
 
   bool get _isPending => _state == 'PENDING_REQUEST';
   bool get _isRejected => _state == 'REJECTED';
@@ -306,9 +328,9 @@ class _InstitutionDashboardScreenState
   ({String value, InsTone tone, String helper}) get _officialSpeech {
     if (_awaitsSpeakingAuthority) {
       return (
-        value: 'Evidence needed',
+        value: _authorityWithReviewer ? 'With a reviewer' : 'Evidence needed',
         tone: InsTone.warn,
-        helper: _authorityStep,
+        helper: _authorityHelper,
       );
     }
     if (_canSpeakOfficially) {
@@ -419,9 +441,11 @@ class _InstitutionDashboardScreenState
     if (_awaitsSpeakingAuthority && _institutionId.isNotEmpty) {
       items.add(InsActionCard(
         icon: Icons.verified_outlined,
-        title: 'Confirm your authority',
-        body: _authorityStep,
-        cta: 'Provide evidence',
+        title: _authorityWithReviewer
+            ? 'Your authority is being reviewed'
+            : 'Confirm your authority',
+        body: _authorityHelper,
+        cta: _authorityWithReviewer ? 'See where it stands' : 'Provide evidence',
         tone: InsTone.warn,
         onTap: () => _go(institutionWorkspacePath(
             _institutionId, InstitutionSection.verification)),

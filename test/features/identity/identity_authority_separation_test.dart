@@ -205,10 +205,14 @@ void main() {
         find.textContaining('provide evidence of your relationship or authority'),
         findsWidgets,
       );
-      // One document may be enough: the option is offered. (The page is a
-      // single scroll view, so everything on it is built without scrolling.)
-      expect(find.text('This document also shows the institution is registered'),
-          findsOneWidget);
+      // One document may be enough, stated as the default rather than as a
+      // decision to make first. (The page is a single scroll view, so
+      // everything on it is built without scrolling.)
+      expect(
+        find.textContaining('answers both questions and you will not need another one'),
+        findsOneWidget,
+      );
+      // Nothing on record in this payload, so the role is asked once, plainly.
       expect(find.text('Your role at this institution'), findsOneWidget);
     });
 

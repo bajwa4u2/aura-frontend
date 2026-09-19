@@ -316,9 +316,16 @@ class _AuthorityCaseCardState extends ConsumerState<_AuthorityCaseCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(detail?.institutionName ?? item.institutionId, style: AuraText.title),
+            Text(detail?.institutionName ?? item.title, style: AuraText.title),
             const SizedBox(height: AuraSpace.xs),
-            Text('State: ${item.state.name}', style: AuraText.small),
+            Text(
+              [
+                if (item.claimantHandle != null) '@${item.claimantHandle}'
+                else if (detail?.claimantHandle != null) '@${detail!.claimantHandle}',
+                'State: ${item.state.name}',
+              ].join(' · '),
+              style: AuraText.small,
+            ),
             if (item.evidenceKind != null)
               Text('Relying on: ${item.evidenceKind!.label}', style: AuraText.small),
             const SizedBox(height: AuraSpace.md),
@@ -539,11 +546,27 @@ class _AuthorityComparisonState extends ConsumerState<_AuthorityComparison> {
       children: [
         const Text('The verified person', style: AuraText.subtitle),
         const SizedBox(height: AuraSpace.xs),
-        _Fact('Verified legal name',
-            d.verifiedLegalName ??
-                (d.identityVerified
-                    ? 'Not recorded (verified before legal names were kept)'
-                    : '—')),
+        _Fact(
+          'Verified legal name',
+          d.verifiedLegalName ??
+              (d.identityVerified
+                  // SAID PLAINLY. The earlier process kept no name, so there
+                  // is none to compare — and none is invented from the
+                  // profile. The reviewer works from the identity standing
+                  // plus what the institutional evidence names.
+                  ? 'Not retained under the earlier process'
+                  : '—'),
+        ),
+        if (d.identityVerified && !d.legalNameRetained)
+          const Padding(
+            padding: EdgeInsets.only(bottom: AuraSpace.xs),
+            child: Text(
+              'This identity was approved before verified legal names were '
+              'kept. Compare the name on the institutional evidence with the '
+              'identity standing; do not record a match that was never made.',
+              style: AuraText.small,
+            ),
+          ),
         _Fact('Identity', d.identityVerified ? 'Verified' : 'Not verified'),
         if (d.identityDocument != null) _Fact('Document', d.identityDocument!),
         if (d.identityVerifiedAt != null) _Fact('Verified on', day(d.identityVerifiedAt!)),
@@ -574,7 +597,19 @@ class _AuthorityComparisonState extends ConsumerState<_AuthorityComparison> {
         const SizedBox(height: AuraSpace.md),
         const Text('The claim', style: AuraText.subtitle),
         const SizedBox(height: AuraSpace.xs),
+        if (d.roleOnRecord != null) _Fact('Role on record', d.roleOnRecord!),
         _Fact('Role claimed', d.claimedRole ?? 'Not stated'),
+        if (d.roleOnRecord != null &&
+            d.claimedRole != null &&
+            d.roleOnRecord!.toLowerCase() != d.claimedRole!.toLowerCase())
+          const Padding(
+            padding: EdgeInsets.only(bottom: AuraSpace.xs),
+            child: Text(
+              'The role claimed differs from the role on record. Both are '
+              'shown; the evidence decides.',
+              style: AuraText.small,
+            ),
+          ),
         if (d.claimedRelationship != null) _Fact('Relationship', d.claimedRelationship!),
         if (d.evidenceKind != null) _Fact('Relying on', d.evidenceKind!.label),
         if (d.infoRequested != null) _Fact('Asked for', d.infoRequested!),
@@ -600,6 +635,7 @@ class _AuthorityComparisonState extends ConsumerState<_AuthorityComparison> {
               subtitle: Text(
                 [
                   e.forAuthority ? 'For authority' : 'For the institution existing',
+                  if (e.alsoSubmittedForExistence) 'answers both questions',
                   if (!e.submittedByClaimant) 'supplied by someone else',
                   if (e.superseded) 'superseded',
                   if (e.discarded) 'destroyed',

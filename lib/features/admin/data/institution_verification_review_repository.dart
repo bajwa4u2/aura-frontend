@@ -57,6 +57,9 @@ class AuthorityCase {
     required this.state,
     required this.evidenceKind,
     required this.submittedAt,
+    this.institutionName,
+    this.institutionSlug,
+    this.claimantHandle,
   });
 
   final String proofId;
@@ -70,16 +73,35 @@ class AuthorityCase {
   final AuthorityEvidenceKind? evidenceKind;
   final DateTime? submittedAt;
 
-  static AuthorityCase fromJson(Map<String, dynamic> json) => AuthorityCase(
-        proofId: (json['id'] ?? '').toString(),
-        institutionId: (json['institutionId'] ?? '').toString(),
-        userId: (json['userId'] ?? '').toString(),
-        state: AuthorityState.parse(json['state']?.toString()),
-        evidenceKind: json['evidenceKind'] == null
-            ? null
-            : AuthorityEvidenceKind.parse(json['evidenceKind']?.toString()),
-        submittedAt: DateTime.tryParse(json['submittedAt']?.toString() ?? ''),
-      );
+  /// WHO AND WHICH, IN THE LIST ITSELF. A queue of cuids is a queue an
+  /// operator has to open one row at a time to read.
+  final String? institutionName;
+  final String? institutionSlug;
+  final String? claimantHandle;
+
+  /// What to call this case before the detail loads.
+  String get title => institutionName ?? institutionSlug ?? institutionId;
+
+  static AuthorityCase fromJson(Map<String, dynamic> json) {
+    String? text(Object? v) {
+      final s = (v ?? '').toString().trim();
+      return s.isEmpty ? null : s;
+    }
+
+    return AuthorityCase(
+      proofId: (json['id'] ?? '').toString(),
+      institutionId: (json['institutionId'] ?? '').toString(),
+      userId: (json['userId'] ?? '').toString(),
+      state: AuthorityState.parse(json['state']?.toString()),
+      evidenceKind: json['evidenceKind'] == null
+          ? null
+          : AuthorityEvidenceKind.parse(json['evidenceKind']?.toString()),
+      submittedAt: DateTime.tryParse(json['submittedAt']?.toString() ?? ''),
+      institutionName: text(json['institutionName']),
+      institutionSlug: text(json['institutionSlug']),
+      claimantHandle: text(json['claimantHandle']),
+    );
+  }
 }
 
 class VerificationQueue {
@@ -129,6 +151,8 @@ class AuthorityClaimDetail {
     required this.claimantHandle,
     required this.identityVerified,
     required this.verifiedLegalName,
+    required this.legalNameRetained,
+    required this.roleOnRecord,
     required this.identityVerifiedAt,
     required this.identityExpiresAt,
     required this.identityDocument,
@@ -171,6 +195,16 @@ class AuthorityClaimDetail {
   /// made before legal names were recorded — the reviewer is told so rather
   /// than shown the profile name in its place.
   final String? verifiedLegalName;
+
+  /// Whether the earlier process retained a legal name at all. FALSE is a
+  /// real answer and is said out loud: "verified name not retained under the
+  /// prior process" is what a reviewer must reason with, and inventing a name
+  /// from profile data would be a claim nobody checked (founder, 2026-09-19).
+  final bool legalNameRetained;
+
+  /// The membership role Aura holds for this person at this institution —
+  /// distinct from what they CLAIM in this request. A reviewer compares both.
+  final String? roleOnRecord;
   final DateTime? identityVerifiedAt;
   final DateTime? identityExpiresAt;
   final String? identityDocument;
@@ -230,6 +264,13 @@ class AuthorityClaimDetail {
       claimantHandle: text(person['handle']),
       identityVerified: (identity['status'] ?? '').toString() == 'VERIFIED',
       verifiedLegalName: text(identity['verifiedLegalName']),
+      // An older server sends no flag; a name being present is then the
+      // answer, and its absence stays honestly unknown-but-not-retained.
+      legalNameRetained: identity['legalNameRetained'] is bool
+          ? identity['legalNameRetained'] == true
+          : text(identity['verifiedLegalName']) != null,
+      roleOnRecord: text(map(claimant['roleOnRecord'])['title']) ??
+          text(map(claimant['roleOnRecord'])['role']),
       identityVerifiedAt: date(identity['verifiedAt']),
       identityExpiresAt: date(identity['expiresAt']),
       identityDocument: kind == null
@@ -274,6 +315,7 @@ class AuthorityClaimEvidence {
     required this.submittedAt,
     required this.superseded,
     required this.discarded,
+    this.alsoSubmittedForExistence = false,
   });
 
   final String id;
@@ -290,6 +332,11 @@ class AuthorityClaimEvidence {
   final DateTime? submittedAt;
   final bool superseded;
   final bool discarded;
+
+  /// ONE DOCUMENT, BOTH QUESTIONS. The same file was supplied for the
+  /// institution's own proof as well, so a reviewer can decide both from it
+  /// instead of asking for a second copy of the same registration.
+  final bool alsoSubmittedForExistence;
 
   bool get isPdf => (mimeType ?? '').toLowerCase() == 'application/pdf';
 
@@ -313,6 +360,7 @@ class AuthorityClaimEvidence {
       submittedAt: DateTime.tryParse(json['submittedAt']?.toString() ?? ''),
       superseded: json['superseded'] == true,
       discarded: json['discarded'] == true,
+      alsoSubmittedForExistence: json['alsoSubmittedForExistence'] == true,
     );
   }
 }

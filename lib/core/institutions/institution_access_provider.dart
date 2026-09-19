@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../authority/capability_projection.dart';
 import '../auth/session_bootstrap.dart';
 import '../auth/session_providers.dart';
 import '../net/dio_provider.dart';
@@ -170,9 +171,27 @@ class InstitutionIdentity {
   /// Holds a standing that could speak for the institution, and is held back
   /// only by authority not yet being confirmed. Asked through the canonical
   /// governance predicate rather than a role literal.
+  ///
+  /// THE CAPABILITY CANNOT ANSWER THIS ONE. The server WITHHOLDS the voice
+  /// capabilities until authority is confirmed, so `canRepresent` is false for
+  /// exactly the people this predicate is about, and asking the capability
+  /// question would send an owner to a generic "Not allowed" (founder,
+  /// 2026-09-19). Governance standing is what remains true while the voice is
+  /// held back, so it is asked through the canonical role — never a literal.
+  ///
+  /// `canSpeakByRole` is the server's own statement that this person's role
+  /// carries the institution's voice, which is how a representative or an
+  /// editor is recognised without this client re-deriving the role-capability
+  /// table (C1: the table is the backend's).
   bool get awaitsSpeakingAuthority =>
       speakingAuthorityConfirmed == false &&
-      (canActAsInstitution || canSpeakByRole);
+      (canActAsInstitution || canSpeakByRole || governsInstitution);
+
+  /// Owner or administrator, through the canonical role rather than a string
+  /// comparison. Governance standing, which a withheld capability never
+  /// removes.
+  bool get governsInstitution =>
+      InstitutionRoleWire.parse(role)?.atLeast(InstitutionRole.admin) ?? false;
 
   /// Effective institutional capability set (role-implied ∪ delegated),
   /// as reported by the backend. Source of truth for every visibility rule.

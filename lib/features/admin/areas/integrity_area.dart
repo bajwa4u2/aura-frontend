@@ -25,9 +25,11 @@ import 'package:go_router/go_router.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
+import '../data/institution_verification_review_repository.dart';
 import '../data/operator_work.dart';
 import '../domain/operator_authority_provider.dart';
 import '../domain/operator_capability.dart';
+import '../domain/operator_routes.dart';
 import '../ui/operator_kit.dart';
 import '../ui/operator_states.dart';
 
@@ -159,6 +161,8 @@ class IntegrityArea extends ConsumerWidget {
                 ),
               ),
             ),
+            const SizedBox(height: AuraSpace.s8),
+            _InstitutionAuthority(authority: authority),
             const SizedBox(height: AuraSpace.s8),
             _Governance(authority: authority),
           ],
@@ -323,6 +327,83 @@ class _QueueLine extends StatelessWidget {
           const Icon(Icons.chevron_right_rounded,
               size: 18, color: AuraSurface.faint),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// MAY THIS PERSON SPEAK FOR THIS INSTITUTION?
+///
+/// A judgement of exactly the shape of the families above — evidence, a human
+/// decision, a consequence, a record — and until now it had NO way in. The
+/// queue existed at a route an operator had to already know, which is the same
+/// as not existing: the claimant waits and nobody is told there is anything to
+/// decide.
+///
+/// It is deliberately NOT folded into the work summary's families: that
+/// summary reports the sources the backend enumerates, and inventing a source
+/// name here would make this card lie the day the real one arrives. It reads
+/// the review queue itself, which is the thing it sends the operator to.
+class _InstitutionAuthority extends ConsumerWidget {
+  const _InstitutionAuthority({required this.authority});
+
+  final OperatorAuthority authority;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // The permission that governs this review, and nothing broader. An
+    // operator without it is told which one it is rather than shown an empty
+    // panel they cannot interpret.
+    if (!authority.can(OperatorCapability.verificationRead)) {
+      return const OperatorSection(
+        title: 'Institution authority',
+        child: OperatorInsufficientCapability(needs: 'verification'),
+      );
+    }
+
+    final queue = ref.watch(institutionVerificationQueueProvider);
+    final waiting = queue.valueOrNull;
+
+    return OperatorSection(
+      title: 'Institution authority',
+      subtitle: 'Somebody says they may speak for an institution. Does the '
+          'evidence show it?',
+      trailing: waiting == null
+          // An em dash, never 0 — unknown is not the same as nothing waiting.
+          ? const Text(
+              '—',
+              style: TextStyle(color: AuraSurface.faint, fontSize: 12.5),
+            )
+          : Text(
+              '${waiting.authority.length + waiting.existence.length} waiting',
+              style: const TextStyle(
+                color: AuraSurface.muted,
+                fontSize: 12.5,
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+            ),
+      child: OperatorPanel(
+        padding: const EdgeInsets.symmetric(vertical: AuraSpace.s4),
+        child: ListTile(
+          dense: true,
+          onTap: () => context.go(kOperatorInstitutionVerificationRoot),
+          leading: const Icon(Icons.account_balance_outlined,
+              size: 16, color: AuraSurface.muted),
+          title: const Text(
+            'Authority claims and institution records',
+            style: TextStyle(color: AuraSurface.ink, fontSize: 13),
+          ),
+          subtitle: waiting != null && waiting.isEmpty
+              ? const Text(
+                  'Nothing waiting',
+                  style: TextStyle(color: AuraSurface.faint, fontSize: 11.5),
+                )
+              : null,
+          trailing: const Icon(Icons.chevron_right_rounded,
+              size: 18, color: AuraSurface.faint),
+        ),
       ),
     );
   }

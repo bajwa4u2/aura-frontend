@@ -28,11 +28,17 @@ class SpeakingAuthorityNotice extends ConsumerWidget {
   const SpeakingAuthorityNotice({
     super.key,
     required this.institutionAddress,
+    this.authorityState,
     this.compact = false,
   });
 
   /// The institution's canonical address (slug), for the Verification link.
   final String institutionAddress;
+
+  /// The authority claim's state, where the caller knows it. A claim already
+  /// with a reviewer must not be told to "provide evidence" again — that is
+  /// how the same document gets sent twice.
+  final String? authorityState;
 
   /// A single line and a button, for cards that already carry a heading.
   final bool compact;
@@ -45,23 +51,45 @@ class SpeakingAuthorityNotice extends ConsumerWidget {
       'Verify your identity first. Then provide evidence of your relationship '
       'or authority for this institution.';
 
+  static const String pendingSentence =
+      'Your evidence of authority for this institution is with a reviewer. '
+      'You can speak for it once that is confirmed.';
+
+  static const String needsInfoSentence =
+      'A reviewer asked for more evidence of your authority for this '
+      'institution.';
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final verified =
         ref.watch(identityVerificationStatusProvider).valueOrNull?.isVerified;
     final needsIdentity = verified == false;
+    final state = (authorityState ?? '').toUpperCase();
+    final pending = state == 'SUBMITTED' || state == 'UNDER_REVIEW';
+    final needsInfo = state == 'NEEDS_INFO';
+
+    final sentence = needsIdentity
+        ? identityFirstSentence
+        : pending
+            ? pendingSentence
+            : needsInfo
+                ? needsInfoSentence
+                : authoritySentence;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          needsIdentity ? identityFirstSentence : authoritySentence,
-          style: compact ? AuraText.small : AuraText.body,
-        ),
+        Text(sentence, style: compact ? AuraText.small : AuraText.body),
         const SizedBox(height: AuraSpace.sm),
         AuraSecondaryButton(
-          label: needsIdentity ? 'Verify my identity' : 'Provide evidence',
+          label: needsIdentity
+              ? 'Verify my identity'
+              : pending
+                  ? 'See where it stands'
+                  : needsInfo
+                      ? 'Add what was asked for'
+                      : 'Provide evidence',
           icon: needsIdentity ? Icons.badge_outlined : Icons.verified_outlined,
           onPressed: () => needsIdentity
               ? context.push(NavigationAuthority.identityVerificationRoute)

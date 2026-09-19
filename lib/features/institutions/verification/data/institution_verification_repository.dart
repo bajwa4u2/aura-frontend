@@ -269,6 +269,8 @@ class InstitutionVerificationStanding {
     this.claimedRole,
     this.claimedRelationship,
     this.authorityEvidenceCount = 0,
+    this.roleOnRecord,
+    this.categoryRecorded = false,
   });
 
   final String institutionId;
@@ -316,10 +318,31 @@ class InstitutionVerificationStanding {
   /// How many documents or references are on the caller's authority claim.
   final int authorityEvidenceCount;
 
+  /// The role Aura already holds for this person here, proposed rather than
+  /// asked for again.
+  final RoleOnRecord? roleOnRecord;
+
+  /// Whether the institution's kind is already recorded. When it is, the
+  /// question is never asked again — and it is never a separate gate in front
+  /// of the evidence (founder, 2026-09-19).
+  final bool categoryRecorded;
+
   /// Verification has been started: a category is recorded and the proofs
-  /// exist. Before this the only step is choosing what kind of organisation
-  /// this is.
+  /// exist. Kept for the reviewer-facing wording; it is NO LONGER a gate in
+  /// front of the one evidence flow, because the server opens the proofs on
+  /// submission.
   bool get started => (category ?? '').trim().isNotEmpty;
+
+  /// The claim is with a reviewer: nothing for this person to do, and the form
+  /// must not be shown as though nothing happened.
+  bool get authorityInReview =>
+      authority.state == AuthorityState.submitted ||
+      authority.state == AuthorityState.underReview;
+
+  /// Whether one document can still answer the institution question too. False
+  /// once the institution is confirmed — it needs nothing more.
+  bool get oneDocumentCanAnswerBoth =>
+      existence.acceptsEvidence && existence.state != ExistenceState.confirmed;
 
   static InstitutionVerificationStanding fromJson(Map<String, dynamic> json) {
     final existence = (json['existence'] as Map?)?.cast<String, dynamic>() ?? {};
@@ -375,7 +398,61 @@ class InstitutionVerificationStanding {
       claimedRole: text(authority['claimedRole']),
       claimedRelationship: text(authority['claimedRelationship']),
       authorityEvidenceCount: (authority['evidenceCount'] as num?)?.toInt() ?? 0,
+      roleOnRecord: RoleOnRecord.fromJson(authority['roleOnRecord']),
+      // A server that does not send the flag still tells us the answer: a
+      // recorded category IS the category field being present.
+      categoryRecorded: (json['institution'] is Map
+              ? (json['institution'] as Map)['categoryRecorded'] == true
+              : false) ||
+          (json['category']?.toString().trim().isNotEmpty ?? false),
     );
+  }
+}
+
+/// WHAT AURA ALREADY KNOWS THIS PERSON IS HERE (founder, 2026-09-19).
+///
+/// The membership role and title, so the claim can be PROPOSED rather than
+/// retyped. Asking somebody to type "Founder and managing member" into an
+/// empty box directly beneath a line that already says it is a form asking a
+/// question it has the answer to.
+class RoleOnRecord {
+  const RoleOnRecord({required this.role, required this.title});
+
+  /// Wire role: OWNER / ADMIN / EDITOR / MEMBER.
+  final String? role;
+
+  /// The member's own title where one is recorded.
+  final String? title;
+
+  /// What to show, preferring the person's own words over the wire role.
+  String? get label {
+    final t = (title ?? '').trim();
+    if (t.isNotEmpty) return t;
+    switch ((role ?? '').trim().toUpperCase()) {
+      case 'OWNER':
+        return 'Owner';
+      case 'ADMIN':
+        return 'Administrator';
+      case 'EDITOR':
+        return 'Editor';
+      case 'MEMBER':
+        return 'Member';
+      default:
+        return null;
+    }
+  }
+
+  static RoleOnRecord? fromJson(dynamic raw) {
+    if (raw is! Map) return null;
+    String? text(Object? v) {
+      final s = (v ?? '').toString().trim();
+      return s.isEmpty ? null : s;
+    }
+
+    final role = text(raw['role']);
+    final title = text(raw['title']);
+    if (role == null && title == null) return null;
+    return RoleOnRecord(role: role, title: title);
   }
 }
 
@@ -475,16 +552,22 @@ class InstitutionVerificationRepository {
     required List<SuppliedEvidence> evidence,
     String? relationship,
     String? claimedRole,
+    String? category,
     bool alsoEstablishesInstitution = false,
   }) async {
     return _call(() async {
       final role = claimedRole?.trim() ?? '';
+      final kind = category?.trim() ?? '';
       final res = await _dio.post<Map<String, dynamic>>(
         '${_base(institutionId)}/authority',
         data: {
           'evidenceKind': evidenceKind.wire,
           if (relationship != null) 'relationship': relationship,
           if (role.isNotEmpty) 'claimedRole': role,
+          // ONE REQUEST, NOT TWO. The server opens the proofs itself and uses
+          // this only when the institution has no kind recorded yet, so the
+          // person is never sent through a separate "start" step first.
+          if (kind.isNotEmpty) 'category': kind,
           // ONE DOCUMENT MAY BE ENOUGH. When it also shows the institution
           // exists, the server supplies it to that proof too.
           if (alsoEstablishesInstitution) 'alsoEstablishesInstitution': true,
