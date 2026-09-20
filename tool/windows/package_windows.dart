@@ -27,7 +27,6 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 
 const _shareTargetMarker = 'windows.shareTarget';
-const _backgroundTaskMarker = 'windows.backgroundTasks';
 const _comServerMarker = 'windows.comServer';
 /// Must equal `kCallPushTaskClsid` in windows/runner/call_push.cpp and the
 /// id `declare_call_push_task.dart` writes.
@@ -126,17 +125,19 @@ List<String> verifyPackage(File package) {
 
   // WINDOWS RINGS WHEN AURA IS CLOSED, OR IT DOES NOT RING.
   //
-  // Both halves are checked because either one alone is silent: the COM server
-  // with no background task is a class nobody activates, and the background
-  // task with no COM server is a task with nothing to run. A package missing
-  // these installs, runs, and answers calls only while it is already open —
-  // which is the defect this release exists to close, and it produces no error.
-  if (!manifest.contains(_backgroundTaskMarker)) {
-    problems.add(
-      'No windows.backgroundTasks extension. This package cannot be woken by '
-      'a call push, so Windows rings only while Aura is already open.',
-    );
-  }
+  // ONE declaration is checked, and it is the one that carries the behaviour:
+  // the COM server the push task's class id resolves to. The task itself is
+  // registered in code by `SetTaskEntryPointClsid`, so there is no
+  // `windows.backgroundTasks` extension to look for — and a package that
+  // declares one cannot be built at all (see `declare_call_push_task.dart`).
+  //
+  // This gate previously demanded that extension and would have passed only a
+  // package that could not exist. It was never exercised, because the manifest
+  // it was guarding had never been packed.
+  //
+  // A package missing the COM server installs, runs, and answers calls only
+  // while Aura is already open — the defect this release exists to close, and
+  // it produces no error anywhere.
   if (!manifest.contains(_comServerMarker)) {
     problems.add(
       'No windows.comServer extension. The push background task has no entry '

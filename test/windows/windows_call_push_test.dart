@@ -116,15 +116,43 @@ void main() {
     // The share-target check exists because a package can install, run, and
     // silently not be a share target. A package that cannot be woken by a call
     // push fails the same way, so it is checked the same way.
-    test('packaging verifies both halves of the receive path', () {
+    //
+    // CORRECTED 2026-09-20, at the 1.4.4 release gate. This used to require
+    // the gate to look for a `windows.backgroundTasks` extension as well. That
+    // extension cannot be in the manifest: a winmain COM task is registered in
+    // code by `SetTaskEntryPointClsid`, and declaring the extension anyway is
+    // refused by the manifest schema — MakeAppx will not pack the package at
+    // all. So the old assertion demanded a gate that could only ever pass a
+    // package that could not exist, and neither the test nor the gate noticed,
+    // because nothing had packed the manifest they were guarding.
+    //
+    // The COM server is the declaration that carries the behaviour, and it is
+    // the one thing worth checking.
+    test('packaging verifies the declaration that carries the behaviour', () {
       final gate = File('tool/windows/package_windows.dart').readAsStringSync();
-      expect(gate, contains('windows.backgroundTasks'));
       expect(gate, contains('windows.comServer'));
       expect(
         gate,
-        contains('rings only while Aura is already open'),
+        contains('while Aura is already open'),
         reason: 'the failure must be described, not just detected',
       );
+    });
+
+    test('the manifest never declares a background task extension', () {
+      // The packable shape, pinned. A future edit that adds the extension back
+      // makes every Windows release unbuildable, and the error it produces
+      // ("Unspecified error", after the first schema failure) does not say so.
+      final declare =
+          File('tool/windows/declare_call_push_task.dart').readAsStringSync();
+      final emitted = RegExp(r"writeln\('\s*<[^']*'").allMatches(declare);
+      for (final m in emitted) {
+        expect(
+          m.group(0),
+          isNot(contains('windows.backgroundTasks')),
+          reason: 'a backgroundTasks extension cannot be packed; the task is '
+              'registered in code by SetTaskEntryPointClsid',
+        );
+      }
     });
 
     test('the packaging command runs the declaration step', () {

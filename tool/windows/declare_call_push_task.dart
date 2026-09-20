@@ -22,8 +22,12 @@
 //   windows.comServer      tells Windows which executable to start, and with
 //                          which argument, to serve the class id that
 //                          `call_push.cpp` registers.
-//   windows.backgroundTasks tells Windows this app is allowed a task of type
-//                          pushNotification at all.
+//
+// That is the ONLY declaration needed. A winmain COM background task is
+// registered in code -- `SetTaskEntryPointClsid` in `call_push.cpp` -- so the
+// manifest declares the server, not the task. A `windows.backgroundTasks`
+// extension beside it is not merely redundant: it is rejected by the manifest
+// schema and the package cannot be built at all. See `_inject` below.
 //
 // The class id below MUST equal `kCallPushTaskClsid` in
 // `windows/runner/call_push.cpp`. A mismatch fails the way that is hardest to
@@ -34,7 +38,8 @@ import 'dart:io';
 
 /// Must equal `kCallPushTaskClsid` in windows/runner/call_push.cpp.
 const _clsid = '7A6C2C1E-3E5B-4C52-9E1A-2F6B1D5C7A90';
-const _marker = 'windows.backgroundTasks';
+/// The declaration whose presence means this tool has already run.
+const _marker = 'windows.comServer';
 const _comNamespace = 'http://schemas.microsoft.com/appx/manifest/com/windows10';
 const _desktopNamespace =
     'http://schemas.microsoft.com/appx/manifest/desktop/windows10';
@@ -154,15 +159,37 @@ String? _inject(String manifest, String executable) {
     )
     ..writeln('            </com:ExeServer>')
     ..writeln('          </com:ComServer>')
-    ..writeln('        </com:Extension>')
-    ..writeln(
-      '        <desktop:Extension Category="windows.backgroundTasks" '
-      'EntryPoint="Windows.FullTrustApplication">',
-    )
-    ..writeln('          <desktop:BackgroundTasks>')
-    ..writeln('            <desktop:Task Type="pushNotification" />')
-    ..writeln('          </desktop:BackgroundTasks>')
-    ..write('        </desktop:Extension>');
+    ..write('        </com:Extension>');
+
+  // AND NO `windows.backgroundTasks` EXTENSION. THIS IS THE WHOLE FIX.
+  //
+  // A winmain COM background task is registered IN CODE — `call_push.cpp`
+  // calls `BackgroundTaskBuilder::SetTaskEntryPointClsid(kCallPushTaskClsid)`
+  // — and the manifest's job is only to declare the COM server that CLSID
+  // resolves to. The `windows.backgroundTasks` extension belongs to tasks with
+  // a managed entry point, which this is not.
+  //
+  // Declaring it anyway does not merely add noise; it makes the package
+  // impossible to build, and it took two different rejections to read:
+  //
+  //   as `desktop:Extension`  -> 'windows.backgroundTasks' violates
+  //     enumeration constraint of 'windows.fullTrustProcess
+  //     windows.startupTask windows.toastNotificationActivation
+  //     windows.searchProtocolHandler'
+  //
+  //   unprefixed, with EntryPoint="Windows.FullTrustApplication"
+  //     -> If it is not an audio background task, it is not allowed to have
+  //        EntryPoint="Windows.FullTrustApplication"
+  //
+  // The second message is the real rule, and it was only legible after
+  // bisecting the generated manifest against MakeAppx directly — the packer
+  // reports the first schema failure it meets and calls the rest
+  // "Unspecified error".
+  //
+  // None of this was found when the declaration was written, because the
+  // package was never built again afterwards. The 1.4.4 release gate found
+  // it. That is the argument for the gate, and against trusting any
+  // declaration nobody has packed.
 
   const extensionsClose = '</Extensions>';
   if (manifest.contains(extensionsClose)) {
