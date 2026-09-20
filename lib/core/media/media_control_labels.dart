@@ -28,6 +28,19 @@ class MediaControlLabels {
 
   static String microphoneAction({required bool on}) => on ? 'Mute' : 'Unmute';
 
+  /// The camera-flip button. Names the effect, like its neighbours, and says
+  /// nothing about which camera is "front" — the word people use for the act
+  /// is flip, and the destination changes every time they press it.
+  static const String cameraFlipAction = 'Flip';
+
+  /// What a screen reader hears. A flip with the camera off does nothing, so
+  /// the control says so rather than offering an act it will not perform.
+  static String cameraFlipSemantics({required bool cameraOn, required bool isFront}) =>
+      cameraOn
+          ? 'Camera facing ${isFront ? 'front' : 'back'}, activate to switch to '
+              'the ${isFront ? 'back' : 'front'} camera'
+          : 'Flip camera unavailable. Turn the camera on first.';
+
   /// What a screen reader hears: the thing, its current state, and what
   /// pressing it will do. All three, because a control that announces only
   /// its name cannot be operated without sight.

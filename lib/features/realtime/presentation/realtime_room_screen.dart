@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import '../../../core/media/media_acquisition.dart';
 import '../../../core/media/media_control_labels.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
@@ -1321,7 +1322,18 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                         : _CallControlDock(
                             micOn: state.microphoneEnabled,
                             cameraOn: state.cameraEnabled,
+                            cameraIsFront: state.cameraIsFront,
                             isVideoMode: state.isVideoMode,
+                            // A FLIP IS ONLY REAL WHERE THERE ARE TWO
+                            // CAMERAS TO FLIP BETWEEN. `supportsCameraCapture`
+                            // is the platform authority for front/back
+                            // hardware (Android and iOS); on desktop and web
+                            // the equivalent act is choosing a device, which
+                            // Meetings already offers and a two-state flip
+                            // would misrepresent.
+                            onFlipCamera: supportsCameraCapture
+                                ? () => unawaited(controller.flipCamera())
+                                : null,
                             activePanel: _activePanel,
                             pendingRequests: canModerate ? joinRequestCount : 0,
                             // LIVE viewer (charter 2026-08-17): publishing
@@ -1524,6 +1536,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         participants: state.participants,
         myUserId: myUserId,
         micOn: state.microphoneEnabled,
+        localIsFrontCamera: state.cameraIsFront,
       );
     }
 
@@ -3009,6 +3022,7 @@ class _CallStage extends StatelessWidget {
         participants: state.participants,
         myUserId: myUserId,
         micOn: state.microphoneEnabled,
+        localIsFrontCamera: state.cameraIsFront,
       );
     }
 
@@ -3038,6 +3052,7 @@ class _CallStage extends StatelessWidget {
 
 class _VideoGrid extends StatelessWidget {
   const _VideoGrid({
+    this.localIsFrontCamera = true,
     required this.localRenderer,
     required this.remoteRenderers,
     required this.renderersByParticipant,
@@ -3067,6 +3082,14 @@ class _VideoGrid extends StatelessWidget {
   final List<RealtimeParticipant> participants;
   final String myUserId;
   final bool micOn;
+
+  /// A SELF-VIEW IS MIRRORED; THE REAR CAMERA IS NOT A SELF-VIEW.
+  ///
+  /// Mirroring exists so a person sees themselves as in a mirror. Once they
+  /// flip to the rear camera the tile shows the world — and a mirrored world
+  /// reverses every word in it, which is much of what a rear camera gets
+  /// pointed at.
+  final bool localIsFrontCamera;
 
   static String _rawSocket(String value) {
     final v = value.trim();
@@ -3155,7 +3178,7 @@ class _VideoGrid extends StatelessWidget {
       label: 'You',
       renderer: localRenderer,
       avatarUrl: _selfAvatarUrl(),
-      mirror: true,
+      mirror: localIsFrontCamera,
       micOn: micOn,
     ));
 
@@ -3761,6 +3784,7 @@ class _CallControlDock extends StatelessWidget {
     required this.cameraOn,
     required this.isVideoMode,
     required this.activePanel,
+    this.cameraIsFront = true,
     required this.pendingRequests,
     required this.onToggleMic,
     required this.onToggleCamera,
@@ -3780,10 +3804,16 @@ class _CallControlDock extends StatelessWidget {
     this.showPublishControls = true,
     this.isPubliclyLive = false,
     this.onGoLive,
+    this.onFlipCamera,
   });
 
   final bool micOn;
   final bool cameraOn;
+
+  /// Which way the camera points, for the flip control's announcement. The
+  /// dock does not decide it — `RealtimeMediaService` reports what the
+  /// hardware answered after a switch.
+  final bool cameraIsFront;
   final bool isVideoMode;
   final String? activePanel;
   final int pendingRequests;
@@ -3809,6 +3839,14 @@ class _CallControlDock extends StatelessWidget {
   /// control closes the public boundary.
   final bool isPubliclyLive;
   final VoidCallback? onGoLive;
+
+  /// FRONT/BACK, on the devices that have both.
+  ///
+  /// Null on platforms where a flip is not a real act — a desktop with one
+  /// webcam has nothing to flip to, and Meetings offers a device picker there
+  /// instead. Present-but-disabled while the camera is off, because the act
+  /// exists and the camera being off is the reason it cannot happen.
+  final VoidCallback? onFlipCamera;
 
   /// False for PUBLIC_STAGE observers: mic/camera/share controls are
   /// hidden entirely (a viewer never publishes; showing the toggles
@@ -3896,6 +3934,24 @@ class _CallControlDock extends StatelessWidget {
                 active: cameraOn,
                 warning: !cameraOn,
                 onPressed: onToggleCamera,
+              ),
+              const SizedBox(width: AuraSpace.s8),
+            ],
+
+            // Flip — founder 2026-09-19: "in video call screen camera
+            // toggle / front/back is missing". It sits beside the camera
+            // control because it is about the camera, and it follows the
+            // same visibility rule: video calls only. Disabled rather than
+            // hidden while the camera is off, so the act stays discoverable.
+            if (showPublishControls && isVideoMode && onFlipCamera != null) ...[
+              _DockButton(
+                icon: Icons.flip_camera_ios_rounded,
+                label: MediaControlLabels.cameraFlipAction,
+                semanticLabel: MediaControlLabels.cameraFlipSemantics(
+                  cameraOn: cameraOn,
+                  isFront: cameraIsFront,
+                ),
+                onPressed: cameraOn ? onFlipCamera : null,
               ),
               const SizedBox(width: AuraSpace.s8),
             ],
@@ -4057,6 +4113,9 @@ class _DockButton extends StatelessWidget {
   const _DockButton({
     required this.icon,
     required this.label,
+    // NULL MEANS PRESENT BUT NOT ACTIONABLE, which is different from absent.
+    // A control that disappears teaches nothing; one that is visibly
+    // unavailable says the act exists and something else must happen first.
     required this.onPressed,
     this.active = false,
     this.warning = false,
@@ -4066,7 +4125,7 @@ class _DockButton extends StatelessWidget {
 
   final IconData icon;
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool active;
   final bool warning;
   final int? badge;
@@ -4078,12 +4137,15 @@ class _DockButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final enabled = onPressed != null;
     final bgColor = active
         ? AuraSurface.accentSoft
         : warning
         ? AuraSurface.coRose.withValues(alpha: 0.16)
         : AuraSurface.card;
-    final iconColor = active
+    final iconColor = !enabled
+        ? AuraSurface.muted.withValues(alpha: 0.4)
+        : active
         ? AuraSurface.accentText
         : warning
         ? AuraSurface.coRose
@@ -4094,6 +4156,7 @@ class _DockButton extends StatelessWidget {
     // as a bare noun with no state.
     return Semantics(
       button: true,
+      enabled: enabled,
       toggled: active,
       label: semanticLabel ?? label,
       child: ExcludeSemantics(
@@ -4155,7 +4218,9 @@ class _DockButton extends StatelessWidget {
         Text(
           label,
           style: AuraText.micro.copyWith(
-            color: AuraSurface.faint,
+            color: enabled
+                ? AuraSurface.faint
+                : AuraSurface.faint.withValues(alpha: 0.5),
             fontWeight: FontWeight.w500,
           ),
         ),

@@ -166,8 +166,10 @@ object SecureStore {
         val stored = prefs(context).getString(key, null) ?: return null
         val value = decrypt(stored)
         if (value == null) {
-            // Same as the channel path: an unreadable blob is not a session,
-            // and leaving it behind means failing on it again every launch.
+            // Do not leave an unreadable blob behind to fail on every launch.
+            // It is not a session any more. (A restore onto another device
+            // brings the ciphertext without the key.) This is now the single
+            // decrypt path, so the rule lives here and the channel inherits it.
             prefs(context).edit().remove(key).commit()
         }
         return value

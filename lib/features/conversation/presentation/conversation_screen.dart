@@ -27,6 +27,8 @@ import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/media/aura_voice_player.dart';
 import '../../../core/notifications/android_telecom.dart';
 import '../../../core/notifications/ios_call_kit.dart';
+import '../../../core/media/recording_time.dart';
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/media/voice_note_capture.dart';
 import '../../../core/media/stored_media.dart';
 import '../../../core/media/aura_media_viewer.dart';
@@ -196,6 +198,19 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   bool _startingCall = false;
   bool _recording = false;
 
+  // ── WHAT A RECORDING LOOKS LIKE WHILE IT HAPPENS ────────────────────────
+  //
+  // Founder, 2026-09-19: "recording voice message is deadlike not showing
+  // recording time". One boolean turned the mic icon red and nothing else
+  // moved — no elapsed time, no sign the microphone was live, and no way out
+  // except sending, because stopping IS sending here. These four fields are
+  // the recording's own state; every one of them is measured, not decorative.
+  DateTime? _recordingStartedAt;
+  Duration _recordingElapsed = Duration.zero;
+  double _recordingLevel = 0;
+  Timer? _recordingTicker;
+  StreamSubscription<Amplitude>? _recordingAmplitude;
+
   /// Reply-to draft state: the quoted message the next send answers.
   ConversationMessage? _replyTo;
 
@@ -247,6 +262,8 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     _linkDebounce?.cancel();
     _composer.dispose();
     _composerFocus.dispose();
+    _recordingTicker?.cancel();
+    unawaited(_recordingAmplitude?.cancel());
     _recorder.dispose();
     super.dispose();
   }
@@ -932,10 +949,83 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   ///
   /// [VoiceNoteCapture] now answers all three, per platform, and the format it
   /// reports is what the bytes genuinely are.
+  /// Starts the two things a person can actually see: the clock and the
+  /// level. Both come from real sources — the clock from the moment recording
+  /// began, the level from the recorder's own dBFS readings — so neither can
+  /// keep moving if the capture has stopped.
+  void _beginRecordingIndicators() {
+    _recordingStartedAt = DateTime.now();
+    _recordingElapsed = Duration.zero;
+    _recordingLevel = 0;
+    _recordingTicker?.cancel();
+    // Faster than a second so the displayed second never lags behind the
+    // real one by most of a second.
+    _recordingTicker = Timer.periodic(const Duration(milliseconds: 200), (_) {
+      final started = _recordingStartedAt;
+      if (!mounted || started == null) return;
+      setState(() => _recordingElapsed = DateTime.now().difference(started));
+    });
+    unawaited(_recordingAmplitude?.cancel());
+    _recordingAmplitude = _recorder
+        .onAmplitudeChanged(const Duration(milliseconds: 200))
+        .listen(
+          (a) {
+            if (!mounted) return;
+            setState(() => _recordingLevel = normalizeRecordingLevel(a.current));
+          },
+          // A platform that cannot report amplitude leaves the meter at rest;
+          // the clock is the part that must never stop.
+          onError: (Object _) {},
+        );
+  }
+
+  void _endRecordingIndicators() {
+    _recordingTicker?.cancel();
+    _recordingTicker = null;
+    unawaited(_recordingAmplitude?.cancel());
+    _recordingAmplitude = null;
+    _recordingStartedAt = null;
+    _recordingElapsed = Duration.zero;
+    _recordingLevel = 0;
+  }
+
+  /// STOPPING IS SENDING HERE, so a person who changes their mind needs a
+  /// different door. This is that door: the capture is stopped and the file
+  /// discarded, and nothing is sent.
+  Future<void> _cancelVoiceNote() async {
+    if (!_recording) return;
+    String? handle;
+    try {
+      handle = await _recorder.stop();
+    } catch (_) {
+      // Already stopped, or the platform refused. There is nothing to send
+      // either way, which is what cancelling asked for.
+    }
+    if (mounted) {
+      setState(() {
+        _recording = false;
+        _endRecordingIndicators();
+      });
+    } else {
+      _endRecordingIndicators();
+    }
+    if (handle != null) {
+      try {
+        await VoiceNoteCapture.discardCaptured(handle);
+      } catch (_) {
+        // A temporary file that outlives a cancel is not worth telling
+        // somebody about; the platform reclaims it.
+      }
+    }
+  }
+
   Future<void> _toggleVoiceNote() async {
     if (_recording) {
       final handle = await _recorder.stop();
-      setState(() => _recording = false);
+      setState(() {
+        _recording = false;
+        _endRecordingIndicators();
+      });
       if (handle == null) return;
       try {
         final bytes = await VoiceNoteCapture.readCaptured(handle);
@@ -984,7 +1074,10 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         RecordConfig(encoder: format.encoder),
         path: await VoiceNoteCapture.targetPath(format.extension),
       );
-      setState(() => _recording = true);
+      setState(() {
+        _recording = true;
+        _beginRecordingIndicators();
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1620,6 +1713,20 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                       ),
                     ],
                   ),
+                ),
+              // THE RECORDING SAYS IT IS HAPPENING.
+              //
+              // Above the composer rather than inside it, because while a
+              // voice note is being recorded the text field is not what the
+              // person is doing. It carries the elapsed time, a level drawn
+              // from the recorder's own readings, and the way out that
+              // "stop is send" otherwise denies them.
+              if (_recording)
+                _RecordingBar(
+                  elapsed: _recordingElapsed,
+                  level: _recordingLevel,
+                  onCancel: () => unawaited(_cancelVoiceNote()),
+                  onSend: () => unawaited(_toggleVoiceNote()),
                 ),
               SafeArea(
                 top: false,
@@ -2700,6 +2807,117 @@ void _openConversationUrl(BuildContext context, String url) {
 }
 
 /// Rendered external-link preview card (canonical LinkPreview data).
+/// WHILE A VOICE NOTE IS BEING RECORDED.
+///
+/// Three facts, each of them measured: that the microphone is live, how long
+/// the message has become, and how loud it is arriving. The meter is drawn
+/// from the recorder's own dBFS readings — where a platform cannot report
+/// them it simply rests at zero, because a meter that moves on its own is a
+/// decoration pretending to be an instrument.
+///
+/// It also carries the way out. Stopping sends, by design ("a voice MESSAGE
+/// sends itself"), which left a person who changed their mind with no exit
+/// but to send the thing anyway.
+class _RecordingBar extends StatelessWidget {
+  const _RecordingBar({
+    required this.elapsed,
+    required this.level,
+    required this.onCancel,
+    required this.onSend,
+  });
+
+  final Duration elapsed;
+  final double level;
+  final VoidCallback onCancel;
+  final VoidCallback onSend;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        AuraSpace.s12,
+        AuraSpace.s8,
+        AuraSpace.s8,
+        0,
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s12,
+          vertical: AuraSpace.s8,
+        ),
+        decoration: BoxDecoration(
+          color: AuraSurface.dangerInk.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(AuraRadius.r12),
+          border: Border.all(
+            color: AuraSurface.dangerInk.withValues(alpha: 0.35),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: const BoxDecoration(
+                color: AuraSurface.dangerInk,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: AuraSpace.s8),
+            Text(
+              'Recording',
+              style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+            ),
+            const SizedBox(width: AuraSpace.s10),
+            // The number the founder asked for, and the reason this bar
+            // exists: a recorder with no clock cannot be trusted to be
+            // recording.
+            Text(
+              formatRecordingElapsed(elapsed),
+              style: AuraText.small.copyWith(
+                color: AuraSurface.ink,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+            const SizedBox(width: AuraSpace.s12),
+            Expanded(
+              child: Semantics(
+                // A level is a picture; the announcement is the thing that
+                // can be read aloud.
+                label: 'Microphone level',
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AuraRadius.pill),
+                  child: LinearProgressIndicator(
+                    value: level.clamp(0.0, 1.0),
+                    minHeight: 4,
+                    backgroundColor: AuraSurface.divider,
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      AuraSurface.dangerInk,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: AuraSpace.s4),
+            TextButton(
+              onPressed: onCancel,
+              child: Text(
+                'Cancel',
+                style: AuraText.small.copyWith(color: AuraSurface.muted),
+              ),
+            ),
+            IconButton(
+              tooltip: 'Send voice note',
+              onPressed: onSend,
+              icon: const Icon(Icons.send_rounded, size: 18),
+              color: AuraSurface.accentText,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _LinkPreviewCard extends StatelessWidget {
   const _LinkPreviewCard({required this.preview});
   final LinkPreviewRef preview;

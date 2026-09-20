@@ -37,6 +37,7 @@ class RealtimeState {
     this.acceptedByPeer = false,
     this.speakerphoneEnabled = false,
     this.connectionFailure,
+    this.cameraIsFront = true,
     this.mediaRecovering = false,
   });
 
@@ -56,6 +57,13 @@ class RealtimeState {
   final bool isBusy;
   final bool isMediaReady;
   final bool isMediaBusy;
+
+  /// WHICH WAY THIS DEVICE'S CAMERA POINTS.
+  ///
+  /// Front until a flip says otherwise, because acquisition asks for
+  /// `facingMode: 'user'`. The local preview mirrors a self-view and must not
+  /// mirror the rear camera, which is pointed at the world rather than a face.
+  final bool cameraIsFront;
 
   /// THE MEDIA PLANE IS BEING REBUILT — a fact, deliberately not a sentence.
   ///
@@ -160,6 +168,7 @@ class RealtimeState {
       acceptedByPeer: false,
       speakerphoneEnabled: false,
       connectionFailure: null,
+      cameraIsFront: true,
       mediaRecovering: false,
     );
   }
@@ -206,6 +215,7 @@ class RealtimeState {
     Set<String>? reconnectingUserIds,
     bool? acceptedByPeer,
     bool? speakerphoneEnabled,
+    bool? cameraIsFront,
     bool? mediaRecovering,
     CallConnectionFailure? connectionFailure,
     // A failure must be CLEARED deliberately — by a retry or a new attempt —
@@ -263,6 +273,7 @@ class RealtimeState {
       connectionFailure: clearConnectionFailure
           ? null
           : (connectionFailure ?? this.connectionFailure),
+      cameraIsFront: cameraIsFront ?? this.cameraIsFront,
       mediaRecovering: mediaRecovering ?? this.mediaRecovering,
     );
   }

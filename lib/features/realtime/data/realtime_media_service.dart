@@ -41,6 +41,7 @@ class RealtimeMediaSnapshot {
     required this.ready,
     required this.micEnabled,
     required this.cameraEnabled,
+    required this.cameraIsFront,
     required this.localRenderer,
     required this.remoteRenderers,
     required this.error,
@@ -60,6 +61,16 @@ class RealtimeMediaSnapshot {
   final bool ready;
   final bool micEnabled;
   final bool cameraEnabled;
+
+  /// WHICH WAY THE CAMERA POINTS, because the preview is mirrored.
+  ///
+  /// A self-view is mirrored so a person sees themselves as in a mirror. The
+  /// rear camera is not a self-view: mirroring it reverses whatever is being
+  /// shown to the other side, which is the one case where the picture is
+  /// about the world rather than about the face. Front is the default because
+  /// acquisition asks for `facingMode: 'user'`.
+  final bool cameraIsFront;
+
   /// Thread/DM speaker toggle (2026-08-14 repair) — mobile-native
   /// speakerphone routing state, resolved fresh per call.
   final bool speakerphoneEnabled;
@@ -242,6 +253,10 @@ class RealtimeMediaService {
   bool _ready = false;
   bool _micEnabled = true;
   bool _cameraEnabled = true;
+
+  /// Acquisition asks for `facingMode: 'user'`, so a stream starts front-
+  /// facing; only a successful switch changes it.
+  bool _cameraIsFront = true;
   // Resolved fresh per call (never persisted globally/across sessions) — the
   // 2026-08-14 Thread/DM speaker-route repair. Mobile-native only (iOS/
   // Android); web routes output via `setAudioOutput`/device selection.
@@ -293,6 +308,7 @@ class RealtimeMediaService {
         ready: _ready,
         micEnabled: _micEnabled,
         cameraEnabled: _cameraEnabled,
+        cameraIsFront: _cameraIsFront,
         localRenderer: _localRenderer,
         remoteRenderers: Map<String, RTCVideoRenderer>.from(_remoteRenderers),
         remoteByParticipant:
@@ -459,6 +475,10 @@ class RealtimeMediaService {
     _ready = true;
     _micEnabled = audio && stream.getAudioTracks().isNotEmpty;
     _cameraEnabled = gotVideo && stream.getVideoTracks().isNotEmpty;
+    // A fresh capture asks for `facingMode: 'user'`, so whatever the person
+    // had flipped to does not survive re-acquisition — and the preview must
+    // not go on claiming it did.
+    _cameraIsFront = true;
     // Joined, but possibly without the camera. Say which, in the words that
     // match what actually happened on THIS platform.
     _error = _cameraUnavailable ? _readiness.camera.summary : null;
@@ -1771,11 +1791,19 @@ class RealtimeMediaService {
   // publication either way — which is what makes a camera switch a track
   // replacement rather than a renegotiation under both transports.
 
-  Future<void> switchCamera() async {
-    if (_disposed) return;
+  /// Returns which way the camera faces AFTER the switch, so the preview's
+  /// mirroring follows the hardware instead of assuming a self-view. Native
+  /// `mediaStreamTrackSwitchCamera` answers with the new facing; a platform
+  /// that cannot answer leaves the recorded facing untouched rather than
+  /// guessing at it.
+  Future<bool> switchCamera() async {
+    if (_disposed) return _cameraIsFront;
     final tracks = _localStream?.getVideoTracks();
-    if (tracks == null || tracks.isEmpty) return;
-    await Helper.switchCamera(tracks.first);
+    if (tracks == null || tracks.isEmpty) return _cameraIsFront;
+    final isFront = await Helper.switchCamera(tracks.first);
+    _cameraIsFront = isFront;
+    _publish();
+    return _cameraIsFront;
   }
 
   // ── Media quality: evidence + adaptation ──────────────────────────────
