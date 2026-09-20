@@ -311,7 +311,6 @@ void main() {
         authority: live.authority,
         authorityEvidenceKind: live.authorityEvidenceKind,
         menu: live.menu,
-        migration: live.migration,
         mayAct: true,
         actionRequiredTier: live.actionRequiredTier,
       );
@@ -343,7 +342,6 @@ void main() {
         authority: live.authority,
         authorityEvidenceKind: live.authorityEvidenceKind,
         menu: live.menu,
-        migration: live.migration,
         mayAct: true,
         actionRequiredTier: live.actionRequiredTier,
       );

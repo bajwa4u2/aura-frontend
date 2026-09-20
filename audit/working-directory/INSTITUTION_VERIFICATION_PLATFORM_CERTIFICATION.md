@@ -47,12 +47,22 @@ refusal reported as a product defect.
 ```
 android_institution_verification_certification_test.dart   16/16
 android_institution_governance_certification_test.dart     13/13
-android_institution_migration_certification_test.dart       9/9
 android_institution_needs_info_certification_test.dart     14/14
 android_return_path_test.dart                               8/8
                                                         -------
-                                                           60/60
+                                                           51/51
 ```
+
+**RETIRED 2026-09-20.** `android_institution_migration_certification_test.dart`
+(9 cases) is deleted. It certified the 120-day legacy migration window, which
+the founder retired on 2026-09-19 along with the ELEVATED tier — so the lane
+was asserting a behaviour the product no longer has, against a `migration`
+field no longer on `InstitutionVerificationStanding`.
+
+It did not fail quietly. It stopped compiling, and the Codemagic iOS build is
+where that surfaced: `flutter analyze` reads `integration_test/`, which
+`analysis_options.yaml` excludes for `test/` but not for this tree. The total
+falls from 60 to 51, recorded here rather than left to drift.
 
 **The verification surface (16).** Standing parses on ARM64; an account without
 standing is refused carrying the server's own words AND its machine code;
