@@ -161,6 +161,22 @@ class SfuRealtimeTransport implements RealtimeTransport {
         ice: _lastIceState,
       );
 
+  /// WHAT ICE LAST SAID, as a label rather than a verdict.
+  ///
+  /// [isMediaHealthy] collapses this to a bool for the decisions that need
+  /// one. Telemetry needs the state itself: "disconnected" and "failed" are
+  /// both unhealthy and mean very different things about what to fix.
+  String get mediaPlaneState => switch (_lastIceState) {
+        RTCIceConnectionState.RTCIceConnectionStateNew => 'new',
+        RTCIceConnectionState.RTCIceConnectionStateChecking => 'checking',
+        RTCIceConnectionState.RTCIceConnectionStateConnected => 'connected',
+        RTCIceConnectionState.RTCIceConnectionStateCompleted => 'completed',
+        RTCIceConnectionState.RTCIceConnectionStateDisconnected => 'disconnected',
+        RTCIceConnectionState.RTCIceConnectionStateFailed => 'failed',
+        RTCIceConnectionState.RTCIceConnectionStateClosed => 'closed',
+        _ => 'unknown',
+      };
+
   @override
   String get id => 'sfu';
 
@@ -804,6 +820,24 @@ class SfuRealtimeTransport implements RealtimeTransport {
     _subscribed.clear();
     _subscribeAttempts.clear();
     _remote = const <String, RemoteParticipantMedia>{};
+  }
+
+  /// The stage's own stats, handed over uninterpreted.
+  ///
+  /// This is the line that had been missing: the quality sampler walked the
+  /// MESH peer map, which is empty for every stage call, so the sample it
+  /// produced was all nulls and the heartbeat attached nothing. The transport
+  /// holds the connection, so the transport is what can be asked.
+  @override
+  Future<List<StatsReport>?> collectStats() async {
+    final pc = _pc;
+    if (pc == null) return null;
+    try {
+      return await pc.getStats();
+    } catch (_) {
+      // A refused stats read is not a measurement of zero.
+      return null;
+    }
   }
 
   @override

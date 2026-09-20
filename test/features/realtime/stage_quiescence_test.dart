@@ -73,6 +73,10 @@ class _ScriptedTransport implements RealtimeTransport {
   // Without the parameter this file does not compile, and a test file
   // that does not compile is not a passing test — it is no test at all.
   Future<void> close({String reason = 'EXPLICIT_LEAVE'}) async {}
+  /// No connection, so nothing to measure — which is null, never zero.
+  @override
+  Future<List<StatsReport>?> collectStats() async => null;
+
   @override
   Future<RealtimeTransportStats> stats() async => const RealtimeTransportStats(
       inboundBytes: 0, outboundBytes: 0, uploadPathCount: 0);

@@ -20,7 +20,9 @@ import '../domain/realtime_models.dart';
 import '../domain/call_mode.dart';
 import '../domain/call_state.dart';
 import '../domain/realtime_state.dart';
+import '../domain/quality_sample_payload.dart';
 import '../../../core/diagnostics/call_teardown_diag.dart';
+import '../../devices/device_service.dart';
 import '../../../core/notifications/android_telecom.dart';
 import '../../../core/notifications/ios_call_kit.dart';
 
@@ -147,10 +149,21 @@ class RealtimeController extends StateNotifier<RealtimeState>
   // connection can be replaced precisely.
   final Map<String, String> _peerSocketByUserId = <String, String>{};
 
-  // Quality evidence: sampled every 5s while joined, attached to heartbeats.
+  // Quality evidence: sampled every 5s while joined, reported on its own
+  // `session:quality` event and also attached to heartbeats for the older
+  // ingest path, which is deliberately untouched.
   Timer? _statsTimer;
   static const Duration _statsInterval = Duration(seconds: 5);
   RealtimeQualitySample? _lastQualitySample;
+
+  /// WHICH BUILD PRODUCED THIS SAMPLE.
+  ///
+  /// `UserDevice.appVersion` reads `1.0.0` on every row in production while
+  /// the sessions themselves report 1.4.3, so the device registry cannot
+  /// answer "is this one build?". Resolved once from the same source device
+  /// registration now uses — the package itself — and omitted until it is
+  /// known rather than guessed.
+  String? _clientVersion;
 
   // TURN credential rotation: refreshed at ~80% of the issued TTL so an ICE
   // restart late in a long meeting never runs on expired relay credentials.
@@ -2175,14 +2188,101 @@ class RealtimeController extends StateNotifier<RealtimeState>
 
   void _startStatsTimer() {
     _statsTimer?.cancel();
+    // Resolved once per controller, off the sampling path: a version label
+    // must never delay or fail a measurement.
+    if (_clientVersion == null) {
+      unawaited(
+        DeviceService.resolveAppVersion()
+            .then((value) => _clientVersion = value)
+            .catchError((Object _) => _clientVersion ?? 'unknown'),
+      );
+    }
     _statsTimer = Timer.periodic(_statsInterval, (_) {
       if (!state.isJoined) return;
       unawaited(
         _mediaService.collectQualitySample().then((sample) {
           _lastQualitySample = sample;
+          _sendQualitySample(sample);
         }).catchError((Object _) {}),
       );
     });
+  }
+
+  /// `session:quality` — the measurement, on its own event and its own beat.
+  ///
+  /// NOT folded into the heartbeat, and that is the whole lesson: quality used
+  /// to ride along as four optional numbers, so when the client stopped
+  /// measuring, liveness kept arriving and nothing anywhere said the evidence
+  /// had stopped. Production wrote its last sample on 2026-08-28 and no error
+  /// was raised in the twenty-two days that followed — the entire 1.4.3 period
+  /// the founder's complaints are about. A separate event can be seen to be
+  /// missing.
+  ///
+  /// The heartbeat keeps its four fields exactly as before, so a server or a
+  /// client of any age keeps producing the rows it always did.
+  ///
+  /// Zero is sent; absent is omitted. The server stores `0` and `null` and
+  /// never coerces one into the other, because "an audio track receiving
+  /// nothing" and "no audio track at all" are different defects and the
+  /// one-way-audio case is precisely the first.
+  void _sendQualitySample(RealtimeQualitySample sample) {
+    final sessionId = _managedSessionId;
+    if (sessionId.isEmpty || !state.isJoined) return;
+
+    final payload = buildQualitySamplePayload(
+      sessionId: sessionId,
+      sample: sample,
+      appLifecycleState: _appLifecycleLabel(),
+      reconnectState: _reconnectStateLabel(),
+      clientPlatform: _clientPlatformLabel(),
+      clientVersion: _clientVersion,
+    );
+
+    // Best-effort by construction. An older server has no handler for this
+    // event and its ack will never come; a sample must never be able to
+    // disturb a call in progress, so nothing waits on it and nothing throws.
+    unawaited(
+      _socketService
+          .emitAck('session:quality', payload)
+          .catchError((Object _) => <String, dynamic>{}),
+    );
+  }
+
+  /// foreground | background | inactive — what the device was doing while the
+  /// sample was taken. A call that only degrades when backgrounded is a
+  /// lifecycle defect, and without this column it reads as a network one.
+  String _appLifecycleLabel() {
+    final state = WidgetsBinding.instance.lifecycleState;
+    return switch (state) {
+      AppLifecycleState.resumed => 'foreground',
+      AppLifecycleState.inactive => 'inactive',
+      AppLifecycleState.paused ||
+      AppLifecycleState.detached ||
+      AppLifecycleState.hidden =>
+        'background',
+      null => 'foreground',
+    };
+  }
+
+  /// stable | reconnecting | failed — read from the facts the transport work
+  /// already publishes, never re-derived here.
+  String _reconnectStateLabel() {
+    if (state.connectionFailure != null) return 'failed';
+    if (state.mediaRecovering) return 'reconnecting';
+    return 'stable';
+  }
+
+  /// android | ios | windows | web | macos | linux.
+  String _clientPlatformLabel() {
+    if (kIsWeb) return 'web';
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.android => 'android',
+      TargetPlatform.iOS => 'ios',
+      TargetPlatform.windows => 'windows',
+      TargetPlatform.macOS => 'macos',
+      TargetPlatform.linux => 'linux',
+      TargetPlatform.fuchsia => 'fuchsia',
+    };
   }
 
   void _stopStatsTimer() {

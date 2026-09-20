@@ -99,6 +99,23 @@ abstract class RealtimeTransport {
   /// delivering nothing is the reason this is on the interface rather than
   /// reached for inside a test.
   Future<RealtimeTransportStats> stats();
+
+  /// RAW WebRTC stats for this transport's own connection, uninterpreted.
+  ///
+  /// Deliberately raw. Quality evidence — loss, jitter, RTT, bytes by kind,
+  /// decoded frames, the selected candidate pair — is read the SAME way
+  /// whatever carried the call, and that reading lives once in the media
+  /// service rather than once per transport. A transport owns its connection;
+  /// it does not own what a stat means.
+  ///
+  /// This exists because quality telemetry starved when calls moved to the
+  /// stage: the sampler walked the mesh peer map, the stage was not in it, so
+  /// every field came back null and production recorded nothing from
+  /// 2026-08-28 onward without one error being raised.
+  ///
+  /// Null means "no connection to ask" or "the platform refused" — never an
+  /// empty measurement.
+  Future<List<StatsReport>?> collectStats() async => null;
 }
 
 /// Delivery facts, transport-independent.

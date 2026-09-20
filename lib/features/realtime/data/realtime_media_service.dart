@@ -143,6 +143,12 @@ class RealtimeQualitySample {
     this.selectedCandidateType,
     this.transportProtocol,
     this.networkType,
+    this.audioBytesReceived,
+    this.videoBytesReceived,
+    this.videoFramesDecoded,
+    this.videoFrameWidth,
+    this.videoFrameHeight,
+    this.transportState,
   });
   final int? rttMs;
   final int? jitterMs;
@@ -169,6 +175,27 @@ class RealtimeQualitySample {
   /// fingerprinting reasons; absent means absent.
   final String? networkType;
 
+  /// BYTES BY KIND — and the whole reason zero and absent may never be merged.
+  ///
+  /// `0` means a receiving track of that kind was negotiated and no packets
+  /// arrived on it; `null` means no such track exists to measure. The
+  /// one-way-audio defect of 2026-09-11 is exactly the first case, and the
+  /// old instrumentation computed this breakdown every three seconds and then
+  /// summed it away before writing anything down.
+  final int? audioBytesReceived;
+  final int? videoBytesReceived;
+
+  /// FRAMES ARE NOT BYTES. On 2026-09-16 two sessions received 614,911 and
+  /// 267,879 bytes of video and drew a black tile. Bytes prove the network;
+  /// decoded frames and a real frame size are what prove a picture existed.
+  final int? videoFramesDecoded;
+  final int? videoFrameWidth;
+  final int? videoFrameHeight;
+
+  /// The connection's own view of itself, as the stack reports it — never a
+  /// guess assembled from what the app believes.
+  final String? transportState;
+
   bool get hasAny =>
       rttMs != null ||
       jitterMs != null ||
@@ -176,7 +203,13 @@ class RealtimeQualitySample {
       bitrateKbps != null ||
       selectedCandidateType != null ||
       transportProtocol != null ||
-      networkType != null;
+      networkType != null ||
+      audioBytesReceived != null ||
+      videoBytesReceived != null ||
+      videoFramesDecoded != null ||
+      videoFrameWidth != null ||
+      videoFrameHeight != null ||
+      transportState != null;
 }
 
 class RealtimeMediaService {
@@ -1297,6 +1330,17 @@ class RealtimeMediaService {
   /// Which transport is carrying media, for observability (§2).
   String get transportId => _stage?.id ?? 'mesh';
 
+  /// The connection's own view of itself, for a quality sample.
+  ///
+  /// Only the stage can answer: mesh holds one connection per peer and has no
+  /// single state, and inventing an aggregate would report a fact no stack
+  /// ever stated. Null there, which the server stores as null.
+  String? _transportStateLabel() {
+    final stage = _stage;
+    if (stage is SfuRealtimeTransport) return stage.mediaPlaneState;
+    return null;
+  }
+
   /// Bring the stage up for this session and publish the local capture.
   ///
   /// Local media must already be acquired: the provider needs at least one
@@ -1888,13 +1932,43 @@ class RealtimeMediaService {
     String? transportProtocol;
     String? networkType;
 
+    // Bytes by kind, decoded frames and frame size. Null until a report of
+    // that kind is actually seen, so "no receiving track" stays
+    // distinguishable from "a track receiving nothing".
+    int? audioBytesReceived;
+    int? videoBytesReceived;
+    int? videoFramesDecoded;
+    int? videoFrameWidth;
+    int? videoFrameHeight;
+
+    // WHEREVER THE MEDIA ACTUALLY IS.
+    //
+    // This walked `_peers` alone, which holds MESH connections. Calls ride the
+    // stage, whose connection is not in that map, so the loop body never ran:
+    // every field stayed null, `hasAny` was false, the heartbeat attached
+    // nothing, and the server wrote its last sample on 2026-08-28. The stage
+    // is asked through the transport seam, and both topologies are then read
+    // by the SAME code below — one interpretation, so the two cannot drift.
+    final sources = <String, List<StatsReport>>{};
     for (final entry in Map<String, RTCPeerConnection>.from(_peers).entries) {
-      List<StatsReport> reports;
       try {
-        reports = await entry.value.getStats();
+        sources[entry.key] = await entry.value.getStats();
       } catch (_) {
-        continue;
+        // A peer that will not answer is skipped, not recorded as zero.
       }
+    }
+    final stage = _stage;
+    if (stage != null) {
+      try {
+        final stageReports = await stage.collectStats();
+        if (stageReports != null) sources['stage:${stage.id}'] = stageReports;
+      } catch (_) {
+        // Same rule: unreadable is not measured.
+      }
+    }
+
+    for (final entry in sources.entries) {
+      final reports = entry.value;
 
       // THE SELECTED PAIR, resolved by id rather than guessed. `getStats`
       // returns a flat list, so the path is transport -> candidate-pair ->
@@ -1940,6 +2014,38 @@ class RealtimeMediaService {
             worstLossPct ??= 0;
           }
         }
+        if (type == 'inbound-rtp') {
+          // `kind` is the modern field; `mediaType` is what older stacks
+          // report. A report with neither cannot be attributed to audio or
+          // video, so it is counted as neither rather than guessed into one.
+          final kind =
+              (values['kind'] ?? values['mediaType'])?.toString().toLowerCase();
+          final bytes = _statDouble(values['bytesReceived'])?.round();
+          if (kind == 'audio' && bytes != null) {
+            audioBytesReceived = (audioBytesReceived ?? 0) + bytes;
+          } else if (kind == 'video') {
+            if (bytes != null) {
+              videoBytesReceived = (videoBytesReceived ?? 0) + bytes;
+            }
+            final frames = _statDouble(values['framesDecoded'])?.round();
+            if (frames != null) {
+              videoFramesDecoded = (videoFramesDecoded ?? 0) + frames;
+            }
+            // The LARGEST frame seen: with several remote videos the
+            // interesting question is whether any real picture arrived, and a
+            // 0x0 alongside a 1280x720 must not average into a half-truth.
+            final width = _statDouble(values['frameWidth'])?.round();
+            final height = _statDouble(values['frameHeight'])?.round();
+            if (width != null &&
+                (videoFrameWidth == null || width > videoFrameWidth)) {
+              videoFrameWidth = width;
+            }
+            if (height != null &&
+                (videoFrameHeight == null || height > videoFrameHeight)) {
+              videoFrameHeight = height;
+            }
+          }
+        }
         if (type == 'outbound-rtp') {
           final bytes = _statDouble(values['bytesSent'])?.round();
           final statId = '${entry.key}:${report.id}';
@@ -1972,6 +2078,12 @@ class RealtimeMediaService {
       selectedCandidateType: candidateType,
       transportProtocol: transportProtocol,
       networkType: networkType,
+      audioBytesReceived: audioBytesReceived,
+      videoBytesReceived: videoBytesReceived,
+      videoFramesDecoded: videoFramesDecoded,
+      videoFrameWidth: videoFrameWidth,
+      videoFrameHeight: videoFrameHeight,
+      transportState: _transportStateLabel(),
     );
 
     await _adaptToSample(sample);
