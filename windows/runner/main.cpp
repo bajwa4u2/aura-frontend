@@ -3,6 +3,7 @@
 #include <flutter/flutter_view_controller.h>
 #include <windows.h>
 
+#include "call_push.h"
 #include "flutter_window.h"
 #include "utils.h"
 
@@ -14,14 +15,24 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
     CreateAndAttachConsole();
   }
 
+  std::vector<std::string> command_line_arguments =
+      GetCommandLineArguments();
+
+  // A CALL ARRIVING WHILE AURA IS CLOSED STARTS THIS SAME EXECUTABLE.
+  //
+  // Windows launches the package's COM server to service the push background
+  // task. That process must not build a window, an engine or a UI: it records
+  // the payload, starts Aura properly, and exits. Checked before COM is
+  // initialised because `RunComServer` owns the apartment it needs.
+  if (aura::IsComServerLaunch(command_line_arguments)) {
+    return aura::RunComServer();
+  }
+
   // Initialize COM, so that it is available for use in the library and/or
   // plugins.
   ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 
   flutter::DartProject project(L"data");
-
-  std::vector<std::string> command_line_arguments =
-      GetCommandLineArguments();
 
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 

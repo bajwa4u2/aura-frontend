@@ -7,6 +7,7 @@ project(runner LANGUAGES CXX)
 #
 # Any new source files that you add to the application should be added here.
 add_executable(${BINARY_NAME} WIN32
+  "call_push.cpp"
   "share_intake.cpp"
   "timezone_channel.cpp"
   "wns_channel.cpp"

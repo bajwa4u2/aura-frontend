@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -58,5 +61,85 @@ class WindowsPushService {
       debugPrint('WindowsPushService.createChannel failed: $e');
       return null;
     }
+  }
+
+  /// Call payloads as they arrive, whether Aura was open or was started by the
+  /// push.
+  ///
+  /// Broadcast because the app root listens for the lifetime of the process;
+  /// there is exactly one producer, the native receiver.
+  static final StreamController<Map<String, dynamic>> _calls =
+      StreamController<Map<String, dynamic>>.broadcast();
+
+  static Stream<Map<String, dynamic>> get callPushes => _calls.stream;
+
+  static bool _listening = false;
+
+  /// Begin receiving. Safe to call more than once.
+  ///
+  /// Three things happen here and they are deliberately in one place: the
+  /// handler for pushes that arrive while Aura is open, the registration that
+  /// lets Windows start Aura for a push when it is closed, and the collection
+  /// of a payload recorded by that background task before Dart existed.
+  static Future<void> start() async {
+    if (!isSupported || _listening) return;
+    _listening = true;
+
+    _channel.setMethodCallHandler((call) async {
+      if (call.method != 'onCallPush') return null;
+      final payload = _decode(call.arguments);
+      if (payload != null) _calls.add(payload);
+      return null;
+    });
+
+    // A machine that refuses this still rings while Aura is open. The answer
+    // is logged rather than thrown for that reason.
+    try {
+      final registered =
+          await _channel.invokeMethod<bool>('registerBackgroundTask');
+      if (registered != true) {
+        debugPrint(
+          'WindowsPushService: background call delivery not registered; '
+          'calls will ring only while Aura is open.',
+        );
+      }
+    } catch (e) {
+      debugPrint('WindowsPushService.registerBackgroundTask failed: $e');
+    }
+
+    // COLD START. The call arrived before this process existed — the push is
+    // what started it — so it is waiting in the package's local folder rather
+    // than on the stream above.
+    await drainPending();
+  }
+
+  /// Collect a call recorded while Aura was closed, if there is one.
+  static Future<void> drainPending() async {
+    if (!isSupported) return;
+    try {
+      final pending = await _channel.invokeMethod<String>('takePendingCallPush');
+      final payload = _decode(pending);
+      if (payload != null) _calls.add(payload);
+    } catch (e) {
+      debugPrint('WindowsPushService.takePendingCallPush failed: $e');
+    }
+  }
+
+  /// The raw body the server sent, as a map.
+  ///
+  /// The WNS adapter sends `{type, title, body, data:{…}}` — the same shape the
+  /// call projection authority already reads, `data` nested and all — so this
+  /// decodes and hands it over without reshaping it into a third dialect.
+  static Map<String, dynamic>? _decode(Object? raw) {
+    if (raw is! String) return null;
+    final text = raw.trim();
+    if (text.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(text);
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    } catch (e) {
+      debugPrint('WindowsPushService: unreadable call payload ($e)');
+    }
+    return null;
   }
 }

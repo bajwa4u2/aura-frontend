@@ -27,6 +27,11 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 
 const _shareTargetMarker = 'windows.shareTarget';
+const _backgroundTaskMarker = 'windows.backgroundTasks';
+const _comServerMarker = 'windows.comServer';
+/// Must equal `kCallPushTaskClsid` in windows/runner/call_push.cpp and the
+/// id `declare_call_push_task.dart` writes.
+const _callPushClsid = '7A6C2C1E-3E5B-4C52-9E1A-2F6B1D5C7A90';
 const _dataFormats = ['Text', 'WebLink', 'StorageItems'];
 
 Future<void> main(List<String> args) async {
@@ -46,6 +51,11 @@ Future<void> main(List<String> args) async {
     ['run', 'tool/windows/declare_share_target.dart'],
     'declaring the share target',
   );
+  await _run(
+    'dart',
+    ['run', 'tool/windows/declare_call_push_task.dart'],
+    'declaring the push background task',
+  );
   await _run('dart', ['run', 'msix:pack'], 'packing');
 
   final path = _defaultPackagePath();
@@ -64,6 +74,7 @@ Future<void> main(List<String> args) async {
   stdout.writeln('');
   stdout.writeln('Packaged and verified: $path ($size MB)');
   stdout.writeln('  share target declared, with ${_dataFormats.join(", ")}');
+  stdout.writeln('  push background task declared, class $_callPushClsid');
 }
 
 /// Read the manifest out of a built `.msix` and say what is wrong with it.
@@ -110,6 +121,33 @@ List<String> verifyPackage(File package) {
     problems.add(
       'The share target declares no file types, so Aura would appear in the '
       'share sheet and then decline everything.',
+    );
+  }
+
+  // WINDOWS RINGS WHEN AURA IS CLOSED, OR IT DOES NOT RING.
+  //
+  // Both halves are checked because either one alone is silent: the COM server
+  // with no background task is a class nobody activates, and the background
+  // task with no COM server is a task with nothing to run. A package missing
+  // these installs, runs, and answers calls only while it is already open —
+  // which is the defect this release exists to close, and it produces no error.
+  if (!manifest.contains(_backgroundTaskMarker)) {
+    problems.add(
+      'No windows.backgroundTasks extension. This package cannot be woken by '
+      'a call push, so Windows rings only while Aura is already open.',
+    );
+  }
+  if (!manifest.contains(_comServerMarker)) {
+    problems.add(
+      'No windows.comServer extension. The push background task has no entry '
+      'point, so Windows has nothing to start when a call arrives.',
+    );
+  }
+  if (!manifest.contains(_callPushClsid)) {
+    problems.add(
+      'The COM server does not declare class $_callPushClsid. Registration '
+      'would succeed and activation would never happen — the failure that '
+      'reports nothing.',
     );
   }
 

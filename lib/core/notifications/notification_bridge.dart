@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../features/devices/windows_push_service.dart';
+
 import '../auth/session_providers.dart';
 import '../../features/realtime/application/incoming_call_projection.dart'
     as projection;
@@ -32,7 +34,8 @@ class NotificationBridge extends ConsumerStatefulWidget {
   ConsumerState<NotificationBridge> createState() => _NotificationBridgeState();
 }
 
-class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
+class _NotificationBridgeState extends ConsumerState<NotificationBridge>
+    with WidgetsBindingObserver {
   static const _browserIdKey = 'aura_browser_notification_device_id';
   static const _browserRegisteredAtKey =
       'aura_browser_notification_registered_at';
@@ -44,6 +47,7 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
   bool _browserRegistrationReady = false;
   bool _registrationSyncQueued = false;
 
+  StreamSubscription<Map<String, dynamic>>? _windowsPushSub;
   StreamSubscription<RemoteMessage>? _fcmForegroundSub;
   StreamSubscription<RemoteMessage>? _fcmTapSub;
 
@@ -58,6 +62,12 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
         auraScaffoldMessengerKey, 'bridge.initState');
     if (!kIsWeb) {
       _initFcm();
+      // WINDOWS CALL ARRIVAL. Its own transport — raw WNS, not FCM — and so
+      // its own start, beside the others rather than inside them.
+      if (defaultTargetPlatform == TargetPlatform.windows) {
+        WidgetsBinding.instance.addObserver(this);
+        _initWindowsPush();
+      }
     } else {
       _initWebSwBridge();
     }
@@ -67,10 +77,70 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge> {
   void dispose() {
     CallDiag.emit('bridge.dispose', 'NotificationBridge',
         data: {'state': CallDiag.id(this)});
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
+      WidgetsBinding.instance.removeObserver(this);
+    }
+    _windowsPushSub?.cancel();
     _fcmForegroundSub?.cancel();
     _fcmTapSub?.cancel();
     stopSwNavigateListener();
     super.dispose();
+  }
+
+  /// A CALL THAT ARRIVED IN THE STARTUP WINDOW IS STILL A CALL.
+  ///
+  /// The foreground handler cancels the background task, so the two paths do
+  /// not both present the same call — but there is a seam between the process
+  /// starting and that handler being attached. A push landing in it is
+  /// recorded by the task and then belongs to nobody, because the one drain
+  /// has already run. Draining again on resume closes that without inventing
+  /// a second delivery path: the collection is read-and-clear, so a drain with
+  /// nothing waiting costs one method call and does nothing.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state != AppLifecycleState.resumed) return;
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.windows) return;
+    unawaited(WindowsPushService.drainPending());
+  }
+
+  /// Windows call pushes, from whichever of the two doors they came through.
+  ///
+  /// A raw WNS notification reaches Aura either directly, while it is open, or
+  /// through the package's push background task, which records the payload and
+  /// starts Aura. Both arrive here identically, and both land on the SAME
+  /// incoming-call bridge every other platform uses — so Windows inherits the
+  /// accept/decline surface, the precedence guard, and the liveness check that
+  /// retracts a call the caller has already given up on, rather than growing a
+  /// parallel idea of what an incoming call is.
+  void _initWindowsPush() {
+    unawaited(WindowsPushService.start());
+    _windowsPushSub = WindowsPushService.callPushes.listen((payload) {
+      if (!mounted) return;
+      final bridge = ref.read(incomingCallBridgeProvider.notifier);
+      final sessionId = _resolveSessionId(payload);
+
+      // A CANCEL IS A PUSH TOO. The server sends ring and cancel through the
+      // same transport with a shared collapse key, so the machine that rang
+      // is the machine told to stop — provided the client reads the terminal
+      // case rather than treating every call push as an arrival.
+      if (projection.isTerminalCallPayload(payload)) {
+        if (sessionId.isNotEmpty) bridge.removeBySession(sessionId);
+        return;
+      }
+
+      if (_isCallInterrupt(payload)) {
+        bridge.addIncoming(
+          Map<String, dynamic>.from(payload)
+            ..['_auraLifecycleSource'] = 'windowsPush',
+        );
+        unawaited(
+          ref
+              .read(notificationsControllerProvider.notifier)
+              .refresh(force: true),
+        );
+      }
+    });
   }
 
   void _initWebSwBridge() {
