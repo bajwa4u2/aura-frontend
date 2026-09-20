@@ -151,7 +151,30 @@ void main() {
     // The population falls to 19. Two integration test groups that certified
     // the sheet went with it, and this line is the third consequence of that
     // deletion — the one that CI found, six minutes into a release build.
-    expect(full, 19,
+    //
+    // 20th and 21st members added 2026-09-17 by the admin console chapter,
+    // and recorded here on 2026-09-20 during the 1.4.4 release gate — which
+    // is late, and is the point: the census had been failing since the day
+    // they landed, and nothing read it until a release ran the whole suite.
+    // A census nobody runs is not a census either.
+    //
+    //   `features/admin/areas/operators_area.dart` — the person picker that
+    //   opens the appointment ceremony, returning the chosen AdminUserSummary.
+    //   `features/admin/ui/grant_authority_sheet.dart` — the proposal step,
+    //   returning the permissions to be granted.
+    //
+    // Reclassified against §6 rather than having the number bumped: both
+    // BEHAVE as sheets — transient, dismissible by the barrier or a drag
+    // (proven mechanically by the first test in this file, which finds no
+    // opt-out anywhere), each returns a value to its caller, and neither
+    // traps. They are deliberately not routes for the reason `operator_action`
+    // above is not: a pending appointment has no addressable identity, and a
+    // URL that reopened one would be proposing operator authority over a real
+    // person with no operator intent behind the request — which is precisely
+    // what the ceremony exists to establish.
+    //
+    // The population rises to 21.
+    expect(full, 21,
         reason: 'the full-height sheet population changed — reclassify it '
             'against §6 (behaviour, not dimensions) rather than adjusting '
             'this number');
