@@ -95,12 +95,26 @@ class AuraCallPushReceiver : BroadcastReceiver() {
         // backgrounded app, and it is the distinction the 85-second ring
         // could not be attributed without.
         val appState = if (AuraApplication.hasStarted) "background" else "cold"
+
+        // THE AUTHORITY TO SPEAK ABOUT THIS ONE CALL, OUT OF THE ENVELOPE.
+        //
+        // Founder invariant, 2026-09-20: call presentation authority is
+        // call-scoped, not user-session-scoped. The capability was minted by
+        // the server for this invitation on this device and travels with the
+        // push, so nothing on this path reads the person's login credential —
+        // which is what used to answer 401 here and leave the ring unchecked
+        // and the presentation unrecorded.
+        //
+        // Absent on a push from an older server. That is the compatibility
+        // case, and it degrades to "could not ask", never to a stale ring
+        // presented as confirmed.
+        val capability = data[CallLiveness.DATA_KEY_CAPABILITY]?.trim()?.ifEmpty { null }
         val pending = goAsync()
 
         Thread {
             val startedAt = System.currentTimeMillis()
             try {
-                val result = CallLiveness.check(context, sessionId)
+                val result = CallLiveness.check(context, sessionId, capability)
                 val retracted = result.verdict == CallLiveness.Verdict.NOT_LIVE
                 if (retracted) {
                     // The only authority that can say this, saying it.
@@ -117,10 +131,15 @@ class AuraCallPushReceiver : BroadcastReceiver() {
                 CallLiveness.reportPresented(
                     context = context,
                     sessionId = sessionId,
+                    capability = capability,
                     appState = appState,
                     wokeAtMs = wokeAtMs,
                     detail = "native ring ($appState); liveness=${result.verdict}:" +
                         "${result.reason}" + if (retracted) "; ring retracted" else "",
+                    // Only a verdict the server actually gave counts as
+                    // confirmation. A ring shown on an unanswered question
+                    // says so, rather than being recorded as confirmed-live.
+                    confirmation = result.confirmation,
                     budgetMs = (ASYNC_BUDGET_MS - spent).coerceAtLeast(0),
                 )
             } catch (t: Throwable) {

@@ -27,29 +27,56 @@ import java.util.TimeZone
  * awake. This device was asleep when the cancellation was sent, so it knew
  * nothing to weigh. Both guards passed, correctly, on the evidence they had.
  *
- * The Dart side now asks the server before presenting. It cannot help here:
- * when the app is DEAD the push is handled by a broadcast receiver with no
- * Flutter engine, no session and no HTTP client. This file is that check, in
- * the one place that runs.
+ * The Dart side asks the server before presenting. It cannot help here: when
+ * the app is DEAD the push is handled by a broadcast receiver with no Flutter
+ * engine, no session and no HTTP client. This file is that check, in the one
+ * place that runs.
+ *
+ * ── AND THEN THE CHECK ITSELF COULD NOT AUTHENTICATE ──────────────────────
+ *
+ * This file used to read `aura_access_token` out of [SecureStore] and send it
+ * as a Bearer token. Pixel 9a, 2026-09-20, app killed with `am kill`:
+ *
+ *     liveness: verdict=UNKNOWN reason=HTTP_401 retracted=false ms=297
+ *     ack: sessionId=… code=401
+ *
+ * and no presentation record on the server at all. On a cold start the access
+ * token has long expired, and a broadcast receiver has no refresh path. So the
+ * guard that exists to stop a stale ring could never refuse in the only
+ * situation it was built for, and the acknowledgement that decides whether the
+ * call is later called "missed" or "never presented" was rejected too — which
+ * is how a call that rang loudly came to read "tried to call you".
+ *
+ * ── THE AUTHORITY THIS FILE NOW CARRIES ───────────────────────────────────
+ *
+ * Founder invariant, 2026-09-20, frozen:
+ *
+ *   CALL PRESENTATION AUTHORITY IS CALL-SCOPED, NOT USER-SESSION-SCOPED.
+ *
+ * The server mints a capability scoped to ONE invitation on ONE device and
+ * carries it in that device's push envelope, as `callAuth`. It authorises
+ * three things and no others: ask whether this invitation is still
+ * presentable, report that this phone presented it, report a decline. It is
+ * not an Aura session, it is not stored, and it dies with the ring.
+ *
+ * Nothing here reads the person's credential any more. That is the point: the
+ * ordinary access/refresh token belongs to the authentication subsystem, and a
+ * receiver racing Flutter to refresh it is how somebody gets signed out.
  *
  * ── WHAT IT IS ALLOWED TO DO ──────────────────────────────────────────────
  *
  * It may STOP a ring for a call the server says is over. It may not start
  * one, delay one, or decide anything else about the call.
  *
- * FAILURE MEANS RING. A timeout, an unreachable server, an expired session,
- * a missing token, a device with no network — every one of them returns
- * [Verdict.UNKNOWN], and the ring stands. "Cannot tell" is not "gone": the
- * cost of a wrong suppression is a missed call, which is the whole failure
- * this product is repairing. The cost of a wrong ring is what happens today.
+ * FAILURE MEANS RING. A timeout, an unreachable server, a missing capability,
+ * a device with no network — every one of them returns [Verdict.UNKNOWN], and
+ * the ring stands. "Cannot tell" is not "gone": the cost of a wrong
+ * suppression is a missed call, which is the whole failure this product is
+ * repairing.
  *
- * ── WHY THE TOKEN IS REACHABLE HERE ───────────────────────────────────────
- *
- * [SecureStore] keeps the session encrypted under an Android Keystore key
- * created WITHOUT `setUserAuthenticationRequired`, deliberately, so that a
- * call arriving on a locked phone can still refresh and join. Reading it here
- * therefore weakens nothing and adds no new exposure — the ring path this
- * file serves is already entitled to act on that session.
+ * But UNKNOWN is never laundered into LIVE. A ring shown on an unanswered
+ * question is reported as [PRESENTED_WITHOUT_LIVENESS_CONFIRMATION], so the
+ * server's own account of the call stays truthful about what was established.
  */
 object CallLiveness {
     private const val TAG = "AuraCallLiveness"
@@ -58,15 +85,29 @@ object CallLiveness {
     private const val FLUTTER_PREFS = "FlutterSharedPreferences"
     private const val PREFIX = "flutter."
 
-    private const val KEY_ACCESS_TOKEN = "aura_access_token"
     private const val KEY_DEVICE_ID = "aura_runtime_device_id"
     private const val KEY_API_BASE_URL = "aura_api_base_url"
+
+    /** The header the call capability is presented in. Never a query param. */
+    private const val HEADER_CAPABILITY = "X-Aura-Call-Capability"
+
+    /** The push envelope key carrying it, and the version of that contract. */
+    const val DATA_KEY_CAPABILITY = "callAuth"
+    const val DATA_KEY_CAPABILITY_VERSION = "callAuthVersion"
+
+    /** How the ring was established. Reported, never inferred by the server. */
+    const val CONFIRMED_LIVE = "CONFIRMED_LIVE"
+    const val PRESENTED_WITHOUT_LIVENESS_CONFIRMATION =
+        "PRESENTED_WITHOUT_LIVENESS_CONFIRMATION"
 
     /**
      * Matches `AppConfig.apiBaseUrl`'s own default. Used only when Dart has
      * never recorded the value — a build that has not been opened since the
      * update. It is a fallback, not a second source of truth: the stored
      * value always wins, so a build pointed elsewhere is still followed.
+     *
+     * This is configuration, not a credential. Reading it here is not the
+     * dependency the invariant above forbids.
      */
     private const val DEFAULT_API_BASE_URL = "https://api.auraplatform.org/v1"
 
@@ -81,41 +122,54 @@ object CallLiveness {
         /** The server says it cannot — ended, cancelled, or never theirs. */
         NOT_LIVE,
 
-        /** We could not find out. The ring stands. */
+        /** We could not find out. The ring stands, and says so. */
         UNKNOWN,
     }
 
-    data class Result(val verdict: Verdict, val reason: String)
+    data class Result(val verdict: Verdict, val reason: String) {
+        /**
+         * What the acknowledgement must claim about this ring. Only a verdict
+         * the server actually gave may be reported as confirmation; everything
+         * else — including a capability this build never received — is an
+         * unanswered question and is recorded as one.
+         */
+        val confirmation: String
+            get() = if (verdict == Verdict.LIVE) CONFIRMED_LIVE
+            else PRESENTED_WITHOUT_LIVENESS_CONFIRMATION
+    }
 
     /**
-     * Ask the server. Blocking, so call it off the main thread.
+     * Ask the server, with the capability minted for this exact invitation.
+     * Blocking, so call it off the main thread.
+     *
+     * A push with no capability is an older server, or a ring for a device
+     * that holds no invite row. There is nothing to ask with, and the previous
+     * credential is deliberately not reachable from here any more, so the
+     * answer is UNKNOWN and the ring stands.
      */
-    fun check(context: Context, sessionId: String): Result {
+    fun check(context: Context, sessionId: String, capability: String?): Result {
         if (sessionId.isBlank()) return Result(Verdict.UNKNOWN, "NO_SESSION_ID")
-        val token = SecureStore.readSecret(context, KEY_ACCESS_TOKEN)
-        if (token.isNullOrBlank()) {
-            // Signed out, or a session this device can no longer decrypt.
-            // Nothing to ask with, so nothing is suppressed.
-            return Result(Verdict.UNKNOWN, "NO_SESSION")
-        }
+        if (capability.isNullOrBlank()) return Result(Verdict.UNKNOWN, "NO_CAPABILITY")
 
         val base = apiBaseUrl(context)
-        val url = "$base/realtime/sessions/$sessionId/callable"
+        val url = "$base/realtime/sessions/$sessionId/invite/presentable"
         var connection: HttpURLConnection? = null
         return try {
             connection = (URL(url).openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 connectTimeout = CONNECT_TIMEOUT_MS
                 readTimeout = READ_TIMEOUT_MS
-                setRequestProperty("Authorization", "Bearer $token")
+                setRequestProperty(HEADER_CAPABILITY, capability)
                 setRequestProperty("Accept", "application/json")
                 deviceId(context)?.let { setRequestProperty("X-Aura-Device-Id", it) }
                 setRequestProperty("X-Aura-Platform", "android")
             }
             val code = connection.responseCode
             if (code != 200) {
-                // 401 included, deliberately: an expired token is a question
-                // we could not ask, not an answer that the call is over.
+                // 401 included, and it means something different now: the
+                // capability is dead, not the person's session. A device that
+                // sees it must NOT go looking for a credential to refresh —
+                // that is precisely the behaviour this design removed.
                 Result(Verdict.UNKNOWN, "HTTP_$code")
             } else {
                 val body = connection.inputStream.bufferedReader().use { it.readText() }
@@ -148,10 +202,11 @@ object CallLiveness {
      * Tell the server this device put the call on screen, and what the check
      * said about it.
      *
-     * The dead-app case is exactly the one that has never been recorded: all
-     * 44 acknowledgements in production history are ESTABLISHED from an app
-     * that was already open, because only Dart ever reported. So a cold ring
-     * looked identical to a phone that never rang at all.
+     * The dead-app case is exactly the one that had never been recorded: every
+     * acknowledgement in production history was ESTABLISHED from an app that
+     * was already open, because only Dart ever reported and the native attempt
+     * was answered 401. So a cold ring looked identical to a phone that never
+     * rang at all, and the call derived as NOT_PRESENTED.
      *
      * The state is ESTABLISHED because that is what happened — the device did
      * present. A retraction is NOT reported as LAPSED: that state means the
@@ -160,51 +215,59 @@ object CallLiveness {
      * instead, beside the verdict, with `appState` and `deviceWokeAt`
      * carrying the timing the 85 seconds could not be attributed without.
      *
+     * No installation header is required any more. The server resolves the
+     * physical endpoint from the `UserDevice` the push was addressed to, which
+     * closes a second gap: an install where Dart had never run held no
+     * `aura_runtime_device_id`, so it could ring and be structurally incapable
+     * of saying so.
+     *
      * Best-effort by construction: the ring does not depend on it.
      */
     fun reportPresented(
         context: Context,
         sessionId: String,
+        capability: String?,
         appState: String,
         wokeAtMs: Long,
         detail: String,
+        confirmation: String,
         budgetMs: Int,
     ) {
         if (sessionId.isBlank() || budgetMs <= 0) return
-        val token = SecureStore.readSecret(context, KEY_ACCESS_TOKEN)
-        if (token.isNullOrBlank()) return
-        val deviceId = deviceId(context)
-        if (deviceId.isNullOrBlank()) {
-            // The installation identity comes from the header or the report is
-            // not recorded at all (NO_INSTALLATION_IDENTITY). Do not spend a
-            // receiver's remaining time on a call the server will discard.
-            Log.i(TAG, "ack skipped: no device id")
+        if (capability.isNullOrBlank()) {
+            // Nothing to speak with. Deliberately not falling back to the
+            // person's credential — that path is what this file removed.
+            Log.i(TAG, "ack skipped: no capability")
             return
         }
 
         val base = apiBaseUrl(context)
-        val url = "$base/realtime/sessions/$sessionId/presentation"
+        val url = "$base/realtime/sessions/$sessionId/invite/presented"
         var connection: HttpURLConnection? = null
         try {
             val body = JSONObject()
-                .put("state", "ESTABLISHED")
                 .put("platform", "android")
                 .put("appState", appState)
                 .put("deviceWokeAt", iso8601(wokeAtMs))
                 .put("detail", detail.take(300))
+                .put("livenessConfirmation", confirmation)
                 .toString()
             connection = (URL(url).openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 connectTimeout = budgetMs
                 readTimeout = budgetMs
                 doOutput = true
-                setRequestProperty("Authorization", "Bearer $token")
+                setRequestProperty(HEADER_CAPABILITY, capability)
                 setRequestProperty("Content-Type", "application/json")
-                setRequestProperty("X-Aura-Device-Id", deviceId)
+                deviceId(context)?.let { setRequestProperty("X-Aura-Device-Id", it) }
                 setRequestProperty("X-Aura-Platform", "android")
             }
             connection.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
-            Log.i(TAG, "ack: sessionId=$sessionId code=${connection.responseCode}")
+            Log.i(
+                TAG,
+                "ack: sessionId=$sessionId code=${connection.responseCode} " +
+                    "confirmation=$confirmation",
+            )
         } catch (t: Throwable) {
             Log.i(TAG, "ack failed: ${t.javaClass.simpleName}")
         } finally {
@@ -215,21 +278,28 @@ object CallLiveness {
         }
     }
 
-    private fun flutterPrefs(context: Context, key: String): String? = try {
+    /**
+     * The API base Dart recorded, or the build's own default.
+     *
+     * Configuration, not a credential — an ordinary preference, deliberately
+     * not in [SecureStore], and reading it implies no session.
+     */
+    private fun apiBaseUrl(context: Context): String {
+        val stored = flutterPref(context, KEY_API_BASE_URL)
+        val base = if (stored.isNullOrBlank()) DEFAULT_API_BASE_URL else stored
+        return base.trimEnd('/')
+    }
+
+    private fun deviceId(context: Context): String? = flutterPref(context, KEY_DEVICE_ID)
+
+    private fun flutterPref(context: Context, key: String): String? = try {
         context
             .getSharedPreferences(FLUTTER_PREFS, Context.MODE_PRIVATE)
             .getString(PREFIX + key, null)
             ?.trim()
-            ?.ifEmpty { null }
-    } catch (t: Throwable) {
+            ?.ifBlank { null }
+    } catch (_: Throwable) {
         null
-    }
-
-    private fun deviceId(context: Context): String? = flutterPrefs(context, KEY_DEVICE_ID)
-
-    private fun apiBaseUrl(context: Context): String {
-        val stored = flutterPrefs(context, KEY_API_BASE_URL) ?: DEFAULT_API_BASE_URL
-        return stored.trimEnd('/')
     }
 
     private fun iso8601(ms: Long): String {
