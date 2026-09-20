@@ -1214,6 +1214,14 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                     productState:
                         state.session?.call?.productStateFor(myUserId),
                     connectionFailure: state.connectionFailure,
+                    // A REBUILDING TRANSPORT IS NOT A CONNECTED CALL.
+                    //
+                    // On 2026-09-16 a callee's transport closed and its
+                    // replacement arrived 13 seconds later; the screen said
+                    // Connected throughout, and on 09-09 a frozen call read
+                    // "Connected · 2 · 02:52" for four minutes. The recovery
+                    // fact exists now, so the person is told.
+                    mediaRecovering: state.mediaRecovering,
                     // Kept for meetings and stages, which have no call and so
                     // still need the local derivations.
                     isAccepted:
@@ -2267,6 +2275,7 @@ class _CallTopBar extends StatelessWidget {
     this.call,
     this.productState,
     this.connectionFailure,
+    this.mediaRecovering = false,
     this.onMinimize,
     this.sessionTypeChip,
     this.trustLine,
@@ -2307,6 +2316,10 @@ class _CallTopBar extends StatelessWidget {
   /// This connection attempt has definitively failed. Outranks the phase,
   /// because "Ringing…" beside a dead attempt is not a status but a false one.
   final CallConnectionFailure? connectionFailure;
+
+  /// Media is being rebuilt after a transport was lost. Not a failure and not
+  /// a healthy call: the one honest word for it is "Reconnecting".
+  final bool mediaRecovering;
 
   final VoidCallback? onMinimize;
 
@@ -2370,6 +2383,11 @@ class _CallTopBar extends StatelessWidget {
     if (connectionFailure != null) {
       statusColor = AuraSurface.coRose;
       statusLabel = 'Not connected';
+    } else if (mediaRecovering) {
+      // Outranks the call's own phase for the same reason transport trouble
+      // does: the phase is still `connected` and the media is not.
+      statusColor = amber;
+      statusLabel = 'Reconnecting…';
     } else if (hasIssue) {
       statusColor = AuraSurface.coRose;
       statusLabel = 'Connection issue';
