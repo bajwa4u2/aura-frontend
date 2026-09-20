@@ -146,6 +146,33 @@ object SecureStore {
         null
     }
 
+    /**
+     * READ A STORED SECRET FROM NATIVE CODE, without Dart running.
+     *
+     * The same bytes, the same key, the same decrypt as the channel's `read`
+     * — extracted rather than duplicated, because a second decrypt path is a
+     * second place for the token format to drift.
+     *
+     * This exists for the incoming-call receiver: when a push arrives at a
+     * DEAD app there is no Flutter engine to ask, so the only way to check
+     * with the server whether a call is still live is to read the session
+     * here. The key is deliberately created without
+     * `setUserAuthenticationRequired` (see above) precisely so a call can be
+     * handled on a locked phone, so this adds no new exposure: it reads what
+     * the ring path is already entitled to act on.
+     */
+    fun readSecret(context: Context, key: String): String? {
+        if (key.isEmpty()) return null
+        val stored = prefs(context).getString(key, null) ?: return null
+        val value = decrypt(stored)
+        if (value == null) {
+            // Same as the channel path: an unreadable blob is not a session,
+            // and leaving it behind means failing on it again every launch.
+            prefs(context).edit().remove(key).commit()
+        }
+        return value
+    }
+
     fun handle(context: Context, call: MethodCall, result: MethodChannel.Result) {
         val key = call.argument<String>("key")
         if (key.isNullOrEmpty()) {
@@ -155,18 +182,10 @@ object SecureStore {
 
         when (call.method) {
             "read" -> {
-                val stored = prefs(context).getString(key, null)
-                if (stored == null) {
-                    result.success(null)
-                    return
-                }
-                val value = decrypt(stored)
-                if (value == null) {
-                    // Do not leave an unreadable blob behind to fail on every
-                    // launch. It is not a session any more.
-                    prefs(context).edit().remove(key).commit()
-                }
-                result.success(value)
+                // Shared with the native ring path; see readSecret. An
+                // unreadable blob is removed there rather than left to fail on
+                // every launch — it is not a session any more.
+                result.success(readSecret(context, key))
             }
 
             "write" -> {

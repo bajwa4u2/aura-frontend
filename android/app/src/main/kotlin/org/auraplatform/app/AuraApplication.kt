@@ -39,7 +39,13 @@ class AuraApplication : Application() {
                 isForeground = resumedActivities > 0
             }
 
-            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+                // See [hasStarted]: the first activity of this process is what
+                // separates "Aura was open and went to the background" from
+                // "this push started Aura".
+                hasStarted = true
+            }
+
             override fun onActivityStarted(activity: Activity) = Unit
             override fun onActivityStopped(activity: Activity) = Unit
             override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
@@ -101,6 +107,22 @@ class AuraApplication : Application() {
         @Volatile
         @JvmStatic
         var isForeground: Boolean = false
+            private set
+
+        /**
+         * Whether any Aura activity has been created in THIS process.
+         *
+         * A push that starts the process finds this false, which is the
+         * honest meaning of a cold ring; a process that was already alive
+         * with the app in the background finds it true. The presentation
+         * acknowledgement carries the difference, because a slow push and an
+         * app that only presents once it is opened are indistinguishable
+         * without it — which is why the 85-second ring of 2026-09-16 could
+         * not be attributed.
+         */
+        @Volatile
+        @JvmStatic
+        var hasStarted: Boolean = false
             private set
 
         private var resumedActivities = 0

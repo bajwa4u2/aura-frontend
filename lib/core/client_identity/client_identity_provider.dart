@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../config.dart';
 import 'capability_tokens.dart';
 import 'client_identity.dart';
 
@@ -86,6 +87,21 @@ ClientDistribution _defaultDistribution(ClientPlatform platform) {
 ///     against the same logical device.
 const _kRuntimeDeviceIdKey = 'aura_runtime_device_id';
 
+/// WHERE THE SERVER IS, FOR CODE THAT HAS NO DART.
+///
+/// `AppConfig.apiBaseUrl` is a compile-time define, which native code cannot
+/// read. Android's incoming-call receiver needs it: when a push arrives at a
+/// dead app there is no Flutter engine, and the ring must still be able to
+/// ask the server whether the call is over before offering it to somebody
+/// (production, 2026-09-16 — a phone rang 67 seconds after the caller had
+/// cancelled). Recording the value Dart actually uses keeps one source of
+/// truth: a build pointed at another environment is followed rather than
+/// second-guessed.
+///
+/// Not a secret, and deliberately not in the encrypted store: it is the same
+/// URL the app's own traffic announces on every request.
+const _kApiBaseUrlKey = 'aura_api_base_url';
+
 /// Generate or load the stable per-install runtime device id.
 ///
 /// Every platform, browsers included. Returns null only when the store itself
@@ -141,6 +157,24 @@ String _generateRuntimeDeviceId() {
   return buf.toString();
 }
 
+/// Record the API base for native code. See [_kApiBaseUrlKey].
+///
+/// Android only: it is the only platform with a native path that runs while
+/// Dart does not. Writing it elsewhere would be storage nobody reads.
+Future<void> _recordApiBaseUrlForNative() async {
+  if (kIsWeb || !Platform.isAndroid) return;
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final current = prefs.getString(_kApiBaseUrlKey);
+    if (current == AppConfig.apiBaseUrl) return;
+    await prefs.setString(_kApiBaseUrlKey, AppConfig.apiBaseUrl);
+  } catch (_) {
+    // The native side falls back to the same default this build compiles
+    // with, so a failure here costs nothing an unopened install does not
+    // already cost.
+  }
+}
+
 Future<ClientIdentity> _buildIdentity() async {
   final info = await PackageInfo.fromPlatform();
   final platform = _detectPlatform();
@@ -155,6 +189,7 @@ Future<ClientIdentity> _buildIdentity() async {
 
   final buildNumber = int.tryParse(info.buildNumber.trim());
   final runtimeDeviceId = await _resolveRuntimeDeviceId();
+  await _recordApiBaseUrlForNative();
 
   return ClientIdentity(
     appVersion: info.version.trim(),

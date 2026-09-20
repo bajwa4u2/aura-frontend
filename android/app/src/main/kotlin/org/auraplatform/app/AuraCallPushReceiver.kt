@@ -51,6 +51,7 @@ class AuraCallPushReceiver : BroadcastReceiver() {
                     return
                 }
                 IncomingCallPresenter.present(context, data)
+                verifyAndRetract(context, data)
             }
 
             TYPE_CANCELLED, TYPE_MISSED -> {
@@ -61,6 +62,74 @@ class AuraCallPushReceiver : BroadcastReceiver() {
 
             else -> Unit
         }
+    }
+
+    /**
+     * RING FIRST, THEN CHECK — and retract if the call is already over.
+     *
+     * The order is the decision. Holding the ring for a network round trip
+     * would tax every healthy call — the overwhelming majority — with the
+     * latency of the rare stale one, on exactly the path where a phone has
+     * just been woken and its radio is at its slowest. So the call is
+     * presented at once, unchanged, and the server's answer can only ever
+     * take a ring AWAY. This is the same shape the Dart side settled on.
+     *
+     * [goAsync] is what makes it possible at all: a broadcast receiver's
+     * process may be killed the moment `onReceive` returns, and the work here
+     * is network I/O. The pending result keeps the receiver alive until
+     * `finish()`, which is why every path below runs inside one `try` and
+     * finishes in `finally`. Android allows roughly ten seconds before this
+     * counts as an ANR, so the budget is spent explicitly: the check first,
+     * the acknowledgement only with what remains.
+     *
+     * The notification survives the process either way — it belongs to the
+     * system once posted, so a kill after `finish()` leaves the call ringing.
+     */
+    private fun verifyAndRetract(context: Context, data: Map<String, String>) {
+        val sessionId = (data["sessionId"] ?: data["realtimeSessionId"] ?: "").trim()
+        if (sessionId.isEmpty()) return
+
+        val wokeAtMs = System.currentTimeMillis()
+        // The app was not on screen (checked by the caller). Whether its
+        // process existed at all is what separates a cold start from a
+        // backgrounded app, and it is the distinction the 85-second ring
+        // could not be attributed without.
+        val appState = if (AuraApplication.hasStarted) "background" else "cold"
+        val pending = goAsync()
+
+        Thread {
+            val startedAt = System.currentTimeMillis()
+            try {
+                val result = CallLiveness.check(context, sessionId)
+                val retracted = result.verdict == CallLiveness.Verdict.NOT_LIVE
+                if (retracted) {
+                    // The only authority that can say this, saying it.
+                    IncomingCallPresenter.dismiss(context, sessionId)
+                }
+                Log.i(
+                    TAG,
+                    "liveness: sessionId=$sessionId verdict=${result.verdict} " +
+                        "reason=${result.reason} retracted=$retracted " +
+                        "ms=${System.currentTimeMillis() - startedAt}",
+                )
+
+                val spent = (System.currentTimeMillis() - startedAt).toInt()
+                CallLiveness.reportPresented(
+                    context = context,
+                    sessionId = sessionId,
+                    appState = appState,
+                    wokeAtMs = wokeAtMs,
+                    detail = "native ring ($appState); liveness=${result.verdict}:" +
+                        "${result.reason}" + if (retracted) "; ring retracted" else "",
+                    budgetMs = (ASYNC_BUDGET_MS - spent).coerceAtLeast(0),
+                )
+            } catch (t: Throwable) {
+                // Never let the ring path take the process down with it.
+                Log.w(TAG, "liveness failed: ${t.javaClass.simpleName}")
+            } finally {
+                pending.finish()
+            }
+        }.start()
     }
 
     /**
@@ -90,6 +159,14 @@ class AuraCallPushReceiver : BroadcastReceiver() {
 
     companion object {
         private const val TAG = "AuraCallPush"
+
+        /**
+         * What [goAsync] may spend in total. Android's broadcast timeout is
+         * ~10s in the foreground queue and this is a high-priority call push;
+         * 7s leaves headroom so a slow network costs a late acknowledgement
+         * rather than an ANR.
+         */
+        private const val ASYNC_BUDGET_MS = 7_000
 
         /** FCM envelope fields that are not part of the app's data payload. */
         private val RESERVED = setOf(
