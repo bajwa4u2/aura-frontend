@@ -20,11 +20,34 @@ class ExistenceCase {
     required this.categoryNeedsReview,
     required this.priority,
     required this.submittedAt,
+    this.institutionName,
+    this.institutionSlug,
+    this.domain,
+    this.websiteUrl,
+    this.jurisdiction,
   });
 
   final String proofId;
   final String institutionId;
   final ExistenceState state;
+
+  /// NAMED, NOT ONLY IDENTIFIED — the same rule [AuthorityCase] keeps. The
+  /// card asks whether this institution exists, so it has to say which
+  /// institution: a cuid gives a reviewer nothing to check a registration
+  /// document against.
+  final String? institutionName;
+  final String? institutionSlug;
+
+  /// The identifying facts a reviewer compares the evidence to. Null where
+  /// the institution never supplied one — absent is a fact about the record,
+  /// not a gap to paper over.
+  final String? domain;
+  final String? websiteUrl;
+  final String? jurisdiction;
+
+  /// What to call this case. Falls back through slug to the id, so the card
+  /// always has a headline even for a record carrying neither.
+  String get title => institutionName ?? institutionSlug ?? institutionId;
 
   /// Null where the legacy class did not map cleanly. NOT a failure — §5.19
   /// asks for a one-time admin review pass for exactly this, and it is why
@@ -46,7 +69,19 @@ class ExistenceCase {
         categoryNeedsReview: json['categoryNeedsReview'] == true,
         priority: json['priority'] == true,
         submittedAt: DateTime.tryParse(json['submittedAt']?.toString() ?? ''),
+        institutionName: _text(json['institutionName']),
+        institutionSlug: _text(json['institutionSlug']),
+        domain: _text(json['institutionDomain']),
+        websiteUrl: _text(json['institutionWebsiteUrl']),
+        jurisdiction: _text(json['institutionJurisdiction']),
       );
+}
+
+/// Empty and whitespace read as absent. A blank headline is worse than the
+/// fallback it would silently beat.
+String? _text(Object? v) {
+  final s = (v ?? '').toString().trim();
+  return s.isEmpty ? null : s;
 }
 
 class AuthorityCase {

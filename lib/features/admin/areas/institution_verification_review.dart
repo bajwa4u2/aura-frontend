@@ -137,7 +137,12 @@ class _ExistenceCaseCardState extends ConsumerState<_ExistenceCaseCard> {
             Row(
               children: [
                 Expanded(
-                  child: Text(item.institutionId, style: AuraText.title),
+                  // THE INSTITUTION, NOT ITS ROW KEY. This read
+                  // `item.institutionId`, so the card asking "does this
+                  // institution exist?" headlined a cuid — the one thing on
+                  // the screen that cannot be checked against a registration
+                  // document.
+                  child: Text(item.title, style: AuraText.title),
                 ),
                 if (item.priority)
                   // §4.3 -- priority is placement, not a different bar. The
@@ -146,9 +151,27 @@ class _ExistenceCaseCardState extends ConsumerState<_ExistenceCaseCard> {
               ],
             ),
             const SizedBox(height: AuraSpace.xs),
-            Text('State: ${item.state.name}', style: AuraText.small),
+            // WHAT THE EVIDENCE IS CHECKED AGAINST. Domain, site and
+            // jurisdiction are the claims a registration document either
+            // corroborates or does not; only what the institution actually
+            // supplied is shown, and the id stays available for the operator
+            // who needs to quote it.
+            Text(
+              [
+                if (item.institutionSlug != null &&
+                    item.institutionName != null)
+                  '@${item.institutionSlug}',
+                if (item.domain != null) item.domain!,
+                if (item.jurisdiction != null) item.jurisdiction!,
+                'State: ${item.state.name}',
+              ].join(' · '),
+              style: AuraText.small,
+            ),
+            if (item.websiteUrl != null)
+              Text(item.websiteUrl!, style: AuraText.small),
             if (item.category != null)
               Text('Category: ${item.category}', style: AuraText.small),
+            Text(item.institutionId, style: AuraText.small),
             if (item.categoryNeedsReview)
               // Honest about the gap. §5.19 asks for a one-time admin pass for
               // anything that did not map cleanly, and this is that prompt.

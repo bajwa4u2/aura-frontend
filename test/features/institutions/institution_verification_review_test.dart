@@ -23,6 +23,11 @@ void main() {
           'categoryNeedsReview': false,
           'priority': true,
           'submittedAt': '2026-09-01T10:00:00.000Z',
+          'institutionName': 'Aura Platform LLC',
+          'institutionSlug': 'aura-platform-llc',
+          'institutionDomain': 'auraplatform.org',
+          'institutionWebsiteUrl': 'https://auraplatform.org',
+          'institutionJurisdiction': 'Michigan, US',
         },
         {
           'id': 'exp_2',
@@ -62,6 +67,28 @@ void main() {
       // A decision about one person's authority must show which person.
       expect(q.authority.first.userId, 'u_claimant');
       expect(q.authority.first.evidenceKind, AuthorityEvidenceKind.appointmentLetter);
+    });
+
+    test('AN EXISTENCE CASE NAMES ITS INSTITUTION', () {
+      final q = VerificationQueue.fromJson(payload);
+      final named = q.existence.firstWhere((c) => c.proofId == 'exp_1');
+
+      // The card headlined `institutionId`, so the question "does this
+      // institution exist?" was asked over a cuid. The headline is the name,
+      // and the facts a registration document is checked against come with it.
+      expect(named.title, 'Aura Platform LLC');
+      expect(named.domain, 'auraplatform.org');
+      expect(named.jurisdiction, 'Michigan, US');
+    });
+
+    test('AN UNNAMED EXISTENCE CASE STILL HAS A HEADLINE', () {
+      final q = VerificationQueue.fromJson(payload);
+      final bare = q.existence.firstWhere((c) => c.proofId == 'exp_2');
+
+      // A server that sent no name must not produce a blank title. The id is
+      // a poor headline; an empty one is not a headline at all.
+      expect(bare.institutionName, isNull);
+      expect(bare.title, 'inst_2');
     });
 
     test('AN UNMAPPED CATEGORY IS FLAGGED, not silently blank', () {
