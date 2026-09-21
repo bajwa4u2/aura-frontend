@@ -74,6 +74,22 @@ enum OperatorArea {
       OperatorCapability.moderationRead,
       OperatorCapability.communicationsRead,
       OperatorCapability.announcementsRead,
+      // INSTITUTION VERIFICATION LIVES IN THIS AREA, SO ITS PERMISSION HAS TO
+      // OPEN IT (founder-observed 2026-09-20).
+      //
+      // The authority-claim queue is reached only from a card inside Integrity,
+      // and that card is itself gated on VERIFICATION_READ — a permission this
+      // list did not admit. So the one person who could decide a claim was the
+      // one person who could not see the door: a reviewer holding exactly
+      // VERIFICATION_READ/WRITE saw Now, Work and Subjects, and Work's
+      // "Institution verification" tab reads a different, legacy table and
+      // truthfully reported nothing waiting. A founder's claim sat SUBMITTED
+      // while the console told the reviewer their queues were clear.
+      //
+      // The area's other sections stay gated on their own capabilities and say
+      // which one they need, which is the behaviour this list already relies on
+      // everywhere else — an area is admission, never action.
+      OperatorCapability.verificationRead,
     ],
   ),
 

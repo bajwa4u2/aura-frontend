@@ -111,6 +111,32 @@ void main() {
       expect(visible, isNot(contains('discovery')));
     });
 
+    test('A VERIFICATION REVIEWER CAN REACH THE QUEUE THEY DECIDE', () {
+      // Founder-observed 2026-09-20: the institution authority-claim queue is
+      // reached only from a card inside Integrity, and Integrity did not admit
+      // VERIFICATION_READ. The one person who could decide a claim was the one
+      // person who could not see the door.
+      final reviewer = OperatorAuthority.fromMe(const {
+        'userId': 'r',
+        'roles': ['ANALYST'],
+        'isOwner': false,
+        'effectivePermissions': [
+          'VERIFICATION_READ',
+          'VERIFICATION_WRITE',
+          'IDENTITY_VERIFICATION_READ',
+          'IDENTITY_VERIFICATION_WRITE',
+        ],
+      });
+      final visible = OperatorArea.visibleFor(reviewer).map((a) => a.id);
+      expect(visible, contains('integrity'),
+          reason: 'the authority-claim queue lives here and nowhere else');
+      expect(visible, contains('work'));
+      expect(visible, contains('subjects'));
+      // Admission is not action: no moderation, no operator appointment.
+      expect(visible, isNot(contains('operators')));
+      expect(visible, isNot(contains('platform')));
+    });
+
     test('an analyst sees platform and record, not queues', () {
       final analyst = OperatorAuthority.fromMe(const {
         'userId': 'a',
