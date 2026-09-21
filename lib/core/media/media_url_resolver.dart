@@ -73,6 +73,51 @@ class MediaUrlResult {
   }
 }
 
+/// WHY A MEDIA URL COULD NOT BE PRODUCED.
+///
+/// The delivery door answers four materially different things, each with its
+/// own status and code (`media.service.ts`):
+///
+///   202 MEDIA_NOT_READY      still uploading or processing — it WILL arrive
+///   403 MEDIA_QUARANTINED    under review; reversible, and appealable
+///   410 MEDIA_GONE           deleted or archived
+///   404 MEDIA_NOT_AVAILABLE  orphaned or failed
+///
+/// The client collapsed all four. A 202 is a SUCCESS to Dio, so the fetch
+/// sailed past the status, found no `url`, threw a bare `StateError`, and the
+/// renderer drew the same broken-image frame it draws for genuinely destroyed
+/// media — permanently, because nothing re-asked. A picture that was thirty
+/// seconds from being ready looked identical to one that no longer existed,
+/// and the person was told neither.
+class MediaUnavailableException implements Exception {
+  const MediaUnavailableException({
+    required this.status,
+    required this.code,
+    required this.message,
+  });
+
+  /// HTTP status from the delivery door, or null when the call never landed.
+  final int? status;
+
+  /// The door's own code, verbatim. Never re-mapped: the server names the
+  /// situation and this carries that name.
+  final String? code;
+
+  /// What the server said, where it said anything a person may read.
+  final String? message;
+
+  /// The bytes are coming. Worth waiting for and worth re-asking.
+  bool get isPending => status == 202 || code == 'MEDIA_NOT_READY';
+
+  /// Withheld under review, not destroyed — reversible, and the owner has
+  /// something to appeal against.
+  bool get isQuarantined => code == 'MEDIA_QUARANTINED' || status == 403;
+
+  @override
+  String toString() =>
+      'MediaUnavailableException(status: $status, code: $code)';
+}
+
 class _CacheEntry {
   _CacheEntry({required this.future, required this.fetchedAt});
   final Future<MediaUrlResult> future;
@@ -147,12 +192,41 @@ class MediaUrlResolver {
   }
 
   Future<MediaUrlResult> _fetch(String id) async {
-    final res = await _dio.get('/media/$id/url');
+    late final Response<dynamic> res;
+    try {
+      res = await _dio.get('/media/$id/url');
+    } on DioException catch (e) {
+      // 403 / 404 / 410 arrive here. The door already chose a status and a
+      // code for each; carry both rather than flattening them into "failed".
+      final payload = _unwrap(e.response?.data);
+      throw MediaUnavailableException(
+        status: e.response?.statusCode,
+        code: payload['code']?.toString(),
+        message: payload['message']?.toString(),
+      );
+    }
+
     final body = res.data;
     final payload = _unwrap(body);
+
+    // 202 IS NOT A SUCCESS. Dio treats every 2xx as one, so this has to be
+    // read explicitly or the empty `url` below becomes the only symptom.
+    if (res.statusCode == 202) {
+      throw MediaUnavailableException(
+        status: 202,
+        code: payload['code']?.toString() ?? 'MEDIA_NOT_READY',
+        message: payload['message']?.toString(),
+      );
+    }
+
     final url = (payload['url'] ?? '').toString().trim();
     if (url.isEmpty) {
-      throw StateError('Media URL missing');
+      // A 200 with no URL is a contract breach, not a state the door names.
+      throw MediaUnavailableException(
+        status: res.statusCode,
+        code: payload['code']?.toString(),
+        message: payload['message']?.toString(),
+      );
     }
     final expiresRaw = payload['expiresAt'];
     final expiresAt = expiresRaw == null
