@@ -2100,7 +2100,31 @@ class RealtimeController extends StateNotifier<RealtimeState>
         // Asserting the default makes it real rather than aspirational: a
         // voice call claims the earpiece, exactly as the paragraph always
         // said it did.
-        unawaited(_mediaService.setSpeakerphoneEnabled(wantsVideo));
+        //
+        // ── AND IT IS AWAITED, BECAUSE WHEN IT LANDS DECIDES THE CALL ──
+        //
+        // This was fire-and-forget, so the route change raced the stage's
+        // negotiation. Measured live on production, 2026-09-24, on the Play
+        // build of 1.4.4 (39) with a Bluetooth device connected:
+        //
+        //     13:45:14  bind  receiving=2 bound=2  (clean, no failures)
+        //     13:45:14  route bt_sco -> speaker
+        //     13:45:15  kinds=audio=ABSENT video=68898b
+        //
+        // The route moved in the SAME SECOND the inbound audio receiver was
+        // bound. Android restarts its audio device on a communication-route
+        // change and the receiving audio stream went with it — five minutes
+        // of a call with full video and no sound, recovering only when the
+        // far end happened to republish. A control run with Bluetooth off put
+        // the route change five seconds AHEAD of the bind and audio arrived
+        // normally.
+        //
+        // Awaiting it settles the route before any receiver is negotiated,
+        // which is the ordering that worked. It does not make route changes
+        // safe in general — somebody connecting earbuds mid-call must still
+        // work, and that is what `_checkAudioReceiverAlive` in the stage
+        // transport repairs.
+        await _mediaService.setSpeakerphoneEnabled(wantsVideo);
       }
 
       state = state.copyWith(

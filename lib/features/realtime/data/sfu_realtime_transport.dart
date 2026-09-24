@@ -245,6 +245,29 @@ class SfuRealtimeTransport implements RealtimeTransport {
   final Map<String, int> _subscribeAttempts = <String, int>{};
   static const int _maxSubscribeAttempts = 6;
 
+  /// What KIND each subscribed track is, so the liveness probe can tell the
+  /// difference between "no audio is arriving" and "no audio was ever asked
+  /// for". Without it, `audio=ABSENT` is unactionable: a call where nobody
+  /// published audio looks identical to one where the receiver died.
+  final Map<String, String> _kindByTrackId = <String, String>{};
+
+  /// Consecutive liveness ticks where an audio track is subscribed and no
+  /// inbound audio stream exists at all.
+  int _audioAbsentTicks = 0;
+
+  /// How many times this transport has rebuilt a lost audio receiver.
+  ///
+  /// Bounded for the same reason `_subscribeAttempts` is: a fault that cannot
+  /// be repaired by renegotiating must not renegotiate forever.
+  int _audioRecoveries = 0;
+  static const int _maxAudioRecoveries = 3;
+
+  /// Ticks of absence before rebuilding. The probe runs every 3s, so this is
+  /// about nine seconds — long enough that a receiver still being negotiated
+  /// is never mistaken for one that died, short enough that nobody sits
+  /// through a silent conversation wondering.
+  static const int _audioAbsentTicksBeforeRecovery = 3;
+
   /// What is currently bound, so a refresh that finds nothing new is free and
   /// still returns the media already being received.
   Map<String, RemoteParticipantMedia> _remote =
@@ -605,6 +628,22 @@ class SfuRealtimeTransport implements RealtimeTransport {
         .map((t) => '${t['id']}')
         .where((id) => id.isNotEmpty && id != 'null')
         .toList(growable: false);
+
+    // REMEMBER WHAT KIND EACH TRACK IS.
+    //
+    // The liveness probe measures inbound bytes per kind and can see that no
+    // audio stream exists at all. On its own that is unactionable — a call
+    // where nobody published audio looks exactly the same. Knowing an AUDIO
+    // track is subscribed turns `audio=ABSENT` from an observation into a
+    // fault worth repairing. See `_recoverLostAudioReceiver`.
+    for (final t in available) {
+      final id = '${t['id']}';
+      if (id.isEmpty || id == 'null') continue;
+      final type = '${t['trackType'] ?? ''}'.toUpperCase();
+      if (type.isEmpty) continue;
+      _kindByTrackId[id] = type == 'VIDEO' ? 'video' : 'audio';
+    }
+
     if (trackIds.isEmpty) return _remote;
 
     // RETIRE RECEIVERS FOR TRACKS THAT NO LONGER EXIST.
@@ -1051,6 +1090,7 @@ class SfuRealtimeTransport implements RealtimeTransport {
 
       if (byKind != null) {
         _noteFirstBytes(byKind);
+        unawaited(_checkAudioReceiverAlive(byKind));
         final stalled = stalledKindAfterTick(
           lastBytesByKind: _lastBytesByKind,
           stallTicksByKind: _stallTicksByKind,
@@ -1110,6 +1150,94 @@ class SfuRealtimeTransport implements RealtimeTransport {
         _declareLost('media_stalled_${_stallTicks * 3}s');
       }
     });
+  }
+
+  /// THE PROBE THAT SAW THE FAULT AND ONLY WROTE IT DOWN.
+  ///
+  /// `audio=ABSENT` means there is no inbound audio RTP stream on this peer
+  /// connection at all — not a silent one, none. Until now that was computed
+  /// every three seconds, printed to a log, and acted on by nothing.
+  ///
+  /// ## What it is repairing
+  ///
+  /// Measured live on production, 2026-09-24, on the Play build of 1.4.4 (39),
+  /// with a Bluetooth device connected to the phone:
+  ///
+  ///     13:45:14  bind  server=2 transceivers=4 receiving=2 bound=2
+  ///                     noMid=0 noLine=0 dirUnreadable=0 noTrack=0
+  ///     13:45:14  the call audio route changed bt_sco -> speaker
+  ///     13:45:15  kinds=audio=ABSENT video=68898b
+  ///     ...
+  ///     13:49:42  kinds=audio=ABSENT video=50643560b
+  ///
+  /// The audio receiver was negotiated and bound CLEANLY, and in the same
+  /// second the platform moved the call's audio route. Android restarts its
+  /// audio device when that happens, the inbound audio stream went with it,
+  /// and nothing renegotiated — so the founder sat in a five-minute call with
+  /// perfect video and no sound. It recovered only when the OTHER party
+  /// happened to republish, which rebuilt the receiver by accident.
+  ///
+  /// A control run minutes later with Bluetooth off put the route change
+  /// FIVE SECONDS BEFORE the bind, and audio arrived normally.
+  ///
+  /// ## Why the repair is here rather than at the cause
+  ///
+  /// The route is settled before negotiation now, which removes the common
+  /// case. But a route change mid-call is not a fault to be prevented — it is
+  /// a person connecting earbuds, getting into a car, walking away from a
+  /// headset. Those must work. So the transport also has to be able to notice
+  /// that its audio receiver has died and rebuild it, whatever killed it.
+  ///
+  /// Dropping the track from `_subscribed` is exactly what the peer's
+  /// accidental republish did: the next reconcile asks for it again and the
+  /// renegotiation creates a fresh receiver.
+  Future<void> _checkAudioReceiverAlive(Map<String, int> byKind) async {
+    if (_closing || _lostReported) return;
+
+    // Only meaningful if we actually asked for audio. A video-only call, or a
+    // call where nobody has published audio yet, is not broken.
+    final subscribedAudio = _subscribed
+        .where((id) => _kindByTrackId[id] == 'audio')
+        .toList(growable: false);
+    if (subscribedAudio.isEmpty) {
+      _audioAbsentTicks = 0;
+      return;
+    }
+
+    if (byKind.containsKey('audio')) {
+      // A stream exists. Whether it carries bytes is the stall probe's
+      // question, not this one.
+      _audioAbsentTicks = 0;
+      return;
+    }
+
+    _audioAbsentTicks += 1;
+    if (_audioAbsentTicks < _audioAbsentTicksBeforeRecovery) return;
+    if (_audioRecoveries >= _maxAudioRecoveries) return;
+
+    _audioAbsentTicks = 0;
+    _audioRecoveries += 1;
+
+    // Forget the subscription so the next reconcile asks again, and clear the
+    // attempt counters so this does not consume the retry budget that exists
+    // for a different fault.
+    _subscribed.removeAll(subscribedAudio);
+    for (final id in subscribedAudio) {
+      _subscribeAttempts.remove(id);
+    }
+
+    unawaited(_report(
+      'op=AUDIO_RECEIVER_LOST tracks=${subscribedAudio.length} '
+      'recovery=$_audioRecoveries/$_maxAudioRecoveries '
+      'video=${byKind['video'] ?? 0}b',
+    ));
+
+    try {
+      await refreshRemoteMedia(trigger: 'AUDIO_RECEIVER_LOST');
+    } catch (_) {
+      // A failed rebuild leaves the call exactly as it already was, and the
+      // next tick will try again within the bound.
+    }
   }
 
   /// AN ABSENT KIND AND A KIND AT ZERO HAVE DIFFERENT CAUSES.
