@@ -292,10 +292,24 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     // the existing ended-session auto-navigation then reconciles the
     // screen the moment the session is terminal. No-op once joined (the
     // socket carries terminal truth live).
+    // C-5 — BEING JOINED IS NOT THE SAME AS BEING IN A CALL.
+    //
+    // This used to stop the moment `isJoined` went true, on the reasoning
+    // below that the socket carries terminal truth once joined. It does —
+    // when it arrives. When it does not, a client that is nominally joined to
+    // a session the server has already ended has NOTHING left that would ever
+    // tell it: this poll had stood down, and the ended-session exit required
+    // `!isJoined`. That is the "Connecting… · 0 participants" the founder sat
+    // in (Film A, capture 10), and it has no way out on its own.
+    //
+    // So the poll now stands down only when the call is demonstrably live —
+    // joined AND somebody else is actually present. A joined session with
+    // nobody in it is either still ringing (legitimate, and re-hydrating it
+    // costs one cheap request every twelve seconds) or already over.
     _preJoinTruthTimer ??= Timer.periodic(const Duration(seconds: 12), (_) {
       if (!mounted) return;
       final current = ref.read(realtimeControllerProvider);
-      if (current.isJoined) return;
+      if (current.isJoined && _someoneElseIsPresent(current)) return;
       final id = widget.sessionId.trim();
       if (id.isEmpty) return;
       unawaited(
@@ -479,6 +493,24 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       if (!mounted) return;
       controller.syncConsentsVisibility(canManageConsents: canManageConsents);
     });
+  }
+
+  /// Is anybody ELSE actually in this call?
+  ///
+  /// The state's own doctrine, written beside `acceptedByPeer`: *"`participants`
+  /// reflecting a present peer remains the sole evidence"* of connection. Not
+  /// `isJoined`, which says only that this client completed its own join, and
+  /// stays true while sitting in a room the far end has left.
+  ///
+  /// Used to decide whether the truth poll may stand down (C-5).
+  bool _someoneElseIsPresent(RealtimeState state) {
+    final me = ref.read(currentUserIdProvider);
+    for (final p in state.participants) {
+      if (!p.isPresent) continue;
+      if (me.isNotEmpty && p.userId == me) continue;
+      return true;
+    }
+    return false;
   }
 
   /// LIVE role truth: am I an OBSERVER-role (receive-only public viewer)
@@ -1057,10 +1089,22 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     // immediately to a safe fallback route. Without this, a stale push tap
     // or a deep link from after the host hung up rendered a "Connecting…"
     // shell on a dead session that would never join.
+    // C-5 (2026-09-24): `!state.isJoined` came off this condition.
+    //
+    // It meant a client that had completed its own join could never take this
+    // exit, however dead the session was — and "joined to a session the server
+    // has ended" is not a state anybody can act their way out of. It is the
+    // "Connecting… · 0 participants" the founder was stranded in.
+    //
+    // `isActive` is SERVER truth — `status not in {ENDED, CANCELLED, FAILED}`
+    // — not an inference drawn from silence, so this cannot fire on a call
+    // that is merely quiet or briefly reconnecting. Production holds 1,003
+    // sessions and every one of them is ENDED or CANCELLED with an `endedAt`,
+    // so the status arrives reliably; what was missing was anything that acted
+    // on it once joined.
     final hydratedSession = state.session;
     if (hydratedSession != null &&
         !hydratedSession.isActive &&
-        !state.isJoined &&
         hydratedSession.surfaceType != RealtimeSurfaceType.meeting) {
       if (!_hasNavigatedAway) {
         _hasNavigatedAway = true;

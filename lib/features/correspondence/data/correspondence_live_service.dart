@@ -45,11 +45,37 @@ class CorrespondenceLiveService {
 
   Stream<CorrespondenceLiveEvent> get events => _events.stream;
 
+  /// In-flight connect, so overlapping callers share one attempt.
+  ///
+  /// `_connect` opens with `await disconnect()`, so two concurrent attempts
+  /// tear each other's socket down mid-setup. That was survivable while
+  /// connecting was rare and incidental — app resume, opening Invitations,
+  /// starting a thread call. It stopped being rare when a token arriving
+  /// started connecting too (C-6), and a token refresh landing during a
+  /// reconnect is exactly the overlap that produces churn.
+  ///
+  /// `RealtimeSocketService.ensureConnected` is already "the SOLE, single-
+  /// flight owner of connection" for the other socket; this is the same rule
+  /// for this one.
+  Future<void>? _connecting;
+
   Future<void> ensureConnected() async {
     final token = _ref.read(tokenStoreProvider).accessToken?.trim() ?? '';
     if (token.isEmpty) return;
     if (_socket != null && _socket!.connected && _activeToken == token) return;
-    await _connect(token);
+
+    final inFlight = _connecting;
+    if (inFlight != null) return inFlight;
+
+    final attempt = _connect(token);
+    _connecting = attempt;
+    try {
+      await attempt;
+    } finally {
+      // Only clear if this attempt is still the current one: a later caller
+      // that superseded it owns the slot now.
+      if (identical(_connecting, attempt)) _connecting = null;
+    }
   }
 
   void updateAccessToken(String token) {
@@ -58,7 +84,35 @@ class CorrespondenceLiveService {
     _activeToken = normalized;
 
     final socket = _socket;
-    if (socket == null) return;
+
+    // C-6 — A TOKEN ARRIVING IS THE MOMENT TO CONNECT.
+    //
+    // This returned here, having recorded the token and done nothing with it,
+    // because the method's job was understood to be "keep an EXISTING socket's
+    // credentials fresh for reconnects". Nothing else was watching for a token
+    // to appear:
+    //
+    //   * `ensureConnected()` returns immediately while the token is empty;
+    //   * the only boot-time call is `RealtimeReconciliationController`, which
+    //     initialises BEFORE the session is restored — so it makes exactly
+    //     that empty-token no-op and never tries again;
+    //   * every other caller is incidental (app RESUME, opening Invitations,
+    //     starting a thread call).
+    //
+    // So on a client where the token arrives after boot and nothing incidental
+    // happens, the correspondence socket is never connected AT ALL. That is
+    // the web: a page load restores the session asynchronously, and a tab that
+    // was never hidden never fires `resumed`.
+    //
+    // Founder-observed (Film A, capture 6): a web conversation did not show
+    // messages sent from the other device until reload — reload re-reads the
+    // list, which is why it looked like a refresh problem. The same silence
+    // covers feed convergence, invitations and the Messages badge, because
+    // they all ride this one socket.
+    if (socket == null || !socket.connected) {
+      unawaited(ensureConnected().catchError((_) {}));
+      return;
+    }
 
     final auth = <String, dynamic>{
       'token': normalized,

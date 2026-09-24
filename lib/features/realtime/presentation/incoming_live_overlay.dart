@@ -57,6 +57,57 @@ bool joinErrorIsStale({
   return liveSessionId == joinErrorSessionId;
 }
 
+/// C-5 — AN ADDRESS IS NOT A CALL.
+///
+/// Being on a call surface used to suppress every incoming ringing card, on
+/// the reasonable assumption that somebody inside a call should not be
+/// interrupted by a card they cannot see behind the room.
+///
+/// The assumption fails exactly when it matters. Founder-observed (Film A,
+/// capture 10): after the far end hung up, the web room sat at *"Connecting…
+/// · 0 participants"* on a session that was never going to join — and because
+/// the person was still AT `/realtime/:id`, the next incoming call was
+/// suppressed silently. No ring, no card, no missed-call reason. The stranding
+/// and the silence compounded: the one state where you most need the next call
+/// to reach you was the one state that guaranteed it would not.
+///
+/// The identical mistake was already found and repaired one rule below, for
+/// the state-based version of the same test — *"the previous 'joined any call
+/// → suppress' rule caused new invites to silently fall through to PiP-only
+/// when a stale joined state lingered from an earlier session."* The
+/// address-based test was left carrying it.
+///
+/// So the address suppresses only when something corroborates it:
+///
+///   * the client is actually JOINED to a call — a real room, do not interrupt;
+///   * or the address names the very session that is ringing, which is the
+///     accept transition (navigated, not yet joined) and must not re-present
+///     the card it just came from.
+///
+/// Parked on a dead room, joined to nothing, the next call rings. That is the
+/// whole repair.
+bool callSurfaceSuppressesIncoming({
+  required String currentPath,
+  required bool isJoined,
+  required String? incomingSessionId,
+}) {
+  final onCallSurface = currentPath.contains('/realtime') ||
+      currentPath.contains('/live/') ||
+      currentPath.contains('/activity');
+  if (!onCallSurface) return false;
+
+  // A real call is in progress here.
+  if (isJoined) return true;
+
+  // The accept transition: this address IS the ringing session.
+  final id = (incomingSessionId ?? '').trim();
+  if (id.isNotEmpty && currentPath.contains(id)) return true;
+
+  // On a call surface, joined to nothing, and the ringing call is a different
+  // session. Nothing is being interrupted — let it through.
+  return false;
+}
+
 class AuraIncomingLiveLayer extends ConsumerStatefulWidget {
   const AuraIncomingLiveLayer({super.key, required this.child});
 
@@ -177,10 +228,14 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       }
     }
 
-    // Already in a dedicated realtime room or live sub-route — suppress.
-    if (currentPath.contains('/realtime') ||
-        currentPath.contains('/live/') ||
-        currentPath.contains('/activity')) {
+    // Already on a call surface — suppress, but only if a call is really live
+    // there. See [callSurfaceSuppressesIncoming] for why the address alone is
+    // not enough (C-5).
+    if (callSurfaceSuppressesIncoming(
+      currentPath: currentPath,
+      isJoined: liveState.isJoined,
+      incomingSessionId: sessionId,
+    )) {
       return false;
     }
 
