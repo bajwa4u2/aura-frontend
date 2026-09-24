@@ -32,6 +32,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
+import '../platform/media_capabilities.dart';
+
 import 'media_initialization.dart';
 
 import '../ui/aura_radius.dart';
@@ -187,8 +189,19 @@ class _AuraVoicePlayerState extends State<AuraVoicePlayer> {
 
     // Position over total once both are known; position alone while playing an
     // unknown-length file; the authoritative total before playback starts.
+    // C-20 — SAY WHICH IS MISSING: THE FILE, OR THE PLAYER.
+    //
+    // "Unavailable" was shown for every failure, and on Windows EVERY voice
+    // note fails: this player is built on `video_player`, which has no Windows
+    // implementation and is not registered in `generated_plugins.cmake`, so
+    // `initialize()` raises `MissingPluginException` every time.
+    //
+    // Reading "Unavailable" there blames the recording. The asymmetry makes it
+    // worse: recording on Windows WORKS (`record_windows` is registered), so a
+    // Windows user can send a voice note and then be told their own message is
+    // unavailable.
     final readout = _failed
-        ? 'Unavailable'
+        ? (voiceNotePlaybackSupported() ? 'Unavailable' : 'Not supported here')
         : total == null
             ? (_controller != null ? formatPlaybackPosition(position) : '')
             : _controller == null
@@ -212,7 +225,9 @@ class _AuraVoicePlayerState extends State<AuraVoicePlayer> {
                   ? 'Audio unavailable'
                   : _playing
                       ? 'Pause'
-                      : 'Play $_title',
+                      : voiceNotePlaybackSupported()
+                          ? 'Play $_title'
+                          : 'Voice notes cannot be played on this device yet',
               child: InkWell(
                 borderRadius: BorderRadius.circular(20),
                 onTap: (_initializing || _failed) ? null : _toggle,

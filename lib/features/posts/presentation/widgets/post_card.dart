@@ -33,26 +33,27 @@ import 'post_card/post_card_models.dart';
 import 'post_card/post_card_parts.dart';
 import 'post_card/post_card_utils.dart';
 import '../../../../core/identity/person_identity_model.dart';
+import '../../../../core/media/attachment_url.dart';
 
-String? _resolveAvatarUrl(WidgetRef ref, String? raw) {
-  final url = (raw ?? '').trim();
-  if (url.isEmpty) return null;
-
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-
-  const uploadsBase = String.fromEnvironment(
-    'UPLOADS_BASE_URL',
-    defaultValue: 'https://uploads.auraplatform.org',
-  );
-
-  var base = uploadsBase.trim();
-  while (base.endsWith('/')) {
-    base = base.substring(0, base.length - 1);
-  }
-
-  if (!url.startsWith('/')) return '$base/$url';
-  return '$base$url';
-}
+/// C-19 — A DEFAULT THAT POINTED AT A HOST THAT NO LONGER SERVES US.
+///
+/// This carried its own copy of the rewrite with
+/// `defaultValue: 'https://uploads.auraplatform.org'`. That origin was retired
+/// by the private-origin cutover, and before it went it answered 401 to
+/// anonymous callers — so any build that did not pass `UPLOADS_BASE_URL`
+/// rebased every relative avatar onto a dead host and rendered a broken image
+/// with no error signal anywhere.
+///
+/// A default is the wrong shape for this question. `rewriteRelativeMediaUrl`
+/// returns a relative path UNCHANGED when no origin is configured, so it
+/// resolves against the app's own origin — which does serve `/media/<id>/raw`
+/// — instead of against somewhere that has been decommissioned for weeks.
+///
+/// It also already existed, and said in its own doc comment that it replaced
+/// this helper. It simply had no call sites: the replacement was written and
+/// never wired, so both copies of the dead host stayed.
+String? _resolveAvatarUrl(WidgetRef ref, String? raw) =>
+    rewriteRelativeMediaUrl(raw);
 
 String? _cleanNullableText(dynamic value) {
   final text = value?.toString().trim();
@@ -190,26 +191,15 @@ class _PostCardState extends ConsumerState<PostCard> {
 
   void _toggleExpanded() => setState(() => _expanded = !_expanded);
 
+  /// C-19 — the second copy of the same dead default. See `_resolveAvatarUrl`.
+  ///
+  /// The protocol-relative case is kept here because the shared helper does
+  /// not carry it: `//host/path` is already absolute and must not be joined to
+  /// anything.
   String? _resolveMediaUrl(WidgetRef ref, String? raw) {
-    if (raw == null) return null;
-    final s = raw.trim();
-    if (s.isEmpty) return null;
-
-    if (s.startsWith('http://') || s.startsWith('https://')) return s;
+    final s = (raw ?? '').trim();
     if (s.startsWith('//')) return 'https:$s';
-
-    const uploadsBase = String.fromEnvironment(
-      'UPLOADS_BASE_URL',
-      defaultValue: 'https://uploads.auraplatform.org',
-    );
-
-    var base = uploadsBase.trim();
-    while (base.endsWith('/')) {
-      base = base.substring(0, base.length - 1);
-    }
-
-    if (s.startsWith('/')) return '$base$s';
-    return '$base/$s';
+    return rewriteRelativeMediaUrl(s);
   }
 
   double _mediaMaxHeight(BuildContext context) {

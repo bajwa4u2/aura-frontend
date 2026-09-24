@@ -13,6 +13,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/platform/media_capabilities.dart';
 import '../../../core/ui/aura_space.dart';
 import '../application/meeting_entry_prefs.dart';
 import '../application/meetings_provider.dart';
@@ -1008,9 +1009,12 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
         await _bridge.startScreenShare();
       }
     } catch (e) {
+      // C-20 — "Try again" is an invitation, and it must only be extended when
+      // trying again could work. On a platform with no capture prerequisites
+      // at all it is worse than silence.
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unable to start screen share. Try again.')),
+          SnackBar(content: Text(screenShareUnavailableReason())),
         );
       }
     } finally {

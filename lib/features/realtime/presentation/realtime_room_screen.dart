@@ -25,6 +25,7 @@ import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_design_system.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
+import '../../../core/platform/media_capabilities.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/trust/trust_marks.dart';
@@ -890,7 +891,18 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         await controller.startScreenShare();
       }
     } catch (error) {
+      // C-20 — A FAILURE NOBODY IS TOLD ABOUT IS A BUTTON THAT DOES NOTHING.
+      //
+      // This was a `debugPrint` and nothing else, and the comment above treats
+      // "the user cancelled the picker" and "this platform cannot capture at
+      // all" as the same event. They are not: one needs no message, the other
+      // needs the only message there is.
       debugPrint('[rtc] screen share toggle failed err=$error');
+      if (mounted && !screenShareSupported()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(screenShareUnavailableReason())),
+        );
+      }
     } finally {
       if (mounted) setState(() => _togglingScreenShare = false);
     }

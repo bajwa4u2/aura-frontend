@@ -384,7 +384,29 @@ String? _enforceCanonicalIdMatch(
   // page, while the same composer opened normally from Explore (2026-09-19).
   // Stay put instead; the router re-evaluates when institution access settles,
   // and a real refusal is still a refusal.
-  final projection = ref.read(capabilityProjectionProvider);
+  // C-13 — AUTHORISE AGAINST THE INSTITUTION IN THE ADDRESS.
+  //
+  // This read `capabilityProjectionProvider`, which is the AMBIENT projection:
+  // it comes from the unscoped `GET /institutions/me`, and that endpoint picks
+  // the person's OLDEST membership (`findFirst` ordered by `createdAt` asc).
+  //
+  // So for anybody holding more than one membership, `/institution/<B>/...`
+  // was authorised against institution A's capabilities. An OWNER of B who had
+  // earlier joined A as a plain MEMBER — and a plain member holds no
+  // capabilities at all — was refused a destination the backend grants them,
+  // and landed on `standing?reason=denied`. The address had already been
+  // resolved correctly one block above; only the capability read was wrong.
+  //
+  // `capabilityProjectionForProvider` is scoped to a named institution and
+  // documents that it must never fall back to a different institution's
+  // authority. It existed and the router simply did not use it.
+  //
+  // This narrows nothing: the server enforces `MANAGE_AVAILABILITY` itself, and
+  // asking about the right institution can only make the client agree with it.
+  final resolvedId = (address?.institutionId ?? pathId ?? '').trim();
+  final projection = resolvedId.isEmpty
+      ? ref.read(capabilityProjectionProvider)
+      : ref.read(capabilityProjectionForProvider(resolvedId));
   if (projection.standing == null &&
       ref.read(institutionAccessProvider).isLoading) {
     return null;

@@ -24,16 +24,15 @@ class InstitutionBillingScreen extends ConsumerWidget {
 
   final String institutionId;
 
-  bool get _purchaseAllowed {
-    if (kIsWeb) return true;
-    switch (defaultTargetPlatform) {
-      case TargetPlatform.iOS:
-      case TargetPlatform.android:
-        return false;
-      default:
-        return true;
-    }
-  }
+  bool get _purchaseAllowed => billingPurchaseAllowed(
+        isWeb: kIsWeb,
+        platform: kIsWeb ? null : defaultTargetPlatform,
+      );
+
+  bool get _mayInviteExternalPurchase => billingMayInviteExternalPurchase(
+        isWeb: kIsWeb,
+        platform: kIsWeb ? null : defaultTargetPlatform,
+      );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -112,7 +111,10 @@ class InstitutionBillingScreen extends ConsumerWidget {
                 _FeatureCostsSection(costs: config.featureCosts),
                 if (!_purchaseAllowed) ...[
                   const SizedBox(height: AuraSpace.s12),
-                  const _MobilePurchaseNotice(),
+                  if (_mayInviteExternalPurchase)
+                    const _MobilePurchaseNotice()
+                  else
+                    const _BillingNotInThisAppNotice(),
                 ],
               ],
             ),
@@ -424,6 +426,82 @@ class _FeatureCostsSection extends StatelessWidget {
                 ],
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// C-21 — WHAT A STORE BINARY MAY SAY ABOUT PAYING SOMEWHERE ELSE.
+///
+/// `_MobilePurchaseNotice` names `app.auraplatform.org` and tells the reader to
+/// sign in there to pay. On iOS that is a call to action directing customers to
+/// a purchasing mechanism other than in-app purchase — **App Store Review
+/// Guideline 3.1.1** — and the same text renders beside a full price catalogue.
+///
+/// The dangerous part is not the text, it is WHEN it appears. The whole screen
+/// is gated on `config.mode`, which is a SERVER flag. Nothing about it is
+/// decided at build time, so on the day monetization is switched on, every
+/// installed binary starts showing this — with no new submission, no review,
+/// and no way to take it back except another release.
+///
+/// Stating current plan and credit balance is not a purchase invitation and
+/// stays. What comes off the store binaries is the invitation itself.
+///
+/// Kept pure and separate from [billingPurchaseAllowed] because they are two
+/// different questions: whether this build may take money, and whether it may
+/// tell you to go and spend it elsewhere. Desktop may do both; a store binary
+/// may do neither.
+bool billingMayInviteExternalPurchase({
+  required bool isWeb,
+  required TargetPlatform? platform,
+}) {
+  if (isWeb) return true;
+  switch (platform) {
+    case TargetPlatform.iOS:
+    case TargetPlatform.android:
+      return false;
+    default:
+      // Windows, macOS and Linux are not distributed under store purchase
+      // rules here, so directing to the web is ordinary.
+      return true;
+  }
+}
+
+/// Whether THIS build may run a checkout itself.
+bool billingPurchaseAllowed({
+  required bool isWeb,
+  required TargetPlatform? platform,
+}) {
+  if (isWeb) return true;
+  switch (platform) {
+    case TargetPlatform.iOS:
+    case TargetPlatform.android:
+      return false;
+    default:
+      return true;
+  }
+}
+
+/// Billing exists, and it is not done here. No price, no destination, no
+/// invitation — the three things 3.1.1 is about.
+class _BillingNotInThisAppNotice extends StatelessWidget {
+  const _BillingNotInThisAppNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return AuraCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Plan changes are not available in this app',
+              style: AuraText.title),
+          const SizedBox(height: AuraSpace.s6),
+          Text(
+            'Your current plan and credit balance are shown above. '
+            'An administrator of this institution can change the plan.',
+            style: AuraText.body.copyWith(height: 1.4),
+          ),
         ],
       ),
     );

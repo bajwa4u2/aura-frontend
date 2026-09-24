@@ -1969,9 +1969,27 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       );
     }
 
+    // C-12 — WHO YOU ARE SPEAKING AS IS NOT A WIDE-SCREEN LUXURY.
+    //
+    // `_ReplyActorBanner` — the line that reads "Replying as <Institution>" —
+    // was mounted only inside `_buildSecondaryRail()`, and the rail exists only
+    // in the `wide` branch above (>= 1080px). So on every phone, a reply
+    // opened with `asInstitution=1&institutionId=...` was composed and sent in
+    // an institution's name with NO disclosure on screen at all.
+    //
+    // That is the wrong thing to lose to a narrow viewport. Speaking as an
+    // institution is a consequential act, and the whole point of the banner is
+    // that the author can see whose voice they are using before they send. It
+    // is shown FIRST here, above the editor, rather than tucked below it.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (_isReply &&
+            widget.asInstitution &&
+            (widget.institutionId ?? '').trim().isNotEmpty) ...[
+          _ReplyActorBanner(institutionId: widget.institutionId!.trim()),
+          const SizedBox(height: AuraSpace.s12),
+        ],
         _buildEditorSection(),
         belowEditorItems,
         if (!_isReply) ...[

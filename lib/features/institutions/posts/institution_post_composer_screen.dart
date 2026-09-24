@@ -240,7 +240,9 @@ class _InstitutionPostComposerScreenState
             eligible: true,
             internal: false,
             sourceUrl: initialLinkUrl,
-            status: (initial.linkTitle ?? '').isNotEmpty || (initial.linkImageUrl ?? '').isNotEmpty
+            status:
+                (initial.linkTitle ?? '').isNotEmpty ||
+                    (initial.linkImageUrl ?? '').isNotEmpty
                 ? 'READY'
                 : 'PENDING',
             title: initial.linkTitle,
@@ -787,8 +789,12 @@ class _InstitutionPostComposerScreenState
       'mentions': _currentMentionPayload(),
       // Compose Link Intelligence / OG Preview -- Phase 1. Same
       // always-resend-current-value convention as the other fields above.
-      'linkPreviewId': (_linkPreview?.eligible ?? false) ? _linkPreview!.linkPreviewId : null,
-      'linkSourceUrl': (_linkPreview?.eligible ?? false) ? _linkPreview!.sourceUrl : null,
+      'linkPreviewId': (_linkPreview?.eligible ?? false)
+          ? _linkPreview!.linkPreviewId
+          : null,
+      'linkSourceUrl': (_linkPreview?.eligible ?? false)
+          ? _linkPreview!.sourceUrl
+          : null,
     };
   }
 
@@ -841,8 +847,9 @@ class _InstitutionPostComposerScreenState
     }
     final message = acquisitionLimitMessage(acquired.droppedForLimit);
     if (message != null && mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -910,12 +917,15 @@ class _InstitutionPostComposerScreenState
         // without becoming a second source of truth.
         _media.add(
           Attachment(
-            localId: '${DateTime.now().microsecondsSinceEpoch}-${_media.length}',
+            localId:
+                '${DateTime.now().microsecondsSinceEpoch}-${_media.length}',
             kind: mimeType.startsWith('video/')
                 ? AttachmentKind.video
                 : AttachmentKind.image,
             source: AttachmentSource.gallery,
-            mediaId: result.mediaId.trim().isEmpty ? null : result.mediaId.trim(),
+            mediaId: result.mediaId.trim().isEmpty
+                ? null
+                : result.mediaId.trim(),
             url: url,
             thumbUrl: result.thumbUrl.trim().isNotEmpty
                 ? result.thumbUrl.trim()
@@ -924,7 +934,9 @@ class _InstitutionPostComposerScreenState
             bytes: prepared,
           ),
         );
-        _mediaComposition = _mediaComposition.copyWith(attachments: [..._media]);
+        _mediaComposition = _mediaComposition.copyWith(
+          attachments: [..._media],
+        );
         _syncTransitionalMediaFields();
       });
       // Claim it before anything persists a reference to it.
@@ -945,7 +957,6 @@ class _InstitutionPostComposerScreenState
       }
     }
   }
-
 
   // _inferMime removed — replaced with `inferMimeFromFileName` from
   // lib/core/media/media_mime.dart (canonical).
@@ -1307,10 +1318,7 @@ class _InstitutionPostComposerScreenState
               authorityState: identity.speakingAuthorityState,
             ),
             const SizedBox(height: AuraSpace.s16),
-            AuraSecondaryButton(
-              label: 'Back',
-              onPressed: () => context.pop(),
-            ),
+            AuraSecondaryButton(label: 'Back', onPressed: () => context.pop()),
           ],
         ),
       );
@@ -1341,277 +1349,299 @@ class _InstitutionPostComposerScreenState
       );
     }
 
-    return AuraScaffold(
-      showHeader: false,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          InsSpacing.screenHPad,
-          InsSpacing.screenVPad,
-          InsSpacing.screenHPad,
-          AuraSpace.s32,
-        ),
-        children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: InsSpacing.contentMaxWidth,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // RETIRED 2026-08-25 — duplicated the governed return
-                      // control, and did it worse: an UNGUARDED pop(), so on a
-                      // deep-link entry there was nothing to pop and the arrow
-                      // did nothing at all.
-                      Expanded(
-                        child: InsModeHeader(
-                          title: widget.isEditing ? 'Edit post' : 'New post',
-                          description:
-                              'Posts are scoped by visibility. Distribution controls whether public posts may surface in the global feed.',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AuraSpace.s14),
-                  _ActorBanner(identity: identity),
-                  const SizedBox(height: AuraSpace.s8),
-                  // Phase 3 — composer authority reminder. A single
-                  // muted line below the banner reminds the host that
-                  // anything they publish here is institutional speech.
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AuraSpace.s4,
-                    ),
-                    child: Text(
-                      'You are publishing as an official institutional voice.',
-                      style: AuraText.small.copyWith(
-                        color: AuraSurface.faint,
-                        fontWeight: FontWeight.w600,
-                        height: 1.45,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: AuraSpace.s16),
-                  if (_error != null) ...[
-                    _ErrorBanner(message: _error!),
-                    const SizedBox(height: AuraSpace.s14),
-                    if (_authorityRefused) ...[
-                      SpeakingAuthorityNotice(
-                        institutionAddress:
-                            identity?.workspaceAddress ?? widget.institutionId,
-                        authorityState: identity?.speakingAuthorityState,
-                        compact: true,
-                      ),
-                      const SizedBox(height: AuraSpace.s14),
-                    ],
-                  ],
-                  _LabeledField(
-                    label: 'Communication type',
-                    child: _CommunicationTypePicker(
-                      selected: _communicationType,
-                      onChanged: (t) => setState(() => _communicationType = t),
-                    ),
-                  ),
-                  _LabeledField(
-                    label:
-                        'Title (optional — derived from body if empty)',
-                    counter:
-                        '${_titleCtrl.text.length} / '
-                        '${InstitutionPost.maxTitleChars}',
-                    counterColor: _counterColor(
-                      _titleCtrl.text.length,
-                      InstitutionPost.maxTitleChars,
-                    ),
-                    child: TextField(
-                      controller: _titleCtrl,
-                      maxLength: InstitutionPost.maxTitleChars,
-                      decoration: _decoration(
-                        'Headline for this statement…',
-                      ),
-                      style: AuraText.body,
-                      buildCounter: _zeroCounter,
-                    ),
-                  ),
-                  _LabeledField(
-                    label: 'Body',
-                    counter:
-                        '${_bodyCtrl.text.length} / '
-                        '${InstitutionPost.maxBodyChars}',
-                    counterColor: _counterColor(
-                      _bodyCtrl.text.length,
-                      InstitutionPost.maxBodyChars,
-                    ),
-                    // Item 15 — Rich Paste, wraps the AXR-1 governed
-                    // @/# autocomplete.
-                    child: RichPasteField(
-                      controller: _bodyCtrl,
-                      child: GovernedTagAutocomplete(
-                        controller: _bodyCtrl,
-                        focusNode: _bodyFocus,
-                        onTagSelected: _rememberSelectedTag,
-                        child: TextField(
-                          controller: _bodyCtrl,
-                          focusNode: _bodyFocus,
-                          maxLength: InstitutionPost.maxBodyChars,
-                          // The identical scroll trap the announcement editor
-                          // had: a bounded maxLines turns this into a second
-                          // Scrollable that swallows the wheel once the text
-                          // overflows, stranding the controls below it on short
-                          // viewports. Same one-line remedy, applied here
-                          // because it is the same defect and not a different
-                          // one that merely looks similar.
-                          maxLines: null,
-                          minLines: 8,
-                          // Declines scroll ownership for the same reason the
-                          // announcement body does: with nothing of its own to
-                          // scroll, the enclosing view should take every
-                          // gesture including those starting over the field.
-                          scrollPhysics: const NeverScrollableScrollPhysics(),
-                          decoration: _decoration('Write your post…'),
-                          style: AuraText.body,
-                          buildCounter: _zeroCounter,
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (_linkPreview != null && _linkPreview!.eligible) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: AuraSpace.s16),
-                      child: _linkPreview!.internal
-                          ? InternalReferenceCard(
-                              sourceUrl: _linkPreview!.sourceUrl,
-                              reference: _linkPreview!.internalReference,
-                              dense: true,
-                              onRemove: () {
-                                setState(() => _linkPreview = null);
-                                _onFieldChanged();
-                              },
-                            )
-                          : LinkPreviewCard(
-                              url: _linkPreview!.sourceUrl,
-                              title: _linkPreview!.title,
-                              description: _linkPreview!.description,
-                              siteName: _linkPreview!.siteName,
-                              imageUrl: _linkPreview!.imageUrl,
-                              dense: true,
-                              onRemove: () {
-                                setState(() => _linkPreview = null);
-                                _onFieldChanged();
-                              },
-                            ),
-                    ),
-                  ],
-                  _LabeledField(
-                    label: 'Media (optional)',
-                    child: Column(
+    // C-17 — BACK PUTS THE KEYBOARD AWAY BEFORE IT LEAVES.
+    //
+    // There was no `PopScope` here at all, so on Android a BACK press while the
+    // soft keyboard was open popped the composer outright — mid-sentence, with
+    // the keyboard still covering half the screen on the way out. The first
+    // press is the one people use to get the keyboard out of the way, and it
+    // was spending their draft instead.
+    //
+    // Only swallowed while the keyboard is actually up: a BACK with no keyboard
+    // must still leave, or the screen becomes a trap.
+    return PopScope(
+      canPop: !backShouldDismissKeyboard(
+        MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        FocusScope.of(context).unfocus();
+      },
+      child: AuraScaffold(
+        showHeader: false,
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(
+            InsSpacing.screenHPad,
+            InsSpacing.screenVPad,
+            InsSpacing.screenHPad,
+            AuraSpace.s32,
+          ),
+          children: [
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: InsSpacing.contentMaxWidth,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // THE CANONICAL STRIP. A video shows its own frame from
-                        // the local source rather than a glyph, and each item
-                        // carries its own state, order and removal.
-                        if (_media.isNotEmpty)
-                          AuraCompositionStrip(
-                            attachments: _media,
-                            phaseOf: _mediaComposition.phaseOf,
-                            onRemove: _removeMediaItem,
-                            onReorder: _reorderMediaItem,
-                          ),
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: TextButton.icon(
-                            onPressed: (_busy ||
-                                    _uploading ||
-                                    _media.length >= kMaxComposableMedia)
-                                ? null
-                                : _pickMediaMultiple,
-                            icon: const Icon(Icons.perm_media_outlined),
-                            label: Text(_media.isEmpty
-                                ? 'Add photos & videos'
-                                : 'Add more'),
+                        // RETIRED 2026-08-25 — duplicated the governed return
+                        // control, and did it worse: an UNGUARDED pop(), so on a
+                        // deep-link entry there was nothing to pop and the arrow
+                        // did nothing at all.
+                        Expanded(
+                          child: InsModeHeader(
+                            title: widget.isEditing ? 'Edit post' : 'New post',
+                            description:
+                                'Posts are scoped by visibility. Distribution controls whether public posts may surface in the global feed.',
                           ),
                         ),
-                        if (_uploading)
-                          const Padding(
-                            padding: EdgeInsets.only(top: 6),
-                            child: LinearProgressIndicator(minHeight: 2),
-                          ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: AuraSpace.s8),
-                  _VisibilitySection(
-                    visibility: _visibility,
-                    onChange: _onVisibilityChanged,
-                  ),
-                  const SizedBox(height: AuraSpace.s16),
-                  _DistributionSection(
-                    distribution: _distribution,
-                    visibility: _visibility,
-                    onChange: (d) {
-                      setState(() => _distribution = d);
-                      _scheduleDraftSave();
-                    },
-                  ),
-                  const SizedBox(height: AuraSpace.s16),
-                  AuraTopicSelector(
-                    primary: _primaryTopic,
-                    secondaries: _secondaryTopics,
-                    contentText: '${_titleCtrl.text} ${_bodyCtrl.text}',
-                    onPrimaryChanged: (t) => setState(() => _primaryTopic = t),
-                    onSecondariesChanged: (list) =>
-                        setState(() => _secondaryTopics = list),
-                    fetchApprovedSecondaries: (primary) => ref
-                        .read(topicRepositoryProvider)
-                        .approvedSecondaries(primary),
-                    fetchSuggestions: (primary, text) => ref
-                        .read(topicRepositoryProvider)
-                        .suggestSecondary(primary, text),
-                  ),
-                  const SizedBox(height: AuraSpace.s16),
-                  if (!widget.isEditing)
-                    _DraftStatusRow(
-                      status: _draftStatus,
-                      savedAt: _draftSavedAt,
-                      canDiscard: _hasAnyDraftContent,
-                      onDiscard: _busy ? null : _discardDraft,
+                    const SizedBox(height: AuraSpace.s14),
+                    _ActorBanner(identity: identity),
+                    const SizedBox(height: AuraSpace.s8),
+                    // Phase 3 — composer authority reminder. A single
+                    // muted line below the banner reminds the host that
+                    // anything they publish here is institutional speech.
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AuraSpace.s4,
+                      ),
+                      child: Text(
+                        'You are publishing as an official institutional voice.',
+                        style: AuraText.small.copyWith(
+                          color: AuraSurface.faint,
+                          fontWeight: FontWeight.w600,
+                          height: 1.45,
+                        ),
+                      ),
                     ),
-                  const SizedBox(height: AuraSpace.s12),
-                  // C1 — ATTRIBUTION AT THE CONSEQUENTIAL ACT (founder Option A).
-                  //
-                  // Publishing in an institution's voice is consequential, so
-                  // who it represents is stated here, immediately above the
-                  // control that commits it — not inferred from the route that
-                  // led here. This composer publishes only in the institution's
-                  // voice, so no chooser is manufactured; the attribution keeps
-                  // the acting person visible so the institution never appears
-                  // to act by itself.
-                  if (actingAs != null) ...[
-                    ActingAttribution(
-                      resolution: actingAs,
-                      selected: actingAs.recommended!,
-                      onChanged: (_) {},
-                      verb: 'Publishing',
+                    const SizedBox(height: AuraSpace.s16),
+                    if (_error != null) ...[
+                      _ErrorBanner(message: _error!),
+                      const SizedBox(height: AuraSpace.s14),
+                      if (_authorityRefused) ...[
+                        SpeakingAuthorityNotice(
+                          institutionAddress:
+                              identity?.workspaceAddress ??
+                              widget.institutionId,
+                          authorityState: identity?.speakingAuthorityState,
+                          compact: true,
+                        ),
+                        const SizedBox(height: AuraSpace.s14),
+                      ],
+                    ],
+                    _LabeledField(
+                      label: 'Communication type',
+                      child: _CommunicationTypePicker(
+                        selected: _communicationType,
+                        onChanged: (t) =>
+                            setState(() => _communicationType = t),
+                      ),
                     ),
+                    _LabeledField(
+                      label: 'Title (optional — derived from body if empty)',
+                      counter:
+                          '${_titleCtrl.text.length} / '
+                          '${InstitutionPost.maxTitleChars}',
+                      counterColor: _counterColor(
+                        _titleCtrl.text.length,
+                        InstitutionPost.maxTitleChars,
+                      ),
+                      child: TextField(
+                        controller: _titleCtrl,
+                        maxLength: InstitutionPost.maxTitleChars,
+                        decoration: _decoration('Headline for this statement…'),
+                        style: AuraText.body,
+                        buildCounter: _zeroCounter,
+                      ),
+                    ),
+                    _LabeledField(
+                      label: 'Body',
+                      counter:
+                          '${_bodyCtrl.text.length} / '
+                          '${InstitutionPost.maxBodyChars}',
+                      counterColor: _counterColor(
+                        _bodyCtrl.text.length,
+                        InstitutionPost.maxBodyChars,
+                      ),
+                      // Item 15 — Rich Paste, wraps the AXR-1 governed
+                      // @/# autocomplete.
+                      child: RichPasteField(
+                        controller: _bodyCtrl,
+                        child: GovernedTagAutocomplete(
+                          controller: _bodyCtrl,
+                          focusNode: _bodyFocus,
+                          onTagSelected: _rememberSelectedTag,
+                          child: TextField(
+                            controller: _bodyCtrl,
+                            focusNode: _bodyFocus,
+                            maxLength: InstitutionPost.maxBodyChars,
+                            // The identical scroll trap the announcement editor
+                            // had: a bounded maxLines turns this into a second
+                            // Scrollable that swallows the wheel once the text
+                            // overflows, stranding the controls below it on short
+                            // viewports. Same one-line remedy, applied here
+                            // because it is the same defect and not a different
+                            // one that merely looks similar.
+                            maxLines: null,
+                            minLines: 8,
+                            // Declines scroll ownership for the same reason the
+                            // announcement body does: with nothing of its own to
+                            // scroll, the enclosing view should take every
+                            // gesture including those starting over the field.
+                            scrollPhysics: const NeverScrollableScrollPhysics(),
+                            decoration: _decoration('Write your post…'),
+                            style: AuraText.body,
+                            buildCounter: _zeroCounter,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (_linkPreview != null && _linkPreview!.eligible) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AuraSpace.s16),
+                        child: _linkPreview!.internal
+                            ? InternalReferenceCard(
+                                sourceUrl: _linkPreview!.sourceUrl,
+                                reference: _linkPreview!.internalReference,
+                                dense: true,
+                                onRemove: () {
+                                  setState(() => _linkPreview = null);
+                                  _onFieldChanged();
+                                },
+                              )
+                            : LinkPreviewCard(
+                                url: _linkPreview!.sourceUrl,
+                                title: _linkPreview!.title,
+                                description: _linkPreview!.description,
+                                siteName: _linkPreview!.siteName,
+                                imageUrl: _linkPreview!.imageUrl,
+                                dense: true,
+                                onRemove: () {
+                                  setState(() => _linkPreview = null);
+                                  _onFieldChanged();
+                                },
+                              ),
+                      ),
+                    ],
+                    _LabeledField(
+                      label: 'Media (optional)',
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // THE CANONICAL STRIP. A video shows its own frame from
+                          // the local source rather than a glyph, and each item
+                          // carries its own state, order and removal.
+                          if (_media.isNotEmpty)
+                            AuraCompositionStrip(
+                              attachments: _media,
+                              phaseOf: _mediaComposition.phaseOf,
+                              onRemove: _removeMediaItem,
+                              onReorder: _reorderMediaItem,
+                            ),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: TextButton.icon(
+                              onPressed:
+                                  (_busy ||
+                                      _uploading ||
+                                      _media.length >= kMaxComposableMedia)
+                                  ? null
+                                  : _pickMediaMultiple,
+                              icon: const Icon(Icons.perm_media_outlined),
+                              label: Text(
+                                _media.isEmpty
+                                    ? 'Add photos & videos'
+                                    : 'Add more',
+                              ),
+                            ),
+                          ),
+                          if (_uploading)
+                            const Padding(
+                              padding: EdgeInsets.only(top: 6),
+                              child: LinearProgressIndicator(minHeight: 2),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AuraSpace.s8),
+                    _VisibilitySection(
+                      visibility: _visibility,
+                      onChange: _onVisibilityChanged,
+                    ),
+                    const SizedBox(height: AuraSpace.s16),
+                    _DistributionSection(
+                      distribution: _distribution,
+                      visibility: _visibility,
+                      onChange: (d) {
+                        setState(() => _distribution = d);
+                        _scheduleDraftSave();
+                      },
+                    ),
+                    const SizedBox(height: AuraSpace.s16),
+                    AuraTopicSelector(
+                      primary: _primaryTopic,
+                      secondaries: _secondaryTopics,
+                      contentText: '${_titleCtrl.text} ${_bodyCtrl.text}',
+                      onPrimaryChanged: (t) =>
+                          setState(() => _primaryTopic = t),
+                      onSecondariesChanged: (list) =>
+                          setState(() => _secondaryTopics = list),
+                      fetchApprovedSecondaries: (primary) => ref
+                          .read(topicRepositoryProvider)
+                          .approvedSecondaries(primary),
+                      fetchSuggestions: (primary, text) => ref
+                          .read(topicRepositoryProvider)
+                          .suggestSecondary(primary, text),
+                    ),
+                    const SizedBox(height: AuraSpace.s16),
+                    if (!widget.isEditing)
+                      _DraftStatusRow(
+                        status: _draftStatus,
+                        savedAt: _draftSavedAt,
+                        canDiscard: _hasAnyDraftContent,
+                        onDiscard: _busy ? null : _discardDraft,
+                      ),
                     const SizedBox(height: AuraSpace.s12),
+                    // C1 — ATTRIBUTION AT THE CONSEQUENTIAL ACT (founder Option A).
+                    //
+                    // Publishing in an institution's voice is consequential, so
+                    // who it represents is stated here, immediately above the
+                    // control that commits it — not inferred from the route that
+                    // led here. This composer publishes only in the institution's
+                    // voice, so no chooser is manufactured; the attribution keeps
+                    // the acting person visible so the institution never appears
+                    // to act by itself.
+                    if (actingAs != null) ...[
+                      ActingAttribution(
+                        resolution: actingAs,
+                        selected: actingAs.recommended!,
+                        onChanged: (_) {},
+                        verb: 'Publishing',
+                      ),
+                      const SizedBox(height: AuraSpace.s12),
+                    ],
+                    _ComposerActions(
+                      isEditing: widget.isEditing,
+                      busy: _busy || _uploading,
+                      canSave: _localValidationError == null,
+                      canPublish: canPublish,
+                      onCancel: () => context.pop(false),
+                      onSubmitForReview: _submitForReview,
+                      onSaveDraft: _saveDraft,
+                      onPublish: _publishNow,
+                    ),
                   ],
-                  _ComposerActions(
-                    isEditing: widget.isEditing,
-                    busy: _busy || _uploading,
-                    canSave: _localValidationError == null,
-                    canPublish: canPublish,
-                    onCancel: () => context.pop(false),
-                    onSubmitForReview: _submitForReview,
-                    onSaveDraft: _saveDraft,
-                    onPublish: _publishNow,
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1667,8 +1697,11 @@ class _ActorBanner extends StatelessWidget {
   // legible text on this screen's teal field is a real need rather than
   // obsolete drift. Deriving it from the accent it sits on means the two
   // cannot drift apart the way the status hues had.
-  static final Color _accentText =
-      Color.lerp(AuraSurface.coTeal, Colors.white, 0.55)!;
+  static final Color _accentText = Color.lerp(
+    AuraSurface.coTeal,
+    Colors.white,
+    0.55,
+  )!;
 
   @override
   Widget build(BuildContext context) {
@@ -1972,9 +2005,22 @@ class _ComposerActions extends StatelessWidget {
           const SizedBox(width: AuraSpace.s10),
           Expanded(
             child: AuraPrimaryButton(
+              // C-17 — A DISABLED BUTTON CANNOT EXPLAIN ITSELF.
+              //
+              // This was `busy || !canSave ? null : onSaveDraft`, so with no
+              // primary topic chosen the only control on the screen went dead
+              // and said nothing. The reason already existed and was good —
+              // `_localValidationError` returns "Select a primary topic." —
+              // and a disabled button is precisely what stops the code that
+              // would say it from ever running.
+              //
+              // Pressing now surfaces the reason, which is what the publish
+              // and submit paths beside it already did. The same rule the
+              // floating call card had to learn: a control that does nothing
+              // and says nothing is the worst of the outcomes available.
               label: busy ? 'Saving...' : 'Save changes',
               icon: busy ? null : Icons.save_rounded,
-              onPressed: busy || !canSave ? null : onSaveDraft,
+              onPressed: busy ? null : onSaveDraft,
             ),
           ),
         ],
@@ -2016,6 +2062,17 @@ class _ComposerActions extends StatelessWidget {
     );
   }
 }
+
+/// C-17 — SHOULD BACK PUT THE KEYBOARD AWAY INSTEAD OF LEAVING?
+///
+/// Yes exactly while the soft keyboard is up. The first BACK press is the one
+/// people use to get the keyboard out of the way; without this the composer
+/// popped instead and spent their draft.
+///
+/// Measured from the keyboard's own inset rather than from focus: a field can
+/// hold focus with the keyboard already dismissed, and swallowing BACK then
+/// would make the screen impossible to leave.
+bool backShouldDismissKeyboard(double keyboardInset) => keyboardInset > 0;
 
 // ── Draft persistence status ────────────────────────────────────────────────
 

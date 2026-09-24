@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+import '../../../core/ui/aura_surface.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -108,8 +110,25 @@ class _PublicAppAcquisitionState extends State<PublicAppAcquisition> {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 920),
+          // C-11 — A LIGHT PANEL IN AN APP THAT HAS NO LIGHT MODE.
+          //
+          // This was `Color(0xFFF5F6FA)`, a near-white panel, while every
+          // foreground inside it inherits the theme: the label falls through to
+          // `AuraText.body` (ink `#E2ECF5`), the icons to `colorScheme
+          // .onSurface`, and the button to the text-button theme — all the same
+          // near-white. Contrast came out about **1.11 : 1**, against 4.5 : 1
+          // for body text.
+          //
+          // And there is no light mode to explain it. `aura_app.dart` pins
+          // `themeMode: ThemeMode.dark` with `darkTheme: theme`, so this was
+          // white-on-white ALWAYS, not merely in one mode — which is why it
+          // could sit unnoticed: a signed-out web visitor is the only person
+          // who ever sees it.
+          //
+          // Using the surface tokens rather than another literal means it
+          // cannot drift away from the theme again.
           child: Material(
-            color: const Color(0xFFF5F6FA),
+            color: AuraSurface.card,
             borderRadius: BorderRadius.circular(12),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
