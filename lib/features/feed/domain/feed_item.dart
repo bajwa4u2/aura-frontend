@@ -1410,8 +1410,46 @@ class FeedRouting {
   /// `/institution/:id/...`), rewrites a canonical `targetRoute` so the user
   /// stays in that shell after navigation. Otherwise returns the route
   /// unchanged.
-  static String adaptTargetRoute(String canonical, {String? currentPath}) {
-    return _adapt(canonical, currentPath);
+  static String adaptTargetRoute(
+    String canonical, {
+    String? currentPath,
+    bool signedIn = true,
+  }) {
+    return _adapt(publicInstitutionPostRoute(canonical, signedIn: signedIn),
+        currentPath);
+  }
+
+  /// C-11 — PUBLIC INSTITUTIONAL SPEECH MUST NOT NEED AN ACCOUNT.
+  ///
+  /// The server's canonical destination for an institution post is
+  /// `/institution/<slug>/posts/<id>` — the WORKSPACE address, classified
+  /// `member` and therefore behind `requiresAuth`. So a signed-out visitor
+  /// reading the public discourse feed tapped an OFFICIAL post and landed on
+  /// the sign-in wall. An institution speaking publicly is the one thing that
+  /// most needs to be readable by someone who has no account yet.
+  ///
+  /// `/institutions/<slug>/posts/<id>` (plural) is already classified PUBLIC by
+  /// `route_classification.dart`, and the product already PUBLISHES it: the
+  /// share link `/p/i/<inst>/<post>` maps to exactly this address. It simply
+  /// had no route registered, so the address the product hands out resolved to
+  /// nothing.
+  ///
+  /// Rewritten only when signed out. A signed-in member keeps the workspace
+  /// address and its surrounding chrome; the screen behind both is the same.
+  static String publicInstitutionPostRoute(
+    String canonical, {
+    required bool signedIn,
+  }) {
+    if (signedIn) return canonical;
+    final m = RegExp(r'^/institution/([^/]+)/posts/([^/?#]+)$')
+        .firstMatch(canonical.trim());
+    if (m == null) return canonical;
+    final postId = m.group(2) ?? '';
+    // `new` is the COMPOSER, not a post. It sits at the same depth and matched
+    // the same shape, and rewriting it would send an author to a public
+    // reading address for a post that does not exist yet.
+    if (postId.isEmpty || postId == 'new') return canonical;
+    return '/institutions/${m.group(1)}/posts/$postId';
   }
 
   static String? adaptProfileRoute(String? canonical, {String? currentPath}) {

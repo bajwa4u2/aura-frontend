@@ -539,9 +539,26 @@ class ConversationsRepository {
   ConversationsRepository(this._dio);
   final Dio _dio;
 
-  Future<List<Conversation>> list({bool archived = false}) async {
-    final res = await _dio.get<dynamic>('/conversations',
-        queryParameters: {if (archived) 'archived': 'true'});
+  /// C-14 — THE INSTITUTION DESK HAD NO WAY TO BE ASKED FOR.
+  ///
+  /// `GET /conversations?institutionId=` is implemented, capability-guarded
+  /// (`assertCallerCanActAs`) and filters to conversations the institution is
+  /// a party to. It had ZERO client callers, because this method had no
+  /// parameter to carry the id — so the institution's own inbox was
+  /// unreachable from the product, and the institution Messages screens listed
+  /// Spaces instead and called them conversations.
+  ///
+  /// Additive: personal listing is what happens when nothing is passed, which
+  /// is every existing caller.
+  Future<List<Conversation>> list({
+    bool archived = false,
+    String? institutionId,
+  }) async {
+    final desk = (institutionId ?? '').trim();
+    final res = await _dio.get<dynamic>('/conversations', queryParameters: {
+      if (archived) 'archived': 'true',
+      if (desk.isNotEmpty) 'institutionId': desk,
+    });
     return (_unwrap(res.data)['conversations'] as List<dynamic>? ?? const [])
         .whereType<Map<String, dynamic>>()
         .map(Conversation.fromJson)
@@ -925,6 +942,19 @@ final conversationsListProvider =
 final archivedConversationsProvider =
     FutureProvider.autoDispose<List<Conversation>>((ref) async {
   return ref.watch(conversationsRepositoryProvider).list(archived: true);
+});
+
+/// The institution's own conversation inbox.
+///
+/// C-14: the server has served this since the desk was built; nothing asked.
+/// Keyed by institution so two desks never share a cache entry.
+final institutionConversationsProvider = FutureProvider.autoDispose
+    .family<List<Conversation>, String>((ref, institutionId) async {
+  final id = institutionId.trim();
+  if (id.isEmpty) return const <Conversation>[];
+  return ref
+      .watch(conversationsRepositoryProvider)
+      .list(institutionId: id);
 });
 
 final pendingInvitationsProvider =

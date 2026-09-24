@@ -1151,6 +1151,33 @@ final routerProvider = Provider<GoRouter>((ref) {
           // route surfaces the unit roster as a stand-alone page so the
           // institutional topology — "Aura Platform LLC → Aura,
           // Orchestrate" — is browsable without sign-in.
+          // C-11 — THE PUBLIC ADDRESS FOR PUBLIC INSTITUTIONAL SPEECH.
+          //
+          // An institution post had exactly one route,
+          // `/institution/:id/posts/:postId`, which is the WORKSPACE address
+          // and classified `member`. So a signed-out visitor who tapped an
+          // OFFICIAL post in the public discourse feed hit the sign-in wall —
+          // the one kind of speech that most needs reading without an account.
+          //
+          // This address was already classified PUBLIC, and the product was
+          // already handing it out: the share link `/p/i/<inst>/<post>` maps
+          // to exactly here. It had no route, so a shared link resolved to
+          // nothing at all.
+          //
+          // Deliberately NOT wrapped in `InstitutionRouteScope`: that boundary
+          // resolves membership and is what a signed-out reader has none of.
+          // The screen needs only the two ids, reads through
+          // `feedItemDetailProvider` / `feedItemRepliesProvider` (both
+          // OptionalJwtAuthGuard server-side), and hides its owner actions
+          // when `institutionIdentityProvider` is null — which it is for a
+          // visitor.
+          GoRoute(
+            path: '/institutions/:slug/posts/:postId',
+            builder: (context, state) => InstitutionPostDetailScreen(
+              institutionId: state.pathParameters['slug'] ?? '',
+              postId: state.pathParameters['postId'] ?? '',
+            ),
+          ),
           GoRoute(
             path: '/institutions/:slug/units',
             builder: (context, state) => PublicInstitutionUnitsScreen(

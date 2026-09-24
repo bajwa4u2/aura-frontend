@@ -110,6 +110,9 @@ class UnifiedFeedCard extends ConsumerWidget {
     final adaptedTarget = FeedRouting.adaptTargetRoute(
       item.targetRoute,
       currentPath: currentPath,
+      // C-11: signed out, an institution post resolves to its PUBLIC address
+      // instead of the workspace one, which is behind the sign-in wall.
+      signedIn: ref.watch(isAuthedProvider),
     );
     final adaptedProfile = FeedRouting.adaptProfileRoute(
       item.author.profileRoute,
