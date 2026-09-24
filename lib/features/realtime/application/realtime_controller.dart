@@ -1431,7 +1431,31 @@ class RealtimeController extends StateNotifier<RealtimeState>
     _heartbeatTimer = null;
   }
 
-  Future<void> toggleMicrophone() async {
+  /// Is local media up, asked of the thing that knows?
+  ///
+  /// `state.isMediaReady` is a MIRROR of the media service's snapshot, updated
+  /// when this controller's own listener runs. A caller that acts on the same
+  /// snapshot from its own listener can arrive first — the meeting room's
+  /// "join with mic off" preference does exactly that — and would be refused
+  /// for a device that is demonstrably ready, with a "preparing your
+  /// microphone" message on a microphone that is already live. Ask the source;
+  /// keep the mirror as a fallback for anyone holding no service.
+  bool get _mediaIsReady =>
+      state.isMediaReady || _mediaService.currentSnapshot.ready;
+
+  /// Flip the microphone. Intent-shaped [setMicrophone] does the work.
+  Future<void> toggleMicrophone() => setMicrophone(!state.microphoneEnabled);
+
+  /// Set the microphone to a STATE, not to "the other thing".
+  ///
+  /// THE WHOLE PATH, IN ONE PLACE (2026-09-24). Meetings called
+  /// `RealtimeMediaService.setMicrophoneEnabled` directly, which flips the
+  /// local track and nothing else: no `session:audio.set`, so the server's
+  /// publish state never changed and the other participant was never told.
+  /// Measured on a real meeting — twelve minutes of toggling produced not one
+  /// `publishState: OFF` event. The media service is the hands; this is the
+  /// act. Everything that must accompany the act lives here.
+  Future<void> setMicrophone(bool enabled) async {
     final sessionId = state.sessionId;
     if (sessionId == null || sessionId.isEmpty) return;
     if (state.isMediaBusy) {
@@ -1440,7 +1464,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
       // permission/media negotiation.
       return;
     }
-    if (!state.isMediaReady) {
+    if (!_mediaIsReady) {
       // No live track yet. The most common cause is that the OS hasn't
       // delivered a permission decision; the next most common is
       // hardware that's still warming up after a device switch. Either
@@ -1454,7 +1478,6 @@ class RealtimeController extends StateNotifier<RealtimeState>
       return;
     }
 
-    final enabled = !state.microphoneEnabled;
     await _mediaService.setMicrophoneEnabled(enabled);
     await _socketService.emitAck('session:audio.set', <String, dynamic>{
       'sessionId': sessionId,
@@ -1463,7 +1486,11 @@ class RealtimeController extends StateNotifier<RealtimeState>
     _patchMyTrack(audioOn: enabled);
   }
 
-  Future<void> toggleCamera() async {
+  /// Flip the camera. Intent-shaped [setCamera] does the work.
+  Future<void> toggleCamera() => setCamera(!state.cameraEnabled);
+
+  /// Set the camera to a STATE. Same reasoning as [setMicrophone].
+  Future<void> setCamera(bool desired) async {
     final sessionId = state.sessionId;
     if (sessionId == null || sessionId.isEmpty) return;
     if (state.isMediaBusy) return;
@@ -1474,7 +1501,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
       );
       return;
     }
-    if (!state.isMediaReady) {
+    if (!_mediaIsReady) {
       // Same shape as the microphone branch. The mic message handles the
       // common case; for camera we add the explicit "front/back camera"
       // note since some devices fail acquisition silently when another
@@ -1487,7 +1514,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
       return;
     }
 
-    final requested = !state.cameraEnabled;
+    final requested = desired;
 
     // PUBLISH WHAT HAPPENED, NOT WHAT WAS ASKED FOR.
     //

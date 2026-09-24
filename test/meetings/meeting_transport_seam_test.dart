@@ -75,10 +75,23 @@ void main() {
           contains('Future<void> enableLocalCamera() => setLocalCamera(true);'));
     });
 
-    test('the absolute operations rest on the service\'s own set API', () {
-      // `setMicrophoneEnabled` / `setCameraEnabled` existed the whole time.
-      expect(src, contains('_mediaService.setMicrophoneEnabled(enabled)'));
-      expect(src, contains('_mediaService.setCameraEnabled(enabled)'));
+    test('the absolute operations rest on a SET api, and one that signals', () {
+      // Originally: `_mediaService.setMicrophoneEnabled(enabled)` — the
+      // service's own set API, which fixed the toggle defect above.
+      //
+      // It was still the wrong authority, and the cost was measured on a real
+      // meeting on 2026-09-24 (M-1): the media service flips the local track
+      // and tells nobody, so twelve minutes of pressing camera off and on
+      // produced not one `publishState: OFF` event and the other participant
+      // never saw a thing. The controller owns the whole act — hardware,
+      // `session:*.set`, state patch, renegotiation — and it calls the very
+      // same set API underneath. Absolute, and now also heard.
+      expect(src, contains('_controller.setMicrophone(enabled)'));
+      expect(src, contains('_controller.setCamera(enabled)'));
+      expect(src, isNot(contains('_mediaService.setMicrophoneEnabled(')),
+          reason: 'M-1: the hardware changes and the session is not told');
+      expect(src, isNot(contains('_mediaService.setCameraEnabled(')),
+          reason: 'M-1: the hardware changes and the session is not told');
     });
 
     test('no absolute-sounding bridge method is backed by a toggle', () {

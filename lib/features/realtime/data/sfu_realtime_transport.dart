@@ -192,6 +192,18 @@ class SfuRealtimeTransport implements RealtimeTransport {
   /// tracks every time and pile up duplicate receivers.
   final Set<String> _subscribed = <String>{};
 
+  /// Which m-line each subscribed track landed on.
+  ///
+  /// A RETIRED SUBSCRIPTION LEAVES ITS M-LINE BEHIND. Unsubscribing at the
+  /// provider stops the media; it does not remove the `recvonly` line from
+  /// this peer connection, and WebRTC cannot delete an m-line — only stop one
+  /// so the slot is recycled. Without this map there is no way to say WHICH
+  /// line belonged to the track that went away, so every republish (a reload,
+  /// a camera re-acquisition) added a pair and kept the dead pair: measured
+  /// 2026-08-28 climbing to `receiving=12 bound=2`, and again 2026-09-24 as a
+  /// `bind_partial` see-saw between two people refreshing in turn.
+  final Map<String, String> _midByTrackId = <String, String>{};
+
   /// How many times each track has been asked for without binding.
   ///
   /// The retry exists for a race (the publisher had not created the track at
@@ -502,6 +514,52 @@ class SfuRealtimeTransport implements RealtimeTransport {
   }) =>
       _traced('SUBSCRIBE', trigger, _refreshRemoteMedia);
 
+  /// Stop the receiving m-lines that belonged to tracks we just retired.
+  ///
+  /// THE ONLY WAY TO GIVE AN M-LINE BACK. Unsubscribing tells the provider to
+  /// stop sending; the transceiver stays, negotiated to receive, carrying
+  /// nothing. It counts as a receiving line forever, which is what turned a
+  /// healthy call into `bind_partial` the moment the other person reloaded,
+  /// and what let the line count climb all call long. `stop()` ends the
+  /// transceiver and frees its slot for the next negotiation to recycle.
+  ///
+  /// NEVER OUR OWN SENDER. Only a line we know we subscribed on is eligible —
+  /// looked up by mid from the provider's own binding — and only when it is
+  /// not carrying a local track. Stopping a sender would take our microphone
+  /// or camera off the wire, which is the one mistake this must not make.
+  Future<int> _stopReceiversFor(
+    RTCPeerConnection pc,
+    List<String> retiredTrackIds,
+  ) async {
+    final mids = retiredReceiverMids(
+      retiredTrackIds: retiredTrackIds,
+      midByTrackId: _midByTrackId,
+    );
+    for (final id in retiredTrackIds) {
+      _midByTrackId.remove(id);
+    }
+    if (mids.isEmpty) return 0;
+
+    var stopped = 0;
+    try {
+      for (final t in await pc.getTransceivers()) {
+        if (!mids.contains(t.mid)) continue;
+        if (t.sender.track != null) continue; // ours; never touch it
+        try {
+          await t.stop();
+          stopped += 1;
+        } catch (_) {
+          // A platform without transceiver.stop() keeps the dead line. That
+          // is the behaviour we already had, so it is a missed improvement
+          // rather than a new fault — and it must not fail the call.
+        }
+      }
+    } catch (_) {
+      // getTransceivers can throw while the connection is being torn down.
+    }
+    return stopped;
+  }
+
   Future<Map<String, RemoteParticipantMedia>> _refreshRemoteMedia() async {
     final pc = _pc;
     final sessionId = _sessionId;
@@ -543,9 +601,10 @@ class SfuRealtimeTransport implements RealtimeTransport {
       // as subscribed would block a later re-subscribe to a track that reuses
       // the id — the one way this could make things worse.
       _subscribed.removeAll(stale);
+      final stopped = await _stopReceiversFor(pc, stale);
       unawaited(_report(
         'op=RETIRE stale=${stale.length} retired=$retired '
-        'subscribed=${_subscribed.length}',
+        'stoppedLines=$stopped subscribed=${_subscribed.length}',
       ));
     }
 
@@ -638,6 +697,13 @@ class SfuRealtimeTransport implements RealtimeTransport {
         .map((e) => e.cast<String, dynamic>())
         .toList(growable: false);
     final bound = boundTrackIds(serverBindings);
+    for (final binding in serverBindings) {
+      final trackId = '${binding['trackId']}';
+      final mid = '${binding['mid']}';
+      if (trackId.isEmpty || trackId == 'null') continue;
+      if (mid.isEmpty || mid == 'null') continue;
+      _midByTrackId[trackId] = mid;
+    }
     final unbound =
         fresh.where((id) => !bound.contains(id)).toList(growable: false);
 
@@ -1280,3 +1346,24 @@ bool mediaHealthFrom({
     !lostReported &&
     (ice == RTCIceConnectionState.RTCIceConnectionStateConnected ||
         ice == RTCIceConnectionState.RTCIceConnectionStateCompleted);
+
+/// WHICH M-LINES A RETIREMENT FREES, as a rule a test can hold.
+///
+/// Pure on purpose: the consequence of getting it wrong is someone's camera or
+/// microphone leaving the call, so the decision is argued about here rather
+/// than inside a peer connection. A mid qualifies only when THIS client
+/// subscribed on it for a track that has now gone; a mid we never recorded is
+/// not ours to stop, and the caller additionally refuses any line that carries
+/// a local sender.
+Set<String> retiredReceiverMids({
+  required List<String> retiredTrackIds,
+  required Map<String, String> midByTrackId,
+}) {
+  final mids = <String>{};
+  for (final id in retiredTrackIds) {
+    final mid = midByTrackId[id];
+    if (mid == null || mid.isEmpty) continue;
+    mids.add(mid);
+  }
+  return mids;
+}

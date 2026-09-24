@@ -72,10 +72,21 @@ class MeetingTransportBridge {
   // `setMicrophoneEnabled` / `setCameraEnabled`; the bridge simply did not
   // expose them, so the one rule this file states — that all mic and camera
   // operations go through the bridge — could not be obeyed.
-  Future<void> setLocalMic(bool enabled) =>
-      _mediaService.setMicrophoneEnabled(enabled);
-  Future<void> setLocalCamera(bool enabled) =>
-      _mediaService.setCameraEnabled(enabled);
+  // THE SESSION HAS TO BE TOLD, NOT JUST THE HARDWARE.
+  //
+  // These two called `RealtimeMediaService` directly, which flips the local
+  // track and stops there: no `session:audio.set`/`session:video.set`, so the
+  // server's publish state never moved and the other participant's tile never
+  // learned the camera had gone. Proven on a real meeting, 2026-09-24 — twelve
+  // minutes of toggling, not one `publishState: OFF` event, and the only thing
+  // that ever changed the far side was a page reload.
+  //
+  // The controller owns the whole act (guards, hardware, signalling, state
+  // patch, renegotiation when a sender has to be added). Meetings use the same
+  // path as Calls now; the bridge stays the seam, it just names the right
+  // authority behind it.
+  Future<void> setLocalMic(bool enabled) => _controller.setMicrophone(enabled);
+  Future<void> setLocalCamera(bool enabled) => _controller.setCamera(enabled);
 
   Future<void> muteLocalMic() => setLocalMic(false);
   Future<void> unmuteLocalMic() => setLocalMic(true);
