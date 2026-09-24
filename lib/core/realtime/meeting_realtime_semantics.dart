@@ -96,32 +96,3 @@ class MeetingRealtimeSemantics {
     return isMeeting && stillActive;
   }
 }
-
-/// SHOULD A REMOTE MEETING TILE PAINT VIDEO?
-///
-/// Call it only once a video track exists on the renderer; this decides the
-/// rest. Pure, because it was got wrong twice in opposite directions and the
-/// argument belongs somewhere a test can hold it.
-///
-///   * `muted` on a REMOTE track is the browser saying "no data is arriving
-///     right now". It starts true on every remote track and clears when media
-///     flows. It is NOT the peer's camera switch, and reading it as one put an
-///     avatar and the words "Camera off" over a live picture while the
-///     receiver decoded 1,745 frames of it (measured, 2026-09-24).
-///   * The roster's `videoOn` IS the peer's camera switch — trustworthy now
-///     that a meeting's camera actually signals the session. It was not when
-///     the muted rule was written, which is why the roster was abandoned.
-///   * Arriving data still counts, so a roster that is stale-false cannot hide
-///     a picture that is demonstrably being received. That was the earlier
-///     defect in the other direction.
-///
-/// Only a track that the roster says is off AND that is delivering nothing is
-/// a camera that is off.
-bool meetingTileShowsVideo({
-  required bool? rosterVideoOn,
-  required bool? trackMuted,
-}) {
-  final receiving = trackMuted != true;
-  final rosterSaysOn = rosterVideoOn ?? true;
-  return rosterSaysOn || receiving;
-}

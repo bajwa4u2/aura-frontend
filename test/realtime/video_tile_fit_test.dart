@@ -22,8 +22,10 @@ void main() {
         'the thread-call video grid',
     'lib/features/realtime/presentation/widgets/realtime_participant_list.dart':
         'the participant list thumbnails',
-    'lib/features/meetings/presentation/meeting_live_room_screen.dart':
-        'the meeting live room',
+    // The meeting stage is NOT listed here: it legitimately contains the
+    // shared screen. Its contract is asserted whole by
+    // 'the stage contains ONLY the presentation' below — one Contain, and it
+    // belongs to the presentation, while every participant tile Covers.
     'lib/features/realtime/presentation/widgets/floating_call_widget.dart':
         'the picture-in-picture',
     // The preflight self-view was here. The sheet it lived on was deleted
@@ -69,7 +71,44 @@ void main() {
         }
       }
     }
+    // ONE CARVE-OUT, NAMED AND REASONED (2026-09-24 founder authority).
+    //
+    // The meeting stage contains the SHARED SCREEN, and only that: "Do not
+    // crop documents, application interfaces or shared screen edges." A
+    // document that loses its margin has lost the thing it was shared for.
+    // Participants on that same surface still Cover — the group above asserts
+    // it file by file, and `participantTilesAlwaysCover` states the contract.
+    //
+    // The carve-out is a path, not a blanket: any OTHER file reintroducing
+    // Contain still fails, which is the point of the sweep.
+    offenders.removeWhere((p) => p.endsWith('meeting_stage.dart'));
+
     expect(offenders, isEmpty,
         reason: 'these surfaces still letterbox participants: $offenders');
+  });
+
+  test('the stage contains ONLY the presentation', () {
+    // The carve-out above would hide a participant tile quietly reverting to
+    // Contain, so the stage is checked from the inside: every Contain in it
+    // belongs to the shared surface.
+    final src =
+        File('lib/features/meetings/presentation/meeting_stage.dart')
+            .readAsStringSync();
+    final containCount =
+        'RTCVideoViewObjectFitContain'.allMatches(src).length;
+    expect(containCount, 1,
+        reason: 'exactly one Contain — the presentation — is expected, '
+            'found $containCount');
+
+    // And it is the presentation's, not a tile's: the only Contain sits in
+    // the composition that paints `presentation`.
+    final i = src.indexOf('RTCVideoViewObjectFitContain');
+    final window = src.substring((i - 400).clamp(0, src.length), i);
+    expect(window, contains('presentation'),
+        reason: 'a participant tile letterboxes again');
+
+    // And the people on that same surface still fill their seats.
+    expect(src, contains('RTCVideoViewObjectFitCover'),
+        reason: 'the stage no longer states a fit for participants');
   });
 }

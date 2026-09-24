@@ -28,6 +28,7 @@ import '../domain/meeting_conversation_message.dart';
 import '../../realtime/application/realtime_controller.dart';
 import '../../realtime/application/realtime_providers.dart';
 import '../../realtime/data/realtime_media_service.dart';
+import 'meeting_stage.dart';
 import '../../realtime/data/realtime_event_parser.dart';
 import '../../realtime/domain/realtime_enums.dart';
 import '../../realtime/domain/realtime_models.dart';
@@ -38,7 +39,6 @@ import '../application/meeting_session_adapter.dart';
 import 'meeting_semantics.dart';
 import 'widgets/meeting_room_controls.dart';
 import '../../../core/auth/session_bootstrap.dart';
-import '../../../core/realtime/meeting_realtime_semantics.dart';
 
 // E1 — MeetingTransportBridge: sole interface between meeting UI and WebRTC layer.
 // All mic/camera/screen operations from meeting widgets MUST go through this bridge.
@@ -1291,8 +1291,17 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
         onPanUpdate: (_) => _onUserInteraction(),
         child: Stack(
         children: [
-          // E3 — Video grid fills the screen
-          Positioned.fill(
+          // E3 — THE STAGE, AND NOTHING OVER IT.
+          //
+          // It used to be `Positioned.fill` with the header painted on top, so
+          // the meeting's own title covered the first participant's face
+          // (founder screenshot, 2026-09-24). The stage now begins BELOW the
+          // compact header: the interface stops eating the meeting.
+          Positioned(
+            top: _kHeaderHeight + MediaQuery.of(context).padding.top,
+            left: 0,
+            right: 0,
+            bottom: 0,
             child: _MeetingVideoGrid(
               localRenderer: localRenderer,
               remoteRenderers: remoteRenderers,
@@ -1798,94 +1807,6 @@ class _MeetingVideoGrid extends StatelessWidget {
   //
   // Only when a track exists, the roster says off, AND nothing is arriving do
   // we show the camera-off tile.
-  bool _hasLiveVideo(RTCVideoRenderer? renderer, RealtimeParticipant? p) {
-    final tracks = renderer?.srcObject?.getVideoTracks() ?? const [];
-    if (tracks.isEmpty) return false;
-    return meetingTileShowsVideo(
-      rosterVideoOn: p?.videoOn,
-      trackMuted: tracks.first.muted,
-    );
-  }
-
-  RealtimeParticipant? _participantForKey(String key) {
-    for (final p in participants) {
-      if ((p.runtimeDeviceId ?? '') == key) return p;
-    }
-    return null;
-  }
-
-  Widget _buildRemoteTile(String key, RTCVideoRenderer renderer) {
-    final p = _participantForKey(key);
-    // Render video ONLY when the renderer's stream actually carries a video
-    // track. A peer that degraded to audio-only (camera busy on its machine)
-    // has a renderer but no video track — relying on the roster's videoOn flag
-    // (which stays true because it never explicitly turned video off) painted a
-    // black RTCVideoView. Check the real track so we fall through to the
-    // avatar/"camera off" tile instead of a black void.
-    final hasVideoTrack =
-        renderer.srcObject?.getVideoTracks().isNotEmpty ?? false;
-    final videoOn = (p?.videoOn ?? true) && hasVideoTrack;
-    if (videoOn) {
-      return RTCVideoView(
-        renderer,
-        objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-      );
-    }
-    final name = (p?.displayName ?? '').trim();
-    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
-    return ColoredBox(
-      color: const Color(0xFF1E293B),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              radius: 36,
-              backgroundColor: const Color(0xFF6C63FF).withValues(alpha: 0.25),
-              backgroundImage: p?.avatarUrl?.trim().isNotEmpty == true
-                  ? NetworkImage(p!.avatarUrl!)
-                  : null,
-              child: p?.avatarUrl?.trim().isNotEmpty == true
-                  ? null
-                  : Text(
-                      initial,
-                      style: const TextStyle(
-                        color: Color(0xFFE5E7EB),
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-            ),
-            if (name.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                name,
-                style: const TextStyle(
-                  color: Color(0xFFCBD5E1),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-            const SizedBox(height: 4),
-            const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.videocam_off_rounded,
-                    size: 14, color: Color(0xFF6B7280)),
-                SizedBox(width: 4),
-                Text(
-                  'Camera off',
-                  style: TextStyle(color: Color(0xFF6B7280), fontSize: 12),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   RealtimeParticipant? _participantForUserId(String userId) {
     final id = userId.trim();
     if (id.isEmpty) return null;
@@ -1895,76 +1816,44 @@ class _MeetingVideoGrid extends StatelessWidget {
     return null;
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // Remote screen share stays a spotlight (shared surface + presenter PiP) —
-    // a screen is not a participant tile.
-    if (screenSharingPeerId != null) {
-      final screenRenderer = remoteRenderers[screenSharingPeerId];
-      if (screenRenderer != null) {
-        return _buildSpotlightLayout(
-            screenSharingPeerId!, screenRenderer, localRenderer);
-      }
-    }
-
-    // Unified participant grid: the local participant and every remote are
-    // first-class tiles in ONE grid — no floating self-preview, no separate
-    // "waiting" screen once we're live. A camera-off / audio-only participant
-    // gets an avatar tile in the same grid; the layout auto-adjusts as people
-    // join. (Small self-preview belongs to pre-join, a different screen.)
-    return _buildParticipantGrid();
-  }
-
-  Widget _buildParticipantGrid() {
-    final tiles = <_ParticipantTile>[];
-
-    // Local participant — always a tile, labelled "You", never a floating PiP.
-    final localP = _participantForUserId(localUserId);
-    final localHasVideo =
-        localRenderer?.srcObject?.getVideoTracks().isNotEmpty ?? false;
-    tiles.add(_ParticipantTile(
-      renderer: localRenderer,
-      videoOn: localHasVideo && !isLocalScreenSharing,
-      mirror: true,
-      isLocal: true,
-      label: 'You',
-      // Still called "You"; drawn as yourself.
-      monogramName: (localP?.displayName ?? '').trim().isEmpty
-          ? null
-          : localP!.displayName!.trim(),
-      avatarUrl: localP?.avatarUrl,
-      micOn: micOn,
-    ));
-
-    // INVENTORY-DRIVEN remote tiles. Every remote PARTICIPANT gets a tile;
-    // video is a tile STATE (attach the renderer if one exists for this
-    // participant, else a camera-off avatar). A participant is NEVER hidden
-    // because its video track is absent — that caused the asymmetry where the
-    // host dropped the audio-only guest's tile while the guest still rendered
-    // the host. Both sides share the same participant inventory, so both render
-    // the same set of tiles.
+  /// EVERY PERSON IN THE ROOM, IN ONE LIST, AND NOTHING ELSE.
+  ///
+  /// Identity comes from the roster; media is looked up for it. A participant
+  /// is never dropped for want of a renderer — that asymmetry once made the
+  /// host lose the audio-only guest's tile while the guest still saw the host.
+  List<StageTile> _stageTiles() {
+    final tiles = <StageTile>[];
     final myUserId = localUserId.trim();
     final mySocket = _raw(localSocketId);
+
     bool isSelf(RealtimeParticipant p) {
       if (myUserId.isNotEmpty && p.userId.trim() == myUserId) return true;
       final key = _raw((p.runtimeDeviceId ?? '').trim());
       return mySocket.isNotEmpty && key == mySocket;
     }
 
+    final localP = _participantForUserId(localUserId);
+    tiles.add(StageTile(
+      key: 'local',
+      label: (localP?.displayName ?? '').trim().isEmpty
+          ? 'You'
+          : localP!.displayName!.trim(),
+      // While this device is presenting, its own camera is not the stage's
+      // business — the share is. Passing no renderer keeps the deliberate
+      // camera-off treatment rather than echoing the desktop back.
+      renderer: isLocalScreenSharing ? null : localRenderer,
+      avatarUrl: localP?.avatarUrl,
+      micOn: micOn,
+      isLocal: true,
+      mirror: true,
+      cameraOffReason: isLocalScreenSharing ? 'Sharing your screen' : null,
+    ));
+
     final claimed = <String>{};
     for (final p in participants) {
       if (isSelf(p)) continue;
       final key = (p.runtimeDeviceId ?? '').trim();
       if (key.isNotEmpty) claimed.add(key);
-      // PARTICIPANT FIRST. Identity is the roster entry `p`; a device key is
-      // only ever used to LOCATE mesh media, never to decide who somebody is.
-      // The stage path has no device-keyed renderers at all, so without this
-      // its video would not display.
-      //
-      // The rule itself now lives in `rendererForParticipant` and is shared
-      // with the conversation call stage. It was written twice and only
-      // applied once: the conversation stage kept iterating devices, and under
-      // SFU drew an empty grid over live media (2026-08-28).
       final renderer = rendererForParticipant(
         participant: ParticipantRef(
           id: p.id,
@@ -1974,37 +1863,19 @@ class _MeetingVideoGrid extends StatelessWidget {
         byParticipant: renderersByParticipant,
         byDevice: remoteRenderers,
       );
-      tiles.add(_ParticipantTile(
-        // Video state is the LIVE track, not the roster's videoOn hint. The
-        // roster flag can be stale-false (a peer's camera-on didn't propagate),
-        // which hid a real incoming video — the "host sees Camera off while the
-        // guest is on camera" bug. The received track is ground truth.
-        renderer: renderer,
-        videoOn: _hasLiveVideo(renderer, p),
-        mirror: false,
-        isLocal: false,
+      tiles.add(StageTile(
+        key: p.id,
         label: p.identityLabel,
+        renderer: renderer,
         avatarUrl: p.avatarUrl,
         micOn: p.audioOn,
       ));
     }
 
-    // Fallback: a live renderer whose peer isn't in the roster YET (socketId
-    // not backfilled) still gets a tile so media is never dropped.
-    //
-    // "Yet" is load-bearing, and it used to be missing. Renderers are keyed by
-    // runtimeDeviceId. When somebody refreshes they rejoin with a NEW device
-    // id, so their previous renderer is still sitting under the OLD key — no
-    // longer claimed by anyone in the roster. This loop then painted it as a
-    // second, anonymous "Participant" tile beside their real one: the same
-    // human, apparently twice, after every refresh. Founder-observed
-    // 2026-08-26.
-    //
-    // A stale device is not a new person. An unattributed renderer is only
-    // shown while somebody in the roster is genuinely still awaiting a device
-    // id — otherwise every device is accounted for and this renderer belongs
-    // to a connection that has already been replaced.
-    final someoneAwaitingDevice = shouldShowUnattributedMedia([
+    // A live renderer whose peer is not in the roster YET still gets a tile,
+    // and only while somebody is genuinely awaiting attribution — otherwise a
+    // refreshed person appears twice, once named and once anonymous.
+    final awaiting = shouldShowUnattributedMedia([
       for (final p in participants)
         if (!isSelf(p))
           ParticipantRef(
@@ -2015,281 +1886,46 @@ class _MeetingVideoGrid extends StatelessWidget {
     ]);
     for (final entry in remoteRenderers.entries) {
       if (claimed.contains(entry.key)) continue;
-      if (!someoneAwaitingDevice) continue;
+      if (!awaiting) continue;
       if (mySocket.isNotEmpty && _raw(entry.key) == mySocket) continue;
-      tiles.add(_ParticipantTile(
-        renderer: entry.value,
-        // No roster entry for this renderer yet, so there is no camera state
-        // to consult — presence of a track is all there is to go on.
-        videoOn: _hasLiveVideo(entry.value, null),
-        mirror: false,
-        isLocal: false,
+      tiles.add(StageTile(
+        key: entry.key,
         label: 'Participant',
-        avatarUrl: null,
-        micOn: true,
+        renderer: entry.value,
       ));
     }
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final count = tiles.length;
-        final columns = _gridColumns(count, constraints);
-        final rows = (count / columns).ceil();
-        final cellW = (constraints.maxWidth - (columns + 1) * 4) / columns;
-        final cellH = (constraints.maxHeight - (rows + 1) * 4) / rows;
-        final aspect =
-            (cellW > 0 && cellH > 0) ? (cellW / cellH) : (16 / 9);
-        return GridView.count(
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: columns,
-          mainAxisSpacing: 4,
-          crossAxisSpacing: 4,
-          padding: const EdgeInsets.all(4),
-          childAspectRatio: aspect,
-          children: tiles,
-        );
-      },
-    );
-  }
-
-  // Column count that keeps tiles roughly square and readable. 2 participants
-  // split equally (side-by-side in landscape, stacked in portrait); 3–4 use a
-  // 2-wide grid; more scale to 3–4 columns.
-  int _gridColumns(int count, BoxConstraints c) {
-    if (count <= 1) return 1;
-    final landscape = c.maxWidth >= c.maxHeight;
-    if (count == 2) return landscape ? 2 : 1;
-    if (count <= 4) return 2;
-    if (count <= 9) return 3;
-    return 4;
-  }
-
-  Widget _buildSpotlightLayout(
-    String remoteKey,
-    RTCVideoRenderer remote,
-    RTCVideoRenderer? local,
-  ) {
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: _buildRemoteTile(remoteKey, remote),
-        ),
-        if (local != null)
-          Positioned(
-            right: 12,
-            bottom: 130,
-            width: 100,
-            height: 140,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: RTCVideoView(
-                local,
-                mirror: true,
-                objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-// One participant tile — local or remote, first-class in the grid. Renders the
-// video when a live video track exists, otherwise an avatar + "Camera off".
-// Always carries the identity label and a mic indicator.
-class _ParticipantTile extends StatefulWidget {
-  const _ParticipantTile({
-    required this.renderer,
-    required this.videoOn,
-    required this.mirror,
-    required this.isLocal,
-    required this.label,
-    required this.avatarUrl,
-    required this.micOn,
-    this.monogramName,
-  });
-
-  final RTCVideoRenderer? renderer;
-  final bool videoOn;
-  final bool mirror;
-  final bool isLocal;
-  final String label;
-  final String? avatarUrl;
-  final bool micOn;
-
-  /// WHOSE INITIAL TO DRAW, when there is no photo and no video.
-  ///
-  /// The label is what to CALL this tile, and for your own it is "You" — so
-  /// deriving the monogram from it drew a "Y" for every person on earth
-  /// looking at themselves. Founder-spotted 2026-09-07: a guest named
-  /// Orchestrate Operations appeared as Y on their own screen and correctly as
-  /// O on everyone else's.
-  final String? monogramName;
-
-  @override
-  State<_ParticipantTile> createState() => _ParticipantTileState();
-}
-
-/// Self-healing tile: remote receive-tracks start MUTED and unmute when the
-/// first RTP frame arrives, and srcObject can attach after build — neither
-/// transition triggers a Flutter rebuild on its own, which produced blank
-/// tiles for already-joined participants until an unrelated state change.
-/// The tile re-evaluates the real track state on a light steady tick and on
-/// the renderer's first decoded frame, rebuilding only when the answer flips.
-class _ParticipantTileState extends State<_ParticipantTile> {
-  Timer? _syncTimer;
-  bool _lastShowVideo = false;
-
-  bool get _showVideo {
-    final r = widget.renderer;
-    if (r == null) return false;
-    if (widget.isLocal) return widget.videoOn;
-    final tracks = r.srcObject?.getVideoTracks() ?? const <MediaStreamTrack>[];
-    if (tracks.isEmpty) return false;
-    return tracks.first.muted != true;
-  }
-
-  void _hookRenderer() {
-    widget.renderer?.onFirstFrameRendered = () {
-      if (mounted && _showVideo != _lastShowVideo) setState(() {});
-    };
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _lastShowVideo = _showVideo;
-    _hookRenderer();
-    _syncTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
-      if (!mounted) return;
-      final now = _showVideo;
-      if (now != _lastShowVideo) setState(() {});
-    });
-  }
-
-  @override
-  void didUpdateWidget(_ParticipantTile oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.renderer != widget.renderer) _hookRenderer();
-  }
-
-  @override
-  void dispose() {
-    _syncTimer?.cancel();
-    super.dispose();
+    return tiles;
   }
 
   @override
   Widget build(BuildContext context) {
-    final showVideo = _showVideo;
-    _lastShowVideo = showVideo;
-    final renderer = widget.renderer;
-    // The person's own name where we know it, falling back to the label —
-    // which is right for a remote tile, whose label already IS their name.
-    final trimmed = (widget.monogramName ?? widget.label).trim();
-    final initial = trimmed.isNotEmpty ? trimmed[0].toUpperCase() : '?';
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFF0B1120),
-        borderRadius: BorderRadius.circular(12),
-        border: widget.isLocal
-            ? Border.all(color: const Color(0xFF6C63FF), width: 1.5)
-            : null,
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (showVideo && renderer != null)
-              RTCVideoView(
-                renderer,
-                mirror: widget.mirror,
-                objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-              )
-            else
-              _avatar(initial),
+    final presenterKey = screenSharingPeerId;
+    final presentation =
+        presenterKey == null ? null : remoteRenderers[presenterKey];
+    String? presenterLabel;
+    if (presenterKey != null) {
+      for (final p in participants) {
+        if ((p.runtimeDeviceId ?? '') == presenterKey) {
+          presenterLabel = p.identityLabel;
+          break;
+        }
+      }
+    }
 
-            // Identity label + mic indicator (bottom-left).
-            Positioned(
-              left: 8,
-              bottom: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.45),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      widget.micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
-                      size: 13,
-                      color: widget.micOn
-                          ? const Color(0xFFE5E7EB)
-                          : const Color(0xFFF87171),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      widget.label,
-                      style: const TextStyle(
-                        color: Color(0xFFE5E7EB),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _avatar(String initial) {
-    final avatarUrl = widget.avatarUrl;
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircleAvatar(
-            radius: 34,
-            backgroundColor: const Color(0xFF6C63FF).withValues(alpha: 0.25),
-            backgroundImage: avatarUrl?.trim().isNotEmpty == true
-                ? NetworkImage(avatarUrl!)
-                : null,
-            child: avatarUrl?.trim().isNotEmpty == true
-                ? null
-                : Text(
-                    initial,
-                    style: const TextStyle(
-                      color: Color(0xFFE5E7EB),
-                      fontSize: 26,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-          ),
-          const SizedBox(height: 8),
-          const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.videocam_off_rounded,
-                  size: 13, color: Color(0xFF6B7280)),
-              SizedBox(width: 4),
-              Text('Camera off',
-                  style: TextStyle(color: Color(0xFF6B7280), fontSize: 11)),
-            ],
-          ),
-        ],
-      ),
+    return MeetingStage(
+      tiles: _stageTiles(),
+      presentation: presentation,
+      presenterLabel: presenterLabel,
     );
   }
 }
 
+
 // ---------------------------------------------------------------------------
+/// The compact top region. Meeting identity lives here and nowhere else —
+/// never over a participant, never over a presentation.
+const double _kHeaderHeight = 52;
+
 // E2 — Header: institution identity + meeting title + elapsed timer
 // ---------------------------------------------------------------------------
 
@@ -2314,17 +1950,27 @@ class _MeetingLiveHeader extends StatelessWidget {
     final host = meeting?.host;
     final title = meeting?.title ?? '';
 
+    // A BAR, NOT A BANNER.
+    //
+    // This was a tall gradient block painted OVER the stage, and on a real
+    // meeting it covered the founder's own face while he was on camera. It is
+    // now a fixed, opaque strip of `_kHeaderHeight`, and the stage starts
+    // beneath it. Secondary detail belongs behind the participants and notes
+    // drawers, not across the top of somebody's head.
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xDD030712), Colors.transparent],
-        ),
+      height: _kHeaderHeight + MediaQuery.of(context).padding.top,
+      padding: EdgeInsets.fromLTRB(
+        14,
+        MediaQuery.of(context).padding.top + 6,
+        14,
+        6,
       ),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+      decoration: const BoxDecoration(
+        color: Color(0xF2070C16),
+        border: Border(bottom: BorderSide(color: Color(0x14FFFFFF))),
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Institutional presence: the room always says who owns the
           // meeting — the institution when there is one, the host otherwise.

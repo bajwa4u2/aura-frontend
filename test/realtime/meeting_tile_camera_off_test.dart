@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:aura/core/realtime/meeting_realtime_semantics.dart';
+import 'package:aura/features/meetings/presentation/meeting_stage_layout.dart';
 
 /// M-4 — AN AVATAR OVER A LIVE PICTURE.
 ///
@@ -30,39 +30,36 @@ void main() {
       // Her camera was on and 1,745 frames had decoded. The old rule returned
       // false here, and that is the whole defect.
       expect(
-        meetingTileShowsVideo(rosterVideoOn: true, trackMuted: true),
+        stageTileShowsPicture(hasVideoTrack: true, trackMuted: true),
         isTrue,
       );
     });
 
     test('roster ON and data arriving — paint', () {
-      expect(meetingTileShowsVideo(rosterVideoOn: true, trackMuted: false), isTrue);
+      expect(stageTileShowsPicture(hasVideoTrack: true, trackMuted: false), isTrue);
     });
 
-    test('a camera genuinely off: roster OFF and nothing arriving', () {
-      expect(meetingTileShowsVideo(rosterVideoOn: false, trackMuted: true), isFalse);
+    test('no video track at all is the only reason to show camera-off', () {
+      expect(stageTileShowsPicture(hasVideoTrack: false, trackMuted: true), isFalse);
+      expect(stageTileShowsPicture(hasVideoTrack: false, trackMuted: false), isFalse);
     });
 
-    test('a stale-false roster cannot hide a picture that IS arriving', () {
-      // The older defect, in the opposite direction: a camera-on that failed
-      // to propagate hid real incoming video.
-      expect(meetingTileShowsVideo(rosterVideoOn: false, trackMuted: false), isTrue);
+    test('no roster flag can hide a picture that exists', () {
+      // M-5: the roster was observed reading OFF for three participants who
+      // were all publishing. The stage does not consult it at all.
+      expect(stageTileShowsPicture(hasVideoTrack: true), isTrue);
     });
 
-    test('an unknown roster entry defaults to showing what is there', () {
-      // No roster entry (a renderer whose peer has not been attributed yet):
-      // presence of a track is all there is to go on, and hiding it would drop
-      // media on the floor.
-      expect(meetingTileShowsVideo(rosterVideoOn: null, trackMuted: null), isTrue);
-      expect(meetingTileShowsVideo(rosterVideoOn: null, trackMuted: true), isTrue);
+    test('an unattributed renderer still paints what it holds', () {
+      expect(stageTileShowsPicture(hasVideoTrack: true, trackMuted: null), isTrue);
     });
 
     test('muted alone can never veto', () {
       // The single property the old rule got wrong, stated as an invariant:
       // there is no combination in which `muted: true` by itself hides video.
-      for (final roster in [true, null]) {
+      for (final muted in [true, false, null]) {
         expect(
-          meetingTileShowsVideo(rosterVideoOn: roster, trackMuted: true),
+          stageTileShowsPicture(hasVideoTrack: true, trackMuted: muted),
           isTrue,
           reason: 'muted is a transport signal, not a camera switch',
         );
