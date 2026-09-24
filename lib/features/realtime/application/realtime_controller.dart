@@ -1572,6 +1572,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
     if (sessionId == null || sessionId.isEmpty) return;
 
     final needsRenegotiation = await _mediaService.startScreenShare();
+    _screenStopAnnounced = false;
 
     unawaited(
       _socketService
@@ -1610,6 +1611,9 @@ class RealtimeController extends StateNotifier<RealtimeState>
     final sessionId = state.sessionId;
     if (sessionId == null || sessionId.isEmpty) return;
 
+    // This stop is ours, so the snapshot watcher below must not announce it a
+    // second time.
+    _screenStopAnnounced = true;
     await _mediaService.stopScreenShare();
 
     unawaited(
@@ -2820,7 +2824,32 @@ class RealtimeController extends StateNotifier<RealtimeState>
   bool _hasReportedMediaFor(String sessionId) =>
       sessionId.isNotEmpty && _mediaReportedForSession == sessionId;
 
+  /// Has the end of the current share already been announced to the session?
+  ///
+  /// A share that the BROWSER ended (its own "Stop sharing" bar) reaches this
+  /// controller only as a snapshot in which `isScreenSharing` has gone false
+  /// without anyone asking. That is a real stop and the room has to hear about
+  /// it; a stop we started has already said so, and must not say it twice.
+  bool _screenStopAnnounced = true;
+
   void _handleMediaSnapshot(RealtimeMediaSnapshot snapshot) {
+    // THE STOP NOBODY ASKED FOR. See `_screenStopAnnounced`.
+    if (state.isScreenSharing &&
+        !snapshot.isScreenSharing &&
+        !_screenStopAnnounced) {
+      _screenStopAnnounced = true;
+      final sessionId = state.sessionId;
+      if (sessionId != null && sessionId.isNotEmpty) {
+        unawaited(
+          _socketService
+              .emitAck('session:screen.set', <String, dynamic>{
+                'sessionId': sessionId,
+                'enabled': false,
+              })
+              .catchError((Object _) => <String, dynamic>{}),
+        );
+      }
+    }
     state = state.copyWith(
       isMediaReady: snapshot.ready,
       localRenderer: snapshot.localRenderer,

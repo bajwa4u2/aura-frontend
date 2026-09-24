@@ -1241,6 +1241,7 @@ class RealtimeMediaService {
       final screenTrack = screenTracks.first;
       needsRenegotiation =
           await _replaceOutboundVideo(screenTrack, reason: 'screen-share');
+      _watchScreenShareEnded(screenTrack);
       try {
         await _applyDegradationPreference(screenTrack, 'maintain-resolution');
       } catch (_) {}
@@ -1249,6 +1250,33 @@ class RealtimeMediaService {
     _isScreenSharing = true;
     _publish();
     return needsRenegotiation;
+  }
+
+  /// THE BROWSER HAS ITS OWN STOP BUTTON, AND IT IS THE ONE PEOPLE PRESS.
+  ///
+  /// Chrome floats a "Stop sharing" bar over every shared screen. Pressing it
+  /// ends the display track directly — the app is never asked. Nothing here
+  /// listened, so the whole stop path was skipped: `_isScreenSharing` stayed
+  /// true, the session was never told, and the sender went on holding a track
+  /// that had stopped producing frames.
+  ///
+  /// Measured live, 2026-09-24, on a real meeting: `SCREEN publishState=ON` at
+  /// 07:25:53 and no OFF ever; the far side's decoder frozen at exactly 1,625
+  /// frames across five consecutive samples while bytes still arrived; and the
+  /// sharer's OWN tile reading "camera off", because a tile hides local video
+  /// while it believes a share is running.
+  ///
+  /// One line of listening turns the browser's own control into the app's.
+  void _watchScreenShareEnded(MediaStreamTrack screenTrack) {
+    try {
+      screenTrack.onEnded = () {
+        if (_disposed || !_isScreenSharing) return;
+        unawaited(stopScreenShare());
+      };
+    } catch (_) {
+      // A platform without the callback keeps the in-app button as the only
+      // way to stop, which is where this started. Never fail the share for it.
+    }
   }
 
   Future<void> stopScreenShare() async {
