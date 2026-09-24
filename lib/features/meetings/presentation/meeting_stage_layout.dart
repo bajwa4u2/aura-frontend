@@ -160,3 +160,33 @@ bool stageTileShowsPicture({
   bool? trackMuted,
 }) =>
     hasVideoTrack;
+
+/// THE SHAPE OF A SEAT.
+///
+/// Filling every last pixel is not the same as looking composed. A stage of
+/// 1960x1010 with two-over-one hands each tile a 1.96:1 rectangle — a wide,
+/// flat slab that also crops the top of somebody's head, because a 16:9
+/// camera covering a 2:1 tile loses its top and bottom. Founder, on the live
+/// meeting, 2026-09-24: *"i do not like tiles they are like laid"*.
+///
+/// So a tile takes the largest 16:9 frame that fits its cell, and the grid is
+/// centred in what is left. Symmetric margins read as composition; a stretched
+/// slab reads as a stretched slab.
+const double stageTileTargetAspect = 16 / 9;
+
+/// The tile size for a plan, honouring the frame shape.
+Size stageTileSize({
+  required Size stage,
+  required List<int> rows,
+  required double gap,
+}) {
+  if (rows.isEmpty) return Size.zero;
+  final columns = stageColumns(rows);
+  final cellW = (stage.width - gap * (columns + 1)) / columns;
+  final cellH = (stage.height - gap * (rows.length + 1)) / rows.length;
+  if (cellW <= 0 || cellH <= 0) return Size.zero;
+  final w = cellW < cellH * stageTileTargetAspect
+      ? cellW
+      : cellH * stageTileTargetAspect;
+  return Size(w, w / stageTileTargetAspect);
+}

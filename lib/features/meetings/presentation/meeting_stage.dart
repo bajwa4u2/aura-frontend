@@ -9,6 +9,8 @@
 /// argued about in tests rather than in screenshots.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
@@ -134,37 +136,31 @@ class _ParticipantComposition extends StatelessWidget {
     // EXPANDED, NOT A COMPUTED ASPECT. Rows and cells take their share of what
     // actually exists, so nothing can overflow the stage or be clipped by the
     // window — the defect this composition replaces.
-    final columns = stageColumns(rows);
+    final size = stageTileSize(stage: stage, rows: rows, gap: gap);
+    if (size.width <= 0) return const SizedBox.expand();
+
+    // FIXED, PROPORTIONED TILES, CENTRED. Not Expanded: a tile that takes
+    // whatever is left becomes a slab on a wide stage, and a 16:9 camera
+    // covering a 2:1 slab loses the top of a head.
     var taken = 0;
     final rowWidgets = <Widget>[];
     for (var r = 0; r < rows.length; r++) {
       final n = rows[r];
       final rowTiles = tiles.sublist(taken, taken + n);
       taken += n;
-      // A SHORT ROW IS CENTRED, NOT STRETCHED. Each tile carries flex 2 so the
-      // two side spacers can split the leftover columns exactly; every tile on
-      // the stage then has the same width whatever row it sits in.
-      //
-      // The slack is counted in COLUMNS, not in flex units. Counting it in
-      // flex units gave a single participant half the stage and three
-      // participants a quarter each — caught by the geometry test, which is
-      // why that test measures rectangles rather than trusting the arithmetic.
-      final slack = columns - n;
       rowWidgets.add(
-        Expanded(
-          child: Row(
-            children: [
-              if (slack > 0) Spacer(flex: slack),
-              for (var i = 0; i < rowTiles.length; i++) ...[
-                if (i > 0) SizedBox(width: gap),
-                Expanded(
-                  flex: 2,
-                  child: _Tile(tile: rowTiles[i]),
-                ),
-              ],
-              if (slack > 0) Spacer(flex: slack),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var i = 0; i < rowTiles.length; i++) ...[
+              if (i > 0) SizedBox(width: gap),
+              SizedBox(
+                width: size.width,
+                height: size.height,
+                child: _Tile(tile: rowTiles[i]),
+              ),
             ],
-          ),
+          ],
         ),
       );
       if (r < rows.length - 1) rowWidgets.add(SizedBox(height: gap));
@@ -172,7 +168,13 @@ class _ParticipantComposition extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.all(gap),
-      child: Column(children: rowWidgets),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: rowWidgets,
+        ),
+      ),
     );
   }
 }
@@ -286,14 +288,78 @@ class _Filmstrip extends StatelessWidget {
   }
 }
 
-class _Tile extends StatelessWidget {
+/// A TILE HAS TO KEEP LOOKING.
+///
+/// A renderer is handed its track by the media service, which happens on its
+/// own schedule — usually AFTER the tile that will show it has already been
+/// built. A tile that answers "is there a picture?" once and never again
+/// answers "no" forever.
+///
+/// This was a stateful tile with exactly this mechanism, and the
+/// reconstruction dropped it. Measured within the hour, 2026-09-24, on the
+/// live meeting: my client (which happened to rebuild when a third person
+/// joined) rendered both peers, while the founder's client — whose tiles were
+/// built before the tracks attached — showed "Camera off" for BOTH of them,
+/// with the server recording `RENDER_ATTACHED created=1
+/// attachedVideoTracks=1` for the very renderer it was refusing to paint.
+///
+/// Two ways of noticing, because neither alone is enough: the renderer's own
+/// first-frame callback, and a modest re-check for the platforms and races
+/// where that callback does not arrive.
+class _Tile extends StatefulWidget {
   const _Tile({required this.tile, this.compact = false});
 
   final StageTile tile;
   final bool compact;
 
   @override
+  State<_Tile> createState() => _TileState();
+}
+
+class _TileState extends State<_Tile> {
+  Timer? _recheck;
+  bool _hadPicture = false;
+
+  StageTile get tile => widget.tile;
+
+  void _hookRenderer() {
+    try {
+      widget.tile.renderer?.onFirstFrameRendered = () {
+        if (!mounted) return;
+        if (tile.hasPicture != _hadPicture) setState(() {});
+      };
+    } catch (_) {
+      // A platform without the callback still has the re-check below.
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _hadPicture = tile.hasPicture;
+    _hookRenderer();
+    _recheck = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      if (!mounted) return;
+      if (tile.hasPicture != _hadPicture) setState(() {});
+    });
+  }
+
+  @override
+  void didUpdateWidget(_Tile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.tile.renderer != widget.tile.renderer) _hookRenderer();
+  }
+
+  @override
+  void dispose() {
+    _recheck?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final compact = widget.compact;
+    _hadPicture = tile.hasPicture;
     final speaking = tile.isSpeaking;
     return Container(
       decoration: BoxDecoration(

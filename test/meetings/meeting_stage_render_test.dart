@@ -106,10 +106,18 @@ void main() {
       // clearly broken. The 2-over-1 puts the same arithmetic leftover into
       // two symmetric margins beside a centred tile, which is composition.
       // What is asserted here is the difference: no gap the size of a tile.
+      // Tiles are proportioned frames now, not slabs that eat every pixel,
+      // so coverage is lower BY DESIGN and symmetry carries the composition.
       final covered = rects.fold<double>(0, (a, r) => a + r.width * r.height);
       final stageArea = stageRect.width * stageRect.height;
-      expect(covered / stageArea, greaterThan(0.70),
+      expect(covered / stageArea, greaterThan(0.45),
           reason: 'the stage is mostly empty: ${covered / stageArea}');
+
+      // Every tile is a video frame, not a letterbox slab.
+      for (final r in rects) {
+        expect(r.width / r.height, closeTo(16 / 9, 0.06),
+            reason: 'a tile is not frame-shaped: ${r.width}x${r.height}');
+      }
 
       final tileArea = rects.first.width * rects.first.height;
       // A dead quadrant would be an empty rectangle as big as a tile sitting
@@ -166,16 +174,18 @@ void main() {
     testWidgets('one participant gets the whole stage', (tester) async {
       final rects = await layout(tester, people: 1, viewport: const Size(1280, 640));
       expect(rects.length, 1);
-      expect(rects.single.width, greaterThan(stageRect.width * 0.95));
-      expect(rects.single.height, greaterThan(stageRect.height * 0.95));
+      // The largest 16:9 frame that fits, centred — not the whole rectangle.
+      expect(rects.single.width / rects.single.height, closeTo(16 / 9, 0.06));
+      expect(rects.single.height, greaterThan(stageRect.height * 0.9));
+      expect((rects.single.center.dx - stageRect.center.dx).abs(), lessThan(1.5));
     });
 
     testWidgets('a phone in portrait stacks rather than slivers', (tester) async {
       final rects = await layout(tester, people: 3, viewport: const Size(390, 740));
       expect(rects.length, 3);
       for (final r in rects) {
-        // Nothing thinner than a usable band.
-        expect(r.height, greaterThan(100));
+        expect(r.height, greaterThan(60));
+        expect(r.width / r.height, closeTo(16 / 9, 0.06));
       }
     });
   });
