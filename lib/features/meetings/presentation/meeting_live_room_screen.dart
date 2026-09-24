@@ -38,6 +38,7 @@ import '../application/meeting_session_adapter.dart';
 import 'meeting_semantics.dart';
 import 'widgets/meeting_room_controls.dart';
 import '../../../core/auth/session_bootstrap.dart';
+import '../../../core/realtime/meeting_realtime_semantics.dart';
 
 // E1 — MeetingTransportBridge: sole interface between meeting UI and WebRTC layer.
 // All mic/camera/screen operations from meeting widgets MUST go through this bridge.
@@ -1772,13 +1773,38 @@ class _MeetingVideoGrid extends StatelessWidget {
 
   String _raw(String s) => s.startsWith('socket:') ? s.substring(7) : s;
 
-  // Ground-truth video state for a renderer: a video track is present AND not
-  // muted (a muted receive-track = the peer's camera is actually off). Used
-  // instead of the roster's videoOn flag, which can be stale.
-  bool _hasLiveVideo(RTCVideoRenderer? renderer) {
+  // Should this tile paint video?
+  //
+  // `muted` ON A REMOTE TRACK IS NOT A CAMERA SWITCH. It is the browser saying
+  // "no data is arriving right now" — it starts true on every remote track and
+  // clears when media flows. Reading it as "the peer's camera is off" is what
+  // put an avatar over a live picture: measured on a real meeting, 2026-09-24,
+  // with the receiver decoding 1,745 frames of her video and climbing while
+  // her tile showed her initial and "Camera off". It is also the likeliest
+  // reading of "his video was not reliably visible" the day before — the flag
+  // clears sometimes and not others, which is exactly what "unreliable" means.
+  //
+  // Three signals, each answering the question it can actually answer:
+  //   * no video track at all  -> nothing to paint (a peer who degraded to
+  //     audio-only has a renderer and no track; this is the case the previous
+  //     repair correctly caught, and it is kept).
+  //   * the roster says video is ON -> paint. Now that a meeting's camera
+  //     actually signals the session (M-1), this flag is trustworthy; it was
+  //     not when this function was written, which is why it was abandoned.
+  //   * data is arriving (`muted != true`) -> paint, even if the roster is
+  //     stale-false. This is the belt to the roster's braces, and it protects
+  //     the older defect where a camera-on that failed to propagate hid a real
+  //     incoming picture.
+  //
+  // Only when a track exists, the roster says off, AND nothing is arriving do
+  // we show the camera-off tile.
+  bool _hasLiveVideo(RTCVideoRenderer? renderer, RealtimeParticipant? p) {
     final tracks = renderer?.srcObject?.getVideoTracks() ?? const [];
     if (tracks.isEmpty) return false;
-    return tracks.first.muted != true;
+    return meetingTileShowsVideo(
+      rosterVideoOn: p?.videoOn,
+      trackMuted: tracks.first.muted,
+    );
   }
 
   RealtimeParticipant? _participantForKey(String key) {
@@ -1954,7 +1980,7 @@ class _MeetingVideoGrid extends StatelessWidget {
         // which hid a real incoming video — the "host sees Camera off while the
         // guest is on camera" bug. The received track is ground truth.
         renderer: renderer,
-        videoOn: _hasLiveVideo(renderer),
+        videoOn: _hasLiveVideo(renderer, p),
         mirror: false,
         isLocal: false,
         label: p.identityLabel,
@@ -1993,7 +2019,9 @@ class _MeetingVideoGrid extends StatelessWidget {
       if (mySocket.isNotEmpty && _raw(entry.key) == mySocket) continue;
       tiles.add(_ParticipantTile(
         renderer: entry.value,
-        videoOn: _hasLiveVideo(entry.value),
+        // No roster entry for this renderer yet, so there is no camera state
+        // to consult — presence of a track is all there is to go on.
+        videoOn: _hasLiveVideo(entry.value, null),
         mirror: false,
         isLocal: false,
         label: 'Participant',
