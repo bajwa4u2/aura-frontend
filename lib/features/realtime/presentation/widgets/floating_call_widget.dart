@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui' as ui show FontFeature;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,24 +6,21 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/services/call_presence_bridge.dart';
-import '../../../../core/ui/aura_platform_components.dart';
-import '../../../../core/ui/aura_radius.dart';
-import '../../../../core/ui/aura_space.dart';
-import '../../../../core/ui/aura_surface.dart';
-import '../../../../core/ui/aura_text.dart';
 import '../../application/realtime_providers.dart';
 import '../../domain/realtime_enums.dart';
 import '../../domain/realtime_models.dart';
 import '../../../../core/navigation/navigation_authority.dart';
 import '../../../../router.dart';
 import '../../domain/realtime_state.dart';
+import 'floating_call_card.dart';
+import 'floating_call_layout.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DIMENSIONS
-// ─────────────────────────────────────────────────────────────────────────────
-
-const double _kWidth = 276.0;
-const double _kEstimatedHeight = 88.0;
+// THE CARD'S DIMENSIONS AND COMPOSITIONS LIVE IN `floating_call_layout.dart`.
+//
+// They were pulled out so the rules — which shape an audio call takes, which a
+// video call takes, and how big a control has to be for a thumb — can be
+// asserted without a renderer, a socket or a camera. See that file's header for
+// what was wrong with the single shape this replaced.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RESOLVED CALL INFO
@@ -39,7 +35,8 @@ class _CallInfo {
     required this.startedAt,
     required this.participants,
     required this.isOwner,
-    this.localRenderer,
+    this.remoteRenderer,
+    this.remoteName,
   });
 
   final String sessionId;
@@ -48,7 +45,18 @@ class _CallInfo {
   final bool cameraOn;
   final DateTime? startedAt;
   final List<RealtimeParticipant> participants;
-  final RTCVideoRenderer? localRenderer;
+
+  /// THE PICTURE OF SOMEBODY ELSE.
+  ///
+  /// This used to be `localRenderer` — the viewer's own camera, mirrored. A
+  /// minimised call is kept on screen so the CALL keeps going while you look at
+  /// something else; the one participant you do not need a picture of is
+  /// yourself. Null when nobody remote is decoding a frame, and the card then
+  /// takes its bar composition rather than showing an empty well.
+  final RTCVideoRenderer? remoteRenderer;
+
+  /// Who [remoteRenderer] belongs to, for the bar composition's label.
+  final String? remoteName;
 
   /// True when this tab owns and is joined to the call.
   /// False when the call is active in another tab (passive view only).
@@ -78,6 +86,23 @@ class FloatingCallWidget extends ConsumerStatefulWidget {
 class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
   Offset? _offset;
   bool _positionInitialized = false;
+
+  /// The composition last built, so the drag clamp measures the card that is
+  /// actually on screen. The old code clamped against a single hardcoded
+  /// estimate, which is how the controls ended up reachable-in-theory and
+  /// parked under the home indicator in practice.
+  FloatingCallComposition _composition = FloatingCallComposition.bar;
+
+  /// A PICTURE ARRIVES AFTER THE CARD IS BUILT.
+  ///
+  /// The renderer is handed its track by the media service on its own schedule.
+  /// A card that asks "is anybody decoding?" once, at build time, answers "no"
+  /// for the rest of the call — the same fault that made every meeting tile say
+  /// "Camera off" a few hours earlier (M-13). So it keeps looking, and rebuilds
+  /// ONLY when the answer changes: a periodic `setState` would rebuild the
+  /// `RTCVideoView` with it, which is the churn A6 removed.
+  Timer? _pictureRecheck;
+  bool _hadPicture = false;
   // A6: removed the 1-second ticker that rebuilt the entire card (and the
   // RTCVideoView with it). The duration display now ticks inside its own
   // isolated subwidget (`_DurationDisplay`), so the video renderer survives
@@ -91,6 +116,17 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
     if (!_positionInitialized) _initPosition();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _pictureRecheck = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      if (!mounted) return;
+      final hasPicture =
+          _remotePicture(ref.read(realtimeControllerProvider)) != null;
+      if (hasPicture != _hadPicture) setState(() => _hadPicture = hasPicture);
+    });
+  }
+
   void _initPosition() {
     final size = MediaQuery.sizeOf(context);
     if (size.isEmpty) return;
@@ -99,14 +135,16 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
     // real system inset rather than a blind margin.
     final pad = MediaQuery.viewPaddingOf(context);
     _positionInitialized = true;
+    final card = floatingCallSize(_composition);
     _offset = Offset(
-      size.width - _kWidth - 20 - pad.right,
-      size.height - _kEstimatedHeight - 84 - pad.bottom,
+      size.width - card.width - 20 - pad.right,
+      size.height - card.height - 84 - pad.bottom,
     );
   }
 
   @override
   void dispose() {
+    _pictureRecheck?.cancel();
     super.dispose();
   }
 
@@ -120,18 +158,66 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
     // bar — it must stay fully visible and draggable in every orientation.
     final pad = MediaQuery.viewPaddingOf(context);
     setState(() {
+      final card = floatingCallSize(_composition);
       final raw = _offset! + d.delta;
       final minX = pad.left;
-      final maxX =
-          (size.width - _kWidth - pad.right).clamp(minX, double.infinity);
-      final minY = pad.top;
-      final maxY = (size.height - _kEstimatedHeight - pad.bottom)
-          .clamp(minY, double.infinity);
-      _offset = Offset(
-        raw.dx.clamp(minX, maxX),
-        raw.dy.clamp(minY, maxY),
+      final maxX = (size.width - card.width - pad.right).clamp(
+        minX,
+        double.infinity,
       );
+      final minY = pad.top;
+      final maxY = (size.height - card.height - pad.bottom).clamp(
+        minY,
+        double.infinity,
+      );
+      _offset = Offset(raw.dx.clamp(minX, maxX), raw.dy.clamp(minY, maxY));
     });
+  }
+
+  // ── Which picture, and whose ────────────────────────────────────────────────
+
+  /// The remote participant whose picture the card should carry, with the
+  /// renderer that is actually decoding it.
+  ///
+  /// A PICTURE IS PROVEN BY A FRAME, NOT BY A FLAG. `participant.videoOn` is
+  /// derived server-side and is under repair — M-10 has it reporting OFF for
+  /// participants who were visibly publishing — so trusting it here would give
+  /// a black 16:9 well exactly when somebody's camera was on. The renderer's
+  /// `srcObject` holding a live video track is the observable fact.
+  ({RealtimeParticipant participant, RTCVideoRenderer renderer})?
+  _remotePicture(RealtimeState local) {
+    final byParticipant = local.remoteRenderersByParticipant;
+    if (byParticipant.isEmpty) return null;
+    for (final participant in local.participants) {
+      if (!participant.isPresent) continue;
+      final renderer = byParticipant[participant.id];
+      if (renderer == null) continue;
+      final stream = renderer.srcObject;
+      if (stream == null) continue;
+      if (stream.getVideoTracks().isEmpty) continue;
+      return (participant: participant, renderer: renderer);
+    }
+    return null;
+  }
+
+  /// The name the bar composition says out loud.
+  ///
+  /// Prefers whoever has a picture, then the first other present participant —
+  /// a minimised call should name the person it is with, not the number of rows
+  /// of chrome it can fit.
+  String? _remoteName(RealtimeState local) {
+    final withPicture = _remotePicture(local)?.participant;
+    final candidate =
+        withPicture ??
+        local.participants
+            .where((p) => p.isPresent)
+            .cast<RealtimeParticipant?>()
+            .firstWhere(
+              (p) => (p?.displayName ?? p?.handle ?? '').trim().isNotEmpty,
+              orElse: () => null,
+            );
+    final name = (candidate?.displayName ?? candidate?.handle ?? '').trim();
+    return name.isEmpty ? null : name;
   }
 
   // ── Resolve active call info ─────────────────────────────────────────────
@@ -170,7 +256,8 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
             : session.startedAt,
         participants: local.participants.where((p) => p.isPresent).toList(),
         isOwner: true,
-        localRenderer: local.localRenderer,
+        remoteRenderer: _remotePicture(local)?.renderer,
+        remoteName: _remoteName(local),
       );
     }
 
@@ -189,7 +276,8 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
       startedAt: presence.startedAt,
       participants: const [],
       isOwner: false,
-      localRenderer: null,
+      remoteRenderer: null,
+      remoteName: null,
     );
   }
 
@@ -221,7 +309,8 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
       // live — it already renders an ended call honestly — so go there and
       // let it answer, rather than deciding from flags that are allowed to
       // flicker.
-      final sameSession = (local.sessionId ?? '').trim() == info.sessionId.trim();
+      final sameSession =
+          (local.sessionId ?? '').trim() == info.sessionId.trim();
       if (!sameSession && session != null) {
         ref.read(realtimeControllerProvider.notifier).clearLocalSession();
         return;
@@ -293,7 +382,11 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
   /// See the rule in [_buildPip].
   final Set<String> _surfaceShown = <String>{};
 
-  Widget _buildPip(BuildContext context, RealtimeState liveState, Uri location) {
+  Widget _buildPip(
+    BuildContext context,
+    RealtimeState liveState,
+    Uri location,
+  ) {
     if (callSurfaceOwnsTheScreen(location)) {
       // Remember that the room for THIS session has been on screen. Recorded
       // during build rather than in the room's initState because that is
@@ -342,43 +435,77 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
       return const SizedBox.shrink();
     }
 
+    // WHICH SHAPE THIS CALL TAKES.
+    //
+    // Decided from the content, every build: a video call with somebody's
+    // picture decoding becomes that picture; anything else — an audio call, or
+    // a video call before the first frame, or one where every camera is off —
+    // becomes a short bar with no picture area to leave empty.
+    final composition = floatingCallComposition(
+      isVideo: info.isVideo,
+      hasRemotePicture: info.remoteRenderer != null,
+    );
+    _composition = composition;
+
     return Positioned(
       left: _offset!.dx,
       top: _offset!.dy,
-      width: _kWidth,
-      child: GestureDetector(
+      width: kFloatingCallWidth,
+      // THE DRAG SURFACE MUST NOT COVER THE BUTTONS.
+      //
+      // `onPanUpdate` used to wrap the WHOLE card, controls included, and that
+      // is what made Return "dead on Android" while it worked perfectly on the
+      // web (C-4, Film A capture 9).
+      //
+      // A tap and a pan compete in the same gesture arena. The tap recogniser
+      // rejects ITSELF once the finger drifts past `kTouchSlop` (18px), and the
+      // pan does not claim until `kPanSlop` (36px) — so a finger that moves
+      // 18–36px while pressing lands in a dead band where the tap has given up,
+      // the pan has not taken over, and NOTHING AT ALL HAPPENS. Past 36px the
+      // pan wins and the card slides out from under the finger instead. A mouse
+      // click drifts zero pixels, which is why this was invisible on desktop.
+      //
+      // The fix is not a bigger tolerance, it is not owning the buttons: the
+      // card is dragged by its body (which is where the drag handle has always
+      // been drawn), and the controls row is left out of the drag surface
+      // entirely. See `kFloatingControlTapTarget` for the other half of C-4.
+      child: FloatingCallCard(
+        composition: composition,
+        isVideo: info.isVideo,
+        micOn: info.micOn,
+        cameraOn: info.cameraOn,
+        participants: info.participants,
+        startedAt: info.startedAt,
+        isOwner: info.isOwner,
+        remoteName: info.remoteName,
         onPanUpdate: _onPanUpdate,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.move,
-          child: _FloatingCard(
-            isVideo: info.isVideo,
-            micOn: info.micOn,
-            cameraOn: info.cameraOn,
-            participants: info.participants,
-            startedAt: info.startedAt,
-            isOwner: info.isOwner,
-            // RETURNING IS ALWAYS AVAILABLE. Ending is not.
-            //
-            // This was `info.isOwner ? ... : null`, so a passive PiP — the
-            // one shown when this tab is not the media owner — had NO return
-            // handler at all and the button did nothing. Founder-observed
-            // 2026-08-28: "nothing happens on return".
-            //
-            // The irony is that `_returnToCall` already has a branch written
-            // for exactly that case, navigating to the session and letting
-            // the room resolve it. It was simply unreachable.
-            //
-            // Ending stays owner-only: closing a call from a tab that does
-            // not own the media is a different act with different
-            // consequences.
-            onReturn: () => _returnToCall(info),
-            // A1: passive (cross-tab) PiPs cannot end the call; only the
-            // owner tab has the media session and authoritative state.
-            onEnd: info.isOwner ? _endCallFromPip : null,
-            isEnding: liveState.isEndingCall,
-            localRenderer: info.localRenderer,
-          ),
-        ),
+        // RETURNING IS ALWAYS AVAILABLE. Ending is not.
+        //
+        // This was `info.isOwner ? ... : null`, so a passive PiP — the
+        // one shown when this tab is not the media owner — had NO return
+        // handler at all and the button did nothing. Founder-observed
+        // 2026-08-28: "nothing happens on return".
+        //
+        // The irony is that `_returnToCall` already has a branch written
+        // for exactly that case, navigating to the session and letting
+        // the room resolve it. It was simply unreachable.
+        //
+        // Ending stays owner-only: closing a call from a tab that does
+        // not own the media is a different act with different
+        // consequences.
+        onReturn: () => _returnToCall(info),
+        // A1: passive (cross-tab) PiPs cannot end the call; only the
+        // owner tab has the media session and authoritative state.
+        onEnd: info.isOwner ? _endCallFromPip : null,
+        isEnding: liveState.isEndingCall,
+        // The card lays out a picture; only this file knows the picture is a
+        // WebRTC surface.
+        picture: info.remoteRenderer == null
+            ? null
+            : RTCVideoView(
+                info.remoteRenderer!,
+                objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+              ),
       ),
     );
   }
@@ -388,372 +515,27 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
 // CARD CONTENT
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _FloatingCard extends StatelessWidget {
-  const _FloatingCard({
-    required this.isVideo,
-    required this.micOn,
-    required this.cameraOn,
-    required this.participants,
-    required this.startedAt,
-    required this.isOwner,
-    required this.onReturn,
-    required this.onEnd,
-    required this.isEnding,
-    this.localRenderer,
-  });
-
-  final bool isVideo;
-  final bool micOn;
-  final bool cameraOn;
-  final List<RealtimeParticipant> participants;
-  final DateTime? startedAt;
-  final bool isOwner;
-  final VoidCallback? onReturn;
-  final VoidCallback? onEnd;
-  final bool isEnding;
-  final RTCVideoRenderer? localRenderer;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: _kWidth,
-      padding: const EdgeInsets.fromLTRB(
-        AuraSpace.s12, AuraSpace.s10, AuraSpace.s10, AuraSpace.s10,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F1E33),
-        borderRadius: BorderRadius.circular(AuraRadius.xl),
-        border: Border.all(color: AuraSurface.divider),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x99000000),
-            blurRadius: 28,
-            offset: Offset(0, 10),
-          ),
-          BoxShadow(
-            color: Color(0x0D5B6CFF),
-            blurRadius: 40,
-            spreadRadius: -4,
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Video preview (video calls with camera on) ────────────────────
-          if (isVideo && cameraOn && localRenderer != null) ...[
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AuraRadius.md),
-              child: SizedBox(
-                width: double.infinity,
-                height: 68,
-                child: RTCVideoView(
-                  localRenderer!,
-                  mirror: true,
-                  objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
-                ),
-              ),
-            ),
-            const SizedBox(height: AuraSpace.s8),
-          ],
-
-          // ── Row 1: live indicator · title · duration · drag handle ────────
-          Row(
-            children: [
-              _LiveDot(active: isOwner),
-              const SizedBox(width: AuraSpace.s6),
-              Text(
-                isOwner
-                    ? (isVideo ? 'Video Call' : 'Audio Call')
-                    : 'Call in another tab',
-                style: AuraText.small.copyWith(
-                  color: AuraSurface.ink,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const Spacer(),
-              // A6: duration ticks inside its own widget so the parent card
-              // (and the RTCVideoView in particular) is not rebuilt every
-              // second. Stops the video preview freeze that was caused by
-              // dispose/reinit cycles on the renderer.
-              _DurationDisplay(startedAt: startedAt),
-              const SizedBox(width: AuraSpace.s8),
-              const Icon(
-                Icons.drag_indicator_rounded,
-                size: 14,
-                color: AuraSurface.faint,
-              ),
-            ],
-          ),
-
-          const SizedBox(height: AuraSpace.s8),
-
-          // ── Row 2: avatars · status · buttons ────────────────────────────
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if (participants.isNotEmpty) ...[
-                _MiniAvatarStack(participants: participants),
-                const SizedBox(width: AuraSpace.s8),
-              ],
-
-              if (isOwner) ...[
-                _StatusDot(
-                  icon: micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
-                  on: micOn,
-                ),
-                if (isVideo) ...[
-                  const SizedBox(width: AuraSpace.s4),
-                  _StatusDot(
-                    icon: cameraOn
-                        ? Icons.videocam_rounded
-                        : Icons.videocam_off_rounded,
-                    on: cameraOn,
-                  ),
-                ],
-              ] else ...[
-                // Passive tab — show a subtle indicator only
-                Text(
-                  'Active',
-                  style: AuraText.micro.copyWith(
-                    color: AuraSurface.muted,
-                  ),
-                ),
-              ],
-
-              const Spacer(),
-
-              if (onReturn != null) ...[
-                _Chip(
-                  label: 'Return',
-                  icon: Icons.open_in_full_rounded,
-                  accent: true,
-                  onTap: onReturn!,
-                ),
-                if (onEnd != null) const SizedBox(width: AuraSpace.s6),
-              ],
-              if (onEnd != null)
-                _Chip(
-                  label: isEnding ? 'Ending…' : 'End',
-                  icon: Icons.call_end_rounded,
-                  danger: true,
-                  onTap: isEnding ? null : onEnd!,
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
+/// A state worth reporting, which for this card means a state that is OFF.
 // ─────────────────────────────────────────────────────────────────────────────
 // MICRO-WIDGETS
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _LiveDot extends StatelessWidget {
-  const _LiveDot({required this.active});
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 7,
-      height: 7,
-      decoration: BoxDecoration(
-        color: active ? const Color(0xFF4ADE80) : AuraSurface.muted,
-        shape: BoxShape.circle,
-      ),
-    );
-  }
-}
-
-class _MiniAvatarStack extends StatelessWidget {
-  const _MiniAvatarStack({required this.participants});
-  final List<RealtimeParticipant> participants;
-
-  @override
-  Widget build(BuildContext context) {
-    final shown = participants.take(3).toList();
-    const size = 22.0;
-    const step = 12.0;
-
-    return SizedBox(
-      width: size + (shown.length - 1) * step,
-      height: size,
-      child: Stack(
-        children: [
-          for (var i = 0; i < shown.length; i++)
-            Positioned(
-              left: i * step,
-              child: Container(
-                width: size,
-                height: size,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0xFF0F1E33),
-                    width: 1.5,
-                  ),
-                ),
-                child: ClipOval(
-                  child: AuraAvatar(
-                    name: shown[i].displayName?.trim().isNotEmpty == true
-                        ? shown[i].displayName!
-                        : shown[i].handle ?? '?',
-                    size: size,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusDot extends StatelessWidget {
-  const _StatusDot({required this.icon, required this.on});
-  final IconData icon;
-  final bool on;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 24,
-      height: 24,
-      decoration: BoxDecoration(
-        color: on ? AuraSurface.coVerdant.withValues(alpha: 0.16) : AuraSurface.coRose.withValues(alpha: 0.16),
-        shape: BoxShape.circle,
-      ),
-      child: Icon(icon, size: 12, color: on ? AuraSurface.coVerdant : AuraSurface.coRose),
-    );
-  }
-}
-
 /// A6: isolated 1-second ticker that owns only the duration text. Sits next
 /// to the RTCVideoView in the card so the video renderer's parent build
 /// scope is not invalidated every second by the duration update.
-class _DurationDisplay extends StatefulWidget {
-  const _DurationDisplay({required this.startedAt});
-  final DateTime? startedAt;
-
-  @override
-  State<_DurationDisplay> createState() => _DurationDisplayState();
-}
-
-class _DurationDisplayState extends State<_DurationDisplay> {
-  Timer? _ticker;
-
-  @override
-  void initState() {
-    super.initState();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    _ticker?.cancel();
-    super.dispose();
-  }
-
-  String _format(DateTime? startedAt) {
-    if (startedAt == null) return '--:--';
-    final diff = DateTime.now().difference(startedAt);
-    final h = diff.inHours;
-    final m = diff.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = diff.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return h > 0 ? '$h:$m:$s' : '$m:$s';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      _format(widget.startedAt),
-      style: AuraText.small.copyWith(
-        color: AuraSurface.muted,
-        fontFeatures: const [ui.FontFeature.tabularFigures()],
-      ),
-    );
-  }
-}
-
-class _Chip extends StatelessWidget {
-  const _Chip({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-    this.accent = false,
-    this.danger = false,
-  });
-
-  final String label;
-  final IconData icon;
-  final VoidCallback? onTap;
-  final bool accent;
-  final bool danger;
-
-  @override
-  Widget build(BuildContext context) {
-    final disabled = onTap == null;
-    final Color bg;
-    final Color fg;
-    final Color border;
-    if (danger) {
-      bg = AuraSurface.coRose.withValues(alpha: 0.16);
-      fg = AuraSurface.coRose;
-      border = AuraSurface.coRose.withValues(alpha: 0.35);
-    } else if (accent) {
-      bg = AuraSurface.accentSoft;
-      fg = AuraSurface.accentText;
-      border = AuraSurface.accent.withValues(alpha: 0.35);
-    } else {
-      bg = AuraSurface.card;
-      fg = AuraSurface.muted;
-      border = AuraSurface.divider;
-    }
-
-    return MouseRegion(
-      cursor: disabled ? SystemMouseCursors.basic : SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Opacity(
-          opacity: disabled ? 0.6 : 1.0,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s8,
-              vertical: AuraSpace.s4,
-            ),
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(AuraRadius.md),
-              border: Border.all(color: border),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 11, color: fg),
-                const SizedBox(width: AuraSpace.s4),
-                Text(
-                  label,
-                  style: AuraText.micro.copyWith(
-                    color: fg,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-
+/// A CONTROL A THUMB CAN FIND — the other half of C-4.
+///
+/// What this replaces was a text pill with 8px of horizontal and 4px of
+/// vertical padding around an 11px glyph: a target about **21 logical pixels
+/// tall**. Flutter's own `kMinInteractiveDimension` is 48 and Android's
+/// guidance is 48dp, for the plain reason that a fingertip is not a mouse
+/// cursor. Founder-observed on Android: Return did nothing. It had been hit
+/// every time in testing because everything that tested it had a cursor.
+///
+/// The visible mark stays small — this belongs to a 276px card — but it now
+/// answers across a full [kFloatingControlTapTarget] square, and it carries a
+/// semantic label so the word that used to be printed beside it is still
+/// available to anyone who needs it read out.
 /// Whether the current address IS a full call surface.
 ///
 /// The PiP exists to represent a call the person is NOT looking at. When the

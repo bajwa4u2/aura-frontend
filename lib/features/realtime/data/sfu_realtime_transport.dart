@@ -155,18 +155,50 @@ class SfuRealtimeTransport implements RealtimeTransport {
   /// This exists because the signalling socket reconnecting told the app
   /// nothing whatsoever about the media, and the app tore the media down
   /// anyway.
+  /// THE STALE CACHE WAS NOT ONLY A TELEMETRY PROBLEM.
+  ///
+  /// `mediaHealthFrom` answers true only for `connected` or `completed`. Read
+  /// from `_lastIceState`, which on web never advanced past its initial `new`
+  /// (see [_iceState]), this returned **false for the whole of every web
+  /// call** — including calls carrying 84 MB of video without a hiccup.
+  ///
+  /// That is not a cosmetic fault: `isMediaHealthy` is what a rejoin consults
+  /// before deciding a transport is worth keeping, and an unhealthy verdict
+  /// detaches it as `MEDIA_UNHEALTHY`. Asking the connection instead of a
+  /// cache makes the verdict match the call.
   bool get isMediaHealthy => mediaHealthFrom(
         closing: _closing,
         lostReported: _lostReported,
-        ice: _lastIceState,
+        ice: _iceState,
       );
 
-  /// WHAT ICE LAST SAID, as a label rather than a verdict.
+  /// ASK THE CONNECTION, DO NOT REMEMBER WHAT IT ONCE SAID.
   ///
-  /// [isMediaHealthy] collapses this to a bool for the decisions that need
-  /// one. Telemetry needs the state itself: "disconnected" and "failed" are
-  /// both unhealthy and mean very different things about what to fix.
-  String get mediaPlaneState => switch (_lastIceState) {
+  /// `_lastIceState` is written only from `onIceConnectionState` events, and
+  /// that callback is a SINGLE SLOT which `_waitForIce` borrows for the whole
+  /// connect. ICE typically reaches `connected` while it is borrowed; by the
+  /// time the long-lived watcher is re-armed there is nothing left to change,
+  /// so no event ever arrives and the cache keeps its initial value for the
+  /// rest of the call.
+  ///
+  /// Measured on production, 45 days: **web reported `new` in 3,069 quality
+  /// samples** while those same rows accumulated up to 84 MB of received video.
+  /// Native platforms happened to report `completed` only because ICE moves
+  /// from `connected` to `completed` a moment later — AFTER the re-arm — which
+  /// is luck, not design. The column added to answer "what did the transport
+  /// think of itself" was therefore unusable, and C-2 ("reconnect never
+  /// observed working") could not have been observed either way.
+  ///
+  /// The connection knows its own state. Read it.
+  RTCIceConnectionState get _iceState =>
+      _pc?.iceConnectionState ?? _lastIceState;
+
+  /// WHAT ICE SAYS, as a label rather than a verdict.
+  ///
+  /// [isMediaHealthy] collapses this to a bool for the decisions that need one.
+  /// Telemetry needs the state itself: `disconnected` and `failed` are both
+  /// unhealthy and mean very different things about what to fix.
+  String get mediaPlaneState => switch (_iceState) {
         RTCIceConnectionState.RTCIceConnectionStateNew => 'new',
         RTCIceConnectionState.RTCIceConnectionStateChecking => 'checking',
         RTCIceConnectionState.RTCIceConnectionStateConnected => 'connected',
