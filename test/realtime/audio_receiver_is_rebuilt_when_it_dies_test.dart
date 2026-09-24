@@ -42,6 +42,10 @@ void main() {
     'lib/features/realtime/data/sfu_realtime_transport.dart',
   ).readAsStringSync();
 
+  /// The detection (`_checkAudioReceiverAlive`) and the repair
+  /// (`_rebuildReceiversForKind`) — one span, because C-10 generalised the
+  /// repair so a stalled VIDEO receiver is rebuilt the same way rather than
+  /// condemning the whole transport.
   final recovery = (() {
     final start = src.indexOf('Future<void> _checkAudioReceiverAlive(');
     if (start < 0) throw StateError('the audio receiver recovery is gone');
@@ -78,8 +82,8 @@ void main() {
   });
 
   group('the rebuild is the same act the accidental republish performed', () {
-    test('it drops the audio subscription so the next reconcile asks again', () {
-      expect(recovery, contains('_subscribed.removeAll(subscribedAudio)'));
+    test('it drops the subscription so the next reconcile asks again', () {
+      expect(recovery, contains('_subscribed.removeAll(ofKind)'));
     });
 
     test('it clears the attempt counters it is not responsible for', () {
@@ -89,18 +93,30 @@ void main() {
     });
 
     test('it renegotiates', () {
-      expect(recovery, contains("refreshRemoteMedia(trigger: 'AUDIO_RECEIVER_LOST')"));
+      expect(recovery, contains("refreshRemoteMedia(trigger: 'RECEIVER_REBUILD_"));
     });
 
     test('it says so, so the next occurrence is legible in the trace', () {
-      expect(recovery, contains('op=AUDIO_RECEIVER_LOST'));
+      expect(recovery, contains('op=RECEIVER_REBUILD'));
+    });
+
+    test('it forgets the stall counters of the stream that went away', () {
+      // Carrying them into the replacement would re-trip the moment the fresh
+      // receiver is still warming up.
+      expect(recovery, contains('_stallTicksByKind.remove(kind)'));
+      expect(recovery, contains('_lastBytesByKind.remove(kind)'));
     });
   });
 
   group('it is bounded', () {
     test('a fault renegotiation cannot fix does not renegotiate forever', () {
-      expect(src, contains('_maxAudioRecoveries = 3'));
-      expect(recovery, contains('_audioRecoveries >= _maxAudioRecoveries'));
+      expect(src, contains('_maxRecoveriesPerKind = 3'));
+      expect(recovery, contains('used >= _maxRecoveriesPerKind'));
+    });
+
+    test('the budget is PER KIND', () {
+      // A camera that keeps stopping must not exhaust the budget audio needs.
+      expect(src, contains('_recoveriesByKind'));
     });
 
     test('it stands down while the transport is closing or already lost', () {

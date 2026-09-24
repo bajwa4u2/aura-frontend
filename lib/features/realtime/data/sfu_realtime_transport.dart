@@ -251,16 +251,36 @@ class SfuRealtimeTransport implements RealtimeTransport {
   /// published audio looks identical to one where the receiver died.
   final Map<String, String> _kindByTrackId = <String, String>{};
 
+  /// What each LOCAL sender publishes, keyed by its stable sender id.
+  ///
+  /// C-9 — A SENDER IS NOT ITS CURRENT TRACK. `_replaceSource` matched senders
+  /// with `sender.track?.kind != kind`, so the moment a track was CLEARED the
+  /// sender that carried it became invisible: `track` is null, its kind is
+  /// null, and no future replacement could ever find it again.
+  ///
+  /// Stopping a screen share when no camera is running does exactly that —
+  /// `replaceVideoSource(null)`. From then on every share and every camera
+  /// start reported `REPLACE_NO_SENDER`, published nothing, and left the
+  /// interface saying it was sharing.
+  ///
+  /// A sender's kind is fixed when its m-line is created, so it is recorded
+  /// there. Only SendOnly transceivers we created for local tracks are
+  /// entered: a `recvonly` line's sender genuinely cannot publish, and must
+  /// keep reporting `REPLACE_NO_SENDER` so the caller renegotiates instead.
+  final Map<String, String> _kindBySenderId = <String, String>{};
+
   /// Consecutive liveness ticks where an audio track is subscribed and no
   /// inbound audio stream exists at all.
   int _audioAbsentTicks = 0;
 
-  /// How many times this transport has rebuilt a lost audio receiver.
+  /// How many times this transport has rebuilt each kind's receivers.
   ///
   /// Bounded for the same reason `_subscribeAttempts` is: a fault that cannot
-  /// be repaired by renegotiating must not renegotiate forever.
-  int _audioRecoveries = 0;
-  static const int _maxAudioRecoveries = 3;
+  /// be repaired by renegotiating must not renegotiate forever. Per KIND,
+  /// because a camera that keeps stopping must not exhaust the budget that
+  /// audio may need.
+  final Map<String, int> _recoveriesByKind = <String, int>{};
+  static const int _maxRecoveriesPerKind = 3;
 
   /// Ticks of absence before rebuilding. The probe runs every 3s, so this is
   /// about nine seconds — long enough that a receiver still being negotiated
@@ -459,10 +479,22 @@ class SfuRealtimeTransport implements RealtimeTransport {
       );
     } else {
       for (final track in tracks) {
-        await pc.addTransceiver(
+        final transceiver = await pc.addTransceiver(
           track: track,
           init: RTCRtpTransceiverInit(direction: TransceiverDirection.SendOnly),
         );
+        // WHAT THIS SENDER IS FOR, recorded while we still know.
+        //
+        // A sender's KIND is fixed when its m-line is created and never
+        // changes. The track it happens to be carrying is not: clearing it
+        // (`replaceTrack(null)`) leaves a perfectly good video sender whose
+        // `track` is null. See `_replaceSource` for what that cost.
+        try {
+          _kindBySenderId[transceiver.sender.senderId] = track.kind ?? '';
+        } catch (_) {
+          // A platform that will not surface a sender id falls back to the
+          // old track-kind match, which is what shipped.
+        }
       }
     }
 
@@ -864,7 +896,19 @@ class SfuRealtimeTransport implements RealtimeTransport {
     if (pc == null) return;
     final senders = await pc.getSenders();
     for (final sender in senders) {
-      if (sender.track?.kind != kind) continue;
+      String? senderId;
+      try {
+        senderId = sender.senderId;
+      } catch (_) {
+        senderId = null;
+      }
+      if (!senderPublishesKind(
+        kind: kind,
+        trackKind: sender.track?.kind,
+        recordedKind: senderId == null ? null : _kindBySenderId[senderId],
+      )) {
+        continue;
+      }
       // replaceTrack, not renegotiation: the publication, the transport and
       // the Aura session all stay exactly as they are, and subscribers keep
       // receiving without re-subscribing.
@@ -1097,9 +1141,25 @@ class SfuRealtimeTransport implements RealtimeTransport {
           sample: byKind,
         );
         if (stalled != null) {
-          _declareLost('media_stalled_'
-              '${(_stallTicksByKind[stalled] ?? 0) * 3}s_kind_$stalled');
-          return;
+          final seconds = (_stallTicksByKind[stalled] ?? 0) * 3;
+          // C-10 — ONE KIND STOPPING IS NOT THE TRANSPORT DYING.
+          //
+          // This called `_declareLost` for ANY stalled kind, so a far-end
+          // camera going off condemned a call whose audio was flowing. Loss is
+          // now reserved for every delivering kind having stopped; a single
+          // kind is repaired where it broke, exactly as a lost audio receiver
+          // is.
+          if (transportLostFromStalls(
+            lastBytesByKind: _lastBytesByKind,
+            stallTicksByKind: _stallTicksByKind,
+          )) {
+            _declareLost('media_stalled_${seconds}s_all_kinds');
+            return;
+          }
+          unawaited(_rebuildReceiversForKind(
+            kind: stalled,
+            reason: 'stalled_${seconds}s',
+          ));
         }
       }
       _ticks += 1;
@@ -1213,27 +1273,59 @@ class SfuRealtimeTransport implements RealtimeTransport {
 
     _audioAbsentTicks += 1;
     if (_audioAbsentTicks < _audioAbsentTicksBeforeRecovery) return;
-    if (_audioRecoveries >= _maxAudioRecoveries) return;
 
+    // The bound itself lives in `_rebuildReceiversForKind`, which owns the
+    // per-kind budget. Resetting the tick counter here regardless keeps this
+    // from spinning once that budget is spent.
     _audioAbsentTicks = 0;
-    _audioRecoveries += 1;
+    await _rebuildReceiversForKind(kind: 'audio', reason: 'absent');
+  }
 
-    // Forget the subscription so the next reconcile asks again, and clear the
+  /// Rebuild the receiving side for ONE kind, without touching the transport.
+  ///
+  /// This is the same act the far end performed by accident when it
+  /// republished and restored a dead audio receiver (production, 2026-09-24):
+  /// forget the subscription so the next reconcile asks for it again, which
+  /// renegotiates and creates a fresh receiver.
+  ///
+  /// It replaces `_declareLost` as the answer to a single stalled or missing
+  /// kind. Loss tears the whole transport down and latches `_lostReported`
+  /// permanently; this repairs what actually broke and leaves everything else
+  /// carrying media untouched.
+  Future<void> _rebuildReceiversForKind({
+    required String kind,
+    required String reason,
+  }) async {
+    if (_closing || _lostReported) return;
+
+    final ofKind = _subscribed
+        .where((id) => _kindByTrackId[id] == kind)
+        .toList(growable: false);
+    if (ofKind.isEmpty) return;
+
+    final used = _recoveriesByKind[kind] ?? 0;
+    if (used >= _maxRecoveriesPerKind) return;
+    _recoveriesByKind[kind] = used + 1;
+
+    // Forget the subscriptions so the next reconcile asks again, and clear the
     // attempt counters so this does not consume the retry budget that exists
-    // for a different fault.
-    _subscribed.removeAll(subscribedAudio);
-    for (final id in subscribedAudio) {
+    // for a different fault (a publisher race).
+    _subscribed.removeAll(ofKind);
+    for (final id in ofKind) {
       _subscribeAttempts.remove(id);
     }
+    // The stall counters belong to the stream that just went away; carrying
+    // them over would re-trip the moment the new receiver is still warming up.
+    _stallTicksByKind.remove(kind);
+    _lastBytesByKind.remove(kind);
 
     unawaited(_report(
-      'op=AUDIO_RECEIVER_LOST tracks=${subscribedAudio.length} '
-      'recovery=$_audioRecoveries/$_maxAudioRecoveries '
-      'video=${byKind['video'] ?? 0}b',
+      'op=RECEIVER_REBUILD kind=$kind reason=$reason '
+      'tracks=${ofKind.length} attempt=${used + 1}/$_maxRecoveriesPerKind',
     ));
 
     try {
-      await refreshRemoteMedia(trigger: 'AUDIO_RECEIVER_LOST');
+      await refreshRemoteMedia(trigger: 'RECEIVER_REBUILD_$kind');
     } catch (_) {
       // A failed rebuild leaves the call exactly as it already was, and the
       // next tick will try again within the bound.
@@ -1497,6 +1589,41 @@ String? stalledKindAfterTick({
   return stalled;
 }
 
+/// C-10 — IS THE TRANSPORT GONE, OR DID SOMEBODY TURN THEIR CAMERA OFF?
+///
+/// [stalledKindAfterTick] answers "has one kind stopped", and it must keep
+/// doing so: it is the 2026-09-08 repair for frozen video under healthy audio,
+/// the failure people actually report as *"I can't see you, you can see me"*.
+///
+/// What was wrong was the RESPONSE. One stalled kind called `_declareLost`,
+/// which latches `_lostReported`, makes `isMediaHealthy` false for the rest of
+/// the transport's life, cancels the liveness probe, and gets the transport
+/// detached as `MEDIA_UNHEALTHY` on a later rejoin. So a participant turning
+/// their camera off — an ordinary, deliberate act that stops video bytes —
+/// permanently condemned a call whose audio was flowing perfectly.
+///
+/// A single kind stopping is a PUBLISHER'S DECISION. Every kind stopping is a
+/// TRANSPORT FAILURE. Only the second is loss.
+///
+/// Judged over the kinds that have actually delivered something: a call that
+/// never carried video cannot be waiting on video to stall, and a video-only
+/// call is correctly lost when its only kind stops.
+bool transportLostFromStalls({
+  required Map<String, int> lastBytesByKind,
+  required Map<String, int> stallTicksByKind,
+  int threshold = 6,
+}) {
+  var delivered = 0;
+  for (final entry in lastBytesByKind.entries) {
+    if (entry.value <= 0) continue;
+    delivered += 1;
+    if ((stallTicksByKind[entry.key] ?? 0) < threshold) return false;
+  }
+  // Nothing ever arrived, so nothing has stopped. The arming rule in the probe
+  // owns that case.
+  return delivered > 0;
+}
+
 bool mediaHealthFrom({
   required bool closing,
   required bool lostReported,
@@ -1506,6 +1633,33 @@ bool mediaHealthFrom({
     !lostReported &&
     (ice == RTCIceConnectionState.RTCIceConnectionStateConnected ||
         ice == RTCIceConnectionState.RTCIceConnectionStateCompleted);
+
+/// C-9 — WHETHER THIS SENDER IS THE ONE THAT PUBLISHES [kind].
+///
+/// Pure, because the consequence of getting it wrong is a screen share that
+/// reaches nobody while the interface says it is sharing, and that is worth
+/// arguing about here rather than inside a peer connection.
+///
+/// The rule the defect came from was `sender.track?.kind == kind`. A sender
+/// whose track has been CLEARED reports a null track and therefore a null
+/// kind, so it matched nothing ever again — and clearing is not exotic:
+/// stopping a screen share with no camera running does precisely that.
+///
+/// [recordedKind] is what the sender was CREATED to publish, which never
+/// changes. It wins when present. [trackKind] remains the fallback for
+/// senders this transport did not create, and for any platform that will not
+/// surface a sender id — that is the behaviour that shipped, kept rather than
+/// replaced.
+bool senderPublishesKind({
+  required String kind,
+  required String? trackKind,
+  required String? recordedKind,
+}) {
+  if (recordedKind != null && recordedKind.isNotEmpty) {
+    return recordedKind == kind;
+  }
+  return trackKind == kind;
+}
 
 /// WHICH M-LINES A RETIREMENT FREES, as a rule a test can hold.
 ///

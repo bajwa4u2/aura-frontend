@@ -35,10 +35,26 @@ void main() {
               'audio while video is frozen — the original defect');
     });
 
-    test('a frozen kind is declared with the kind named', () {
+    test('a frozen kind is acted on with the kind named', () {
       // A stall that cannot say WHICH kind died cannot have been decided
-      // per-kind.
-      expect(source, contains('_kind_'));
+      // per-kind. That invariant is unchanged; where it is satisfied moved.
+      //
+      // This used to look for `_kind_` in the `_declareLost` reason, because a
+      // single stalled kind tore the whole transport down. C-10 ended that:
+      // one kind stopping is a publisher's decision (somebody turned their
+      // camera off), and only EVERY kind stopping is a transport failure. So
+      // the per-kind response is now a rebuild of that kind's receivers, and
+      // that is where the kind is named.
+      expect(source, contains('op=RECEIVER_REBUILD kind=\$kind'),
+          reason: 'the per-kind response must still say which kind it is for');
+      expect(source, contains('_rebuildReceiversForKind('));
+    });
+
+    test('loss is reserved for every delivering kind having stopped', () {
+      // The counterpart to the above: if this ever reverts to naming a single
+      // kind, a camera being switched off condemns the call again.
+      expect(source, contains('transportLostFromStalls('));
+      expect(source, contains('_all_kinds'));
     });
   });
 
