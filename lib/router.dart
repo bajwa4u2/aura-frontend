@@ -1499,16 +1499,6 @@ final routerProvider = Provider<GoRouter>((ref) {
               guestId: state.uri.queryParameters['guestId'],
             ),
           ),
-          GoRoute(
-            path: '/meetings/:meetingId/live',
-            builder: (context, state) => MeetingLiveRoomScreen(
-              meetingId: state.pathParameters['meetingId'] ?? '',
-              sessionId: state.uri.queryParameters['sessionId'] ?? '',
-              isHost: state.uri.queryParameters['isHost'] == 'true',
-              meetingCode: state.uri.queryParameters['code'],
-              guestUserId: state.uri.queryParameters['guestId'],
-            ),
-          ),
           // Summary and workspace merged into the Meeting Record — one page
           // is the meeting before, during, and after. Old links keep working.
           GoRoute(
@@ -1553,20 +1543,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                 sessionId: state.uri.queryParameters['sessionId'],
                 returnTo: state.uri.queryParameters['returnTo'],
                 guestId: state.uri.queryParameters['guestId'],
-              ),
-            ),
-          ),
-          GoRoute(
-            path: '/institution/:institutionId/meetings/:meetingId/live',
-            builder: (context, state) => InstitutionRouteScope(
-              address: state.pathParameters['institutionId'],
-              builder: (institutionId) => MeetingLiveRoomScreen(
-                meetingId: state.pathParameters['meetingId'] ?? '',
-                institutionId: institutionId,
-                sessionId: state.uri.queryParameters['sessionId'] ?? '',
-                isHost: state.uri.queryParameters['isHost'] == 'true',
-                meetingCode: state.uri.queryParameters['code'],
-                guestUserId: state.uri.queryParameters['guestId'],
               ),
             ),
           ),
@@ -2795,6 +2771,45 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
         ],
+      ),
+
+      // A LIVE MEETING IS A SESSION, AND A SESSION TAKES THE SCREEN.
+      //
+      // These two lived INSIDE the ShellRoute, so a meeting was wrapped in the
+      // global AURA bar and the institution bar and then carried its own
+      // header underneath: three stacked bars before a single face. Founder,
+      // on the real thing (2026-09-24): "still three headers above meeting
+      // surface tiles eating vertical space" — about a quarter of the window
+      // gone before the meeting started.
+      //
+      // Calls already knew this rule; `/realtime/:sessionId` sits out here and
+      // suppresses chrome "once you are in a session". Meetings were the
+      // exception, and there was never a reason for it. Entering is immersive;
+      // the meeting RECORD stays inside the shell, where ordinary navigation
+      // belongs.
+      GoRoute(
+        path: '/meetings/:meetingId/live',
+        builder: (context, state) => MeetingLiveRoomScreen(
+          meetingId: state.pathParameters['meetingId'] ?? '',
+          sessionId: state.uri.queryParameters['sessionId'] ?? '',
+          isHost: state.uri.queryParameters['isHost'] == 'true',
+          meetingCode: state.uri.queryParameters['code'],
+          guestUserId: state.uri.queryParameters['guestId'],
+        ),
+      ),
+      GoRoute(
+        path: '/institution/:institutionId/meetings/:meetingId/live',
+        builder: (context, state) => InstitutionRouteScope(
+          address: state.pathParameters['institutionId'],
+          builder: (institutionId) => MeetingLiveRoomScreen(
+            meetingId: state.pathParameters['meetingId'] ?? '',
+            institutionId: institutionId,
+            sessionId: state.uri.queryParameters['sessionId'] ?? '',
+            isHost: state.uri.queryParameters['isHost'] == 'true',
+            meetingCode: state.uri.queryParameters['code'],
+            guestUserId: state.uri.queryParameters['guestId'],
+          ),
+        ),
       ),
 
       // A CALL renders without the member nav/sidebar — chrome gets out of
