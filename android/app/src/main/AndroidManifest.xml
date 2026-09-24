@@ -159,6 +159,32 @@
                 <!-- Guest-reachable meeting entry. -->
                 <data android:pathPrefix="/meetings/join/" />
 
+                <!--
+                  THE OTHER GUEST-REACHABLE ENTRY, AND THE ONE THAT ARRIVES BY
+                  EMAIL.
+
+                  `/i/` carries the public booking family and an invitation
+                  ceremony, and every one of them belongs to a category already
+                  declared above:
+
+                    /i/:institutionSlug/meet/:bookingSlug   a public booking
+                    /i/:institutionSlug/meet/:slug/book     the booking itself
+                    /i/:institutionSlug/meet/cancel/:token      from EMAIL
+                    /i/:institutionSlug/meet/reschedule/:token  from EMAIL
+                    /i/:token                               claim an invitation
+
+                  Measured on a Pixel 9a running the Play build of 1.4.4 (39),
+                  2026-09-24: both domains verify, `/meetings/join/...` resolves
+                  to MainActivity, and every `/i/...` link resolved to the
+                  BROWSER. So a booking confirmation email opened the web, and
+                  `/i/:token` never reached the app at all while `/invite/`
+                  next door always did — two invitation paths, one declared.
+
+                  Routes reached only from email are invisible to in-app
+                  testing, which is why this sat undetected.
+                -->
+                <data android:pathPrefix="/i/" />
+
                 <!-- Invitation + auth ceremonies that complete a destination. -->
                 <data android:pathPrefix="/invite/" />
                 <data android:pathPrefix="/auth/" />
