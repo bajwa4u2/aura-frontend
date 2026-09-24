@@ -693,17 +693,6 @@
   "verdict": "COMPLIANT"
  },
  {
-  "route": "/meetings/:meetingId/live",
-  "sample": "/meetings/x-meetingid/live",
-  "renders": true,
-  "protected": true,
-  "deepLinkSemantic": "parentReturn",
-  "deepLinkDestination": "/meetings/x-meetingid",
-  "inAppSemantic": "stackReturn",
-  "affordance": true,
-  "verdict": "PROTECTED_BOUNDARY"
- },
- {
   "route": "/meetings/:meetingId/summary",
   "sample": "/meetings/x-meetingid/summary",
   "renders": false,
@@ -768,17 +757,6 @@
   "inAppSemantic": "stackReturn",
   "affordance": true,
   "verdict": "COMPLIANT"
- },
- {
-  "route": "/institution/:institutionId/meetings/:meetingId/live",
-  "sample": "/institution/x-institutionid/meetings/x-meetingid/live",
-  "renders": true,
-  "protected": true,
-  "deepLinkSemantic": "parentReturn",
-  "deepLinkDestination": "/institution/x-institutionid/meetings/x-meetingid",
-  "inAppSemantic": "stackReturn",
-  "affordance": true,
-  "verdict": "PROTECTED_BOUNDARY"
  },
  {
   "route": "/institution/:institutionId/meetings/:meetingId/summary",
@@ -2077,6 +2055,28 @@
   "inAppSemantic": "stackReturn",
   "affordance": true,
   "verdict": "COMPLIANT"
+ },
+ {
+  "route": "/meetings/:meetingId/live",
+  "sample": "/meetings/x-meetingid/live",
+  "renders": true,
+  "protected": true,
+  "deepLinkSemantic": "parentReturn",
+  "deepLinkDestination": "/meetings/x-meetingid",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "PROTECTED_BOUNDARY"
+ },
+ {
+  "route": "/institution/:institutionId/meetings/:meetingId/live",
+  "sample": "/institution/x-institutionid/meetings/x-meetingid/live",
+  "renders": true,
+  "protected": true,
+  "deepLinkSemantic": "parentReturn",
+  "deepLinkDestination": "/institution/x-institutionid/meetings/x-meetingid",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "PROTECTED_BOUNDARY"
  },
  {
   "route": "/realtime/:sessionId",

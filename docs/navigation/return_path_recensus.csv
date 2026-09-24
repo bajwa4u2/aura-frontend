@@ -62,14 +62,12 @@ route,sample,renders,protected,deeplink_semantic,deeplink_destination,in_app_sem
 /meetings/:meetingId/prep,/meetings/x-meetingid/prep,false,false,parentReturn,/meetings/x-meetingid,stackReturn,true,NOT_A_SURFACE
 /meetings/:meetingId/room,/meetings/x-meetingid/room,false,false,parentReturn,/meetings/x-meetingid,stackReturn,true,NOT_A_SURFACE
 /meetings/:meetingId/waiting,/meetings/x-meetingid/waiting,true,false,parentReturn,/meetings/x-meetingid,stackReturn,true,COMPLIANT
-/meetings/:meetingId/live,/meetings/x-meetingid/live,true,true,parentReturn,/meetings/x-meetingid,stackReturn,true,PROTECTED_BOUNDARY
 /meetings/:meetingId/summary,/meetings/x-meetingid/summary,false,false,parentReturn,/meetings/x-meetingid,stackReturn,true,NOT_A_SURFACE
 /meetings/:meetingId/post-meeting,/meetings/x-meetingid/post-meeting,false,false,parentReturn,/meetings/x-meetingid,stackReturn,true,NOT_A_SURFACE
 /institution/:institutionId/meetings/:meetingId,/institution/x-institutionid/meetings/x-meetingid,true,false,parentReturn,/institution/x-institutionid/meetings,stackReturn,true,COMPLIANT
 /institution/:institutionId/meetings/:meetingId/prep,/institution/x-institutionid/meetings/x-meetingid/prep,false,false,parentReturn,/institution/x-institutionid/meetings/x-meetingid,stackReturn,true,NOT_A_SURFACE
 /institution/:institutionId/meetings/:meetingId/room,/institution/x-institutionid/meetings/x-meetingid/room,false,false,parentReturn,/institution/x-institutionid/meetings/x-meetingid,stackReturn,true,NOT_A_SURFACE
 /institution/:institutionId/meetings/:meetingId/waiting,/institution/x-institutionid/meetings/x-meetingid/waiting,true,false,parentReturn,/institution/x-institutionid/meetings/x-meetingid,stackReturn,true,COMPLIANT
-/institution/:institutionId/meetings/:meetingId/live,/institution/x-institutionid/meetings/x-meetingid/live,true,true,parentReturn,/institution/x-institutionid/meetings/x-meetingid,stackReturn,true,PROTECTED_BOUNDARY
 /institution/:institutionId/meetings/:meetingId/summary,/institution/x-institutionid/meetings/x-meetingid/summary,false,false,parentReturn,/institution/x-institutionid/meetings/x-meetingid,stackReturn,true,NOT_A_SURFACE
 /institution/:institutionId/meetings/:meetingId/post-meeting,/institution/x-institutionid/meetings/x-meetingid/post-meeting,false,false,parentReturn,/institution/x-institutionid/meetings/x-meetingid,stackReturn,true,NOT_A_SURFACE
 /institution/:institutionId/availability,/institution/x-institutionid/availability,true,false,deepLinkFallback,/institution/x-institutionid/explore,stackReturn,true,COMPLIANT
@@ -188,4 +186,6 @@ route,sample,renders,protected,deeplink_semantic,deeplink_destination,in_app_sem
 /institution/:institutionId/messages/direct/archived,/institution/x-institutionid/messages/direct/archived,false,false,parentReturn,/institution/x-institutionid/messages,stackReturn,true,NOT_A_SURFACE
 /realtime,/realtime,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT
 /calls/:sessionId,/calls/x-sessionid,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT
+/meetings/:meetingId/live,/meetings/x-meetingid/live,true,true,parentReturn,/meetings/x-meetingid,stackReturn,true,PROTECTED_BOUNDARY
+/institution/:institutionId/meetings/:meetingId/live,/institution/x-institutionid/meetings/x-meetingid/live,true,true,parentReturn,/institution/x-institutionid/meetings/x-meetingid,stackReturn,true,PROTECTED_BOUNDARY
 /realtime/:sessionId,/realtime/x-sessionid,true,true,parentReturn,/realtime,stackReturn,true,PROTECTED_BOUNDARY

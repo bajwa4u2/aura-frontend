@@ -803,20 +803,6 @@
   "parent": ""
  },
  {
-  "path": "/meetings/:meetingId/live",
-  "segments": 3,
-  "params": [
-   "meetingId"
-  ],
-  "renders": true,
-  "hasRedirect": false,
-  "childCount": 0,
-  "shellChain": [
-   "ShellRoute#0"
-  ],
-  "parent": ""
- },
- {
   "path": "/meetings/:meetingId/summary",
   "segments": 3,
   "params": [
@@ -891,21 +877,6 @@
  },
  {
   "path": "/institution/:institutionId/meetings/:meetingId/waiting",
-  "segments": 5,
-  "params": [
-   "institutionId",
-   "meetingId"
-  ],
-  "renders": true,
-  "hasRedirect": false,
-  "childCount": 0,
-  "shellChain": [
-   "ShellRoute#0"
-  ],
-  "parent": ""
- },
- {
-  "path": "/institution/:institutionId/meetings/:meetingId/live",
   "segments": 5,
   "params": [
    "institutionId",
@@ -2466,6 +2437,31 @@
   "shellChain": [
    "ShellRoute#0"
   ],
+  "parent": ""
+ },
+ {
+  "path": "/meetings/:meetingId/live",
+  "segments": 3,
+  "params": [
+   "meetingId"
+  ],
+  "renders": true,
+  "hasRedirect": false,
+  "childCount": 0,
+  "shellChain": [],
+  "parent": ""
+ },
+ {
+  "path": "/institution/:institutionId/meetings/:meetingId/live",
+  "segments": 5,
+  "params": [
+   "institutionId",
+   "meetingId"
+  ],
+  "renders": true,
+  "hasRedirect": false,
+  "childCount": 0,
+  "shellChain": [],
   "parent": ""
  },
  {
