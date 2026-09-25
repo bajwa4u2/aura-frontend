@@ -948,15 +948,35 @@ class RealtimeRepository {
     clearBundleCache(id);
   }
 
+  /// END A SESSION BY ID, WHEN THE OBJECT IS NOT TO HAND.
+  ///
+  /// `endSession` below takes the whole session because the surface decides
+  /// the path. When only the id is known the generic realtime path is correct
+  /// and complete — it is already the fallback branch there — so a missing
+  /// object is no reason to end nothing.
+  Future<void> endSessionById(String sessionId) async {
+    final id = sessionId.trim();
+    if (id.isEmpty) {
+      throw StateError('endSessionById called with no id');
+    }
+    await _postSessionEnd('/realtime/sessions/$id/end', id);
+  }
+
   Future<void> endSession(RealtimeSession? session) async {
     if (session == null) {
       debugPrint('[END] endSession: session is null — no-op');
-      return;
+      // NOT SILENT ANY MORE. A caller that cannot name the session it means
+      // to end has to hear about it: the local teardown will still run and the
+      // person will be told the call ended, while the server goes on believing
+      // it is live. That is precisely what happened on 2026-09-24 — End closed
+      // the minimised card and the conversation kept showing "call in
+      // progress", because this returned quietly.
+      throw StateError('endSession called with no session');
     }
     final id = session.id.trim();
     if (id.isEmpty) {
       debugPrint('[END] endSession: session.id is empty — no-op');
-      return;
+      throw StateError('endSession called with an empty session id');
     }
 
     final surfaceId = (session.surfaceId ?? '').trim();
@@ -977,6 +997,10 @@ class RealtimeRepository {
     }
 
     debugPrint('[END] endSession: surfaceType=$surfaceType surfaceId=$surfaceId id=$id → POST $path');
+    await _postSessionEnd(path, id);
+  }
+
+  Future<void> _postSessionEnd(String path, String id) async {
     try {
       await _dio.post(path);
       debugPrint('[END] endSession: POST $path succeeded');

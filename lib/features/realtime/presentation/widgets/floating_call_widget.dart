@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../core/services/call_presence_bridge.dart';
 import '../../application/realtime_providers.dart';
@@ -321,7 +320,7 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
     if (liveSession?.surfaceType == RealtimeSurfaceType.meeting) {
       final meetingId = (liveSession!.surfaceId ?? '').trim();
       if (meetingId.isNotEmpty) {
-        context.go('/meetings/$meetingId/live?sessionId=${info.sessionId}');
+        _goTo('/meetings/$meetingId/live?sessionId=${info.sessionId}');
         return;
       }
     }
@@ -330,7 +329,36 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
     // they were already in — the same stall as the accept path. The owner
     // branch above proves an active local session; a non-owner reaches
     // here without that proof, which is exactly who would be stranded.
-    context.go(NavigationAuthority.realtimeSessionJoinRoute(info.sessionId));
+    _goTo(NavigationAuthority.realtimeSessionJoinRoute(info.sessionId));
+  }
+
+  /// NAVIGATE THROUGH THE ROUTER, NOT THROUGH THIS CONTEXT.
+  ///
+  /// `context.go` resolves `InheritedGoRouter` by walking up the widget tree,
+  /// and this card is not in a tree that has one: `AuraIncomingLiveLayer`
+  /// mounts it in a bare `Stack` beside the app's child, outside the router's
+  /// own subtree. So the call threw inside the tap handler and nothing
+  /// happened — silently, because a throw in a `VoidCallback` has nowhere to
+  /// go.
+  ///
+  /// Founder-observed, 2026-09-24, and the report is what identified it:
+  /// *"two action CTA return and end, return not working end is working"*.
+  /// Both controls are the same widget with the same gestures, so the tap was
+  /// never in question — End only calls the controller, and Return is the one
+  /// that navigates. That is the whole difference.
+  ///
+  /// The same mount is why the card had no `Material` (yellow fallback
+  /// underline) and no `Overlay` (the tooltip threw on hover). Three faults,
+  /// one cause.
+  ///
+  /// The router instance is already held through Riverpod — this widget reads
+  /// it for the address it watches — so it is asked directly.
+  void _goTo(String location) {
+    try {
+      ref.read(routerProvider).go(location);
+    } catch (error) {
+      debugPrint('[rtc] pip navigation failed to=$location err=$error');
+    }
   }
 
   // A1+A5: End the call from PiP using the same authoritative controller path.

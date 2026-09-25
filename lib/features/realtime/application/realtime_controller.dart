@@ -1290,7 +1290,45 @@ class RealtimeController extends StateNotifier<RealtimeState>
       // double-end; not firing leaves the host's authoritative end stuck
       // on the client and the UI navigates away with the server still
       // believing the session is live.
-      unawaited(_repository.endSession(session).catchError((Object error) {}));
+      // THE END MUST REACH THE SERVER, AND SAY SO IF IT DOES NOT.
+      //
+      // This was `unawaited(_repository.endSession(session).catchError((e) {}))`
+      // — fired, and every failure discarded. Two ways it went wrong, and both
+      // happened on a live call on 2026-09-24:
+      //
+      //   * `state.session` can be null while `_managedSessionId` is perfectly
+      //     well known, and `endSession(null)` returned QUIETLY. Nothing was
+      //     sent at all.
+      //   * any refusal from the server was swallowed by the empty
+      //     `catchError`, so a failed end looked exactly like a successful one.
+      //
+      // The local teardown below then ran regardless and told the person "Call
+      // ended." Production disagreed: the session stayed ACTIVE with
+      // `endedAt = null`, its Call row stayed `phase=CONNECTED`, no
+      // `session.ended` was ever logged — and the conversation went on showing
+      // "call in progress" with join/decline, because it was right and the
+      // minimised card was not.
+      //
+      // Local-first is kept deliberately: the UI must not hang on the network.
+      // What changes is that the id is always resolved, and a failure is
+      // recorded and surfaced instead of discarded.
+      final endId = (session?.id ?? sessionId).trim();
+      unawaited(
+        (session != null
+                ? _repository.endSession(session)
+                : _repository.endSessionById(endId))
+            .catchError((Object error) {
+          CallDiag.emit('call.end', 'server_end_failed',
+              data: {'session': endId, 'error': '$error'});
+          debugPrint('[ended-diag] endCall: SERVER END FAILED id=$endId err=$error');
+          // The call is still live as far as the server is concerned, so say
+          // that rather than leaving "Call ended." standing as the last word.
+          state = state.copyWith(
+            errorMessage: 'Could not end the call on the server. '
+                'It may still be running.',
+          );
+        }),
+      );
 
       // If a concurrent teardown is already in-flight, skip the second
       // local teardown — but the server end above has already fired.

@@ -60,7 +60,11 @@ void main() {
     final exit = (() {
       final start = src.indexOf('final hydratedSession = state.session;');
       if (start < 0) throw StateError('the ended-session exit is gone');
-      return src.substring(start, start + 600);
+      final end = src.indexOf('_navigateAfterCall(hydratedSession)', start);
+      if (end < 0) throw StateError('could not bound the ended-session exit');
+      return src
+          .substring(start, end)
+          .replaceAll(RegExp(r'^\s*//.*$', multiLine: true), '');
     })();
 
     test('the exit no longer requires NOT being joined', () {
@@ -80,6 +84,17 @@ void main() {
         exit,
         contains('hydratedSession.surfaceType != RealtimeSurfaceType.meeting'),
       );
+    });
+
+    test('but it may only evict the room showing THAT session', () {
+      // Dropping `!state.isJoined` removed more protection than it looked
+      // like: it also stopped this acting on a session left over from a
+      // PREVIOUS call. Returning from the minimised card re-enters the room
+      // while the controller may still hold the last, ENDED session for a
+      // moment, and the guard ejected immediately — so Return appeared to do
+      // nothing. Founder-observed within minutes: "return not working".
+      expect(exit, contains('isThisScreensSession'));
+      expect(src, contains('showingSessionId == addressSessionId'));
     });
 
     test('the reason is kept where the clause was', () {

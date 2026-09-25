@@ -1115,8 +1115,28 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     // so the status arrives reliably; what was missing was anything that acted
     // on it once joined.
     final hydratedSession = state.session;
+    // ...AND IT MUST BE THE SESSION THIS SCREEN IS SHOWING.
+    //
+    // Dropping `!state.isJoined` (above) removed more protection than it
+    // looked like. That clause also happened to stop this exit acting on a
+    // session object left over from a PREVIOUS call: returning from the
+    // minimised card re-enters the room while the controller may still be
+    // holding the last, ENDED session for a moment, and the guard would then
+    // eject immediately — so Return appeared to do nothing at all.
+    //
+    // Founder-observed minutes after the change: "return not working".
+    //
+    // Comparing identity is the honest condition. A dead session may only
+    // evict the room that is actually showing IT, which is exactly the C-5
+    // case and none of the others.
+    final showingSessionId = (hydratedSession?.id ?? '').trim();
+    final addressSessionId = widget.sessionId.trim();
+    final isThisScreensSession = showingSessionId.isNotEmpty &&
+        (addressSessionId.isEmpty || showingSessionId == addressSessionId);
+
     if (hydratedSession != null &&
         !hydratedSession.isActive &&
+        isThisScreensSession &&
         hydratedSession.surfaceType != RealtimeSurfaceType.meeting) {
       if (!_hasNavigatedAway) {
         _hasNavigatedAway = true;

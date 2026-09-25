@@ -1599,7 +1599,30 @@ class RealtimeMediaService {
 
     for (final entry in media.entries) {
       final video = entry.value.video;
-      if (video == null) continue;
+      final audioTrack = entry.value.audio;
+
+      // AN AUDIO-ONLY PARTICIPANT STILL NEEDS A SINK.
+      //
+      // This read `if (video == null) continue;`, so anybody publishing audio
+      // and no video was skipped entirely: no stream composed, no renderer
+      // built — and therefore the `renderer.muted = false` below, which exists
+      // for precisely this audio problem, never ran.
+      //
+      // On web the renderer IS the sink. It is what holds a media element for
+      // the stream; without one the received audio track is decoded and
+      // attached to nothing. Native routes remote audio through the device and
+      // needs no element, which is why this only ever bit the browser — the
+      // same asymmetry the note below describes.
+      //
+      // Founder-observed on a live web call, 2026-09-24: an AUDIO-ONLY call
+      // with no voice on either side, while the server recorded ~250 KB of
+      // inbound audio per participant at ~30 kbps — real speech, arriving,
+      // decoded, and played nowhere. The diagnostic said it plainly:
+      // `render participants=1 withVideo=0 created=0`.
+      //
+      // A video call on the same build has sound because it happens to build a
+      // renderer for the picture, and the audio rides the same element.
+      if (video == null && audioTrack == null) continue;
 
       // A RENDERER MUST FOLLOW THE TRACK, NOT JUST THE PERSON.
       //
@@ -1621,8 +1644,10 @@ class RealtimeMediaService {
         final held = _remoteStreamsByParticipant[entry.key];
         final heldVideo = held?.getVideoTracks() ?? const <MediaStreamTrack>[];
         final heldAudio = held?.getAudioTracks() ?? const <MediaStreamTrack>[];
-        final sameVideo = heldVideo.isNotEmpty && heldVideo.first.id == video.id;
-        final incomingAudio = entry.value.audio;
+        final sameVideo = video == null
+            ? heldVideo.isEmpty
+            : heldVideo.isNotEmpty && heldVideo.first.id == video.id;
+        final incomingAudio = audioTrack;
         final sameAudio = incomingAudio == null
             ? heldAudio.isEmpty
             : heldAudio.isNotEmpty && heldAudio.first.id == incomingAudio.id;
@@ -1666,8 +1691,8 @@ class RealtimeMediaService {
         // The identity of WHOSE media this is lives in the map key, where it
         // belongs, not in a string the platform reinterprets.
         final stream = await createLocalMediaStream(_localOwnerTag);
-        await stream.addTrack(video);
-        final audio = entry.value.audio;
+        if (video != null) await stream.addTrack(video);
+        final audio = audioTrack;
         if (audio != null) await stream.addTrack(audio);
         final renderer = await _createRemoteRenderer();
         renderer.srcObject = stream;
@@ -1709,8 +1734,12 @@ class RealtimeMediaService {
         }
         _remoteStreamsByParticipant[entry.key] = stream;
         _remoteRenderersByParticipant[entry.key] = renderer;
-        _watchRemoteVideoLiveness(video);
-        _watchRenderedFrames(entry.key, renderer);
+        // Both of these watch a PICTURE. An audio-only participant has none,
+        // and arming them would report a frozen video that does not exist.
+        if (video != null) {
+          _watchRemoteVideoLiveness(video);
+          _watchRenderedFrames(entry.key, renderer);
+        }
         created += 1;
         // WHAT THE RENDERER ACTUALLY RECEIVED, not what we handed it.
         //
@@ -1735,7 +1764,11 @@ class RealtimeMediaService {
           ? 'render_failed'
           : created == 0
               ? 'render_none'
-              : attached < created
+              // `attached` counts VIDEO tracks, so an audio-only participant
+              // legitimately contributes a renderer and no picture. Calling
+              // that an empty stream would report the audio-only repair as a
+              // fault every time it worked.
+              : attached < withVideo
                   ? 'render_empty_stream'
                   : 'render_attached',
       message: 'participants=${media.length} withVideo=$withVideo '

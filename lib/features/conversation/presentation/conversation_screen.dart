@@ -2018,11 +2018,38 @@ class _ConversationLiveRibbon extends ConsumerWidget {
             onPressed: () async {
               // Decline is authoritative; the ribbon then clears from
               // server truth on the next fetch.
+              //
+              // A REFUSAL HAS TO BE AUDIBLE. This was `catch (_) {}`, so a
+              // decline the server rejected looked exactly like one it
+              // accepted: the ribbon stayed, and nothing said why.
+              //
+              // Founder-observed on a live call, 2026-09-24: "join works but
+              // decline not". The likely reason is that declining is an
+              // INVITEE'S act and he was the HOST — he had started the call —
+              // so there was no invite of his to decline and the server was
+              // right to refuse. The interface offering him the action, and
+              // then hiding the refusal, is what made it look broken.
+              //
+              // Whether a host should be shown Decline at all (rather than
+              // End) is a product question and is left open; a silent failure
+              // is not a product question.
               try {
                 await ref
                     .read(realtimeRepositoryProvider)
                     .declineInvite(sessionId);
-              } catch (_) {}
+              } catch (error) {
+                debugPrint('[call] decline failed session=$sessionId err=$error');
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Could not decline this call. If you started it, '
+                        'end it from the call instead.',
+                      ),
+                    ),
+                  );
+                }
+              }
               ref.invalidate(conversationActiveLiveProvider(conversationId));
             },
             child: Text(
