@@ -133,13 +133,30 @@ void main() {
       'lib/features/realtime/application/realtime_controller.dart',
     ).readAsStringSync();
 
-    test('the default output is AWAITED, not fired into the same moment', () {
-      expect(controller,
-          contains('await _mediaService.setSpeakerphoneEnabled(wantsVideo);'));
-      expect(controller,
-          isNot(contains('unawaited(_mediaService.setSpeakerphoneEnabled(')),
+    // 2026-09-25: the await is ANDROID-ONLY. C-1 was measured on Android and
+    // stays repaired there. On iOS the same call reconfigures the one shared
+    // AVAudioSession, and TestFlight 1.5.0 (40) -- the first iOS build to
+    // await it -- carried calls with no audio either way, so iOS keeps what
+    // 1.4.4 shipped until that is proven or cleared. The old assertion
+    // ("fire-and-forget is what let the route change land in the same
+    // second as the bind") still holds for Android and is kept below.
+    test('the default output is AWAITED on Android, not fired into the same '
+        'moment', () {
+      final androidBranch = RegExp(
+        r'if \(defaultTargetPlatform == TargetPlatform\.android\) \{\s*'
+        r'await _mediaService\.setSpeakerphoneEnabled\(wantsVideo\);',
+      );
+      expect(controller, matches(androidBranch),
           reason: 'fire-and-forget is what let the route change land in the '
               'same second as the bind');
+    });
+
+    test('iOS keeps 1.4.4 behaviour: fire-and-forget', () {
+      final otherwise = RegExp(
+        r'\} else \{\s*'
+        r'unawaited\(_mediaService\.setSpeakerphoneEnabled\(wantsVideo\)\);',
+      );
+      expect(controller, matches(otherwise));
     });
 
     test('the measurement that proved it is kept beside the await', () {

@@ -2162,7 +2162,18 @@ class RealtimeController extends StateNotifier<RealtimeState>
         // safe in general — somebody connecting earbuds mid-call must still
         // work, and that is what `_checkAudioReceiverAlive` in the stage
         // transport repairs.
-        await _mediaService.setSpeakerphoneEnabled(wantsVideo);
+        //
+        // 2026-09-25 -- ANDROID ONLY. On iOS this reconfigures the one shared
+        // AVAudioSession, and TestFlight 1.5.0 (40), the first iOS build to
+        // await it, carried calls with no audio in either direction. Until
+        // that is proven or cleared, iOS keeps exactly what 1.4.4 shipped:
+        // fire-and-forget. The C-1 ordering this await buys was measured on
+        // Android, where it stays.
+        if (defaultTargetPlatform == TargetPlatform.android) {
+          await _mediaService.setSpeakerphoneEnabled(wantsVideo);
+        } else {
+          unawaited(_mediaService.setSpeakerphoneEnabled(wantsVideo));
+        }
       }
 
       state = state.copyWith(

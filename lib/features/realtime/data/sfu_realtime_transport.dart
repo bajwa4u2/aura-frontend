@@ -1169,9 +1169,10 @@ class SfuRealtimeTransport implements RealtimeTransport {
       // back empty and there was no way to tell a probe that saw health from
       // one that was not running. It says where it stands every ~30s.
       if (_ticks % 10 == 0) {
+        final io = await _audioIoSummary(pc);
         unawaited(_report('op=LIVE bytes=$bytes stall=$_stallTicks '
             'armed=${_lastLivenessBytes >= 0} '
-            'kinds=${_kindSummary(byKind)}'));
+            'kinds=${_kindSummary(byKind)} $io'));
       }
 
       if (bytes > _lastLivenessBytes) {
@@ -1376,6 +1377,42 @@ class SfuRealtimeTransport implements RealtimeTransport {
       _firstByteMsByKind[entry.key] = ms;
       unawaited(_report('op=MEDIA state=first_bytes kind=${entry.key} '
           'sinceOpenMs=$ms bytes=${entry.value}'));
+    }
+  }
+
+  /// Whether THIS device's audio is working, from its own side of the wire.
+  ///
+  /// `kinds=` above says only what ARRIVES. On 2026-09-25 an iPhone on
+  /// TestFlight 1.5.0 (40) received the Pixel's audio (`audio=411462b`) while
+  /// the Pixel received none from it, and neither person heard anything -- the
+  /// server could not say whether the iPhone's microphone ever sent, or whether
+  /// the audio it received was ever played. These two numbers answer both:
+  ///
+  ///   * `sentAudio` -- audio `bytesSent` on our outbound stream. Zero while
+  ///     the call runs means our microphone path is not producing.
+  ///   * `playedAudio` -- `totalSamplesReceived` on inbound audio: samples the
+  ///     audio device actually pulled for playout. Bytes arriving with this at
+  ///     zero means the sound reached the phone and was never played.
+  Future<String> _audioIoSummary(RTCPeerConnection pc) async {
+    try {
+      var sent = -1;
+      var played = -1;
+      for (final report in await pc.getStats()) {
+        final v = report.values;
+        final kind = (v['kind'] ?? v['mediaType'] ?? '').toString();
+        if (kind != 'audio') continue;
+        if (report.type == 'outbound-rtp') {
+          sent = (sent < 0 ? 0 : sent) +
+              ((v['bytesSent'] as num?) ?? 0).toInt();
+        } else if (report.type == 'inbound-rtp') {
+          played = (played < 0 ? 0 : played) +
+              ((v['totalSamplesReceived'] as num?) ?? 0).toInt();
+        }
+      }
+      String show(int n) => n < 0 ? 'ABSENT' : '$n';
+      return 'sentAudio=${show(sent)} playedAudio=${show(played)}';
+    } catch (_) {
+      return 'sentAudio=? playedAudio=?';
     }
   }
 

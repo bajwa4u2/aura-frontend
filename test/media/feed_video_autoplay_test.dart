@@ -5,6 +5,7 @@
 // with real scrolling, a real pushed route and the real reduce-motion
 // setting; only the video itself is a stand-in, because the test binding has
 // no decoder.
+import 'package:aura/core/media/aura_video_surface.dart';
 import 'package:aura/core/media/feed_video_autoplay.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -47,6 +48,62 @@ void main() {
     });
   });
 
+  // iOS call audio — 2026-09-25, TestFlight 1.5.0 (40): video good, no audio
+  // either way. On iOS `mixWithOthers` re-sets the app's single AVAudioSession
+  // category each time a player is created with it, which stops a live call's
+  // audio unit. The feed must therefore pass NO options there.
+  group('feed player options', () {
+    test('iOS: none, so the shared audio session is never touched', () {
+      expect(
+        feedVideoPlayerOptions(
+          inFeed: true,
+          platform: TargetPlatform.iOS,
+          isWeb: false,
+        ),
+        isNull,
+      );
+    });
+
+    test('macOS: none either — the same AVAudioSession rules apply', () {
+      expect(
+        feedVideoPlayerOptions(
+          inFeed: true,
+          platform: TargetPlatform.macOS,
+          isWeb: false,
+        ),
+        isNull,
+      );
+    });
+
+    test('Android feed: mixes, so a muted video never takes audio focus', () {
+      final options = feedVideoPlayerOptions(
+        inFeed: true,
+        platform: TargetPlatform.android,
+        isWeb: false,
+      );
+      expect(options?.mixWithOthers, isTrue);
+    });
+
+    test('outside a feed, or on web: none', () {
+      expect(
+        feedVideoPlayerOptions(
+          inFeed: false,
+          platform: TargetPlatform.android,
+          isWeb: false,
+        ),
+        isNull,
+      );
+      expect(
+        feedVideoPlayerOptions(
+          inFeed: true,
+          platform: TargetPlatform.android,
+          isWeb: true,
+        ),
+        isNull,
+      );
+    });
+  });
+
   group('FeedVideoAutoplay', () {
     testWidgets('plays exactly one video: the one in view', (tester) async {
       final log = _Log();
@@ -76,9 +133,7 @@ void main() {
       expect(log.playing, {0});
 
       final nav = tester.state<NavigatorState>(find.byType(Navigator));
-      nav.push(
-        MaterialPageRoute<void>(builder: (_) => const Text('viewer')),
-      );
+      nav.push(MaterialPageRoute<void>(builder: (_) => const Text('viewer')));
       await tester.pumpAndSettle();
       expect(log.playing, isEmpty);
 
@@ -138,9 +193,7 @@ void main() {
       );
     });
 
-    testWidgets('a video outside any feed is never registered', (
-      tester,
-    ) async {
+    testWidgets('a video outside any feed is never registered', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(home: Scaffold(body: _Probe())),
       );

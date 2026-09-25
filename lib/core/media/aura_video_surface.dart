@@ -96,6 +96,34 @@ bool storedVideoCanDecodeInline({TargetPlatform? platform, bool? isWeb}) {
   }
 }
 
+/// Player options for a stored video, by where it plays and on what.
+///
+/// ANDROID ONLY. A silent feed video must not take audio focus there: ExoPlayer
+/// asks for focus per player, and without `mixWithOthers` a muted feed video
+/// paused whatever the person was already listening to.
+///
+/// NEVER ON iOS. There `mixWithOthers` is not per player: video_player applies
+/// it by re-setting the category of the app's ONE shared AVAudioSession, every
+/// time a player is created with it. The feed creates players while it is
+/// alive — including under a call screen or behind the minimized call card —
+/// and re-setting the session category mid-call stops WebRTC's audio unit in
+/// both directions. Founder-observed on TestFlight 1.5.0 (40), 2026-09-25:
+/// video good, no audio either way; the server saw the Pixel's audio reach the
+/// iPhone and none leave it. Passing no options means video_player never
+/// touches the session, which is exactly how 1.4.4 behaved.
+@visibleForTesting
+VideoPlayerOptions? feedVideoPlayerOptions({
+  required bool inFeed,
+  TargetPlatform? platform,
+  bool? isWeb,
+}) {
+  if (!inFeed || (isWeb ?? kIsWeb)) return null;
+  if ((platform ?? defaultTargetPlatform) != TargetPlatform.android) {
+    return null;
+  }
+  return VideoPlayerOptions(mixWithOthers: true);
+}
+
 /// `m:ss`, matching the voice player's clock so a duration reads the same
 /// whether it is attached to audio or to video.
 String formatVideoDuration(int? milliseconds) {
@@ -348,11 +376,9 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface>
             ? localVideoController(candidate)
             : VideoPlayerController.networkUrl(
                 Uri.parse(candidate),
-                // A silent feed video must not take audio focus: on Android
-                // that paused whatever the person was already listening to.
-                videoPlayerOptions: _autoplayScope != null
-                    ? VideoPlayerOptions(mixWithOthers: true)
-                    : null,
+                videoPlayerOptions: feedVideoPlayerOptions(
+                  inFeed: _autoplayScope != null,
+                ),
               );
         if (attempt == null) continue;
         try {
