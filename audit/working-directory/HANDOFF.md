@@ -1,5 +1,12 @@
 # Handoff - aura_final
 
+## 2026-09-25 — RELEASE 1.5.0 SHIPPED ACROSS PLATFORMS; 1.5.1 WINDOWS DRAFTED
+
+Read `RELEASE_1.5.0_1.5.1_RECORD.md` first. Deploys to production need a single explicit
+founder approval per push (auto mode blocks them); never edit settings to avoid that.
+iPhone logs can be read on this Windows machine (Apple Devices + `pymobiledevice3 syslog live`).
+
+
 ## 2026-09-12 — ANDROID 1.4.3 (38) SUBMITTED TO GOOGLE PLAY PRODUCTION
 
     SUBMISSION ID    25   (Production + App Content)

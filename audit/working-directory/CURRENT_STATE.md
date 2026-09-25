@@ -1,5 +1,14 @@
 # Current State — aura_final
 
+## Release 1.5.0 / 1.5.1 — 2026-09-25
+
+Web 1.5.0 (42) live (`4ef86f59`). Play 1.5.0 (40) submitted (`3adbc7fb`). iOS 1.5.0 (42) in App
+Review. Microsoft 1.5.0.0 live; 1.5.1.0 (Windows video playback, `9180a492`) drafted as
+Submission 17. Full suite 3318/0 on `9180a492`. Root cause of silent iPhone-placed calls found
+from the iPhone's syslog and fixed (`16b545d1`). Full record:
+`RELEASE_1.5.0_1.5.1_RECORD.md`.
+
+
 ## One evidence flow + reviewer path — 2026-09-19 (founder follow-up)
 
 Submitting authority evidence now STARTS the journey (no separate category gate); status carries

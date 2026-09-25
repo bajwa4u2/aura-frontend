@@ -1,5 +1,15 @@
 # Next Work - aura_final
 
+## After release 1.5.0 / 1.5.1 (2026-09-25)
+
+1. Microsoft Submission 17 (1.5.1.0): founder pastes listing text, submits.
+2. Verify on Windows: browser-recorded voice note (WebM/Opus), composer video attach, sound after unmute.
+3. Play: add release notes when 40 is live (text in `aura/release-notes/v1.5.0.md`).
+4. Next Android/iOS release carries 1.5.1+ (caller fix already in iOS 42; viewer clock fix).
+5. Founder decisions pending: re-type pre-`8188c4f` voice notes stored as video; switch the App
+   Store Connect review contact off Gmail.
+
+
 ## After the identity/authority separation (2026-09-19)
 
 1. Production follow-through: count institutions whose authority was CONFIRMED by the old onboarding bridge on a job title/domain only (they keep speaking under the new gate) and bring the result to the founder — do not revoke without a decision.
