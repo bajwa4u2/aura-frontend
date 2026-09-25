@@ -148,24 +148,23 @@ class StoredMedia {
     StoredMediaState? state,
     String? sourceUrl,
     String? posterUrl,
-  }) =>
-      StoredMedia(
-        mediaId: mediaId,
-        kind: kind,
-        state: state ?? this.state,
-        isPublic: isPublic,
-        sourceUrl: sourceUrl ?? this.sourceUrl,
-        posterUrl: posterUrl ?? this.posterUrl,
-        localBytes: localBytes,
-        localPath: localPath,
-        fileName: fileName,
-        mimeType: mimeType,
-        caption: caption,
-        width: width,
-        height: height,
-        durationMs: durationMs,
-        sizeBytes: sizeBytes,
-      );
+  }) => StoredMedia(
+    mediaId: mediaId,
+    kind: kind,
+    state: state ?? this.state,
+    isPublic: isPublic,
+    sourceUrl: sourceUrl ?? this.sourceUrl,
+    posterUrl: posterUrl ?? this.posterUrl,
+    localBytes: localBytes,
+    localPath: localPath,
+    fileName: fileName,
+    mimeType: mimeType,
+    caption: caption,
+    width: width,
+    height: height,
+    durationMs: durationMs,
+    sizeBytes: sizeBytes,
+  );
 
   /// Canonical constructor from loose parts.
   ///
@@ -192,16 +191,23 @@ class StoredMedia {
   }) {
     return StoredMedia(
       mediaId: mediaId.trim(),
-      kind: attachmentKindFrom(
-        mimeType: mimeType,
-        canonicalKind: declaredKind,
-      ),
+      kind: attachmentKindFrom(mimeType: mimeType, canonicalKind: declaredKind),
       state: state,
       isPublic: isPublic,
       sourceUrl: sourceUrl,
-      // An empty string is not a poster. Normalising here keeps every
-      // consumer from having to trim before deciding.
-      posterUrl: (posterUrl ?? '').trim().isEmpty ? null : posterUrl!.trim(),
+      // An empty string is not a poster, and NEITHER IS THE OBJECT ITSELF.
+      //
+      // Normalising here keeps every consumer from having to trim before
+      // deciding — and the second rule closes a defect that reached three
+      // stores: the institution composer had no server thumbnail for a video
+      // (there are none, per `posterUrl` above) and fell back to the video's
+      // own URL. A poster is rendered with `Image.network`, so that pointed an
+      // image decoder at an .mp4: it downloaded the whole file, failed, and
+      // left a permanently blank tile in the composition strip.
+      //
+      // A picture OF the object can never be the object. Enforced here rather
+      // than in each adapter because the adapters are where it went wrong.
+      posterUrl: _posterOrNull(posterUrl, sourceUrl),
       localBytes: localBytes,
       localPath: localPath,
       fileName: fileName,
@@ -213,4 +219,20 @@ class StoredMedia {
       sizeBytes: sizeBytes,
     );
   }
+}
+
+/// A poster is a picture OF the object, so it is neither empty nor the object.
+///
+/// Exposed for test: the rule is worth asserting directly, because the way it
+/// was broken was invisible in every unit that held only one of the two URLs.
+String? posterOrNullFor({
+  required String? posterUrl,
+  required String? sourceUrl,
+}) => _posterOrNull(posterUrl, sourceUrl);
+
+String? _posterOrNull(String? posterUrl, String? sourceUrl) {
+  final poster = (posterUrl ?? '').trim();
+  if (poster.isEmpty) return null;
+  if (poster == (sourceUrl ?? '').trim()) return null;
+  return poster;
 }

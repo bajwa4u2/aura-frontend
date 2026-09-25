@@ -23,9 +23,20 @@ void main() {
     });
 
     test('an hour-long note grows an hours field rather than 60+ minutes', () {
-      expect(formatRecordingElapsed(const Duration(minutes: 59, seconds: 59)), '59:59');
-      expect(formatRecordingElapsed(const Duration(hours: 1, seconds: 5)), '1:00:05');
-      expect(formatRecordingElapsed(const Duration(hours: 2, minutes: 3, seconds: 4)), '2:03:04');
+      expect(
+        formatRecordingElapsed(const Duration(minutes: 59, seconds: 59)),
+        '59:59',
+      );
+      expect(
+        formatRecordingElapsed(const Duration(hours: 1, seconds: 5)),
+        '1:00:05',
+      );
+      expect(
+        formatRecordingElapsed(
+          const Duration(hours: 2, minutes: 3, seconds: 4),
+        ),
+        '2:03:04',
+      );
     });
 
     test('a length never runs backwards', () {
@@ -38,7 +49,10 @@ void main() {
     test('is a measurement of dBFS, clamped rather than exaggerated', () {
       expect(normalizeRecordingLevel(0), 1.0);
       expect(normalizeRecordingLevel(kRecordingFloorDbfs), 0.0);
-      expect(normalizeRecordingLevel(kRecordingFloorDbfs / 2), closeTo(0.5, 0.001));
+      expect(
+        normalizeRecordingLevel(kRecordingFloorDbfs / 2),
+        closeTo(0.5, 0.001),
+      );
       // Louder than full scale and quieter than the floor are both clamped:
       // the bar states what was measured, never more.
       expect(normalizeRecordingLevel(12), 1.0);
@@ -52,8 +66,16 @@ void main() {
   });
 
   group('the call dock offers a camera flip', () {
-    final src = File('lib/features/realtime/presentation/realtime_room_screen.dart')
-        .readAsStringSync();
+    // COLLAPSED WHITESPACE, because the subject is the RULE, not its layout.
+    //
+    // These matched the raw source, so `dart format` broke them: adding the
+    // dock's auto-hide made the condition long enough to wrap onto three
+    // lines, and a passing behaviour assertion started failing over line
+    // breaks. A test that fails when the formatter runs is asserting the
+    // formatter.
+    final src = File(
+      'lib/features/realtime/presentation/realtime_room_screen.dart',
+    ).readAsStringSync().replaceAll(RegExp(r'\s+'), ' ');
 
     test('it exists at all — the 1:1 call screen had none', () {
       expect(src.contains('Icons.flip_camera_ios_rounded'), isTrue);
@@ -62,7 +84,9 @@ void main() {
 
     test('it appears only in video calls, and only where flipping is real', () {
       expect(
-        src.contains('if (showPublishControls && isVideoMode && onFlipCamera != null)'),
+        src.contains(
+          'if (showPublishControls && isVideoMode && onFlipCamera != null)',
+        ),
         isTrue,
       );
       // `supportsCameraCapture` is the platform authority for front/back
@@ -83,8 +107,9 @@ void main() {
   });
 
   group('the recording bar', () {
-    final src = File('lib/features/conversation/presentation/conversation_screen.dart')
-        .readAsStringSync();
+    final src = File(
+      'lib/features/conversation/presentation/conversation_screen.dart',
+    ).readAsStringSync();
 
     test('shows the elapsed time the founder could not see', () {
       expect(src.contains('formatRecordingElapsed(elapsed)'), isTrue);

@@ -927,9 +927,20 @@ class _InstitutionPostComposerScreenState
                 ? null
                 : result.mediaId.trim(),
             url: url,
+            // A POSTER IS A PICTURE OF THE MEDIA, NEVER THE MEDIA.
+            //
+            // This fell back to `url` when the server issued no thumbnail —
+            // and for video the server NEVER issues one, because the
+            // derivative pipeline accepts image mimes only. So every video
+            // attached here got its own .mp4 as a poster, an image decoder was
+            // pointed at it, and the strip showed a blank tile after
+            // downloading the entire file. Founder-observed 2026-09-24.
+            //
+            // For a still image the object IS its own picture, so the fallback
+            // is sound there and is kept.
             thumbUrl: result.thumbUrl.trim().isNotEmpty
                 ? result.thumbUrl.trim()
-                : url,
+                : (video ? null : url),
             mimeType: mimeType,
             bytes: prepared,
           ),
