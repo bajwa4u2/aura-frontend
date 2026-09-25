@@ -4,8 +4,7 @@ import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart'
-    show kIsWeb, defaultTargetPlatform;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -197,6 +196,41 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   /// lifecycle state and it never substitutes for one.
   bool _joinIntentInFlight = false;
   Timer? _preJoinTruthTimer;
+
+  /// THE CANVAS IS MEDIA-FIRST, AND THE DOCK NEVER LEARNED IT.
+  ///
+  /// `_VideoTile` states the frozen direction a few hundred lines below: the
+  /// live canvas is media-first and low-noise, and identity "is revealed on
+  /// intent — hover with a pointer, tap on touch — and recedes again".
+  ///
+  /// The control dock was rendered unconditionally for the whole call, so the
+  /// one element with the most ink on it was the one element exempt from that
+  /// rule. Founder-observed 2026-09-24: *"bottom action ribbin not auto
+  /// appearing/disappearing but presisted"*.
+  ///
+  /// STRANDING IS THE ONLY REAL RISK HERE, and it is a serious one — a person
+  /// who cannot find End is in a call they cannot leave. So:
+  ///
+  ///   * ANY pointer movement or press anywhere on the screen reveals it,
+  ///     including over the space the dock occupies;
+  ///   * it never hides while the pointer is over the dock itself;
+  ///   * it fades rather than collapsing, so nothing under it moves and the
+  ///     target stays exactly where the hand last saw it;
+  ///   * and it is only ever hidden while genuinely joined.
+  bool _dockVisible = true;
+  bool _pointerOverDock = false; // set from MouseRegion callbacks
+  Timer? _dockHideTimer;
+  static const Duration _dockIdleBeforeHiding = Duration(seconds: 4);
+
+  void _revealDock() {
+    _dockHideTimer?.cancel();
+    if (!_dockVisible && mounted) setState(() => _dockVisible = true);
+    _dockHideTimer = Timer(_dockIdleBeforeHiding, () {
+      if (!mounted || _pointerOverDock) return;
+      setState(() => _dockVisible = false);
+    });
+  }
+
   DateTime _now = DateTime.now();
   // Panel state: null = closed; only one panel open at a time
   String? _activePanel;
@@ -241,8 +275,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       ref.read(realtimeControllerProvider.notifier).setCallRoomVisible(true);
       // Route-truth for app-root overlays: while this room is mounted, the
       // room owns call presentation — OrphanedSessionBanner suppresses.
-      ref.read(mountedRealtimeRoomSessionProvider.notifier).state =
-          widget.sessionId.trim();
+      ref.read(mountedRealtimeRoomSessionProvider.notifier).state = widget
+          .sessionId
+          .trim();
     });
 
     // Resolve institution session metadata. Constructor query params win
@@ -331,7 +366,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     });
   }
 
-
   /// Start or stop the Android foreground call service to match the call.
   ///
   /// Called from the joined-state listener AND from build, because a callee
@@ -380,17 +414,22 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       final st = ref.read(realtimeControllerProvider);
       final sid = (st.sessionId ?? '').trim();
       if (sid.isNotEmpty) {
-        unawaited(ref.read(realtimeRepositoryProvider).reportStageDiagnostic(
-              sid,
-              phase: 'lifecycle',
-              code: 'room_unmounted',
-              message: 'intentToLeave=$_intentToLeave '
-                  'navigatedAway=$_hasNavigatedAway '
-                  'join=${st.joinState.name} conn=${st.connectionStatus.name} '
-                  'ending=${st.isEndingCall} '
-                  'lastEvent=${st.lastSocketEvent ?? 'none'}',
-              platform: kIsWeb ? 'web' : defaultTargetPlatform.name,
-            ));
+        unawaited(
+          ref
+              .read(realtimeRepositoryProvider)
+              .reportStageDiagnostic(
+                sid,
+                phase: 'lifecycle',
+                code: 'room_unmounted',
+                message:
+                    'intentToLeave=$_intentToLeave '
+                    'navigatedAway=$_hasNavigatedAway '
+                    'join=${st.joinState.name} conn=${st.connectionStatus.name} '
+                    'ending=${st.isEndingCall} '
+                    'lastEvent=${st.lastSocketEvent ?? 'none'}',
+                platform: kIsWeb ? 'web' : defaultTargetPlatform.name,
+              ),
+        );
       }
     } catch (_) {
       // Observability must never be able to break a teardown.
@@ -400,6 +439,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     WakelockPlus.disable();
     _durationTimer?.cancel();
     _preJoinTruthTimer?.cancel();
+    _dockHideTimer?.cancel();
 
     // A4: clear the visibility flag as the room screen unmounts so the
     // PiP becomes visible right after the room widget tree is removed.
@@ -725,10 +765,11 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     // these providers, which means the `dm` branch had been inert already.
 
     final target = _safeReturnRoute(session);
-    CallDiag.emit('call.return', 'resolved', data: {
-      'target': target,
-      'surface': session?.surfaceType.name ?? '',
-    });
+    CallDiag.emit(
+      'call.return',
+      'resolved',
+      data: {'target': target, 'surface': session?.surfaceType.name ?? ''},
+    );
     debugPrint(
       '[RTC NAV] action=go target=$target sessionId=${session?.id ?? widget.sessionId} surfaceType=${session?.surfaceType.name ?? ""} lastEvent=${ref.read(realtimeControllerProvider).lastSocketEvent ?? ""}',
     );
@@ -899,9 +940,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       // needs the only message there is.
       debugPrint('[rtc] screen share toggle failed err=$error');
       if (mounted && !screenShareSupported()) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(screenShareUnavailableReason())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(screenShareUnavailableReason())));
       }
     } finally {
       if (mounted) setState(() => _togglingScreenShare = false);
@@ -1005,8 +1046,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
             .where((p) => p.userId == myUserId)
             .firstOrNull;
         if (mine != null) {
-          _lastKnownIsObserver =
-              mine.role == RealtimeParticipantRole.observer;
+          _lastKnownIsObserver = mine.role == RealtimeParticipantRole.observer;
         }
       }
       if (next.isJoined && !_wasJoined) {
@@ -1131,7 +1171,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     // case and none of the others.
     final showingSessionId = (hydratedSession?.id ?? '').trim();
     final addressSessionId = widget.sessionId.trim();
-    final isThisScreensSession = showingSessionId.isNotEmpty &&
+    final isThisScreensSession =
+        showingSessionId.isNotEmpty &&
         (addressSessionId.isEmpty || showingSessionId == addressSessionId);
 
     if (hydratedSession != null &&
@@ -1254,214 +1295,265 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
             builder: (context, constraints) {
               final wide = constraints.maxWidth >= 860;
 
-              return Column(
-                children: [
-                  // ── Header bar ────────────────────────────────────────────────
-                  _CallTopBar(
-                    title: _callTitle(state.session, state.isVideoMode),
-                    contextLabel: _contextLabel(state.session),
-                    duration: callDuration,
-                    // Stage/private participants only — the watching
-                    // audience is a separate truth (charter §26 O).
-                    participantCount: state.participants
-                        .where(
-                          (p) =>
-                              p.role != RealtimeParticipantRole.observer,
-                        )
-                        .length,
-                    isPubliclyLive: state.session?.isLive == true,
-                    viewerCount: state.participants
-                        .where(
-                          (p) =>
-                              p.role == RealtimeParticipantRole.observer &&
-                              p.joinState.toUpperCase() == 'ACTIVE',
-                        )
-                        .length,
-                    isConnecting: isConnecting,
-                    hasIssue: showConnectionIssue,
-                    // WHERE THE CALL ACTUALLY IS, FROM THE CALL.
-                    //
-                    // These used to be assembled locally: "ringing" meant the
-                    // roster had one row and a ringback set contained this
-                    // session; anything that matched nothing fell through to a
-                    // green dot labelled "Live". A call with no remote media
-                    // and a peer who had never answered therefore rendered as
-                    // Live the instant the socket join was acknowledged.
-                    call: state.session?.call,
-                    productState:
-                        state.session?.call?.productStateFor(myUserId),
-                    connectionFailure: state.connectionFailure,
-                    // A REBUILDING TRANSPORT IS NOT A CONNECTED CALL.
-                    //
-                    // On 2026-09-16 a callee's transport closed and its
-                    // replacement arrived 13 seconds later; the screen said
-                    // Connected throughout, and on 09-09 a frozen call read
-                    // "Connected · 2 · 02:52" for four minutes. The recovery
-                    // fact exists now, so the person is told.
-                    mediaRecovering: state.mediaRecovering,
-                    // Kept for meetings and stages, which have no call and so
-                    // still need the local derivations.
-                    isAccepted:
-                        !isMeetingSession &&
-                        state.session?.call == null &&
-                        state.isJoined &&
-                        state.isPeerAcceptedNotYetPresent,
-                    isRinging:
-                        !isMeetingSession &&
-                        state.session?.call == null &&
-                        state.isJoined &&
-                        state.participants.length <= 1 &&
-                        !state.acceptedByPeer &&
-                        ringingSessionIds.contains(widget.sessionId),
-                    waitingLabel:
-                        isMeetingSession &&
+              return MouseRegion(
+                onHover: (_) => _revealDock(),
+                child: Listener(
+                  behavior: HitTestBehavior.translucent,
+                  onPointerDown: (_) => _revealDock(),
+                  child: Column(
+                    children: [
+                      // ── Header bar ────────────────────────────────────────────────
+                      _CallTopBar(
+                        title: _callTitle(state.session, state.isVideoMode),
+                        contextLabel: _contextLabel(state.session),
+                        duration: callDuration,
+                        // Stage/private participants only — the watching
+                        // audience is a separate truth (charter §26 O).
+                        participantCount: state.participants
+                            .where(
+                              (p) => p.role != RealtimeParticipantRole.observer,
+                            )
+                            .length,
+                        isPubliclyLive: state.session?.isLive == true,
+                        viewerCount: state.participants
+                            .where(
+                              (p) =>
+                                  p.role == RealtimeParticipantRole.observer &&
+                                  p.joinState.toUpperCase() == 'ACTIVE',
+                            )
+                            .length,
+                        isConnecting: isConnecting,
+                        hasIssue: showConnectionIssue,
+                        // WHERE THE CALL ACTUALLY IS, FROM THE CALL.
+                        //
+                        // These used to be assembled locally: "ringing" meant the
+                        // roster had one row and a ringback set contained this
+                        // session; anything that matched nothing fell through to a
+                        // green dot labelled "Live". A call with no remote media
+                        // and a peer who had never answered therefore rendered as
+                        // Live the instant the socket join was acknowledged.
+                        call: state.session?.call,
+                        productState: state.session?.call?.productStateFor(
+                          myUserId,
+                        ),
+                        connectionFailure: state.connectionFailure,
+                        // A REBUILDING TRANSPORT IS NOT A CONNECTED CALL.
+                        //
+                        // On 2026-09-16 a callee's transport closed and its
+                        // replacement arrived 13 seconds later; the screen said
+                        // Connected throughout, and on 09-09 a frozen call read
+                        // "Connected · 2 · 02:52" for four minutes. The recovery
+                        // fact exists now, so the person is told.
+                        mediaRecovering: state.mediaRecovering,
+                        // Kept for meetings and stages, which have no call and so
+                        // still need the local derivations.
+                        isAccepted:
+                            !isMeetingSession &&
+                            state.session?.call == null &&
                             state.isJoined &&
-                            state.participants.length <= 1
-                        ? 'Waiting for guest to join'
-                        : null,
-                    onMinimize: state.isJoined
-                        ? () => _minimizeCall(state.session)
-                        : null,
-                    sessionTypeChip: _buildSessionTypeChip(),
-                    trustLine: _buildTrustLine(),
-                  ),
+                            state.isPeerAcceptedNotYetPresent,
+                        isRinging:
+                            !isMeetingSession &&
+                            state.session?.call == null &&
+                            state.isJoined &&
+                            state.participants.length <= 1 &&
+                            !state.acceptedByPeer &&
+                            ringingSessionIds.contains(widget.sessionId),
+                        waitingLabel:
+                            isMeetingSession &&
+                                state.isJoined &&
+                                state.participants.length <= 1
+                            ? 'Waiting for guest to join'
+                            : null,
+                        onMinimize: state.isJoined
+                            ? () => _minimizeCall(state.session)
+                            : null,
+                        sessionTypeChip: _buildSessionTypeChip(),
+                        trustLine: _buildTrustLine(),
+                      ),
 
-                  // ── Phase 3 — per-type focus reinforcement ───────────────────
-                  // Single-line text band that shifts focus per session type:
-                  // "Speaker-led session" for public briefings/classes,
-                  // "Q&A session" for media interactions. Internal meetings
-                  // and research sessions stay quiet.
-                  if (_buildFocusBanner() case final focus?) focus,
+                      // ── Phase 3 — per-type focus reinforcement ───────────────────
+                      // Single-line text band that shifts focus per session type:
+                      // "Speaker-led session" for public briefings/classes,
+                      // "Q&A session" for media interactions. Internal meetings
+                      // and research sessions stay quiet.
+                      if (_buildFocusBanner() case final focus?) focus,
 
-                  // ── Phase 4 — in-session presence line ───────────────────────
-                  // Calm line beneath the focus banner (or directly under
-                  // the top bar when there's no focus banner) that names
-                  // how many participants are present. Reads from existing
-                  // realtime state — no extra fetch.
-                  if (_buildPresenceLine(state) case final presence?) presence,
+                      // ── Phase 4 — in-session presence line ───────────────────────
+                      // Calm line beneath the focus banner (or directly under
+                      // the top bar when there's no focus banner) that names
+                      // how many participants are present. Reads from existing
+                      // realtime state — no extra fetch.
+                      if (_buildPresenceLine(state) case final presence?)
+                        presence,
 
-                  // ── Consent banner ────────────────────────────────────────────
-                  RealtimeConsentSheet(
-                    currentUserId: myUserId.isNotEmpty ? myUserId : null,
-                    consents: state.consents,
-                  ),
+                      // ── Consent banner ────────────────────────────────────────────
+                      RealtimeConsentSheet(
+                        currentUserId: myUserId.isNotEmpty ? myUserId : null,
+                        consents: state.consents,
+                      ),
 
-                  // ── Connection issue banner ───────────────────────────────────
-                  if (showConnectionIssue)
-                    _ConnectionBanner(
-                      isBusy: state.isBusy || isConnecting,
-                      onReconnect: () => controller.resume(widget.sessionId),
-                    ),
+                      // ── Connection issue banner ───────────────────────────────────
+                      if (showConnectionIssue)
+                        _ConnectionBanner(
+                          isBusy: state.isBusy || isConnecting,
+                          onReconnect: () =>
+                              controller.resume(widget.sessionId),
+                        ),
 
-                  // ── Main body ─────────────────────────────────────────────────
-                  Expanded(
-                    child: isMeetingSession && state.isJoined
-                        ? _buildMeetingRoom(
-                            state: state,
-                            myUserId: myUserId,
-                            wide: wide,
-                          )
-                        : state.isJoined
-                        ? _buildActiveCall(
-                            state: state,
-                            controller: controller,
-                            myUserId: myUserId,
-                            canModerate: canModerate,
-                            wide: wide,
-                          )
-                        : _buildPreJoin(
-                            context: context,
-                            state: state,
-                            controller: controller,
-                            policy: policy,
-                            roomIsClosed: roomIsClosed,
-                          ),
-                  ),
+                      // ── Main body ─────────────────────────────────────────────────
+                      Expanded(
+                        child: isMeetingSession && state.isJoined
+                            ? _buildMeetingRoom(
+                                state: state,
+                                myUserId: myUserId,
+                                wide: wide,
+                              )
+                            : state.isJoined
+                            ? _buildActiveCall(
+                                state: state,
+                                controller: controller,
+                                myUserId: myUserId,
+                                canModerate: canModerate,
+                                wide: wide,
+                              )
+                            : _buildPreJoin(
+                                context: context,
+                                state: state,
+                                controller: controller,
+                                policy: policy,
+                                roomIsClosed: roomIsClosed,
+                              ),
+                      ),
 
-                  // ── Call controls ─────────────────────────────────────────────
-                  if (state.isJoined)
-                    isMeetingSession
-                        ? _MeetingControlDock(
-                            micOn: state.microphoneEnabled,
-                            cameraOn: state.cameraEnabled,
-                            isVideoMode: state.isVideoMode,
-                            onToggleMic: controller.toggleMicrophone,
-                            onToggleCamera: controller.toggleCamera,
-                            onLeave: state.isEndingCall
-                                ? null
-                                : isHost
-                                ? () => unawaited(_endCallAndClose(controller))
-                                : () =>
-                                      unawaited(_leaveAndNavigate(controller)),
-                            isEnding: state.isEndingCall,
-                          )
-                        : _CallControlDock(
-                            micOn: state.microphoneEnabled,
-                            cameraOn: state.cameraEnabled,
-                            cameraIsFront: state.cameraIsFront,
-                            isVideoMode: state.isVideoMode,
-                            // A FLIP IS ONLY REAL WHERE THERE ARE TWO
-                            // CAMERAS TO FLIP BETWEEN. `supportsCameraCapture`
-                            // is the platform authority for front/back
-                            // hardware (Android and iOS); on desktop and web
-                            // the equivalent act is choosing a device, which
-                            // Meetings already offers and a two-state flip
-                            // would misrepresent.
-                            onFlipCamera: supportsCameraCapture
-                                ? () => unawaited(controller.flipCamera())
-                                : null,
-                            activePanel: _activePanel,
-                            pendingRequests: canModerate ? joinRequestCount : 0,
-                            // LIVE viewer (charter 2026-08-17): publishing
-                            // is a ROLE fact — every stage participant in
-                            // an escalated call keeps their controls; only
-                            // OBSERVER-role viewers are receive-only
-                            // (publish controls would be lies for them).
-                            showPublishControls: !_amObserver(
-                              state,
-                              myUserId,
+                      // ── Call controls ─────────────────────────────────────────────
+                      //
+                      // Fades rather than collapses: nothing under it moves, so the
+                      // target stays exactly where the hand last saw it. Pointer
+                      // events are refused while it is faded out, and the
+                      // MouseRegion + Listener around this whole column still see
+                      // the movement and bring it straight back.
+                      if (state.isJoined)
+                        MouseRegion(
+                          onEnter: (_) {
+                            _pointerOverDock = true;
+                            _revealDock();
+                          },
+                          onExit: (_) {
+                            _pointerOverDock = false;
+                            _revealDock();
+                          },
+                          child: AnimatedOpacity(
+                            opacity: _dockVisible ? 1 : 0,
+                            duration: const Duration(milliseconds: 180),
+                            child: IgnorePointer(
+                              ignoring: !_dockVisible,
+                              child: isMeetingSession
+                                  ? _MeetingControlDock(
+                                      micOn: state.microphoneEnabled,
+                                      cameraOn: state.cameraEnabled,
+                                      isVideoMode: state.isVideoMode,
+                                      onToggleMic: controller.toggleMicrophone,
+                                      onToggleCamera: controller.toggleCamera,
+                                      onLeave: state.isEndingCall
+                                          ? null
+                                          : isHost
+                                          ? () => unawaited(
+                                              _endCallAndClose(controller),
+                                            )
+                                          : () => unawaited(
+                                              _leaveAndNavigate(controller),
+                                            ),
+                                      isEnding: state.isEndingCall,
+                                    )
+                                  : _CallControlDock(
+                                      micOn: state.microphoneEnabled,
+                                      cameraOn: state.cameraEnabled,
+                                      cameraIsFront: state.cameraIsFront,
+                                      isVideoMode: state.isVideoMode,
+                                      // A FLIP IS ONLY REAL WHERE THERE ARE TWO
+                                      // CAMERAS TO FLIP BETWEEN. `supportsCameraCapture`
+                                      // is the platform authority for front/back
+                                      // hardware (Android and iOS); on desktop and web
+                                      // the equivalent act is choosing a device, which
+                                      // Meetings already offers and a two-state flip
+                                      // would misrepresent.
+                                      onFlipCamera: supportsCameraCapture
+                                          ? () => unawaited(
+                                              controller.flipCamera(),
+                                            )
+                                          : null,
+                                      activePanel: _activePanel,
+                                      pendingRequests: canModerate
+                                          ? joinRequestCount
+                                          : 0,
+                                      // LIVE viewer (charter 2026-08-17): publishing
+                                      // is a ROLE fact — every stage participant in
+                                      // an escalated call keeps their controls; only
+                                      // OBSERVER-role viewers are receive-only
+                                      // (publish controls would be lies for them).
+                                      showPublishControls: !_amObserver(
+                                        state,
+                                        myUserId,
+                                      ),
+                                      onToggleMic: controller.toggleMicrophone,
+                                      onToggleCamera: controller.toggleCamera,
+                                      isScreenSharing: state.isScreenSharing,
+                                      isTogglingScreenShare:
+                                          _togglingScreenShare,
+                                      onToggleScreenShare: () =>
+                                          unawaited(_toggleScreenShare()),
+                                      isPubliclyLive: publiclyLive,
+                                      onGoLive: !liveEligible
+                                          ? null
+                                          : publiclyLive
+                                          // ENDING a Live is never gated on video: a
+                                          // broadcaster whose camera closed mid-
+                                          // broadcast must still be able to close the
+                                          // public door.
+                                          ? () => unawaited(_endLive(state))
+                                          : (_callCarriesVideo(state)
+                                                ? () =>
+                                                      unawaited(_goLive(state))
+                                                : null),
+                                      showSpeakerToggle:
+                                          _supportsSpeakerphoneToggle,
+                                      speakerOn: state.speakerphoneEnabled,
+                                      onToggleSpeaker: () => unawaited(
+                                        controller.toggleSpeakerphone(),
+                                      ),
+                                      // The platform's answer, not ours. When it cannot
+                                      // say, these stay null and the button keeps its
+                                      // existing two-word behaviour.
+                                      audioRouteLabel: audioOut.current?.label,
+                                      audioRouteIcon: _audioRouteIcon(
+                                        audioOut.current,
+                                      ),
+                                      onChooseAudioOutput: audioOut.hasChoice
+                                          ? () => unawaited(
+                                              AudioOutputSheet.show(context),
+                                            )
+                                          : null,
+                                      onMore: () =>
+                                          _togglePanel(_kPanelMore, wide),
+                                      isEndCall: isHost,
+                                      isEnding: state.isEndingCall,
+                                      onLeave: state.isEndingCall
+                                          ? null
+                                          : isHost
+                                          ? () => unawaited(
+                                              _endCallAndClose(controller),
+                                            )
+                                          : () => unawaited(
+                                              _leaveAndNavigate(controller),
+                                            ),
+                                    ),
                             ),
-                            onToggleMic: controller.toggleMicrophone,
-                            onToggleCamera: controller.toggleCamera,
-                            isScreenSharing: state.isScreenSharing,
-                            isTogglingScreenShare: _togglingScreenShare,
-                            onToggleScreenShare: () =>
-                                unawaited(_toggleScreenShare()),
-                            isPubliclyLive: publiclyLive,
-                            onGoLive: !liveEligible
-                                ? null
-                                : publiclyLive
-                                // ENDING a Live is never gated on video: a
-                                // broadcaster whose camera closed mid-
-                                // broadcast must still be able to close the
-                                // public door.
-                                ? () => unawaited(_endLive(state))
-                                : (_callCarriesVideo(state)
-                                      ? () => unawaited(_goLive(state))
-                                      : null),
-                            showSpeakerToggle: _supportsSpeakerphoneToggle,
-                            speakerOn: state.speakerphoneEnabled,
-                            onToggleSpeaker: () =>
-                                unawaited(controller.toggleSpeakerphone()),
-                            // The platform's answer, not ours. When it cannot
-                            // say, these stay null and the button keeps its
-                            // existing two-word behaviour.
-                            audioRouteLabel: audioOut.current?.label,
-                            audioRouteIcon: _audioRouteIcon(audioOut.current),
-                            onChooseAudioOutput: audioOut.hasChoice
-                                ? () => unawaited(AudioOutputSheet.show(context))
-                                : null,
-                            onMore: () => _togglePanel(_kPanelMore, wide),
-                            isEndCall: isHost,
-                            isEnding: state.isEndingCall,
-                            onLeave: state.isEndingCall
-                                ? null
-                                : isHost
-                                ? () => unawaited(_endCallAndClose(controller))
-                                : () =>
-                                      unawaited(_leaveAndNavigate(controller)),
                           ),
-                ],
+                        ),
+                    ],
+                  ),
+                ),
               );
             },
           ),
@@ -1533,7 +1625,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     required String myUserId,
     required bool wide,
   }) {
-    final hasAnyRenderer = state.localRenderer != null ||
+    final hasAnyRenderer =
+        state.localRenderer != null ||
         state.remoteRenderers.isNotEmpty ||
         state.remoteRenderersByParticipant.isNotEmpty;
     final body = hasAnyRenderer
@@ -2600,7 +2693,10 @@ class _CallTopBar extends StatelessWidget {
           // actually connected — was communicated by a dot changing colour and
           // the text vanishing. A call that had been accepted but not yet
           // connected looked identical to one that had.
-          if (productState != null || hasIssue || isConnecting || isRinging) ...[
+          if (productState != null ||
+              hasIssue ||
+              isConnecting ||
+              isRinging) ...[
             Text(
               statusLabel,
               style: AuraText.label.copyWith(color: statusColor),
@@ -2906,19 +3002,13 @@ class _PreConnectStage extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              state.isVideoMode
-                  ? Icons.videocam_rounded
-                  : Icons.call_rounded,
+              state.isVideoMode ? Icons.videocam_rounded : Icons.call_rounded,
               size: 44,
               color: AuraSurface.muted,
             ),
             const SizedBox(height: AuraSpace.s16),
             if (name.isNotEmpty) ...[
-              Text(
-                name,
-                textAlign: TextAlign.center,
-                style: AuraText.headline,
-              ),
+              Text(name, textAlign: TextAlign.center, style: AuraText.headline),
               const SizedBox(height: AuraSpace.s8),
             ],
             Text(
@@ -3036,7 +3126,8 @@ class _CallStage extends StatelessWidget {
     // nothing device-shaped to key on, so under SFU that map is permanently
     // empty and asking it alone answers "is anyone's media here?" with a
     // confident, wrong no.
-    final hasRemoteRenderers = state.remoteRenderers.isNotEmpty ||
+    final hasRemoteRenderers =
+        state.remoteRenderers.isNotEmpty ||
         state.remoteRenderersByParticipant.isNotEmpty;
     final hasLocalRenderer = state.localRenderer != null;
     final hasAnyRenderer = hasLocalRenderer || hasRemoteRenderers;
@@ -3082,10 +3173,10 @@ class _CallStage extends StatelessWidget {
       branch: takesGrid
           ? 'grid'
           : (state.isMediaBusy && !state.isMediaReady && !hasAnyRenderer)
-              ? 'loading'
-              : (mediaError.isNotEmpty && !hasAnyRenderer)
-                  ? 'warning'
-                  : 'avatar',
+          ? 'loading'
+          : (mediaError.isNotEmpty && !hasAnyRenderer)
+          ? 'warning'
+          : 'avatar',
       someoneSharingScreen: someoneSharingScreen,
     );
 
@@ -3225,9 +3316,8 @@ class _VideoGrid extends StatelessWidget {
     final others = me.isEmpty
         ? const <RealtimeParticipant>[]
         : participants
-            .where((p) =>
-                p.userId.trim().isNotEmpty && p.userId.trim() != me)
-            .toList();
+              .where((p) => p.userId.trim().isNotEmpty && p.userId.trim() != me)
+              .toList();
     if (others.length == 1 && remoteRenderers.length == 1) {
       return _nameOf(others.first);
     }
@@ -3250,13 +3340,15 @@ class _VideoGrid extends StatelessWidget {
     // video renderer existed. That relationship is backwards — participation
     // creates the tile, and video is optional content inside it.
     final entries = <_TileSpec>[];
-    entries.add(_TileSpec(
-      label: 'You',
-      renderer: localRenderer,
-      avatarUrl: _selfAvatarUrl(),
-      mirror: localIsFrontCamera,
-      micOn: micOn,
-    ));
+    entries.add(
+      _TileSpec(
+        label: 'You',
+        renderer: localRenderer,
+        avatarUrl: _selfAvatarUrl(),
+        mirror: localIsFrontCamera,
+        micOn: micOn,
+      ),
+    );
 
     final claimed = <String>{};
     final others = <ParticipantRef>[];
@@ -3296,7 +3388,9 @@ class _VideoGrid extends StatelessWidget {
       return am.compareTo(bm);
     });
     for (final p in ordered) {
-      final identity = p.userId.trim().isNotEmpty ? p.userId.trim() : p.id.trim();
+      final identity = p.userId.trim().isNotEmpty
+          ? p.userId.trim()
+          : p.id.trim();
       if (identity.isNotEmpty && !seated.add(identity)) continue;
       final key = (p.runtimeDeviceId ?? '').trim();
       // Claim the device even when no renderer resolves: an unclaimed
@@ -3317,13 +3411,15 @@ class _VideoGrid extends StatelessWidget {
         byParticipant: renderersByParticipant,
         byDevice: remoteRenderers,
       );
-      entries.add(_TileSpec(
-        label: _nameOf(p),
-        renderer: renderer,
-        avatarUrl: p.avatarUrl,
-        mirror: false,
-        micOn: p.audioOn,
-      ));
+      entries.add(
+        _TileSpec(
+          label: _nameOf(p),
+          renderer: renderer,
+          avatarUrl: p.avatarUrl,
+          mirror: false,
+          micOn: p.audioOn,
+        ),
+      );
     }
 
     // A live renderer nobody in the roster claims — shown only while somebody
@@ -3338,13 +3434,15 @@ class _VideoGrid extends StatelessWidget {
         continue;
       }
       if (!showUnattributed) continue;
-      entries.add(_TileSpec(
-        label: _labelForPeerKey(entry.key),
-        renderer: entry.value,
-        avatarUrl: null,
-        mirror: false,
-        micOn: true,
-      ));
+      entries.add(
+        _TileSpec(
+          label: _labelForPeerKey(entry.key),
+          renderer: entry.value,
+          avatarUrl: null,
+          mirror: false,
+          micOn: true,
+        ),
+      );
     }
 
     return LayoutBuilder(
@@ -3362,9 +3460,7 @@ class _VideoGrid extends StatelessWidget {
         }
 
         // 3+ participants — responsive grid
-        final cols = w >= 900
-            ? 3
-            : 2;
+        final cols = w >= 900 ? 3 : 2;
         final rows = (entries.length / cols).ceil();
         final tileH = h / rows;
         final tileW = w / cols;
@@ -3374,7 +3470,9 @@ class _VideoGrid extends StatelessWidget {
           height: h,
           child: Wrap(
             children: entries
-                .map((e) => SizedBox(width: tileW, height: tileH, child: _tile(e)))
+                .map(
+                  (e) => SizedBox(width: tileW, height: tileH, child: _tile(e)),
+                )
                 .toList(growable: false),
           ),
         );
@@ -3383,12 +3481,12 @@ class _VideoGrid extends StatelessWidget {
   }
 
   Widget _tile(_TileSpec spec) => _VideoTile(
-        label: spec.label,
-        renderer: spec.renderer,
-        avatarUrl: spec.avatarUrl,
-        mirror: spec.mirror,
-        micOn: spec.micOn,
-      );
+    label: spec.label,
+    renderer: spec.renderer,
+    avatarUrl: spec.avatarUrl,
+    mirror: spec.mirror,
+    micOn: spec.micOn,
+  );
 }
 
 /// One seat at the table. The renderer is optional; the person is not.
@@ -3977,129 +4075,137 @@ class _CallControlDock extends StatelessWidget {
         children: [
           Expanded(
             child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Mic
-            if (showPublishControls) ...[
-              _DockButton(
-                icon: micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
-                label: MediaControlLabels.microphoneAction(on: micOn),
-                semanticLabel:
-                    MediaControlLabels.microphoneSemantics(on: micOn),
-                active: micOn,
-                warning: !micOn,
-                onPressed: onToggleMic,
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Mic
+                  if (showPublishControls) ...[
+                    _DockButton(
+                      icon: micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
+                      label: MediaControlLabels.microphoneAction(on: micOn),
+                      semanticLabel: MediaControlLabels.microphoneSemantics(
+                        on: micOn,
+                      ),
+                      active: micOn,
+                      warning: !micOn,
+                      onPressed: onToggleMic,
+                    ),
+                    const SizedBox(width: AuraSpace.s8),
+                  ],
+
+                  // Camera (video calls only)
+                  if (showPublishControls && isVideoMode) ...[
+                    _DockButton(
+                      icon: cameraOn
+                          ? Icons.videocam_rounded
+                          : Icons.videocam_off_rounded,
+                      // WAS: cameraOn ? 'Camera' : 'Camera off' — the ON state
+                      // named the thing, not the state or the effect, while the
+                      // microphone beside it named the action.
+                      label: MediaControlLabels.cameraAction(on: cameraOn),
+                      semanticLabel: MediaControlLabels.cameraSemantics(
+                        on: cameraOn,
+                      ),
+                      active: cameraOn,
+                      warning: !cameraOn,
+                      onPressed: onToggleCamera,
+                    ),
+                    const SizedBox(width: AuraSpace.s8),
+                  ],
+
+                  // Flip — founder 2026-09-19: "in video call screen camera
+                  // toggle / front/back is missing". It sits beside the camera
+                  // control because it is about the camera, and it follows the
+                  // same visibility rule: video calls only. Disabled rather than
+                  // hidden while the camera is off, so the act stays discoverable.
+                  if (showPublishControls &&
+                      isVideoMode &&
+                      onFlipCamera != null) ...[
+                    _DockButton(
+                      icon: Icons.flip_camera_ios_rounded,
+                      label: MediaControlLabels.cameraFlipAction,
+                      semanticLabel: MediaControlLabels.cameraFlipSemantics(
+                        cameraOn: cameraOn,
+                        isFront: cameraIsFront,
+                      ),
+                      onPressed: cameraOn ? onFlipCamera : null,
+                    ),
+                    const SizedBox(width: AuraSpace.s8),
+                  ],
+
+                  // Screen share — audio AND video calls (the shared media
+                  // service adds the track with renegotiation on audio-only
+                  // peers, so audio calls genuinely support it).
+                  if (showPublishControls && onToggleScreenShare != null) ...[
+                    _DockButton(
+                      icon: isScreenSharing
+                          ? Icons.stop_screen_share_rounded
+                          : Icons.screen_share_rounded,
+                      label: isScreenSharing ? 'Stop share' : 'Share',
+                      active: isScreenSharing,
+                      onPressed: isTogglingScreenShare
+                          ? () {}
+                          : onToggleScreenShare!,
+                    ),
+                    const SizedBox(width: AuraSpace.s8),
+                  ],
+
+                  // GO LIVE — a PRIMARY in-call act, so it sits in the dock
+                  // rather than buried in a panel (founder 2026-08-17: "there is
+                  // no option in running video call to make it live, i think its
+                  // burried").
+                  if (onGoLive != null) ...[
+                    _DockButton(
+                      icon: isPubliclyLive
+                          ? Icons.stop_circle_outlined
+                          : Icons.sensors_rounded,
+                      label: isPubliclyLive ? 'End Live' : 'Go Live',
+                      active: isPubliclyLive,
+                      warning: isPubliclyLive,
+                      onPressed: onGoLive!,
+                    ),
+                    const SizedBox(width: AuraSpace.s8),
+                  ],
+
+                  // ── WHERE THE CALL IS BEING HEARD ────────────────────────
+                  //
+                  // ONE control, not several. It shows the route the platform says is
+                  // in use, and opening it lists the routes that actually exist.
+                  //
+                  // It replaces a binary speaker toggle, which could not express a
+                  // third output: with a Bluetooth headset connected there are at
+                  // least three legitimate places a call can play, and a two-state
+                  // switch left the person with no way to move it. On a device with
+                  // nothing to choose between, it stays the toggle it always was —
+                  // an "Audio" menu offering one option would be theatre.
+                  if (showSpeakerToggle) ...[
+                    _DockButton(
+                      icon:
+                          audioRouteIcon ??
+                          (speakerOn
+                              ? Icons.volume_up_rounded
+                              : Icons.hearing_rounded),
+                      label:
+                          audioRouteLabel ??
+                          (speakerOn ? 'Speaker' : 'Earpiece'),
+                      active: speakerOn,
+                      onPressed:
+                          onChooseAudioOutput ?? onToggleSpeaker ?? () {},
+                    ),
+                    const SizedBox(width: AuraSpace.s8),
+                  ],
+
+                  // More / Settings
+                  _DockButton(
+                    icon: Icons.tune_rounded,
+                    label: 'More',
+                    active: activePanel == _kPanelMore,
+                    badge: pendingRequests > 0 ? pendingRequests : null,
+                    onPressed: onMore,
+                  ),
+                ],
               ),
-              const SizedBox(width: AuraSpace.s8),
-            ],
-
-            // Camera (video calls only)
-            if (showPublishControls && isVideoMode) ...[
-              _DockButton(
-                icon: cameraOn
-                    ? Icons.videocam_rounded
-                    : Icons.videocam_off_rounded,
-                // WAS: cameraOn ? 'Camera' : 'Camera off' — the ON state
-                // named the thing, not the state or the effect, while the
-                // microphone beside it named the action.
-                label: MediaControlLabels.cameraAction(on: cameraOn),
-                semanticLabel:
-                    MediaControlLabels.cameraSemantics(on: cameraOn),
-                active: cameraOn,
-                warning: !cameraOn,
-                onPressed: onToggleCamera,
-              ),
-              const SizedBox(width: AuraSpace.s8),
-            ],
-
-            // Flip — founder 2026-09-19: "in video call screen camera
-            // toggle / front/back is missing". It sits beside the camera
-            // control because it is about the camera, and it follows the
-            // same visibility rule: video calls only. Disabled rather than
-            // hidden while the camera is off, so the act stays discoverable.
-            if (showPublishControls && isVideoMode && onFlipCamera != null) ...[
-              _DockButton(
-                icon: Icons.flip_camera_ios_rounded,
-                label: MediaControlLabels.cameraFlipAction,
-                semanticLabel: MediaControlLabels.cameraFlipSemantics(
-                  cameraOn: cameraOn,
-                  isFront: cameraIsFront,
-                ),
-                onPressed: cameraOn ? onFlipCamera : null,
-              ),
-              const SizedBox(width: AuraSpace.s8),
-            ],
-
-            // Screen share — audio AND video calls (the shared media
-            // service adds the track with renegotiation on audio-only
-            // peers, so audio calls genuinely support it).
-            if (showPublishControls && onToggleScreenShare != null) ...[
-              _DockButton(
-                icon: isScreenSharing
-                    ? Icons.stop_screen_share_rounded
-                    : Icons.screen_share_rounded,
-                label: isScreenSharing ? 'Stop share' : 'Share',
-                active: isScreenSharing,
-                onPressed:
-                    isTogglingScreenShare ? () {} : onToggleScreenShare!,
-              ),
-              const SizedBox(width: AuraSpace.s8),
-            ],
-
-            // GO LIVE — a PRIMARY in-call act, so it sits in the dock
-            // rather than buried in a panel (founder 2026-08-17: "there is
-            // no option in running video call to make it live, i think its
-            // burried").
-            if (onGoLive != null) ...[
-              _DockButton(
-                icon: isPubliclyLive
-                    ? Icons.stop_circle_outlined
-                    : Icons.sensors_rounded,
-                label: isPubliclyLive ? 'End Live' : 'Go Live',
-                active: isPubliclyLive,
-                warning: isPubliclyLive,
-                onPressed: onGoLive!,
-              ),
-              const SizedBox(width: AuraSpace.s8),
-            ],
-
-            // ── WHERE THE CALL IS BEING HEARD ────────────────────────
-            //
-            // ONE control, not several. It shows the route the platform says is
-            // in use, and opening it lists the routes that actually exist.
-            //
-            // It replaces a binary speaker toggle, which could not express a
-            // third output: with a Bluetooth headset connected there are at
-            // least three legitimate places a call can play, and a two-state
-            // switch left the person with no way to move it. On a device with
-            // nothing to choose between, it stays the toggle it always was —
-            // an "Audio" menu offering one option would be theatre.
-            if (showSpeakerToggle) ...[
-              _DockButton(
-                icon: audioRouteIcon ??
-                    (speakerOn
-                        ? Icons.volume_up_rounded
-                        : Icons.hearing_rounded),
-                label: audioRouteLabel ?? (speakerOn ? 'Speaker' : 'Earpiece'),
-                active: speakerOn,
-                onPressed: onChooseAudioOutput ?? onToggleSpeaker ?? () {},
-              ),
-              const SizedBox(width: AuraSpace.s8),
-            ],
-
-            // More / Settings
-            _DockButton(
-              icon: Icons.tune_rounded,
-              label: 'More',
-              active: activePanel == _kPanelMore,
-              badge: pendingRequests > 0 ? pendingRequests : null,
-              onPressed: onMore,
-            ),
-
-          ],
-        ),
             ),
           ),
 
@@ -4166,8 +4272,7 @@ class _MeetingControlDock extends StatelessWidget {
                   ? Icons.videocam_rounded
                   : Icons.videocam_off_rounded,
               label: MediaControlLabels.cameraAction(on: cameraOn),
-              semanticLabel:
-                  MediaControlLabels.cameraSemantics(on: cameraOn),
+              semanticLabel: MediaControlLabels.cameraSemantics(on: cameraOn),
               active: cameraOn,
               warning: !cameraOn,
               onPressed: onToggleCamera,
@@ -4237,70 +4342,74 @@ class _DockButton extends StatelessWidget {
       label: semanticLabel ?? label,
       child: ExcludeSemantics(
         child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Stack(
-          clipBehavior: Clip.none,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: onPressed,
-                borderRadius: BorderRadius.circular(AuraRadius.md),
-                child: AnimatedContainer(
-                  duration: AuraMotion.fast,
-                  width: 48,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: bgColor,
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: onPressed,
                     borderRadius: BorderRadius.circular(AuraRadius.md),
-                    border: Border.all(
-                      color: active
-                          ? AuraSurface.accent.withValues(alpha: 0.4)
-                          : AuraSurface.divider,
-                    ),
-                  ),
-                  child: Icon(icon, size: AuraIconSize.md, color: iconColor),
-                ),
-              ),
-            ),
-            if ((badge ?? 0) > 0)
-              Positioned(
-                right: -4,
-                top: -4,
-                child: Container(
-                  width: 16,
-                  height: 16,
-                  decoration: const BoxDecoration(
-                    color: AuraSurface.accent,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      '$badge',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        height: 1,
+                    child: AnimatedContainer(
+                      duration: AuraMotion.fast,
+                      width: 48,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: bgColor,
+                        borderRadius: BorderRadius.circular(AuraRadius.md),
+                        border: Border.all(
+                          color: active
+                              ? AuraSurface.accent.withValues(alpha: 0.4)
+                              : AuraSurface.divider,
+                        ),
+                      ),
+                      child: Icon(
+                        icon,
+                        size: AuraIconSize.md,
+                        color: iconColor,
                       ),
                     ),
                   ),
                 ),
+                if ((badge ?? 0) > 0)
+                  Positioned(
+                    right: -4,
+                    top: -4,
+                    child: Container(
+                      width: 16,
+                      height: 16,
+                      decoration: const BoxDecoration(
+                        color: AuraSurface.accent,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '$badge',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AuraSpace.s4),
+            Text(
+              label,
+              style: AuraText.micro.copyWith(
+                color: enabled
+                    ? AuraSurface.faint
+                    : AuraSurface.faint.withValues(alpha: 0.5),
+                fontWeight: FontWeight.w500,
               ),
+            ),
           ],
-        ),
-        const SizedBox(height: AuraSpace.s4),
-        Text(
-          label,
-          style: AuraText.micro.copyWith(
-            color: enabled
-                ? AuraSurface.faint
-                : AuraSurface.faint.withValues(alpha: 0.5),
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
         ),
       ),
     );
@@ -4618,7 +4727,6 @@ class _CallPanelContentState extends ConsumerState<_CallPanelContent> {
         // buried in this panel (founder 2026-08-17: "there is no option in
         // running video call to make it live, i think its burried").
         // See _RealtimeRoomScreenState._goLive / _endLive.
-
         AuraSecondaryButton(
           label: 'Refresh session',
           onPressed: () => ctrl.hydrateSession(widget.sessionId),
@@ -4627,7 +4735,6 @@ class _CallPanelContentState extends ConsumerState<_CallPanelContent> {
       ],
     );
   }
-
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
