@@ -29,6 +29,7 @@ Future<AuraMediaUploadResult> uploadAuraMedia({
   required String mimeType,
   required String kind,
   required String source,
+
   /// What the content was BEFORE Aura transcoded it, when it did.
   ///
   /// Sent only when it differs from [mimeType]. A HEIC photograph re-encoded
@@ -40,6 +41,7 @@ Future<AuraMediaUploadResult> uploadAuraMedia({
   int? width,
   int? height,
   int? duration,
+
   /// WHAT THE CREATOR SAYS about this media's origin.
   ///
   /// One of `AI_GENERATED`, `AI_EDITED`, `NOT_AI`. Recorded server-side as an
@@ -64,7 +66,8 @@ Future<AuraMediaUploadResult> uploadAuraMedia({
       'source': source,
       if (originalMimeType != null &&
           originalMimeType.trim().isNotEmpty &&
-          originalMimeType.trim().toLowerCase() != mimeType.trim().toLowerCase())
+          originalMimeType.trim().toLowerCase() !=
+              mimeType.trim().toLowerCase())
         'originalMimeType': originalMimeType.trim().toLowerCase(),
       if (width != null) 'width': width,
       if (height != null) 'height': height,
@@ -104,10 +107,7 @@ Future<AuraMediaUploadResult> uploadAuraMedia({
   }
 
   final uploadDio = Dio(
-    BaseOptions(
-      responseType: ResponseType.plain,
-      followRedirects: true,
-    ),
+    BaseOptions(responseType: ResponseType.plain, followRedirects: true),
   );
 
   await uploadDio.put(
@@ -125,9 +125,7 @@ Future<AuraMediaUploadResult> uploadAuraMedia({
 
   await dio.post('/media/$mediaId/confirm');
 
-  final patchPayload = <String, dynamic>{
-    ...metadataPatch,
-  };
+  final patchPayload = <String, dynamic>{...metadataPatch};
   final patch = await dio.patch('/media/$mediaId', data: patchPayload);
   final patched = _asMap(_unwrapData(patch.data));
 
@@ -165,15 +163,32 @@ Future<AuraMediaUploadResult> uploadAuraMedia({
     _stringOf(mediaMap['fileUrl']),
   ]);
 
-  final thumbUrl = _firstNonEmpty([
-    _stringOf(patched['thumbnailUrl']),
-    _stringOf(patched['thumbUrl']),
-    _stringOf(patched['previewUrl']),
-    _stringOf(mediaMap['thumbnailUrl']),
-    _stringOf(mediaMap['thumbUrl']),
-    _stringOf(mediaMap['previewUrl']),
-    url,
-  ]);
+  // A POSTER IS A PICTURE OF THE OBJECT. FOR VIDEO IT IS NEVER THE OBJECT.
+  //
+  // `url` used to close this list unconditionally, so `thumbUrl` was NEVER
+  // empty. For a video that handed back the .mp4 as its own poster, an image
+  // decoder was pointed at it, and the composition strip showed a blank tile
+  // after fetching the whole file. It also suppressed the real preview:
+  // `AuraVideoSurface` decodes a frame only when no poster appears to exist.
+  //
+  // This is the layer the rule belongs in. The institution composer was fixed
+  // first and the fix was DEAD CODE — it tested `result.thumbUrl.isNotEmpty`,
+  // which this fallback had already guaranteed. Every composer shares this
+  // helper, so every composer shared the defect.
+  //
+  // For a still the object IS its own picture, so the fallback stays there.
+  final thumbUrl = posterUrlForUpload(
+    candidates: [
+      _stringOf(patched['thumbnailUrl']),
+      _stringOf(patched['thumbUrl']),
+      _stringOf(patched['previewUrl']),
+      _stringOf(mediaMap['thumbnailUrl']),
+      _stringOf(mediaMap['thumbUrl']),
+      _stringOf(mediaMap['previewUrl']),
+    ],
+    url: url,
+    kind: kind,
+  );
 
   return AuraMediaUploadResult(
     mediaId: mediaId,
@@ -203,6 +218,21 @@ Map<String, dynamic> _asMap(dynamic value) {
 String _stringOf(dynamic value) {
   final text = value?.toString().trim() ?? '';
   return text;
+}
+
+/// The poster for a freshly uploaded object, or `''` when there is none.
+///
+/// Pure, and public, because the last fix of this defect was DEAD CODE: the
+/// institution composer's guard tested `result.thumbUrl.isNotEmpty` while this
+/// helper's `url` fallback guaranteed it was never empty. A test that reads the
+/// composer's source cannot see that. This one is asserted on the VALUE.
+String posterUrlForUpload({
+  required List<String> candidates,
+  required String url,
+  required String kind,
+}) {
+  final isVideo = kind.trim().toUpperCase() == 'VIDEO';
+  return _firstNonEmpty([...candidates, if (!isVideo) url]);
 }
 
 String _firstNonEmpty(List<String> values) {

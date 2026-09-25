@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:aura/core/attachments/aura_media_upload.dart';
 import 'package:aura/core/media/stored_media.dart';
 
 /// A POSTER IS A PICTURE OF THE MEDIA. IT IS NEVER THE MEDIA.
@@ -146,4 +147,101 @@ void main() {
       expect(src, contains('A POSTER IS A PICTURE OF THE MEDIA'));
     });
   });
+  group('the upload helper is where the rule has to live', () {
+    const mp4 = 'https://cdn.aura/v/clip.mp4';
+
+    test('THE DEAD-CODE DEFECT: a video upload reports no poster', () {
+      // Previously this returned `mp4` — which made the composer's guard
+      // unreachable, because it tested for emptiness.
+      expect(
+        posterUrlForUpload(candidates: const [], url: mp4, kind: 'VIDEO'),
+        '',
+      );
+    });
+
+    test('a still still falls back to itself, because it IS its picture', () {
+      const jpg = 'https://cdn.aura/i/photo.jpg';
+      expect(
+        posterUrlForUpload(candidates: const [], url: jpg, kind: 'IMAGE'),
+        jpg,
+      );
+    });
+
+    test('a real server poster wins for either kind', () {
+      const poster = 'https://cdn.aura/v/clip-poster.jpg';
+      for (final k in ['VIDEO', 'IMAGE']) {
+        expect(
+          posterUrlForUpload(candidates: const [poster], url: mp4, kind: k),
+          poster,
+          reason: 'kind=$k',
+        );
+      }
+    });
+
+    test('blank candidates are skipped, not treated as a poster', () {
+      expect(
+        posterUrlForUpload(
+          candidates: const ['', '   '],
+          url: mp4,
+          kind: 'VIDEO',
+        ),
+        '',
+      );
+    });
+
+    test('kind is matched regardless of case or padding', () {
+      for (final k in ['video', ' Video ', 'VIDEO']) {
+        expect(
+          posterUrlForUpload(candidates: const [], url: mp4, kind: k),
+          '',
+          reason: 'kind="$k"',
+        );
+      }
+    });
+
+    test('THE TWO LAYERS COMPOSE: helper empty -> composer null -> decode', () {
+      // This is the assertion whose absence let the first fix ship broken.
+      // Walk the whole chain with real values instead of reading source.
+      final reported = posterUrlForUpload(
+        candidates: const [],
+        url: mp4,
+        kind: 'VIDEO',
+      );
+      // What the composer then does with it.
+      final attachmentThumb = reported.trim().isNotEmpty ? reported : null;
+      expect(attachmentThumb, isNull);
+
+      final media = StoredMedia.fromParts(
+        mimeType: 'video/mp4',
+        declaredKind: 'VIDEO',
+        sourceUrl: mp4,
+        posterUrl: attachmentThumb,
+      );
+      expect(
+        media.hasPoster,
+        isFalse,
+        reason: 'no poster is what makes initState decode a real frame',
+      );
+      expect(
+        media.isReachable,
+        isTrue,
+        reason: 'the video itself is still there',
+      );
+    });
+  });
 }
+
+/// THE SECOND HALF, AND THE REASON THE FIRST HALF DID NOTHING.
+///
+/// The composer guard shipped and the founder reported "still broken". The
+/// guard was DEAD CODE:
+///
+///     thumbUrl: result.thumbUrl.trim().isNotEmpty ? ... : (video ? null : url)
+///
+/// `uploadAuraMedia` closed its own candidate list with `url`, so
+/// `result.thumbUrl` was NEVER empty and the null branch was unreachable. I had
+/// fixed the OUTER copy of the rule while the INNER one kept feeding it the
+/// video's own address — and my test asserted the composer's source text, which
+/// cannot see an effective value produced one layer down.
+///
+/// So this half asserts the VALUE, and asserts that the two layers COMPOSE.
