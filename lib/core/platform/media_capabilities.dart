@@ -60,13 +60,17 @@ bool screenShareSupported({
 /// send a voice note that neither they nor any other Windows user can play.
 /// Saying so is better than a dead control, and better than pretending the
 /// file is broken when the player is simply missing.
+///
+/// 2026-09-25 — WINDOWS HAS A PLAYER NOW. `video_player_win` (Media
+/// Foundation) was added so feed video plays on Windows, and it serves this
+/// surface too, so the claim widens as `media_capabilities_test` demands.
+/// Linux still has none.
 bool voiceNotePlaybackSupported({
   bool? isWeb,
   TargetPlatform? platform,
 }) {
   if (isWeb ?? kIsWeb) return true;
   switch (platform ?? defaultTargetPlatform) {
-    case TargetPlatform.windows:
     case TargetPlatform.linux:
       return false;
     default:

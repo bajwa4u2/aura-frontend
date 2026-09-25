@@ -76,9 +76,11 @@ import 'media_url_resolver.dart';
 /// Whether the running platform can decode video in-process.
 ///
 /// Derived from the federated implementations `video_player` actually
-/// resolves, not from a guess: android, avfoundation (iOS/macOS) and web.
-/// Windows and Linux have no implementation, so a surface there must present
-/// the video honestly rather than attempt a decode that throws.
+/// resolves, not from a guess: android, avfoundation (iOS/macOS), web, and
+/// Windows through `video_player_win` (Media Foundation), added 2026-09-25 on
+/// the founder's direction that feed video plays on Windows as it does
+/// everywhere else. Linux still has no implementation, so a surface there
+/// presents the video honestly rather than attempt a decode that throws.
 ///
 /// Exposed as a pure function so the fallback grammar is testable without a
 /// platform.
@@ -88,8 +90,8 @@ bool storedVideoCanDecodeInline({TargetPlatform? platform, bool? isWeb}) {
     case TargetPlatform.android:
     case TargetPlatform.iOS:
     case TargetPlatform.macOS:
-      return true;
     case TargetPlatform.windows:
+      return true;
     case TargetPlatform.linux:
     case TargetPlatform.fuchsia:
       return false;

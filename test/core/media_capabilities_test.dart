@@ -76,11 +76,23 @@ void main() {
   });
 
   group('voice note playback', () {
-    test('Windows cannot — video_player has no Windows implementation', () {
+    // 2026-09-25: video_player_win gives Windows a player; the claim widened
+    // exactly as the build-measured test below instructed.
+    test('Windows can — video_player_win is registered', () {
       expect(
         voiceNotePlaybackSupported(
           isWeb: false,
           platform: TargetPlatform.windows,
+        ),
+        isTrue,
+      );
+    });
+
+    test('Linux cannot — video_player has no Linux implementation', () {
+      expect(
+        voiceNotePlaybackSupported(
+          isWeb: false,
+          platform: TargetPlatform.linux,
         ),
         isFalse,
       );
@@ -114,14 +126,14 @@ void main() {
       );
     });
 
-    test('Windows still does not register video_player', () {
+    test('Windows registers video_player, so the Windows claims may stand', () {
       final plugins =
           File('windows/flutter/generated_plugins.cmake').readAsStringSync();
       expect(
-        plugins.contains('video_player'),
-        isFalse,
-        reason: 'a Windows player now exists — let '
-            'voiceNotePlaybackSupported() return true for Windows',
+        plugins.contains('video_player_win'),
+        isTrue,
+        reason: 'voiceNotePlaybackSupported() and storedVideoCanDecodeInline() '
+            'say Windows plays media; without the plugin that is a lie',
       );
     });
   });

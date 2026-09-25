@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -150,12 +152,26 @@ void main() {
       }
     });
 
-    test('Windows and Linux cannot — video_player ships no implementation', () {
-      for (final p in [TargetPlatform.windows, TargetPlatform.linux]) {
-        expect(storedVideoCanDecodeInline(platform: p, isWeb: false), isFalse,
-            reason: '$p has no video_player implementation; claiming '
-                'otherwise is how a released platform ends up throwing');
-      }
+    // Windows decodes through `video_player_win` since 2026-09-25 (founder:
+    // feed video must play on Windows too). The rule stays honest: it is true
+    // only where an implementation is actually a dependency.
+    test('Windows decodes — video_player_win is a dependency', () {
+      expect(
+          storedVideoCanDecodeInline(
+              platform: TargetPlatform.windows, isWeb: false),
+          isTrue);
+      final pubspec = File('pubspec.yaml').readAsStringSync();
+      expect(pubspec, contains('video_player_win:'),
+          reason: 'claiming Windows decodes without the implementation is '
+              'how a released platform ends up throwing');
+    });
+
+    test('Linux cannot — video_player ships no implementation', () {
+      expect(
+          storedVideoCanDecodeInline(platform: TargetPlatform.linux, isWeb: false),
+          isFalse,
+          reason: 'linux has no video_player implementation; claiming '
+              'otherwise is how a released platform ends up throwing');
     });
 
     testWidgets('where it cannot decode, it says so honestly rather than '

@@ -1128,6 +1128,17 @@ class _ViewerVideoPlayerState extends State<_ViewerVideoPlayer> {
   Future<void>? _initialize;
   String? _error;
 
+  /// THE CLOCK FOLLOWS THE VIDEO, NOT THE BUTTONS.
+  ///
+  /// Nothing here listened to the controller, so the time readout and the
+  /// scrubber redrew only when a control called setState. Pressing play used
+  /// to be that call. Once the viewer began starting playback itself
+  /// (2026-09-25), the film ran with the clock frozen at 0:00 -- seen on
+  /// Windows, and equally true on every platform.
+  void _onPlayback() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1150,6 +1161,7 @@ class _ViewerVideoPlayerState extends State<_ViewerVideoPlayer> {
         MediaInitPhase.acquisition,
         () => controller.initialize(),
       ).then((_) async {
+        controller.addListener(_onPlayback);
         await controller.setLooping(true);
         // OPENING THE VIEWER IS THE REQUEST TO WATCH. Founder-observed
         // 2026-09-25: a tap opened the viewer and a second tap was still
@@ -1170,6 +1182,7 @@ class _ViewerVideoPlayerState extends State<_ViewerVideoPlayer> {
   void dispose() {
     final c = _controller;
     _controller = null;
+    c?.removeListener(_onPlayback);
     c?.dispose();
     super.dispose();
   }
