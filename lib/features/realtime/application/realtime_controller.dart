@@ -3699,6 +3699,20 @@ class RealtimeController extends StateNotifier<RealtimeState>
         _answerWatchdogRetried.clear();
         if (endedSessionId.isNotEmpty) {
           _repository.clearBundleCache(endedSessionId);
+          // THE FAR END HUNG UP, SO THE SYSTEM CALL ENDS HERE.
+          //
+          // This branch never told CallKit or Telecom. It did not have to: the
+          // incoming-call bridge saw the same terminal event, projected it as
+          // "stop ringing", and ended the system call as a side effect. That
+          // side effect is exactly what ended a CALLER's call the moment it
+          // was answered (2026-09-25), so ring-clears no longer touch calls
+          // placed here — and ending the call is said where the call ends.
+          unawaited(
+            IosCallKit.instance.reportEnded(endedSessionId, reason: 'ended'),
+          );
+          unawaited(
+            AndroidTelecom.instance.reportEnded(endedSessionId, reason: 'ended'),
+          );
         }
         unawaited(_mediaService.resetSessionMedia());
         state = _copyWithDetachedMediaState(

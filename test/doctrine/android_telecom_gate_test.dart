@@ -205,10 +205,14 @@ void main() {
       final bridge = _read(_bridge);
       // A second place that decides a call is over is a second place that can
       // be wrong about it.
-      expect(bridge.contains('AndroidTelecom.instance.reportEnded'), isTrue);
+      //
+      // 2026-09-25: the choke point reports a RING ending (`reportRingEnded`),
+      // which never ends a call this phone placed — the callee's accept was
+      // ending the caller's own call. Both systems still hear it from here.
+      expect(bridge.contains('AndroidTelecom.instance.reportRingEnded'), isTrue);
       expect(bridge.contains('AndroidTelecom.instance.reportConnected'), isTrue);
       expect(bridge.contains('AndroidTelecom.instance.reportIncoming'), isTrue);
-      expect(bridge.contains('IosCallKit.instance.reportEnded'), isTrue);
+      expect(bridge.contains('IosCallKit.instance.reportRingEnded'), isTrue);
     });
 
     test('accepting a call reports CONNECTED, never ended', () {

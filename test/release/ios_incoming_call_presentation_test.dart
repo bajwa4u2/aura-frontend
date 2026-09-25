@@ -191,7 +191,9 @@ void main() {
         'void _onSessionTerminated(String sessionId',
       );
       expect(body, contains('_guard.recordClear(sessionId)'));
-      expect(body, contains('IosCallKit.instance.reportEnded(sessionId'));
+      // A RING ending — `reportRingEnded` never ends a call placed here
+      // (2026-09-25: the callee's accept ended the caller's own CallKit call).
+      expect(body, contains('IosCallKit.instance.reportRingEnded(sessionId'));
       expect(
         body,
         contains('IosCallKit.instance.clearCallNotifications(sessionId)'),

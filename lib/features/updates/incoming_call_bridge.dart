@@ -247,11 +247,15 @@ class IncomingCallBridgeNotifier
   /// invents the difference.
   void _onSessionTerminated(String sessionId, {String reason = 'ended'}) {
     _guard.recordClear(sessionId);
-    IosCallKit.instance.reportEnded(sessionId, reason: reason);
+    // A RING ending — never the call this phone placed. `reportRingEnded`
+    // leaves a call placed here alone: on 2026-09-25 the callee's accept
+    // cleared "the ring" on the CALLER and ended the caller's own CallKit
+    // call, and with it all call audio. See IosCallKit._placed.
+    IosCallKit.instance.reportRingEnded(sessionId, reason: reason);
     // Track C — the same truth, told to Android's call stack. Reported from
     // this line rather than a new one, because a second place that decides a
     // call is over is a second place that can be wrong about it.
-    AndroidTelecom.instance.reportEnded(sessionId, reason: reason);
+    AndroidTelecom.instance.reportRingEnded(sessionId, reason: reason);
     // AND THE OTHER HALF OF THE RING. Reporting the CallKit call ended retires
     // the system call; it does nothing to the ordinary APNs banner delivered
     // beside it, which is why an iPhone kept showing "Incoming call…" for a

@@ -55,6 +55,35 @@ class AndroidTelecom {
   bool get isSupported =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
+  /// Calls THIS device placed, by session id.
+  ///
+  /// THE CALLER ENDED ITS OWN CALL THE MOMENT IT WAS ANSWERED. Root-caused
+  /// 2026-09-25 from an iPhone's system log (TestFlight 1.5.0 (40), iPhone
+  /// calling a Pixel): the Pixel accepted, the session's `participant.accepted`
+  /// reached the caller, the incoming-call bridge projected it as "stop
+  /// ringing", and its terminal choke point reported the system call ended.
+  /// The system call id is derived from the session id in BOTH directions, so
+  /// what it ended was the call this phone had placed:
+  ///
+  ///   05:34:35.854  Provider was asked to report that call ... ended ... reason 2
+  ///   05:34:35.854  callservicesd: Setting disconnected reason to remote hangup
+  ///   05:34:35.941  AudioToolboxServerHandleInterruption Stop Now ... Runner
+  ///
+  /// On iOS CallKit tore down the audio session: video carried on, audio died both
+  /// ways, and an audio-only call looked as if it never connected. Present
+  /// since outgoing calls were first reported (5ffed711, 1.4.2).
+  ///
+  /// A ring can only end on a phone that rang. [reportRingEnded] consults this
+  /// set; [reportEnded] — the call really ending — does not, and retires it.
+  final Set<String> _placed = <String>{};
+
+  /// Whether this device placed [sessionId]. For tests and diagnostics.
+  @visibleForTesting
+  bool placedHere(String sessionId) => _placed.contains(sessionId.trim());
+
+  @visibleForTesting
+  void resetPlacedForTest() => _placed.clear();
+
   Future<void> start() async {
     if (!isSupported || _started) return;
     _started = true;
@@ -111,8 +140,12 @@ class AndroidTelecom {
     String sessionId, {
     required String displayName,
     required bool video,
-  }) =>
-      _report('reportOutgoing', sessionId, displayName, video);
+  }) {
+    if (isSupported && sessionId.trim().isNotEmpty) {
+      _placed.add(sessionId.trim());
+    }
+    return _report('reportOutgoing', sessionId, displayName, video);
+  }
 
   Future<bool> _report(
     String method,
@@ -156,6 +189,7 @@ class AndroidTelecom {
   /// disconnect, and nothing invents it.
   Future<void> reportEnded(String sessionId, {required String reason}) async {
     if (!isSupported || sessionId.trim().isEmpty) return;
+    _placed.remove(sessionId.trim());
     try {
       await _channel.invokeMethod<void>('reportEnded', {
         'sessionId': sessionId,
@@ -164,5 +198,16 @@ class AndroidTelecom {
     } catch (e) {
       debugPrint('[telecom] reportEnded failed: $e');
     }
+  }
+
+  /// A RING is over. Ends the system call only if this device was ringing for
+  /// it — never a call it placed. See [_placed].
+  Future<void> reportRingEnded(String sessionId, {required String reason}) async {
+    if (_placed.contains(sessionId.trim())) {
+      debugPrint('[telecom] ring-clear ignored for a call placed here '
+          'session=$sessionId reason=$reason');
+      return;
+    }
+    await reportEnded(sessionId, reason: reason);
   }
 }
