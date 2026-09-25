@@ -64,6 +64,10 @@
             "comment": "Guest-reachable meeting entry. NOT /join/* - that path is declared by no router."
           },
           {
+            "/": "/i/*",
+            "comment": "Arrives by email: public booking pages, their cancel and reschedule links, and invitation claims (/i/:token)."
+          },
+          {
             "/": "/invite/*",
             "comment": "Invitation acceptance."
           },

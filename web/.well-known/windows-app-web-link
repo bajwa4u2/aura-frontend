@@ -10,6 +10,7 @@
     "/institutions/*",
     "/spaces/*",
     "/meetings/join/*",
+    "/i/*",
     "/invite/*",
     "/auth/*",
     "/verify-email",
