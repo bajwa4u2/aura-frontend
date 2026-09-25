@@ -66,6 +66,7 @@ import '../ui/aura_radius.dart';
 import '../ui/aura_space.dart';
 import '../ui/aura_surface.dart';
 import '../ui/aura_text.dart';
+import 'feed_video_autoplay.dart';
 import 'local_video_source_stub.dart'
     if (dart.library.io) 'local_video_source_io.dart'
     if (dart.library.html) 'local_video_source_web.dart';
@@ -189,11 +190,27 @@ class AuraVideoSurface extends StatefulWidget {
   State<AuraVideoSurface> createState() => _AuraVideoSurfaceState();
 }
 
-class _AuraVideoSurfaceState extends State<AuraVideoSurface> {
+class _AuraVideoSurfaceState extends State<AuraVideoSurface>
+    implements FeedAutoplayCandidate {
   VideoPlayerController? _controller;
   bool _preparing = false;
   bool _failed = false;
   bool _playing = false;
+
+  /// The feed this surface plays silently inside, if any. Only a surface that
+  /// hands off to the viewer, decodes on this platform and plays a stored
+  /// object joins one; composers and correspondence keep tap-to-play.
+  FeedVideoAutoplayScope? _autoplayScope;
+  bool _autoplaying = false;
+  Future<void>? _opening;
+
+  @override
+  BuildContext get candidateContext => context;
+
+  bool get _eligibleForAutoplay =>
+      widget.tap == AuraVideoTap.viewer &&
+      _canDecode &&
+      (widget.localPath ?? '').trim().isEmpty;
 
   bool get _hasServerPoster => (widget.posterUrl ?? '').trim().isNotEmpty;
   bool get _canDecode => widget.canDecode ?? storedVideoCanDecodeInline();
@@ -216,7 +233,56 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final scope = _eligibleForAutoplay
+        ? FeedVideoAutoplay.maybeOf(context)
+        : null;
+    if (identical(scope, _autoplayScope)) return;
+    _autoplayScope?.muted.removeListener(_applyMute);
+    _autoplayScope?.unregister(this);
+    _autoplayScope = scope;
+    scope?.muted.addListener(_applyMute);
+    scope?.register(this);
+  }
+
+  @override
+  void setAutoplaying(bool on) {
+    if (!mounted || on == _autoplaying) return;
+    setState(() => _autoplaying = on);
+    if (on) {
+      unawaited(_startInFeed());
+    } else {
+      unawaited(_controller?.pause());
+    }
+  }
+
+  Future<void> _startInFeed() async {
+    await _prepare();
+    final controller = _controller;
+    if (!mounted || !_autoplaying || controller == null) return;
+    // Volume BEFORE play: a browser only lets a video start on its own when
+    // it is already muted at the moment play is asked for.
+    await controller.setVolume(_feedMuted ? 0 : 1);
+    await controller.setLooping(true);
+    if (mounted && _autoplaying) await controller.play();
+  }
+
+  bool get _feedMuted => _autoplayScope?.muted.value ?? true;
+
+  void _applyMute() {
+    if (!mounted) return;
+    final controller = _controller;
+    if (_autoplaying && controller != null) {
+      unawaited(controller.setVolume(_feedMuted ? 0 : 1));
+    }
+    setState(() {});
+  }
+
+  @override
   void dispose() {
+    _autoplayScope?.muted.removeListener(_applyMute);
+    _autoplayScope?.unregister(this);
     _controller?.removeListener(_onPlaybackChanged);
     _controller?.dispose();
     super.dispose();
@@ -229,7 +295,26 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface> {
     if (playing != _playing) setState(() => _playing = playing);
   }
 
+  /// One opening at a time. The first-frame decode starts from initState and
+  /// autoplay can ask for the same controller moments later; without this the
+  /// second request opened a second decoder and leaked the first.
   Future<void> _prepare({bool thenPlay = false}) async {
+    final inflight = _opening;
+    if (inflight != null) {
+      await inflight;
+      if (thenPlay) await _controller?.play();
+      return;
+    }
+    final opening = _open(thenPlay: thenPlay);
+    _opening = opening;
+    try {
+      await opening;
+    } finally {
+      if (identical(_opening, opening)) _opening = null;
+    }
+  }
+
+  Future<void> _open({bool thenPlay = false}) async {
     final existing = _controller;
     if (existing != null) {
       if (thenPlay) await existing.play();
@@ -261,7 +346,14 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface> {
         final isLocal = candidate == local && local.isNotEmpty;
         final attempt = isLocal
             ? localVideoController(candidate)
-            : VideoPlayerController.networkUrl(Uri.parse(candidate));
+            : VideoPlayerController.networkUrl(
+                Uri.parse(candidate),
+                // A silent feed video must not take audio focus: on Android
+                // that paused whatever the person was already listening to.
+                videoPlayerOptions: _autoplayScope != null
+                    ? VideoPlayerOptions(mixWithOthers: true)
+                    : null,
+              );
         if (attempt == null) continue;
         try {
           await boundedMediaInit(
@@ -397,6 +489,8 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface> {
         if (!_playing) _playAffordance(),
         if (widget.showDuration && durationLabel.isNotEmpty)
           Positioned(top: 12, right: 12, child: _durationChip(durationLabel)),
+        if (_autoplayScope != null && _autoplaying && _controller != null)
+          Positioned(left: 4, bottom: 4, child: _muteControl()),
       ],
     );
 
@@ -437,6 +531,39 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface> {
           )
         : const Icon(Icons.videocam_outlined, color: AuraSurface.faint),
   );
+
+  /// Sound on or off for the feed. Its own tap target, so pressing it never
+  /// also opens the viewer behind it.
+  Widget _muteControl() {
+    final muted = _feedMuted;
+    return Semantics(
+      button: true,
+      label: muted ? 'Turn sound on' : 'Turn sound off',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _autoplayScope?.setMuted(!muted),
+        child: SizedBox(
+          width: 48,
+          height: 48,
+          child: Center(
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.6),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                muted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                size: 18,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _playAffordance() => Center(
     child: Container(

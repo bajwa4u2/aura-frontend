@@ -26,6 +26,7 @@ import 'features/admin/areas/subject_person_area.dart';
 import 'features/admin/areas/subjects_area.dart';
 import 'features/admin/areas/work_area.dart';
 import 'core/continuation/native_continuation.dart';
+import 'core/media/feed_video_autoplay.dart';
 import 'core/continuation/windows_activation.dart';
 import 'app/route_targets.dart';
 import 'core/auth/admin_access_provider.dart';
@@ -1052,13 +1053,20 @@ final routerProvider = Provider<GoRouter>((ref) {
           return AppShell(child: child);
         },
         routes: [
-          GoRoute(path: '/', builder: (_, __) => const PublicHomeScreen()),
+          GoRoute(
+            path: '/',
+            // Feed videos play silently while in view — founder direction
+            // 2026-09-25, for the public, member and institution feeds.
+            builder: (_, __) =>
+                const FeedVideoAutoplay(child: PublicHomeScreen()),
+          ),
           GoRoute(path: '/auth', redirect: (_, __) => '/login'),
 
           // Public routes
           GoRoute(
             path: '/public',
-            builder: (_, __) => const PublicHomeScreen(),
+            builder: (_, __) =>
+                const FeedVideoAutoplay(child: PublicHomeScreen()),
           ),
           GoRoute(path: '/mission', builder: (_, __) => const MissionScreen()),
           GoRoute(
@@ -1431,7 +1439,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
 
           // Member + institution routes
-          GoRoute(path: '/home', builder: (_, __) => const MemberHomeScreen()),
+          GoRoute(
+            path: '/home',
+            builder: (_, __) =>
+                const FeedVideoAutoplay(child: MemberHomeScreen()),
+          ),
 
           // ── Meetings ─────────────────────────────────────────────────
           // MEETINGS ARE AN INSTITUTIONAL DOMAIN (founder ruling,
@@ -2602,8 +2614,9 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/institution/:institutionId/explore',
             builder: (context, state) => InstitutionRouteScope(
               address: state.pathParameters['institutionId'],
-              builder: (institutionId) =>
-                  InstitutionExploreScreen(institutionId: institutionId),
+              builder: (institutionId) => FeedVideoAutoplay(
+                child: InstitutionExploreScreen(institutionId: institutionId),
+              ),
             ),
           ),
           GoRoute(

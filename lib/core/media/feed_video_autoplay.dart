@@ -7,8 +7,10 @@
 ///
 /// The rules, and why each exists:
 ///
-///   * SILENT. A browser refuses sound nobody asked for, and a feed is read,
-///     not listened to. The viewer — one tap away — plays with sound.
+///   * SILENT UNTIL ASKED. A browser refuses sound nobody asked for, and a
+///     feed is read, not listened to. The speaker control on a playing video
+///     turns sound on for the whole feed until it is turned off again; the
+///     viewer — one tap away — always plays with sound.
 ///   * ONE AT A TIME. Several moving pictures compete for the eye; the card
 ///     most in view plays and every other one rests on its first frame.
 ///   * ONLY WHILE SEEN. At least [kFeedAutoplayVisibleFraction] of the video
@@ -22,6 +24,7 @@
 /// exactly as they always have.
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
@@ -88,6 +91,11 @@ class FeedVideoAutoplay extends StatefulWidget {
 abstract class FeedVideoAutoplayScope {
   void register(FeedAutoplayCandidate candidate);
   void unregister(FeedAutoplayCandidate candidate);
+
+  /// Whether feed videos play silently. One setting for the feed, not one per
+  /// card: a person who turned sound on expects the next video to have it too.
+  ValueListenable<bool> get muted;
+  void setMuted(bool muted);
 }
 
 class _FeedVideoAutoplayState extends State<FeedVideoAutoplay>
@@ -95,6 +103,13 @@ class _FeedVideoAutoplayState extends State<FeedVideoAutoplay>
   final Set<FeedAutoplayCandidate> _candidates = <FeedAutoplayCandidate>{};
   FeedAutoplayCandidate? _active;
   bool _evaluationPending = false;
+  final ValueNotifier<bool> _muted = ValueNotifier<bool>(true);
+
+  @override
+  ValueListenable<bool> get muted => _muted;
+
+  @override
+  void setMuted(bool muted) => _muted.value = muted;
 
   bool _tickerEnabled = true;
   bool _routeIsCurrent = true;
@@ -128,6 +143,7 @@ class _FeedVideoAutoplayState extends State<FeedVideoAutoplay>
   @override
   void dispose() {
     _lifecycle.dispose();
+    _muted.dispose();
     _candidates.clear();
     _active = null;
     super.dispose();
