@@ -1151,6 +1151,12 @@ class _ViewerVideoPlayerState extends State<_ViewerVideoPlayer> {
         () => controller.initialize(),
       ).then((_) async {
         await controller.setLooping(true);
+        // OPENING THE VIEWER IS THE REQUEST TO WATCH. Founder-observed
+        // 2026-09-25: a tap opened the viewer and a second tap was still
+        // needed on its own play button. A browser that refuses sound here
+        // rejects the promise quietly and the play button stands, exactly
+        // as before, so starting can never cost the person anything.
+        if (mounted) await controller.play();
         if (mounted) setState(() {});
       }).catchError((_) {
         if (mounted) setState(() => _error = 'This video could not be played.');
