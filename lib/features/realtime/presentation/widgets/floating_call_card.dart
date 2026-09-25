@@ -16,6 +16,7 @@ import 'dart:ui' as ui show FontFeature;
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/media/recording_time.dart';
 import '../../../../core/ui/aura_platform_components.dart';
 import '../../../../core/ui/aura_radius.dart';
 import '../../../../core/ui/aura_space.dart';
@@ -33,11 +34,11 @@ class FloatingCallCard extends StatelessWidget {
     required this.cameraOn,
     required this.participants,
     required this.startedAt,
-    required this.isOwner,
+    required this.joinedHere,
     required this.onReturn,
     required this.onEnd,
     required this.isEnding,
-    this.isHost = true,
+    this.mayEndForEveryone = true,
     required this.onPanUpdate,
     this.remoteName,
     this.picture,
@@ -49,7 +50,11 @@ class FloatingCallCard extends StatelessWidget {
   final bool cameraOn;
   final List<RealtimeParticipant> participants;
   final DateTime? startedAt;
-  final bool isOwner;
+
+  /// True when this tab owns the call's media and is joined to it; false for
+  /// the passive view of a call running in another tab. Named for what it is:
+  /// it was `joinedHere`, which read as a role and is not one.
+  final bool joinedHere;
   final VoidCallback? onReturn;
   final VoidCallback? onEnd;
   final bool isEnding;
@@ -60,8 +65,9 @@ class FloatingCallCard extends StatelessWidget {
   /// group call or a meeting only the host may, and everyone else leaves.
   ///
   /// This changes the word and the icon, not the handler: `onEnd` is the same
-  /// act, and the server applies the same rule.
-  final bool isHost;
+  /// act, and the server applies the same rule. A capability, not a role — it
+  /// was named `mayEndForEveryone`, though a non-host in a two-person call may end it.
+  final bool mayEndForEveryone;
   final String? remoteName;
 
   /// The other person, already built.
@@ -167,7 +173,7 @@ class FloatingCallCard extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _LiveDot(active: isOwner),
+                _LiveDot(active: joinedHere),
                 const SizedBox(width: AuraSpace.s6),
                 _DurationDisplay(startedAt: startedAt),
               ],
@@ -181,7 +187,7 @@ class FloatingCallCard extends StatelessWidget {
         // for on — two more pieces of furniture reporting the unremarkable. A
         // badge appears here only when something is OFF, which is the only
         // case where the viewer needs telling.
-        if (isOwner && (!micOn || (isVideo && !cameraOn)))
+        if (joinedHere && (!micOn || (isVideo && !cameraOn)))
           Positioned(
             top: AuraSpace.s8,
             right: AuraSpace.s8,
@@ -248,7 +254,7 @@ class FloatingCallCard extends StatelessWidget {
   Widget _buildBar(BuildContext context) {
     final label =
         remoteName ??
-        (isOwner
+        (joinedHere
             ? (isVideo ? 'Video call' : 'Audio call')
             : 'Call in another tab');
 
@@ -288,10 +294,10 @@ class FloatingCallCard extends StatelessWidget {
                             const SizedBox(height: 1),
                             Row(
                               children: [
-                                _LiveDot(active: isOwner),
+                                _LiveDot(active: joinedHere),
                                 const SizedBox(width: AuraSpace.s6),
                                 _DurationDisplay(startedAt: startedAt),
-                                if (isOwner && !micOn) ...[
+                                if (joinedHere && !micOn) ...[
                                   const SizedBox(width: AuraSpace.s6),
                                   const _OffBadge(
                                     icon: Icons.mic_off_rounded,
@@ -330,10 +336,12 @@ class FloatingCallCard extends StatelessWidget {
           ),
         if (onEnd != null)
           _RoundControl(
-            icon: isHost ? Icons.call_end_rounded : Icons.logout_rounded,
+            icon: mayEndForEveryone
+                ? Icons.call_end_rounded
+                : Icons.logout_rounded,
             semanticLabel: isEnding
-                ? (isHost ? 'Ending call' : 'Leaving call')
-                : (isHost ? 'End call' : 'Leave call'),
+                ? (mayEndForEveryone ? 'Ending call' : 'Leaving call')
+                : (mayEndForEveryone ? 'End call' : 'Leave call'),
             danger: true,
             onTap: isEnding ? null : onEnd,
           ),
@@ -523,19 +531,16 @@ class _DurationDisplayState extends State<_DurationDisplay> {
     super.dispose();
   }
 
-  String _format(DateTime? startedAt) {
-    if (startedAt == null) return '--:--';
-    final diff = DateTime.now().difference(startedAt);
-    final h = diff.inHours;
-    final m = diff.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = diff.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return h > 0 ? '$h:$m:$s' : '$m:$s';
-  }
-
   @override
   Widget build(BuildContext context) {
+    // One clock grammar for elapsed time: the same `m:ss` / `h:mm:ss` a voice
+    // note shows while recording. This card used to declare its own
+    // zero-padded formatter, which the C0 temporal gate forbids on a screen.
+    final startedAt = widget.startedAt;
     return Text(
-      _format(widget.startedAt),
+      startedAt == null
+          ? '--:--'
+          : formatRecordingElapsed(DateTime.now().difference(startedAt)),
       style: AuraText.small.copyWith(
         color: AuraSurface.muted,
         fontFeatures: const [ui.FontFeature.tabularFigures()],

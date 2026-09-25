@@ -45,7 +45,11 @@ R1 1 lib/features/public/widgets/reply_unit.dart
 # ratchet had been failing on this unrecorded reduction, which is the gate
 # working as designed: a baseline that overstates drift is as untrue as one
 # that understates it.
-R1 13 lib/features/realtime/presentation/widgets/floating_call_widget.dart
+# 2026-09-25 floating call: 13 -> 7. The PiP card was extracted to
+# floating_call_card.dart, and its two booleans were renamed to what they
+# are: joinedHere (this tab owns the media) and mayEndForEveryone (a
+# capability). Neither was ever a role.
+R1 7 lib/features/realtime/presentation/widgets/floating_call_widget.dart
 R1 4 lib/router.dart
 
 # -- R2 -- 3 files / 6 sites

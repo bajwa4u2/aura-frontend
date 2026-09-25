@@ -537,7 +537,7 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
         cameraOn: info.cameraOn,
         participants: info.participants,
         startedAt: info.startedAt,
-        isOwner: info.isOwner,
+        joinedHere: info.isOwner,
         remoteName: info.remoteName,
         onPanUpdate: _onPanUpdate,
         // RETURNING IS ALWAYS AVAILABLE. Ending is not.
@@ -562,7 +562,7 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
         // tab holds the media was being offered End, and pressing it asked the
         // server to end the HOST's session. The card now says which act it is.
         onEnd: info.isOwner ? _endCallFromPip : null,
-        isHost: info.isHost,
+        mayEndForEveryone: info.isHost,
         isEnding: liveState.isEndingCall,
         // The card lays out a picture; only this file knows the picture is a
         // WebRTC surface.

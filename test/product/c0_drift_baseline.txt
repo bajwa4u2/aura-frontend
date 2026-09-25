@@ -81,7 +81,8 @@ G7 1 lib/features/announcements/presentation/announcements_screen.dart
 G7 1 lib/features/institutions/activity/institution_activity_screen.dart
 G7 1 lib/features/meetings/presentation/meeting_lifecycle_presenter.dart
 G7 1 lib/features/notifications/presentation/notifications_screen.dart
-G7 1 lib/features/realtime/presentation/widgets/floating_call_widget.dart
+# 2026-09-25 floating call widget: 1 -> 0. The PiP clock now uses the shared
+# elapsed-time grammar (formatRecordingElapsed) in floating_call_card.dart.
 G7 1 lib/widgets/note_card.dart
 
 # -- G5 -- surfaces constructing the state primitives directly ----------------
