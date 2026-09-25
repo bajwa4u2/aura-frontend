@@ -287,6 +287,72 @@ void main() {
     expect(returns, 2);
   });
 
+  testWidgets('no yellow fallback underline when mounted WITHOUT a Material',
+      (tester) async {
+    // THE MOUNT THE PRODUCT ACTUALLY USES.
+    //
+    // `AuraIncomingLiveLayer` puts this card in a bare `Stack` beside the
+    // app's child — no Scaffold, no Material. Flutter answers that with
+    // `DefaultTextStyle.fallback()`, whose decoration is a YELLOW DOUBLE
+    // UNDERLINE, and our styles inherit it because they set colour and weight
+    // and never `decoration`.
+    //
+    // Founder-observed on a live call: the elapsed time reading `02:39`
+    // underlined in yellow over the video.
+    //
+    // Every other test in this file renders inside a `Scaffold`, which
+    // PROVIDES a Material — so they were all kinder than the real mount and
+    // none of them could see this. This one deliberately is not.
+    tester.view.physicalSize = const Size(420, 320);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: Stack(
+          children: [
+            const SizedBox.expand(),
+            Center(
+              child: FloatingCallCard(
+                composition: FloatingCallComposition.bar,
+                isVideo: false,
+                micOn: true,
+                cameraOn: false,
+                participants: people(2),
+                startedAt: DateTime.now().subtract(const Duration(minutes: 2)),
+                isOwner: true,
+                remoteName: 'Iffat S. Chaudhry',
+                onReturn: () {},
+                onEnd: () {},
+                isEnding: false,
+                onPanUpdate: (_) {},
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 32));
+
+    final texts = tester.widgetList<Text>(find.byType(Text)).toList();
+    expect(texts, isNotEmpty, reason: 'the card rendered no text at all');
+
+    for (final t in texts) {
+      final element = find.text(t.data ?? '').evaluate().isEmpty
+          ? null
+          : find.text(t.data ?? '').evaluate().first;
+      if (element == null) continue;
+      final resolved = DefaultTextStyle.of(element).style.merge(t.style);
+      expect(
+        resolved.decoration ?? TextDecoration.none,
+        TextDecoration.none,
+        reason: 'text "\${t.data}" carries a decoration it never asked for — '
+            'the card has lost its Material ancestor again',
+      );
+    }
+  });
+
   testWidgets('a press on the controls does NOT drag the card', (tester) async {
     // The other half of C-4: the drag surface used to cover the buttons, so a
     // finger that drifted while pressing either did nothing or slid the card

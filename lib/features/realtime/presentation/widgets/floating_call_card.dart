@@ -84,14 +84,37 @@ class FloatingCallCard extends StatelessWidget {
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AuraRadius.xl),
-        child: SizedBox(
-          width: card.width,
-          height: card.height,
-          child: floatingCallShowsPicture(composition)
-              ? _buildPicture(context)
-              : _buildBar(context),
+      // THE CARD IS MOUNTED OUTSIDE ANY MATERIAL, AND TEXT NOTICED.
+      //
+      // `AuraIncomingLiveLayer` mounts this in a bare `Stack` beside the app's
+      // child — there is no `Scaffold` and no `Material` above it. Flutter
+      // answers that with `DefaultTextStyle.fallback()`, whose decoration is a
+      // YELLOW DOUBLE UNDERLINE, and every `Text` here inherits it: our styles
+      // set colour and weight and never `decoration`, so the fallback's wins.
+      //
+      // Founder-observed on a live call, 2026-09-24: the elapsed time reading
+      // `02:39` underlined in yellow over the video. It is very likely part of
+      // what "odd and ugly" meant about the old card too — the same mount, the
+      // same missing ancestor.
+      //
+      // `MaterialType.transparency` supplies the theme's text style and ink
+      // without painting anything, so nothing about the card's appearance
+      // changes except the decoration that should never have been there.
+      //
+      // Worth noting why the frames test missed it: it renders the card inside
+      // a `Scaffold`, which PROVIDES a Material. The test was kinder than the
+      // real mount — so it now renders one case without one.
+      child: Material(
+        type: MaterialType.transparency,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AuraRadius.xl),
+          child: SizedBox(
+            width: card.width,
+            height: card.height,
+            child: floatingCallShowsPicture(composition)
+                ? _buildPicture(context)
+                : _buildBar(context),
+          ),
         ),
       ),
     );
@@ -363,33 +386,35 @@ class _RoundControl extends StatelessWidget {
       button: true,
       enabled: !disabled,
       label: semanticLabel,
-      child: Tooltip(
-        message: semanticLabel,
-        child: MouseRegion(
-          cursor: disabled
-              ? SystemMouseCursors.basic
-              : SystemMouseCursors.click,
-          child: GestureDetector(
-            onTap: onTap,
-            // A TRANSPARENT MISS IS STILL A MISS. Without this, only the
-            // painted disc answers a tap and the slack around it — which is
-            // the entire point of the 48px target — would swallow the press.
-            behavior: HitTestBehavior.opaque,
-            child: SizedBox(
-              width: kFloatingControlTapTarget,
-              height: kFloatingControlTapTarget,
-              child: Center(
-                child: Opacity(
-                  opacity: disabled ? 0.5 : 1.0,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: bg,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(icon, size: 16, color: fg),
-                  ),
+      // NO TOOLTIP HERE, DELIBERATELY.
+      //
+      // `Tooltip` requires an `Overlay` ancestor, and this card is mounted in
+      // a bare `Stack` by `AuraIncomingLiveLayer` — there is none. A tooltip
+      // therefore throws while BUILDING, and the founder saw exactly that on a
+      // live call: hovering Return replaced the control with an error.
+      //
+      // `Semantics` above already carries the label for anyone using a screen
+      // reader, which is what the tooltip was there for. The nicety is not
+      // worth a control that breaks when you point at it.
+      child: MouseRegion(
+        cursor: disabled ? SystemMouseCursors.basic : SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: onTap,
+          // A TRANSPARENT MISS IS STILL A MISS. Without this, only the
+          // painted disc answers a tap and the slack around it — which is
+          // the entire point of the 48px target — would swallow the press.
+          behavior: HitTestBehavior.opaque,
+          child: SizedBox(
+            width: kFloatingControlTapTarget,
+            height: kFloatingControlTapTarget,
+            child: Center(
+              child: Opacity(
+                opacity: disabled ? 0.5 : 1.0,
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(color: bg, shape: BoxShape.circle),
+                  child: Icon(icon, size: 16, color: fg),
                 ),
               ),
             ),
