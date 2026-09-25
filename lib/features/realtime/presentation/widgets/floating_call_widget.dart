@@ -8,6 +8,7 @@ import '../../../../core/services/call_presence_bridge.dart';
 import '../../application/realtime_providers.dart';
 import '../../domain/realtime_enums.dart';
 import '../../domain/realtime_models.dart';
+import '../../../../core/auth/session_providers.dart';
 import '../../../../core/navigation/navigation_authority.dart';
 import '../../../../router.dart';
 import '../../domain/realtime_state.dart';
@@ -34,6 +35,7 @@ class _CallInfo {
     required this.startedAt,
     required this.participants,
     required this.isOwner,
+    required this.isHost,
     this.remoteRenderer,
     this.remoteName,
   });
@@ -60,6 +62,21 @@ class _CallInfo {
   /// True when this tab owns and is joined to the call.
   /// False when the call is active in another tab (passive view only).
   final bool isOwner;
+
+  /// WHETHER THIS PERSON MAY END THE CALL, WHICH IS NOT THE SAME QUESTION.
+  ///
+  /// The card offered a red End to anyone whose tab owned the media —
+  /// `isOwner` — and owning the media is not authority over the call. A callee
+  /// pressing it asked the server to end somebody else's session.
+  ///
+  /// Founder-observed 2026-09-24: *"mrs bajwa was the caller. i end from my
+  /// side it reside in top banner not ended"*. The banner was RIGHT: the host
+  /// was still in the call, so it had not ended. The card was wrong to have
+  /// offered the act at all.
+  ///
+  /// The room has always drawn this line — `isEndCall: isHost`, with a
+  /// separate Leave button beside it. The card simply never asked.
+  final bool isHost;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -199,6 +216,10 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
     return null;
   }
 
+  /// Who I am, for the host comparison. Empty when identity has not settled,
+  /// which resolves to "not the host" — the safe direction.
+  String _meId() => ref.read(currentUserIdProvider).trim();
+
   /// The name the bar composition says out loud.
   ///
   /// Prefers whoever has a picture, then the first other present participant —
@@ -255,6 +276,15 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
             : session.startedAt,
         participants: local.participants.where((p) => p.isPresent).toList(),
         isOwner: true,
+        // Either the host, or one of exactly two people in a call — see
+        // `mayEndForEveryone`.
+        isHost: mayEndForEveryone(
+          isHost: _meId().isNotEmpty &&
+              (session.startedByUserId ?? '') == _meId(),
+          isMeeting: session.surfaceType == RealtimeSurfaceType.meeting,
+          participantCount:
+              local.participants.map((p) => p.userId).toSet().length,
+        ),
         remoteRenderer: _remotePicture(local)?.renderer,
         remoteName: _remoteName(local),
       );
@@ -275,6 +305,9 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
       startedAt: presence.startedAt,
       participants: const [],
       isOwner: false,
+      // A passive cross-tab card offers no End at all, so this is moot; false
+      // is the safe answer either way.
+      isHost: false,
       remoteRenderer: null,
       remoteName: null,
     );
@@ -524,7 +557,12 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
         onReturn: () => _returnToCall(info),
         // A1: passive (cross-tab) PiPs cannot end the call; only the
         // owner tab has the media session and authoritative state.
+        //
+        // AND OWNING THE MEDIA IS NOT AUTHORITY OVER THE CALL. A callee whose
+        // tab holds the media was being offered End, and pressing it asked the
+        // server to end the HOST's session. The card now says which act it is.
         onEnd: info.isOwner ? _endCallFromPip : null,
+        isHost: info.isHost,
         isEnding: liveState.isEndingCall,
         // The card lays out a picture; only this file knows the picture is a
         // WebRTC surface.
@@ -564,6 +602,35 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
 /// answers across a full [kFloatingControlTapTarget] square, and it carries a
 /// semantic label so the word that used to be printed beside it is still
 /// available to anyone who needs it read out.
+/// WHO MAY END A CALL FOR EVERYONE, as a rule a test can hold.
+///
+/// The card offered End to anyone whose tab owned the media, and owning the
+/// media is not authority over the call. The server refused those ends
+/// outright, so a callee could press End and watch nothing happen — founder,
+/// 2026-09-24: *"i end from my side it reside in top banner not ended"*.
+///
+/// Two people in a call are symmetrical, and a telephone has never worked any
+/// other way: whoever hangs up, the call is over. So either of them may end
+/// it.
+///
+/// A group call or a meeting is NOT symmetrical. One attendee of five pressing
+/// End would hang up on the other four, so there ending belongs to the host
+/// and everyone else leaves. The same rule is enforced server-side in
+/// `RealtimeSessionService.peerMayEndSession`; this exists so the interface
+/// offers the act only where it will be honoured.
+bool mayEndForEveryone({
+  required bool isHost,
+  required bool isMeeting,
+  required int participantCount,
+}) {
+  if (isHost && !isMeeting) return true;
+  if (isMeeting) return isHost;
+  // A call that has not populated its roster yet is treated as two-party: the
+  // alternative is a card that refuses to hang up a call with one person in
+  // it, which is the worse failure.
+  return participantCount <= 2;
+}
+
 /// Whether the current address IS a full call surface.
 ///
 /// The PiP exists to represent a call the person is NOT looking at. When the

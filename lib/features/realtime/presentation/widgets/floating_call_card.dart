@@ -37,6 +37,7 @@ class FloatingCallCard extends StatelessWidget {
     required this.onReturn,
     required this.onEnd,
     required this.isEnding,
+    this.isHost = true,
     required this.onPanUpdate,
     this.remoteName,
     this.picture,
@@ -52,6 +53,15 @@ class FloatingCallCard extends StatelessWidget {
   final VoidCallback? onReturn;
   final VoidCallback? onEnd;
   final bool isEnding;
+
+  /// Whether this person may end the call FOR EVERYONE, as opposed to leaving
+  /// it. See `mayEndForEveryone` — the host always may; in a two-person call
+  /// either side may, because a telephone has never worked otherwise; in a
+  /// group call or a meeting only the host may, and everyone else leaves.
+  ///
+  /// This changes the word and the icon, not the handler: `onEnd` is the same
+  /// act, and the server applies the same rule.
+  final bool isHost;
   final String? remoteName;
 
   /// The other person, already built.
@@ -320,8 +330,10 @@ class FloatingCallCard extends StatelessWidget {
           ),
         if (onEnd != null)
           _RoundControl(
-            icon: Icons.call_end_rounded,
-            semanticLabel: isEnding ? 'Ending call' : 'End call',
+            icon: isHost ? Icons.call_end_rounded : Icons.logout_rounded,
+            semanticLabel: isEnding
+                ? (isHost ? 'Ending call' : 'Leaving call')
+                : (isHost ? 'End call' : 'Leave call'),
             danger: true,
             onTap: isEnding ? null : onEnd,
           ),
