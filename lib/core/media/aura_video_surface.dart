@@ -243,41 +243,63 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface> {
     }
     setState(() => _preparing = true);
     try {
-      // A local source is preferred when present: during compose the object
-      // has no server URL yet, and after upload the caller stops passing one.
-      final controller = local.isNotEmpty
-          ? localVideoController(local)
-          : VideoPlayerController.networkUrl(Uri.parse(url));
-      if (controller == null) {
+      // PREFERRED, THEN FALLBACK — not one source chosen and lived with.
+      //
+      // A local copy is tried first: it is the same object, costs no network,
+      // and during compose the stored `Media.url` is a raw origin address that
+      // answers 401 to an anonymous reader, so it is also the ONLY one that
+      // works there. But a local handle can go stale — a blob URL can be
+      // revoked — and the earlier rule of picking exactly one source meant a
+      // stale handle became a permanently dead tile even when the server had
+      // the bytes. So the stored object remains the second candidate.
+      final candidates = <String>[
+        if (local.isNotEmpty) local,
+        if (url.isNotEmpty && url != local) url,
+      ];
+      VideoPlayerController? controller;
+      for (final candidate in candidates) {
+        final isLocal = candidate == local && local.isNotEmpty;
+        final attempt = isLocal
+            ? localVideoController(candidate)
+            : VideoPlayerController.networkUrl(Uri.parse(candidate));
+        if (attempt == null) continue;
+        try {
+          await boundedMediaInit(
+            MediaInitPhase.acquisition,
+            () => attempt.initialize(),
+          );
+          controller = attempt;
+          break;
+        } catch (_) {
+          // Release the failed attempt before trying the next address;
+          // otherwise a retry leaks a controller per failure.
+          await attempt.dispose();
+        }
+      }
+      final opened = controller;
+      if (opened == null) {
         setState(() {
           _failed = true;
           _preparing = false;
         });
         return;
       }
-      // BOUNDED. A stalled load is silence, not an error, so without this the
-      // surface would sit in `_preparing` forever instead of reaching the
-      // honest failure state below.
-      await boundedMediaInit(
-        MediaInitPhase.acquisition,
-        () => controller.initialize(),
-      );
       // Some platforms present nothing until a position is requested, so the
       // poster would be a black rectangle rather than a frame of the video.
       await boundedMediaInit(
         MediaInitPhase.decode,
-        () => controller.seekTo(Duration.zero),
+        () => opened.seekTo(Duration.zero),
       );
       if (!mounted) {
-        await controller.dispose();
+        await opened.dispose();
         return;
       }
-      controller.addListener(_onPlaybackChanged);
+      opened.addListener(_onPlaybackChanged);
       setState(() {
-        _controller = controller;
+        _controller = opened;
         _preparing = false;
       });
-      if (thenPlay) await controller.play();
+      if (thenPlay) await opened.play();
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -405,49 +427,54 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface> {
   /// Neutral ground while a frame is being produced, or where none can be.
   /// It keeps the media's identity as video and never implies damage.
   Widget _placeholder() => Container(
-        color: AuraSurface.subtle,
-        alignment: Alignment.center,
-        child: _preparing
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Icon(Icons.videocam_outlined, color: AuraSurface.faint),
-      );
+    color: AuraSurface.subtle,
+    alignment: Alignment.center,
+    child: _preparing
+        ? const SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : const Icon(Icons.videocam_outlined, color: AuraSurface.faint),
+  );
 
   Widget _playAffordance() => Center(
-        child: Container(
-          width: 64,
-          height: 64,
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.58),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(Icons.play_arrow_rounded,
-              size: 36, color: Colors.white),
-        ),
-      );
+    child: Container(
+      width: 64,
+      height: 64,
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.58),
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(
+        Icons.play_arrow_rounded,
+        size: 36,
+        color: Colors.white,
+      ),
+    ),
+  );
 
   Widget _durationChip(String label) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(AuraRadius.pill),
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: Colors.black.withValues(alpha: 0.6),
+      borderRadius: BorderRadius.circular(AuraRadius.pill),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.videocam, size: 14, color: Colors.white),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: AuraText.small.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.videocam, size: 14, color: Colors.white),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: AuraText.small
-                  .copyWith(color: Colors.white, fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-      );
+      ],
+    ),
+  );
 }
 
 /// Honest tile for a video that cannot be reached or decoded.
@@ -491,7 +518,8 @@ class AuraVideoUnavailableTile extends StatelessWidget {
             // ANSWER TO THE ROOM GIVEN, rather than declaring a minimum the
             // parent has already refused. A `minHeight` larger than the
             // incoming `maxHeight` is not a floor — it is an overflow.
-            final compact = constraints.maxHeight < _compactBelow ||
+            final compact =
+                constraints.maxHeight < _compactBelow ||
                 constraints.maxWidth < _compactBelow;
 
             if (compact) {
@@ -518,8 +546,11 @@ class AuraVideoUnavailableTile extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.videocam_off_outlined,
-                      color: AuraSurface.faint, size: 32),
+                  const Icon(
+                    Icons.videocam_off_outlined,
+                    color: AuraSurface.faint,
+                    size: 32,
+                  ),
                   const SizedBox(height: AuraSpace.s8),
                   Flexible(
                     child: Text(
@@ -584,19 +615,19 @@ class AuraVideoMedia extends ConsumerWidget {
   final bool fill;
 
   Widget _surface(String url) => AuraVideoSurface(
-        url: url,
-        posterUrl: posterUrl,
-        intrinsicWidth: intrinsicWidth,
-        intrinsicHeight: intrinsicHeight,
-        durationMs: durationMs,
-        fileName: fileName,
-        maxHeight: maxHeight,
-        fill: fill,
-        borderRadius: borderRadius,
-        tap: tap,
-        onOpenViewer: onOpenViewer,
-        showDuration: showDuration,
-      );
+    url: url,
+    posterUrl: posterUrl,
+    intrinsicWidth: intrinsicWidth,
+    intrinsicHeight: intrinsicHeight,
+    durationMs: durationMs,
+    fileName: fileName,
+    maxHeight: maxHeight,
+    fill: fill,
+    borderRadius: borderRadius,
+    tap: tap,
+    onOpenViewer: onOpenViewer,
+    showDuration: showDuration,
+  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -607,11 +638,15 @@ class AuraVideoMedia extends ConsumerWidget {
     if (id.isEmpty) {
       return direct.isEmpty
           ? AuraVideoUnavailableTile(
-              fileName: fileName, borderRadius: borderRadius)
+              fileName: fileName,
+              borderRadius: borderRadius,
+            )
           : _surface(direct);
     }
 
-    return ref.watch(mediaUrlProvider(id)).when(
+    return ref
+        .watch(mediaUrlProvider(id))
+        .when(
           data: (result) {
             final url = result.url.trim();
             if (url.isEmpty) {

@@ -95,16 +95,15 @@ class StoredMediaRequest {
 }
 
 /// A candidate presentation. Returning null means "not mine".
-typedef StoredMediaPresenter = Widget? Function(
-  BuildContext context,
-  StoredMediaRequest request,
-);
+typedef StoredMediaPresenter =
+    Widget? Function(BuildContext context, StoredMediaRequest request);
 
 /// The presenter chain.
 class AuraStoredMediaRegistry {
   AuraStoredMediaRegistry._();
 
-  static final List<StoredMediaPresenter> _registered = <StoredMediaPresenter>[];
+  static final List<StoredMediaPresenter> _registered =
+      <StoredMediaPresenter>[];
 
   /// Add a presenter ahead of the built-ins.
   static void register(StoredMediaPresenter presenter) =>
@@ -159,7 +158,8 @@ Widget? _videoPresenter(BuildContext context, StoredMediaRequest r) {
   final media = r.media;
 
   final tap = r.playsInline ? AuraVideoTap.inline : AuraVideoTap.viewer;
-  final maxHeight = r.maxHeight ??
+  final maxHeight =
+      r.maxHeight ??
       switch (r.context) {
         StoredMediaContext.feed => 360.0,
         StoredMediaContext.detail => 520.0,
@@ -167,11 +167,22 @@ Widget? _videoPresenter(BuildContext context, StoredMediaRequest r) {
         StoredMediaContext.compose => 320.0,
       };
 
-  // Before there is a fetchable server URL, the local source is the only
-  // truth — and that stays true WHILE the upload is in flight, not just
-  // before it starts. Keying this on state alone would blank the preview the
-  // moment someone pressed send.
-  if (media.hasLocalPath && !media.hasSource) {
+  // A LOCAL COPY WINS WHENEVER THERE IS ONE — including AFTER the upload.
+  //
+  // This required `!hasSource`, on the assumption that once the server had the
+  // object its URL was the better source. It is not: `Media.url` is a raw R2
+  // origin address (`buildPublicUrl`), and since the private-origin cutover
+  // that host answers 401 to an anonymous reader. A <video> element cannot send
+  // an Authorization header, so the moment the upload completed the preview
+  // swapped a working local blob for a URL that can only fail — which is
+  // exactly what the founder saw: "falling back to broke only after upload".
+  //
+  // Governed bytes reach a viewer through the delivery door, resolved per
+  // request against real identity. They never reach one through this column.
+  // Images never showed the fault because `_imagePresenter` tries
+  // `hasLocalBytes` first; video had no equivalent, so it went straight out to
+  // the network.
+  if (media.hasLocalPath) {
     return AuraVideoSurface(
       localPath: media.localPath,
       posterUrl: media.posterUrl,
@@ -258,13 +269,12 @@ Widget? _imagePresenter(BuildContext context, StoredMediaRequest r) {
 /// Documents, archives and anything unrecognised keep their real identity and
 /// are offered the action appropriate to their kind.
 Widget _identityCard(StoredMediaRequest r) => AuraAttachmentCard(
-      kind: r.media.kind,
-      fileName: r.media.fileName,
-      sizeBytes: r.media.sizeBytes,
-      onOpen: r.onOpenFile,
-      unavailableReason:
-          r.media.isReachable ? null : 'Unavailable',
-    );
+  kind: r.media.kind,
+  fileName: r.media.fileName,
+  sizeBytes: r.media.sizeBytes,
+  onOpen: r.onOpenFile,
+  unavailableReason: r.media.isReachable ? null : 'Unavailable',
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE CONSUMER-FACING WIDGET

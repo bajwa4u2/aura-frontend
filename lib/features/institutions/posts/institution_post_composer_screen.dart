@@ -943,6 +943,18 @@ class _InstitutionPostComposerScreenState
                 : (video ? null : url),
             mimeType: mimeType,
             bytes: prepared,
+            // KEEP THE LOCAL HANDLE. On web an XFile's `path` is a blob: URL,
+            // which a media element loads like any other source and without
+            // copying bytes — so this is the only preview that does not depend
+            // on the network.
+            //
+            // Dropping it is why a video broke HERE and not in the member
+            // composer: that one MUTATES the attachment it already has and so
+            // keeps `file`, while this one built a fresh Attachment from the
+            // upload response alone. The stored `url` is a raw R2 origin
+            // address that answers 401 to an anonymous reader, and a <video>
+            // tag cannot send an Authorization header.
+            file: attachment.file,
           ),
         );
         _mediaComposition = _mediaComposition.copyWith(

@@ -229,6 +229,24 @@ void main() {
       );
     });
   });
+  group('the institution composer keeps its local handle', () {
+    final src = File(
+      'lib/features/institutions/posts/institution_post_composer_screen.dart',
+    ).readAsStringSync().replaceAll(RegExp(r'\s+'), ' ');
+
+    test('THE "ONLY AFTER UPLOAD" DEFECT: the file survives the upload', () {
+      // This composer built a FRESH Attachment from the upload response and
+      // dropped `file`, so the strip had no local source and fell through to
+      // `Media.url` — a raw origin address that answers 401 to an anonymous
+      // <video>. The member composer MUTATES its attachment, so it kept the
+      // handle and never showed the fault.
+      expect(src, contains('file: attachment.file,'));
+    });
+
+    test('the reason is recorded where the handle is kept', () {
+      expect(src, contains('KEEP THE LOCAL HANDLE'));
+    });
+  });
 }
 
 /// THE SECOND HALF, AND THE REASON THE FIRST HALF DID NOTHING.

@@ -355,7 +355,26 @@ void main() {
       );
     });
 
-    testWidgets('once hydrated it presents from the stored object',
+    // REVISED 2026-09-24, DELIBERATELY. This asserted the opposite:
+    //
+    //     expect(surface.url, 'https://cdn.example.com/clip.mp4',
+    //        reason: 'a sent video must not keep pointing at a local file');
+    //
+    // That assumption is what the founder hit as "falling back to broke only
+    // after upload". `Media.url` is a RAW ORIGIN address (`buildPublicUrl`),
+    // and since the private-origin cutover that host answers 401 to an
+    // anonymous reader — verified directly: `uploads.auraplatform.org` → 401.
+    // A <video> element cannot send an Authorization header, so the instant
+    // the upload completed the preview swapped a working local blob for an
+    // address that can only fail. Governed bytes reach a viewer through the
+    // delivery door, never through this column.
+    //
+    // The old reason was still protecting something real — a stale local
+    // handle must not strand the tile — so that is now handled by ORDER rather
+    // than by exclusion: local is tried first, and `_prepare` falls back to the
+    // stored object if it fails. Both concerns are satisfied; neither is
+    // traded away.
+    testWidgets('once hydrated the local copy is still preferred',
         (tester) async {
       await tester.pumpWidget(host(AuraStoredMedia(
         media: StoredMedia.fromParts(
@@ -372,8 +391,8 @@ void main() {
 
       final surface =
           tester.widget<AuraVideoSurface>(find.byType(AuraVideoSurface));
-      expect(surface.url, 'https://cdn.example.com/clip.mp4',
-          reason: 'a sent video must not keep pointing at a local file');
+      expect(surface.localPath, '/tmp/chosen.mp4',
+          reason: 'the stored URL is not fetchable by an anonymous <video>');
     });
   });
 
