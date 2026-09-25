@@ -19,6 +19,7 @@ route,sample,renders,protected,deeplink_semantic,deeplink_destination,in_app_sem
 /institutions/get-started,/institutions/get-started,true,false,flowCancel,/institutions,flowCancel,true,COMPLIANT
 /institutions/sector/:classId,/institutions/sector/x-classid,true,false,parentReturn,/institutions/sector,stackReturn,true,COMPLIANT
 /institutions/:slug,/institutions/x-slug,true,false,parentReturn,/institutions,stackReturn,true,COMPLIANT
+/institutions/:slug/posts/:postId,/institutions/x-slug/posts/x-postid,true,false,parentReturn,/institutions/x-slug,stackReturn,true,COMPLIANT
 /institutions/:slug/units,/institutions/x-slug/units,true,false,parentReturn,/institutions/x-slug,stackReturn,true,COMPLIANT
 /institutions/:slug/units/:unitSlug,/institutions/x-slug/units/x-unitslug,true,false,parentReturn,/institutions/x-slug/units,stackReturn,true,COMPLIANT
 /institution/sign-in,/institution/sign-in,false,true,deepLinkFallback,/institution/sign-in/explore,stackReturn,true,NOT_A_SURFACE

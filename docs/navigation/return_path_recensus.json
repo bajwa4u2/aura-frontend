@@ -220,6 +220,17 @@
   "verdict": "COMPLIANT"
  },
  {
+  "route": "/institutions/:slug/posts/:postId",
+  "sample": "/institutions/x-slug/posts/x-postid",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "parentReturn",
+  "deepLinkDestination": "/institutions/x-slug",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
   "route": "/institutions/:slug/units",
   "sample": "/institutions/x-slug/units",
   "renders": true,

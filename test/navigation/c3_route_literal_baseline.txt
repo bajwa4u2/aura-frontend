@@ -108,7 +108,8 @@
 # had not asked to join and instruct them to join the call they were already
 # in -- the same stall measured live on the accept and initiator paths. Now
 # routed through NavigationAuthority.realtimeSessionJoinRoute.
-1 lib/features/realtime/presentation/widgets/floating_call_widget.dart
+# 2026-09-25 floating call widget: 1 -> 0. The PiP rebuild navigates
+# through routerProvider rather than a literal context.go (0ce7dda2 era).
 1 lib/features/realtime/presentation/widgets/orphaned_session_banner.dart
 2 lib/features/updates/presentation/updates_screen.dart
 1 lib/screens/account_deletion_screen.dart
