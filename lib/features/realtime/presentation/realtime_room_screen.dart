@@ -1294,6 +1294,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final wide = constraints.maxWidth >= 860;
+              final dockShown = _dockVisible || !state.isVideoMode;
 
               return MouseRegion(
                 onHover: (_) => _revealDock(),
@@ -1402,155 +1403,207 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                         ),
 
                       // ── Main body ─────────────────────────────────────────────────
-                      Expanded(
-                        child: isMeetingSession && state.isJoined
-                            ? _buildMeetingRoom(
-                                state: state,
-                                myUserId: myUserId,
-                                wide: wide,
-                              )
-                            : state.isJoined
-                            ? _buildActiveCall(
-                                state: state,
-                                controller: controller,
-                                myUserId: myUserId,
-                                canModerate: canModerate,
-                                wide: wide,
-                              )
-                            : _buildPreJoin(
-                                context: context,
-                                state: state,
-                                controller: controller,
-                                policy: policy,
-                                roomIsClosed: roomIsClosed,
-                              ),
-                      ),
-
-                      // ── Call controls ─────────────────────────────────────────────
                       //
-                      // Fades rather than collapses: nothing under it moves, so the
-                      // target stays exactly where the hand last saw it. Pointer
-                      // events are refused while it is faded out, and the
-                      // MouseRegion + Listener around this whole column still see
-                      // the movement and bring it straight back.
-                      if (state.isJoined)
-                        MouseRegion(
-                          onEnter: (_) {
-                            _pointerOverDock = true;
-                            _revealDock();
-                          },
-                          onExit: (_) {
-                            _pointerOverDock = false;
-                            _revealDock();
-                          },
-                          child: AnimatedOpacity(
-                            opacity: _dockVisible ? 1 : 0,
-                            duration: const Duration(milliseconds: 180),
-                            child: IgnorePointer(
-                              ignoring: !_dockVisible,
-                              child: isMeetingSession
-                                  ? _MeetingControlDock(
-                                      micOn: state.microphoneEnabled,
-                                      cameraOn: state.cameraEnabled,
-                                      isVideoMode: state.isVideoMode,
-                                      onToggleMic: controller.toggleMicrophone,
-                                      onToggleCamera: controller.toggleCamera,
-                                      onLeave: state.isEndingCall
-                                          ? null
-                                          : isHost
-                                          ? () => unawaited(
-                                              _endCallAndClose(controller),
-                                            )
-                                          : () => unawaited(
-                                              _leaveAndNavigate(controller),
-                                            ),
-                                      isEnding: state.isEndingCall,
+                      // 2026-09-25 — THE DOCK LIES OVER THE PICTURE, NOT UNDER IT.
+                      //
+                      // Observed on a Pixel (1.5.0+40): the controls faded but the
+                      // bar stayed. The dock was the Column's last child, so fading
+                      // it emptied its contents and kept its height — a blank band
+                      // under the stage. Layered over the stage, a faded dock hands
+                      // its space back to the picture while the controls still
+                      // return to exactly where the hand last saw them.
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: isMeetingSession && state.isJoined
+                                  ? _buildMeetingRoom(
+                                      state: state,
+                                      myUserId: myUserId,
+                                      wide: wide,
                                     )
-                                  : _CallControlDock(
-                                      micOn: state.microphoneEnabled,
-                                      cameraOn: state.cameraEnabled,
-                                      cameraIsFront: state.cameraIsFront,
-                                      isVideoMode: state.isVideoMode,
-                                      // A FLIP IS ONLY REAL WHERE THERE ARE TWO
-                                      // CAMERAS TO FLIP BETWEEN. `supportsCameraCapture`
-                                      // is the platform authority for front/back
-                                      // hardware (Android and iOS); on desktop and web
-                                      // the equivalent act is choosing a device, which
-                                      // Meetings already offers and a two-state flip
-                                      // would misrepresent.
-                                      onFlipCamera: supportsCameraCapture
-                                          ? () => unawaited(
-                                              controller.flipCamera(),
-                                            )
-                                          : null,
-                                      activePanel: _activePanel,
-                                      pendingRequests: canModerate
-                                          ? joinRequestCount
-                                          : 0,
-                                      // LIVE viewer (charter 2026-08-17): publishing
-                                      // is a ROLE fact — every stage participant in
-                                      // an escalated call keeps their controls; only
-                                      // OBSERVER-role viewers are receive-only
-                                      // (publish controls would be lies for them).
-                                      showPublishControls: !_amObserver(
-                                        state,
-                                        myUserId,
-                                      ),
-                                      onToggleMic: controller.toggleMicrophone,
-                                      onToggleCamera: controller.toggleCamera,
-                                      isScreenSharing: state.isScreenSharing,
-                                      isTogglingScreenShare:
-                                          _togglingScreenShare,
-                                      onToggleScreenShare: () =>
-                                          unawaited(_toggleScreenShare()),
-                                      isPubliclyLive: publiclyLive,
-                                      onGoLive: !liveEligible
-                                          ? null
-                                          : publiclyLive
-                                          // ENDING a Live is never gated on video: a
-                                          // broadcaster whose camera closed mid-
-                                          // broadcast must still be able to close the
-                                          // public door.
-                                          ? () => unawaited(_endLive(state))
-                                          : (_callCarriesVideo(state)
-                                                ? () =>
-                                                      unawaited(_goLive(state))
-                                                : null),
-                                      showSpeakerToggle:
-                                          _supportsSpeakerphoneToggle,
-                                      speakerOn: state.speakerphoneEnabled,
-                                      onToggleSpeaker: () => unawaited(
-                                        controller.toggleSpeakerphone(),
-                                      ),
-                                      // The platform's answer, not ours. When it cannot
-                                      // say, these stay null and the button keeps its
-                                      // existing two-word behaviour.
-                                      audioRouteLabel: audioOut.current?.label,
-                                      audioRouteIcon: _audioRouteIcon(
-                                        audioOut.current,
-                                      ),
-                                      onChooseAudioOutput: audioOut.hasChoice
-                                          ? () => unawaited(
-                                              AudioOutputSheet.show(context),
-                                            )
-                                          : null,
-                                      onMore: () =>
-                                          _togglePanel(_kPanelMore, wide),
-                                      isEndCall: isHost,
-                                      isEnding: state.isEndingCall,
-                                      onLeave: state.isEndingCall
-                                          ? null
-                                          : isHost
-                                          ? () => unawaited(
-                                              _endCallAndClose(controller),
-                                            )
-                                          : () => unawaited(
-                                              _leaveAndNavigate(controller),
-                                            ),
+                                  : state.isJoined
+                                  ? _buildActiveCall(
+                                      state: state,
+                                      controller: controller,
+                                      myUserId: myUserId,
+                                      canModerate: canModerate,
+                                      wide: wide,
+                                    )
+                                  : _buildPreJoin(
+                                      context: context,
+                                      state: state,
+                                      controller: controller,
+                                      policy: policy,
+                                      roomIsClosed: roomIsClosed,
                                     ),
                             ),
-                          ),
+
+                            // ── Call controls ─────────────────────────────────────────────
+                            //
+                            // Fades rather than collapses: nothing under it moves, so the
+                            // target stays exactly where the hand last saw it. Pointer
+                            // events are refused while it is faded out, and the
+                            // MouseRegion + Listener around this whole column still see
+                            // the movement and bring it straight back.
+                            if (state.isJoined)
+                              Positioned(
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                child: MouseRegion(
+                                  onEnter: (_) {
+                                    _pointerOverDock = true;
+                                    _revealDock();
+                                  },
+                                  onExit: (_) {
+                                    _pointerOverDock = false;
+                                    _revealDock();
+                                  },
+                                  // AN AUDIO CALL HAS NO PICTURE TO GIVE BACK.
+                                  // Hiding exists to uncover video; with none,
+                                  // it only takes the controls away. Founder-
+                                  // observed on a Pixel 2026-09-25: "in audio
+                                  // controls are disappearing with bar".
+                                  child: AnimatedOpacity(
+                                    opacity: dockShown ? 1 : 0,
+                                    duration: const Duration(milliseconds: 180),
+                                    child: IgnorePointer(
+                                      ignoring: !dockShown,
+                                      child: isMeetingSession
+                                          ? _MeetingControlDock(
+                                              micOn: state.microphoneEnabled,
+                                              cameraOn: state.cameraEnabled,
+                                              isVideoMode: state.isVideoMode,
+                                              onToggleMic:
+                                                  controller.toggleMicrophone,
+                                              onToggleCamera:
+                                                  controller.toggleCamera,
+                                              onLeave: state.isEndingCall
+                                                  ? null
+                                                  : isHost
+                                                  ? () => unawaited(
+                                                      _endCallAndClose(
+                                                        controller,
+                                                      ),
+                                                    )
+                                                  : () => unawaited(
+                                                      _leaveAndNavigate(
+                                                        controller,
+                                                      ),
+                                                    ),
+                                              isEnding: state.isEndingCall,
+                                            )
+                                          : _CallControlDock(
+                                              micOn: state.microphoneEnabled,
+                                              cameraOn: state.cameraEnabled,
+                                              cameraIsFront:
+                                                  state.cameraIsFront,
+                                              isVideoMode: state.isVideoMode,
+                                              // A FLIP IS ONLY REAL WHERE THERE ARE TWO
+                                              // CAMERAS TO FLIP BETWEEN. `supportsCameraCapture`
+                                              // is the platform authority for front/back
+                                              // hardware (Android and iOS); on desktop and web
+                                              // the equivalent act is choosing a device, which
+                                              // Meetings already offers and a two-state flip
+                                              // would misrepresent.
+                                              onFlipCamera:
+                                                  supportsCameraCapture
+                                                  ? () => unawaited(
+                                                      controller.flipCamera(),
+                                                    )
+                                                  : null,
+                                              activePanel: _activePanel,
+                                              pendingRequests: canModerate
+                                                  ? joinRequestCount
+                                                  : 0,
+                                              // LIVE viewer (charter 2026-08-17): publishing
+                                              // is a ROLE fact — every stage participant in
+                                              // an escalated call keeps their controls; only
+                                              // OBSERVER-role viewers are receive-only
+                                              // (publish controls would be lies for them).
+                                              showPublishControls: !_amObserver(
+                                                state,
+                                                myUserId,
+                                              ),
+                                              onToggleMic:
+                                                  controller.toggleMicrophone,
+                                              onToggleCamera:
+                                                  controller.toggleCamera,
+                                              isScreenSharing:
+                                                  state.isScreenSharing,
+                                              isTogglingScreenShare:
+                                                  _togglingScreenShare,
+                                              onToggleScreenShare: () =>
+                                                  unawaited(
+                                                    _toggleScreenShare(),
+                                                  ),
+                                              isPubliclyLive: publiclyLive,
+                                              onGoLive: !liveEligible
+                                                  ? null
+                                                  : publiclyLive
+                                                  // ENDING a Live is never gated on video: a
+                                                  // broadcaster whose camera closed mid-
+                                                  // broadcast must still be able to close the
+                                                  // public door.
+                                                  ? () => unawaited(
+                                                      _endLive(state),
+                                                    )
+                                                  : (_callCarriesVideo(state)
+                                                        ? () => unawaited(
+                                                            _goLive(state),
+                                                          )
+                                                        : null),
+                                              showSpeakerToggle:
+                                                  _supportsSpeakerphoneToggle,
+                                              speakerOn:
+                                                  state.speakerphoneEnabled,
+                                              onToggleSpeaker: () => unawaited(
+                                                controller.toggleSpeakerphone(),
+                                              ),
+                                              // The platform's answer, not ours. When it cannot
+                                              // say, these stay null and the button keeps its
+                                              // existing two-word behaviour.
+                                              audioRouteLabel:
+                                                  audioOut.current?.label,
+                                              audioRouteIcon: _audioRouteIcon(
+                                                audioOut.current,
+                                              ),
+                                              onChooseAudioOutput:
+                                                  audioOut.hasChoice
+                                                  ? () => unawaited(
+                                                      AudioOutputSheet.show(
+                                                        context,
+                                                      ),
+                                                    )
+                                                  : null,
+                                              onMore: () => _togglePanel(
+                                                _kPanelMore,
+                                                wide,
+                                              ),
+                                              isEndCall: isHost,
+                                              isEnding: state.isEndingCall,
+                                              onLeave: state.isEndingCall
+                                                  ? null
+                                                  : isHost
+                                                  ? () => unawaited(
+                                                      _endCallAndClose(
+                                                        controller,
+                                                      ),
+                                                    )
+                                                  : () => unawaited(
+                                                      _leaveAndNavigate(
+                                                        controller,
+                                                      ),
+                                                    ),
+                                            ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
+                      ),
                     ],
                   ),
                 ),
