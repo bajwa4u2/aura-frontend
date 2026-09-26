@@ -79,9 +79,12 @@ class _SearchListingScreenState extends ConsumerState<SearchListingScreen> {
       title: 'Search engines',
       maxWidth: 720,
       body: listing.when(
+        // Its own words: the generic loading copy for `person` reads
+        // "Getting people ready", which says nothing about this screen.
         loading: () => const AuraProductState(
           state: ProductState.loading,
           subject: ProductNoun.person,
+          detail: 'Checking your search engine setting.',
         ),
         // A FAILED LOAD IS NOT "OFF". Showing the switch as off when the
         // request failed would tell a person something false about their own

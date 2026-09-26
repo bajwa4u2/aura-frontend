@@ -62,6 +62,15 @@ void main() {
     expect(t.widget<SwitchListTile>(find.byType(SwitchListTile)).value, isTrue);
   });
 
+  testWidgets('while loading it says what it is loading', (t) async {
+    final repo = _FakeRepo(initial: const SearchListing(listed: false));
+    await t.pumpWidget(_app(repo));
+    // First frame, before the fake answers.
+    expect(find.text('Checking your search engine setting.'), findsOneWidget);
+    expect(find.textContaining('people ready'), findsNothing);
+    await t.pumpAndSettle();
+  });
+
   testWidgets('a failed load is an error, never a switch showing OFF', (t) async {
     final repo = _FakeRepo(initial: const SearchListing(listed: false), fail: true);
     await t.pumpWidget(_app(repo));
