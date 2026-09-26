@@ -75,8 +75,11 @@ diagnosed performance causes fixed rather than masked; six rendered widths.
    opt-in (none exists yet, so none listed). Backend `3c492f9` generates
    `/v1/sitemap.xml` (share module — control stays out of DISCOVERY); this
    repo's nginx now proxies `/sitemap.xml` to it, falling back to the static
-   `web/sitemap.xml`. Open follow-up: a per-person search-indexing opt-in
-   (setting + field), which is what would let profiles be listed.
+   `web/sitemap.xml`. The per-person opt-in SHIPPED the same day: backend
+   `c8d95fe` (UserSearchListingConsent, GET|PUT /v1/users/me/search-listing,
+   sitemap lists only consenting active people) and Preferences › Privacy ›
+   Search engines in this repo. Off for everyone until chosen. Native clients
+   (Android, iOS, Windows) show it from their next store release; web now.
 
 <details>
 <summary>Superseded — the hub migration this replaced</summary>

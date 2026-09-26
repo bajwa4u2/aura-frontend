@@ -239,6 +239,8 @@ String _constantNameFor(String path) {
       return 'kMePreferencesRoute';
     case '/me/blocked':
       return 'kMeBlockedRoute';
+    case '/me/search-listing':
+      return 'kMeSearchListingRoute';
     case '/me/settings/communications':
       return 'kMeCommunicationsRoute';
     default:

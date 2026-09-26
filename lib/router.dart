@@ -78,6 +78,7 @@ import 'features/ai/presentation/claim_audit_screen.dart';
 import 'features/me/presentation/me_screen.dart';
 import 'features/me/presentation/edit_profile_screen.dart';
 import 'features/me/presentation/blocked_people_screen.dart';
+import 'features/me/presentation/search_listing_screen.dart';
 import 'features/me/presentation/preferences_screen.dart';
 import 'features/me/presentation/personal_details_screen.dart';
 import 'features/me/presentation/security_screen.dart';
@@ -192,6 +193,7 @@ const String kAdminWorkspaceRoute = '/admin';
 const String kMeCommunicationsRoute = '/me/settings/communications';
 const String kMePreferencesRoute = '/me/preferences';
 const String kMeBlockedRoute = '/me/blocked';
+const String kMeSearchListingRoute = '/me/search-listing';
 const String kRouterBootRoute = '/_boot';
 
 const String kMessagesRoute = '/messages';
@@ -1866,6 +1868,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             // surface offering it.
             path: kMeBlockedRoute,
             builder: (_, __) => const BlockedPeopleScreen(),
+          ),
+          GoRoute(
+            // Whether this person's profile is listed in Aura's sitemap
+            // (founder ruling 2026-09-26: only with their opt-in).
+            path: kMeSearchListingRoute,
+            builder: (_, __) => const SearchListingScreen(),
           ),
           GoRoute(
             path: kMeCommunicationsRoute,

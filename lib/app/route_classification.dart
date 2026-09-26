@@ -291,6 +291,7 @@ bool isMemberShellPath(String path) {
       // shell — the F069 failure this allowlist exists to prevent.
       path == '/me/preferences' ||
       path == '/me/blocked' ||
+      path == '/me/search-listing' ||
       path == '/settings/communications' ||
       path == '/security' ||
       // The private canonical identity: legal name, date of birth, declared

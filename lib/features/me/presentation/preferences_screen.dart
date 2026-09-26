@@ -197,6 +197,14 @@ class PreferencesScreen extends ConsumerWidget {
             subtitle: 'See who you have blocked, and undo it',
             onTap: () => context.push(NavigationAuthority.blockedPeopleRoute),
           ),
+          MeSectionRow(
+            leading: Icons.travel_explore_outlined,
+            title: 'Search engines',
+            // Off unless chosen: a profile is listed in Aura's sitemap only
+            // with the person's own consent.
+            subtitle: 'Choose whether your profile is listed for search engines',
+            onTap: () => context.push(NavigationAuthority.searchListingRoute),
+          ),
         ],
       );
 

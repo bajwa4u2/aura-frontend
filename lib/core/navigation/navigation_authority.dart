@@ -209,6 +209,7 @@ class NavigationAuthority {
   // and "Settings" came to be two names for two narrower screens.
   static const String preferencesRoute = '/me/preferences';
   static const String blockedPeopleRoute = '/me/blocked';
+  static const String searchListingRoute = '/me/search-listing';
   static const String communicationPreferencesRoute =
       '/me/settings/communications';
   /// Where a person asks to have their identity verified.
