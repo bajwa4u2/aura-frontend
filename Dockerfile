@@ -346,12 +346,33 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '    return 200 "User-agent: *\nAllow: /p/\nAllow: /media/\nAllow: /institutions\nAllow: /u/\nDisallow: /admin\nDisallow: /institution/\nDisallow: /messages\nDisallow: /conversations\nDisallow: /activity\nDisallow: /notifications\nDisallow: /saved\nDisallow: /settings\nDisallow: /me\nSitemap: https://auraplatform.org/sitemap.xml\n";' \
 '  }' \
 '' \
-'  # Static discovery endpoints must not fall through to the Flutter shell.' \
+'  # THE SITEMAP IS GENERATED FROM WHAT AURA HAS PUBLISHED (2026-09-26).' \
+'  # It used to be the static web/sitemap.xml: marketing pages only, and not' \
+'  # one article, announcement or institution page. The backend now lists' \
+'  # those from the published corpus (never a person profile without that' \
+'  # person opting in). If the backend cannot answer, the static file is' \
+'  # still served, so a crawler never gets an error where a sitemap was.' \
 '  location = /sitemap.xml {' \
-'    default_type application/xml;' \
-'    add_header Cache-Control "public, max-age=3600";' \
-'    try_files $uri =404;' \
+'    resolver 1.1.1.1 8.8.8.8 valid=300s ipv6=off;' \
+'    resolver_timeout 5s;' \
+'    proxy_pass ${AURA_BACKEND_API_ORIGIN}/v1/sitemap.xml;' \
+'    proxy_http_version 1.1;' \
+'    proxy_ssl_server_name on;' \
+'    proxy_set_header Host api.auraplatform.org;' \
+'    proxy_set_header X-Forwarded-Host $host;' \
+'    proxy_set_header X-Forwarded-Proto $scheme;' \
+'    proxy_read_timeout 15s;' \
+'    proxy_connect_timeout 5s;' \
+'    proxy_intercept_errors on;' \
+'    error_page 404 500 502 503 504 = @static_sitemap;' \
 '  }' \
+'  location @static_sitemap {' \
+'    default_type application/xml;' \
+'    add_header Cache-Control "public, max-age=600";' \
+'    try_files /sitemap.xml =404;' \
+'  }' \
+'' \
+'  # Static discovery endpoints must not fall through to the Flutter shell.' \
 '  location = /indexnow-key.txt {' \
 '    default_type text/plain;' \
 '    add_header Cache-Control "public, max-age=3600";' \

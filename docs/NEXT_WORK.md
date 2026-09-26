@@ -70,10 +70,13 @@ diagnosed performance causes fixed rather than masked; six rendered widths.
 4. **The worklist names a moderation subject by TYPE, not by person** — "User"
    rather than who was reported. Resolving it costs a lookup per row; RECORD
    resolves the same class because it is a detail read. Disclosed, not fixed.
-4. **The sitemap finding** — unchanged, and deliberately not touched in this
-   workstream. Aura publishes thousands of canonical URLs and advertises none.
-   Generating a sitemap would be CONTROL, and DISCOVERY is frozen as
-   observation. A finding awaiting a ruling.
+4. **The sitemap finding** — RULED AND SHIPPED 2026-09-26. Founder: advertise
+   editorial and institutional objects; person profiles only with the person's
+   opt-in (none exists yet, so none listed). Backend `3c492f9` generates
+   `/v1/sitemap.xml` (share module — control stays out of DISCOVERY); this
+   repo's nginx now proxies `/sitemap.xml` to it, falling back to the static
+   `web/sitemap.xml`. Open follow-up: a per-person search-indexing opt-in
+   (setting + field), which is what would let profiles be listed.
 
 <details>
 <summary>Superseded — the hub migration this replaced</summary>
