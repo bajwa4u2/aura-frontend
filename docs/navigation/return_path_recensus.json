@@ -1199,6 +1199,17 @@
   "verdict": "COMPLIANT"
  },
  {
+  "route": "/me/search-listing",
+  "sample": "/me/search-listing",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "parentReturn",
+  "deepLinkDestination": "/me",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
   "route": "/me/settings/communications",
   "sample": "/me/settings/communications",
   "renders": true,

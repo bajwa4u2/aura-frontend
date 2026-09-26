@@ -1406,6 +1406,18 @@
   "parent": ""
  },
  {
+  "path": "/me/search-listing",
+  "segments": 2,
+  "params": [],
+  "renders": true,
+  "hasRedirect": false,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
   "path": "/me/settings/communications",
   "segments": 3,
   "params": [],
