@@ -110,6 +110,37 @@ media retention scheduled rather than remembered.
 
 </details>
 
+## PUBLIC RECORD INTENT + RAISE-ISSUE GATE — founder-scheduled, START 2026-09-29
+
+Founder 2026-09-26, looking at Admin › Platform: both switches must be on, on a
+timeline ("these controls are thoughtful but left alone").
+
+- `PUBLIC_RECORD_INTENT_REQUIRED` (OFF): when on, the server refuses a top-level
+  post without an intent (ASK / ISSUE / UPDATE). NO CLIENT SENDS AN INTENT TODAY
+  (web and every store build), so turning it on now would stop all posting.
+- `CAN_RAISE_ISSUE_GATE_ENABLED` (OFF): runs `assertCanRaiseIssue` for ISSUE
+  posts only, and that check is just "email verified" — already required for
+  every post (VerifiedEmailGuard), so it currently adds nothing.
+- **DECISION (founder, 2026-09-26): Raise Issue requires IDENTITY VERIFICATION**
+  (option 1). ASK and UPDATE stay at base assurance (email + publication age),
+  honouring "do not turn verification into a universal account-completeness
+  gate". This is a deliberate one-row addition to the assurance allowlist for
+  Raise Issue — record it as the founder-approved amendment when implemented.
+
+Plan (dates re-based on the 09-29 start):
+1. 09-29 → ~10-01: composer asks Ask / Raise Issue / Share Update on top-level
+   public posts and sends `intent`; publishing an older draft asks too; posts
+   show their intent; choosing Raise Issue without a current identity
+   verification explains what is needed and links to verification BEFORE
+   posting. Backend: `canRaiseIssue` requires current identity verification.
+   Web deploy.
+2. With the web deploy: turn ON `CAN_RAISE_ISSUE_GATE_ENABLED`.
+3. Next Aura store release carrying the composer (after iOS 1.5.0 (42) and
+   Windows 1.5.1 clear review): submit ~10-02/03, live ~10-06..08.
+4. When live on all stores: raise the minimum supported client
+   (Admin client policies) to that release; after ~7 days of update window,
+   turn ON `PUBLIC_RECORD_INTENT_REQUIRED` (~10-15).
+
 ## A/V — chapter unchanged
 
 **As of 2026-08-25.** Meetings is CLOSED and founder-accepted. The **Audio /
