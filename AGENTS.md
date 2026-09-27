@@ -24,6 +24,30 @@ with the original wording preserved. Never supersede silently.
 
 Operating law for agents working in `aura_final/`. The umbrella scope file is `../AGENTS.md`; this file overrides for frontend work.
 
+<!-- product-design-function-pointer -->
+## Product design authority (charter PDF-2026-09-27.1): read before changing anything a user sees
+
+This applies before any change to what a user sees or does in Aura: screens, layout, flows,
+wording, visual assets. It does not apply to backend-only work.
+
+- **The founder is Head of Product Design.** Agents carry out design work; they never hold design
+  authority.
+- **Aura has its own design system.** Nothing visual (colour, type, spacing, density, icons,
+  motion, tone) is shared with the company's other products without a founder decision. Only
+  behaviour is shared: an honest interface, explicit decision and authority moments, truthful
+  empty, loading and error states, accessibility floors, platform conventions.
+- **Corrections (founder ruling, 2026-09-27):** "The agent may implement a narrow, reversible
+  correction locally when it restores an already approved design. It must record what was broken
+  and verify the rendered result. Founder approval is required before committing or releasing the
+  correction. Any new design or change in flow requires approval before implementation."
+- **Verify rendered.** Design work is verified only in the running product, in the right signed-in
+  state, at real widths and text sizes. Name the layer observed.
+- **Record** every approved design decision in `company/docs/design/DESIGN_DECISIONS.md`.
+
+Full charter: `company/governance/product-design-function.md` (version `PDF-2026-09-27.1`).
+If this pointer's version differs from the charter's, the pointer is stale: resync it from the
+charter's Appendix A, never edit it here.
+
 ## Repo identity
 
 Flutter (single codebase: iOS + Android + Web). Three application shells (Member / Institution / Admin) + Public shell. Talks to `aura-backend` under global `/v1`. Out-of-scope: anything under `../../orchestrate/`.
