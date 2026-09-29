@@ -238,13 +238,15 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   late bool _choosingIntent =
       !_isReply && !_isEditingPost && _intent == _ComposeIntent.none;
 
-  /// Whether the server will accept an issue from this person now. Null
-  /// until asked; asked as the composer opens, so the choice can say so.
-  bool? _raiseAllowed;
+  /// What the server will accept from this person now: Ask and Raise issue
+  /// need a current identity verification (founder, 2026-09-29: "wire ask
+  /// through identity check too"); Share update never does. Null until asked;
+  /// asked as the composer opens, so the choice can say so.
+  _Gates? _gates;
 
-  /// Raise issue was pressed and the server would refuse it: say so under the
-  /// chips, with the way to verify, instead of selecting it silently.
-  bool _raiseRefused = false;
+  /// The gated choice just pressed that the server would refuse: said under
+  /// the chips or on the door, with the way to verify, instead of selected.
+  _ComposeIntent? _refused;
 
   /// Index into `_kRotatingPrompts` — used only when `_intent` is
   /// `_ComposeIntent.none`. Set once on each composer mount so the
@@ -640,8 +642,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       // there is no draft to lose.
       if (sharedIn == null) _loadDraft();
       _loadExternalConnections();
-      _mayRaiseIssue().then((allowed) {
-        if (mounted) setState(() => _raiseAllowed = allowed);
+      _readGates().then((gates) {
+        if (mounted) setState(() => _gates = gates);
       });
     }
 
@@ -2311,22 +2313,27 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   /// Public-UX Phase 5 — discourse intent buttons. Three optional
   /// chips above the body input that shape the placeholder + tone
   /// hint. Tapping a selected chip clears the intent (toggle).
-  /// Whether the server will accept an issue from this person now. Unknown
-  /// (offline, an old server) answers yes: publish is the authority, and a
-  /// refusal there still explains itself.
-  Future<bool> _mayRaiseIssue() async {
+  /// What the server will accept from this person now. Unknown (offline, an
+  /// old server) answers yes: publish is the authority, and a refusal there
+  /// still explains itself.
+  Future<_Gates> _readGates() async {
     try {
       final res =
           await ref.read(dioProvider).get('/public-record/capabilities/me');
-      // The server wraps every answer: { ok, data: { raiseIssue } }. Reading
-      // the top level found nothing, which counted as yes, so an unverified
-      // person was let through (founder, signed in as one, 2026-09-29).
+      // The server wraps every answer: { ok, data: { raiseIssue, ask } }.
+      // Reading the top level found nothing, which counted as yes, so an
+      // unverified person was let through (founder, signed in as one,
+      // 2026-09-29).
       final root = _asMap(res.data);
       final body = root.containsKey('data') ? _asMap(root['data']) : root;
       final raise = body['raiseIssue'];
-      return raise is bool ? raise : true;
+      final ask = body['ask'];
+      return _Gates(
+        raise: raise is bool ? raise : true,
+        ask: ask is bool ? ask : true,
+      );
     } catch (_) {
-      return true;
+      return const _Gates(raise: true, ask: true);
     }
   }
 
@@ -2336,31 +2343,32 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     if (mounted) context.push(NavigationAuthority.identityVerificationRoute);
   }
 
-  /// Raise issue, chosen as a door or a chip: taken only if the server will
-  /// accept it now; otherwise the person is told at once (founder,
-  /// 2026-09-29: "pressed raise ... it didn't ask identity").
-  Future<void> _chooseRaise({required bool fromDoor}) async {
-    final allowed = _raiseAllowed ?? await _mayRaiseIssue();
+  /// A choice, as a door or a chip: taken only if the server will accept it
+  /// now; otherwise the person is told at once (founder, 2026-09-29:
+  /// "pressed raise ... it didn't ask identity"; "wire ask through identity
+  /// check too").
+  Future<void> _choose(_ComposeIntent kind, {required bool fromDoor}) async {
+    final gates = _gates ?? await _readGates();
     if (!mounted) return;
     setState(() {
-      _raiseAllowed = allowed;
-      if (allowed) {
-        _intent = _ComposeIntent.raise;
-        _raiseRefused = false;
+      _gates = gates;
+      if (gates.allows(kind)) {
+        _intent = kind;
+        _refused = null;
         if (fromDoor) _choosingIntent = false;
       } else {
-        _raiseRefused = true;
+        _refused = kind;
       }
     });
   }
 
   /// "What is this post?" — asked at Publish when nothing was chosen.
   /// Returns null when dismissed, or when the person went to verify.
-  Future<_ComposeIntent?> _askIntent({required bool raiseAllowed}) {
+  Future<_ComposeIntent?> _askIntent({required _Gates gates}) {
     return showDialog<_ComposeIntent>(
       context: context,
       builder: (dialogContext) => _IntentChooser(
-        raiseAllowed: raiseAllowed,
+        gates: gates,
         onVerify: () {
           Navigator.of(dialogContext).pop();
           _goVerify();
@@ -2380,12 +2388,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             _IntentChip(
               kind: _ComposeIntent.ask,
               selected: _intent == _ComposeIntent.ask,
-              onTap: () => setState(() {
-                _raiseRefused = false;
-                _intent = _intent == _ComposeIntent.ask
-                    ? _ComposeIntent.none
-                    : _ComposeIntent.ask;
-              }),
+              onTap: () {
+                if (_intent == _ComposeIntent.ask) {
+                  setState(() => _intent = _ComposeIntent.none);
+                } else {
+                  _choose(_ComposeIntent.ask, fromDoor: false);
+                }
+              },
             ),
             _IntentChip(
               kind: _ComposeIntent.raise,
@@ -2394,7 +2403,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 if (_intent == _ComposeIntent.raise) {
                   setState(() => _intent = _ComposeIntent.none);
                 } else {
-                  _chooseRaise(fromDoor: false);
+                  _choose(_ComposeIntent.raise, fromDoor: false);
                 }
               },
             ),
@@ -2402,7 +2411,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               kind: _ComposeIntent.share,
               selected: _intent == _ComposeIntent.share,
               onTap: () => setState(() {
-                _raiseRefused = false;
+                _refused = null;
                 _intent = _intent == _ComposeIntent.share
                     ? _ComposeIntent.none
                     : _ComposeIntent.share;
@@ -2410,9 +2419,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             ),
           ],
         ),
-        if (_raiseRefused) ...[
+        if (_refused != null) ...[
           const SizedBox(height: AuraSpace.s8),
-          _RaiseNeedsVerification(onVerify: _goVerify),
+          _NeedsVerification(kind: _refused!, onVerify: _goVerify),
         ],
         if (_intent != _ComposeIntent.none && _intent.toneHint != null) ...[
           const SizedBox(height: AuraSpace.s8),
@@ -2831,11 +2840,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     // issue that publish then refuses. Replies answer a post that already
     // says what it is; an edit keeps what the post was published as.
     if (!_isReply && !_isEditingPost) {
-      final raiseAllowed = await _mayRaiseIssue();
+      final gates = await _readGates();
       if (!mounted) return;
-      if (_intent == _ComposeIntent.none ||
-          (_intent == _ComposeIntent.raise && !raiseAllowed)) {
-        final chosen = await _askIntent(raiseAllowed: raiseAllowed);
+      if (_intent == _ComposeIntent.none || !gates.allows(_intent)) {
+        final chosen = await _askIntent(gates: gates);
         if (chosen == null || !mounted) return;
         setState(() => _intent = chosen);
       }
@@ -3026,7 +3034,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       // non-judgmental message rather than a raw error string.
       if (e is DioException &&
           e.response?.statusCode == 403 &&
-          _intent == _ComposeIntent.raise) {
+          (_intent == _ComposeIntent.raise || _intent == _ComposeIntent.ask)) {
         // The server says what is missing (ASSURANCE_REQUIRED since
         // 2026-09-29): an identity verification. Say it, and offer the way.
         final body = e.response?.data;
@@ -3878,19 +3886,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                             // founder's 943 window, Raise issue and its note
                             // fell below the fold.
                             wide: MediaQuery.sizeOf(context).width >= 700,
-                            raiseAllowed: _raiseAllowed,
-                            raiseRefused: _raiseRefused,
-                            onChoose: (kind) {
-                              if (kind == _ComposeIntent.raise) {
-                                _chooseRaise(fromDoor: true);
-                                return;
-                              }
-                              setState(() {
-                                _intent = kind;
-                                _raiseRefused = false;
-                                _choosingIntent = false;
-                              });
-                            },
+                            gates: _gates,
+                            refused: _refused,
+                            onChoose: (kind) =>
+                                _choose(kind, fromDoor: true),
                             onVerify: _goVerify,
                           )
                         else
@@ -3962,15 +3961,15 @@ class _ReplyActorBanner extends ConsumerWidget {
 class _IntentDoors extends StatelessWidget {
   const _IntentDoors({
     required this.wide,
-    required this.raiseAllowed,
-    required this.raiseRefused,
+    required this.gates,
+    required this.refused,
     required this.onChoose,
     required this.onVerify,
   });
 
   final bool wide;
-  final bool? raiseAllowed;
-  final bool raiseRefused;
+  final _Gates? gates;
+  final _ComposeIntent? refused;
   final ValueChanged<_ComposeIntent> onChoose;
   final VoidCallback onVerify;
 
@@ -3981,8 +3980,8 @@ class _IntentDoors extends StatelessWidget {
         _Door(
           kind: kind,
           line: _IntentChooser._lines[kind]!,
-          needsVerification: kind == _ComposeIntent.raise &&
-              (raiseAllowed == false || raiseRefused),
+          needsVerification:
+              refused == kind || (gates != null && !gates!.allows(kind)),
           onChoose: () => onChoose(kind),
           onVerify: onVerify,
         ),
@@ -4081,7 +4080,7 @@ class _Door extends StatelessWidget {
               ),
               if (needsVerification) ...[
                 const SizedBox(height: AuraSpace.s10),
-                _RaiseNeedsVerification(onVerify: onVerify),
+                _NeedsVerification(kind: kind, onVerify: onVerify),
               ],
             ],
           ),
@@ -4091,10 +4090,25 @@ class _Door extends StatelessWidget {
   }
 }
 
-/// Said wherever Raise issue is chosen by somebody the server would refuse.
-class _RaiseNeedsVerification extends StatelessWidget {
-  const _RaiseNeedsVerification({required this.onVerify});
+/// What the server will accept from this person now, per choice.
+class _Gates {
+  const _Gates({required this.raise, required this.ask});
+  final bool raise;
+  final bool ask;
 
+  bool allows(_ComposeIntent kind) => switch (kind) {
+        _ComposeIntent.raise => raise,
+        _ComposeIntent.ask => ask,
+        _ => true,
+      };
+}
+
+/// Said wherever Ask or Raise issue is chosen by somebody the server would
+/// refuse.
+class _NeedsVerification extends StatelessWidget {
+  const _NeedsVerification({required this.kind, required this.onVerify});
+
+  final _ComposeIntent kind;
   final VoidCallback onVerify;
 
   @override
@@ -4112,8 +4126,11 @@ class _RaiseNeedsVerification extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              'Raising an issue needs your identity verified. '
-              'You can still ask or share an update.',
+              kind == _ComposeIntent.ask
+                  ? 'Asking a question needs your identity verified. '
+                      'You can still share an update.'
+                  : 'Raising an issue needs your identity verified. '
+                      'You can still share an update.',
               style: AuraText.small.copyWith(
                 color: AuraSurface.warnInk,
                 height: 1.4,
@@ -4138,9 +4155,9 @@ class _RaiseNeedsVerification extends StatelessWidget {
 
 /// The panel Publish opens when a post does not yet say what it is.
 class _IntentChooser extends StatelessWidget {
-  const _IntentChooser({required this.raiseAllowed, required this.onVerify});
+  const _IntentChooser({required this.gates, required this.onVerify});
 
-  final bool raiseAllowed;
+  final _Gates gates;
   final VoidCallback onVerify;
 
   static const _lines = {
@@ -4175,10 +4192,10 @@ class _IntentChooser extends StatelessWidget {
               for (final kind in _lines.keys) ...[
                 _IntentOption(
                   kind: kind,
-                  line: kind == _ComposeIntent.raise && !raiseAllowed
-                      ? 'Needs your identity verified. Your draft is kept.'
-                      : _lines[kind]!,
-                  available: kind != _ComposeIntent.raise || raiseAllowed,
+                  line: gates.allows(kind)
+                      ? _lines[kind]!
+                      : 'Needs your identity verified. Your draft is kept.',
+                  available: gates.allows(kind),
                   onChoose: () => Navigator.of(context).pop(kind),
                   onVerify: onVerify,
                 ),

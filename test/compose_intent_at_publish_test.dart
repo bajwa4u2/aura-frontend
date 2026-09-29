@@ -56,27 +56,37 @@ void main() {
     await tester.pump();
   });
 
-  testWidgets('unverified: Raise issue says so at once and is not taken (Nimra)',
+  testWidgets('unverified (Nimra): Ask and Raise issue say so as the composer opens',
       (tester) async {
     final published = await openWithDraft(tester, raiseAllowed: false);
 
-    await tester.tap(find.text('A problem, stated so that someone can respond to it.'));
-    await tester.pumpAndSettle();
-
+    // Founder, 2026-09-29: "wire ask through identity check too".
+    expect(find.textContaining('Asking a question needs your identity verified'),
+        findsOneWidget);
     expect(find.textContaining('Raising an issue needs your identity verified'),
         findsOneWidget);
-    expect(find.text('Verify'), findsOneWidget);
-    expect(find.text('What are you posting?'), findsOneWidget,
-        reason: 'still choosing: Raise issue was not taken');
+    expect(find.text('Verify'), findsNWidgets(2));
     await expectLater(find.byType(MaterialApp),
         matchesGoldenFile('goldens/compose_intent_unverified_943.png'));
+
+    // Pressing either is refused; nothing is chosen, nothing is sent.
+    await tester.tap(find.text('A question you want answered.'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('A problem, stated so that someone can respond to it.'));
+    await tester.pumpAndSettle();
+    expect(find.text('What are you posting?'), findsOneWidget);
     expect(published, isEmpty);
+
+    // Share update is open to everyone.
+    await tester.tap(find.text('News or progress others should know.'));
+    await tester.pumpAndSettle();
+    expect(find.text('What are you posting?'), findsNothing);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });
 
-  testWidgets('unverified: the Raise issue chip says so too, and keeps the choice made',
+  testWidgets('unverified: the Ask and Raise issue chips say so too, and keep the choice made',
       (tester) async {
     await openWithDraft(tester, raiseAllowed: false);
     await tester.tap(find.text('News or progress others should know.'));
@@ -85,6 +95,10 @@ void main() {
     await tester.tap(find.text('Raise issue'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Raising an issue needs your identity verified'),
+        findsOneWidget);
+    await tester.tap(find.text('Ask'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Asking a question needs your identity verified'),
         findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
@@ -156,7 +170,7 @@ Dio _dio({
           // As the real server answers: every response is wrapped. The
           // unwrapped fixture hid the defect that let an unverified person
           // raise an issue (2026-09-29).
-          return handler.resolve(ok({'ok': true, 'data': {'raiseIssue': raiseAllowed}}));
+          return handler.resolve(ok({'ok': true, 'data': {'raiseIssue': raiseAllowed, 'ask': raiseAllowed}}));
         }
         if (method == 'GET' && path == '/users/me') {
           return handler.resolve(ok({'id': 'user-1', 'handle': 'me', 'displayName': 'Me'}));
