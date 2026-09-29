@@ -306,6 +306,13 @@ class UnifiedFeedCard extends ConsumerWidget {
                 ),
               ],
             ],
+            // What the post says it is, above what it says (founder,
+            // 2026-09-29). Personal posts only; nothing on older posts.
+            if (item.authorType == FeedAuthorType.user &&
+                _PostIntentLabel.textFor(item.intent) != null) ...[
+              const SizedBox(height: AuraSpace.s8),
+              _PostIntentLabel(intent: item.intent!),
+            ],
             if (item.body.trim().isNotEmpty) ...[
               const SizedBox(height: AuraSpace.s8),
               // Detail surfaces render the full body as selectable
@@ -1928,6 +1935,55 @@ class _RecentActivityLine extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// A personal post's intent, as a small label above its text: Ask, Issue or
+/// Update. An issue in Aura's warning ink, the others in its accent.
+class _PostIntentLabel extends StatelessWidget {
+  const _PostIntentLabel({required this.intent});
+
+  final String intent;
+
+  static String? textFor(String? intent) {
+    switch ((intent ?? '').toUpperCase()) {
+      case 'ASK':
+        return 'Ask';
+      case 'ISSUE':
+        return 'Issue';
+      case 'UPDATE':
+        return 'Update';
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final issue = intent.toUpperCase() == 'ISSUE';
+    final color = issue ? AuraSurface.warnInk : AuraSurface.accentText;
+    final icon = switch (intent.toUpperCase()) {
+      'ASK' => Icons.help_outline_rounded,
+      'ISSUE' => Icons.report_problem_outlined,
+      _ => Icons.campaign_outlined,
+    };
+    return Semantics(
+      label: 'Posted as: ${textFor(intent)}',
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 5),
+          Text(
+            textFor(intent)!.toUpperCase(),
+            style: AuraText.micro.copyWith(
+              color: color,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.6,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

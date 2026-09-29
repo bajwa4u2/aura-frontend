@@ -888,6 +888,7 @@ class FeedItem {
     this.resolvesPostId,
     this.continuesPostId,
     this.publicStatus,
+    this.intent,
     this.replyToPostId,
     this.replyToInstitutionPostId,
     this.parentInstitutionId,
@@ -994,6 +995,10 @@ class FeedItem {
   /// renders nothing in that case. RESPONDED / COMMITTED / RESOLVED map
   /// to the calm product labels "Official Response" / "Commitment" / "Resolved".
   final String? publicStatus;
+
+  /// What a top-level personal post says it is: ASK, ISSUE or UPDATE. Null
+  /// on replies, reposts, other kinds of item and posts that predate it.
+  final String? intent;
 
   /// Reply linkage — non-null when this item is itself a reply. Used by detail
   /// surfaces to show the original it answers (never a detached comment).
@@ -1160,6 +1165,7 @@ class FeedItem {
       resolvesPostId: opt(['resolvesPostId']),
       continuesPostId: opt(['continuesPostId']),
       publicStatus: opt(['publicStatus']),
+      intent: opt(['intent']),
       replyToPostId: opt(['replyToPostId']),
       replyToInstitutionPostId: opt(['replyToInstitutionPostId']),
       parentInstitutionId: opt(['parentInstitutionId']),

@@ -12,6 +12,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/content_policy/content_length_policy.dart';
+import '../../../core/navigation/navigation_authority.dart';
 import '../../../core/eligibility/eligibility_affordance.dart';
 import '../../../core/eligibility/eligibility_refusal.dart';
 import '../../../core/errors/app_error_mapper.dart';
@@ -124,9 +125,11 @@ class ComposeScreen extends ConsumerStatefulWidget {
   ConsumerState<ComposeScreen> createState() => _ComposeScreenState();
 }
 
-/// Public-UX Phase 5 — discourse intent. Shapes placeholder, tone
-/// hint, and the "intent" chip group. Backend doesn't know about
-/// intent today — it's purely a UX-shaping signal.
+/// Public-UX Phase 5 — discourse intent: Ask, Raise issue, Share update.
+/// Sent as the post's `intent` (ASK / ISSUE / UPDATE) and shown with it.
+/// Every top-level post says what it is: if none was chosen while writing,
+/// Publish asks (founder, 2026-09-29, option B of three:
+/// https://claude.ai/artifact/JEuASkaxxbMCHC1dWXMev7).
 enum _ComposeIntent { none, ask, raise, share }
 
 /// Thrown when an institution-voice reply's Communication Integrity review
@@ -197,9 +200,11 @@ _ComposeIntent _intentFromWire(String? raw) {
       return _ComposeIntent.ask;
     case 'raise':
     case 'raise_issue':
+    case 'issue':
       return _ComposeIntent.raise;
     case 'share':
     case 'share_update':
+    case 'update':
       return _ComposeIntent.share;
     default:
       return _ComposeIntent.none;
@@ -1198,6 +1203,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           ..clear()
           ..addAll(loadedAttachments);
         _linkPreview = draftLinkPreview;
+        // A draft remembers what it is. The restore dropped it, so a draft
+        // chosen as an issue came back as nothing (2026-09-29).
+        final restoredIntent = _intentFromWire(_str(draft['intent']));
+        if (restoredIntent != _ComposeIntent.none) _intent = restoredIntent;
         _syncExternalPublishingToggles();
 
         if (_hasText) {
@@ -2283,6 +2292,37 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   /// Public-UX Phase 5 — discourse intent buttons. Three optional
   /// chips above the body input that shape the placeholder + tone
   /// hint. Tapping a selected chip clears the intent (toggle).
+  /// Whether the server will accept an issue from this person now. Unknown
+  /// (offline, an old server) answers yes: publish is the authority, and a
+  /// refusal there still explains itself.
+  Future<bool> _mayRaiseIssue() async {
+    try {
+      final res =
+          await ref.read(dioProvider).get('/public-record/capabilities/me');
+      final raise = _asMap(res.data)['raiseIssue'];
+      return raise is bool ? raise : true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /// "What is this post?" — asked at Publish when nothing was chosen.
+  /// Returns null when dismissed, or when the person went to verify.
+  Future<_ComposeIntent?> _askIntent({required bool raiseAllowed}) {
+    return showDialog<_ComposeIntent>(
+      context: context,
+      builder: (dialogContext) => _IntentChooser(
+        raiseAllowed: raiseAllowed,
+        onVerify: () async {
+          Navigator.of(dialogContext).pop();
+          // Their words are kept before they leave for verification.
+          await _saveDraft(silent: true);
+          if (mounted) context.push(NavigationAuthority.identityVerificationRoute);
+        },
+      ),
+    );
+  }
+
   Widget _buildIntentRow() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2731,6 +2771,22 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     if (!_canPublish) return;
 
+    // Every top-level post says what it is (founder, 2026-09-29, option B):
+    // written first, then asked here if nothing was chosen. Raise issue is
+    // offered only when the server will accept it now, so nobody writes an
+    // issue that publish then refuses. Replies answer a post that already
+    // says what it is; an edit keeps what the post was published as.
+    if (!_isReply && !_isEditingPost) {
+      final raiseAllowed = await _mayRaiseIssue();
+      if (!mounted) return;
+      if (_intent == _ComposeIntent.none ||
+          (_intent == _ComposeIntent.raise && !raiseAllowed)) {
+        final chosen = await _askIntent(raiseAllowed: raiseAllowed);
+        if (chosen == null || !mounted) return;
+        setState(() => _intent = chosen);
+      }
+    }
+
     // Communication Governance v1.0, Roadmap Milestone 7 — if the ambient
     // check already found something requiring acknowledgment, surface the
     // panel instead of letting the raw backend rejection through.
@@ -2917,13 +2973,24 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       if (e is DioException &&
           e.response?.statusCode == 403 &&
           _intent == _ComposeIntent.raise) {
+        // The server says what is missing (ASSURANCE_REQUIRED since
+        // 2026-09-29): an identity verification. Say it, and offer the way.
+        final body = e.response?.data;
+        final serverSays = body is Map ? body['message'] : null;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Text(
-              'Raising issues may require account verification or eligibility. '
-              'You can still ask a question or share an update.',
+              serverSays is String && serverSays.trim().isNotEmpty
+                  ? serverSays
+                  : 'Raising an issue needs your identity verified. '
+                      'You can still ask a question or share an update.',
             ),
-            duration: Duration(seconds: 5),
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(
+              label: 'Verify',
+              onPressed: () =>
+                  context.push(NavigationAuthority.identityVerificationRoute),
+            ),
           ),
         );
         return;
@@ -3810,6 +3877,144 @@ class _ReplyActorBanner extends ConsumerWidget {
           letterSpacing: 0.2,
         ),
       ),
+    );
+  }
+}
+
+/// The panel Publish opens when a post does not yet say what it is.
+class _IntentChooser extends StatelessWidget {
+  const _IntentChooser({required this.raiseAllowed, required this.onVerify});
+
+  final bool raiseAllowed;
+  final VoidCallback onVerify;
+
+  static const _lines = {
+    _ComposeIntent.ask: 'A question you want answered.',
+    _ComposeIntent.raise: 'A problem, stated so that someone can respond to it.',
+    _ComposeIntent.share: 'News or progress others should know.',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: AuraSurface.elevated,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AuraRadius.r18),
+        side: const BorderSide(color: AuraSurface.divider),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: Padding(
+          padding: const EdgeInsets.all(AuraSpace.s20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('What is this post?', style: AuraText.subtitle),
+              const SizedBox(height: AuraSpace.s4),
+              Text(
+                'It is shown with your post, so people know how to answer it.',
+                style: AuraText.small.copyWith(color: AuraSurface.muted),
+              ),
+              const SizedBox(height: AuraSpace.s12),
+              for (final kind in _lines.keys) ...[
+                _IntentOption(
+                  kind: kind,
+                  line: kind == _ComposeIntent.raise && !raiseAllowed
+                      ? 'Needs your identity verified. Your draft is kept.'
+                      : _lines[kind]!,
+                  available: kind != _ComposeIntent.raise || raiseAllowed,
+                  onChoose: () => Navigator.of(context).pop(kind),
+                  onVerify: onVerify,
+                ),
+                const SizedBox(height: AuraSpace.s8),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _IntentOption extends StatelessWidget {
+  const _IntentOption({
+    required this.kind,
+    required this.line,
+    required this.available,
+    required this.onChoose,
+    required this.onVerify,
+  });
+
+  final _ComposeIntent kind;
+  final String line;
+  final bool available;
+  final VoidCallback onChoose;
+  final VoidCallback onVerify;
+
+  @override
+  Widget build(BuildContext context) {
+    final body = Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s12,
+        vertical: AuraSpace.s10,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.subtle,
+        borderRadius: BorderRadius.circular(AuraRadius.r12),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: AuraSurface.accentSoft,
+              borderRadius: BorderRadius.circular(AuraRadius.r10),
+            ),
+            child: Icon(kind.icon, size: 15, color: AuraSurface.accentText),
+          ),
+          const SizedBox(width: AuraSpace.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  kind.label,
+                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  line,
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                ),
+              ],
+            ),
+          ),
+          if (!available)
+            TextButton(
+              onPressed: onVerify,
+              child: Text(
+                'Verify',
+                style: AuraText.small.copyWith(
+                  color: AuraSurface.accentText,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+    return Semantics(
+      button: available,
+      label: '${kind.label}. $line',
+      child: available
+          ? InkWell(
+              onTap: onChoose,
+              borderRadius: BorderRadius.circular(AuraRadius.r12),
+              child: body,
+            )
+          : Opacity(opacity: 0.85, child: body),
     );
   }
 }
