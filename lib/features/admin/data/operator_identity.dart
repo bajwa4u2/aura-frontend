@@ -268,7 +268,12 @@ class IdentitySubmission {
     this.decisionReason,
     this.reviewerName,
     this.evidenceDiscardedAt,
+    this.documentAge = const DocumentAge.unread(),
   });
+
+  /// What the document says about the person's age, for the reviewer's
+  /// decision (founder, 2026-09-29). Advice only: it decides nothing.
+  final DocumentAge documentAge;
 
   final String id;
   final IdentitySubmissionState state;
@@ -388,6 +393,7 @@ class IdentitySubmission {
           ? _text(Map<String, dynamic>.from(reviewer)['displayName'])
           : null,
       evidenceDiscardedAt: _date(body['evidenceDiscardedAt']),
+      documentAge: DocumentAge.fromJson(body['documentAge']),
     );
   }
 }
@@ -476,6 +482,23 @@ class OperatorIdentityRepository {
     return IdentityEvidenceView.fromJson(evidenceId, res.data);
   }
 
+  /// Ask Aura to read the document's date of birth (on its own server).
+  Future<DocumentAge> readDocumentAge(String submissionId) async {
+    final res = await _dio.post(
+      '/v1/admin/identity-verification/$submissionId/document-age/read',
+    );
+    return DocumentAge.fromJson(res.data);
+  }
+
+  /// The reviewer types the date from the document (YYYY-MM-DD).
+  Future<DocumentAge> typeDocumentDob(String submissionId, String ymd) async {
+    final res = await _dio.post(
+      '/v1/admin/identity-verification/$submissionId/document-age',
+      data: {'dateOfBirth': ymd},
+    );
+    return DocumentAge.fromJson(res.data);
+  }
+
   /// The verdict. `reason` is required by the authority for every decision.
   /// Approval also carries the legal name exactly as read on the document —
   /// the verified RESULT, retained after the images are destroyed.
@@ -555,3 +578,72 @@ final openIdentitySubmissionForPersonProvider = Provider.autoDispose
   }
   return null;
 });
+
+/// The document's age, as advice to the reviewer.
+class DocumentAge {
+  const DocumentAge({
+    required this.state,
+    this.readAt,
+    this.documentDateOfBirth,
+    this.source,
+    this.age,
+    this.bucket,
+    this.publicationAge,
+    this.oldEnoughToPublish,
+    this.declaredDateOfBirth,
+    this.declaredMatches,
+    this.differsByYears,
+  });
+
+  const DocumentAge.unread() : this(state: 'UNREAD');
+
+  /// UNREAD | UNREADABLE | READ.
+  final String state;
+  final DateTime? readAt;
+  final DateTime? documentDateOfBirth;
+
+  /// MRZ | BARCODE | REVIEWER.
+  final String? source;
+  final int? age;
+
+  /// US | EU_EEA | ROW.
+  final String? bucket;
+  final int? publicationAge;
+  final bool? oldEnoughToPublish;
+  final DateTime? declaredDateOfBirth;
+  final bool? declaredMatches;
+  final int? differsByYears;
+
+  bool get isRead => state == 'READ' && documentDateOfBirth != null;
+
+  static DocumentAge fromJson(dynamic raw) {
+    final root = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+    // Admin answers may arrive wrapped ({ ok, data }) or bare.
+    final m = root['data'] is Map && !root.containsKey('state')
+        ? Map<String, dynamic>.from(root['data'] as Map)
+        : root;
+    final a = m['advice'] is Map
+        ? Map<String, dynamic>.from(m['advice'] as Map)
+        : const <String, dynamic>{};
+    DateTime? d(dynamic v) => v == null ? null : DateTime.tryParse('$v');
+    int? i(dynamic v) => v is num ? v.toInt() : int.tryParse('${v ?? ''}');
+    bool? b(dynamic v) => v is bool ? v : null;
+    // Only the three states the service speaks; anything else (a stray
+    // submission state, an old server) is "not read yet", never nothing.
+    final said = '${m['state'] ?? ''}';
+    final state = const {'UNREAD', 'UNREADABLE', 'READ'}.contains(said) ? said : 'UNREAD';
+    return DocumentAge(
+      state: state,
+      readAt: d(m['readAt']),
+      documentDateOfBirth: d(a['documentDateOfBirth']),
+      source: a['source']?.toString(),
+      age: i(a['age']),
+      bucket: a['bucket']?.toString(),
+      publicationAge: i(a['publicationAge']),
+      oldEnoughToPublish: b(a['oldEnoughToPublish']),
+      declaredDateOfBirth: d(a['declaredDateOfBirth']),
+      declaredMatches: b(a['declaredMatches']),
+      differsByYears: i(a['differsByYears']),
+    );
+  }
+}

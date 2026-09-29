@@ -106,6 +106,14 @@ class IdentityReviewDetail extends ConsumerWidget {
                           const SizedBox(height: AuraSpace.s20),
                           _Evidence(submission: s, authority: authority),
                           const SizedBox(height: AuraSpace.s20),
+                          if (s.evidenceDiscardedAt == null) ...[
+                            _DocumentAgeSection(
+                              submission: s,
+                              canWrite: authority.can(
+                                  OperatorCapability.identityVerificationWrite),
+                            ),
+                            const SizedBox(height: AuraSpace.s20),
+                          ],
                           if (s.history.isNotEmpty) ...[
                             _History(submission: s),
                             const SizedBox(height: AuraSpace.s20),
@@ -877,3 +885,253 @@ class _Row extends StatelessWidget {
 String _day(DateTime when) =>
     '${when.year}-${when.month.toString().padLeft(2, '0')}-'
     '${when.day.toString().padLeft(2, '0')}';
+
+/// "Age, from the document" (founder, 2026-09-29; drawn and approved:
+/// https://claude.ai/artifact/6ouRsnfWrmFLzbgrX5xj2y). Aura reads the date of
+/// birth from the document's machine-readable lines or licence barcode on its
+/// own server, or the reviewer types it; either way the reviewer is told the
+/// age against the publication age where the person lives. Advice only.
+class _DocumentAgeSection extends ConsumerStatefulWidget {
+  const _DocumentAgeSection({required this.submission, required this.canWrite});
+
+  final IdentitySubmission submission;
+  final bool canWrite;
+
+  @override
+  ConsumerState<_DocumentAgeSection> createState() => _DocumentAgeSectionState();
+}
+
+class _DocumentAgeSectionState extends ConsumerState<_DocumentAgeSection> {
+  late DocumentAge _age = widget.submission.documentAge;
+  bool _busy = false;
+  String? _trouble;
+  DateTime? _typed;
+
+  @override
+  void initState() {
+    super.initState();
+    // Read as soon as a reviewer who may write opens it: the advice should be
+    // there by the time they reach the decision.
+    if (_age.state == 'UNREAD' && widget.canWrite) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _read());
+    }
+  }
+
+  Future<void> _run(Future<DocumentAge> Function() call) async {
+    setState(() {
+      _busy = true;
+      _trouble = null;
+    });
+    try {
+      final next = await call();
+      if (mounted) setState(() => _age = next);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _trouble = 'Aura could not do that just now. Nothing was recorded.');
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _read() => _run(() => ref
+      .read(operatorIdentityRepositoryProvider)
+      .readDocumentAge(widget.submission.id));
+
+  Future<void> _check() async {
+    final d = _typed;
+    if (d == null) return;
+    final ymd = '${d.year.toString().padLeft(4, '0')}-'
+        '${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    await _run(() => ref
+        .read(operatorIdentityRepositoryProvider)
+        .typeDocumentDob(widget.submission.id, ymd));
+  }
+
+  static const _months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
+  /// A date of birth is a calendar date, not a moment: no time is shown.
+  static String _day(DateTime d) => '${d.day} ${_months[d.month - 1]} ${d.year}';
+
+  static String _where(String? bucket) => switch (bucket) {
+        'US' => 'United States',
+        'EU_EEA' => 'EU / EEA',
+        _ => 'rest of the world',
+      };
+
+  String _from() {
+    final kind = switch (widget.submission.documentKind) {
+      'PASSPORT' => 'Passport',
+      'DRIVING_LICENCE' => 'Driving licence',
+      'IDENTITY_CARD' => 'Identity card',
+      'RESIDENCE_PERMIT' => 'Residence permit',
+      _ => 'Document',
+    };
+    return switch (_age.source) {
+      'MRZ' => '$kind, machine-readable lines · check digits correct',
+      'BARCODE' => '$kind, barcode',
+      _ => 'Typed by a reviewer from the document',
+    };
+  }
+
+  Widget _verdict(String text, Color bg, Color ink) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AuraSpace.s12,
+          vertical: AuraSpace.s10,
+        ),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(AuraRadius.r10),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(color: ink, fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final a = _age;
+    final children = <Widget>[];
+
+    if (_busy && !a.isRead) {
+      children.add(const Text(
+        'Reading the document on Aura’s own server…',
+        style: TextStyle(color: AuraSurface.muted, fontSize: 13),
+      ));
+    } else if (a.isRead) {
+      final under = a.oldEnoughToPublish == false;
+      final differs = a.declaredMatches == false;
+      children.add(under
+          ? _verdict(
+              'Under the publication age where they live: ${a.age}, the limit is ${a.publicationAge}',
+              AuraSurface.dangerBg,
+              AuraSurface.dangerInk)
+          : differs
+              ? _verdict(
+                  'Old enough, but the document’s date of birth is not the one they gave',
+                  AuraSurface.warnBg,
+                  AuraSurface.warnInk)
+              : _verdict('Old enough to publish where they live', AuraSurface.goodBg,
+                  AuraSurface.goodInk));
+      children.add(const SizedBox(height: AuraSpace.s10));
+      children.addAll([
+        _Row(label: 'Read from', value: _from()),
+        _Row(label: 'Date of birth on the document', value: _day(a.documentDateOfBirth!)),
+        _Row(label: 'Age today', value: '${a.age}'),
+        _Row(
+          label: 'Publication age where they live',
+          value: '${a.publicationAge} · ${_where(a.bucket)}',
+        ),
+        _Row(
+          label: 'Date of birth they gave Aura',
+          value: a.declaredDateOfBirth == null
+              ? 'Not given'
+              : '${_day(a.declaredDateOfBirth!)} · '
+                  '${a.declaredMatches == true ? 'matches' : a.differsByYears != null ? 'differs by ${a.differsByYears} year${a.differsByYears == 1 ? '' : 's'}' : 'differs'}',
+          tone: differs ? OperatorTone.pending : null,
+        ),
+      ]);
+      if (under) {
+        children.add(const Padding(
+          padding: EdgeInsets.only(top: AuraSpace.s4),
+          child: Text(
+            'Aura already refuses publishing to anyone under the limit by the date they gave; '
+            'here the document is what says so.',
+            style: TextStyle(color: AuraSurface.faint, fontSize: 11.5),
+          ),
+        ));
+      }
+    } else if (a.state == 'UNREAD' && widget.canWrite) {
+      // Never an empty panel: before the read runs, or if it could not.
+      children.addAll([
+        const Text(
+          'Not read yet. Aura reads the document’s machine-readable lines or barcode on its own server.',
+          style: TextStyle(color: AuraSurface.muted, fontSize: 13),
+        ),
+        const SizedBox(height: AuraSpace.s8),
+        TextButton(
+          onPressed: _read,
+          style: TextButton.styleFrom(foregroundColor: AuraSurface.accent),
+          child: const Text('Read the document'),
+        ),
+      ]);
+    } else if (a.state == 'UNREADABLE' || (!widget.canWrite && a.state == 'UNREAD')) {
+      children.add(_verdict(
+        a.state == 'UNREADABLE'
+            ? 'This document has no machine-readable lines or barcode Aura could read.'
+            : 'Not read yet. A reviewer who may decide can read it.',
+        AuraSurface.warnBg,
+        AuraSurface.warnInk,
+      ));
+      if (widget.canWrite) {
+        children.addAll([
+          const SizedBox(height: AuraSpace.s10),
+          const Text(
+            'Choose the date of birth exactly as the document shows it, and Aura will check the age.',
+            style: TextStyle(color: AuraSurface.ink, fontSize: 13),
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          Wrap(
+            spacing: AuraSpace.s10,
+            runSpacing: AuraSpace.s8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              OutlinedButton(
+                onPressed: _busy
+                    ? null
+                    : () async {
+                        final now = DateTime.now();
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _typed ?? DateTime(now.year - 30),
+                          firstDate: DateTime(1900),
+                          lastDate: now,
+                          helpText: 'Date of birth on the document',
+                        );
+                        if (picked != null) setState(() => _typed = picked);
+                      },
+                child: Text(_typed == null ? 'Date of birth on the document' : _day(_typed!)),
+              ),
+              TextButton(
+                onPressed: _busy || _typed == null ? null : _check,
+                style: TextButton.styleFrom(foregroundColor: AuraSurface.accent),
+                child: const Text('Check the age'),
+              ),
+              TextButton(
+                onPressed: _busy ? null : _read,
+                child: const Text('Try reading again'),
+              ),
+            ],
+          ),
+          const SizedBox(height: AuraSpace.s6),
+          const Text(
+            'Recorded as chosen by you, with the time. Kept with the review; destroyed with the evidence.',
+            style: TextStyle(color: AuraSurface.faint, fontSize: 11.5),
+          ),
+        ]);
+      }
+    }
+    if (_trouble != null) {
+      children.add(Padding(
+        padding: const EdgeInsets.only(top: AuraSpace.s8),
+        child: Text(_trouble!, style: const TextStyle(color: AuraSurface.dangerInk, fontSize: 12.5)),
+      ));
+    }
+
+    return OperatorSection(
+      title: 'Age, from the document',
+      subtitle: 'Advice for your decision. It decides nothing and blocks nothing.',
+      child: OperatorPanel(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: children,
+        ),
+      ),
+    );
+  }
+}
