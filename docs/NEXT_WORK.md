@@ -136,6 +136,22 @@ AND current identity verification (RAISE_ISSUE row of the assurance policy,
 founder-approved amendment); refusal in the ASSURANCE_REQUIRED shape;
 `GET /public-record/capabilities/me` -> `{ raiseIssue }`. No behaviour change
 while the gate is off.
+**2026-09-29, later — SUPERSEDES the B entry below.** Founder tried B as an
+unverified account and chose C; then extended identity to Ask, then to Share
+update after a 15-day grace. LIVE and walked through as that account:
+web `2ea332a2` (C: doors), `0c01c737` (read the wrapped answer: the client
+let an unverified person through), `ed42d02e` (Ask), `b8f7d49c` (Share update
+grace notice); backend `cd99572` (ASK_QUESTION), `e5b4005` (SHARE_UPDATE from
+2026-10-15 04:00 UTC = 15 Oct 12:00 AM EDT; supersedes "not a universal gate"
+for public-record posts). Switches (Admin > Platform) both ON since
+2026-09-29 13:04 UTC.
+Coverage (read-only, 2026-09-29): 48 members, 36 email-verified, 1 with a
+current identity verification, 8 unverified people have posted before.
+OPEN: (a) the member notice + email about verification (drafted, not sent);
+(b) "Require intent" ON refuses posts from store builds without an intent,
+and the Share screen: until the next store release; (c) document scanner that
+advises the reviewer on age (founder), later blocking; (d) store release.
+
 **2026-09-29, founder chose B; SHIPPED:** web `29a55063` (live), backend `8ab071c`
 (capabilities/me reads the gate switch) and `c2c14a6` (feed carries intent).
 Publish asks "What is this post?" when nothing was chosen; Raise issue offered
