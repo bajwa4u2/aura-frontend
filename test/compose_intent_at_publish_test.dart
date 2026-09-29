@@ -17,6 +17,7 @@ void main() {
     WidgetTester tester, {
     required bool raiseAllowed,
     String? intent,
+    bool shareAllowed = true,
   }) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(943, 442);
@@ -29,6 +30,7 @@ void main() {
       published: published,
       raiseAllowed: raiseAllowed,
       draftIntent: intent,
+      shareAllowed: shareAllowed,
     )));
     await tester.pumpAndSettle();
     return published;
@@ -65,7 +67,10 @@ void main() {
         findsOneWidget);
     expect(find.textContaining('Raising an issue needs your identity verified'),
         findsOneWidget);
-    expect(find.text('Verify'), findsNWidgets(2));
+    // Share update during its grace: allowed, and the date is said.
+    expect(find.textContaining('sharing an update needs your identity verified too'),
+        findsOneWidget);
+    expect(find.text('Verify'), findsNWidgets(3));
     await expectLater(find.byType(MaterialApp),
         matchesGoldenFile('goldens/compose_intent_unverified_943.png'));
 
@@ -100,6 +105,21 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('Asking a question needs your identity verified'),
         findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+
+  testWidgets('after the grace, Share update is refused too: every public post needs identity',
+      (tester) async {
+    final published = await openWithDraft(tester, raiseAllowed: false, shareAllowed: false);
+
+    expect(find.textContaining('Sharing an update needs your identity verified'),
+        findsOneWidget);
+    await tester.tap(find.text('News or progress others should know.'));
+    await tester.pumpAndSettle();
+    expect(find.text('What are you posting?'), findsOneWidget);
+    expect(published, isEmpty);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
@@ -147,6 +167,7 @@ Dio _dio({
   required List<Map<String, dynamic>> published,
   required bool raiseAllowed,
   String? draftIntent,
+  bool shareAllowed = true,
 }) {
   final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'));
   dio.interceptors.add(
@@ -170,7 +191,14 @@ Dio _dio({
           // As the real server answers: every response is wrapped. The
           // unwrapped fixture hid the defect that let an unverified person
           // raise an issue (2026-09-29).
-          return handler.resolve(ok({'ok': true, 'data': {'raiseIssue': raiseAllowed, 'ask': raiseAllowed}}));
+          return handler.resolve(ok({'ok': true, 'data': {
+            'raiseIssue': raiseAllowed,
+            'ask': raiseAllowed,
+            'shareUpdate': shareAllowed,
+            'identityVerified': raiseAllowed,
+            // Far enough ahead that the grace is always running in this test.
+            'shareUpdateFrom': '2099-10-15T04:00:00.000Z',
+          }}));
         }
         if (method == 'GET' && path == '/users/me') {
           return handler.resolve(ok({'id': 'user-1', 'handle': 'me', 'displayName': 'Me'}));

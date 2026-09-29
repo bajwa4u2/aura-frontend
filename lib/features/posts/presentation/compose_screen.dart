@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart' show DateFormat;
 import 'package:video_player/video_player.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
@@ -2328,9 +2329,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       final body = root.containsKey('data') ? _asMap(root['data']) : root;
       final raise = body['raiseIssue'];
       final ask = body['ask'];
+      final share = body['shareUpdate'];
+      final verified = body['identityVerified'];
       return _Gates(
         raise: raise is bool ? raise : true,
         ask: ask is bool ? ask : true,
+        share: share is bool ? share : true,
+        identityVerified: verified is bool ? verified : true,
+        shareFrom: DateTime.tryParse('${body['shareUpdateFrom'] ?? ''}'),
       );
     } catch (_) {
       return const _Gates(raise: true, ask: true);
@@ -2410,18 +2416,27 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             _IntentChip(
               kind: _ComposeIntent.share,
               selected: _intent == _ComposeIntent.share,
-              onTap: () => setState(() {
-                _refused = null;
-                _intent = _intent == _ComposeIntent.share
-                    ? _ComposeIntent.none
-                    : _ComposeIntent.share;
-              }),
+              onTap: () {
+                if (_intent == _ComposeIntent.share) {
+                  setState(() => _intent = _ComposeIntent.none);
+                } else {
+                  _choose(_ComposeIntent.share, fromDoor: false);
+                }
+              },
             ),
           ],
         ),
         if (_refused != null) ...[
           const SizedBox(height: AuraSpace.s8),
           _NeedsVerification(kind: _refused!, onVerify: _goVerify),
+        ] else if (_intent == _ComposeIntent.share &&
+            _gates?.shareGraceNotice != null) ...[
+          const SizedBox(height: AuraSpace.s8),
+          _NeedsVerification(
+            kind: _ComposeIntent.share,
+            onVerify: _goVerify,
+            notice: _gates!.shareGraceNotice,
+          ),
         ],
         if (_intent != _ComposeIntent.none && _intent.toneHint != null) ...[
           const SizedBox(height: AuraSpace.s8),
@@ -3034,7 +3049,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       // non-judgmental message rather than a raw error string.
       if (e is DioException &&
           e.response?.statusCode == 403 &&
-          (_intent == _ComposeIntent.raise || _intent == _ComposeIntent.ask)) {
+          _intent != _ComposeIntent.none) {
         // The server says what is missing (ASSURANCE_REQUIRED since
         // 2026-09-29): an identity verification. Say it, and offer the way.
         final body = e.response?.data;
@@ -3982,6 +3997,8 @@ class _IntentDoors extends StatelessWidget {
           line: _IntentChooser._lines[kind]!,
           needsVerification:
               refused == kind || (gates != null && !gates!.allows(kind)),
+          graceNotice:
+              kind == _ComposeIntent.share ? gates?.shareGraceNotice : null,
           onChoose: () => onChoose(kind),
           onVerify: onVerify,
         ),
@@ -4030,7 +4047,11 @@ class _Door extends StatelessWidget {
     required this.needsVerification,
     required this.onChoose,
     required this.onVerify,
+    this.graceNotice,
   });
+
+  /// Said on Share update while its grace lasts, to somebody not verified.
+  final String? graceNotice;
 
   final _ComposeIntent kind;
   final String line;
@@ -4081,6 +4102,13 @@ class _Door extends StatelessWidget {
               if (needsVerification) ...[
                 const SizedBox(height: AuraSpace.s10),
                 _NeedsVerification(kind: kind, onVerify: onVerify),
+              ] else if (graceNotice != null) ...[
+                const SizedBox(height: AuraSpace.s10),
+                _NeedsVerification(
+                  kind: kind,
+                  onVerify: onVerify,
+                  notice: graceNotice,
+                ),
               ],
             ],
           ),
@@ -4092,24 +4120,54 @@ class _Door extends StatelessWidget {
 
 /// What the server will accept from this person now, per choice.
 class _Gates {
-  const _Gates({required this.raise, required this.ask});
+  const _Gates({
+    required this.raise,
+    required this.ask,
+    this.share = true,
+    this.identityVerified = true,
+    this.shareFrom,
+  });
   final bool raise;
   final bool ask;
+  final bool share;
+  final bool identityVerified;
+
+  /// When Share update starts to need identity (founder, 2026-09-29: a
+  /// 15-day grace, from 15 Oct 2026 12:00 AM EDT).
+  final DateTime? shareFrom;
 
   bool allows(_ComposeIntent kind) => switch (kind) {
         _ComposeIntent.raise => raise,
         _ComposeIntent.ask => ask,
+        _ComposeIntent.share => share,
         _ => true,
       };
+
+  /// While the grace lasts, an unverified person may still share, and is told
+  /// the moment it ends, in their own zone and with its time.
+  String? get shareGraceNotice {
+    final from = shareFrom;
+    if (identityVerified || !share || from == null) return null;
+    if (!from.isAfter(DateTime.now())) return null;
+    final when = DateFormat('d MMM y · h:mm a').format(from.toLocal());
+    return 'From $when, sharing an update needs your identity verified too.';
+  }
 }
 
 /// Said wherever Ask or Raise issue is chosen by somebody the server would
 /// refuse.
 class _NeedsVerification extends StatelessWidget {
-  const _NeedsVerification({required this.kind, required this.onVerify});
+  const _NeedsVerification({
+    required this.kind,
+    required this.onVerify,
+    this.notice,
+  });
 
   final _ComposeIntent kind;
   final VoidCallback onVerify;
+
+  /// Said instead of the refusal: a date ahead, not a door closed.
+  final String? notice;
 
   @override
   Widget build(BuildContext context) {
@@ -4126,11 +4184,17 @@ class _NeedsVerification extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              kind == _ComposeIntent.ask
-                  ? 'Asking a question needs your identity verified. '
-                      'You can still share an update.'
-                  : 'Raising an issue needs your identity verified. '
-                      'You can still share an update.',
+              notice ??
+                  switch (kind) {
+                    _ComposeIntent.ask =>
+                      'Asking a question needs your identity verified. '
+                          'You can still reply, read and message.',
+                    _ComposeIntent.share =>
+                      'Sharing an update needs your identity verified. '
+                          'You can still reply, read and message.',
+                    _ => 'Raising an issue needs your identity verified. '
+                        'You can still reply, read and message.',
+                  },
               style: AuraText.small.copyWith(
                 color: AuraSurface.warnInk,
                 height: 1.4,
