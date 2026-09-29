@@ -1,3 +1,4 @@
+import 'package:aura/core/product/temporal.dart';
 import '../../../core/trust/trust_marks.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -190,8 +191,7 @@ class _InstitutionJoinRequestsScreenState
     final date = () {
       final dt = DateTime.tryParse(createdAt);
       if (dt == null) return '';
-      final local = dt.toLocal();
-      return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}';
+      return AuraTemporal.fullShort(dt);
     }();
 
     return Container(

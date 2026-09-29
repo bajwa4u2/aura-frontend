@@ -1,3 +1,4 @@
+import 'package:aura/core/product/temporal.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -243,8 +244,7 @@ class _InstitutionInvitesScreenState
     if (raw == null || raw.isEmpty) return '';
     final dt = DateTime.tryParse(raw);
     if (dt == null) return raw;
-    final local = dt.toLocal();
-    return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}';
+    return AuraTemporal.fullShort(dt);
   }
 
   Widget _buildCreateSection() {

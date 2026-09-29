@@ -13,6 +13,7 @@
 /// be revised is not history.
 library;
 
+import 'package:aura/core/product/temporal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -169,8 +170,7 @@ class RecordArea extends ConsumerWidget {
     if (_sameDay(now.subtract(const Duration(days: 1)), when)) {
       return 'YESTERDAY';
     }
-    return '${when.year}-${when.month.toString().padLeft(2, '0')}-'
-        '${when.day.toString().padLeft(2, '0')}';
+    return AuraTemporal.day(when).toUpperCase();
   }
 }
 

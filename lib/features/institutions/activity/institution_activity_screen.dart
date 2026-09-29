@@ -1,3 +1,4 @@
+import 'package:aura/core/product/temporal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -344,8 +345,7 @@ List<_DayGroup> _groupByDay(List<InstitutionActivityEvent> events) {
       } else if (d == yesterday) {
         label = 'Yesterday';
       } else {
-        label = '${d.year}-${d.month.toString().padLeft(2, '0')}-'
-            '${d.day.toString().padLeft(2, '0')}';
+        label = AuraTemporal.day(d);
       }
     }
     if (!groups.containsKey(label)) {

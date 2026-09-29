@@ -1,3 +1,4 @@
+import 'package:aura/core/product/temporal.dart';
 import '../../../core/navigation/navigation_authority.dart';
 import 'dart:async';
 
@@ -105,9 +106,7 @@ class _AnnouncementDetailScreenState
   final Set<String> _markedAnnouncementIds = <String>{};
 
   String _fmtDate(DateTime dt) {
-    final d = dt.toLocal();
-    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')} '
-        '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+    return AuraTemporal.full(dt);
   }
 
   Future<void> _pickTranslationLanguage(BuildContext context) async {

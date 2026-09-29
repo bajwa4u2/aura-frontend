@@ -81,7 +81,8 @@ class PostCardIdentityHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final metaParts = <String>[
       if (handle.trim().isNotEmpty) '@${handle.trim()}',
-      if (createdLabel.trim().isNotEmpty) createdLabel.trim(),
+      // A roomy card gives the written date its own line below.
+      if (compact && createdLabel.trim().isNotEmpty) createdLabel.trim(),
     ];
 
     return Row(
@@ -123,6 +124,18 @@ class PostCardIdentityHeader extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(
                               metaParts.join(' · '),
+                              style: AuraText.small.copyWith(
+                                color: AuraSurface.muted,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        if (!compact && createdLabel.trim().isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              createdLabel.trim(),
                               style: AuraText.small.copyWith(
                                 color: AuraSurface.muted,
                               ),

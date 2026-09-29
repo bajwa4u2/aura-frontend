@@ -1,3 +1,4 @@
+import 'package:aura/core/product/temporal.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/media/trace/aura_trace.dart';
 import 'package:flutter/material.dart';
@@ -758,8 +759,9 @@ class _PostCardState extends ConsumerState<PostCard> {
     }
 
     final createdAt = post.createdAt;
-    final createdLabel =
-        '${createdAt.year.toString().padLeft(4, '0')}-${createdAt.month.toString().padLeft(2, '0')}-${createdAt.day.toString().padLeft(2, '0')}';
+    final createdLabel = widget.compact
+        ? AuraTemporal.fullShort(createdAt)
+        : AuraTemporal.full(createdAt);
 
     final postId = post.id;
     final postUrl = canonicalPostUrl(postId);

@@ -1,3 +1,4 @@
+import 'package:aura/core/product/temporal.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' as ui;
@@ -8,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart' show DateFormat;
 import 'package:video_player/video_player.dart';
 
 import '../../../core/attachments/aura_media_upload.dart';
@@ -4149,7 +4149,7 @@ class _Gates {
     final from = shareFrom;
     if (identityVerified || !share || from == null) return null;
     if (!from.isAfter(DateTime.now())) return null;
-    final when = DateFormat('d MMM y · h:mm a').format(from.toLocal());
+    final when = AuraTemporal.full(from);
     return 'From $when, sharing an update needs your identity verified too.';
   }
 }

@@ -33,16 +33,12 @@ G2 3 lib/features/me/presentation/security_screen.dart
 
 # ── G3 — local timezone conversion ───────────────────────────────────────────
 G3 1 lib/features/activity/presentation/activity_screen.dart
-G3 1 lib/features/announcements/presentation/announcement_detail_screen.dart
 G3 1 lib/features/announcements/presentation/announcements_screen.dart
 G3 1 lib/features/devices/presentation/devices_screen.dart
-G3 2 lib/features/home/presentation/member_home_screen.dart
+G3 1 lib/features/home/presentation/member_home_screen.dart
 G3 2 lib/features/institutions/activity/institution_activity_screen.dart
-G3 1 lib/features/institutions/announcements/institution_announcements_screen.dart
 G3 1 lib/features/institutions/correspondence/institution_correspondence_screen.dart
 G3 1 lib/features/institutions/data/institution_draft_store.dart
-G3 1 lib/features/institutions/presentation/institution_invites_screen.dart
-G3 1 lib/features/institutions/presentation/institution_join_requests_screen.dart
 G3 1 lib/features/invitations/presentation/invite_accept_screen.dart
 G3 3 lib/features/me/presentation/me/me_participation_continuity.dart
 G3 1 lib/features/me/presentation/security_screen.dart

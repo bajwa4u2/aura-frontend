@@ -4,6 +4,7 @@ import '../../../core/product/product_state_view.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:aura/core/product/temporal.dart';
 import 'package:aura/core/auth/session_providers.dart';
 
 import '../../../app/shell/rail/rail_composition.dart';
@@ -350,8 +351,7 @@ class _PinnedAnnouncementBanner extends ConsumerWidget {
   const _PinnedAnnouncementBanner();
 
   String _fmt(DateTime dt) {
-    final d = dt.toLocal();
-    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    return AuraTemporal.fullShort(dt);
   }
 
   @override

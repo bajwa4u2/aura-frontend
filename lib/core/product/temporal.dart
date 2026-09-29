@@ -231,6 +231,36 @@ class AuraTemporal {
     return '${_date(l)}, ${_clock(l)}';
   }
 
+  static const List<String> _monthNames = <String>[
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+
+  static const List<String> _weekdays = <String>[
+    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+  ];
+
+  /// The full, written date with its time, in the viewer's zone:
+  /// "Tuesday, September 29, 2026 · 9:04 AM". Use it wherever the space
+  /// allows (founder, 2026-09-29: never "2026-09-29"; always the time).
+  static String full(DateTime instant) {
+    final l = instant.toLocal();
+    return '${_weekdays[l.weekday - 1]}, ${_monthNames[l.month - 1]} ${l.day}, ${l.year} · ${_clock(l)}';
+  }
+
+  /// The written day alone, for a heading over that day's entries:
+  /// "Tuesday, September 29, 2026". Each entry below carries its own time.
+  static String day(DateTime instant) {
+    final l = instant.toLocal();
+    return '${_weekdays[l.weekday - 1]}, ${_monthNames[l.month - 1]} ${l.day}, ${l.year}';
+  }
+
+  /// The same, shortened for a tight line: "Tue, Sep 29, 2026 · 9:04 AM".
+  static String fullShort(DateTime instant) {
+    final l = instant.toLocal();
+    return '${_weekdays[l.weekday - 1].substring(0, 3)}, ${_months[l.month - 1]} ${l.day}, ${l.year} · ${_clock(l)}';
+  }
+
   static String _date(DateTime l) {
     final now = _now();
     final month = _months[l.month - 1];

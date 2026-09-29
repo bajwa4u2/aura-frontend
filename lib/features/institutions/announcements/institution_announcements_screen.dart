@@ -1,3 +1,4 @@
+import 'package:aura/core/product/temporal.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -241,8 +242,7 @@ class _InstitutionAnnouncementsScreenState
   String _formatDate(String? raw) {
     final dt = DateTime.tryParse(raw ?? '');
     if (dt == null) return '';
-    final local = dt.toLocal();
-    return '${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}';
+    return AuraTemporal.fullShort(dt);
   }
 
   Widget _buildAnnouncementTile(
