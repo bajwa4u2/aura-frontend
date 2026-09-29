@@ -147,7 +147,15 @@ for public-record posts). Switches (Admin > Platform) both ON since
 2026-09-29 13:04 UTC.
 Coverage (read-only, 2026-09-29): 48 members, 36 email-verified, 1 with a
 current identity verification, 8 unverified people have posted before.
-OPEN: (a) the member notice + email about verification (drafted, not sent);
+DONE 2026-09-29 14:39 UTC: the verify-your-identity notice went to 27 members
+(bell + email, all 27 emails SENT; audit row platform.notice.identity_verification.sent;
+7 non-members left out at the founder's word; Nimra had verified meanwhile).
+Along the way: SYSTEM notices can request immediate email (opt-outs still
+honoured), a platform notice keeps its own subject, the App Store review
+account is exempt (STORE_REVIEW_ACCOUNT_IDS). "Require intent" OFF since
+13:36 UTC until the store release. DEFECT FOUND: Aura has never sent a digest
+email (88 digest-routed PENDING since April) - tracked, not fixed.
+OPEN: (a) digest sender;
 (b) "Require intent" ON refuses posts from store builds without an intent,
 and the Share screen: until the next store release; (c) document scanner that
 advises the reviewer on age (founder), later blocking; (d) store release.
