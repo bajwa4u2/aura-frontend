@@ -136,10 +136,17 @@ AND current identity verification (RAISE_ISSUE row of the assurance policy,
 founder-approved amendment); refusal in the ASSURANCE_REQUIRED shape;
 `GET /public-record/capabilities/me` -> `{ raiseIssue }`. No behaviour change
 while the gate is off.
-**Waiting on the founder:** the composer step, drawn at his window:
-https://claude.ai/artifact/JEuASkaxxbMCHC1dWXMev7 (A chips required / B asked at
-Publish, recommended / C choose first), and whether the intent switch covers
-public posts only (recommended; otherwise the Share screen needs the choice too).
+**2026-09-29, founder chose B; SHIPPED:** web `29a55063` (live), backend `8ab071c`
+(capabilities/me reads the gate switch) and `c2c14a6` (feed carries intent).
+Publish asks "What is this post?" when nothing was chosen; Raise issue offered
+only when the server accepts it now, else "Needs your identity verified. Your
+draft is kept." + Verify; drafts keep intent; feed cards show Ask / Issue /
+Update. Verified: real ComposeScreen widget test at 943 x 442 (goldens in
+test/goldens/compose_intent_*); the feed label was NOT seen live (the extension
+window would not scroll).
+**Next:** (1) founder's word to turn ON `CAN_RAISE_ISSUE_GATE_ENABLED`;
+(2) still open: intent switch on public posts only (recommended) or the Share
+screen gets the choice; (3) the store release carrying this (~10-02/03).
 
 Plan (dates re-based on the 09-29 start):
 1. 09-29 → ~10-01: composer asks Ask / Raise Issue / Share Update on top-level
