@@ -153,7 +153,10 @@ Dio _dio({
           }));
         }
         if (method == 'GET' && path == '/public-record/capabilities/me') {
-          return handler.resolve(ok({'raiseIssue': raiseAllowed}));
+          // As the real server answers: every response is wrapped. The
+          // unwrapped fixture hid the defect that let an unverified person
+          // raise an issue (2026-09-29).
+          return handler.resolve(ok({'ok': true, 'data': {'raiseIssue': raiseAllowed}}));
         }
         if (method == 'GET' && path == '/users/me') {
           return handler.resolve(ok({'id': 'user-1', 'handle': 'me', 'displayName': 'Me'}));

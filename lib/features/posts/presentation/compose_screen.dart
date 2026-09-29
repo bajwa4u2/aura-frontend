@@ -2318,7 +2318,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     try {
       final res =
           await ref.read(dioProvider).get('/public-record/capabilities/me');
-      final raise = _asMap(res.data)['raiseIssue'];
+      // The server wraps every answer: { ok, data: { raiseIssue } }. Reading
+      // the top level found nothing, which counted as yes, so an unverified
+      // person was let through (founder, signed in as one, 2026-09-29).
+      final root = _asMap(res.data);
+      final body = root.containsKey('data') ? _asMap(root['data']) : root;
+      final raise = body['raiseIssue'];
       return raise is bool ? raise : true;
     } catch (_) {
       return true;
