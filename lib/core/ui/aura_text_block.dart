@@ -252,7 +252,13 @@ final class AuraTextBlockDirection {
   static bool _isRtlRune(int rune) {
     return (rune >= 0x0590 && rune <= 0x05FF) || // Hebrew
         (rune >= 0x0600 && rune <= 0x06FF) || // Arabic
+        (rune >= 0x0700 && rune <= 0x074F) || // Syriac
         (rune >= 0x0750 && rune <= 0x077F) || // Arabic Supplement
+        (rune >= 0x0780 && rune <= 0x07BF) || // Thaana (Dhivehi)
+        (rune >= 0x07C0 && rune <= 0x07FF) || // N'Ko
+        (rune >= 0x0800 && rune <= 0x085F) || // Samaritan, Mandaic
+        (rune >= 0x0860 && rune <= 0x089F) || // Syriac Supplement, Arabic Ext-B
+        (rune >= 0xFB1D && rune <= 0xFB4F) || // Hebrew presentation forms
         (rune >= 0x08A0 && rune <= 0x08FF) || // Arabic Extended-A
         (rune >= 0xFB50 && rune <= 0xFDFF) || // Arabic Presentation Forms-A
         (rune >= 0xFE70 && rune <= 0xFEFF) || // Arabic Presentation Forms-B

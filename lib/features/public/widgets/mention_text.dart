@@ -1,4 +1,5 @@
 import 'package:flutter/gestures.dart';
+import '../../../core/ui/aura_text_block.dart' show AuraTextBlockDirection;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -56,11 +57,16 @@ class TagStyledText extends StatelessWidget {
     final base = style ?? AuraText.body;
     final t = text;
     if (t.isEmpty) return Text(t, style: base);
+    // A post reads in the direction of its own first letter, as the web's
+    // dir="auto" does: Urdu and Arabic right to left, aligned to their start
+    // (founder, 2026-09-29: published Urdu was laid out left to right).
+    final dir = AuraTextBlockDirection.resolve(t);
 
     final re = RegExp(r'(^|[^a-zA-Z0-9_])([@#])([a-zA-Z0-9_\-]{2,32})');
     final matches = re.allMatches(t).toList();
     if (matches.isEmpty) {
-      return Text(t, style: base, maxLines: maxLines, overflow: overflow);
+      return _placed(dir, Text(t, style: base, maxLines: maxLines, overflow: overflow,
+          textDirection: dir, textAlign: TextAlign.start));
     }
 
     final spans = <InlineSpan>[];
@@ -86,11 +92,13 @@ class TagStyledText extends StatelessWidget {
       spans.add(TextSpan(text: t.substring(cursor), style: base));
     }
 
-    return RichText(
+    return _placed(dir, RichText(
       text: TextSpan(style: base, children: spans),
       maxLines: maxLines,
       overflow: overflow ?? TextOverflow.clip,
-    );
+      textDirection: dir,
+      textAlign: TextAlign.start,
+    ));
   }
 }
 
@@ -187,14 +195,20 @@ class _ResolvedTagTextState extends State<ResolvedTagText> {
     }
 
     final span = TextSpan(style: base, children: spans);
+    final dir = AuraTextBlockDirection.resolve(widget.text);
     if (widget.selectable) {
-      return SelectableText.rich(span, maxLines: widget.maxLines);
+      return _placed(dir, SelectableText.rich(span,
+          maxLines: widget.maxLines,
+          textDirection: dir,
+          textAlign: TextAlign.start));
     }
-    return RichText(
+    return _placed(dir, RichText(
       text: span,
       maxLines: widget.maxLines,
       overflow: widget.overflow ?? TextOverflow.clip,
-    );
+      textDirection: dir,
+      textAlign: TextAlign.start,
+    ));
   }
 
   List<_ResolvedRange> _ranges(String text, List<TagReference> refs) {
@@ -266,16 +280,22 @@ class _MentionTextState extends State<MentionText> {
     final base = widget.style ?? AuraText.body;
     final t = widget.text;
     if (t.isEmpty) return Text(t, style: base);
+    // A post reads in the direction of its own first letter, as the web's
+    // dir="auto" does: Urdu and Arabic right to left, aligned to their start
+    // (founder, 2026-09-29: published Urdu was laid out left to right).
+    final dir = AuraTextBlockDirection.resolve(t);
 
     final re = RegExp(r'(^|[^a-zA-Z0-9_])([@#])([a-zA-Z0-9_\-]{2,32})');
     final matches = re.allMatches(t).toList();
     if (matches.isEmpty) {
-      return Text(
+      return _placed(dir, Text(
         t,
         style: base,
         maxLines: widget.maxLines,
         overflow: widget.overflow,
-      );
+        textDirection: dir,
+        textAlign: TextAlign.start,
+      ));
     }
 
     // Reset recognizers each build — match count can change.
@@ -330,10 +350,19 @@ class _MentionTextState extends State<MentionText> {
       spans.add(TextSpan(text: t.substring(cursor), style: base));
     }
 
-    return RichText(
+    return _placed(dir, RichText(
       text: TextSpan(style: base, children: spans),
       maxLines: widget.maxLines,
       overflow: widget.overflow ?? TextOverflow.clip,
-    );
+      textDirection: dir,
+      textAlign: TextAlign.start,
+    ));
   }
 }
+
+/// Right-to-left text starts at the right edge of its space; left-to-right
+/// layouts are left exactly as they were. In unbounded width Align shrinks to
+/// the text, so this is safe inside a Row.
+Widget _placed(TextDirection dir, Widget child) => dir == TextDirection.rtl
+    ? Align(alignment: Alignment.topRight, child: child)
+    : child;

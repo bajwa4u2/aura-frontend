@@ -1562,7 +1562,12 @@ class _PreviewLine extends StatelessWidget {
                     ],
                     const TextSpan(text: '   '),
                     TextSpan(
-                      text: item.body.replaceAll('\n', ' ').trim(),
+                      // Isolated (FSI .. PDI): an Urdu or Arabic reply keeps
+                      // its own direction inside the name's line, so its
+                      // punctuation and emoji do not scatter (2026-09-29).
+                      text: '${String.fromCharCode(0x2068)}'
+                          '${item.body.replaceAll('\n', ' ').trim()}'
+                          '${String.fromCharCode(0x2069)}',
                       style: AuraText.micro.copyWith(
                         color: AuraSurface.muted,
                         height: 1.4,
