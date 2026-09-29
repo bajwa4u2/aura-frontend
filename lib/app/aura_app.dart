@@ -2,6 +2,7 @@ import '../core/ui/aura_window.dart';
 import '../core/ui/nav_posture_preference.dart';
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -853,11 +854,13 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
                     expandedPreferred: expanded,
                     hasPersistentNav: true,
                   ),
-                  child: ThreadCallLifecycleHost(
-                    child: OrphanedSessionBanner(
-                      child: UpdateGate(
-                        child: BootGate(
-                            child: child ?? const SizedBox.shrink()),
+                  child: _ScriptWarmup(
+                    child: ThreadCallLifecycleHost(
+                      child: OrphanedSessionBanner(
+                        child: UpdateGate(
+                          child: BootGate(
+                              child: child ?? const SizedBox.shrink()),
+                        ),
                       ),
                     ),
                   ),
@@ -1008,6 +1011,35 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Lays out one Arabic-script letter, unpainted, from the first frame
+/// (2026-09-29). Flutter web fetches a script's font only when it first meets
+/// that script, so an Urdu post in the first feed paint showed as boxes for a
+/// few seconds. Meeting the script at start-up makes the engine load the font
+/// (already preloaded from Aura's own origin by index.html) while the feed is
+/// still arriving. Web only; it takes no space and is never painted.
+class _ScriptWarmup extends StatelessWidget {
+  const _ScriptWarmup({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!kIsWeb) return child;
+    return Stack(
+      children: [
+        Positioned.fill(child: child),
+        const Positioned(
+          left: 0,
+          top: 0,
+          child: Offstage(
+            child: Text('اب', textDirection: TextDirection.rtl),
+          ),
+        ),
+      ],
     );
   }
 }
