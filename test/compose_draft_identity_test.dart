@@ -93,7 +93,10 @@ Widget _app(Dio dio) {
         routes: [
           GoRoute(
             path: '/compose',
-            builder: (context, state) => const Scaffold(body: ComposeScreen()),
+            // Opened with a choice made, as /compose?intent= does: a new post
+            // otherwise opens on "What are you posting?" (option C).
+            builder: (context, state) =>
+                const Scaffold(body: ComposeScreen(intent: 'share')),
           ),
           GoRoute(path: '/login', builder: (_, __) => const SizedBox.shrink()),
         ],

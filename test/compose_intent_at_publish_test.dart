@@ -8,8 +8,8 @@ import 'package:aura/core/institutions/institution_access_provider.dart';
 import 'package:aura/core/net/dio_provider.dart';
 import 'package:aura/features/posts/presentation/compose_screen.dart';
 
-/// Every top-level post says what it is. Written first, then asked at Publish
-/// when nothing was chosen (founder, 2026-09-29, option B:
+/// Every top-level post says what it is. A new post opens on the choice
+/// (founder, 2026-09-29, option C, after trying B live:
 /// https://claude.ai/artifact/JEuASkaxxbMCHC1dWXMev7). Mounts the real
 /// ComposeScreen at the founder's window (943 x 442).
 void main() {
@@ -34,57 +34,70 @@ void main() {
     return published;
   }
 
-  testWidgets('Publish with nothing chosen asks what the post is, then sends it',
+  testWidgets('a new post opens on "What are you posting?", and the choice is sent',
       (tester) async {
     final published = await openWithDraft(tester, raiseAllowed: true);
 
-    await tester.tap(find.text('Publish post'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('What is this post?'), findsOneWidget);
-    expect(published, isEmpty, reason: 'nothing is sent before the answer');
+    expect(find.text('What are you posting?'), findsOneWidget);
+    expect(find.text('Publish post'), findsNothing,
+        reason: 'nothing to publish until the post says what it is');
     await expectLater(find.byType(MaterialApp),
-        matchesGoldenFile('goldens/compose_intent_at_publish_943.png'));
+        matchesGoldenFile('goldens/compose_intent_doors_943.png'));
 
     await tester.tap(find.text('A question you want answered.'));
     await tester.pumpAndSettle();
+    expect(find.text('What are you posting?'), findsNothing);
 
-    final shown = find.byType(SnackBar).evaluate().map((e) => ((e.widget as SnackBar).content as Text).data).toList();
-    expect(published, isNotEmpty, reason: 'snackbar: $shown');
+    await tester.tap(find.text('Publish post'));
+    await tester.pumpAndSettle();
     expect(published.last['intent'], 'ASK');
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });
 
-  testWidgets('without a current verification, Raise issue says so before anything is lost',
+  testWidgets('unverified: Raise issue says so at once and is not taken (Nimra)',
       (tester) async {
     final published = await openWithDraft(tester, raiseAllowed: false);
 
-    await tester.tap(find.text('Publish post'));
+    await tester.tap(find.text('A problem, stated so that someone can respond to it.'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Needs your identity verified. Your draft is kept.'), findsOneWidget);
+    expect(find.textContaining('Raising an issue needs your identity verified'),
+        findsOneWidget);
     expect(find.text('Verify'), findsOneWidget);
+    expect(find.text('What are you posting?'), findsOneWidget,
+        reason: 'still choosing: Raise issue was not taken');
     await expectLater(find.byType(MaterialApp),
         matchesGoldenFile('goldens/compose_intent_unverified_943.png'));
-
-    // Choosing it does nothing; nothing is sent.
-    await tester.tap(find.text('Needs your identity verified. Your draft is kept.'));
-    await tester.pumpAndSettle();
     expect(published, isEmpty);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });
 
-  testWidgets('a draft that already says what it is publishes without asking',
+  testWidgets('unverified: the Raise issue chip says so too, and keeps the choice made',
+      (tester) async {
+    await openWithDraft(tester, raiseAllowed: false);
+    await tester.tap(find.text('News or progress others should know.'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Raise issue'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Raising an issue needs your identity verified'),
+        findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
+
+  testWidgets('a draft that already says what it is opens on its text and publishes',
       (tester) async {
     final published = await openWithDraft(tester, raiseAllowed: true, intent: 'UPDATE');
 
+    expect(find.text('What are you posting?'), findsNothing);
     await tester.tap(find.text('Publish post'));
     await tester.pumpAndSettle();
-
     expect(find.text('What is this post?'), findsNothing);
     expect(published.last['intent'], 'UPDATE');
 

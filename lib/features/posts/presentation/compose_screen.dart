@@ -127,9 +127,10 @@ class ComposeScreen extends ConsumerStatefulWidget {
 
 /// Public-UX Phase 5 — discourse intent: Ask, Raise issue, Share update.
 /// Sent as the post's `intent` (ASK / ISSUE / UPDATE) and shown with it.
-/// Every top-level post says what it is: if none was chosen while writing,
-/// Publish asks (founder, 2026-09-29, option B of three:
-/// https://claude.ai/artifact/JEuASkaxxbMCHC1dWXMev7).
+/// Every top-level post says what it is. A new post OPENS on the choice
+/// (founder, 2026-09-29, option C, after trying B live: "pressing post no pop
+/// up window ... straight to compose"). Publish still asks if a post somehow
+/// has none. Options: https://claude.ai/artifact/JEuASkaxxbMCHC1dWXMev7
 enum _ComposeIntent { none, ask, raise, share }
 
 /// Thrown when an institution-voice reply's Communication Integrity review
@@ -232,6 +233,18 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   /// the route query param (`?intent=ask`) and rotated to `_none`
   /// when the user clears it.
   late _ComposeIntent _intent = _intentFromWire(widget.intent);
+
+  /// A new top-level post opens on "What are you posting?" (option C).
+  late bool _choosingIntent =
+      !_isReply && !_isEditingPost && _intent == _ComposeIntent.none;
+
+  /// Whether the server will accept an issue from this person now. Null
+  /// until asked; asked as the composer opens, so the choice can say so.
+  bool? _raiseAllowed;
+
+  /// Raise issue was pressed and the server would refuse it: say so under the
+  /// chips, with the way to verify, instead of selecting it silently.
+  bool _raiseRefused = false;
 
   /// Index into `_kRotatingPrompts` — used only when `_intent` is
   /// `_ComposeIntent.none`. Set once on each composer mount so the
@@ -627,6 +640,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       // there is no draft to lose.
       if (sharedIn == null) _loadDraft();
       _loadExternalConnections();
+      _mayRaiseIssue().then((allowed) {
+        if (mounted) setState(() => _raiseAllowed = allowed);
+      });
     }
 
     if (sharedIn != null) _adoptSharedContent(sharedIn);
@@ -1206,7 +1222,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         // A draft remembers what it is. The restore dropped it, so a draft
         // chosen as an issue came back as nothing (2026-09-29).
         final restoredIntent = _intentFromWire(_str(draft['intent']));
-        if (restoredIntent != _ComposeIntent.none) _intent = restoredIntent;
+        if (restoredIntent != _ComposeIntent.none) {
+          _intent = restoredIntent;
+          _choosingIntent = false;
+        }
         _syncExternalPublishingToggles();
 
         if (_hasText) {
@@ -2306,6 +2325,30 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
   }
 
+  /// To identity verification, keeping whatever has been written.
+  Future<void> _goVerify() async {
+    if (_hasText) await _saveDraft(silent: true);
+    if (mounted) context.push(NavigationAuthority.identityVerificationRoute);
+  }
+
+  /// Raise issue, chosen as a door or a chip: taken only if the server will
+  /// accept it now; otherwise the person is told at once (founder,
+  /// 2026-09-29: "pressed raise ... it didn't ask identity").
+  Future<void> _chooseRaise({required bool fromDoor}) async {
+    final allowed = _raiseAllowed ?? await _mayRaiseIssue();
+    if (!mounted) return;
+    setState(() {
+      _raiseAllowed = allowed;
+      if (allowed) {
+        _intent = _ComposeIntent.raise;
+        _raiseRefused = false;
+        if (fromDoor) _choosingIntent = false;
+      } else {
+        _raiseRefused = true;
+      }
+    });
+  }
+
   /// "What is this post?" — asked at Publish when nothing was chosen.
   /// Returns null when dismissed, or when the person went to verify.
   Future<_ComposeIntent?> _askIntent({required bool raiseAllowed}) {
@@ -2313,11 +2356,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       context: context,
       builder: (dialogContext) => _IntentChooser(
         raiseAllowed: raiseAllowed,
-        onVerify: () async {
+        onVerify: () {
           Navigator.of(dialogContext).pop();
-          // Their words are kept before they leave for verification.
-          await _saveDraft(silent: true);
-          if (mounted) context.push(NavigationAuthority.identityVerificationRoute);
+          _goVerify();
         },
       ),
     );
@@ -2335,6 +2376,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               kind: _ComposeIntent.ask,
               selected: _intent == _ComposeIntent.ask,
               onTap: () => setState(() {
+                _raiseRefused = false;
                 _intent = _intent == _ComposeIntent.ask
                     ? _ComposeIntent.none
                     : _ComposeIntent.ask;
@@ -2343,16 +2385,19 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             _IntentChip(
               kind: _ComposeIntent.raise,
               selected: _intent == _ComposeIntent.raise,
-              onTap: () => setState(() {
-                _intent = _intent == _ComposeIntent.raise
-                    ? _ComposeIntent.none
-                    : _ComposeIntent.raise;
-              }),
+              onTap: () {
+                if (_intent == _ComposeIntent.raise) {
+                  setState(() => _intent = _ComposeIntent.none);
+                } else {
+                  _chooseRaise(fromDoor: false);
+                }
+              },
             ),
             _IntentChip(
               kind: _ComposeIntent.share,
               selected: _intent == _ComposeIntent.share,
               onTap: () => setState(() {
+                _raiseRefused = false;
                 _intent = _intent == _ComposeIntent.share
                     ? _ComposeIntent.none
                     : _ComposeIntent.share;
@@ -2360,6 +2405,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             ),
           ],
         ),
+        if (_raiseRefused) ...[
+          const SizedBox(height: AuraSpace.s8),
+          _RaiseNeedsVerification(onVerify: _goVerify),
+        ],
         if (_intent != _ComposeIntent.none && _intent.toneHint != null) ...[
           const SizedBox(height: AuraSpace.s8),
           Text(
@@ -3818,7 +3867,29 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                       children: [
                         _buildPageTopBar(),
                         const SizedBox(height: AuraSpace.s16),
-                        _buildMainCard(context, wide: wide),
+                        if (_choosingIntent)
+                          _IntentDoors(
+                            // Side by side wherever three fit: stacked at the
+                            // founder's 943 window, Raise issue and its note
+                            // fell below the fold.
+                            wide: MediaQuery.sizeOf(context).width >= 700,
+                            raiseAllowed: _raiseAllowed,
+                            raiseRefused: _raiseRefused,
+                            onChoose: (kind) {
+                              if (kind == _ComposeIntent.raise) {
+                                _chooseRaise(fromDoor: true);
+                                return;
+                              }
+                              setState(() {
+                                _intent = kind;
+                                _raiseRefused = false;
+                                _choosingIntent = false;
+                              });
+                            },
+                            onVerify: _goVerify,
+                          )
+                        else
+                          _buildMainCard(context, wide: wide),
                       ],
                     ),
                   ),
@@ -3826,7 +3897,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               ),
             ),
           ),
-          _buildBottomBar(context),
+          // Nothing to publish or save until the post says what it is.
+          if (!_choosingIntent) _buildBottomBar(context),
         ],
       ),
     );
@@ -3876,6 +3948,184 @@ class _ReplyActorBanner extends ConsumerWidget {
           fontWeight: FontWeight.w800,
           letterSpacing: 0.2,
         ),
+      ),
+    );
+  }
+}
+
+/// "What are you posting?" — where a new post begins (option C).
+class _IntentDoors extends StatelessWidget {
+  const _IntentDoors({
+    required this.wide,
+    required this.raiseAllowed,
+    required this.raiseRefused,
+    required this.onChoose,
+    required this.onVerify,
+  });
+
+  final bool wide;
+  final bool? raiseAllowed;
+  final bool raiseRefused;
+  final ValueChanged<_ComposeIntent> onChoose;
+  final VoidCallback onVerify;
+
+  @override
+  Widget build(BuildContext context) {
+    final doors = [
+      for (final kind in _IntentChooser._lines.keys)
+        _Door(
+          kind: kind,
+          line: _IntentChooser._lines[kind]!,
+          needsVerification: kind == _ComposeIntent.raise &&
+              (raiseAllowed == false || raiseRefused),
+          onChoose: () => onChoose(kind),
+          onVerify: onVerify,
+        ),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('What are you posting?', style: AuraText.subtitle),
+        const SizedBox(height: AuraSpace.s4),
+        Text(
+          'Your post will show this, so people know how to answer it.',
+          style: AuraText.small.copyWith(color: AuraSurface.muted),
+        ),
+        const SizedBox(height: AuraSpace.s16),
+        if (wide)
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < doors.length; i++) ...[
+                  if (i > 0) const SizedBox(width: AuraSpace.s12),
+                  Expanded(child: doors[i]),
+                ],
+              ],
+            ),
+          )
+        else
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < doors.length; i++) ...[
+                if (i > 0) const SizedBox(height: AuraSpace.s10),
+                doors[i],
+              ],
+            ],
+          ),
+      ],
+    );
+  }
+}
+
+class _Door extends StatelessWidget {
+  const _Door({
+    required this.kind,
+    required this.line,
+    required this.needsVerification,
+    required this.onChoose,
+    required this.onVerify,
+  });
+
+  final _ComposeIntent kind;
+  final String line;
+  final bool needsVerification;
+  final VoidCallback onChoose;
+  final VoidCallback onVerify;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '${kind.label}. $line',
+      child: InkWell(
+        onTap: onChoose,
+        borderRadius: BorderRadius.circular(AuraRadius.r14),
+        child: Container(
+          padding: const EdgeInsets.all(AuraSpace.s16),
+          decoration: BoxDecoration(
+            color: AuraSurface.card,
+            borderRadius: BorderRadius.circular(AuraRadius.r14),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: AuraSurface.accentSoft,
+                  borderRadius: BorderRadius.circular(AuraRadius.r10),
+                ),
+                child: Icon(kind.icon, size: 17, color: AuraSurface.accentText),
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              Text(
+                kind.label,
+                style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: AuraSpace.s4),
+              Text(
+                line,
+                style: AuraText.small.copyWith(
+                  color: AuraSurface.muted,
+                  height: 1.4,
+                ),
+              ),
+              if (needsVerification) ...[
+                const SizedBox(height: AuraSpace.s10),
+                _RaiseNeedsVerification(onVerify: onVerify),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Said wherever Raise issue is chosen by somebody the server would refuse.
+class _RaiseNeedsVerification extends StatelessWidget {
+  const _RaiseNeedsVerification({required this.onVerify});
+
+  final VoidCallback onVerify;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s12,
+        vertical: AuraSpace.s8,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.warnBg,
+        borderRadius: BorderRadius.circular(AuraRadius.r10),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Raising an issue needs your identity verified. '
+              'You can still ask or share an update.',
+              style: AuraText.small.copyWith(
+                color: AuraSurface.warnInk,
+                height: 1.4,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: onVerify,
+            child: Text(
+              'Verify',
+              style: AuraText.small.copyWith(
+                color: AuraSurface.warnInk,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

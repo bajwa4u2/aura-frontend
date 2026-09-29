@@ -136,7 +136,10 @@ Widget _wrap(Dio dio) {
         routes: [
           GoRoute(
             path: '/compose',
-            builder: (context, state) => const Material(child: ComposeScreen()),
+            // Opened with a choice made, as /compose?intent= does: a new post
+            // otherwise opens on "What are you posting?" (option C).
+            builder: (context, state) =>
+                const Material(child: ComposeScreen(intent: 'share')),
           ),
           GoRoute(
             path: '/posts/:id',
