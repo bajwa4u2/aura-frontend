@@ -116,8 +116,12 @@ Founder 2026-09-26, looking at Admin › Platform: both switches must be on, on 
 timeline ("these controls are thoughtful but left alone").
 
 - `PUBLIC_RECORD_INTENT_REQUIRED` (OFF): when on, the server refuses a top-level
-  post without an intent (ASK / ISSUE / UPDATE). NO CLIENT SENDS AN INTENT TODAY
-  (web and every store build), so turning it on now would stop all posting.
+  post without an intent (ASK / ISSUE / UPDATE), WHATEVER ITS VISIBILITY.
+  CORRECTED 2026-09-29: the composer HAS sent an intent since `d615d4f2`
+  (2026-06-21), but only when the person picks a chip; it is optional, drafts
+  forget it, and the Share screen (FOLLOWERS posts) never sends one. So turning
+  the switch on now would still stop most posting, and would break Share
+  outright.
 - `CAN_RAISE_ISSUE_GATE_ENABLED` (OFF): runs `assertCanRaiseIssue` for ISSUE
   posts only, and that check is just "email verified" — already required for
   every post (VerifiedEmailGuard), so it currently adds nothing.
@@ -126,6 +130,16 @@ timeline ("these controls are thoughtful but left alone").
   honouring "do not turn verification into a universal account-completeness
   gate". This is a deliberate one-row addition to the assurance allowlist for
   Raise Issue — record it as the founder-approved amendment when implemented.
+
+**2026-09-29, done:** backend `e75cc5a` (live): `canRaiseIssue` = verified email
+AND current identity verification (RAISE_ISSUE row of the assurance policy,
+founder-approved amendment); refusal in the ASSURANCE_REQUIRED shape;
+`GET /public-record/capabilities/me` -> `{ raiseIssue }`. No behaviour change
+while the gate is off.
+**Waiting on the founder:** the composer step, drawn at his window:
+https://claude.ai/artifact/JEuASkaxxbMCHC1dWXMev7 (A chips required / B asked at
+Publish, recommended / C choose first), and whether the intent switch covers
+public posts only (recommended; otherwise the Share screen needs the choice too).
 
 Plan (dates re-based on the 09-29 start):
 1. 09-29 → ~10-01: composer asks Ask / Raise Issue / Share Update on top-level
