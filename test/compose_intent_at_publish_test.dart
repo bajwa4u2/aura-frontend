@@ -8,6 +8,8 @@ import 'package:aura/core/institutions/institution_access_provider.dart';
 import 'package:aura/core/net/dio_provider.dart';
 import 'package:aura/features/posts/presentation/compose_screen.dart';
 
+import 'support/reference_golden.dart';
+
 /// Every top-level post says what it is. A new post opens on the choice
 /// (founder, 2026-09-29, option C, after trying B live:
 /// https://claude.ai/artifact/JEuASkaxxbMCHC1dWXMev7). Mounts the real
@@ -43,8 +45,7 @@ void main() {
     expect(find.text('What are you posting?'), findsOneWidget);
     expect(find.text('Publish post'), findsNothing,
         reason: 'nothing to publish until the post says what it is');
-    await expectLater(find.byType(MaterialApp),
-        matchesGoldenFile('goldens/compose_intent_doors_943.png'));
+    await expectReferenceGolden(find.byType(MaterialApp), 'goldens/compose_intent_doors_943.png');
 
     await tester.tap(find.text('A question you want answered.'));
     await tester.pumpAndSettle();
@@ -71,8 +72,7 @@ void main() {
     expect(find.textContaining('sharing an update needs your identity verified too'),
         findsOneWidget);
     expect(find.text('Verify'), findsNWidgets(3));
-    await expectLater(find.byType(MaterialApp),
-        matchesGoldenFile('goldens/compose_intent_unverified_943.png'));
+    await expectReferenceGolden(find.byType(MaterialApp), 'goldens/compose_intent_unverified_943.png');
 
     // Pressing either is refused; nothing is chosen, nothing is sent.
     await tester.tap(find.text('A question you want answered.'));
