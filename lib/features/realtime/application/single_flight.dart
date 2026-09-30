@@ -30,7 +30,17 @@ class SingleFlight {
   /// [onJoin] fires only for callers that joined an existing operation, so the
   /// join can be observed — a race that is invisible cannot be told from a
   /// system that never raced.
-  Future<void> run(Future<void> Function() operation, {void Function()? onJoin}) {
+  /// [deadline]: an operation that has not finished by then releases the
+  /// gate, so the next caller starts a fresh attempt instead of joining one
+  /// that will never finish. 2026-09-30: a browser's first stage connect
+  /// stalled, and eight later attempts joined it, so the call could not
+  /// recover. The stalled operation is not cancelled (Dart cannot); if it
+  /// wakes, the server adopts it by the client's attempt nonce.
+  Future<void> run(
+    Future<void> Function() operation, {
+    void Function()? onJoin,
+    Duration? deadline,
+  }) {
     final existing = _inFlight;
     if (existing != null) {
       onJoin?.call();
@@ -43,7 +53,9 @@ class SingleFlight {
     // The future is stored BEFORE it is awaited anywhere, which is the whole
     // point: the window between deciding to act and acting is the race.
     late final Future<void> started;
-    started = Future<void>.sync(operation).whenComplete(() {
+    var attempt = Future<void>.sync(operation);
+    if (deadline != null) attempt = attempt.timeout(deadline);
+    started = attempt.whenComplete(() {
       if (identical(_inFlight, started)) _inFlight = null;
     });
     _inFlight = started;

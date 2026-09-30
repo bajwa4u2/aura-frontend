@@ -13,6 +13,7 @@ import 'core/auth/auth_providers.dart';
 import 'core/diagnostics/runtime_trace.dart';
 import 'core/utils/configure_url_strategy.dart';
 import 'core/diagnostics/call_teardown_diag.dart';
+import 'core/web/hidden_tab_frames.dart';
 
 // Top-level handler required by firebase_messaging for background/killed-app
 // message processing. Must be annotated so the Dart tree shaker keeps it.
@@ -191,4 +192,8 @@ Future<void> main(List<String> args) async {
       child: const AuraApp(),
     ),
   );
+
+  // A caller who turns to their phone hides this tab; the call must keep
+  // moving without the browser's animation frames (2026-09-30).
+  startHiddenTabFrames();
 }

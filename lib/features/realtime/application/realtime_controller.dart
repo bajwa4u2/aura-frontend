@@ -4300,10 +4300,21 @@ class RealtimeController extends StateNotifier<RealtimeState>
   /// the operation already in flight instead of starting its own. The gate
   /// lives at the media boundary rather than at the nine call sites, because a
   /// tenth caller will be added one day and it must be safe by construction.
-  Future<void> _ensureStageConnected(String reason) => _stageGate.run(
+  Future<void> _ensureStageConnected(String reason) => _stageGate
+      .run(
         () => _ensureStageConnectedOnce(reason),
         onJoin: () => _report('stage.connect_joined reason=$reason'),
+        // A connect that has not finished in 20 s is not going to (a healthy
+        // one takes 2 to 4). Release the gate so the reattach loop's next
+        // attempt starts fresh (2026-09-30, see SingleFlight.run).
+        deadline: _stageConnectDeadline,
+      )
+      .catchError(
+        (Object _) => _report('stage.connect_deadline reason=$reason'),
+        test: (e) => e is TimeoutException,
       );
+
+  static const Duration _stageConnectDeadline = Duration(seconds: 20);
 
   /// The ownership token for a connection attempt: it exists from before the
   /// first await until the attempt finishes, which is exactly the window the
