@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/shell/rail/rail_composition.dart';
 import '../../../app/shell/shell_shared.dart';
 import '../../../core/auth/session_providers.dart';
+import '../../../core/ui/aura_chamber.dart';
 import '../../../core/ui/aura_design_system.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
@@ -91,36 +92,40 @@ class PublicHomeScreen extends ConsumerWidget {
       //     short steps and it explains what the discussions below it are.
       //     It sat five sections down. It now bridges the hero and the
       //     discourse, which is the job it was written for.
-      body: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          // ARRIVAL
-          _HeroSection(
-            feedAsync: feedAsync,
-            liveAsync: liveAsync,
-            isAuthed: isAuthed,
-          ),
-          // UNDERSTANDING
-          const _HowItWorksSection(),
-          // ENCOUNTER
-          _DiscussionPreviewSection(feedAsync: feedAsync, isAuthed: isAuthed),
-          const SizedBox(height: AuraSpace.s14),
-          // The cue paints no background of its own and does not centre
-          // itself, so it takes the page's reading band explicitly rather
-          // than stretching to the window.
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: kHeroWidth),
-              child: const CivicMemoryContinuityCue(),
+      // Look B: the whole front door sits on the same flat ink.
+      body: ColoredBox(
+        color: AuraChamber.ink,
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            // ARRIVAL
+            _HeroSection(
+              feedAsync: feedAsync,
+              liveAsync: liveAsync,
+              isAuthed: isAuthed,
             ),
-          ),
-          const SizedBox(height: AuraSpace.s14),
-          // PARTICIPATION
-          const _SpacesSection(),
-          const _PublicDiscoveryStrip(),
-          // CLOSING
-          const ShellFooter(),
-        ],
+            // UNDERSTANDING
+            const _HowItWorksSection(),
+            // ENCOUNTER
+            _DiscussionPreviewSection(feedAsync: feedAsync, isAuthed: isAuthed),
+            const SizedBox(height: AuraSpace.s14),
+            // The cue paints no background of its own and does not centre
+            // itself, so it takes the page's reading band explicitly rather
+            // than stretching to the window.
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: kHeroWidth),
+                child: const CivicMemoryContinuityCue(),
+              ),
+            ),
+            const SizedBox(height: AuraSpace.s14),
+            // PARTICIPATION
+            const _SpacesSection(),
+            const _PublicDiscoveryStrip(),
+            // CLOSING
+            const ShellFooter(),
+          ],
+        ),
       ),
     );
   }
@@ -243,27 +248,14 @@ class _HeroSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
+      // Look B, "Night Chamber" (founder, 2026-09-30): a flat ink ground.
+      // The indigo gradient and the glow behind the headline are gone.
       decoration: const BoxDecoration(
-        gradient: AuraGradients.hero,
-        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
+        color: AuraChamber.ink,
+        border: Border(bottom: BorderSide(color: AuraChamber.rule)),
       ),
       child: Stack(
         children: [
-          Positioned(
-            top: -60,
-            left: -80,
-            child: Container(
-              width: 480,
-              height: 480,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [Color(0x1A5B6CFF), Colors.transparent],
-                  radius: 0.65,
-                ),
-              ),
-            ),
-          ),
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: kHeroWidth),
@@ -362,6 +354,26 @@ class _HeroLeft extends StatelessWidget {
         // place while leaving the line half empty.
         Builder(
           builder: (context) {
+            // Look B: the one gold word is the headline's own subject.
+            const word = 'context';
+            final at = publicHomeHeadline.lastIndexOf(word);
+            if (at >= 0) {
+              return Text.rich(
+                TextSpan(
+                  style: AuraChamber.display,
+                  children: [
+                    TextSpan(text: publicHomeHeadline.substring(0, at)),
+                    const TextSpan(
+                      text: word,
+                      style: TextStyle(color: AuraChamber.gold),
+                    ),
+                    TextSpan(
+                      text: publicHomeHeadline.substring(at + word.length),
+                    ),
+                  ],
+                ),
+              );
+            }
             return const Text(
               // No forced break at any width: on a phone the forced one left
               // "that" alone on its own line (seen 2026-09-29, 390 wide).
@@ -376,7 +388,7 @@ class _HeroLeft extends StatelessWidget {
               // as a marketing page was the hard line break and a header and
               // hero band that floated in the middle of the window; both are
               // addressed where they actually live.
-              style: AuraText.display,
+              style: AuraChamber.display,
             );
           },
         ),
@@ -395,26 +407,24 @@ class _HeroLeft extends StatelessWidget {
         // and what was said stays legible afterwards. Institutions arrive
         // three lines later, as step three of a loop and as a place to
         // browse — participants, not premise.
-        Text(
-          publicHomeLede,
-          style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.6),
-        ),
+        const Text(publicHomeLede, style: AuraChamber.lede),
         const SizedBox(height: AuraSpace.s28),
         Wrap(
           spacing: AuraSpace.s10,
           runSpacing: AuraSpace.s10,
           children: [
-            AuraPrimaryButton(
+            _ChamberButton(
               label: isAuthed ? 'Open your feed' : publicHomeJoinLabel,
-              icon: Icons.arrow_forward_rounded,
-              onPressed: () => _goJoinAura(context, isAuthed: isAuthed),
+              filled: true,
+              onTap: () => _goJoinAura(context, isAuthed: isAuthed),
             ),
             // C3 froze Discover as the consolidated discovery intention and
             // Search as a facet of it. "Explore discussions" was routing to
             // the search box — a label promising discussions and a
             // destination offering an empty field.
-            _HeroOutlineButton(
+            _ChamberButton(
               label: publicHomeExploreLabel,
+              filled: false,
               onTap: () => context.push(publicHomeExploreRoute),
             ),
           ],
@@ -437,13 +447,12 @@ class _HeroLeft extends StatelessWidget {
                 const Icon(
                   Icons.account_balance_outlined,
                   size: 14,
-                  color: AuraSurface.muted,
+                  color: AuraChamber.muted,
                 ),
                 const SizedBox(width: AuraSpace.s8),
                 Text(
                   publicHomeInstitutionsLabel,
-                  style: AuraText.small.copyWith(
-                    color: AuraSurface.muted,
+                  style: AuraChamber.small.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -451,7 +460,7 @@ class _HeroLeft extends StatelessWidget {
                 const Icon(
                   Icons.arrow_forward_rounded,
                   size: 14,
-                  color: AuraSurface.muted,
+                  color: AuraChamber.muted,
                 ),
               ],
             ),
@@ -677,38 +686,6 @@ class _PulseStatRow extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _HeroOutlineButton extends StatelessWidget {
-  const _HeroOutlineButton({required this.label, required this.onTap});
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AuraRadius.r14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s20,
-            vertical: AuraSpace.s12,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AuraRadius.r14),
-            border: Border.all(color: AuraSurface.divider),
-          ),
-          child: Text(
-            label,
-            style: AuraText.body.copyWith(fontWeight: FontWeight.w600),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -1096,13 +1073,7 @@ class _QuietContinuation extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          text,
-          style: AuraText.small.copyWith(
-            color: AuraSurface.muted,
-            height: 1.55,
-          ),
-        ),
+        Text(text, style: AuraChamber.small.copyWith(height: 1.55)),
         const SizedBox(height: AuraSpace.s6),
         InkWell(
           onTap: onTap,
@@ -1114,16 +1085,16 @@ class _QuietContinuation extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: AuraText.small.copyWith(
-                    color: AuraSurface.accentText,
-                    fontWeight: FontWeight.w700,
+                  style: AuraChamber.small.copyWith(
+                    color: AuraChamber.gold,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(width: 4),
                 const Icon(
                   Icons.arrow_forward_rounded,
                   size: 14,
-                  color: AuraSurface.accentText,
+                  color: AuraChamber.gold,
                 ),
               ],
             ),
@@ -1149,10 +1120,11 @@ class _HowItWorksStep extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s16),
+      // Look B: a raised ink tile on a hairline, the icon in the gold ring.
       decoration: BoxDecoration(
-        color: AuraSurface.card,
+        color: AuraChamber.raised,
         borderRadius: BorderRadius.circular(AuraRadius.lg),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: AuraChamber.rule),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -1161,32 +1133,21 @@ class _HowItWorksStep extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AuraSurface.accentSoft,
-              borderRadius: BorderRadius.circular(AuraRadius.r10),
-              border: Border.all(
-                color: AuraSurface.accent.withValues(alpha: 0.3),
-              ),
+              shape: BoxShape.circle,
+              border: Border.all(color: AuraChamber.gold, width: 1.2),
             ),
-            child: Icon(icon, color: AuraSurface.accentText, size: 20),
+            child: Icon(icon, color: AuraChamber.gold, size: 18),
           ),
           const SizedBox(width: AuraSpace.s12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'STEP $index',
-                  style: AuraText.micro.copyWith(
-                    color: AuraSurface.faint,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.8,
-                    fontSize: 10,
-                  ),
-                ),
+                Text('STEP $index', style: AuraChamber.eyebrow),
                 const SizedBox(height: 2),
                 Text(
                   label,
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                  style: AuraChamber.body.copyWith(fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -1389,9 +1350,9 @@ class _SectionHeading extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: AuraText.headline),
+        Text(title, style: AuraChamber.heading),
         const SizedBox(height: AuraSpace.s4),
-        Text(subtitle, style: AuraText.muted),
+        Text(subtitle, style: AuraChamber.small),
       ],
     );
   }
@@ -1600,48 +1561,86 @@ class _HeroRecord extends StatelessWidget {
       label: 'Open the discussion by ${item.author.name}',
       child: InkWell(
         onTap: () => context.push(item.targetRoute),
-        borderRadius: BorderRadius.circular(AuraRadius.card),
         child: Container(
-          padding: const EdgeInsets.all(AuraSpace.s16),
-          decoration: BoxDecoration(
-            color: AuraSurface.card,
-            borderRadius: BorderRadius.circular(AuraRadius.card),
-            border: Border.all(color: AuraSurface.divider),
+          // Look B: the record sits under one gold rule, not in a card.
+          padding: const EdgeInsets.only(top: AuraSpace.s16),
+          decoration: const BoxDecoration(
+            border: Border(top: BorderSide(color: AuraChamber.gold)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'ON THE PUBLIC RECORD NOW',
-                style: AuraText.micro.copyWith(
-                  color: AuraSurface.faint,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
-                  fontSize: 10,
-                ),
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'ON THE PUBLIC RECORD NOW',
+                      style: AuraChamber.eyebrow,
+                    ),
+                  ),
+                  if ((item.intent ?? '').trim().isNotEmpty)
+                    Text(
+                      item.intent!.trim().toUpperCase(),
+                      style: AuraChamber.eyebrow,
+                    ),
+                ],
               ),
-              const SizedBox(height: AuraSpace.s10),
-              Text(
-                item.author.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+              const SizedBox(height: AuraSpace.s14),
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AuraChamber.gold, width: 1.5),
+                    ),
+                    child: Text(
+                      item.author.name.trim().isEmpty
+                          ? '·'
+                          : item.author.name.trim().characters.first,
+                      style: AuraChamber.body.copyWith(
+                        color: AuraChamber.gold,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AuraSpace.s12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.author.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AuraChamber.body.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (meta.isNotEmpty)
+                          Text(
+                            meta,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AuraChamber.small.copyWith(
+                              color: AuraChamber.faint,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              if (meta.isNotEmpty)
-                Text(
-                  meta,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AuraText.small.copyWith(color: AuraSurface.muted),
-                ),
-              const SizedBox(height: AuraSpace.s10),
+              const SizedBox(height: AuraSpace.s14),
               if (title.isNotEmpty && body.isNotEmpty) ...[
                 Text(
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                  style: AuraChamber.body.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: AuraSpace.s4),
               ],
@@ -1653,28 +1652,82 @@ class _HeroRecord extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   textDirection: direction,
                   textAlign: TextAlign.start,
-                  style: AuraText.body.copyWith(height: 1.5),
+                  style: AuraChamber.body.copyWith(fontSize: 16, height: 1.7),
                 ),
               ),
-              const SizedBox(height: AuraSpace.s12),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      answered ? 'Institution responded' : 'No responses yet',
-                      style: AuraText.small.copyWith(color: AuraSurface.muted),
+              const SizedBox(height: AuraSpace.s14),
+              Container(
+                padding: const EdgeInsets.only(top: AuraSpace.s12),
+                decoration: const BoxDecoration(
+                  border: Border(top: BorderSide(color: AuraChamber.rule)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        answered ? 'Institution responded' : 'No responses yet',
+                        style: AuraChamber.small.copyWith(
+                          color: AuraChamber.faint,
+                        ),
+                      ),
                     ),
-                  ),
-                  Text(
-                    'Open the discussion →',
-                    style: AuraText.small.copyWith(
-                      color: AuraSurface.accentText,
-                      fontWeight: FontWeight.w700,
+                    Text(
+                      'Open the discussion →',
+                      style: AuraChamber.small.copyWith(
+                        color: AuraChamber.gold,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Look B's buttons: a gold pill with ink text, or a hairline pill.
+class _ChamberButton extends StatelessWidget {
+  const _ChamberButton({
+    required this.label,
+    required this.filled,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool filled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: filled ? AuraChamber.gold : Colors.transparent,
+      shape: StadiumBorder(
+        side: BorderSide(
+          color: filled ? AuraChamber.gold : AuraChamber.ruleStrong,
+        ),
+      ),
+      child: InkWell(
+        customBorder: const StadiumBorder(),
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Center(
+              widthFactor: 1,
+              child: Text(
+                label,
+                style: AuraChamber.body.copyWith(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: filled ? AuraChamber.ink : AuraChamber.text,
+                ),
+              ),
+            ),
           ),
         ),
       ),

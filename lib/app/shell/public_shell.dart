@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../route_classification.dart';
 import '../../core/auth/session_providers.dart';
-import '../../core/ui/aura_design_system.dart';
+import '../../core/ui/aura_chamber.dart';
 import '../../core/ui/aura_radius.dart';
 import '../../core/ui/aura_responsive.dart';
 import '../../core/ui/aura_space.dart';
@@ -161,9 +161,11 @@ class _PublicHeaderState extends ConsumerState<_PublicHeader> {
     final hPad = isDesktop || isTablet ? AuraSpace.s20 : AuraSpace.s16;
 
     return Container(
+      // Look B, "Night Chamber" (founder, 2026-09-30): the public bar is the
+      // same flat ink as the page beneath it.
       decoration: const BoxDecoration(
-        gradient: AuraGradients.header,
-        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
+        color: AuraChamber.ink,
+        border: Border(bottom: BorderSide(color: AuraChamber.rule)),
       ),
       // THE BAR SHARES THE PAGE'S MEASURE.
       //
@@ -335,7 +337,7 @@ class _GoHomeButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(AuraRadius.pill),
         child: Ink(
           decoration: BoxDecoration(
-            gradient: AuraGradients.accent,
+            color: AuraChamber.gold,
             borderRadius: BorderRadius.circular(AuraRadius.pill),
           ),
           child: Padding(
@@ -345,9 +347,9 @@ class _GoHomeButton extends StatelessWidget {
             ),
             child: Text(
               'Open Aura',
-              style: AuraText.small.copyWith(
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
+              style: AuraChamber.small.copyWith(
+                color: AuraChamber.ink,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -396,21 +398,23 @@ class _JoinButton extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AuraRadius.pill),
+        // Look B, "Night Chamber" (founder, 2026-09-30): a gold hairline
+        // pill, not the indigo gradient.
         child: Ink(
           decoration: BoxDecoration(
-            gradient: AuraGradients.accent,
+            border: Border.all(color: AuraChamber.gold),
             borderRadius: BorderRadius.circular(AuraRadius.pill),
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s14,
+              horizontal: AuraSpace.s16,
               vertical: AuraSpace.s8,
             ),
             child: Text(
               'Join',
-              style: AuraText.small.copyWith(
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
+              style: AuraChamber.small.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AuraChamber.gold,
               ),
             ),
           ),

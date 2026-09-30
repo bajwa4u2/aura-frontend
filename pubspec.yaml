@@ -172,6 +172,27 @@ flutter:
     # not a proof of the released client.
     - test/fixtures/trace-account.golden.json
 
+  # Aura's own type (founder, 2026-09-30: look direction B, "Night Chamber").
+  # Static files from Google Fonts, SIL Open Font License (licences beside
+  # them in assets/fonts/).
+  fonts:
+    - family: AuraSerif
+      fonts:
+        - asset: assets/fonts/SourceSerif4-500.ttf
+          weight: 500
+        - asset: assets/fonts/SourceSerif4-600.ttf
+          weight: 600
+    - family: AuraSans
+      fonts:
+        - asset: assets/fonts/PublicSans-400.ttf
+          weight: 400
+        - asset: assets/fonts/PublicSans-500.ttf
+          weight: 500
+        - asset: assets/fonts/PublicSans-600.ttf
+          weight: 600
+        - asset: assets/fonts/PublicSans-700.ttf
+          weight: 700
+
 flutter_launcher_icons:
   # Pure-Dart pipeline produced every platform/store asset under
   # `assets/store/`; we already copied those into the platform res
