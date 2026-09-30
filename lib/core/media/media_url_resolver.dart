@@ -29,6 +29,7 @@ class MediaUrlResult {
     this.height,
     this.duration,
     this.distribution,
+    this.servedVariant,
   });
 
   final String id;
@@ -54,9 +55,15 @@ class MediaUrlResult {
   /// permissive answer.
   final String? distribution;
 
+  /// WHICH REPRESENTATION THE URL IS — `thumb`, `display` or `primary`.
+  ///
+  /// A `v=thumb` request falls through to the film itself when no poster
+  /// exists yet, and a video file is never a poster. Null from a server that
+  /// predates the field; callers treat null as "not a poster".
+  final String? servedVariant;
+
   /// True when this viewer is entitled to the untouched source object.
-  bool get deliversOriginal =>
-      (distribution ?? '').toUpperCase() == 'ORIGINAL';
+  bool get deliversOriginal => (distribution ?? '').toUpperCase() == 'ORIGINAL';
 
   /// True when the server will produce a governed Aura copy instead.
   bool get deliversGovernedExport =>
@@ -145,13 +152,15 @@ class MediaUrlResolver {
   /// Resolve once. Returns the cached result while it's still fresh;
   /// otherwise issues a single `/media/:id/url` call and dedupes
   /// concurrent requests for the same id.
-  Future<MediaUrlResult> resolve(String mediaId) {
+  Future<MediaUrlResult> resolve(String mediaId, {String? variant}) {
     final id = mediaId.trim();
     if (id.isEmpty) {
       return Future.error(StateError('Empty mediaId'));
     }
+    // A variant is a different URL for the same object, so it is cached apart.
+    final cacheKey = variant == null ? id : '$id?v=$variant';
 
-    final existing = _cache[id];
+    final existing = _cache[cacheKey];
     if (existing != null) {
       final value = existing.value;
       // Reuse a non-stale resolved value.
@@ -161,20 +170,23 @@ class MediaUrlResolver {
       if (value == null && existing.error == null) return existing.future;
     }
 
-    final future = _fetch(id);
+    final future = _fetch(id, variant);
     final entry = _CacheEntry(future: future, fetchedAt: DateTime.now());
-    _cache[id] = entry;
+    _cache[cacheKey] = entry;
 
-    future.then((v) {
-      entry.value = v;
-    }, onError: (Object e) {
-      entry.error = e;
-      // Drop failed entries after a short cooldown so a transient error
-      // doesn't poison the cache forever; subsequent reads will retry.
-      Timer(const Duration(seconds: 10), () {
-        if (identical(_cache[id], entry)) _cache.remove(id);
-      });
-    });
+    future.then(
+      (v) {
+        entry.value = v;
+      },
+      onError: (Object e) {
+        entry.error = e;
+        // Drop failed entries after a short cooldown so a transient error
+        // doesn't poison the cache forever; subsequent reads will retry.
+        Timer(const Duration(seconds: 10), () {
+          if (identical(_cache[cacheKey], entry)) _cache.remove(cacheKey);
+        });
+      },
+    );
 
     return future;
   }
@@ -182,7 +194,8 @@ class MediaUrlResolver {
   /// Force-evict a single entry. Use when the caller knows the
   /// underlying media has changed (e.g. an admin replaced the file).
   void invalidate(String mediaId) {
-    _cache.remove(mediaId.trim());
+    final id = mediaId.trim();
+    _cache.removeWhere((key, _) => key == id || key.startsWith('$id?v='));
   }
 
   /// Drop every cached entry. Wire this into the auth-state-cleared
@@ -191,10 +204,13 @@ class MediaUrlResolver {
     _cache.clear();
   }
 
-  Future<MediaUrlResult> _fetch(String id) async {
+  Future<MediaUrlResult> _fetch(String id, String? variant) async {
     late final Response<dynamic> res;
     try {
-      res = await _dio.get('/media/$id/url');
+      res = await _dio.get(
+        '/media/$id/url',
+        queryParameters: variant == null ? null : {'v': variant},
+      );
     } on DioException catch (e) {
       // 403 / 404 / 410 arrive here. The door already chose a status and a
       // code for each; carry both rather than flattening them into "failed".
@@ -240,6 +256,7 @@ class MediaUrlResolver {
       mimeType: payload['mimeType']?.toString(),
       mediaType: payload['mediaType']?.toString(),
       distribution: payload['distribution']?.toString(),
+      servedVariant: payload['servedVariant']?.toString(),
       width: _asInt(payload['width']),
       height: _asInt(payload['height']),
       duration: _asInt(payload['duration']),
@@ -275,8 +292,34 @@ final mediaUrlResolverProvider = Provider<MediaUrlResolver>(
 /// One-shot future provider for a specific media id. Re-watch this to
 /// refresh after expiry; AuraResolvableAttachmentImage does that
 /// automatically when [MediaUrlResult.isStale] returns true.
-final mediaUrlProvider = FutureProvider.family<MediaUrlResult, String>(
-  (ref, mediaId) {
-    return ref.watch(mediaUrlResolverProvider).resolve(mediaId);
-  },
-);
+final mediaUrlProvider = FutureProvider.family<MediaUrlResult, String>((
+  ref,
+  mediaId,
+) {
+  return ref.watch(mediaUrlResolverProvider).resolve(mediaId);
+});
+
+/// THE SERVER POSTER OF A VIDEO THE FEED COULD NOT NAME.
+///
+/// The feed ships no poster URL for non-public media (`media-redaction.ts`):
+/// the poster is a capability, asked of the door with the viewer's identity.
+/// Without this ask, a restricted film decoded its own frames — black on
+/// some films, and nothing at all where the platform cannot decode.
+///
+/// Null when the door has no poster yet (it answers with the film itself,
+/// which is never a poster) or cannot be reached: the card falls back to its
+/// own frame, never to an error.
+final mediaPosterUrlProvider = FutureProvider.family<String?, String>((
+  ref,
+  mediaId,
+) async {
+  try {
+    final result = await ref
+        .watch(mediaUrlResolverProvider)
+        .resolve(mediaId, variant: 'thumb');
+    final url = result.url.trim();
+    return result.servedVariant == 'thumb' && url.isNotEmpty ? url : null;
+  } catch (_) {
+    return null;
+  }
+});

@@ -315,8 +315,7 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface>
     final controller = _controller;
     if (controller == null) return;
     await controller.pause();
-    if (_posterAt > Duration.zero &&
-        controller.value.position < _posterAt) {
+    if (_posterAt > Duration.zero && controller.value.position < _posterAt) {
       await controller.seekTo(_posterAt);
       _startedFromTop = false;
     }
@@ -817,9 +816,9 @@ class AuraVideoMedia extends ConsumerWidget {
   /// See [AuraVideoSurface.fill] — the collage cell case.
   final bool fill;
 
-  Widget _surface(String url) => AuraVideoSurface(
+  Widget _surface(String url, {String? poster}) => AuraVideoSurface(
     url: url,
-    posterUrl: posterUrl,
+    posterUrl: poster ?? posterUrl,
     intrinsicWidth: intrinsicWidth,
     intrinsicHeight: intrinsicHeight,
     durationMs: durationMs,
@@ -847,6 +846,12 @@ class AuraVideoMedia extends ConsumerWidget {
           : _surface(direct);
     }
 
+    // No poster in the payload: ask the door for the server's, alongside the
+    // video, and build once both have answered so the surface never starts
+    // decoding a frame the server already made.
+    final needsPoster = (posterUrl ?? '').trim().isEmpty;
+    final poster = needsPoster ? ref.watch(mediaPosterUrlProvider(id)) : null;
+
     return ref
         .watch(mediaUrlProvider(id))
         .when(
@@ -859,21 +864,10 @@ class AuraVideoMedia extends ConsumerWidget {
                 borderRadius: borderRadius,
               );
             }
-            return _surface(url);
+            if (poster != null && poster.isLoading) return _loading();
+            return _surface(url, poster: poster?.valueOrNull);
           },
-          loading: () => ClipRRect(
-            borderRadius: borderRadius ?? BorderRadius.circular(16),
-            child: Container(
-              color: AuraSurface.subtle,
-              height: 160,
-              alignment: Alignment.center,
-              child: const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-          ),
+          loading: _loading,
           error: (_, __) => AuraVideoUnavailableTile(
             label: 'This media link has expired or is no longer available.',
             fileName: fileName,
@@ -881,6 +875,20 @@ class AuraVideoMedia extends ConsumerWidget {
           ),
         );
   }
+
+  Widget _loading() => ClipRRect(
+    borderRadius: borderRadius ?? BorderRadius.circular(16),
+    child: Container(
+      color: AuraSurface.subtle,
+      height: 160,
+      alignment: Alignment.center,
+      child: const SizedBox(
+        width: 22,
+        height: 22,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      ),
+    ),
+  );
 }
 
 /// Where a stored video's poster frame is taken when the server has no
@@ -889,5 +897,7 @@ class AuraVideoMedia extends ConsumerWidget {
 Duration videoPosterPosition(Duration length) {
   if (length <= const Duration(seconds: 4)) return Duration.zero;
   final tenth = Duration(milliseconds: length.inMilliseconds ~/ 10);
-  return tenth < const Duration(seconds: 3) ? tenth : const Duration(seconds: 3);
+  return tenth < const Duration(seconds: 3)
+      ? tenth
+      : const Duration(seconds: 3);
 }
