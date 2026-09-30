@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import '../../../features/public/data/public_institutions_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -667,7 +668,9 @@ class VerifiedInstitutionsRailModule extends ConsumerWidget {
               child: Text(
                 'Browse all institutions →',
                 style: AuraText.micro.copyWith(
-                  color: AuraSurface.accentText,
+                  color: AuraChamberScope.of(context)
+                      ? AuraChamber.gold
+                      : AuraSurface.accentText,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -726,10 +729,12 @@ class _VerifiedInstitutionRow extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            const Icon(
+            Icon(
               Icons.verified_rounded,
               size: 12,
-              color: AuraSurface.accentText,
+              color: AuraChamberScope.of(context)
+                  ? AuraChamber.gold
+                  : AuraSurface.accentText,
             ),
           ],
         ),
