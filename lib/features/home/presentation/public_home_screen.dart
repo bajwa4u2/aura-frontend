@@ -1,3 +1,4 @@
+import 'public_home_copy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -23,6 +24,8 @@ import '../../discourse_intelligence/widgets/civic_memory_continuity_cue.dart';
 import '../../public/data/public_spaces_repository.dart';
 import '../../public/domain/space.dart';
 import '../../../core/product/product_state.dart';
+import '../../../core/product/temporal.dart';
+import '../../../core/ui/aura_text_block.dart';
 import '../../../core/product/product_state_view.dart';
 import '../../public/widgets/discourse_card.dart';
 
@@ -270,27 +273,34 @@ class _HeroSection extends StatelessWidget {
                 // fold past everything worth seeing.
                 padding: EdgeInsets.fromLTRB(
                   AuraSpace.s20,
-                  AuraWindow.of(context).windowClass.canHoldSelection ? 32 : 60,
+                  AuraWindow.of(context).windowClass.canHoldSelection ? 24 : 32,
                   AuraSpace.s20,
-                  AuraWindow.of(context).windowClass.canHoldSelection ? 28 : 56,
+                  AuraWindow.of(context).windowClass.canHoldSelection ? 24 : 32,
                 ),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     final wide = constraints.maxWidth >= 720;
                     final left = _HeroLeft(isAuthed: isAuthed);
-                    // The activity module is optional. When the network has
-                    // nothing current to show, the hero is the whole band
-                    // rather than a headline column with a hole beside it.
-                    if (!_LiveDiscoursePulse.hasCurrentActivity(
+                    // D2 (founder, 2026-09-29): the first screen shows one
+                    // real, current discussion, so the record is the proof.
+                    // The activity counts remain the fallback when there is
+                    // no discussion to show, and with neither the hero is
+                    // the whole band rather than a column with a hole.
+                    final record = _heroRecordItem(feedAsync);
+                    final Widget right;
+                    if (record != null) {
+                      right = _HeroRecord(item: record);
+                    } else if (_LiveDiscoursePulse.hasCurrentActivity(
                       feedAsync,
                       liveAsync,
                     )) {
+                      right = _LiveDiscoursePulse(
+                        feedAsync: feedAsync,
+                        liveAsync: liveAsync,
+                      );
+                    } else {
                       return left;
                     }
-                    final right = _LiveDiscoursePulse(
-                      feedAsync: feedAsync,
-                      liveAsync: liveAsync,
-                    );
                     if (wide) {
                       return Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -330,42 +340,9 @@ class _HeroLeft extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s10,
-            vertical: AuraSpace.s6,
-          ),
-          decoration: BoxDecoration(
-            color: AuraSurface.accentSoft,
-            borderRadius: BorderRadius.circular(AuraRadius.pill),
-            border: Border.all(
-              color: AuraSurface.accent.withValues(alpha: 0.3),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.forum_rounded,
-                size: 11,
-                color: AuraSurface.accentText,
-              ),
-              const SizedBox(width: AuraSpace.s6),
-              // A `mainAxisSize: min` Row asks its Text for the width the
-              // sentence WANTS, so at any surface narrower than that the pill
-              // overflows — 76px at 800 wide, still 1px at 1600. Constraining
-              // the text lets the pill shrink instead of spilling.
-              Flexible(
-                child: Text(
-                  'Public communication with accountability',
-                  overflow: TextOverflow.ellipsis,
-                  style: AuraText.label.copyWith(color: AuraSurface.accentText),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: AuraSpace.s20),
+        // D2 (founder, 2026-09-29): the "Public communication with
+        // accountability" chip that sat here said the headline twice and cost
+        // the first screen the discussion it now shows.
         // Public-first causal doctrine — people and the communication they
         // already struggle with are the originating force; institutions
         // enter as accountable participants. The previous hero led with an
@@ -385,11 +362,10 @@ class _HeroLeft extends StatelessWidget {
         // place while leaving the line half empty.
         Builder(
           builder: (context) {
-            final desktop = AuraWindow.of(context).windowClass.canHoldSelection;
-            return Text(
-              desktop
-                  ? 'Public conversation that keeps its context.'
-                  : 'Public conversation that\nkeeps its context.',
+            return const Text(
+              // No forced break at any width: on a phone the forced one left
+              // "that" alone on its own line (seen 2026-09-29, 390 wide).
+              publicHomeHeadline,
               // 46 was WRONG and I put it there. `AuraText.display` is 40 --
               // I assumed it was an oversized phone-hero style without
               // reading it, so the "desktop correction" made the headline
@@ -420,9 +396,7 @@ class _HeroLeft extends StatelessWidget {
         // three lines later, as step three of a loop and as a place to
         // browse — participants, not premise.
         Text(
-          'Raise what matters in the open, with people who answer under their '
-          'real name. Conversations keep their history, so what was said and '
-          'what was promised are still there later.',
+          publicHomeLede,
           style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.6),
         ),
         const SizedBox(height: AuraSpace.s28),
@@ -431,7 +405,7 @@ class _HeroLeft extends StatelessWidget {
           runSpacing: AuraSpace.s10,
           children: [
             AuraPrimaryButton(
-              label: isAuthed ? 'Open your feed' : 'Join Aura',
+              label: isAuthed ? 'Open your feed' : publicHomeJoinLabel,
               icon: Icons.arrow_forward_rounded,
               onPressed: () => _goJoinAura(context, isAuthed: isAuthed),
             ),
@@ -440,8 +414,8 @@ class _HeroLeft extends StatelessWidget {
             // the search box — a label promising discussions and a
             // destination offering an empty field.
             _HeroOutlineButton(
-              label: 'Explore discussions',
-              onTap: () => context.push('/discover'),
+              label: publicHomeExploreLabel,
+              onTap: () => context.push(publicHomeExploreRoute),
             ),
           ],
         ),
@@ -450,7 +424,7 @@ class _HeroLeft extends StatelessWidget {
         // (public-first doctrine: institution discovery remains real; it is
         // simply not the originating proposition of the entry surface).
         InkWell(
-          onTap: () => context.push('/institutions'),
+          onTap: () => context.push(publicHomeInstitutionsRoute),
           borderRadius: BorderRadius.circular(AuraRadius.r10),
           child: Padding(
             padding: const EdgeInsets.symmetric(
@@ -467,7 +441,7 @@ class _HeroLeft extends StatelessWidget {
                 ),
                 const SizedBox(width: AuraSpace.s8),
                 Text(
-                  'Browse the institutions on Aura',
+                  publicHomeInstitutionsLabel,
                   style: AuraText.small.copyWith(
                     color: AuraSurface.muted,
                     fontWeight: FontWeight.w600,
@@ -849,7 +823,13 @@ class _DiscussionPreviewSection extends ConsumerWidget {
             icon: Icons.forum_outlined,
           );
         }
-        final items = page.items.take(6).toList(growable: false);
+        // The first screen already shows one discussion (D2); the list
+        // does not repeat it.
+        final shown = _heroRecordItem(feedAsync)?.id;
+        final items = page.items
+            .where((i) => i.id != shown)
+            .take(6)
+            .toList(growable: false);
         return Column(
           children: [
             for (final item in items) ...[
@@ -1569,6 +1549,135 @@ class _DiscoveryColumn extends StatelessWidget {
           if (i < modules.length - 1) const SizedBox(height: AuraSpace.s12),
         ],
       ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// THE RECORD IN THE FIRST SCREEN (D2, founder 2026-09-29)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// The discussion the first screen shows: the newest public item that has
+/// something to read. Null when the feed has nothing yet. The list further
+/// down skips it, so no one meets the same discussion twice.
+FeedItem? _heroRecordItem(AsyncValue<FeedPage> feedAsync) {
+  final items = feedAsync.valueOrNull?.items ?? const <FeedItem>[];
+  for (final item in items) {
+    final hasText =
+        (item.title ?? '').trim().isNotEmpty || item.body.trim().isNotEmpty;
+    if (hasText && item.targetRoute.trim().isNotEmpty) return item;
+  }
+  return null;
+}
+
+/// One real, current discussion beside the headline, so a visitor sees what
+/// Aura is before scrolling. At the founder's window (943 × 489) the headline
+/// band alone used to fill the whole first screen.
+class _HeroRecord extends StatelessWidget {
+  const _HeroRecord({required this.item});
+
+  final FeedItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = (item.title ?? '').trim();
+    final body = item.body.trim();
+    final text = body.isNotEmpty ? body : title;
+    final when = item.publishedAt ?? item.createdAt;
+    final handle = item.author.handleOrSlug.trim();
+    final meta = <String>[
+      if (handle.isNotEmpty) '@$handle',
+      if (when != null) AuraTemporal.fullShort(when),
+    ].join(' · ');
+    final answered = (item.replyPreview?.items ?? const []).any(
+      (r) =>
+          r.author.context?.type == FeedIdentityContextType.officialInstitution,
+    );
+    final direction = AuraTextBlockDirection.resolve(text);
+
+    return Semantics(
+      button: true,
+      label: 'Open the discussion by ${item.author.name}',
+      child: InkWell(
+        onTap: () => context.push(item.targetRoute),
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        child: Container(
+          padding: const EdgeInsets.all(AuraSpace.s16),
+          decoration: BoxDecoration(
+            color: AuraSurface.card,
+            borderRadius: BorderRadius.circular(AuraRadius.card),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'ON THE PUBLIC RECORD NOW',
+                style: AuraText.micro.copyWith(
+                  color: AuraSurface.faint,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
+                  fontSize: 10,
+                ),
+              ),
+              const SizedBox(height: AuraSpace.s10),
+              Text(
+                item.author.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AuraText.body.copyWith(fontWeight: FontWeight.w800),
+              ),
+              if (meta.isNotEmpty)
+                Text(
+                  meta,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                ),
+              const SizedBox(height: AuraSpace.s10),
+              if (title.isNotEmpty && body.isNotEmpty) ...[
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: AuraSpace.s4),
+              ],
+              SizedBox(
+                width: double.infinity,
+                child: Text(
+                  text,
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                  textDirection: direction,
+                  textAlign: TextAlign.start,
+                  style: AuraText.body.copyWith(height: 1.5),
+                ),
+              ),
+              const SizedBox(height: AuraSpace.s12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      answered ? 'Institution responded' : 'No responses yet',
+                      style: AuraText.small.copyWith(color: AuraSurface.muted),
+                    ),
+                  ),
+                  Text(
+                    'Open the discussion →',
+                    style: AuraText.small.copyWith(
+                      color: AuraSurface.accentText,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

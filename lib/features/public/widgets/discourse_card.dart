@@ -117,21 +117,30 @@ class DiscourseCard extends StatelessWidget {
   /// caller passes them in.
   final MonetizationKind? paidLabel;
 
-  bool get _isOfficial =>
-      item.type == FeedItemType.institutionPost &&
-      (item.title?.trim().isNotEmpty ?? false);
+  /// An institution post is an official RESPONSE only when it answers
+  /// something: it resolves a post, or it replies to one. A titled post that
+  /// answers nothing is an original post, and labelling it a response put a
+  /// false line on the record (founder-approved F2, 2026-09-29: the Aura film
+  /// and "AI's next problem" both carried it on the public landing page).
+  bool get _isOfficialResponse {
+    if (item.type != FeedItemType.institutionPost) return false;
+    bool has(String? id) => (id ?? '').trim().isNotEmpty;
+    return has(item.resolvesPostId) ||
+        has(item.replyToInstitutionPostId) ||
+        has(item.replyToPostId);
+  }
 
   /// The label we'll render in the stripe band. Order of precedence:
   ///   1. Explicit caller override (still supported for hand-rendered
   ///      surfaces that want to force a specific label).
   ///   2. Backend `paidAction` field on the FeedItem (Phase 3 wiring).
-  ///   3. Free-OFFICIAL — derived from the institution-post heuristic.
+  ///   3. Free OFFICIAL RESPONSE — only for a post that answers one.
   MonetizationKind? get _stripeLabel {
     if (paidLabel != null) return paidLabel;
     final fromWire =
         MonetizationKindX.fromPaidActionWire(item.paidActionWire);
     if (fromWire != null) return fromWire;
-    if (_isOfficial) return MonetizationKind.officialResponse;
+    if (_isOfficialResponse) return MonetizationKind.officialResponse;
     return null;
   }
 

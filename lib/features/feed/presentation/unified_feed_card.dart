@@ -231,7 +231,12 @@ class UnifiedFeedCard extends ConsumerWidget {
             // verified. Only renders when verification is *known* to
             // be true; never renders when the data is missing so we
             // can't accidentally claim authority.
-            if (officialPost && _isAuthorExplicitlyVerified(item)) ...[
+            // D4 (founder, 2026-09-29): one mark of institutional standing per
+            // card. The identity badge beside the name is that mark, so this
+            // line only speaks when no badge is shown.
+            if (officialPost &&
+                !_authorBadgeShown(item) &&
+                _isAuthorExplicitlyVerified(item)) ...[
               const SizedBox(height: 2),
               Text(
                 'Source: Verified institution',
@@ -249,7 +254,9 @@ class UnifiedFeedCard extends ConsumerWidget {
                 currentPath: currentPath,
               ),
             ],
-            if (item.voice != null && item.voice!.type.rendersLabel) ...[
+            if (item.voice != null &&
+                item.voice!.type.rendersLabel &&
+                !officialPost) ...[
               const SizedBox(height: 2),
               _VoiceLabelLine(voice: item.voice!),
             ],
@@ -643,44 +650,21 @@ class _OfficialPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // D4 (founder, 2026-09-29): the verified-institution badge beside the
+    // name is the card's one mark of standing. This eyebrow now carries only
+    // what KIND of post it is (Update, Notice, Advisory…), never a second
+    // "OFFICIAL".
+    if (type == null) return const SizedBox.shrink();
     return Opacity(
       opacity: ageBucket.eyebrowOpacity,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: AuraSurface.accentSoft,
-              borderRadius: BorderRadius.circular(AuraRadius.pill),
-              border: Border.all(
-                color: AuraSurface.accent.withValues(alpha: 0.35),
-              ),
-            ),
-            child: Text(
-              'OFFICIAL',
-              style: AuraText.micro.copyWith(
-                color: AuraSurface.accentText,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.8,
-                fontSize: 10,
-              ),
-            ),
-          ),
-          if (type != null) ...[
-            const SizedBox(width: 6),
-            Text(
-              '• ${type!.label.toUpperCase()}',
-              style: AuraText.micro.copyWith(
-                color: AuraSurface.faint,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.7,
-                fontSize: 10,
-              ),
-            ),
-          ],
-        ],
+      child: Text(
+        type!.label.toUpperCase(),
+        style: AuraText.micro.copyWith(
+          color: AuraSurface.accentText,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.7,
+          fontSize: 10,
+        ),
       ),
     );
   }
