@@ -186,6 +186,13 @@ final dioProvider = Provider<Dio>((ref) {
   }
 
   Future<void> clearSessionState() async {
+    // NOTHING TO CLEAR, SO NOTHING TO REBUILD. A signed-out visitor has no
+    // access token; two refused refreshes used to invalidate the session
+    // providers anyway, which rebuilt the app and threw a reader on the
+    // public front door back to the top of the page (2026-09-30).
+    final store = ref.read(tokenStoreProvider);
+    bool held(String? t) => t != null && t.trim().isNotEmpty;
+    if (!held(store.accessToken) && !held(store.refreshToken)) return;
     await ref.read(tokenStoreProvider).clearTokens();
     ref.invalidate(sessionBootstrapProvider);
     ref.invalidate(authStatusProvider);

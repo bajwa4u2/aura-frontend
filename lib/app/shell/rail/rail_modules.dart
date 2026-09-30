@@ -1,3 +1,4 @@
+import '../../../features/public/data/public_institutions_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -618,9 +619,27 @@ class VerifiedInstitutionsRailModule extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(verifiedInstitutionsProvider);
+    // THE PUBLIC DIRECTORY, NOT THE ADMIN LIST. This read the admin endpoint
+    // (`/institutions/admin?status=VERIFIED`), which refuses everyone who is
+    // not an admin. On the public front door a signed-out visitor's 401 set
+    // off a session refresh, then "clearing session", which rebuilt the page
+    // and threw the reader back to the top (found 2026-09-30, scrolling the
+    // landing page at 943 px).
+    final async = ref.watch(
+      publicInstitutionsListProvider(
+        const PublicInstitutionsQuery(verifiedOnly: true),
+      ),
+    );
     final list = async.maybeWhen(
-      data: (l) => l,
+      data: (page) => [
+        for (final i in page.verified)
+          <String, dynamic>{
+            'id': i.id,
+            'name': i.name,
+            'slug': i.slug,
+            'logoUrl': i.logoUrl,
+          },
+      ],
       orElse: () => const <Map<String, dynamic>>[],
     );
     if (list.isEmpty) return const SizedBox.shrink();
