@@ -22,9 +22,9 @@ class FounderMessageScreen extends StatelessWidget {
       eyebrow: 'Founder',
       title: 'Operator-builder background. Infrastructure discipline.',
       subtitle:
-          'Aura Platform LLC is being built by a sole operator-builder '
-          'focused on accountable communication, operational execution, '
-          'and durable systems.',
+          'Aura Platform LLC was founded and is led by Muhammad Sakhawat '
+          '(MS Bajwa), an operator-builder focused on accountable '
+          'communication, operational execution and durable systems.',
       actions: [
         AuraGhostButton(
           label: 'Mission',
@@ -45,7 +45,9 @@ class FounderMessageScreen extends StatelessWidget {
       children: [
         PubText.h('Operator-builder background'),
         PubText.p(
-          'Muhammad Sakhawat (MS Bajwa) is the sole founder and builder. '
+          'Muhammad Sakhawat (MS Bajwa) is the founder and Managing '
+          'Member of Aura Platform LLC. In 2026 Amjad M. Chaudhry and '
+          'Iffat S. Chaudhry joined as Strategic Members. '
           'The background is operator-builder, not media: construction, '
           'excavation, oil and gas infrastructure, and project '
           'management — primarily in Oman. The work demanded the kind '
@@ -125,7 +127,7 @@ class FounderMessageScreen extends StatelessWidget {
         const AuraPublicationColophon(
           publisher: 'Aura Platform LLC',
           version: 'Founder',
-          updatedLabel: 'May 2026',
+          updatedLabel: 'Wednesday, September 30, 2026 · 3:45 AM ET',
         ),
       ],
     );

@@ -244,7 +244,7 @@ class _SafetyHero extends StatelessWidget {
           ),
           const SizedBox(height: AuraSpace.md),
           Text(
-            'Last updated: May 2026',
+            'Last updated: Wednesday, September 30, 2026 · 3:45 AM ET',
             style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
           ),
         ],

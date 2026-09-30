@@ -104,7 +104,7 @@ class SupportersHubScreen extends StatelessWidget {
         const AuraPublicationColophon(
           publisher: 'Aura Platform LLC',
           version: 'Supporters',
-          updatedLabel: 'May 2026',
+          updatedLabel: 'Wednesday, September 30, 2026 · 3:45 AM ET',
         ),
       ],
     );

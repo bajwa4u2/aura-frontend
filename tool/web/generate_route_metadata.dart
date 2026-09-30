@@ -150,7 +150,7 @@ const _routes = <_RouteMeta>[
     path: '/investors',
     title: 'Investors & Partners — Aura Platform LLC',
     description:
-        'Aura Platform LLC builds continuity infrastructure: Aura (purposeful communication, continuity, identity, participation and institutional accountability), Orchestrate (AI participating in consequential organizational work under explicit authority, evidence and human responsibility), and Colophon (reading, authorship and publishing built on Works, Editions, preservation and provenance). One identity, one record, one accountable surface.',
+        'Aura Platform LLC makes three products that keep what people and organizations say, do and publish on the record: Aura for public communication, Orchestrate for business relationships, and Colophon for authored work. Pre-seed.',
     image: 'og-investors.png',
     imageAlt: 'Aura Platform LLC — investors and partners',
   ),
@@ -158,7 +158,7 @@ const _routes = <_RouteMeta>[
     path: '/founder',
     title: 'Founder — Aura Platform LLC',
     description:
-        'Aura Platform LLC is being built by an operator-builder focused on public communication and discourse, commercial execution, and durable systems.',
+        'Aura Platform LLC was founded and is led by Muhammad Sakhawat, an operator-builder focused on public communication, commercial execution and durable systems.',
     image: 'og-founder.png',
     imageAlt: 'Aura Platform LLC — founder',
   ),
@@ -178,7 +178,7 @@ const _routes = <_RouteMeta>[
     path: '/institutions',
     title: 'Institutions — Aura Platform',
     description:
-        'Verified institutions on Aura — organizations taking part in public discourse and running their member-facing life under identity-bound, accountable record.',
+        'Verified institutions on Aura: organizations that take part in public conversation under verified identity and answer on the same record.',
   ),
   _RouteMeta(
     path: '/white-paper',

@@ -33,9 +33,10 @@ class MissionScreen extends StatelessWidget {
       title: 'Build durable public communication where people '
           'participate purposefully and institutions remain accountable.',
       subtitle:
-          'Aura Platform LLC builds infrastructure where identity, '
-          'authority, and outcomes stay connected across people, '
-          'institutions, and AI.',
+          'Aura Platform LLC makes three products that keep what people and '
+          'organizations say, do and publish on the record: Aura for public '
+          'communication, Orchestrate for business relationships, and '
+          'Colophon for authored work.',
       actions: [
         AuraGhostButton(
           label: 'White Paper',
@@ -55,15 +56,15 @@ class MissionScreen extends StatelessWidget {
       hero: hero,
       children: [
         PubText.p(
-          'Modern work is fast, but unstable. Conversations scatter '
-          'across tools. Identity blurs. Decisions move forward, but '
-          'the record of who said what, and what was supposed to '
-          'happen next, gets lost between the tab and the calendar.',
+          'People say things in public that matter, and organizations '
+          'make promises to them. Most tools let both disappear: posts '
+          'scroll away, context splits across apps, and later no one '
+          'can show what was said or what was promised.',
         ),
         PubText.p(
-          'Aura Platform exists to fix that fragmentation at the '
-          'infrastructure layer. We build systems where identity, '
-          'action, and records stay connected.',
+          'Aura Platform exists to keep that record. Each of our '
+          'products keeps who said or did something, and when, '
+          'attached to it for as long as it matters.',
         ),
 
         PubText.h('What we protect'),
@@ -140,16 +141,16 @@ class MissionScreen extends StatelessWidget {
         ]),
 
         const AuraPublicationCallout(
-          text: 'Infrastructure for accountable communication and '
-              'AI-assisted operational execution.',
-          attribution: 'Aura Platform thesis',
+          text: 'Three products that keep what people and organizations '
+              'say, do and publish on the record.',
+          attribution: 'Aura Platform LLC',
         ),
 
         const AuraPublicationDivider(),
         const AuraPublicationColophon(
           publisher: 'Aura Platform LLC',
           version: 'Mission',
-          updatedLabel: 'May 2026',
+          updatedLabel: 'Wednesday, September 30, 2026 · 3:45 AM ET',
         ),
       ],
     );

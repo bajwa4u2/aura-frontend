@@ -39,7 +39,7 @@ class _TermsBody extends StatelessWidget {
           eyebrow: '01',
           title: 'Acceptance of these terms',
           body:
-              'By accessing Aura, creating an account, joining an institution or space, publishing content, sending messages, participating in calls, or using any public or member-facing service, you agree to these Terms. If you use Aura on behalf of an institution, organization, company, or public body, you represent that you have authority to act for that entity.',
+              'Aura is operated by Aura Platform LLC, a Michigan limited liability company, 25426 Goddard Rd, Taylor, Michigan 48180, USA. By accessing Aura, creating an account, joining an institution or space, publishing content, sending messages, participating in calls, or using any public or member-facing service, you agree to these Terms. If you use Aura on behalf of an institution, organization, company, or public body, you represent that you have authority to act for that entity.',
         ),
         const _Section(
           eyebrow: '02',
@@ -115,7 +115,7 @@ class _TermsBody extends StatelessWidget {
           eyebrow: '12',
           title: 'Intellectual property',
           body:
-              'You retain ownership of content you own, but you grant Aura the rights needed to host, transmit, display, store, secure, moderate, and operate that content within the platform. Aura, its product design, software, brand, infrastructure, and platform materials remain Aura property or the property of their respective owners.',
+              'You retain ownership of content you own, but you grant Aura the rights needed to host, transmit, display, store, secure, moderate, and operate that content within the platform. Aura, its product design, software, brand, infrastructure, and platform materials remain the property of Aura Platform LLC or of their respective owners.',
         ),
         const _Section(
           eyebrow: '13',
@@ -195,7 +195,7 @@ class _LegalHero extends StatelessWidget {
           ),
           const SizedBox(height: AuraSpace.md),
           Text(
-            'Last updated: May 2026',
+            'Last updated: Wednesday, September 30, 2026 · 3:45 AM ET',
             style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
           ),
         ],

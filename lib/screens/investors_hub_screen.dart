@@ -55,8 +55,8 @@ class InvestorsHubScreen extends StatelessWidget {
           bottomBorder: true,
           child: AuraPublicationHero(
             eyebrow: 'Investors & Partners',
-            title: 'Continuity infrastructure: one governance pattern, '
-                'three products.',
+            title: 'Three products that keep what people and '
+                'organizations say on the record.',
             subtitle:
                 'Aura Platform LLC builds three independent products. Aura '
                 'for public-first communication and accountable '
@@ -279,16 +279,16 @@ class InvestorsHubScreen extends StatelessWidget {
                 eyebrow: 'Execution',
                 title: 'Operator-builder discipline.',
                 subtitle:
-                    'Aura Platform LLC is being built by a sole '
-                    'operator-builder. The background is not media or '
-                    'marketing — it is infrastructure, projects, and '
-                    'records.',
+                    'Aura Platform LLC was founded and is led by '
+                    'Muhammad Sakhawat, its Founder and Managing Member. '
+                    'In 2026 Amjad M. Chaudhry and Iffat S. Chaudhry '
+                    'joined as Strategic Members.',
               ),
               SizedBox(height: AuraSpace.xl),
               InvestorExecutionContent(
                 summary:
-                    'Muhammad Sakhawat (MS Bajwa) is founder and '
-                    'builder. The background is operator-builder, not '
+                    'Muhammad Sakhawat (MS Bajwa) is the founder. The '
+                    'background is operator-builder, not '
                     'media: construction, excavation, oil and gas '
                     'infrastructure, and project management — '
                     'primarily in Oman. The work demanded the kind of '
@@ -348,19 +348,19 @@ class InvestorsHubScreen extends StatelessWidget {
                 eyebrow: 'Investor deck',
                 title: 'Read the platform thesis.',
                 subtitle:
-                    'A single, controlled investor document covers the '
-                    'infrastructure thesis, the two-product platform, '
-                    'and the operating contract. Open the deck below.',
+                    'One investor document covers the three products, '
+                    'where they stand, the round and the team. Open the '
+                    'deck below.',
               ),
               const SizedBox(height: AuraSpace.xl),
               InvestorDeckCenterpiece(
                 title: 'Aura Platform Investor Deck',
                 subtitle:
-                    'Infrastructure overview for Aura Platform LLC, '
-                    'including Aura and Orchestrate, the shared trust '
-                    'fabric, and the operating contract.',
-                version: 'Version 1.0 · Seed',
-                updatedLabel: 'May 2026',
+                    'Aura, Orchestrate and Colophon: what each does, '
+                    'where they stand, the \$550,000 pre-seed round and '
+                    'the team.',
+                version: 'Version 2.0 · Pre-seed',
+                updatedLabel: 'Wednesday, September 30, 2026 · 3:49 AM ET',
                 onOpen: () => _openDeck(context),
               ),
             ],
@@ -427,7 +427,7 @@ class _Colophon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      'AURA PLATFORM LLC · INVESTORS & PARTNERS · MAY 2026',
+      'AURA PLATFORM LLC · INVESTORS & PARTNERS · SEPTEMBER 30, 2026',
       style: AuraText.label.copyWith(
         color: chamberTone(context, AuraSurface.muted),
         letterSpacing: 1.4,

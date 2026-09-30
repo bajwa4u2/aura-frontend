@@ -118,7 +118,7 @@ class _WhitePaperScreenState extends State<WhitePaperScreen> {
       ),
       const AuraPublicationMetaItem(
         icon: Icons.event_outlined,
-        label: 'Updated September 2026',
+        label: 'Updated Wednesday, September 30, 2026 · 3:45 AM ET',
       ),
       if (readingMinutes != null)
         AuraPublicationMetaItem(

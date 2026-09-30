@@ -45,6 +45,10 @@ class _PrivacyBody extends StatelessWidget {
             'Communication content you create or send through Aura, including messages, posts, attachments, updates, support requests, and moderation records.',
             'Contact import data you choose to provide, such as names and email addresses, so Aura can preview, deduplicate, resolve existing users, and help you send confirmed invitations.',
             'Technical and security records such as device, browser, IP, timestamps, request metadata, delivery logs, error logs, and abuse-prevention signals.',
+            'Identity verification records, if you verify your identity: your legal name, images of the government document you submit and the photo taken with it. Only a reviewer at Aura sees them, and the images are deleted 60 days after the review is complete.',
+            'Your date of birth, used only to apply the right age rules. It is never shown on your profile.',
+            'Evidence of your authority to act for an institution, when you ask to speak for one.',
+            'Meeting recordings, only where the participants have given their consent.',
           ],
         ),
         _PrivacySection(
@@ -197,8 +201,18 @@ class _PrivacyHero extends StatelessWidget {
           ),
           const SizedBox(height: AuraSpace.md),
           Text(
-            'Aura handles data to protect access, preserve communication context, support institutions, and keep the platform reliable. The goal is not to extract attention from people — it is to make trusted communication possible.',
+            'Aura handles data to protect access, preserve communication context, support institutions, and keep the platform reliable. The goal is not to extract attention from people — it is to make accountable communication possible.',
             style: AuraText.body.copyWith(height: 1.75),
+          ),
+          const SizedBox(height: AuraSpace.sm),
+          Text(
+            'Aura is operated by Aura Platform LLC, a Michigan limited liability company, 25426 Goddard Rd, Taylor, Michigan 48180, USA.',
+            style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
+          ),
+          const SizedBox(height: AuraSpace.sm),
+          Text(
+            'Last updated: Wednesday, September 30, 2026 · 3:45 AM ET',
+            style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
           ),
           const SizedBox(height: AuraSpace.lg),
           const Wrap(
