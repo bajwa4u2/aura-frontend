@@ -67,3 +67,17 @@ abstract final class AuraChamber {
     color: faint,
   );
 }
+
+/// Marks a subtree as dressed in look B. Shared widgets (the feed card)
+/// read it and take the chamber's surface and gold; outside it they keep
+/// the look they have. This is how B reaches the public front door without
+/// changing the signed-in app (founder, 2026-09-30: one surface at a time).
+class AuraChamberScope extends InheritedWidget {
+  const AuraChamberScope({super.key, required super.child});
+
+  static bool of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<AuraChamberScope>() != null;
+
+  @override
+  bool updateShouldNotify(AuraChamberScope oldWidget) => false;
+}

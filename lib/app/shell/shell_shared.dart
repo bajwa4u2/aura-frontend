@@ -1,3 +1,4 @@
+import '../../core/ui/aura_chamber.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -213,13 +214,19 @@ class _MadeWithSupportBand extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Look B inside the public front door; unchanged elsewhere.
+    final chamber = AuraChamberScope.of(context);
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
-        color: AuraSurface.subtle,
+      decoration: BoxDecoration(
+        color: chamber ? AuraChamber.raised : AuraSurface.subtle,
         border: Border(
-          top: BorderSide(color: AuraSurface.divider),
-          bottom: BorderSide(color: AuraSurface.divider),
+          top: BorderSide(
+            color: chamber ? AuraChamber.rule : AuraSurface.divider,
+          ),
+          bottom: BorderSide(
+            color: chamber ? AuraChamber.rule : AuraSurface.divider,
+          ),
         ),
       ),
       child: Center(
@@ -233,7 +240,7 @@ class _MadeWithSupportBand extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, c) {
                 final compact = c.maxWidth < _compactBreakpoint;
-                final copy = _copy();
+                final copy = _copy(chamber);
                 final marks = _SupportMarks(compact: compact);
                 if (compact) {
                   return Column(
@@ -261,14 +268,14 @@ class _MadeWithSupportBand extends StatelessWidget {
     );
   }
 
-  Widget _copy() {
+  Widget _copy(bool chamber) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'MADE WITH SUPPORT',
           style: AuraText.micro.copyWith(
-            color: AuraSurface.accentText,
+            color: chamber ? AuraChamber.gold : AuraSurface.accentText,
             fontWeight: FontWeight.w800,
             letterSpacing: 1.4,
           ),
@@ -492,6 +499,8 @@ class _ClosingInvitation extends StatelessWidget {
 class _StartAConversationButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final chamber = AuraChamberScope.of(context);
+    final ink = chamber ? AuraChamber.gold : AuraSurface.accentText;
     return Semantics(
       button: true,
       label: 'Start a conversation',
@@ -508,9 +517,11 @@ class _StartAConversationButton extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AuraRadius.pill),
               border: Border.all(
-                color: AuraSurface.accent.withValues(alpha: 0.45),
+                color: chamber
+                    ? AuraChamber.gold
+                    : AuraSurface.accent.withValues(alpha: 0.45),
               ),
-              color: AuraSurface.accentSoft,
+              color: chamber ? Colors.transparent : AuraSurface.accentSoft,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -518,15 +529,15 @@ class _StartAConversationButton extends StatelessWidget {
                 Text(
                   'Start a conversation',
                   style: AuraText.small.copyWith(
-                    color: AuraSurface.accentText,
+                    color: ink,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(width: AuraSpace.s8),
-                const Icon(
+                Icon(
                   Icons.arrow_forward_rounded,
                   size: 16,
-                  color: AuraSurface.accentText,
+                  color: ink,
                 ),
               ],
             ),

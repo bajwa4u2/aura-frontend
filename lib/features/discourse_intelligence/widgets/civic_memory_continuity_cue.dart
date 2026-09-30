@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -62,7 +63,9 @@ class CivicMemoryContinuityCue extends ConsumerWidget {
           AuraSpace.s10,
         ),
         decoration: BoxDecoration(
-          color: AuraSurface.subtle,
+          color: AuraChamberScope.of(context)
+              ? AuraChamber.raised
+              : AuraSurface.subtle,
           borderRadius: BorderRadius.circular(AuraRadius.r12),
           border: Border.all(
             color: AuraSurface.divider.withValues(alpha: 0.6),

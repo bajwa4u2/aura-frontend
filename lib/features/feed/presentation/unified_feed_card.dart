@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -154,9 +155,13 @@ class UnifiedFeedCard extends ConsumerWidget {
     // calmer accent, >72 h drops to the divider color so an old
     // statement no longer competes with fresh institutional speech.
     final ageBucket = _ageBucketFor(item);
+    // Look B inside the public front door (AuraChamberScope); the signed-in
+    // app keeps its card until the founder moves it.
+    final chamber = AuraChamberScope.of(context);
     final accentBorder = isAnnouncement
-        ? AuraSurface.accent.withValues(alpha: ageBucket.accentBorderAlpha)
-        : AuraSurface.divider;
+        ? (chamber ? AuraChamber.gold : AuraSurface.accent)
+            .withValues(alpha: ageBucket.accentBorderAlpha)
+        : (chamber ? AuraChamber.rule : AuraSurface.divider);
 
     return InkWell(
       onTap: adaptedTarget.isEmpty ? null : () => context.push(adaptedTarget),
@@ -171,7 +176,7 @@ class UnifiedFeedCard extends ConsumerWidget {
           AuraSpace.s14,
         ),
         decoration: BoxDecoration(
-          color: AuraSurface.card,
+          color: chamber ? AuraChamber.raised : AuraSurface.card,
           borderRadius: BorderRadius.circular(AuraRadius.card),
           border: Border.all(
             color: accentBorder,
@@ -305,7 +310,7 @@ class UnifiedFeedCard extends ConsumerWidget {
                 Text(
                   'Recent update',
                   style: AuraText.micro.copyWith(
-                    color: AuraSurface.accentText,
+                    color: chamber ? AuraChamber.gold : AuraSurface.accentText,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.4,
                     fontSize: 10,
@@ -660,7 +665,9 @@ class _OfficialPill extends StatelessWidget {
       child: Text(
         type!.label.toUpperCase(),
         style: AuraText.micro.copyWith(
-          color: AuraSurface.accentText,
+          color: AuraChamberScope.of(context)
+              ? AuraChamber.gold
+              : AuraSurface.accentText,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.7,
           fontSize: 10,
@@ -1308,6 +1315,37 @@ class _Badge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (AuraChamberScope.of(context)) {
+      // Look B: a hairline badge, gold only for "Global".
+      final gold = tone == _BadgeTone.accent;
+      final ink = gold ? AuraChamber.gold : AuraChamber.faint;
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: gold
+                ? AuraChamber.gold.withValues(alpha: 0.5)
+                : AuraChamber.rule,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: ink),
+            const SizedBox(width: 4),
+            Text(
+              label.toUpperCase(),
+              style: AuraChamber.eyebrow.copyWith(
+                fontSize: 10.5,
+                letterSpacing: 1.0,
+                color: ink,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return SubstrateChip(
       label: label,
       icon: icon,
@@ -1950,7 +1988,11 @@ class _PostIntentLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final issue = intent.toUpperCase() == 'ISSUE';
-    final color = issue ? AuraSurface.warnInk : AuraSurface.accentText;
+    final color = issue
+        ? AuraSurface.warnInk
+        : (AuraChamberScope.of(context)
+            ? AuraChamber.gold
+            : AuraSurface.accentText);
     final icon = switch (intent.toUpperCase()) {
       'ASK' => Icons.help_outline_rounded,
       'ISSUE' => Icons.report_problem_outlined,

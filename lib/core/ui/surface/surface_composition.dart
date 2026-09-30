@@ -1,3 +1,4 @@
+import '../aura_chamber.dart';
 import 'package:flutter/material.dart';
 
 import '../aura_radius.dart';
@@ -656,16 +657,24 @@ class AuraRailModule extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = tone == AuraRailModuleTone.accent;
+    // Look B inside the public front door: an ink tile on a hairline, gold
+    // for the accent tone. Everywhere else the module is unchanged.
+    final chamber = AuraChamberScope.of(context);
+    final ground = chamber
+        ? AuraChamber.raised
+        : (accent ? AuraSurface.accentSoft : AuraSurface.card);
+    final edge = chamber
+        ? (accent ? AuraChamber.gold.withValues(alpha: 0.5) : AuraChamber.rule)
+        : (accent
+            ? AuraSurface.accent.withValues(alpha: 0.32)
+            : AuraSurface.divider);
+    final accentInk = chamber ? AuraChamber.gold : AuraSurface.accentText;
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s14),
       decoration: BoxDecoration(
-        color: accent ? AuraSurface.accentSoft : AuraSurface.card,
+        color: ground,
         borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(
-          color: accent
-              ? AuraSurface.accent.withValues(alpha: 0.32)
-              : AuraSurface.divider,
-        ),
+        border: Border.all(color: edge),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -677,9 +686,7 @@ class AuraRailModule extends StatelessWidget {
                 Icon(
                   icon,
                   size: 16,
-                  color: accent
-                      ? AuraSurface.accentText
-                      : AuraSurface.muted,
+                  color: accent ? accentInk : AuraSurface.muted,
                 ),
                 const SizedBox(width: AuraSpace.s8),
               ],
@@ -688,9 +695,7 @@ class AuraRailModule extends StatelessWidget {
                   title,
                   style: AuraText.small.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: accent
-                        ? AuraSurface.accentText
-                        : AuraSurface.ink,
+                    color: accent ? accentInk : AuraSurface.ink,
                     letterSpacing: 0.2,
                   ),
                 ),

@@ -93,38 +93,43 @@ class PublicHomeScreen extends ConsumerWidget {
       //     It sat five sections down. It now bridges the hero and the
       //     discourse, which is the job it was written for.
       // Look B: the whole front door sits on the same flat ink.
-      body: ColoredBox(
-        color: AuraChamber.ink,
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            // ARRIVAL
-            _HeroSection(
-              feedAsync: feedAsync,
-              liveAsync: liveAsync,
-              isAuthed: isAuthed,
-            ),
-            // UNDERSTANDING
-            const _HowItWorksSection(),
-            // ENCOUNTER
-            _DiscussionPreviewSection(feedAsync: feedAsync, isAuthed: isAuthed),
-            const SizedBox(height: AuraSpace.s14),
-            // The cue paints no background of its own and does not centre
-            // itself, so it takes the page's reading band explicitly rather
-            // than stretching to the window.
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: kHeroWidth),
-                child: const CivicMemoryContinuityCue(),
+      body: AuraChamberScope(
+        child: ColoredBox(
+          color: AuraChamber.ink,
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              // ARRIVAL
+              _HeroSection(
+                feedAsync: feedAsync,
+                liveAsync: liveAsync,
+                isAuthed: isAuthed,
               ),
-            ),
-            const SizedBox(height: AuraSpace.s14),
-            // PARTICIPATION
-            const _SpacesSection(),
-            const _PublicDiscoveryStrip(),
-            // CLOSING
-            const ShellFooter(),
-          ],
+              // UNDERSTANDING
+              const _HowItWorksSection(),
+              // ENCOUNTER
+              _DiscussionPreviewSection(
+                feedAsync: feedAsync,
+                isAuthed: isAuthed,
+              ),
+              const SizedBox(height: AuraSpace.s14),
+              // The cue paints no background of its own and does not centre
+              // itself, so it takes the page's reading band explicitly rather
+              // than stretching to the window.
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: kHeroWidth),
+                  child: const CivicMemoryContinuityCue(),
+                ),
+              ),
+              const SizedBox(height: AuraSpace.s14),
+              // PARTICIPATION
+              const _SpacesSection(),
+              const _PublicDiscoveryStrip(),
+              // CLOSING
+              const ShellFooter(),
+            ],
+          ),
         ),
       ),
     );
@@ -898,8 +903,8 @@ class _DiscourseRailFooter extends StatelessWidget {
           height: 44,
           padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s14),
           decoration: const BoxDecoration(
-            color: AuraSurface.subtle,
-            border: Border(top: BorderSide(color: AuraSurface.divider)),
+            color: AuraChamber.ink,
+            border: Border(top: BorderSide(color: AuraChamber.rule)),
             borderRadius: BorderRadius.only(
               bottomLeft: Radius.circular(AuraRadius.lg),
               bottomRight: Radius.circular(AuraRadius.lg),
@@ -908,7 +913,7 @@ class _DiscourseRailFooter extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(icon, size: 14, color: AuraSurface.muted),
+              Icon(icon, size: 14, color: AuraChamber.muted),
               const SizedBox(width: AuraSpace.s6),
               Flexible(
                 child: Text(
@@ -917,7 +922,7 @@ class _DiscourseRailFooter extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   softWrap: false,
                   style: AuraText.small.copyWith(
-                    color: AuraSurface.muted,
+                    color: AuraChamber.muted,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -930,7 +935,7 @@ class _DiscourseRailFooter extends StatelessWidget {
                 softWrap: false,
                 overflow: TextOverflow.fade,
                 style: AuraText.small.copyWith(
-                  color: AuraSurface.accentText,
+                  color: AuraChamber.gold,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -938,7 +943,7 @@ class _DiscourseRailFooter extends StatelessWidget {
               const Icon(
                 Icons.arrow_forward_rounded,
                 size: 14,
-                color: AuraSurface.accentText,
+                color: AuraChamber.gold,
               ),
             ],
           ),
@@ -1254,9 +1259,9 @@ class _SpaceTile extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s16),
       decoration: BoxDecoration(
-        color: AuraSurface.card,
+        color: AuraChamber.raised,
         borderRadius: BorderRadius.circular(AuraRadius.lg),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: AuraChamber.rule),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1267,17 +1272,13 @@ class _SpaceTile extends ConsumerWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: AuraSurface.accentSoft,
+                  color: Colors.transparent,
                   borderRadius: BorderRadius.circular(AuraRadius.r10),
                   border: Border.all(
-                    color: AuraSurface.accent.withValues(alpha: 0.3),
+                    color: AuraChamber.gold.withValues(alpha: 0.6),
                   ),
                 ),
-                child: Icon(
-                  space.icon,
-                  size: 18,
-                  color: AuraSurface.accentText,
-                ),
+                child: Icon(space.icon, size: 18, color: AuraChamber.gold),
               ),
               const SizedBox(width: AuraSpace.s10),
               Expanded(
@@ -1295,7 +1296,7 @@ class _SpaceTile extends ConsumerWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: AuraText.small.copyWith(
-              color: AuraSurface.muted,
+              color: AuraChamber.muted,
               height: 1.4,
             ),
           ),
@@ -1304,13 +1305,13 @@ class _SpaceTile extends ConsumerWidget {
             data: (s) => Text(
               '${s.activeDiscussionCount} active · ${s.institutionCount} institutions',
               style: AuraText.micro.copyWith(
-                color: AuraSurface.faint,
+                color: AuraChamber.faint,
                 fontWeight: FontWeight.w600,
               ),
             ),
             loading: () => Text(
               'Active',
-              style: AuraText.micro.copyWith(color: AuraSurface.faint),
+              style: AuraText.micro.copyWith(color: AuraChamber.faint),
             ),
             error: (_, __) => const SizedBox.shrink(),
           ),
@@ -1321,7 +1322,7 @@ class _SpaceTile extends ConsumerWidget {
             'Discussions happening now',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: AuraText.small.copyWith(color: AuraSurface.muted),
+            style: AuraText.small.copyWith(color: AuraChamber.muted),
           ),
           const SizedBox(height: AuraSpace.s12),
           AuraSecondaryButton(
@@ -1391,10 +1392,10 @@ class _PublicDiscoveryStrip extends StatelessWidget {
           ),
           decoration: const BoxDecoration(
             border: Border(
-              top: BorderSide(color: AuraSurface.divider),
-              bottom: BorderSide(color: AuraSurface.divider),
+              top: BorderSide(color: AuraChamber.rule),
+              bottom: BorderSide(color: AuraChamber.rule),
             ),
-            color: AuraSurface.elevated,
+            color: AuraChamber.ink,
           ),
           child: Center(
             child: ConstrainedBox(
@@ -1404,7 +1405,7 @@ class _PublicDiscoveryStrip extends StatelessWidget {
                 children: [
                   Text(
                     'Ecosystem at a glance',
-                    style: AuraText.headline.copyWith(
+                    style: AuraChamber.heading.copyWith(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                     ),
@@ -1416,7 +1417,7 @@ class _PublicDiscoveryStrip extends StatelessWidget {
                   // section's job is to name what is actually here.
                   Text(
                     'Verified institutions and what is live now.',
-                    style: AuraText.body.copyWith(color: AuraSurface.muted),
+                    style: AuraText.body.copyWith(color: AuraChamber.muted),
                   ),
                   const SizedBox(height: AuraSpace.s20),
                   // Public discovery columns come from the shared
