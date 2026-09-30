@@ -130,7 +130,7 @@ Future<void> main(List<String> args) async {
             children: [
               const Icon(
                 Icons.error_outline_rounded,
-                color: Color(0xFF9AA4B2),
+                color: Color(0xFFA9AEB9),
                 size: 30,
               ),
               const SizedBox(height: 10),
@@ -138,7 +138,7 @@ Future<void> main(List<String> args) async {
                 'This section ran into a problem.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Color(0xFFE6E9EF),
+                  color: Color(0xFFE8E4DA),
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -148,14 +148,14 @@ Future<void> main(List<String> args) async {
                 'The rest of the app is still working — go back, '
                 'or reopen this screen.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFF9AA4B2), fontSize: 12),
+                style: TextStyle(color: Color(0xFFA9AEB9), fontSize: 12),
               ),
               const SizedBox(height: 8),
               SelectableText(
                 short,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: Color(0xFF6B7280),
+                  color: Color(0xFF8C919C),
                   fontSize: 10,
                   fontFamily: 'monospace',
                 ),

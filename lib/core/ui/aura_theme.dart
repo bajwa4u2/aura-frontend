@@ -36,28 +36,28 @@ class AuraRadius {
 
 class AuraSurface {
   /// Deep graphite base (not pure black)
-  static const Color page = Color(0xFF121418);
+  static const Color page = Color(0xFF0E1116);
 
   /// Primary content surface (lifted from background)
-  static const Color panel = Color(0xFF1A1E24);
+  static const Color panel = Color(0xFF151922);
 
   /// Elevated surface (dialogs / overlays / emphasis panels)
-  static const Color elevated = Color(0xFF222833);
+  static const Color elevated = Color(0xFF1A1F29);
 
   /// Subtle separation frame (barely visible edge light)
   static const Color frame = Color(0x1FFFFFFF);
 
   /// Primary readable foreground
-  static const Color ink = Color(0xFFE8EAED);
+  static const Color ink = Color(0xFFE8E4DA);
 
   /// Muted text (still readable on dark)
-  static const Color muted = Color(0xFF9AA3AF);
+  static const Color muted = Color(0xFFA9AEB9);
 
   /// Signature accent (restrained indigo energy)
-  static const Color accent = Color(0xFF5B6CFF);
+  static const Color accent = Color(0xFFD2AC62);
 
   /// Soft accent glow (hover / active states)
-  static const Color accentSoft = Color(0x335B6CFF);
+  static const Color accentSoft = Color(0x33D2AC62);
 }
 
 class AuraText {

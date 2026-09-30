@@ -111,7 +111,7 @@ class _BookingRescheduleScreenState
                     'A new confirmation has been sent to your email.',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF6B7280),
+                      color: const Color(0xFF8C919C),
                     ),
                   ),
                   const SizedBox(height: AuraSpace.s24),
@@ -218,7 +218,7 @@ class _BookingRescheduleScreenState
                         if (slots.isEmpty) {
                           return const Text(
                             'No times available. Try another date.',
-                            style: TextStyle(color: Color(0xFF6B7280)),
+                            style: TextStyle(color: Color(0xFF8C919C)),
                           );
                         }
                         return Column(
@@ -291,7 +291,7 @@ class _CalendarGrid extends StatelessWidget {
                       child: Text(
                         d,
                         style: const TextStyle(
-                          color: Color(0xFF9CA3AF),
+                          color: Color(0xFFA9AEB9),
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
@@ -327,13 +327,13 @@ class _CalendarGrid extends StatelessWidget {
                       height: 38,
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? const Color(0xFF6C63FF)
-                            : const Color(0xFF111827),
+                            ? const Color(0xFFD2AC62)
+                            : const Color(0xFF0E1116),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
                           color: isSelected
-                              ? const Color(0xFF8B85FF)
-                              : const Color(0xFF1F2937),
+                              ? const Color(0xFFD2AC62)
+                              : const Color(0xFF1A1F29),
                         ),
                       ),
                       child: Center(
@@ -344,7 +344,7 @@ class _CalendarGrid extends StatelessWidget {
                                 ? Colors.white
                                 : isPast
                                     ? const Color(0xFF4B5563)
-                                    : const Color(0xFFE5E7EB),
+                                    : const Color(0xFFE8E4DA),
                             fontWeight: isSelected
                                 ? FontWeight.w800
                                 : null,

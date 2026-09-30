@@ -1811,7 +1811,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                   gradient: AuraGradients.accent,
                   borderRadius: BorderRadius.circular(AuraRadius.xl),
                 ),
-                child: Icon(icon, size: 30, color: Colors.white),
+                child: Icon(icon, size: 30, color: AuraSurface.onAccent),
               ),
               const SizedBox(height: AuraSpace.s20),
               Text(
@@ -4441,7 +4441,7 @@ class _DockButton extends StatelessWidget {
                         child: Text(
                           '$badge',
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AuraSurface.onAccent,
                             fontSize: 9,
                             fontWeight: FontWeight.w700,
                             height: 1,

@@ -561,7 +561,7 @@ class _CurrentSessionPanel extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1A2A3A), Color(0xFF152030)],
+          colors: [Color(0xFF1A1F29), Color(0xFF151922)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -865,7 +865,7 @@ class _SecurityHeaderPanel extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1A2235), Color(0xFF152030)],
+          colors: [Color(0xFF1A1F29), Color(0xFF151922)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

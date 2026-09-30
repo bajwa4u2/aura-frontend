@@ -440,7 +440,7 @@ class _PrimaryAction extends StatelessWidget {
       label: Text(label),
       style: FilledButton.styleFrom(
         backgroundColor: AuraSurface.accent,
-        foregroundColor: Colors.white,
+        foregroundColor: AuraSurface.onAccent,
         padding:
             const EdgeInsets.symmetric(horizontal: AuraSpace.s12, vertical: 7),
         minimumSize: Size.zero,
@@ -556,7 +556,7 @@ class _EmptyState extends StatelessWidget {
               label: const Text('Declare participation'),
               style: FilledButton.styleFrom(
                 backgroundColor: AuraSurface.accent,
-                foregroundColor: Colors.white,
+                foregroundColor: AuraSurface.onAccent,
               ),
             ),
           ],
@@ -796,7 +796,7 @@ class _CreateParticipationSheetState
                 onPressed: _saving ? null : _save,
                 style: FilledButton.styleFrom(
                   backgroundColor: AuraSurface.accent,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AuraSurface.onAccent,
                   padding:
                       const EdgeInsets.symmetric(vertical: AuraSpace.s12),
                 ),

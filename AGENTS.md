@@ -105,7 +105,7 @@ Shells are structurally distinct. Members switch into Institution Shell for inst
 - **Multi-shell architecture** (`lib/app/app_shell.dart`): shell selection is **token-keyed** (presence of refresh token), not auth-state-keyed. Prevents mid-session shell thrash during JWT refresh.
 - **API client contract** (`lib/core/network/`): single `Dio` client, base URL owns `/v1`, individual paths must NOT include `/v1`.
 - **AuraDesignSystem** (`lib/core/ui/aura_design_system.dart` + adjacent files): `AuraText`, `AuraSpace` (s4–s32), `AuraRadius` (card / xl / pill / r10 / r14), `AuraShadows`, gradients. Dark-first.
-- **Shell accents**: Member = indigo `#5B6CFF`, Institution = teal `#0D9488`, Admin = amber `#F59E0B`, Public = neutral navy `#1A1A2E`.
+- **Shell accents**: Member = gold `#D2AC62` on ink `#0E1116` (Night Chamber, DD-25, 2026-09-30; the Member and Public shells share it), Institution = teal `#0D9488`, Admin = amber `#F59E0B`, Public = neutral navy `#1A1A2E`.
 - **Compose intents**: `Ask` / `Raise` / `Share` — these are user-visible vocabulary.
 - **Speech-mode toggle** in compose: maps to `InstitutionSpeechMode` enum on the post. UI must surface the active mode clearly.
 

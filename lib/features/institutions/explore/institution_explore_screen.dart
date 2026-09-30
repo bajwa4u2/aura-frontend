@@ -322,7 +322,7 @@ class _InstitutionExploreScreenState
                                 tooltip: 'Compose',
                                 style: IconButton.styleFrom(
                                   backgroundColor: AuraSurface.accent,
-                                  foregroundColor: Colors.white,
+                                  foregroundColor: AuraSurface.onAccent,
                                   padding: EdgeInsets.zero,
                                 ),
                               ),

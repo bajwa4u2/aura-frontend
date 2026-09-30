@@ -1,3 +1,4 @@
+import '../core/ui/aura_chamber.dart';
 import '../core/ui/aura_window.dart';
 import '../core/ui/nav_posture_preference.dart';
 import 'dart:async';
@@ -117,7 +118,9 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     if (sessionId.isEmpty) return;
     try {
       unawaited(
-        ref.read(realtimeRepositoryProvider).reportStageDiagnostic(
+        ref
+            .read(realtimeRepositoryProvider)
+            .reportStageDiagnostic(
               sessionId,
               phase: 'callkit',
               code: code,
@@ -142,14 +145,17 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     if (sessionId.isEmpty) return;
     try {
       unawaited(
-        ref.read(realtimeRepositoryProvider).reportCallPresentation(
+        ref
+            .read(realtimeRepositoryProvider)
+            .reportCallPresentation(
               sessionId,
               state: state,
               platform: 'iOS',
               // WHAT THE APP WAS DOING WHEN IT RANG. Without it an 85-second
               // delay cannot be attributed to delivery or to presentation.
-              detail: CallPresentationContext.instance
-                  .describe(detail ?? 'callkit presentation'),
+              detail: CallPresentationContext.instance.describe(
+                detail ?? 'callkit presentation',
+              ),
             ),
       );
     } catch (_) {
@@ -193,7 +199,11 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     // sessionId, so the socket's `call:incoming` landing a moment later is
     // harmless — whichever arrives first wins and the other is absorbed.
     callKit.onPushReceived = (sessionId) async {
-      _reportCallKit(sessionId, 'push_received', 'PushKit handler reached report');
+      _reportCallKit(
+        sessionId,
+        'push_received',
+        'PushKit handler reached report',
+      );
     };
 
     callKit.onIncomingCall = (payload) async {
@@ -368,14 +378,11 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
         final payload = ref
             .read(incomingCallBridgeProvider)
             .cast<Map<String, dynamic>?>()
-            .firstWhere(
-              (item) {
-                final data = item?['data'];
-                return data is Map &&
-                    '${data['sessionId'] ?? ''}'.trim() == sessionId;
-              },
-              orElse: () => null,
-            );
+            .firstWhere((item) {
+              final data = item?['data'];
+              return data is Map &&
+                  '${data['sessionId'] ?? ''}'.trim() == sessionId;
+            }, orElse: () => null);
         if (payload != null) {
           await controller.acceptIncomingCall(payload);
         } else {
@@ -406,9 +413,9 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
             final meetingId = (session?.surfaceId ?? '').trim();
             final route =
                 session?.surfaceType == RealtimeSurfaceType.meeting &&
-                        meetingId.isNotEmpty
-                    ? '/meetings/$meetingId/live?sessionId=$sessionId'
-                    : NavigationAuthority.realtimeSessionJoinRoute(sessionId);
+                    meetingId.isNotEmpty
+                ? '/meetings/$meetingId/live?sessionId=$sessionId'
+                : NavigationAuthority.realtimeSessionJoinRoute(sessionId);
             ref.read(routerProvider).go(route);
           } catch (e) {
             debugPrint('[callkit] answer navigation failed: $e');
@@ -843,23 +850,29 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
             return Consumer(
               builder: (context, ref, _) {
                 final expanded = ref.watch(navExpandedProvider);
-                return AuraWindow(
-                  width: MediaQuery.sizeOf(context).width,
-                  height: MediaQuery.sizeOf(context).height,
-                  // The SHELL decides whether persistent navigation exists at
-                  // all (public surfaces have none); this is the posture it
-                  // takes when it does.
-                  navPosture: resolveNavPosture(
-                    windowWidth: MediaQuery.sizeOf(context).width,
-                    expandedPreferred: expanded,
-                    hasPersistentNav: true,
-                  ),
-                  child: _ScriptWarmup(
-                    child: ThreadCallLifecycleHost(
-                      child: OrphanedSessionBanner(
-                        child: UpdateGate(
-                          child: BootGate(
-                              child: child ?? const SizedBox.shrink()),
+                // ONE LOOK, EVERYWHERE (founder, 2026-09-30: "night chamber
+                // only"). Shared widgets read this scope, so a feed card
+                // signed in is the same card the public front door shows.
+                return AuraChamberScope(
+                  child: AuraWindow(
+                    width: MediaQuery.sizeOf(context).width,
+                    height: MediaQuery.sizeOf(context).height,
+                    // The SHELL decides whether persistent navigation exists at
+                    // all (public surfaces have none); this is the posture it
+                    // takes when it does.
+                    navPosture: resolveNavPosture(
+                      windowWidth: MediaQuery.sizeOf(context).width,
+                      expandedPreferred: expanded,
+                      hasPersistentNav: true,
+                    ),
+                    child: _ScriptWarmup(
+                      child: ThreadCallLifecycleHost(
+                        child: OrphanedSessionBanner(
+                          child: UpdateGate(
+                            child: BootGate(
+                              child: child ?? const SizedBox.shrink(),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -877,9 +890,9 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     const colorScheme = ColorScheme(
       brightness: Brightness.dark,
       primary: AuraSurface.accent,
-      onPrimary: Colors.white,
+      onPrimary: AuraSurface.onAccent,
       secondary: AuraSurface.accent,
-      onSecondary: Colors.white,
+      onSecondary: AuraSurface.onAccent,
       error: Color(0xFFF07878),
       onError: Colors.white,
       surface: AuraSurface.card,
@@ -902,6 +915,11 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       dividerColor: AuraSurface.divider,
 
       splashColor: AuraSurface.accentSoft,
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: AuraSurface.accent,
+        selectionColor: AuraSurface.accent.withValues(alpha: 0.3),
+        selectionHandleColor: AuraSurface.accent,
+      ),
       highlightColor: Colors.transparent,
       splashFactory: InkRipple.splashFactory,
 
@@ -942,7 +960,7 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
             borderRadius: BorderRadius.circular(AuraRadius.r14),
           ),
           backgroundColor: AuraSurface.accent,
-          foregroundColor: Colors.white,
+          foregroundColor: AuraSurface.onAccent,
         ),
       ),
 
@@ -1035,9 +1053,7 @@ class _ScriptWarmup extends StatelessWidget {
         const Positioned(
           left: 0,
           top: 0,
-          child: Offstage(
-            child: Text('اب', textDirection: TextDirection.rtl),
-          ),
+          child: Offstage(child: Text('اب', textDirection: TextDirection.rtl)),
         ),
       ],
     );

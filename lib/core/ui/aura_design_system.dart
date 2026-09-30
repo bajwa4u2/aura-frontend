@@ -2,59 +2,58 @@ import 'package:flutter/material.dart';
 
 import 'aura_surface.dart';
 
+/// Night Chamber has no gradients (2026-09-30): every one of these is a
+/// flat token, kept so existing call sites need no change.
 class AuraGradients {
   AuraGradients._();
 
-  /// Full-page background — very subtle navy sweep.
+  /// Full-page background.
   static const LinearGradient page = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [
-      Color(0xFF0A1220),
       AuraSurface.page,
-      Color(0xFF0F1C2C),
+      AuraSurface.page,
     ],
   );
 
-  /// Header gradient — premium navy diagonal used in shell headers.
+  /// Shell headers.
   static const LinearGradient header = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF0E1828),
-      Color(0xFF132030),
-      Color(0xFF152438),
+      AuraSurface.page,
+      AuraSurface.page,
     ],
   );
 
-  /// Accent — indigo to violet for icons, badges, FABs.
+  /// Accent — icons, badges, FABs.
   static const LinearGradient accent = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF5B6CFF),
-      Color(0xFF7A4DFF),
+      AuraSurface.accent,
+      AuraSurface.accent,
     ],
   );
 
-  /// Card interior — subtle navy depth gradient.
+  /// Card interior.
   static const LinearGradient card = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF192C42),
-      Color(0xFF122034),
+      AuraSurface.card,
+      AuraSurface.card,
     ],
   );
 
-  /// Hero — rich navy sweep for full-width landing sections.
+  /// Hero — full-width sections.
   static const LinearGradient hero = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF0A1428),
-      Color(0xFF0F2040),
-      Color(0xFF163058),
+      AuraSurface.page,
+      AuraSurface.page,
     ],
   );
 
@@ -63,8 +62,8 @@ class AuraGradients {
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [
-      Color(0xFF0C1828),
-      Color(0xFF0A1420),
+      AuraSurface.page,
+      AuraSurface.page,
     ],
   );
 
@@ -73,8 +72,8 @@ class AuraGradients {
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [
-      Color(0xFF152438),
-      Color(0xFF101E30),
+      AuraSurface.card,
+      AuraSurface.card,
     ],
   );
 
@@ -83,8 +82,8 @@ class AuraGradients {
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [
-      Color(0xFF0C1828),
-      Color(0xFF090F1C),
+      AuraSurface.page,
+      AuraSurface.page,
     ],
   );
 }
@@ -94,7 +93,7 @@ class AuraShadows {
 
   static const List<BoxShadow> glow = [
     BoxShadow(
-      color: Color(0x2A5B6CFF),
+      color: Color(0x00000000),
       blurRadius: 32,
       offset: Offset(0, 12),
       spreadRadius: -4,

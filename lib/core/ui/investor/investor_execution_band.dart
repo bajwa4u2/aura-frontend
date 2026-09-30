@@ -100,7 +100,7 @@ class _Tile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(tile.icon, size: 18, color: const Color(0xFFC9A55C)),
+          Icon(tile.icon, size: 18, color: const Color(0xFFD2AC62)),
           const SizedBox(height: AuraSpace.s10),
           Text(
             tile.label,

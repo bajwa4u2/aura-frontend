@@ -955,7 +955,7 @@ class AuraAdminTile extends StatelessWidget {
               gradient: chamberGradient(context, AuraGradients.accent),
               borderRadius: BorderRadius.circular(AuraRadius.r12),
             ),
-            child: Icon(icon, color: Colors.white, size: AuraIconSize.md),
+            child: Icon(icon, color: AuraSurface.onAccent, size: AuraIconSize.md),
           ),
           const SizedBox(width: AuraSpace.s12),
           Expanded(
@@ -1211,7 +1211,7 @@ class AuraCallBanner extends StatelessWidget {
             ),
             child: const Icon(
               Icons.call,
-              color: Colors.white,
+              color: AuraSurface.onAccent,
               size: AuraIconSize.md,
             ),
           ),

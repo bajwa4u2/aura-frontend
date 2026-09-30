@@ -199,7 +199,7 @@ class _SafetyHero extends StatelessWidget {
                 ),
                 child: const Icon(
                   Icons.shield_outlined,
-                  color: Colors.white,
+                  color: AuraSurface.onAccent,
                   size: AuraIconSize.lg,
                 ),
               ),

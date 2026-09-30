@@ -1826,7 +1826,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/create', builder: (_, __) => const CreateHubScreen()),
           GoRoute(path: '/saved', builder: (_, __) => const SavedScreen()),
           GoRoute(path: '/updates', builder: (_, __) => const UpdatesScreen()),
-          GoRoute(path: '/conversations', redirect: (_, __) => kMessagesRoute),
+          GoRoute(
+            path: '/conversations',
+            redirect: (_, state) => state.uri.hasQuery
+                ? '$kMessagesRoute?${state.uri.query}'
+                : kMessagesRoute,
+          ),
           GoRoute(
             path: '/activity',
             builder: (_, __) => const ActivityScreen(),

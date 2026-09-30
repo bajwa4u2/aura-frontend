@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 /// matches the ring in the mark, a serif for what is said and a plain sans
 /// for everything around it. No gradients, no glow.
 ///
-/// First applied to the public front door. Other surfaces move to it only
-/// with the founder's word, one surface at a time.
+/// First applied to the public front door, then to all of Aura at once
+/// (founder, 2026-09-30: "night chamber only", "do at once").
 abstract final class AuraChamber {
   // Colour
   static const Color ink = Color(0xFF0E1116);
@@ -127,25 +127,16 @@ Color chamberTone(BuildContext context, Color legacy) {
   if (!AuraChamberScope.of(context)) return legacy;
   final v = legacy.toARGB32();
   switch (v) {
-    case 0xFF0D1520: // page
-    case 0xFF111D2E: // subtle
+    // The legacy tokens now carry chamber values; the public layouts stay
+    // flat (no subtle or elevated steps), as approved on the front door.
+    case 0xFF12161D: // subtle
       return AuraChamber.ink;
-    case 0xFF152438: // card
-    case 0xFF1B2E44: // elevated
-    case 0xFF203454: // overlay
+    case 0xFF1A1F29: // elevated
+    case 0xFF1E2330: // overlay
       return AuraChamber.raised;
-    case 0xFFE2ECF5: // ink (text)
-      return AuraChamber.text;
-    case 0xFF7A96B5: // muted
-      return AuraChamber.muted;
-    case 0xFF4B6882: // faint
-      return AuraChamber.faint;
-    case 0x14FFFFFF: // divider
+    case 0x14FFFFFF: // a translucent hairline
       return AuraChamber.rule;
-    case 0xFF5B6CFF: // accent
-    case 0xFF8B9EFF: // accentText
-      return AuraChamber.gold;
-    case 0x335B6CFF: // accentSoft
+    case 0x33D2AC62: // accentSoft
       return const Color(0x1FD2AC62);
   }
   return legacy;
@@ -158,7 +149,7 @@ Gradient chamberGradient(BuildContext context, Gradient legacy) {
   if (!AuraChamberScope.of(context)) return legacy;
   final isAccent = legacy is LinearGradient &&
       legacy.colors.isNotEmpty &&
-      legacy.colors.first.toARGB32() == 0xFF5B6CFF;
+      legacy.colors.first.toARGB32() == 0xFFD2AC62;
   final c = isAccent ? AuraChamber.gold : AuraChamber.raised;
   return LinearGradient(colors: [c, c]);
 }

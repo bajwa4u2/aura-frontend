@@ -77,7 +77,7 @@ class AuraPublicationHero extends StatelessWidget {
         Text(
           publisher.toUpperCase(),
           style: AuraText.micro.copyWith(
-            color: const Color(0xFFC9A55C),
+            color: const Color(0xFFD2AC62),
             letterSpacing: 1.4,
             fontWeight: FontWeight.w700,
           ),

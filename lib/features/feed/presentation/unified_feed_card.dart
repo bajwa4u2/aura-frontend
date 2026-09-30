@@ -584,7 +584,7 @@ String _articleSlugOf(FeedItem item) {
       shareUrl: url,
       headline: headline,
       subtitle:
-          'A public, crawler-friendly link that previews on LinkedIn, X, Discord, Slack, Facebook.',
+          'A public link that shows a preview on LinkedIn, X, Slack and Facebook.',
       emailSubject: 'Aura',
     );
   }
@@ -1038,7 +1038,7 @@ class _PresenceDot extends StatelessWidget {
       case FeedPresenceState.recentlyActive:
         return const Color(0xFF60A5FA); // muted blue
       case FeedPresenceState.activeToday:
-        return const Color(0xFF94A3B8); // gray
+        return const Color(0xFFA9AEB9); // gray
       case FeedPresenceState.idle:
       case FeedPresenceState.unknown:
         return Colors.transparent;

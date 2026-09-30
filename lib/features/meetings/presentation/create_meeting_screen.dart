@@ -407,7 +407,7 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
                   Text(
                     'Open an institution to create or start a meeting.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF9CA3AF),
+                      color: const Color(0xFFA9AEB9),
                     ),
                   ),
                   const SizedBox(height: AuraSpace.s12),
@@ -596,7 +596,7 @@ class _CreateMeetingLayout extends StatelessWidget {
     subtitle,
     style: Theme.of(
       context,
-    ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF9CA3AF)),
+    ).textTheme.bodyMedium?.copyWith(color: const Color(0xFFA9AEB9)),
   );
 
   @override
@@ -992,7 +992,7 @@ class _CreationForm extends StatelessWidget {
                   Text(
                     selectedSummary,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF9CA3AF),
+                      color: const Color(0xFFA9AEB9),
                     ),
                   ),
                 ],
@@ -1277,8 +1277,8 @@ class _Chip extends StatelessWidget {
   Widget build(BuildContext context) {
     final bg = warning
         ? const Color(0xFFF59E0B).withValues(alpha: 0.12)
-        : const Color(0xFF6C63FF).withValues(alpha: 0.12);
-    final fg = warning ? const Color(0xFFF59E0B) : const Color(0xFF8B85FF);
+        : const Color(0xFFD2AC62).withValues(alpha: 0.12);
+    final fg = warning ? const Color(0xFFF59E0B) : const Color(0xFFD2AC62);
 
     return InputChip(
       avatar: Icon(icon, size: 16, color: fg),

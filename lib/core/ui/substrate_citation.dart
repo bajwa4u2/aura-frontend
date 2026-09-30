@@ -25,7 +25,7 @@ class SubstrateCitation extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final foreground = isLight ? const Color(0xFF5B6679) : AuraSurface.muted;
+    final foreground = isLight ? const Color(0xFF8C919C) : AuraSurface.muted;
 
     return Padding(
       padding: padding,

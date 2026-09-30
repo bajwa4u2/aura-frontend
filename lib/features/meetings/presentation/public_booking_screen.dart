@@ -67,7 +67,7 @@ class _NotFoundBody extends StatelessWidget {
                   const Icon(
                     Icons.calendar_today_rounded,
                     size: 48,
-                    color: Color(0xFF9CA3AF),
+                    color: Color(0xFFA9AEB9),
                   ),
                   const SizedBox(height: AuraSpace.s16),
                   Text(
@@ -78,7 +78,7 @@ class _NotFoundBody extends StatelessWidget {
                   const Text(
                     'This booking link may be expired or invalid.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Color(0xFF6B7280)),
+                    style: TextStyle(color: Color(0xFF8C919C)),
                   ),
                   const SizedBox(height: AuraSpace.s16),
                   // No dead ends: give the visitor somewhere to go next.
@@ -250,7 +250,7 @@ class _BookingIntro extends StatelessWidget {
                       Text(
                         host!.title!.trim(),
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF9CA3AF),
+                          color: const Color(0xFFA9AEB9),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -273,7 +273,7 @@ class _BookingIntro extends StatelessWidget {
           Text(
             profile.meetingDescription!.trim(),
             style: theme.textTheme.bodyLarge?.copyWith(
-              color: const Color(0xFF9CA3AF),
+              color: const Color(0xFFA9AEB9),
               height: 1.45,
             ),
           ),
@@ -322,7 +322,7 @@ class _BookingActionPanel extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        border: Border.all(color: const Color(0xFF243244)),
+        border: Border.all(color: const Color(0xFF232833)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
@@ -372,7 +372,7 @@ class _CompactLogo extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: const Color(0xFF6C63FF).withValues(alpha: 0.12),
+        color: const Color(0xFFD2AC62).withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
       ),
       clipBehavior: Clip.antiAlias,
@@ -400,7 +400,7 @@ class _FallbackMark extends StatelessWidget {
       child: Text(
         initial,
         style: const TextStyle(
-          color: Color(0xFFE6E9EF),
+          color: Color(0xFFE8E4DA),
           fontSize: 12,
           fontWeight: FontWeight.w800,
         ),
@@ -419,7 +419,7 @@ class _HostAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     return CircleAvatar(
       radius: 20,
-      backgroundColor: const Color(0xFF6C63FF),
+      backgroundColor: const Color(0xFFD2AC62),
       backgroundImage: avatarUrl != null && avatarUrl!.trim().isNotEmpty
           ? NetworkImage(avatarUrl!)
           : null,
@@ -446,11 +446,11 @@ class _DetailChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Chip(
-      avatar: Icon(icon, size: 16, color: const Color(0xFF8B85FF)),
+      avatar: Icon(icon, size: 16, color: const Color(0xFFD2AC62)),
       label: Text(label),
-      backgroundColor: const Color(0xFF6C63FF).withValues(alpha: 0.10),
-      side: BorderSide(color: const Color(0xFF6C63FF).withValues(alpha: 0.30)),
-      labelStyle: const TextStyle(color: Color(0xFFD9D7FF)),
+      backgroundColor: const Color(0xFFD2AC62).withValues(alpha: 0.10),
+      side: BorderSide(color: const Color(0xFFD2AC62).withValues(alpha: 0.30)),
+      labelStyle: const TextStyle(color: Color(0xFFE8E4DA)),
     );
   }
 }
@@ -467,14 +467,14 @@ class _ReassuranceRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AuraSpace.s8),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: const Color(0xFF9CA3AF)),
+          Icon(icon, size: 18, color: const Color(0xFFA9AEB9)),
           const SizedBox(width: AuraSpace.s10),
           Expanded(
             child: Text(
               text,
               style: Theme.of(
                 context,
-              ).textTheme.bodyMedium?.copyWith(color: const Color(0xFFD1D5DB)),
+              ).textTheme.bodyMedium?.copyWith(color: const Color(0xFFD6D2C8)),
             ),
           ),
         ],

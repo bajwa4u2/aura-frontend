@@ -444,7 +444,7 @@ class _PreJoinBody extends ConsumerWidget {
                   Text(
                     'Camera & microphone',
                     style: theme.textTheme.labelMedium?.copyWith(
-                      color: const Color(0xFF9CA3AF),
+                      color: const Color(0xFFA9AEB9),
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.5,
                     ),
@@ -461,7 +461,7 @@ class _PreJoinBody extends ConsumerWidget {
                       'The host reviews who joins — you may wait briefly '
                       'after asking to join.',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF9CA3AF),
+                        color: const Color(0xFFA9AEB9),
                       ),
                     ),
                     const SizedBox(height: AuraSpace.s10),
@@ -576,7 +576,7 @@ class _InvitationVerificationBody extends StatelessWidget {
                                 Text(
                                   maskedEmail,
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: const Color(0xFF9CA3AF),
+                                    color: const Color(0xFFA9AEB9),
                                   ),
                                 ),
                             ],
@@ -591,7 +591,7 @@ class _InvitationVerificationBody extends StatelessWidget {
                           : 'To confirm it\'s you, we\'ll send a 6-digit code '
                               'to your invited email.',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF9CA3AF),
+                        color: const Color(0xFFA9AEB9),
                       ),
                     ),
                     const SizedBox(height: AuraSpace.s16),
@@ -690,7 +690,7 @@ class _RecognizedIdentity extends StatelessWidget {
                 Text(
                   email,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFF9CA3AF),
+                    color: const Color(0xFFA9AEB9),
                   ),
                 ),
             ],
@@ -713,7 +713,7 @@ class _EntryStatusPill extends StatelessWidget {
         const Color(0xFFF59E0B),
       ),
       _ when resolution.meetingLive => ('Live now', const Color(0xFF10B981)),
-      _ => ('Scheduled', const Color(0xFF6C63FF)),
+      _ => ('Scheduled', const Color(0xFFD2AC62)),
     };
 
     return Row(
@@ -760,7 +760,7 @@ class _TerminalMessage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 48, color: const Color(0xFF9CA3AF)),
+            Icon(icon, size: 48, color: const Color(0xFFA9AEB9)),
             const SizedBox(height: AuraSpace.s16),
             Text(title, style: theme.textTheme.titleMedium),
             const SizedBox(height: AuraSpace.s8),
@@ -768,7 +768,7 @@ class _TerminalMessage extends StatelessWidget {
               detail,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF6B7280),
+                color: const Color(0xFF8C919C),
               ),
             ),
             if (action != null) ...[

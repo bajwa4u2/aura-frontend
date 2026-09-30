@@ -227,7 +227,7 @@ class _DetailBody extends StatelessWidget {
               label: const Text('Reply Officially'),
               style: FilledButton.styleFrom(
                 backgroundColor: AuraSurface.accent,
-                foregroundColor: Colors.white,
+                foregroundColor: AuraSurface.onAccent,
                 padding: const EdgeInsets.symmetric(
                   horizontal: AuraSpace.s16,
                   vertical: AuraSpace.s12,
@@ -690,7 +690,7 @@ class _OfficialReplySheetState extends ConsumerState<_OfficialReplySheet> {
                       label: Text(_busy ? 'Publishing…' : 'Publish reply'),
                       style: FilledButton.styleFrom(
                         backgroundColor: AuraSurface.accent,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AuraSurface.onAccent,
                         padding: const EdgeInsets.symmetric(
                           vertical: AuraSpace.s12,
                         ),

@@ -206,7 +206,7 @@ class MeetingControlBar extends StatelessWidget {
               // bar: notes & agenda, files, invite, devices, flip camera.
               PopupMenuButton<String>(
                 tooltip: 'More',
-                color: const Color(0xFF0F172A),
+                color: const Color(0xFF0E1116),
                 offset: const Offset(0, -8),
                 position: PopupMenuPosition.over,
                 onSelected: (value) {
@@ -284,13 +284,13 @@ class MeetingControlBar extends StatelessWidget {
           Icon(icon,
               size: 18,
               color: highlighted
-                  ? const Color(0xFF8B85FF)
-                  : const Color(0xFF9CA3AF)),
+                  ? const Color(0xFFD2AC62)
+                  : const Color(0xFFA9AEB9)),
           const SizedBox(width: 10),
           Text(
             label,
             style: TextStyle(
-              color: highlighted ? const Color(0xFF8B85FF) : const Color(0xFFE5E7EB),
+              color: highlighted ? const Color(0xFFD2AC62) : const Color(0xFFE8E4DA),
               fontSize: 13,
             ),
           ),
@@ -312,9 +312,9 @@ class ControlGroup extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0x66101B2E),
+        color: const Color(0x6612161D),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x331E293B)),
+        border: Border.all(color: const Color(0x33151922)),
       ),
       child: Wrap(
         spacing: AuraSpace.s8,
@@ -367,9 +367,9 @@ class ControlButton extends StatelessWidget {
     final bg = danger
         ? const Color(0xFFDC2626)
         : active
-            ? const Color(0xFF1E293B)
-            : const Color(0xFF0F172A);
-    final fg = danger ? Colors.white : const Color(0xFFE5E7EB);
+            ? const Color(0xFF151922)
+            : const Color(0xFF0E1116);
+    final fg = danger ? Colors.white : const Color(0xFFE8E4DA);
 
     return Semantics(
       button: true,
@@ -398,7 +398,7 @@ class ControlButton extends StatelessWidget {
                   border: active && !danger
                       ? Border.all(
                           color:
-                              const Color(0xFF6C63FF).withValues(alpha: 0.5),
+                              const Color(0xFFD2AC62).withValues(alpha: 0.5),
                         )
                       : null,
                 ),
@@ -412,7 +412,7 @@ class ControlButton extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF6C63FF),
+                      color: const Color(0xFFD2AC62),
                       borderRadius: BorderRadius.circular(9),
                     ),
                     constraints: const BoxConstraints(minWidth: 16),
@@ -433,7 +433,7 @@ class ControlButton extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: danger ? const Color(0xFFFCA5A5) : const Color(0xFF9CA3AF),
+              color: danger ? const Color(0xFFFCA5A5) : const Color(0xFFA9AEB9),
               fontSize: 11,
             ),
           ),

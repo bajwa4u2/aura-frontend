@@ -61,7 +61,7 @@ class AuraPublicationMarkdown extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final isMobile = width < 600;
-    const goldAccent = Color(0xFFC9A55C);
+    const goldAccent = Color(0xFFD2AC62);
 
     final h1Size = isMobile ? 24.0 : 28.0;
     final h2Size = isMobile ? 20.0 : 22.0;

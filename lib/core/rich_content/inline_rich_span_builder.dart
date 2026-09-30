@@ -70,7 +70,7 @@ import 'inline_markdown.dart';
         spans.add(TextSpan(
           text: token.text,
           style: baseStyle.copyWith(
-            color: const Color(0xFFC9A55C),
+            color: const Color(0xFFD2AC62),
             decoration: TextDecoration.underline,
           ),
           recognizer: recognizer,

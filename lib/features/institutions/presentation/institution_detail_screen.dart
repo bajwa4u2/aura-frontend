@@ -1223,7 +1223,7 @@ class _InstitutionProfileCtaRowState
                 ),
                 AuraSecondaryButton(
                   label: state.canMessage
-                      ? (_busy ? 'Opening…' : 'Message')
+                      ? (_busy ? 'Opening…' : 'Start a conversation')
                       : (identical(actorRef, personal) || !_actAsInstitution
                           ? 'Follow to message'
                           : 'Cannot message'),

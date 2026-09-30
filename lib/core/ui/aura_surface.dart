@@ -1,48 +1,54 @@
 import 'package:flutter/material.dart';
 
 /// Centralized surface + stroke tokens for Aura.
-/// Deep navy direction — premium, institutional, trust-forward.
+///
+/// Night Chamber, everywhere (founder, 2026-09-30: "night chamber only").
+/// The same ink, gold and warm text the public front door wears, so signed-in
+/// Aura and public Aura are one look. See `aura_chamber.dart`.
 class AuraSurface {
   AuraSurface._();
 
-  /// Deep navy canvas — the base of every surface.
-  static const Color page = Color(0xFF0D1520);
+  /// Ink canvas — the base of every surface.
+  static const Color page = Color(0xFF0E1116);
 
   /// Inset surface — for nested well areas, sidebar backgrounds, text fields.
-  static const Color subtle = Color(0xFF111D2E);
+  static const Color subtle = Color(0xFF12161D);
 
   /// Primary panel surface — default card background.
-  static const Color card = Color(0xFF152438);
+  static const Color card = Color(0xFF151922);
 
   /// Elevated surface — dialogs, overlays, popups.
-  static const Color elevated = Color(0xFF1B2E44);
+  static const Color elevated = Color(0xFF1A1F29);
 
   /// Heavy overlay — bottom sheets, side drawers.
-  static const Color overlay = Color(0xFF203454);
+  static const Color overlay = Color(0xFF1E2330);
 
-  /// Primary text — luminous cool white.
-  static const Color ink = Color(0xFFE2ECF5);
+  /// Primary text — warm paper white.
+  static const Color ink = Color(0xFFE8E4DA);
 
-  /// Muted text — readable secondary on navy.
-  static const Color muted = Color(0xFF7A96B5);
+  /// Muted text — readable secondary on ink.
+  static const Color muted = Color(0xFFA9AEB9);
 
   /// Faint text — placeholder, disabled, tertiary.
-  static const Color faint = Color(0xFF4B6882);
+  static const Color faint = Color(0xFF8C919C);
 
-  /// Hairline divider — barely-there separator.
-  static const Color divider = Color(0x14FFFFFF);
+  /// Hairline divider — the chamber's rule.
+  static const Color divider = Color(0xFF232833);
 
   /// Alias kept for backward compatibility.
   static const Color cardBorder = divider;
 
-  /// Signature indigo accent.
-  static const Color accent = Color(0xFF5B6CFF);
+  /// The gold of the ring in the mark — Aura's one accent.
+  static const Color accent = Color(0xFFD2AC62);
 
   /// Soft accent — glow / active / hover backgrounds.
-  static const Color accentSoft = Color(0x335B6CFF);
+  static const Color accentSoft = Color(0x33D2AC62);
 
-  /// Accent text — lighter indigo for text on dark navy.
-  static const Color accentText = Color(0xFF8B9EFF);
+  /// Accent text — gold reads on ink as it is.
+  static const Color accentText = Color(0xFFD2AC62);
+
+  /// Text and icons ON the accent. White on gold does not read; ink does.
+  static const Color onAccent = Color(0xFF0E1116);
 
   // ── Semantic status surfaces ────────────────────────────────────────────────
 
@@ -55,7 +61,7 @@ class AuraSurface {
   static const Color dangerBg = Color(0xFF231010);
   static const Color dangerInk = Color(0xFFF07878);
 
-  static const Color infoBg = Color(0xFF0F1E2E);
+  static const Color infoBg = Color(0xFF12161D);
   static const Color infoInk = Color(0xFF6BAEED);
 
   // ─── Canonical substrate tokens ─────────────────────────────────

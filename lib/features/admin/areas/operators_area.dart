@@ -100,7 +100,7 @@ class OperatorsArea extends ConsumerWidget {
                           label: const Text('Appoint an operator'),
                           style: FilledButton.styleFrom(
                             backgroundColor: AuraSurface.accent,
-                            foregroundColor: Colors.white,
+                            foregroundColor: AuraSurface.onAccent,
                             padding: const EdgeInsets.symmetric(
                               horizontal: AuraSpace.s16,
                               vertical: AuraSpace.s12,

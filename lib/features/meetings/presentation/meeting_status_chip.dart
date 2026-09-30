@@ -20,11 +20,11 @@ class MeetingStatusChip extends StatelessWidget {
     final (label, color) = switch (lifecycle.status) {
       MeetingLifecycleStatus.scheduled => (
         'Scheduled',
-        const Color(0xFF6C63FF),
+        const Color(0xFFD2AC62),
       ),
       MeetingLifecycleStatus.startingSoon => (
         'Starting soon',
-        const Color(0xFF8B85FF),
+        const Color(0xFFD2AC62),
       ),
       MeetingLifecycleStatus.guestWaiting => (
         viewerIsHost ? 'Guest is waiting' : 'You are in the room',
@@ -38,8 +38,8 @@ class MeetingStatusChip extends StatelessWidget {
         'Live now',
         const Color(0xFF10B981),
       ),
-      MeetingLifecycleStatus.ended => ('Ended', const Color(0xFF9CA3AF)),
-      MeetingLifecycleStatus.missed => ('Missed', const Color(0xFF9CA3AF)),
+      MeetingLifecycleStatus.ended => ('Ended', const Color(0xFFA9AEB9)),
+      MeetingLifecycleStatus.missed => ('Missed', const Color(0xFFA9AEB9)),
       // Amber, not grey: this is a meeting still waiting to happen, not a
       // closed one.
       MeetingLifecycleStatus.scheduledTimePassed => (
@@ -54,7 +54,7 @@ class MeetingStatusChip extends StatelessWidget {
         'Connection issue',
         const Color(0xFFF97316),
       ),
-      MeetingLifecycleStatus.unknown => ('Scheduled', const Color(0xFF9CA3AF)),
+      MeetingLifecycleStatus.unknown => ('Scheduled', const Color(0xFFA9AEB9)),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),

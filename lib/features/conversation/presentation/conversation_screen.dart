@@ -1890,7 +1890,7 @@ class _DropIntakeState extends State<_DropIntake> {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xE6111827),
+                        color: const Color(0xE60E1116),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Text(

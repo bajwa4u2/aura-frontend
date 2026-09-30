@@ -660,7 +660,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     }
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: const Color(0xFF0E1116),
       builder: (sheetContext) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
@@ -680,7 +680,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               if (joinUrl.isNotEmpty) ...[
                 const Text(
                   'Share the link',
-                  style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
+                  style: TextStyle(color: Color(0xFFA9AEB9), fontSize: 12),
                 ),
                 const SizedBox(height: 6),
                 Row(
@@ -691,7 +691,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          color: Color(0xFFCBD5E1),
+                          color: Color(0xFFD6D2C8),
                           fontSize: 13,
                         ),
                       ),
@@ -713,7 +713,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               if (code.isNotEmpty) ...[
                 const Text(
                   'Or share the meeting code',
-                  style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
+                  style: TextStyle(color: Color(0xFFA9AEB9), fontSize: 12),
                 ),
                 const SizedBox(height: 6),
                 Row(
@@ -731,7 +731,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                     IconButton(
                       tooltip: 'Copy the meeting code',
                       icon: const Icon(Icons.copy_rounded,
-                          size: 18, color: Color(0xFF6C63FF)),
+                          size: 18, color: Color(0xFFD2AC62)),
                       onPressed: () {
                         Clipboard.setData(ClipboardData(text: code));
                         Navigator.pop(sheetContext);
@@ -752,7 +752,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     const emojis = ['👍', '❤️', '😂', '🎉', '👏', '😮'];
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: const Color(0xFF0E1116),
       builder: (sheetContext) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
@@ -1030,7 +1030,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   void _showDeviceSettings() {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: const Color(0xFF0E1116),
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -1163,7 +1163,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       return const Scaffold(
         backgroundColor: Color(0xFF030712),
         body: Center(
-          child: CircularProgressIndicator(color: Color(0xFF6C63FF)),
+          child: CircularProgressIndicator(color: Color(0xFFD2AC62)),
         ),
       );
     }
@@ -1489,7 +1489,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xCC0F172A),
+                    color: const Color(0xCC0E1116),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: Colors.white.withValues(alpha: 0.10),
@@ -1561,7 +1561,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xCC0F172A),
+                      color: const Color(0xCC0E1116),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: Colors.white.withValues(alpha: 0.10),
@@ -1981,7 +1981,7 @@ class _MeetingLiveHeader extends StatelessWidget {
           if (institution != null) ...[
             CircleAvatar(
               radius: 18,
-              backgroundColor: const Color(0xFF1E293B),
+              backgroundColor: const Color(0xFF151922),
               backgroundImage: institution.logoUrl?.trim().isNotEmpty == true
                   ? NetworkImage(institution.logoUrl!)
                   : null,
@@ -1990,14 +1990,14 @@ class _MeetingLiveHeader extends StatelessWidget {
                   : const Icon(
                       Icons.business_rounded,
                       size: 18,
-                      color: Color(0xFF9CA3AF),
+                      color: Color(0xFFA9AEB9),
                     ),
             ),
             const SizedBox(width: AuraSpace.s10),
           ] else if (host != null) ...[
             CircleAvatar(
               radius: 18,
-              backgroundColor: const Color(0xFF1E293B),
+              backgroundColor: const Color(0xFF151922),
               backgroundImage: host.avatarUrl?.trim().isNotEmpty == true
                   ? NetworkImage(host.avatarUrl!)
                   : null,
@@ -2008,7 +2008,7 @@ class _MeetingLiveHeader extends StatelessWidget {
                           ? 'H'
                           : host.name.trim()[0].toUpperCase(),
                       style: const TextStyle(
-                        color: Color(0xFFE5E7EB),
+                        color: Color(0xFFE8E4DA),
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
@@ -2024,7 +2024,7 @@ class _MeetingLiveHeader extends StatelessWidget {
                   institution?.name ??
                       (host != null ? 'Hosted by ${host.name}' : ''),
                   style: const TextStyle(
-                    color: Color(0xFFCBD5E1),
+                    color: Color(0xFFD6D2C8),
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.1,
@@ -2101,7 +2101,7 @@ class _MeetingLiveHeader extends StatelessWidget {
                     ? 'only you'
                     : '$participantCount in the room',
                 style: const TextStyle(
-                  color: Color(0xFF6B7280),
+                  color: Color(0xFF8C919C),
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                 ),
@@ -2155,20 +2155,20 @@ class _RoomReadyPanel extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
           child: Row(
             children: [
-              Icon(icon, size: 16, color: const Color(0xFF8B85FF)),
+              Icon(icon, size: 16, color: const Color(0xFFD2AC62)),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   label,
                   style: const TextStyle(
-                    color: Color(0xFFCBD5E1),
+                    color: Color(0xFFD6D2C8),
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
               const Icon(Icons.chevron_right_rounded,
-                  size: 16, color: Color(0xFF475569)),
+                  size: 16, color: Color(0xFF8C919C)),
             ],
           ),
         ),
@@ -2179,9 +2179,9 @@ class _RoomReadyPanel extends ConsumerWidget {
       width: 290,
       padding: const EdgeInsets.all(AuraSpace.s16),
       decoration: BoxDecoration(
-        color: const Color(0xF20F172A),
+        color: const Color(0xF20E1116),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF243244)),
+        border: Border.all(color: const Color(0xFF232833)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -2208,7 +2208,7 @@ class _RoomReadyPanel extends ConsumerWidget {
                 child: const Padding(
                   padding: EdgeInsets.all(2),
                   child: Icon(Icons.close_rounded,
-                      size: 16, color: Color(0xFF64748B)),
+                      size: 16, color: Color(0xFF8C919C)),
                 ),
               ),
             ],
@@ -2219,7 +2219,7 @@ class _RoomReadyPanel extends ConsumerWidget {
                 ? 'Waiting for $invited invited participant${invited == 1 ? '' : 's'} to join.'
                 : 'You are the first one here. Share the invite to bring people in.',
             style: const TextStyle(
-              color: Color(0xFF8A94A6),
+              color: Color(0xFFA9AEB9),
               fontSize: 12,
               height: 1.4,
             ),
@@ -2234,7 +2234,7 @@ class _RoomReadyPanel extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AuraSpace.s10),
-          const Divider(color: Color(0xFF1E293B), height: 1),
+          const Divider(color: Color(0xFF151922), height: 1),
           const SizedBox(height: AuraSpace.s6),
           if (onAgenda != null)
             actionRow(
@@ -2294,7 +2294,7 @@ class _ElapsedTimerState extends State<_ElapsedTimer> {
     return Text(
       label,
       style: const TextStyle(
-        color: Color(0xFF9CA3AF),
+        color: Color(0xFFA9AEB9),
         fontSize: 12,
         fontWeight: FontWeight.w600,
         fontFeatures: [FontFeature.tabularFigures()],
@@ -2325,7 +2325,7 @@ class _MeetingParticipantPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 280,
-      color: const Color(0xFF0F172A),
+      color: const Color(0xFF0E1116),
       child: Column(
         children: [
           Padding(
@@ -2344,19 +2344,19 @@ class _MeetingParticipantPanel extends StatelessWidget {
                 ),
                 IconButton(
                   tooltip: 'Close this panel',
-                  icon: const Icon(Icons.close, color: Color(0xFF9CA3AF)),
+                  icon: const Icon(Icons.close, color: Color(0xFFA9AEB9)),
                   onPressed: onClose,
                 ),
               ],
             ),
           ),
-          const Divider(color: Color(0xFF1E293B), height: 1),
+          const Divider(color: Color(0xFF151922), height: 1),
           Expanded(
             child: participants.isEmpty
                 ? const Center(
                     child: Text(
                       'No participants yet',
-                      style: TextStyle(color: Color(0xFF6B7280), fontSize: 13),
+                      style: TextStyle(color: Color(0xFF8C919C), fontSize: 13),
                     ),
                   )
                 : ListView.builder(
@@ -2447,7 +2447,7 @@ class _ParticipantRow extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 16,
-                    backgroundColor: const Color(0xFF1E293B),
+                    backgroundColor: const Color(0xFF151922),
                     backgroundImage:
                         participant.avatarUrl?.trim().isNotEmpty == true
                             ? NetworkImage(participant.avatarUrl!)
@@ -2461,7 +2461,7 @@ class _ParticipantRow extends StatelessWidget {
                                     .trim()[0]
                                     .toUpperCase(),
                             style: const TextStyle(
-                              color: Color(0xFFE5E7EB),
+                              color: Color(0xFFE8E4DA),
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -2477,7 +2477,7 @@ class _ParticipantRow extends StatelessWidget {
                               ? 'Guest'
                               : (participant.displayName ?? '').trim(),
                           style: const TextStyle(
-                            color: Color(0xFFE5E7EB),
+                            color: Color(0xFFE8E4DA),
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
@@ -2488,7 +2488,7 @@ class _ParticipantRow extends StatelessWidget {
                           Text(
                             (participant.displayRole ?? '').trim(),
                             style: const TextStyle(
-                              color: Color(0xFF6B7280),
+                              color: Color(0xFF8C919C),
                               fontSize: 11,
                             ),
                             maxLines: 1,
@@ -2508,7 +2508,7 @@ class _ParticipantRow extends StatelessWidget {
                         : Icons.mic_off_rounded,
                     size: 16,
                     color: participant.audioOn
-                        ? const Color(0xFF6B7280)
+                        ? const Color(0xFF8C919C)
                         : const Color(0xFFEF4444),
                   ),
                   const SizedBox(width: AuraSpace.s4),
@@ -2518,7 +2518,7 @@ class _ParticipantRow extends StatelessWidget {
                         : Icons.videocam_off_rounded,
                     size: 16,
                     color: participant.videoOn
-                        ? const Color(0xFF6B7280)
+                        ? const Color(0xFF8C919C)
                         : const Color(0xFFEF4444),
                   ),
                   if (participant.screenOn) ...[
@@ -2526,7 +2526,7 @@ class _ParticipantRow extends StatelessWidget {
                     const Icon(
                       Icons.screen_share_rounded,
                       size: 16,
-                      color: Color(0xFF6C63FF),
+                      color: Color(0xFFD2AC62),
                     ),
                   ],
                 ],
@@ -2660,7 +2660,7 @@ class _MeetingNotesDrawerState extends ConsumerState<_MeetingNotesDrawer> {
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : const Color(0xFF64748B),
+            color: selected ? Colors.white : const Color(0xFF8C919C),
             fontWeight: FontWeight.w700,
             fontSize: 15,
           ),
@@ -2675,7 +2675,7 @@ class _MeetingNotesDrawerState extends ConsumerState<_MeetingNotesDrawer> {
     final hasAgenda = agenda.isNotEmpty;
     return Container(
       width: 300,
-      color: const Color(0xFF0F172A),
+      color: const Color(0xFF0E1116),
       child: Column(
         children: [
           Padding(
@@ -2708,7 +2708,7 @@ class _MeetingNotesDrawerState extends ConsumerState<_MeetingNotesDrawer> {
                     height: 14,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Color(0xFF6C63FF),
+                      color: Color(0xFFD2AC62),
                     ),
                   )
                 else if (_saved)
@@ -2723,13 +2723,13 @@ class _MeetingNotesDrawerState extends ConsumerState<_MeetingNotesDrawer> {
                 const SizedBox(width: 4),
                 IconButton(
                   tooltip: 'Close this panel',
-                  icon: const Icon(Icons.close, color: Color(0xFF9CA3AF)),
+                  icon: const Icon(Icons.close, color: Color(0xFFA9AEB9)),
                   onPressed: widget.onClose,
                 ),
               ],
             ),
           ),
-          const Divider(color: Color(0xFF1E293B), height: 1),
+          const Divider(color: Color(0xFF151922), height: 1),
           Expanded(
             child: _showAgenda && hasAgenda
                 ? ListView(
@@ -2747,7 +2747,7 @@ class _MeetingNotesDrawerState extends ConsumerState<_MeetingNotesDrawer> {
                               const Text(
                                 '·  ',
                                 style: TextStyle(
-                                  color: Color(0xFF6C63FF),
+                                  color: Color(0xFFD2AC62),
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -2755,7 +2755,7 @@ class _MeetingNotesDrawerState extends ConsumerState<_MeetingNotesDrawer> {
                                 child: Text(
                                   line,
                                   style: const TextStyle(
-                                    color: Color(0xFFCBD5E1),
+                                    color: Color(0xFFD6D2C8),
                                     fontSize: 13,
                                     height: 1.4,
                                   ),
@@ -2775,7 +2775,7 @@ class _MeetingNotesDrawerState extends ConsumerState<_MeetingNotesDrawer> {
                       textAlignVertical: TextAlignVertical.top,
                       textCapitalization: TextCapitalization.sentences,
                       style: const TextStyle(
-                        color: Color(0xFFE5E7EB),
+                        color: Color(0xFFE8E4DA),
                         fontSize: 13,
                       ),
                       decoration: const InputDecoration(
@@ -2823,7 +2823,7 @@ class _MeetingFilesDrawerState extends ConsumerState<_MeetingFilesDrawer> {
     final submitted = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: const Color(0xFF0E1116),
         title: const Text('Share a link',
             style: TextStyle(color: Colors.white, fontSize: 16)),
         content: Column(
@@ -2833,7 +2833,7 @@ class _MeetingFilesDrawerState extends ConsumerState<_MeetingFilesDrawer> {
               controller: urlCtrl,
               autofocus: true,
               keyboardType: TextInputType.url,
-              style: const TextStyle(color: Color(0xFFE5E7EB)),
+              style: const TextStyle(color: Color(0xFFE8E4DA)),
               decoration: const InputDecoration(
                 labelText: 'https://…',
                 border: OutlineInputBorder(),
@@ -2842,7 +2842,7 @@ class _MeetingFilesDrawerState extends ConsumerState<_MeetingFilesDrawer> {
             const SizedBox(height: AuraSpace.s12),
             TextField(
               controller: titleCtrl,
-              style: const TextStyle(color: Color(0xFFE5E7EB)),
+              style: const TextStyle(color: Color(0xFFE8E4DA)),
               decoration: const InputDecoration(
                 labelText: 'Title (optional)',
                 border: OutlineInputBorder(),
@@ -2906,7 +2906,7 @@ class _MeetingFilesDrawerState extends ConsumerState<_MeetingFilesDrawer> {
   Widget build(BuildContext context) {
     return Container(
       width: 320,
-      color: const Color(0xFF0F172A),
+      color: const Color(0xFF0E1116),
       child: Column(
         children: [
           Padding(
@@ -2929,32 +2929,32 @@ class _MeetingFilesDrawerState extends ConsumerState<_MeetingFilesDrawer> {
                     height: 14,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Color(0xFF6C63FF),
+                      color: Color(0xFFD2AC62),
                     ),
                   ),
                 if (widget.isHost) ...[
                   IconButton(
                     tooltip: 'Share a link',
                     icon: const Icon(Icons.add_link_rounded,
-                        size: 19, color: Color(0xFF8B85FF)),
+                        size: 19, color: Color(0xFFD2AC62)),
                     onPressed: _busy ? null : _addLink,
                   ),
                   IconButton(
                     tooltip: 'Upload a file',
                     icon: const Icon(Icons.upload_file_rounded,
-                        size: 18, color: Color(0xFF8B85FF)),
+                        size: 18, color: Color(0xFFD2AC62)),
                     onPressed: _busy ? null : _uploadFile,
                   ),
                 ],
                 IconButton(
                   tooltip: 'Close this panel',
-                  icon: const Icon(Icons.close, color: Color(0xFF9CA3AF)),
+                  icon: const Icon(Icons.close, color: Color(0xFFA9AEB9)),
                   onPressed: widget.onClose,
                 ),
               ],
             ),
           ),
-          const Divider(color: Color(0xFF1E293B), height: 1),
+          const Divider(color: Color(0xFF151922), height: 1),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(AuraSpace.s12),
@@ -3044,7 +3044,7 @@ class _DrawerAssetGroup extends ConsumerWidget {
         Text(
           title,
           style: const TextStyle(
-            color: Color(0xFF8A94A6),
+            color: Color(0xFFA9AEB9),
             fontSize: 11,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.6,
@@ -3054,7 +3054,7 @@ class _DrawerAssetGroup extends ConsumerWidget {
         if (assets.isEmpty)
           Text(
             emptyText,
-            style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+            style: const TextStyle(color: Color(0xFF8C919C), fontSize: 12),
           ),
         for (final asset in assets)
           Padding(
@@ -3067,7 +3067,7 @@ class _DrawerAssetGroup extends ConsumerWidget {
                 child: Row(
                   children: [
                     Icon(_iconFor(asset),
-                        size: 17, color: const Color(0xFF8B85FF)),
+                        size: 17, color: const Color(0xFFD2AC62)),
                     const SizedBox(width: AuraSpace.s10),
                     Expanded(
                       child: Text(
@@ -3075,7 +3075,7 @@ class _DrawerAssetGroup extends ConsumerWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          color: Color(0xFFE5E7EB),
+                          color: Color(0xFFE8E4DA),
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                         ),
@@ -3104,7 +3104,7 @@ class _DrawerAssetGroup extends ConsumerWidget {
                             size: 15,
                             color: asset.visibleToGuests
                                 ? const Color(0xFF10B981)
-                                : const Color(0xFF8A94A6),
+                                : const Color(0xFFA9AEB9),
                           ),
                         ),
                       ),
@@ -3120,12 +3120,12 @@ class _DrawerAssetGroup extends ConsumerWidget {
                         child: const Padding(
                           padding: EdgeInsets.all(4),
                           child: Icon(Icons.close_rounded,
-                              size: 15, color: Color(0xFF6B7280)),
+                              size: 15, color: Color(0xFF8C919C)),
                         ),
                       ),
                     ] else
                       const Icon(Icons.open_in_new_rounded,
-                          size: 14, color: Color(0xFF475569)),
+                          size: 14, color: Color(0xFF8C919C)),
                   ],
                 ),
               ),
@@ -3184,7 +3184,7 @@ class _ConnectingOverlay extends StatelessWidget {
             children: [
               const Icon(
                 Icons.devices_rounded,
-                color: Color(0xFF8A94A6),
+                color: Color(0xFFA9AEB9),
                 size: 40,
               ),
               const SizedBox(height: AuraSpace.s12),
@@ -3199,7 +3199,7 @@ class _ConnectingOverlay extends StatelessWidget {
               const SizedBox(height: AuraSpace.s8),
               const Text(
                 'This meeting is now active on another of your devices.\nYou can continue it here at any time.',
-                style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+                style: TextStyle(color: Color(0xFFA9AEB9), fontSize: 14),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: AuraSpace.s16),
@@ -3228,7 +3228,7 @@ class _ConnectingOverlay extends StatelessWidget {
                   Text(
                     owner,
                     style: const TextStyle(
-                      color: Color(0xFF8A94A6),
+                      color: Color(0xFFA9AEB9),
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
@@ -3246,12 +3246,12 @@ class _ConnectingOverlay extends StatelessWidget {
                 ),
                 const SizedBox(height: AuraSpace.s20),
               ],
-              const CircularProgressIndicator(color: Color(0xFF6C63FF)),
+              const CircularProgressIndicator(color: Color(0xFFD2AC62)),
               const SizedBox(height: AuraSpace.s16),
               Text(
                 state.infoMessage ?? 'Entering the meeting…',
                 style: const TextStyle(
-                  color: Color(0xFF9CA3AF),
+                  color: Color(0xFFA9AEB9),
                   fontSize: 14,
                 ),
                 textAlign: TextAlign.center,
@@ -3264,7 +3264,7 @@ class _ConnectingOverlay extends StatelessWidget {
                 child: Text(
                   explanation,
                   style:
-                      const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+                      const TextStyle(color: Color(0xFFA9AEB9), fontSize: 14),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -3338,7 +3338,7 @@ class _MeetingEndedOverlay extends StatelessWidget {
             const SizedBox(height: AuraSpace.s8),
             Text(
               isGuest ? thanks : 'The host has ended the meeting.',
-              style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+              style: const TextStyle(color: Color(0xFFA9AEB9), fontSize: 14),
             ),
             // Section 11/12: the moment a meeting ends is exactly when
             // "what survives this" matters, and it was the moment the product
@@ -3349,7 +3349,7 @@ class _MeetingEndedOverlay extends StatelessWidget {
               const Text(
                 'Its notes, outcomes and conversation stay with the meeting.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFF6B7280), fontSize: 13),
+                style: TextStyle(color: Color(0xFF8C919C), fontSize: 13),
               ),
             ],
             if (isGuest) ...[
@@ -3357,7 +3357,7 @@ class _MeetingEndedOverlay extends StatelessWidget {
               const Text(
                 'If the host shares the meeting summary,\nit will arrive by email.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFF6B7280), fontSize: 13),
+                style: TextStyle(color: Color(0xFF8C919C), fontSize: 13),
               ),
             ],
             const SizedBox(height: AuraSpace.s24),
@@ -3372,7 +3372,7 @@ class _MeetingEndedOverlay extends StatelessWidget {
             OutlinedButton(
               onPressed: onLeave,
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF9CA3AF),
+                foregroundColor: const Color(0xFFA9AEB9),
               ),
               child: Text(isGuest ? 'Done' : 'Leave'),
             ),
@@ -3468,7 +3468,7 @@ class _RaisedHandsStrip extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 12),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xF20F172A),
+        color: const Color(0xF20E1116),
         border: Border.all(color: const Color(0x66F59E0B)),
         borderRadius: BorderRadius.circular(999),
       ),

@@ -119,7 +119,7 @@ class _EmptyState extends StatelessWidget {
             const Icon(
               Icons.calendar_today_rounded,
               size: 56,
-              color: Color(0xFF9CA3AF),
+              color: Color(0xFFA9AEB9),
             ),
             const SizedBox(height: AuraSpace.s16),
             Text(
@@ -130,7 +130,7 @@ class _EmptyState extends StatelessWidget {
             const Text(
               'Create a booking page so visitors can schedule meetings with your workspace.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF6B7280)),
+              style: TextStyle(color: Color(0xFF8C919C)),
             ),
             const SizedBox(height: AuraSpace.s20),
             FilledButton.icon(
@@ -260,7 +260,7 @@ class _ProfileCard extends ConsumerWidget {
           Text(
             profile.meetingTitle,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF6B7280),
+              color: const Color(0xFF8C919C),
             ),
           ),
 
@@ -272,14 +272,14 @@ class _ProfileCard extends ConsumerWidget {
                 const Icon(
                   Icons.person_outline_rounded,
                   size: 14,
-                  color: Color(0xFF9CA3AF),
+                  color: Color(0xFFA9AEB9),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   'Host: ${host.name}',
                   style: const TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF9CA3AF),
+                    color: Color(0xFFA9AEB9),
                   ),
                 ),
               ],
@@ -324,7 +324,7 @@ class _ProfileCard extends ConsumerWidget {
                       child: Text(
                         '${_dayAbbr(w.dayOfWeek)} ${w.label}',
                         style: const TextStyle(
-                          color: Color(0xFFD1D5DB),
+                          color: Color(0xFFD6D2C8),
                           fontSize: 11,
                         ),
                       ),
@@ -343,7 +343,7 @@ class _ProfileCard extends ConsumerWidget {
                 child: Text(
                   publicUrl,
                   style: const TextStyle(
-                    color: Color(0xFF9CA3AF),
+                    color: Color(0xFFA9AEB9),
                     fontSize: 12,
                   ),
                 ),
@@ -351,7 +351,7 @@ class _ProfileCard extends ConsumerWidget {
               IconButton(
                 tooltip: 'Copy the public booking link',
                 icon: const Icon(Icons.copy_rounded, size: 16),
-                color: const Color(0xFF9CA3AF),
+                color: const Color(0xFFA9AEB9),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                 onPressed: () {
@@ -444,14 +444,14 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: (isActive ? const Color(0xFF10B981) : const Color(0xFF9CA3AF))
+        color: (isActive ? const Color(0xFF10B981) : const Color(0xFFA9AEB9))
             .withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         isActive ? 'Active' : 'Disabled',
         style: TextStyle(
-          color: isActive ? const Color(0xFF10B981) : const Color(0xFF9CA3AF),
+          color: isActive ? const Color(0xFF10B981) : const Color(0xFFA9AEB9),
           fontSize: 11,
           fontWeight: FontWeight.w600,
         ),
@@ -488,21 +488,21 @@ class _WindowManagerState extends ConsumerState<_WindowManager> {
                 const Expanded(
                   child: Text(
                     'Manage availability windows',
-                    style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                    style: TextStyle(fontSize: 13, color: Color(0xFF8C919C)),
                   ),
                 ),
                 Icon(
                   _expanded
                       ? Icons.keyboard_arrow_up_rounded
                       : Icons.keyboard_arrow_down_rounded,
-                  color: const Color(0xFF9CA3AF),
+                  color: const Color(0xFFA9AEB9),
                 ),
               ],
             ),
           ),
         ),
         if (_expanded) ...[
-          const Divider(height: 1, color: Color(0xFF1F2937)),
+          const Divider(height: 1, color: Color(0xFF1A1F29)),
           ...profile.windows.map(
             (w) => ListTile(
               contentPadding: EdgeInsets.zero,
@@ -516,7 +516,7 @@ class _WindowManagerState extends ConsumerState<_WindowManager> {
                 icon: const Icon(
                   Icons.remove_circle_outline_rounded,
                   size: 18,
-                  color: Color(0xFF9CA3AF),
+                  color: Color(0xFFA9AEB9),
                 ),
                 onPressed: () async {
                   try {
@@ -544,11 +544,11 @@ class _WindowManagerState extends ConsumerState<_WindowManager> {
             leading: const Icon(
               Icons.add_rounded,
               size: 18,
-              color: Color(0xFF6C63FF),
+              color: Color(0xFFD2AC62),
             ),
             title: const Text(
               'Add window',
-              style: TextStyle(fontSize: 13, color: Color(0xFF6C63FF)),
+              style: TextStyle(fontSize: 13, color: Color(0xFFD2AC62)),
             ),
             onTap: () => _showAddWindow(context),
           ),
@@ -647,7 +647,7 @@ class _AddWindowDialogState extends State<_AddWindowDialog> {
           children: [
             const Text(
               'Day',
-              style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+              style: TextStyle(fontSize: 12, color: Color(0xFFA9AEB9)),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -1060,7 +1060,7 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
             const SizedBox(height: 20),
             const Text(
               'Booking behavior',
-              style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+              style: TextStyle(fontSize: 12, color: Color(0xFFA9AEB9)),
             ),
             const SizedBox(height: 8),
             Row(
@@ -1222,11 +1222,11 @@ class _BookingInboxDialog extends ConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.calendar_today_outlined,
-                          size: 40, color: Color(0xFF9CA3AF)),
+                          size: 40, color: Color(0xFFA9AEB9)),
                       SizedBox(height: 12),
                       Text(
                         'No upcoming bookings',
-                        style: TextStyle(color: Color(0xFF9CA3AF)),
+                        style: TextStyle(color: Color(0xFFA9AEB9)),
                       ),
                     ],
                   ),
@@ -1237,7 +1237,7 @@ class _BookingInboxDialog extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 itemCount: bookings.length,
                 separatorBuilder: (_, __) =>
-                    const Divider(height: 1, color: Color(0xFF1F2937)),
+                    const Divider(height: 1, color: Color(0xFF1A1F29)),
                 itemBuilder: (ctx, i) => _BookingRow(
                   booking: bookings[i],
                   institutionId: institutionId,
@@ -1299,27 +1299,27 @@ class _BookingRow extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             bookerEmail,
-            style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
+            style: const TextStyle(color: Color(0xFFA9AEB9), fontSize: 12),
           ),
           const SizedBox(height: 6),
           Row(
             children: [
               const Icon(Icons.schedule_rounded,
-                  size: 13, color: Color(0xFF6B7280)),
+                  size: 13, color: Color(0xFF8C919C)),
               const SizedBox(width: 4),
               Text(
                 _formatTime(scheduledAt),
                 style: const TextStyle(
-                    fontSize: 12, color: Color(0xFF6B7280)),
+                    fontSize: 12, color: Color(0xFF8C919C)),
               ),
               const SizedBox(width: 12),
               const Icon(Icons.timelapse_rounded,
-                  size: 13, color: Color(0xFF6B7280)),
+                  size: 13, color: Color(0xFF8C919C)),
               const SizedBox(width: 4),
               Text(
                 '$durationMinutes min',
                 style: const TextStyle(
-                    fontSize: 12, color: Color(0xFF6B7280)),
+                    fontSize: 12, color: Color(0xFF8C919C)),
               ),
             ],
           ),
@@ -1328,7 +1328,7 @@ class _BookingRow extends StatelessWidget {
             Text(
               'Note: $notes',
               style: const TextStyle(
-                  fontSize: 11, color: Color(0xFF9CA3AF)),
+                  fontSize: 11, color: Color(0xFFA9AEB9)),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1345,9 +1345,9 @@ class _BookingRow extends StatelessWidget {
                 'View meeting',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Color(0xFF6C63FF),
+                  color: Color(0xFFD2AC62),
                   decoration: TextDecoration.underline,
-                  decorationColor: Color(0xFF6C63FF),
+                  decorationColor: Color(0xFFD2AC62),
                 ),
               ),
             ),

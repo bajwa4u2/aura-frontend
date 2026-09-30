@@ -118,7 +118,7 @@ class _InstitutionMark extends StatelessWidget {
           width: size,
           height: size,
           decoration: BoxDecoration(
-            color: const Color(0xFF5B6CFF).withValues(alpha: 0.14),
+            color: const Color(0xFFD2AC62).withValues(alpha: 0.14),
             borderRadius: BorderRadius.circular(6),
           ),
           clipBehavior: Clip.antiAlias,
@@ -154,7 +154,7 @@ class _FallbackMark extends StatelessWidget {
       child: Text(
         initial,
         style: const TextStyle(
-          color: Color(0xFFE6E9EF),
+          color: Color(0xFFE8E4DA),
           fontSize: 11,
           fontWeight: FontWeight.w800,
         ),

@@ -416,7 +416,7 @@ class _IconBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(AuraRadius.md),
         boxShadow: AuraShadows.glow,
       ),
-      child: Icon(icon, color: Colors.white, size: AuraIconSize.lg),
+      child: Icon(icon, color: AuraSurface.onAccent, size: AuraIconSize.lg),
     );
   }
 }

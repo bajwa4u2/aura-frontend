@@ -400,7 +400,7 @@ class CommunicationsRepository {
 
 const Map<String, (String, String, bool)> _preferenceGroupDefinitions = {
   'social': ('Social', 'Replies, reposts, reactions, and follows.', false),
-  'messages': ('Messages', 'Direct correspondence and thread messages.', false),
+  'messages': ('Messages', 'Your conversations and replies in threads.', false),
   'institutions': (
     'Institutions',
     'Space invites, member updates, and institutional activity.',

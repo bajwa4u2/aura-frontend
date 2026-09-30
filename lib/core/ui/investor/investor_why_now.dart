@@ -17,7 +17,7 @@ class InvestorWhyNowContent extends StatelessWidget {
     super.key,
     required this.forces,
     required this.shifts,
-    this.accentColor = const Color(0xFFC9A55C),
+    this.accentColor = const Color(0xFFD2AC62),
   });
 
   /// Left column items — the market forces creating demand.

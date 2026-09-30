@@ -82,7 +82,7 @@ class FloatingCallCard extends StatelessWidget {
   /// the call site.
   final GestureDragUpdateCallback onPanUpdate;
 
-  static const Color _surface = Color(0xFF0F1E33);
+  static const Color _surface = Color(0xFF151922);
 
   @override
   Widget build(BuildContext context) {
@@ -486,7 +486,7 @@ class _MiniAvatarStack extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: const Color(0xFF0F1E33),
+                    color: const Color(0xFF151922),
                     width: 1.5,
                   ),
                 ),

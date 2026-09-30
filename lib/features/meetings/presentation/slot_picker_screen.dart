@@ -187,7 +187,7 @@ class _MeetingSummary extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        border: Border.all(color: const Color(0xFF243244)),
+        border: Border.all(color: const Color(0xFF232833)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
@@ -227,7 +227,7 @@ class _MeetingSummary extends StatelessWidget {
               Text(
                 profile.meetingDescription!.trim(),
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF9CA3AF),
+                  color: const Color(0xFFA9AEB9),
                   height: 1.35,
                 ),
                 maxLines: 2,
@@ -240,20 +240,20 @@ class _MeetingSummary extends StatelessWidget {
                 const Icon(
                   Icons.schedule_rounded,
                   size: 18,
-                  color: Color(0xFF9CA3AF),
+                  color: Color(0xFFA9AEB9),
                 ),
                 const SizedBox(width: AuraSpace.s8),
                 Text(
                   _durationLabel(duration),
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFFD1D5DB),
+                    color: const Color(0xFFD6D2C8),
                   ),
                 ),
                 const SizedBox(width: AuraSpace.s16),
                 const Icon(
                   Icons.public_rounded,
                   size: 18,
-                  color: Color(0xFF9CA3AF),
+                  color: Color(0xFFA9AEB9),
                 ),
                 const SizedBox(width: AuraSpace.s8),
                 Expanded(
@@ -263,7 +263,7 @@ class _MeetingSummary extends StatelessWidget {
                       Text(
                         timezone,
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: const Color(0xFFD1D5DB),
+                          color: const Color(0xFFD6D2C8),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -274,7 +274,7 @@ class _MeetingSummary extends StatelessWidget {
                         Text(
                           'Host: ${profile.timezone}',
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: const Color(0xFF6B7280),
+                            color: const Color(0xFF8C919C),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -289,7 +289,7 @@ class _MeetingSummary extends StatelessWidget {
               Text(
                 'Duration',
                 style: theme.textTheme.labelMedium?.copyWith(
-                  color: const Color(0xFF9CA3AF),
+                  color: const Color(0xFFA9AEB9),
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -337,7 +337,7 @@ class _CompactIdentityRow extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 18,
-          backgroundColor: const Color(0xFF6C63FF).withValues(alpha: 0.12),
+          backgroundColor: const Color(0xFFD2AC62).withValues(alpha: 0.12),
           backgroundImage: avatarUrl != null && avatarUrl!.trim().isNotEmpty
               ? NetworkImage(avatarUrl!)
               : null,
@@ -345,7 +345,7 @@ class _CompactIdentityRow extends StatelessWidget {
               ? Text(
                   initial,
                   style: const TextStyle(
-                    color: Color(0xFFE6E9EF),
+                    color: Color(0xFFE8E4DA),
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                   ),
@@ -371,7 +371,7 @@ class _CompactIdentityRow extends StatelessWidget {
                 Text(
                   subtitle!,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFF9CA3AF),
+                    color: const Color(0xFFA9AEB9),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -413,7 +413,7 @@ class _PickerSurface extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        border: Border.all(color: const Color(0xFF243244)),
+        border: Border.all(color: const Color(0xFF232833)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
@@ -528,7 +528,7 @@ class _CalendarPanel extends StatelessWidget {
                     child: Text(
                       day,
                       style: const TextStyle(
-                        color: Color(0xFF9CA3AF),
+                        color: Color(0xFFA9AEB9),
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),
@@ -573,15 +573,15 @@ class _CalendarPanel extends StatelessWidget {
                         height: 42,
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? const Color(0xFF6C63FF)
+                              ? const Color(0xFFD2AC62)
                               : isToday
-                              ? const Color(0xFF6C63FF).withValues(alpha: 0.14)
-                              : const Color(0xFF111827),
+                              ? const Color(0xFFD2AC62).withValues(alpha: 0.14)
+                              : const Color(0xFF0E1116),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
                             color: isSelected
-                                ? const Color(0xFF8B85FF)
-                                : const Color(0xFF1F2937),
+                                ? const Color(0xFFD2AC62)
+                                : const Color(0xFF1A1F29),
                           ),
                         ),
                         child: Center(
@@ -592,7 +592,7 @@ class _CalendarPanel extends StatelessWidget {
                                   ? Colors.white
                                   : isPast
                                   ? const Color(0xFF4B5563)
-                                  : const Color(0xFFE5E7EB),
+                                  : const Color(0xFFE8E4DA),
                               fontWeight: isSelected || isToday
                                   ? FontWeight.w800
                                   : null,
@@ -633,8 +633,8 @@ class _TimesPanel extends StatelessWidget {
       constraints: const BoxConstraints(minHeight: 320),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: const Color(0xFF0B1220),
-          border: Border.all(color: const Color(0xFF1F2937)),
+          color: const Color(0xFF0E1116),
+          border: Border.all(color: const Color(0xFF1A1F29)),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Padding(
@@ -661,7 +661,7 @@ class _TimesPanel extends StatelessWidget {
                           : 'Times shown in your local time '
                               '(${cachedLocalTimezone!})',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF9CA3AF),
+                        color: const Color(0xFFA9AEB9),
                       ),
                     ),
                     const SizedBox(height: AuraSpace.s14),
@@ -754,7 +754,7 @@ class _LoadingTimes extends StatelessWidget {
           SizedBox(width: AuraSpace.s12),
           Text(
             'Checking available times...',
-            style: TextStyle(color: Color(0xFFD1D5DB)),
+            style: TextStyle(color: Color(0xFFD6D2C8)),
           ),
         ],
       ),
@@ -781,7 +781,7 @@ class _EmptyTimesMessage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: const Color(0xFF9CA3AF), size: 28),
+          Icon(icon, color: const Color(0xFFA9AEB9), size: 28),
           const SizedBox(height: AuraSpace.s10),
           Text(
             title,
@@ -793,7 +793,7 @@ class _EmptyTimesMessage extends StatelessWidget {
           Text(
             body,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF9CA3AF),
+              color: const Color(0xFFA9AEB9),
             ),
           ),
         ],

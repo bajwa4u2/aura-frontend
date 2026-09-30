@@ -120,7 +120,7 @@ class AuraPublicationCallout extends StatelessWidget {
       decoration: BoxDecoration(
         color: chamberTone(context, AuraSurface.subtle),
         border: const Border(
-          left: BorderSide(color: Color(0xFFC9A55C), width: 3),
+          left: BorderSide(color: Color(0xFFD2AC62), width: 3),
         ),
       ),
       child: Column(

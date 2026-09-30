@@ -28,7 +28,7 @@ class InvestorDeckCenterpiece extends StatelessWidget {
     required this.version,
     required this.updatedLabel,
     required this.onOpen,
-    this.accentColor = const Color(0xFFC9A55C),
+    this.accentColor = const Color(0xFFD2AC62),
   });
 
   /// Deck title.
@@ -138,7 +138,7 @@ class _DeckCover extends StatelessWidget {
           center: Alignment.topLeft,
           radius: 1.4,
           colors: [
-            const Color(0xFF13202F),
+            const Color(0xFF151922),
             chamberTone(context, AuraSurface.page),
           ],
         ),

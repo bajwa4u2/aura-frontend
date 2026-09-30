@@ -381,7 +381,7 @@ class _InstitutionAnnouncementsScreenState
                   shareUrl: canonicalAnnouncementUrl(slug),
                   headline: 'Share this announcement',
                   subtitle:
-                      'A public, crawler-friendly link that previews on LinkedIn, X, Discord, Slack, Facebook.',
+                      'A public link that shows a preview on LinkedIn, X, Slack and Facebook.',
                   emailSubject: 'Aura announcement',
                 ),
               ),

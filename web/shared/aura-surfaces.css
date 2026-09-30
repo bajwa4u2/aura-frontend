@@ -61,12 +61,12 @@
    the point: institutional speech is visually load-bearing. */
 .pub[data-official] {
   border-width: 1.5px;
-  border-color: rgba(91, 108, 255, 0.45);
+  border-color: rgba(210, 172, 98, 0.45);
   padding-top: 13px;
 }
 
 /* Past 24h the same statement quietens. Past 72h it returns to a plain edge. */
-.pub[data-age="recent"] { border-color: rgba(91, 108, 255, 0.28); }
+.pub[data-age="recent"] { border-color: rgba(210, 172, 98, 0.28); }
 .pub[data-age="recent"] .pub__eyebrow { opacity: 0.85; }
 .pub[data-age="stale"]  { border-color: var(--divider); }
 .pub[data-age="stale"] .pub__eyebrow { opacity: 0.65; }
@@ -83,7 +83,7 @@
   padding: 3px 8px;
   border-radius: var(--r-pill);
   background: var(--accent-soft);
-  border: 1px solid rgba(91, 108, 255, 0.35);
+  border: 1px solid rgba(210, 172, 98, 0.35);
   color: var(--accent-text);
   font-size: 10px;
   font-weight: 800;
@@ -190,7 +190,7 @@
   color: var(--muted);
   font-size: 13px;
 }
-.pill[data-on] { color: var(--accent-text); border-color: rgba(91,108,255,0.30); background: var(--accent-soft); }
+.pill[data-on] { color: var(--accent-text); border-color: rgba(210,172,98,0.30); background: var(--accent-soft); }
 .pill svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.7; }
 
 /* the translate affordance sits where the reader is */
@@ -211,7 +211,7 @@
   line-height: 1.55;
 }
 .msg[data-side="out"] { justify-content: flex-end; }
-.msg[data-side="out"] .msg__b { background: var(--accent-soft); border-color: rgba(91,108,255,0.28); }
+.msg[data-side="out"] .msg__b { background: var(--accent-soft); border-color: rgba(210,172,98,0.28); }
 .msg__who { font-size: 12px; color: var(--faint); margin-bottom: 3px; }
 
 .corr__state {
@@ -239,7 +239,7 @@
   position: relative;
   overflow: hidden;
 }
-.tile[data-speaking] { border-color: rgba(91,108,255,0.45); }
+.tile[data-speaking] { border-color: rgba(210,172,98,0.45); }
 .tile__bar {
   position: absolute; left: 8px; right: 8px; bottom: 8px;
   display: flex; align-items: center; gap: 8px;
@@ -274,7 +274,7 @@
   font-size: 13px; font-weight: 600;
   border: 1px solid var(--accent);
   background: var(--accent);
-  color: #fff;
+  color: #0E1116;
 }
 .btn[data-ghost] { background: transparent; color: var(--accent-text); }
 
@@ -319,7 +319,7 @@
 }
 
 .pub[data-decay] {
-  border-color: rgba(91, 108, 255, var(--age-alpha, 0.45));
+  border-color: rgba(210, 172, 98, var(--age-alpha, 0.45));
 }
 .pub[data-decay] .pub__eyebrow { opacity: var(--eyebrow-op, 1); }
 
@@ -362,13 +362,13 @@
   border-radius: 50%;
   background: var(--g-accent);
   border: 2px solid var(--card);
-  box-shadow: 0 0 0 1px rgba(91, 108, 255, 0.45);
+  box-shadow: 0 0 0 1px rgba(210, 172, 98, 0.45);
 }
 
 .decay input[type="range"]::-moz-range-thumb {
   width: 14px; height: 14px;
   border-radius: 50%;
-  background: #5B6CFF;
+  background: #D2AC62;
   border: 2px solid var(--card);
 }
 
@@ -407,7 +407,7 @@
   position: absolute;
   inset: 0;
   border-radius: var(--r-sm);
-  box-shadow: inset 0 0 0 1px rgba(91, 108, 255, 0.45);
+  box-shadow: inset 0 0 0 1px rgba(210, 172, 98, 0.45);
   pointer-events: none;
 }
 

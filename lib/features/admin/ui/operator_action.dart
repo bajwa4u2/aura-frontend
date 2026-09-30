@@ -458,7 +458,7 @@ class _ActionSheetState extends State<_ActionSheet> {
                       : () => Navigator.of(context).pop(true),
                   style: FilledButton.styleFrom(
                     backgroundColor: AuraSurface.accent,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AuraSurface.onAccent,
                     padding: const EdgeInsets.symmetric(
                       vertical: AuraSpace.s14,
                     ),

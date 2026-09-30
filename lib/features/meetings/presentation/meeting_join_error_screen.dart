@@ -47,7 +47,7 @@ class MeetingJoinErrorScreen extends StatelessWidget {
                 const Icon(
                   Icons.link_off_rounded,
                   size: 44,
-                  color: Color(0xFF9CA3AF),
+                  color: Color(0xFFA9AEB9),
                 ),
                 const SizedBox(height: AuraSpace.s16),
                 Text(
@@ -64,7 +64,7 @@ class MeetingJoinErrorScreen extends StatelessWidget {
                   'the meeting code from your email to try again.',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: const Color(0xFF9CA3AF),
+                    color: const Color(0xFFA9AEB9),
                     height: 1.45,
                   ),
                 ),
@@ -135,7 +135,7 @@ class _DiagnosticBlock extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        border: Border.all(color: const Color(0xFF243244)),
+        border: Border.all(color: const Color(0xFF232833)),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
@@ -146,7 +146,7 @@ class _DiagnosticBlock extends StatelessWidget {
             Text(
               'Diagnostic',
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: const Color(0xFF9CA3AF),
+                color: const Color(0xFFA9AEB9),
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.5,
               ),
@@ -159,7 +159,7 @@ class _DiagnosticBlock extends StatelessWidget {
               'code: ${v(code)}\n'
               'guestId: ${v(guestId)}',
               style: const TextStyle(
-                color: Color(0xFF6B7280),
+                color: Color(0xFF8C919C),
                 fontSize: 12,
                 fontFeatures: [FontFeature.tabularFigures()],
               ),

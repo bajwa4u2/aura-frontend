@@ -401,7 +401,7 @@ class _AttentionMark extends StatelessWidget {
         child: Text(
           conversation.unreadCount > 99 ? '99+' : '${conversation.unreadCount}',
           style: AuraText.micro
-              .copyWith(color: Colors.white, fontWeight: FontWeight.w800),
+              .copyWith(color: AuraSurface.onAccent, fontWeight: FontWeight.w800),
         ),
       );
     }

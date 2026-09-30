@@ -23,7 +23,7 @@ class InvestorThesisStrip extends StatelessWidget {
   const InvestorThesisStrip({
     super.key,
     required this.pillars,
-    this.accentColor = const Color(0xFFC9A55C),
+    this.accentColor = const Color(0xFFD2AC62),
   });
 
   /// Up to three or four pillar entries. The strip lays them out

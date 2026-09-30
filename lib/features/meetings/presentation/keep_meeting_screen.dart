@@ -113,7 +113,7 @@ class _KeepMeetingScreenState extends ConsumerState<KeepMeetingScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(Icons.info_outline_rounded,
-                          size: 40, color: Color(0xFF9CA3AF)),
+                          size: 40, color: Color(0xFFA9AEB9)),
                       const SizedBox(height: AuraSpace.s12),
                       Text(
                         _error!,
@@ -121,7 +121,7 @@ class _KeepMeetingScreenState extends ConsumerState<KeepMeetingScreen> {
                         style: Theme.of(context)
                             .textTheme
                             .bodyMedium
-                            ?.copyWith(color: const Color(0xFFCBD5E1)),
+                            ?.copyWith(color: const Color(0xFFD6D2C8)),
                       ),
                       const SizedBox(height: AuraSpace.s20),
                       Wrap(

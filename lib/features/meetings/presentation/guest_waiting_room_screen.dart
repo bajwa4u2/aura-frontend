@@ -219,13 +219,13 @@ class _GuestWaitingRoomScreenState
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.error_outline_rounded,
-                  size: 48, color: Color(0xFF9CA3AF)),
+                  size: 48, color: Color(0xFFA9AEB9)),
               SizedBox(height: AuraSpace.s16),
               Text('Unable to load meeting.',
-                  style: TextStyle(color: Color(0xFFE2ECF5), fontSize: 16)),
+                  style: TextStyle(color: Color(0xFFE8E4DA), fontSize: 16)),
               SizedBox(height: AuraSpace.s8),
               Text('Check your connection and try again.',
-                  style: TextStyle(color: Color(0xFF9CA3AF))),
+                  style: TextStyle(color: Color(0xFFA9AEB9))),
             ],
           ),
         ),
@@ -298,7 +298,7 @@ class _GuestWaitingRoomScreenState
                       DecoratedBox(
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.surface,
-                          border: Border.all(color: const Color(0xFF243244)),
+                          border: Border.all(color: const Color(0xFF232833)),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Padding(
@@ -355,7 +355,7 @@ class _GuestWaitingRoomScreenState
                               Text(
                                 institutionName,
                                 style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(color: const Color(0xFF9CA3AF)),
+                                    ?.copyWith(color: const Color(0xFFA9AEB9)),
                               ),
                               if (meeting.host?.title?.trim().isNotEmpty ==
                                   true)
@@ -365,7 +365,7 @@ class _GuestWaitingRoomScreenState
                                     meeting.host!.title!.trim(),
                                     style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(
-                                          color: const Color(0xFF9CA3AF),
+                                          color: const Color(0xFFA9AEB9),
                                         ),
                                   ),
                                 ),
@@ -394,7 +394,7 @@ class _GuestWaitingRoomScreenState
                                   meeting.description!.trim(),
                                   style: Theme.of(context).textTheme.bodyMedium
                                       ?.copyWith(
-                                        color: const Color(0xFFCBD5E1),
+                                        color: const Color(0xFFD6D2C8),
                                         height: 1.45,
                                       ),
                                 ),
@@ -503,7 +503,7 @@ class _AdmissionBanner extends StatelessWidget {
                     style: Theme.of(context)
                         .textTheme
                         .bodySmall
-                        ?.copyWith(color: const Color(0xFF9CA3AF)),
+                        ?.copyWith(color: const Color(0xFFA9AEB9)),
                   ),
                 ],
               ),
@@ -595,20 +595,20 @@ class _WaitingCard extends StatelessWidget {
               message,
               style: Theme.of(
                 context,
-              ).textTheme.bodyMedium?.copyWith(color: const Color(0xFF9CA3AF)),
+              ).textTheme.bodyMedium?.copyWith(color: const Color(0xFFA9AEB9)),
             ),
             if (timeNote != null) ...[
               const SizedBox(height: AuraSpace.s8),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.schedule_rounded, size: 16, color: Color(0xFF6C63FF)),
+                  const Icon(Icons.schedule_rounded, size: 16, color: Color(0xFFD2AC62)),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       timeNote,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF6C63FF),
+                        color: const Color(0xFFD2AC62),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -623,7 +623,7 @@ class _WaitingCard extends StatelessWidget {
                   : '$participantCount participant${participantCount == 1 ? '' : 's'} in the meeting.',
               style: Theme.of(
                 context,
-              ).textTheme.bodySmall?.copyWith(color: const Color(0xFF6B7280)),
+              ).textTheme.bodySmall?.copyWith(color: const Color(0xFF8C919C)),
             ),
           ],
         ),
@@ -645,7 +645,7 @@ class _IdentityAvatar extends StatelessWidget {
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: const Color(0xFF111827),
+        color: const Color(0xFF0E1116),
         borderRadius: BorderRadius.circular(8),
       ),
       clipBehavior: Clip.antiAlias,
@@ -654,9 +654,9 @@ class _IdentityAvatar extends StatelessWidget {
               logoUrl!,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) =>
-                  Icon(icon, color: const Color(0xFF9CA3AF)),
+                  Icon(icon, color: const Color(0xFFA9AEB9)),
             )
-          : Icon(icon, color: const Color(0xFF9CA3AF)),
+          : Icon(icon, color: const Color(0xFFA9AEB9)),
     );
   }
 }
@@ -671,11 +671,11 @@ class _StatusBadge extends StatelessWidget {
     final (label, color) = switch (lifecycle.status) {
       MeetingLifecycleStatus.scheduled => (
         'Scheduled',
-        const Color(0xFF6C63FF),
+        const Color(0xFFD2AC62),
       ),
       MeetingLifecycleStatus.startingSoon => (
         'Starting soon',
-        const Color(0xFF8B85FF),
+        const Color(0xFFD2AC62),
       ),
       MeetingLifecycleStatus.guestWaiting => (
         'Waiting for host',
@@ -691,9 +691,9 @@ class _StatusBadge extends StatelessWidget {
       ),
       MeetingLifecycleStatus.ended => (
         'Meeting ended',
-        const Color(0xFF9CA3AF),
+        const Color(0xFFA9AEB9),
       ),
-      MeetingLifecycleStatus.missed => ('Missed', const Color(0xFF9CA3AF)),
+      MeetingLifecycleStatus.missed => ('Missed', const Color(0xFFA9AEB9)),
       MeetingLifecycleStatus.scheduledTimePassed => (
         'Scheduled time passed',
         const Color(0xFFF59E0B),
@@ -706,7 +706,7 @@ class _StatusBadge extends StatelessWidget {
         'Connection issue',
         const Color(0xFFF97316),
       ),
-      MeetingLifecycleStatus.unknown => ('Pending', const Color(0xFF9CA3AF)),
+      MeetingLifecycleStatus.unknown => ('Pending', const Color(0xFFA9AEB9)),
     };
 
     return Container(
@@ -739,19 +739,19 @@ class _SmallChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        border: Border.all(color: const Color(0xFF243244)),
+        color: const Color(0xFF0E1116),
+        border: Border.all(color: const Color(0xFF232833)),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: const Color(0xFF9CA3AF)),
+          Icon(icon, size: 14, color: const Color(0xFFA9AEB9)),
           const SizedBox(width: 6),
           Text(
             label,
             style: const TextStyle(
-              color: Color(0xFFE5E7EB),
+              color: Color(0xFFE8E4DA),
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -778,7 +778,7 @@ class _InfoRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: const Color(0xFF9CA3AF)),
+        Icon(icon, size: 18, color: const Color(0xFFA9AEB9)),
         const SizedBox(width: AuraSpace.s10),
         Expanded(
           child: Column(
@@ -787,7 +787,7 @@ class _InfoRow extends StatelessWidget {
               Text(
                 label,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: const Color(0xFF9CA3AF),
+                  color: const Color(0xFFA9AEB9),
                   fontWeight: FontWeight.w700,
                 ),
               ),

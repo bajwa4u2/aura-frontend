@@ -286,7 +286,7 @@ class _MeetingDeviceCheckState extends ConsumerState<MeetingDeviceCheck> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: DecoratedBox(
-              decoration: const BoxDecoration(color: Color(0xFF0B1120)),
+              decoration: const BoxDecoration(color: Color(0xFF0E1116)),
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -360,11 +360,11 @@ class _MeetingDeviceCheckState extends ConsumerState<MeetingDeviceCheck> {
         children: [
           CircleAvatar(
             radius: 34,
-            backgroundColor: const Color(0xFF6C63FF).withValues(alpha: 0.25),
+            backgroundColor: const Color(0xFFD2AC62).withValues(alpha: 0.25),
             child: Text(
               initial,
               style: const TextStyle(
-                color: Color(0xFFE5E7EB),
+                color: Color(0xFFE8E4DA),
                 fontSize: 26,
                 fontWeight: FontWeight.w700,
               ),
@@ -373,7 +373,7 @@ class _MeetingDeviceCheckState extends ConsumerState<MeetingDeviceCheck> {
           const SizedBox(height: 10),
           Text(
             _cameraUnavailable ? 'Camera unavailable' : 'Camera off',
-            style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+            style: const TextStyle(color: Color(0xFFA9AEB9), fontSize: 13),
           ),
         ],
       ),
@@ -399,7 +399,7 @@ class _MeetingDeviceCheckState extends ConsumerState<MeetingDeviceCheck> {
       ),
       _ => (
         Icons.hourglass_empty_rounded,
-        const Color(0xFF9CA3AF),
+        const Color(0xFFA9AEB9),
         'Checking your camera and microphone…',
       ),
     };
@@ -448,7 +448,7 @@ class _GlassToggle extends StatelessWidget {
             on ? onIcon : offIcon,
             size: 20,
             color: disabled
-                ? const Color(0xFF6B7280)
+                ? const Color(0xFF8C919C)
                 : const Color(0xFFF9FAFB),
           ),
         ),

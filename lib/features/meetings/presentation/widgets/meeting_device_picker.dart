@@ -131,12 +131,12 @@ class _MeetingDevicePickerState extends State<MeetingDevicePicker> {
 
     return Row(
       children: [
-        Icon(icon, size: 18, color: const Color(0xFF9CA3AF)),
+        Icon(icon, size: 18, color: const Color(0xFFA9AEB9)),
         const SizedBox(width: 10),
         Expanded(
           child: DecoratedBox(
             decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFF243244)),
+              border: Border.all(color: const Color(0xFF232833)),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Padding(
@@ -147,7 +147,7 @@ class _MeetingDevicePickerState extends State<MeetingDevicePicker> {
                       child: Text(
                         emptyLabel,
                         style: const TextStyle(
-                          color: Color(0xFF6B7280),
+                          color: Color(0xFF8C919C),
                           fontSize: 13,
                         ),
                       ),

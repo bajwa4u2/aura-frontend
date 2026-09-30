@@ -948,7 +948,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
                       ),
                     if (!isSelf)
                       PresenceHeaderAction(
-                        label: 'Message',
+                        label: 'Start a conversation',
                         primary: false,
                         icon: Icons.chat_bubble_outline,
                         onTap: canCorrespond

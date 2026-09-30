@@ -22,7 +22,7 @@ class InvestorPlatformArchitecture extends StatelessWidget {
     required this.products,
     required this.fabricLabel,
     required this.fabricCells,
-    this.accentColor = const Color(0xFFC9A55C),
+    this.accentColor = const Color(0xFFD2AC62),
   });
 
   /// The two-or-more product columns rendered at the top tier. Each

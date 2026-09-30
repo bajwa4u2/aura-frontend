@@ -23,25 +23,25 @@
 
 :root {
   /* AuraSurface */
-  --page:       #0D1520;
-  --subtle:     #111D2E;
-  --card:       #152438;
-  --elevated:   #1B2E44;
-  --overlay:    #203454;
-  --ink:        #E2ECF5;
-  --muted:      #7A96B5;
-  --faint:      #4B6882;
-  --divider:    rgba(255, 255, 255, 0.08);
-  --accent:     #5B6CFF;
-  --accent-soft: rgba(91, 108, 255, 0.20);
-  --accent-text: #8B9EFF;
-  --violet:     #7A4DFF;
+  --page:       #0E1116;
+  --subtle:     #12161D;
+  --card:       #151922;
+  --elevated:   #1A1F29;
+  --overlay:    #1E2330;
+  --ink:        #E8E4DA;
+  --muted:      #A9AEB9;
+  --faint:      #8C919C;
+  --divider:    #232833;
+  --accent:     #D2AC62;
+  --accent-soft: rgba(210, 172, 98, 0.20);
+  --accent-text: #D2AC62;
+  --violet:     #D2AC62;
 
   /* semantic pairs */
   --good-bg: #0E2318;  --good-ink: #5FD99A;
   --warn-bg: #221B0E;  --warn-ink: #EDC264;
   --danger-bg: #231010; --danger-ink: #F07878;
-  --info-bg: #0F1E2E;  --info-ink: #6BAEED;
+  --info-bg: #12161D;  --info-ink: #6BAEED;
 
   /* identity chip tones, from aura_identity_badge.dart */
   --official-bg: rgba(13, 148, 136, 0.12);
@@ -51,13 +51,13 @@
   --admin-ink: #C4B5FD;
   --admin-line: rgba(139, 92, 246, 0.30);
 
-  /* AuraGradients, verbatim */
-  --g-page:   linear-gradient(to bottom, #0A1220 0%, #0D1520 52%, #0F1C2C 100%);
-  --g-hero:   linear-gradient(135deg, #0A1428 0%, #0F2040 55%, #163058 100%);
-  --g-header: linear-gradient(135deg, #0E1828 0%, #132030 55%, #152438 100%);
-  --g-card:   linear-gradient(135deg, #192C42 0%, #122034 100%);
-  --g-accent: linear-gradient(135deg, #5B6CFF 0%, #7A4DFF 100%);
-  --g-footer: linear-gradient(to bottom, #0C1828 0%, #090F1C 100%);
+  /* AuraGradients: Night Chamber has none (2026-09-30), so each is flat */
+  --g-page:   linear-gradient(#0E1116, #0E1116);
+  --g-hero:   linear-gradient(#0E1116, #0E1116);
+  --g-header: linear-gradient(#0E1116, #0E1116);
+  --g-card:   linear-gradient(#151922, #151922);
+  --g-accent: linear-gradient(#D2AC62, #D2AC62);
+  --g-footer: linear-gradient(#0E1116, #0E1116);
 
   /* AuraRadius */
   --r-sm: 12px; --r-md: 14px; --r-card: 18px; --r-pill: 999px;
@@ -142,7 +142,7 @@ body::before {
   top: 0; left: 0; right: 0;
   height: 620px;
   background:
-    radial-gradient(120% 130% at 18% 0%, rgba(91, 108, 255, 0.10) 0%, transparent 60%),
+    radial-gradient(120% 130% at 18% 0%, rgba(210, 172, 98, 0.10) 0%, transparent 60%),
     var(--g-hero);
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 58%, transparent 100%);
   mask-image: linear-gradient(to bottom, #000 0%, #000 58%, transparent 100%);
@@ -290,7 +290,7 @@ section:last-of-type { border-bottom: 0; }
    only thing animated is the reader's position in the order. */
 .step.lit::before {
   background: var(--accent);
-  box-shadow: 0 0 0 4px rgba(91, 108, 255, 0.14);
+  box-shadow: 0 0 0 4px rgba(210, 172, 98, 0.14);
 }
 
 .step[data-institution]::before { border-color: var(--official-ink); }
@@ -311,7 +311,7 @@ section:last-of-type { border-bottom: 0; }
   margin: var(--s32) 0 0;
   padding: var(--s20) var(--s24) var(--s20) var(--s32);
   border-radius: 0 var(--r-card) var(--r-card) 0;
-  background: linear-gradient(90deg, rgba(91, 108, 255, 0.07), transparent 72%);
+  background: linear-gradient(90deg, rgba(210, 172, 98, 0.07), transparent 72%);
 }
 
 .frozen::before {
@@ -357,7 +357,7 @@ section:last-of-type { border-bottom: 0; }
 
 .chip[data-t="good"]   { background: var(--good-bg);   color: var(--good-ink);   border-color: rgba(95, 217, 154, 0.25); }
 .chip[data-t="warn"]   { background: var(--warn-bg);   color: var(--warn-ink);   border-color: rgba(237, 194, 100, 0.25); }
-.chip[data-t="accent"] { background: var(--accent-soft); color: var(--accent-text); border-color: rgba(91, 108, 255, 0.30); }
+.chip[data-t="accent"] { background: var(--accent-soft); color: var(--accent-text); border-color: rgba(210, 172, 98, 0.30); }
 .chip[data-t="quiet"]  { background: rgba(255,255,255,0.04); color: var(--muted); border-color: var(--divider); }
 
 /* identity chips carry their own tones, from the client */
@@ -379,7 +379,7 @@ section:last-of-type { border-bottom: 0; }
   background: var(--admin-bg); color: var(--admin-ink); border-color: var(--admin-line);
 }
 .idchip[data-t="member"] {
-  background: var(--accent-soft); color: var(--accent-text); border-color: rgba(91,108,255,0.30);
+  background: var(--accent-soft); color: var(--accent-text); border-color: rgba(210,172,98,0.30);
 }
 
 /* ── panels ───────────────────────────────────────────────────────────────
@@ -404,7 +404,7 @@ section:last-of-type { border-bottom: 0; }
   position: absolute;
   left: 0; right: 0; top: 0;
   height: 1px;
-  background: linear-gradient(to right, rgba(91, 108, 255, 0.55), transparent 60%);
+  background: linear-gradient(to right, rgba(210, 172, 98, 0.55), transparent 60%);
 }
 
 .panel + .panel { margin-top: var(--s12); }
@@ -598,7 +598,7 @@ section:last-of-type { border-bottom: 0; }
 .rung__d { margin-top: 3px; font-size: 12.5px; color: var(--faint); line-height: 1.45; }
 
 .rung[data-now] {
-  background: linear-gradient(180deg, rgba(91, 108, 255, 0.10), transparent);
+  background: linear-gradient(180deg, rgba(210, 172, 98, 0.10), transparent);
   box-shadow: inset 0 2px 0 var(--accent);
 }
 .rung[data-now] .rung__k { color: var(--accent-text); }

@@ -429,7 +429,7 @@ class _GrantAuthoritySheetState extends ConsumerState<_GrantAuthoritySheet> {
                               ),
                       style: FilledButton.styleFrom(
                         backgroundColor: AuraSurface.accent,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AuraSurface.onAccent,
                         disabledBackgroundColor: AuraSurface.elevated,
                         padding: const EdgeInsets.symmetric(
                           vertical: AuraSpace.s14,

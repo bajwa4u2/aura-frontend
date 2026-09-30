@@ -54,7 +54,7 @@ class _MeetingJoinFallbackScreenState extends State<MeetingJoinFallbackScreen> {
                   const Icon(
                     Icons.meeting_room_outlined,
                     size: 44,
-                    color: Color(0xFF9CA3AF),
+                    color: Color(0xFFA9AEB9),
                   ),
                   const SizedBox(height: AuraSpace.s16),
                   Text(
@@ -70,7 +70,7 @@ class _MeetingJoinFallbackScreenState extends State<MeetingJoinFallbackScreen> {
                     'or reminder email to join.',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF9CA3AF),
+                      color: const Color(0xFFA9AEB9),
                       height: 1.45,
                     ),
                   ),

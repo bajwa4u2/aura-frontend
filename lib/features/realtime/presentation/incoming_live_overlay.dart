@@ -1035,7 +1035,7 @@ class _IncomingCallCardState extends State<_IncomingCallCard>
       constraints: const BoxConstraints(maxWidth: 420),
       padding: const EdgeInsets.all(AuraSpace.s16),
       decoration: BoxDecoration(
-        color: const Color(0xF20D1520),
+        color: const Color(0xF20E1116),
         borderRadius: BorderRadius.circular(AuraRadius.xl),
         border: Border.all(color: ringColor.withValues(alpha: 0.32)),
         boxShadow: [

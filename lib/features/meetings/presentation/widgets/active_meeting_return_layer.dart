@@ -49,7 +49,7 @@ class ActiveMeetingReturnLayer extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
-                      color: const Color(0xF00F172A),
+                      color: const Color(0xF00E1116),
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(
                         color: const Color(0xFF10B981).withValues(alpha: 0.55),

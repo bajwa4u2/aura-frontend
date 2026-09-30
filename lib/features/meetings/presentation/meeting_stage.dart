@@ -363,10 +363,10 @@ class _TileState extends State<_Tile> {
     final speaking = tile.isSpeaking;
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0B1220),
+        color: const Color(0xFF0E1116),
         borderRadius: BorderRadius.circular(compact ? 8 : 12),
         border: Border.all(
-          color: speaking ? const Color(0xFF6C63FF) : const Color(0x14FFFFFF),
+          color: speaking ? const Color(0xFFD2AC62) : const Color(0x14FFFFFF),
           width: speaking ? 2 : 1,
         ),
       ),
@@ -420,7 +420,7 @@ class _CameraOff extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF131C2E), Color(0xFF0A111C)],
+          colors: [Color(0xFF151922), Color(0xFF0E1116)],
         ),
       ),
       child: Center(
@@ -429,14 +429,14 @@ class _CameraOff extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: r,
-              backgroundColor: const Color(0xFF6C63FF).withValues(alpha: 0.22),
+              backgroundColor: const Color(0xFFD2AC62).withValues(alpha: 0.22),
               backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
               child: avatar.isNotEmpty
                   ? null
                   : Text(
                       initial,
                       style: TextStyle(
-                        color: const Color(0xFFE5E7EB),
+                        color: const Color(0xFFE8E4DA),
                         fontSize: r * 0.8,
                         fontWeight: FontWeight.w700,
                       ),
@@ -447,7 +447,7 @@ class _CameraOff extends StatelessWidget {
               Text(
                 tile.cameraOffReason ?? 'Camera off',
                 style: const TextStyle(
-                  color: Color(0xFF7C8AA5),
+                  color: Color(0xFFA9AEB9),
                   fontSize: 12,
                 ),
               ),
@@ -487,7 +487,7 @@ class _NamePlate extends StatelessWidget {
           Icon(
             micOn ? Icons.mic_rounded : Icons.mic_off_rounded,
             size: compact ? 11 : 13,
-            color: micOn ? const Color(0xFFE5E7EB) : const Color(0xFFF87171),
+            color: micOn ? const Color(0xFFE8E4DA) : const Color(0xFFF87171),
           ),
           SizedBox(width: compact ? 4 : 6),
           ConstrainedBox(
@@ -496,7 +496,7 @@ class _NamePlate extends StatelessWidget {
               label,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: const Color(0xFFE5E7EB),
+                color: const Color(0xFFE8E4DA),
                 fontSize: compact ? 11 : 12.5,
                 fontWeight: FontWeight.w600,
               ),
@@ -525,7 +525,7 @@ class _Chip extends StatelessWidget {
           const SizedBox(width: 6),
           Text(text,
               style: const TextStyle(
-                  color: Color(0xFFE5E7EB),
+                  color: Color(0xFFE8E4DA),
                   fontSize: 12,
                   fontWeight: FontWeight.w600)),
         ]),
@@ -555,11 +555,11 @@ class _GhostButton extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(icon, size: 13, color: const Color(0xFFE5E7EB)),
+                Icon(icon, size: 13, color: const Color(0xFFE8E4DA)),
                 const SizedBox(width: 6),
                 Text(label,
                     style: const TextStyle(
-                        color: Color(0xFFE5E7EB),
+                        color: Color(0xFFE8E4DA),
                         fontSize: 12,
                         fontWeight: FontWeight.w600)),
               ]),

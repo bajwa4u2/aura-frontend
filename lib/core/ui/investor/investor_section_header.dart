@@ -18,7 +18,7 @@ class InvestorSectionHeader extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.numeral,
-    this.accentColor = const Color(0xFFC9A55C),
+    this.accentColor = const Color(0xFFD2AC62),
   });
 
   /// Short uppercase eyebrow ("Platform structure", "Why now",

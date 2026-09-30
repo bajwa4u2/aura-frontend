@@ -697,7 +697,7 @@ class _UnreadDot extends StatelessWidget {
       child: Text(
         label,
         style: AuraText.micro.copyWith(
-          color: Colors.white,
+          color: AuraSurface.onAccent,
           fontSize: 10,
           fontWeight: FontWeight.w800,
         ),

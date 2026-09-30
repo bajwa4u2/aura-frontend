@@ -586,7 +586,7 @@ class MediaAppealDetail extends ConsumerWidget {
                       onPressed: () => _decide(context, ref, a, release: true),
                       style: FilledButton.styleFrom(
                         backgroundColor: AuraSurface.accent,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AuraSurface.onAccent,
                         padding: const EdgeInsets.symmetric(
                           vertical: AuraSpace.s14,
                         ),
@@ -1208,7 +1208,7 @@ class SupportCaseDetail extends ConsumerWidget {
                       onPressed: () => _reply(context, ref, c),
                       style: FilledButton.styleFrom(
                         backgroundColor: AuraSurface.accent,
-                        foregroundColor: Colors.white,
+                        foregroundColor: AuraSurface.onAccent,
                         padding: const EdgeInsets.symmetric(
                           vertical: AuraSpace.s14,
                         ),

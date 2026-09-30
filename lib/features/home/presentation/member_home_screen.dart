@@ -785,7 +785,7 @@ class _NextMeetingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = isLive ? const Color(0xFF10B981) : const Color(0xFF6C63FF);
+    final accent = isLive ? const Color(0xFF10B981) : const Color(0xFFD2AC62);
     final institutionName = meeting.booking?.institution?.name.trim();
     final hostName = meeting.host?.name.trim();
     final attribution = [

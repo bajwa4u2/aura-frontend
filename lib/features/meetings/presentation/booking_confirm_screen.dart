@@ -318,7 +318,7 @@ class _ConfirmationView extends ConsumerWidget {
                     'A confirmation has been sent to your email.',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF6B7280),
+                      color: const Color(0xFF8C919C),
                     ),
                   ),
                   const SizedBox(height: AuraSpace.s24),
@@ -362,7 +362,7 @@ class _ConfirmationView extends ConsumerWidget {
                                 Text(
                                   host.title!.trim(),
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                    color: const Color(0xFF9CA3AF),
+                                    color: const Color(0xFFA9AEB9),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -405,10 +405,10 @@ class _ConfirmationView extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(AuraSpace.s14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF6C63FF).withValues(alpha: 0.08),
+                      color: const Color(0xFFD2AC62).withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: const Color(0xFF6C63FF).withValues(alpha: 0.3),
+                        color: const Color(0xFFD2AC62).withValues(alpha: 0.3),
                       ),
                     ),
                     child: Row(
@@ -419,14 +419,14 @@ class _ConfirmationView extends ConsumerWidget {
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1.2,
-                              color: const Color(0xFF6C63FF),
+                              color: const Color(0xFFD2AC62),
                             ),
                           ),
                         ),
                         IconButton(
                           tooltip: 'Copy the joining link',
                           icon: const Icon(Icons.copy_rounded, size: 18),
-                          color: const Color(0xFF6C63FF),
+                          color: const Color(0xFFD2AC62),
                           onPressed: () {
                             Clipboard.setData(
                               ClipboardData(text: confirmation.joinUrl),
@@ -539,7 +539,7 @@ class _IdentityAvatar extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: const Color(0xFF6C63FF).withValues(alpha: 0.14),
+        color: const Color(0xFFD2AC62).withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Stack(
@@ -555,20 +555,20 @@ class _IdentityAvatar extends StatelessWidget {
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Icon(
                   icon,
-                  color: const Color(0xFF8B85FF),
+                  color: const Color(0xFFD2AC62),
                   size: size * 0.46,
                 ),
               ),
             )
           else
-            Icon(icon, color: const Color(0xFF8B85FF), size: size * 0.46),
+            Icon(icon, color: const Color(0xFFD2AC62), size: size * 0.46),
           Positioned(
             right: size * 0.1,
             bottom: size * 0.08,
             child: Text(
               initial,
               style: const TextStyle(
-                color: Color(0xFFE6E9EF),
+                color: Color(0xFFE8E4DA),
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
               ),
@@ -591,19 +591,19 @@ class _PillChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        border: Border.all(color: const Color(0xFF243244)),
+        color: const Color(0xFF0E1116),
+        border: Border.all(color: const Color(0xFF232833)),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: const Color(0xFF9CA3AF)),
+          Icon(icon, size: 14, color: const Color(0xFFA9AEB9)),
           const SizedBox(width: 6),
           Text(
             label,
             style: const TextStyle(
-              color: Color(0xFFE5E7EB),
+              color: Color(0xFFE8E4DA),
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -625,7 +625,7 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AuraSpace.s6),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: const Color(0xFF6B7280)),
+          Icon(icon, size: 18, color: const Color(0xFF8C919C)),
           const SizedBox(width: AuraSpace.s10),
           Expanded(
             child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
@@ -649,8 +649,8 @@ class _BookingAsCard extends StatelessWidget {
     final email = identity.email.trim();
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        border: Border.all(color: const Color(0xFF243244)),
+        color: const Color(0xFF0E1116),
+        border: Border.all(color: const Color(0xFF232833)),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Padding(
@@ -659,7 +659,7 @@ class _BookingAsCard extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 18,
-              backgroundColor: const Color(0xFF6C63FF).withValues(alpha: 0.18),
+              backgroundColor: const Color(0xFFD2AC62).withValues(alpha: 0.18),
               backgroundImage:
                   identity.avatarUrl != null &&
                       identity.avatarUrl!.trim().isNotEmpty
@@ -694,7 +694,7 @@ class _BookingAsCard extends StatelessWidget {
                     Text(
                       email,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF9CA3AF),
+                        color: const Color(0xFFA9AEB9),
                       ),
                     ),
                   const SizedBox(height: AuraSpace.s8),
@@ -732,8 +732,8 @@ class _BookingIdentityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        border: Border.all(color: const Color(0xFF243244)),
+        color: const Color(0xFF0E1116),
+        border: Border.all(color: const Color(0xFF232833)),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Padding(
@@ -742,7 +742,7 @@ class _BookingIdentityCard extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 14,
-              backgroundColor: const Color(0xFF6C63FF).withValues(alpha: 0.18),
+              backgroundColor: const Color(0xFFD2AC62).withValues(alpha: 0.18),
               backgroundImage:
                   identity.avatarUrl != null &&
                       identity.avatarUrl!.trim().isNotEmpty
@@ -777,7 +777,7 @@ class _BookingIdentityCard extends StatelessWidget {
                     Text(
                       identity.email.trim(),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: const Color(0xFF9CA3AF),
+                        color: const Color(0xFFA9AEB9),
                       ),
                     ),
                 ],

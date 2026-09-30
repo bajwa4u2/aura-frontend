@@ -76,7 +76,7 @@ class _AuraPublicationProgressState extends State<AuraPublicationProgress> {
             widthFactor: _progress,
             child: Container(
               decoration: const BoxDecoration(
-                color: Color(0xFFC9A55C), // Aura gold — same accent the OG images use
+                color: Color(0xFFD2AC62), // Aura gold — same accent the OG images use
               ),
             ),
           ),

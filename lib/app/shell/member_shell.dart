@@ -49,16 +49,16 @@ import '../../core/diagnostics/call_teardown_diag.dart';
 const Color _institutionAccent = Color(0xFF0D9488);
 const Color _institutionAccentSoft = Color(0x1E0D9488);
 const Color _institutionAccentText = Color(0xFF5EEAD4);
-const Color _institutionNavBg1 = Color(0xFF091820);
-const Color _institutionNavBg2 = Color(0xFF071420);
+const Color _institutionNavBg1 = Color(0xFF0E1116);
+const Color _institutionNavBg2 = Color(0xFF0E1116);
 
 const LinearGradient _institutionHeaderGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
   colors: [
-    Color(0xFF0B1C26),
-    Color(0xFF0D2030),
-    Color(0xFF0F2535),
+    Color(0xFF12161D),
+    Color(0xFF151922),
+    Color(0xFF1A1F29),
   ],
 );
 
