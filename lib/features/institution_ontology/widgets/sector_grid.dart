@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -124,7 +125,7 @@ class SectorCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AuraSurface.card,
+      color: chamberTone(context, AuraSurface.card),
       borderRadius: BorderRadius.circular(AuraRadius.r14),
       child: InkWell(
         borderRadius: BorderRadius.circular(AuraRadius.r14),
@@ -133,7 +134,7 @@ class SectorCard extends StatelessWidget {
           padding: const EdgeInsets.all(AuraSpace.s14),
           decoration: BoxDecoration(
             border: Border.all(
-              color: AuraSurface.divider.withValues(alpha: 0.6),
+              color: chamberTone(context, AuraSurface.divider).withValues(alpha: 0.6),
             ),
             borderRadius: BorderRadius.circular(AuraRadius.r14),
           ),
@@ -147,18 +148,18 @@ class SectorCard extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: AuraSurface.accentSoft,
+                      color: chamberTone(context, AuraSurface.accentSoft),
                       borderRadius: BorderRadius.circular(AuraRadius.r10),
                       border: Border.all(
                         color:
-                            AuraSurface.accent.withValues(alpha: 0.35),
+                            chamberTone(context, AuraSurface.accent).withValues(alpha: 0.35),
                       ),
                     ),
                     alignment: Alignment.center,
                     child: Icon(
                       _icon,
                       size: 18,
-                      color: AuraSurface.accentText,
+                      color: chamberTone(context, AuraSurface.accentText),
                     ),
                   ),
                   const SizedBox(width: AuraSpace.s10),
@@ -178,7 +179,7 @@ class SectorCard extends StatelessWidget {
               Text(
                 classDef.description,
                 style: AuraText.small.copyWith(
-                  color: AuraSurface.muted,
+                  color: chamberTone(context, AuraSurface.muted),
                   height: 1.4,
                 ),
                 maxLines: 3,

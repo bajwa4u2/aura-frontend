@@ -234,6 +234,25 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface>
   bool _autoplaying = false;
   Future<void>? _opening;
 
+  /// Where the poster frame was taken, and whether playback has begun since.
+  ///
+  /// THE FIRST FRAME OF A FILM IS OFTEN BLACK. With no server poster the card
+  /// shows a decoded frame, and it used to be frame zero. A film that opens
+  /// from black (the Colophon film does) therefore sat in the feed as a black
+  /// box with a play glyph until muted autoplay advanced it, so the same card
+  /// looked broken or fine depending on the moment (founder, 2026-09-30:
+  /// "sometimes looks broken cards sometimes fine"). The poster now comes from
+  /// a moment into the video; playing always starts from the beginning.
+  Duration _posterAt = Duration.zero;
+  bool _startedFromTop = false;
+
+  /// Before the first play, return from the poster frame to the opening.
+  Future<void> _rewindForFirstPlay(VideoPlayerController controller) async {
+    if (_startedFromTop) return;
+    _startedFromTop = true;
+    if (_posterAt > Duration.zero) await controller.seekTo(Duration.zero);
+  }
+
   @override
   BuildContext get candidateContext => context;
 
@@ -295,6 +314,7 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface>
     // it is already muted at the moment play is asked for.
     await controller.setVolume(_feedMuted ? 0 : 1);
     await controller.setLooping(true);
+    await _rewindForFirstPlay(controller);
     if (mounted && _autoplaying) await controller.play();
   }
 
@@ -332,7 +352,11 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface>
     final inflight = _opening;
     if (inflight != null) {
       await inflight;
-      if (thenPlay) await _controller?.play();
+      final c = _controller;
+      if (thenPlay && c != null) {
+        await _rewindForFirstPlay(c);
+        await c.play();
+      }
       return;
     }
     final opening = _open(thenPlay: thenPlay);
@@ -347,7 +371,10 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface>
   Future<void> _open({bool thenPlay = false}) async {
     final existing = _controller;
     if (existing != null) {
-      if (thenPlay) await existing.play();
+      if (thenPlay) {
+        await _rewindForFirstPlay(existing);
+        await existing.play();
+      }
       return;
     }
     final url = widget.url.trim();
@@ -406,9 +433,10 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface>
       }
       // Some platforms present nothing until a position is requested, so the
       // poster would be a black rectangle rather than a frame of the video.
+      _posterAt = videoPosterPosition(opened.value.duration);
       await boundedMediaInit(
         MediaInitPhase.decode,
-        () => opened.seekTo(Duration.zero),
+        () => opened.seekTo(_posterAt),
       );
       if (!mounted) {
         await opened.dispose();
@@ -419,7 +447,10 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface>
         _controller = opened;
         _preparing = false;
       });
-      if (thenPlay) await opened.play();
+      if (thenPlay) {
+        await _rewindForFirstPlay(opened);
+        await opened.play();
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -438,6 +469,7 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface>
     if (controller.value.isPlaying) {
       await controller.pause();
     } else {
+      await _rewindForFirstPlay(controller);
       await controller.play();
     }
   }
@@ -833,4 +865,13 @@ class AuraVideoMedia extends ConsumerWidget {
           ),
         );
   }
+}
+
+/// Where a stored video's poster frame is taken when the server has no
+/// poster: a moment in (10% of the length, at most 3 s), because films often
+/// open on black. Videos of 4 s or less keep their first frame.
+Duration videoPosterPosition(Duration length) {
+  if (length <= const Duration(seconds: 4)) return Duration.zero;
+  final tenth = Duration(milliseconds: length.inMilliseconds ~/ 10);
+  return tenth < const Duration(seconds: 3) ? tenth : const Duration(seconds: 3);
 }
