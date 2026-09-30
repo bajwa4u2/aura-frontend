@@ -1,3 +1,4 @@
+import '../aura_chamber.dart';
 import 'package:flutter/material.dart';
 
 import '../aura_radius.dart';
@@ -100,9 +101,9 @@ class _PillarTile extends StatelessWidget {
         AuraSpace.lg,
       ),
       decoration: BoxDecoration(
-        color: AuraSurface.elevated,
+        color: chamberTone(context, AuraSurface.elevated),
         borderRadius: BorderRadius.circular(AuraRadius.md),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,7 +143,7 @@ class _PillarTile extends StatelessWidget {
             style: AuraText.body.copyWith(
               fontSize: 15,
               height: 1.65,
-              color: AuraSurface.ink,
+              color: chamberTone(context, AuraSurface.ink),
             ),
           ),
         ],

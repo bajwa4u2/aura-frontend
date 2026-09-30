@@ -179,7 +179,7 @@ class _PrivacyHero extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.xl),
       decoration: BoxDecoration(
-        gradient: AuraGradients.hero,
+        gradient: chamberGradient(context, AuraGradients.hero),
         borderRadius: BorderRadius.circular(AuraRadius.xl),
         border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),

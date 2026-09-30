@@ -1,3 +1,4 @@
+import '../aura_chamber.dart';
 import 'package:flutter/material.dart';
 
 import '../aura_space.dart';
@@ -76,7 +77,7 @@ class InvestorSectionHeader extends StatelessWidget {
               child: Text(
                 eyebrow.toUpperCase(),
                 style: AuraText.label.copyWith(
-                  color: AuraSurface.ink,
+                  color: chamberTone(context, AuraSurface.ink),
                   letterSpacing: 1.4,
                   fontWeight: FontWeight.w700,
                   fontSize: 12,
@@ -96,7 +97,7 @@ class InvestorSectionHeader extends StatelessWidget {
               style: AuraText.body.copyWith(
                 fontSize: isMobile ? 15 : 16,
                 height: 1.65,
-                color: AuraSurface.muted,
+                color: chamberTone(context, AuraSurface.muted),
                 fontWeight: FontWeight.w500,
               ),
             ),

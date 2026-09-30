@@ -1,3 +1,4 @@
+import '../aura_chamber.dart';
 import 'package:flutter/material.dart';
 
 import '../aura_radius.dart';
@@ -58,7 +59,7 @@ class InvestorWhyNowContent extends StatelessWidget {
             children: [
               Expanded(child: forcesCol),
               const SizedBox(width: AuraSpace.xl),
-              Container(width: 1, color: AuraSurface.divider),
+              Container(width: 1, color: chamberTone(context, AuraSurface.divider)),
               const SizedBox(width: AuraSpace.xl),
               Expanded(child: shiftsCol),
             ],
@@ -121,9 +122,9 @@ class _PointRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.md),
       decoration: BoxDecoration(
-        color: AuraSurface.elevated,
+        color: chamberTone(context, AuraSurface.elevated),
         borderRadius: BorderRadius.circular(AuraRadius.md),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -142,7 +143,7 @@ class _PointRow extends StatelessWidget {
             style: AuraText.body.copyWith(
               fontSize: 14,
               height: 1.6,
-              color: AuraSurface.muted,
+              color: chamberTone(context, AuraSurface.muted),
             ),
           ),
         ],

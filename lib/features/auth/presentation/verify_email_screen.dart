@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'dart:async';
 
 import 'package:dio/dio.dart';
@@ -226,7 +227,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                     Text(
                       _busy ? 'Verifying your email…' : (_msg ?? ''),
                       style: AuraText.body.copyWith(
-                        color: AuraSurface.muted,
+                        color: chamberTone(context, AuraSurface.muted),
                         height: 1.5,
                       ),
                     ),
@@ -234,19 +235,19 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                     if (_busy) ...[
                       Row(
                         children: [
-                          const SizedBox(
+                          SizedBox(
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: AuraSurface.accent,
+                              color: chamberTone(context, AuraSurface.accent),
                             ),
                           ),
                           const SizedBox(width: AuraSpace.s12),
                           Text(
                             'Please wait…',
                             style: AuraText.small.copyWith(
-                              color: AuraSurface.muted,
+                              color: chamberTone(context, AuraSurface.muted),
                             ),
                           ),
                         ],

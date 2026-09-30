@@ -154,7 +154,7 @@ class _LegalHero extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AuraSpace.lg),
       decoration: BoxDecoration(
-        gradient: AuraGradients.card,
+        gradient: chamberGradient(context, AuraGradients.card),
         borderRadius: BorderRadius.circular(AuraRadius.lg),
         border: Border.all(color: chamberTone(context, AuraSurface.divider)),
         boxShadow: AuraShadows.card,
@@ -412,7 +412,7 @@ class _IconBadge extends StatelessWidget {
       height: 44,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        gradient: AuraGradients.accent,
+        gradient: chamberGradient(context, AuraGradients.accent),
         borderRadius: BorderRadius.circular(AuraRadius.md),
         boxShadow: AuraShadows.glow,
       ),

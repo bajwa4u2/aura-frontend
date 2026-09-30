@@ -178,7 +178,7 @@ class _SafetyHero extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.xl),
       decoration: BoxDecoration(
-        gradient: AuraGradients.hero,
+        gradient: chamberGradient(context, AuraGradients.hero),
         borderRadius: BorderRadius.circular(AuraRadius.xl),
         border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
@@ -193,7 +193,7 @@ class _SafetyHero extends StatelessWidget {
                 height: 44,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  gradient: AuraGradients.accent,
+                  gradient: chamberGradient(context, AuraGradients.accent),
                   borderRadius: BorderRadius.circular(AuraRadius.md),
                   boxShadow: AuraShadows.glow,
                 ),
@@ -486,7 +486,7 @@ class _SafetyContactCallout extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.lg),
       decoration: BoxDecoration(
-        gradient: AuraGradients.card,
+        gradient: chamberGradient(context, AuraGradients.card),
         borderRadius: BorderRadius.circular(AuraRadius.lg),
         border: Border.all(color: chamberTone(context, AuraSurface.divider)),
         boxShadow: AuraShadows.card,

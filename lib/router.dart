@@ -1,3 +1,4 @@
+import 'core/ui/aura_chamber.dart';
 import 'features/conversation/presentation/messages_workspace.dart';
 import 'features/discover/presentation/discover_search.dart';
 import 'dart:async';
@@ -1435,8 +1436,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: kCompleteIdentityRoute,
-            builder: (context, state) => IdentityBaselineScreen(
-              redirectTo: state.uri.queryParameters['redirect'],
+            // Onboarding wears look B, "Night Chamber" (founder,
+            // 2026-09-30), though it runs after sign-in.
+            builder: (context, state) => AuraChamberScope(
+              child: Theme(
+                data: auraChamberTheme(Theme.of(context)),
+                child: IdentityBaselineScreen(
+                  redirectTo: state.uri.queryParameters['redirect'],
+                ),
+              ),
             ),
           ),
 

@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -268,14 +269,14 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                     Container(
                       width: 44,
                       height: 44,
-                      decoration: const BoxDecoration(
-                        color: AuraSurface.accentSoft,
+                      decoration: BoxDecoration(
+                        color: chamberTone(context, AuraSurface.accentSoft),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.mark_email_unread_outlined,
                         size: 22,
-                        color: AuraSurface.accentText,
+                        color: chamberTone(context, AuraSurface.accentText),
                       ),
                     ),
                     const SizedBox(height: AuraSpace.s14),
@@ -284,7 +285,7 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                     Text(
                       'We need to verify your email before you can continue. Open the email we sent and click the link.',
                       style: AuraText.body.copyWith(
-                        color: AuraSurface.muted,
+                        color: chamberTone(context, AuraSurface.muted),
                         height: 1.5,
                       ),
                     ),
@@ -365,19 +366,19 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                       const SizedBox(height: AuraSpace.s14),
                       Row(
                         children: [
-                          const SizedBox(
+                          SizedBox(
                             width: 14,
                             height: 14,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: AuraSurface.accent,
+                              color: chamberTone(context, AuraSurface.accent),
                             ),
                           ),
                           const SizedBox(width: AuraSpace.s10),
                           Text(
                             'Checking verification status…',
                             style: AuraText.small.copyWith(
-                              color: AuraSurface.muted,
+                              color: chamberTone(context, AuraSurface.muted),
                             ),
                           ),
                         ],

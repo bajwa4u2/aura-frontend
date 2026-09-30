@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'dart:async';
 
 import 'package:dio/dio.dart';
@@ -270,14 +271,14 @@ class _IdentityBaselineScreenState
                     Container(
                       width: 44,
                       height: 44,
-                      decoration: const BoxDecoration(
-                        color: AuraSurface.accentSoft,
+                      decoration: BoxDecoration(
+                        color: chamberTone(context, AuraSurface.accentSoft),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.cake_outlined,
                         size: 22,
-                        color: AuraSurface.accentText,
+                        color: chamberTone(context, AuraSurface.accentText),
                       ),
                     ),
                     const SizedBox(height: AuraSpace.s14),
@@ -296,7 +297,7 @@ class _IdentityBaselineScreenState
                           // as a threat is not a respectful completion path.
                           : 'Aura did not ask for these when you joined. Adding them keeps your account details complete, and neither is shown on your profile.',
                       style: AuraText.body.copyWith(
-                        color: AuraSurface.muted,
+                        color: chamberTone(context, AuraSurface.muted),
                         height: 1.5,
                       ),
                     ),
@@ -386,7 +387,7 @@ class _IdentityBaselineScreenState
                           child: Text(
                             'Not now',
                             style: AuraText.body.copyWith(
-                              color: AuraSurface.muted,
+                              color: chamberTone(context, AuraSurface.muted),
                             ),
                           ),
                         ),

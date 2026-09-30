@@ -481,7 +481,7 @@ class AuraPrimaryButton extends StatelessWidget {
             // Look B inside AuraChamberScope: a gold fill with ink text.
             gradient: onPressed != null && !chamber ? chamberGradient(context, AuraGradients.accent) : null,
             color: onPressed == null
-                ? AuraSurface.faint
+                ? (chamber ? AuraChamber.ruleStrong : AuraSurface.faint)
                 : (chamber ? AuraChamber.gold : null),
             borderRadius: BorderRadius.circular(AuraRadius.r14),
           ),

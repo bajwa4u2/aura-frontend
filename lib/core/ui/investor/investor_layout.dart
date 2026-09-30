@@ -1,3 +1,4 @@
+import '../aura_chamber.dart';
 import 'package:flutter/material.dart';
 
 import '../../../app/shell/shell_shared.dart';
@@ -80,7 +81,7 @@ class InvestorBand extends StatelessWidget {
   final Widget child;
 
   /// Band background color. Default keeps the canvas (page); pass
-  /// [AuraSurface.subtle] for a contrasting band, [AuraSurface.card]
+  /// [chamberTone(context, AuraSurface.subtle)] for a contrasting band, [chamberTone(context, AuraSurface.card)]
   /// for a hero-adjacent band, etc.
   final Color surface;
 
@@ -108,13 +109,13 @@ class InvestorBand extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: surface,
+        color: chamberTone(context, surface),
         border: Border(
           top: topBorder
-              ? const BorderSide(color: AuraSurface.divider)
+              ? BorderSide(color: chamberTone(context, AuraSurface.divider))
               : BorderSide.none,
           bottom: bottomBorder
-              ? const BorderSide(color: AuraSurface.divider)
+              ? BorderSide(color: chamberTone(context, AuraSurface.divider))
               : BorderSide.none,
         ),
       ),

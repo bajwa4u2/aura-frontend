@@ -1,3 +1,4 @@
+import '../aura_chamber.dart';
 import 'package:flutter/material.dart';
 
 import '../aura_radius.dart';
@@ -95,9 +96,9 @@ class InvestorPlatformArchitecture extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(AuraSpace.lg),
               decoration: BoxDecoration(
-                color: AuraSurface.elevated,
+                color: chamberTone(context, AuraSurface.elevated),
                 borderRadius: BorderRadius.circular(AuraRadius.md),
-                border: Border.all(color: AuraSurface.divider),
+                border: Border.all(color: chamberTone(context, AuraSurface.divider)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,9 +146,9 @@ class _ProductColumn extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.lg),
       decoration: BoxDecoration(
-        color: AuraSurface.card,
+        color: chamberTone(context, AuraSurface.card),
         borderRadius: BorderRadius.circular(AuraRadius.md),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,7 +167,7 @@ class _ProductColumn extends StatelessWidget {
             style: AuraText.body.copyWith(
               fontSize: 14,
               height: 1.55,
-              color: AuraSurface.muted,
+              color: chamberTone(context, AuraSurface.muted),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -214,16 +215,16 @@ class _FabricCellTile extends StatelessWidget {
         vertical: AuraSpace.s10,
       ),
       decoration: BoxDecoration(
-        color: AuraSurface.subtle,
+        color: chamberTone(context, AuraSurface.subtle),
         borderRadius: BorderRadius.circular(AuraRadius.sm),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       alignment: Alignment.center,
       child: Text(
         label,
         textAlign: TextAlign.center,
         style: AuraText.label.copyWith(
-          color: AuraSurface.ink,
+          color: chamberTone(context, AuraSurface.ink),
           fontSize: 12,
           fontWeight: FontWeight.w700,
           letterSpacing: 0.4,
