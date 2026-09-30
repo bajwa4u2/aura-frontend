@@ -41,4 +41,8 @@ Source `108176b0`. iOS was built from `6a993d49`, whose only change is a test;
 - **"Require intent": switch back ON once Play and iOS are live**, not before, or older store builds cannot post.
 - Windows, founder-checked 2026-09-30 ~10:40 AM ET: voice message playback good; feed video good. Still unchecked: composer video attach.
 - Firefox web calling is untested.
-- Caller dropped before connect: server rule `82f57d4` (backend), deployed 10:41 AM ET. The call ends 15 s after the caller is lost; no client change. A real-call proof is pending.
+- Caller dropped before connect: server rule `82f57d4` (backend), deployed 10:41 AM ET. The call ends 15 s after the caller is lost; no client change. Proven on a real call 12:22 PM ET (the browser closed while ringing; ended MISSED 17 s later); end-reason overwrite fixed in `63d5bd9`.
+
+## Web calling, root cause fixed (2026-09-30, web only)
+
+Browser calls stalled in a hidden or covered tab: calling was driven by rendered frames, and Chrome gives hidden tabs none. `9dae4213` pumps waiting frames on a timer while hidden and adds a 20 s deadline to the stage-connect gate. Hidden-tab proof: the browser joined in 4.9 s (was 42.7 s); connected 6.7 s after answer (was 43 s). Not a 1.5.2 regression: browser-to-iPhone last worked on 09-21 with the browser side watched.
