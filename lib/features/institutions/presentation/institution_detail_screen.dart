@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -195,7 +196,7 @@ class _InstitutionDetailBody extends ConsumerWidget {
                                 : 'Not verified',
                             valueColor: institution.isVerified
                                 ? AuraSurface.coVerdant
-                                : AuraSurface.muted,
+                                : chamberTone(context, AuraSurface.muted),
                           ),
                           if (institution.domain.trim().isNotEmpty)
                             _InfoRow(
@@ -263,9 +264,9 @@ class _UnitsSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s16),
       decoration: BoxDecoration(
-        color: AuraSurface.card,
+        color: chamberTone(context, AuraSurface.card),
         borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,7 +275,7 @@ class _UnitsSection extends StatelessWidget {
             'UNITS & BRANCHES',
             style: AuraText.small.copyWith(
               fontWeight: FontWeight.w700,
-              color: AuraSurface.faint,
+              color: chamberTone(context, AuraSurface.faint),
               letterSpacing: 0.6,
             ),
           ),
@@ -309,9 +310,9 @@ class _InfoSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s16),
       decoration: BoxDecoration(
-        color: AuraSurface.card,
+        color: chamberTone(context, AuraSurface.card),
         borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -320,7 +321,7 @@ class _InfoSection extends StatelessWidget {
             title,
             style: AuraText.small.copyWith(
               fontWeight: FontWeight.w700,
-              color: AuraSurface.faint,
+              color: chamberTone(context, AuraSurface.faint),
               letterSpacing: 0.6,
             ),
           ),
@@ -359,7 +360,7 @@ class _InfoRow extends StatelessWidget {
             label,
             style: AuraText.small.copyWith(
               fontWeight: FontWeight.w600,
-              color: AuraSurface.muted,
+              color: chamberTone(context, AuraSurface.muted),
             ),
           ),
         ),
@@ -367,7 +368,7 @@ class _InfoRow extends StatelessWidget {
           child: Text(
             cleanValue,
             style: AuraText.small.copyWith(
-              color: valueColor ?? AuraSurface.ink,
+              color: valueColor ?? chamberTone(context, AuraSurface.ink),
             ),
           ),
         ),
@@ -405,9 +406,9 @@ class _RelatedInstitutionsSection extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s14),
       decoration: BoxDecoration(
-        color: AuraSurface.subtle,
+        color: chamberTone(context, AuraSurface.subtle),
         borderRadius: BorderRadius.circular(AuraRadius.r14),
-        border: Border.all(color: AuraSurface.divider.withValues(alpha: 0.6)),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider).withValues(alpha: 0.6)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -418,7 +419,7 @@ class _RelatedInstitutionsSection extends ConsumerWidget {
                 width: 4,
                 height: 14,
                 decoration: BoxDecoration(
-                  color: AuraSurface.accent,
+                  color: chamberTone(context, AuraSurface.accent),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -438,7 +439,7 @@ class _RelatedInstitutionsSection extends ConsumerWidget {
             'Other institutions that have replied on the same recent '
             'public discussions.',
             style: AuraText.micro.copyWith(
-              color: AuraSurface.faint,
+              color: chamberTone(context, AuraSurface.faint),
               fontWeight: FontWeight.w600,
               fontSize: 11,
             ),
@@ -465,9 +466,9 @@ class _PublicPostsSection extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s16),
       decoration: BoxDecoration(
-        color: AuraSurface.card,
+        color: chamberTone(context, AuraSurface.card),
         borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -476,7 +477,7 @@ class _PublicPostsSection extends ConsumerWidget {
             'POSTS',
             style: AuraText.small.copyWith(
               fontWeight: FontWeight.w700,
-              color: AuraSurface.faint,
+              color: chamberTone(context, AuraSurface.faint),
               letterSpacing: 0.6,
             ),
           ),
@@ -497,13 +498,13 @@ class _PublicPostsSection extends ConsumerWidget {
             ),
             error: (e, _) => Text(
               'Could not load posts.',
-              style: AuraText.small.copyWith(color: AuraSurface.muted),
+              style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
             ),
             data: (page) {
               if (page.items.isEmpty) {
                 return Text(
                   'This institution has no public posts yet.',
-                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                  style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
                 );
               }
               return Column(
@@ -580,18 +581,18 @@ class _PublicHero extends StatelessWidget {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        AuraSurface.accent.withValues(alpha: 0.30),
-                        AuraSurface.accent.withValues(alpha: 0.08),
-                        AuraSurface.subtle,
+                        chamberTone(context, AuraSurface.accent).withValues(alpha: 0.30),
+                        chamberTone(context, AuraSurface.accent).withValues(alpha: 0.08),
+                        chamberTone(context, AuraSurface.subtle),
                       ],
                     ),
                   ),
                   child: coverUrl.isEmpty
-                      ? const Center(
+                      ? Center(
                           child: Icon(
                             Icons.apartment_rounded,
                             size: 56,
-                            color: AuraSurface.accentText,
+                            color: chamberTone(context, AuraSurface.accentText),
                           ),
                         )
                       : Stack(
@@ -601,11 +602,11 @@ class _PublicHero extends StatelessWidget {
                               coverUrl,
                               fit: BoxFit.fill,
                               errorBuilder: (_, __, ___) => Container(
-                                color: AuraSurface.accentSoft,
-                                child: const Center(
+                                color: chamberTone(context, AuraSurface.accentSoft),
+                                child: Center(
                                   child: Icon(
                                     Icons.image_outlined,
-                                    color: AuraSurface.accentText,
+                                    color: chamberTone(context, AuraSurface.accentText),
                                     size: 48,
                                   ),
                                 ),
@@ -633,7 +634,7 @@ class _PublicHero extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(3),
                   decoration: BoxDecoration(
-                    color: AuraSurface.page,
+                    color: chamberTone(context, AuraSurface.page),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
@@ -696,7 +697,7 @@ class _PublicIdentity extends StatelessWidget {
           Text(
             subtitleParts.join(' · '),
             style: AuraText.small.copyWith(
-              color: AuraSurface.muted,
+              color: chamberTone(context, AuraSurface.muted),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -717,7 +718,7 @@ class _PublicIdentity extends StatelessWidget {
           Text(
             description,
             style: AuraText.body.copyWith(
-              color: AuraSurface.muted,
+              color: chamberTone(context, AuraSurface.muted),
               height: 1.5,
             ),
             maxLines: 6,
@@ -817,13 +818,13 @@ class _PublicStatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fg = good ? AuraSurface.coVerdant : AuraSurface.muted;
+    final fg = good ? AuraSurface.coVerdant : chamberTone(context, AuraSurface.muted);
     final bg = good
         ? AuraSurface.coVerdant.withValues(alpha: 0.16)
-        : AuraSurface.subtle;
+        : chamberTone(context, AuraSurface.subtle);
     final border = good
         ? AuraSurface.coVerdant.withValues(alpha: 0.3)
-        : AuraSurface.divider;
+        : chamberTone(context, AuraSurface.divider);
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AuraSpace.s10,
@@ -876,7 +877,7 @@ class _PublicInstitutionAvatar extends StatelessWidget {
           child: Text(
             initial,
             style: TextStyle(
-              color: AuraSurface.accentText,
+              color: chamberTone(context, AuraSurface.accentText),
               fontSize: size * 0.4,
               fontWeight: FontWeight.w800,
             ),
@@ -886,7 +887,7 @@ class _PublicInstitutionAvatar extends StatelessWidget {
       return Icon(
         Icons.apartment_outlined,
         size: size * 0.46,
-        color: AuraSurface.accentText,
+        color: chamberTone(context, AuraSurface.accentText),
       );
     }
 
@@ -894,9 +895,9 @@ class _PublicInstitutionAvatar extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: AuraSurface.accentSoft,
+        color: chamberTone(context, AuraSurface.accentSoft),
         shape: BoxShape.circle,
-        border: Border.all(color: AuraSurface.accent.withValues(alpha: 0.3)),
+        border: Border.all(color: chamberTone(context, AuraSurface.accent).withValues(alpha: 0.3)),
       ),
       clipBehavior: Clip.antiAlias,
       child: logoUrl.isNotEmpty
@@ -1158,7 +1159,7 @@ class _InstitutionProfileCtaRowState
               children: [
                 Text(
                   'Follow as',
-                  style: AuraText.micro.copyWith(color: AuraSurface.muted),
+                  style: AuraText.micro.copyWith(color: chamberTone(context, AuraSurface.muted)),
                 ),
                 _FollowAsChip(
                   label: 'You',
@@ -1280,14 +1281,14 @@ class _FollowAsChip extends StatelessWidget {
             borderRadius: BorderRadius.circular(AuraRadius.pill),
             border: Border.all(
               color: selected
-                  ? AuraSurface.accent.withValues(alpha: 0.5)
-                  : AuraSurface.divider,
+                  ? chamberTone(context, AuraSurface.accent).withValues(alpha: 0.5)
+                  : chamberTone(context, AuraSurface.divider),
             ),
           ),
           child: Text(
             label,
             style: AuraText.micro.copyWith(
-              color: selected ? AuraSurface.accentText : AuraSurface.muted,
+              color: selected ? AuraSurface.accentText : chamberTone(context, AuraSurface.muted),
               fontWeight: FontWeight.w700,
             ),
           ),

@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -449,13 +450,13 @@ class _EmailCodeCard extends StatelessWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: AuraSurface.accentSoft,
+                    color: chamberTone(context, AuraSurface.accentSoft),
                     borderRadius: BorderRadius.circular(AuraRadius.sm),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.mark_email_unread_outlined,
                     size: 16,
-                    color: AuraSurface.accentText,
+                    color: chamberTone(context, AuraSurface.accentText),
                   ),
                 ),
                 const SizedBox(width: AuraSpace.s10),
@@ -471,7 +472,7 @@ class _EmailCodeCard extends StatelessWidget {
                   ? 'We sent a 6-digit code to $maskedEmail. Enter it below to continue.'
                   : 'A code is required to continue, but our email service did not deliver it just now. Tap "Resend" to try again.',
               style: AuraText.body.copyWith(
-                color: AuraSurface.muted,
+                color: chamberTone(context, AuraSurface.muted),
                 height: 1.5,
               ),
             ),
@@ -506,7 +507,7 @@ class _EmailCodeCard extends StatelessWidget {
                   onTap: busy ? null : () => onTrustDeviceChanged(!trustDevice),
                   child: Text(
                     'Trust this device for 60 days',
-                    style: AuraText.small.copyWith(color: AuraSurface.muted),
+                    style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
                   ),
                 ),
               ],
@@ -684,7 +685,7 @@ class _LoginFormCard extends StatelessWidget {
                         : () => onRememberEmailChanged(!rememberEmail),
                     child: Text(
                       'Remember email',
-                      style: AuraText.small.copyWith(color: AuraSurface.muted),
+                      style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
                     ),
                   ),
                 ],
@@ -769,7 +770,7 @@ class _AuthHero extends StatelessWidget {
           Text(
             body,
             style: AuraText.body.copyWith(
-              color: AuraSurface.muted,
+              color: chamberTone(context, AuraSurface.muted),
               height: 1.6,
             ),
           ),
@@ -792,7 +793,7 @@ class _AuthHero extends StatelessWidget {
           Text(
             accent,
             style: AuraText.small.copyWith(
-              color: AuraSurface.faint,
+              color: chamberTone(context, AuraSurface.faint),
               height: 1.5,
             ),
           ),
@@ -816,20 +817,20 @@ class _AuthFeatureRow extends StatelessWidget {
           width: 30,
           height: 30,
           decoration: BoxDecoration(
-            color: AuraSurface.accentSoft,
+            color: chamberTone(context, AuraSurface.accentSoft),
             borderRadius: BorderRadius.circular(AuraRadius.sm),
             border: Border.all(
-              color: AuraSurface.accent.withValues(alpha: 0.2),
+              color: chamberTone(context, AuraSurface.accent).withValues(alpha: 0.2),
             ),
           ),
-          child: Icon(icon, size: 14, color: AuraSurface.accentText),
+          child: Icon(icon, size: 14, color: chamberTone(context, AuraSurface.accentText)),
         ),
         const SizedBox(width: AuraSpace.s10),
         Expanded(
           child: Text(
             label,
             style: AuraText.small.copyWith(
-              color: AuraSurface.muted,
+              color: chamberTone(context, AuraSurface.muted),
               height: 1.4,
             ),
           ),

@@ -1,3 +1,4 @@
+import 'aura_chamber.dart';
 import 'package:flutter/material.dart';
 
 import 'aura_design_system.dart';
@@ -33,11 +34,11 @@ class AuraCard extends StatelessWidget {
       margin: margin,
       padding: padding ?? const EdgeInsets.all(AuraSpace.md),
       decoration: BoxDecoration(
-        gradient: color != null ? null : AuraGradients.card,
+        gradient: color != null ? null : chamberGradient(context, AuraGradients.card),
         color: color?.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
-          color: borderColor ?? AuraSurface.divider,
+          color: borderColor ?? chamberTone(context, AuraSurface.divider),
           width: 1,
         ),
         boxShadow: AuraShadows.card,
@@ -53,8 +54,8 @@ class AuraCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(radius),
-          splashColor: AuraSurface.accentSoft,
-          highlightColor: AuraSurface.divider,
+          splashColor: chamberTone(context, AuraSurface.accentSoft),
+          highlightColor: chamberTone(context, AuraSurface.divider),
           onTap: onTap,
           child: card,
         ),

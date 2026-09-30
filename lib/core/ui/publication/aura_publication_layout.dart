@@ -1,3 +1,4 @@
+import '../aura_chamber.dart';
 import 'package:flutter/material.dart';
 
 import '../../../app/shell/shell_shared.dart';
@@ -189,10 +190,10 @@ class _HeroWrap extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
-        color: AuraSurface.subtle,
+      decoration: BoxDecoration(
+        color: chamberTone(context, AuraSurface.subtle),
         border: Border(
-          bottom: BorderSide(color: AuraSurface.divider),
+          bottom: BorderSide(color: chamberTone(context, AuraSurface.divider)),
         ),
       ),
       padding: EdgeInsets.symmetric(

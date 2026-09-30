@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -193,7 +194,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                 // supports the heading rather than competing with it.
                 Text(
                   'A public record that remains accessible and accountable over time.',
-                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                  style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
                 ),
 
                 const SizedBox(height: AuraSpace.s14),
@@ -299,7 +300,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
 
                 Text(
                   'Responses become part of the same record.',
-                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                  style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
                 ),
 
                 const SizedBox(height: AuraSpace.s14),
@@ -323,7 +324,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                               Text(
                                 'Be the first to respond to this work.',
                                 style: AuraText.small.copyWith(
-                                  color: AuraSurface.muted,
+                                  color: chamberTone(context, AuraSurface.muted),
                                 ),
                               ),
                               const SizedBox(height: AuraSpace.s12),
@@ -382,9 +383,9 @@ class _InReplyToCard extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AuraSpace.s12),
       decoration: BoxDecoration(
-        color: AuraSurface.elevated,
+        color: chamberTone(context, AuraSurface.elevated),
         borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: child,
     );
@@ -442,7 +443,7 @@ class _InReplyToCard extends ConsumerWidget {
             const SizedBox(width: AuraSpace.s10),
             Text(
               'Loading the original…',
-              style: AuraText.small.copyWith(color: AuraSurface.muted),
+              style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
             ),
           ],
         ),
@@ -456,7 +457,7 @@ class _InReplyToCard extends ConsumerWidget {
             const SizedBox(height: AuraSpace.s6),
             Text(
               'The original post is unavailable.',
-              style: AuraText.small.copyWith(color: AuraSurface.muted),
+              style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
             ),
           ],
         ),
@@ -489,7 +490,7 @@ class _InReplyToCard extends ConsumerWidget {
                 Text(
                   short,
                   style: AuraText.small.copyWith(
-                    color: AuraSurface.muted,
+                    color: chamberTone(context, AuraSurface.muted),
                     height: 1.4,
                   ),
                   maxLines: 2,
@@ -511,11 +512,11 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
+    return const Wrap(
       spacing: AuraSpace.s10,
       runSpacing: AuraSpace.s10,
       crossAxisAlignment: WrapCrossAlignment.center,
-      children: const [
+      children: [
         // RETIRED 2026-08-25 — the Back button that stood here is governed now.
         //
         // It was the closest thing in the product to correct: it checked
@@ -556,14 +557,14 @@ class _CountPill extends StatelessWidget {
         vertical: AuraSpace.s6,
       ),
       decoration: BoxDecoration(
-        color: AuraSurface.elevated,
+        color: chamberTone(context, AuraSurface.elevated),
         borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Text(
         '$count',
         style: AuraText.small.copyWith(
-          color: AuraSurface.muted,
+          color: chamberTone(context, AuraSurface.muted),
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -604,7 +605,7 @@ class _ContinuationPrompt extends ConsumerWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(AuraSpace.s12),
         decoration: BoxDecoration(
-          color: AuraSurface.subtle,
+          color: chamberTone(context, AuraSurface.subtle),
           borderRadius: BorderRadius.circular(AuraRadius.card),
         ),
         child: Column(
@@ -612,7 +613,7 @@ class _ContinuationPrompt extends ConsumerWidget {
           children: [
             Text(
               'If this points to something an institution should act on:',
-              style: AuraText.small.copyWith(color: AuraSurface.muted),
+              style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
             ),
             const SizedBox(height: AuraSpace.s8),
             AuraSecondaryButton(

@@ -24,6 +24,7 @@
 /// and another size once published.
 library;
 
+import '../aura_chamber.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -172,7 +173,13 @@ class AuraPublicationTitle extends StatelessWidget {
             : MediaQuery.of(context).size.width;
         return Text(
           shown,
-          style: publicationTitleStyle(title: shown, availableWidth: width),
+          style: AuraChamberScope.of(context)
+              ? publicationTitleStyle(title: shown, availableWidth: width)
+                  .copyWith(
+                    fontFamily: AuraChamber.serif,
+                    fontWeight: FontWeight.w500,
+                  )
+              : publicationTitleStyle(title: shown, availableWidth: width),
         );
       },
     );

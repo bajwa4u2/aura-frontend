@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -225,14 +226,14 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                     Container(
                       width: 44,
                       height: 44,
-                      decoration: const BoxDecoration(
-                        color: AuraSurface.accentSoft,
+                      decoration: BoxDecoration(
+                        color: chamberTone(context, AuraSurface.accentSoft),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.key_rounded,
                         size: 22,
-                        color: AuraSurface.accentText,
+                        color: chamberTone(context, AuraSurface.accentText),
                       ),
                     ),
                     const SizedBox(height: AuraSpace.s14),
@@ -243,7 +244,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                           ? 'Choose a new password for $accountLabel.'
                           : 'This reset link looks incomplete. Please request a new one.',
                       style: AuraText.body.copyWith(
-                        color: AuraSurface.muted,
+                        color: chamberTone(context, AuraSurface.muted),
                         height: 1.5,
                       ),
                     ),
@@ -269,7 +270,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                               _obscurePassword
                                   ? Icons.visibility_off_rounded
                                   : Icons.visibility_rounded,
-                              color: AuraSurface.muted,
+                              color: chamberTone(context, AuraSurface.muted),
                               size: 20,
                             ),
                           ),
@@ -296,7 +297,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                               _obscureConfirm
                                   ? Icons.visibility_off_rounded
                                   : Icons.visibility_rounded,
-                              color: AuraSurface.muted,
+                              color: chamberTone(context, AuraSurface.muted),
                               size: 20,
                             ),
                           ),

@@ -1,3 +1,4 @@
+import '../core/ui/aura_chamber.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -156,9 +157,9 @@ class _Protect extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.md),
       decoration: BoxDecoration(
-        color: AuraSurface.elevated,
+        color: chamberTone(context, AuraSurface.elevated),
         borderRadius: BorderRadius.circular(AuraRadius.md),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,7 +167,7 @@ class _Protect extends StatelessWidget {
           Text(
             label.toUpperCase(),
             style: AuraText.micro.copyWith(
-              color: AuraSurface.muted,
+              color: chamberTone(context, AuraSurface.muted),
               fontWeight: FontWeight.w800,
               letterSpacing: 1.2,
             ),

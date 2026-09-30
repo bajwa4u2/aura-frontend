@@ -1,3 +1,4 @@
+import '../core/ui/aura_chamber.dart';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
@@ -225,8 +226,8 @@ class _ErrorBlock extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.lg),
       decoration: BoxDecoration(
-        color: AuraSurface.subtle,
-        border: Border.all(color: AuraSurface.divider),
+        color: chamberTone(context, AuraSurface.subtle),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
         borderRadius: BorderRadius.circular(AuraRadius.lg),
       ),
       child: Column(

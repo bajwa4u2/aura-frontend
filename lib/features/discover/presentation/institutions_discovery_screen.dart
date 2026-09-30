@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -74,7 +75,7 @@ class InstitutionsDiscoveryScreen extends ConsumerWidget {
               'Organisations participating publicly on Aura, under their '
               'official identity.',
               style:
-                  AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
+                  AuraText.body.copyWith(color: chamberTone(context, AuraSurface.muted), height: 1.5),
             ),
             const SizedBox(height: AuraSpace.s20),
             const _SectorFilter(),
@@ -169,18 +170,18 @@ class _SectorFilter extends ConsumerWidget {
               vertical: AuraSpace.s8,
             ),
             decoration: BoxDecoration(
-              color: isSelected ? AuraSurface.accentSoft : AuraSurface.card,
+              color: isSelected ? AuraSurface.accentSoft : chamberTone(context, AuraSurface.card),
               borderRadius: BorderRadius.circular(AuraRadius.pill),
               border: Border.all(
                 color: isSelected
-                    ? AuraSurface.accent.withValues(alpha: 0.4)
-                    : AuraSurface.divider,
+                    ? chamberTone(context, AuraSurface.accent).withValues(alpha: 0.4)
+                    : chamberTone(context, AuraSurface.divider),
               ),
             ),
             child: Text(
               label,
               style: AuraText.small.copyWith(
-                color: isSelected ? AuraSurface.ink : AuraSurface.muted,
+                color: isSelected ? AuraSurface.ink : chamberTone(context, AuraSurface.muted),
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
               ),
             ),
@@ -190,11 +191,11 @@ class _SectorFilter extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Browse by sector', style: AuraText.title),
+        const Text('Browse by sector', style: AuraText.title),
         const SizedBox(height: 2),
         Text(
           'Each sector narrows to the institutions working in it.',
-          style: AuraText.small.copyWith(color: AuraSurface.muted),
+          style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
         ),
         const SizedBox(height: AuraSpace.s12),
         Wrap(

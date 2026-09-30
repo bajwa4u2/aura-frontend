@@ -1,3 +1,4 @@
+import '../aura_chamber.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -70,9 +71,9 @@ class InvestorDeckCenterpiece extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.xl),
       decoration: BoxDecoration(
-        color: AuraSurface.elevated,
+        color: chamberTone(context, AuraSurface.elevated),
         borderRadius: BorderRadius.circular(AuraRadius.lg),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x33000000),
@@ -129,16 +130,16 @@ class _DeckCover extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.lg),
       decoration: BoxDecoration(
-        color: AuraSurface.page,
+        color: chamberTone(context, AuraSurface.page),
         borderRadius: BorderRadius.circular(AuraRadius.md),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
         // A subtle inner highlight implies a real paper artifact.
-        gradient: const RadialGradient(
+        gradient: RadialGradient(
           center: Alignment.topLeft,
           radius: 1.4,
           colors: [
-            Color(0xFF13202F),
-            AuraSurface.page,
+            const Color(0xFF13202F),
+            chamberTone(context, AuraSurface.page),
           ],
         ),
       ),
@@ -175,7 +176,7 @@ class _DeckCover extends StatelessWidget {
               Text(
                 'Investor Deck',
                 style: AuraText.label.copyWith(
-                  color: AuraSurface.muted,
+                  color: chamberTone(context, AuraSurface.muted),
                   letterSpacing: 1.4,
                   fontWeight: FontWeight.w700,
                   fontSize: 11,
@@ -200,7 +201,7 @@ class _DeckCover extends StatelessWidget {
                   Text(
                     version.toUpperCase(),
                     style: AuraText.micro.copyWith(
-                      color: AuraSurface.muted,
+                      color: chamberTone(context, AuraSurface.muted),
                       letterSpacing: 1.4,
                       fontWeight: FontWeight.w700,
                     ),
@@ -317,7 +318,7 @@ class _DeckMeta extends StatelessWidget {
           style: AuraText.body.copyWith(
             fontSize: 15,
             height: 1.65,
-            color: AuraSurface.muted,
+            color: chamberTone(context, AuraSurface.muted),
           ),
         ),
         const SizedBox(height: AuraSpace.lg),
@@ -344,16 +345,16 @@ class _DeckMeta extends StatelessWidget {
                   Text(
                     'Open the deck',
                     style: AuraText.subtitle.copyWith(
-                      color: AuraSurface.page,
+                      color: chamberTone(context, AuraSurface.page),
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.3,
                     ),
                   ),
                   const SizedBox(width: AuraSpace.s8),
-                  const Icon(
+                  Icon(
                     Icons.arrow_forward_rounded,
                     size: 18,
-                    color: AuraSurface.page,
+                    color: chamberTone(context, AuraSurface.page),
                   ),
                 ],
               ),
@@ -379,7 +380,7 @@ class _MetaRow extends StatelessWidget {
           child: Text(
             label.toUpperCase(),
             style: AuraText.label.copyWith(
-              color: AuraSurface.faint,
+              color: chamberTone(context, AuraSurface.faint),
               letterSpacing: 1.2,
               fontWeight: FontWeight.w700,
               fontSize: 11,

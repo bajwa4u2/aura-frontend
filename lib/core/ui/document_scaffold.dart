@@ -1,3 +1,4 @@
+import 'aura_chamber.dart';
 import 'package:flutter/material.dart';
 
 import '../../app/shell/shell_shared.dart';
@@ -91,9 +92,9 @@ class _DocumentSurface extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.lg),
       decoration: BoxDecoration(
-        color: AuraSurface.card,
+        color: chamberTone(context, AuraSurface.card),
         borderRadius: BorderRadius.circular(AuraRadius.lg),
-        border: Border.all(color: AuraSurface.divider, width: 1),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider), width: 1),
         boxShadow: const [
           BoxShadow(
             color: Color(0x22000000),

@@ -1,3 +1,4 @@
+import '../core/ui/aura_chamber.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -180,7 +181,7 @@ class _SafetyHero extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: AuraGradients.hero,
         borderRadius: BorderRadius.circular(AuraRadius.xl),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,7 +217,7 @@ class _SafetyHero extends StatelessWidget {
                     Text(
                       'Zero tolerance for CSAM, exploitation, grooming, trafficking, and abuse of minors.',
                       style: AuraText.emphasis.copyWith(
-                        color: AuraSurface.accentText,
+                        color: chamberTone(context, AuraSurface.accentText),
                         height: 1.45,
                       ),
                     ),
@@ -245,7 +246,7 @@ class _SafetyHero extends StatelessWidget {
           const SizedBox(height: AuraSpace.md),
           Text(
             'Last updated: May 2026',
-            style: AuraText.small.copyWith(color: AuraSurface.muted),
+            style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
           ),
         ],
       ),
@@ -330,14 +331,14 @@ class _SafetySignalCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.md),
       decoration: BoxDecoration(
-        color: AuraSurface.subtle,
+        color: chamberTone(context, AuraSurface.subtle),
         borderRadius: BorderRadius.circular(AuraRadius.lg),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AuraSurface.accentText, size: 22),
+          Icon(icon, color: chamberTone(context, AuraSurface.accentText), size: 22),
           const SizedBox(height: AuraSpace.sm),
           Text(title, style: AuraText.emphasis),
           const SizedBox(height: AuraSpace.xs),
@@ -401,13 +402,13 @@ class _SectionNumber extends StatelessWidget {
       height: 42,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: AuraSurface.elevated,
+        color: chamberTone(context, AuraSurface.elevated),
         borderRadius: BorderRadius.circular(AuraRadius.md),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Text(
         value,
-        style: AuraText.label.copyWith(color: AuraSurface.accentText),
+        style: AuraText.label.copyWith(color: chamberTone(context, AuraSurface.accentText)),
       ),
     );
   }
@@ -428,8 +429,8 @@ class _Bullet extends StatelessWidget {
             width: 6,
             height: 6,
             margin: const EdgeInsets.only(top: 9),
-            decoration: const BoxDecoration(
-              color: AuraSurface.accentText,
+            decoration: BoxDecoration(
+              color: chamberTone(context, AuraSurface.accentText),
               shape: BoxShape.circle,
             ),
           ),
@@ -455,13 +456,13 @@ class _SafetyPill extends StatelessWidget {
         vertical: AuraSpace.xs,
       ),
       decoration: BoxDecoration(
-        color: AuraSurface.accentSoft,
+        color: chamberTone(context, AuraSurface.accentSoft),
         borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Text(
         label,
-        style: AuraText.label.copyWith(color: AuraSurface.ink),
+        style: AuraText.label.copyWith(color: chamberTone(context, AuraSurface.ink)),
       ),
     );
   }
@@ -488,7 +489,7 @@ class _SafetyContactCallout extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: AuraGradients.card,
         borderRadius: BorderRadius.circular(AuraRadius.lg),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
         boxShadow: AuraShadows.card,
       ),
       child: Column(
@@ -497,9 +498,9 @@ class _SafetyContactCallout extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
+              Icon(
                 Icons.support_agent_outlined,
-                color: AuraSurface.accentText,
+                color: chamberTone(context, AuraSurface.accentText),
                 size: AuraIconSize.lg,
               ),
               const SizedBox(width: AuraSpace.md),
@@ -537,7 +538,7 @@ class _SafetyContactCallout extends StatelessWidget {
               ),
               SelectableText(
                 ChildSafetyScreen.safetyEmail,
-                style: AuraText.small.copyWith(color: AuraSurface.muted),
+                style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
               ),
             ],
           ),
@@ -562,9 +563,9 @@ class _SafetyActionPanel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AuraSpace.md),
       decoration: BoxDecoration(
-        color: AuraSurface.elevated,
+        color: chamberTone(context, AuraSurface.elevated),
         borderRadius: BorderRadius.circular(AuraRadius.md),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -574,7 +575,7 @@ class _SafetyActionPanel extends StatelessWidget {
           Text(
             'Privacy explains how Aura handles data — including records preserved for safety review. Terms cover platform-wide rules of use and enforcement.',
             style: AuraText.small.copyWith(
-              color: AuraSurface.muted,
+              color: chamberTone(context, AuraSurface.muted),
               height: 1.55,
             ),
           ),

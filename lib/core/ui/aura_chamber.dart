@@ -81,3 +81,84 @@ class AuraChamberScope extends InheritedWidget {
   @override
   bool updateShouldNotify(AuraChamberScope oldWidget) => false;
 }
+
+/// The public estate's theme in look B: Public Sans for every piece of text
+/// that does not name a family, the ink ground, gold as the primary colour.
+/// Wraps the public shell only; the signed-in shells keep their theme.
+ThemeData auraChamberTheme(ThemeData base) {
+  final scheme = base.colorScheme.copyWith(
+    primary: AuraChamber.gold,
+    onPrimary: AuraChamber.ink,
+    secondary: AuraChamber.gold,
+    onSecondary: AuraChamber.ink,
+    surface: AuraChamber.raised,
+    onSurface: AuraChamber.text,
+    outline: AuraChamber.ruleStrong,
+    outlineVariant: AuraChamber.rule,
+  );
+  return base.copyWith(
+    colorScheme: scheme,
+    scaffoldBackgroundColor: AuraChamber.ink,
+    canvasColor: AuraChamber.ink,
+    cardColor: AuraChamber.raised,
+    dividerColor: AuraChamber.rule,
+    textTheme: base.textTheme.apply(fontFamily: AuraChamber.sans),
+    primaryTextTheme: base.primaryTextTheme.apply(fontFamily: AuraChamber.sans),
+    textSelectionTheme: base.textSelectionTheme.copyWith(
+      cursorColor: AuraChamber.gold,
+      selectionColor: AuraChamber.gold.withValues(alpha: 0.3),
+      selectionHandleColor: AuraChamber.gold,
+    ),
+    inputDecorationTheme: base.inputDecorationTheme.copyWith(
+      fillColor: AuraChamber.raised,
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AuraChamber.gold),
+      ),
+    ),
+  );
+}
+
+/// Translates one of the legacy surface colours into look B when [context]
+/// sits inside [AuraChamberScope]; outside it the colour is returned as is.
+/// Lets shared public layouts wear B without forking them, while the
+/// signed-in app keeps its palette.
+Color chamberTone(BuildContext context, Color legacy) {
+  if (!AuraChamberScope.of(context)) return legacy;
+  final v = legacy.toARGB32();
+  switch (v) {
+    case 0xFF0D1520: // page
+    case 0xFF111D2E: // subtle
+      return AuraChamber.ink;
+    case 0xFF152438: // card
+    case 0xFF1B2E44: // elevated
+    case 0xFF203454: // overlay
+      return AuraChamber.raised;
+    case 0xFFE2ECF5: // ink (text)
+      return AuraChamber.text;
+    case 0xFF7A96B5: // muted
+      return AuraChamber.muted;
+    case 0xFF4B6882: // faint
+      return AuraChamber.faint;
+    case 0x14FFFFFF: // divider
+      return AuraChamber.rule;
+    case 0xFF5B6CFF: // accent
+    case 0xFF8B9EFF: // accentText
+      return AuraChamber.gold;
+    case 0x335B6CFF: // accentSoft
+      return const Color(0x1FD2AC62);
+  }
+  return legacy;
+}
+
+/// Gradients in look B: inside [AuraChamberScope] the accent gradient becomes
+/// flat gold and every surface gradient the flat raised ink. B has no
+/// gradients. Outside the scope the gradient is returned as is.
+Gradient chamberGradient(BuildContext context, Gradient legacy) {
+  if (!AuraChamberScope.of(context)) return legacy;
+  final isAccent = legacy is LinearGradient &&
+      legacy.colors.isNotEmpty &&
+      legacy.colors.first.toARGB32() == 0xFF5B6CFF;
+  final c = isAccent ? AuraChamber.gold : AuraChamber.raised;
+  return LinearGradient(colors: [c, c]);
+}

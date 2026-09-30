@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -55,7 +56,7 @@ class ArticlesDiscoveryScreen extends ConsumerWidget {
               'Durable, authored writing — long-form thought that stays worth '
               'returning to.',
               style:
-                  AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
+                  AuraText.body.copyWith(color: chamberTone(context, AuraSurface.muted), height: 1.5),
             ),
             const SizedBox(height: AuraSpace.s20),
             page.when(

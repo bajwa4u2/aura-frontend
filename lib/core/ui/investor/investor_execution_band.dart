@@ -1,3 +1,4 @@
+import '../aura_chamber.dart';
 import 'package:flutter/material.dart';
 
 import '../aura_radius.dart';
@@ -39,7 +40,7 @@ class InvestorExecutionContent extends StatelessWidget {
             style: AuraText.body.copyWith(
               fontSize: isMobile ? 16 : 17,
               height: 1.7,
-              color: AuraSurface.ink,
+              color: chamberTone(context, AuraSurface.ink),
             ),
           ),
         ),
@@ -92,9 +93,9 @@ class _Tile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.lg),
       decoration: BoxDecoration(
-        color: AuraSurface.elevated,
+        color: chamberTone(context, AuraSurface.elevated),
         borderRadius: BorderRadius.circular(AuraRadius.md),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,7 +116,7 @@ class _Tile extends StatelessWidget {
             style: AuraText.body.copyWith(
               fontSize: 14,
               height: 1.6,
-              color: AuraSurface.muted,
+              color: chamberTone(context, AuraSurface.muted),
             ),
           ),
         ],

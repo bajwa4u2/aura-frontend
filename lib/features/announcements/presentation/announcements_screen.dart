@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -105,7 +106,7 @@ class _AnnouncementsHeader extends StatelessWidget {
         const SizedBox(height: AuraSpace.s6),
         Text(
           subtitle,
-          style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
+          style: AuraText.body.copyWith(color: chamberTone(context, AuraSurface.muted), height: 1.5),
         ),
       ],
     );
@@ -325,9 +326,9 @@ class _InstitutionAnnouncementsScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(AuraSpace.s16),
             decoration: BoxDecoration(
-              color: AuraSurface.card,
+              color: chamberTone(context, AuraSurface.card),
               borderRadius: BorderRadius.circular(AuraRadius.card),
-              border: Border.all(color: AuraSurface.divider),
+              border: Border.all(color: chamberTone(context, AuraSurface.divider)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,7 +336,7 @@ class _InstitutionAnnouncementsScreen extends StatelessWidget {
                 Text(
                   'Standing',
                   style: AuraText.small.copyWith(
-                    color: AuraSurface.faint,
+                    color: chamberTone(context, AuraSurface.faint),
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.6,
                   ),
@@ -441,7 +442,7 @@ class _PinnedSection extends StatelessWidget {
               child: Text(
                 title,
                 style: AuraText.label.copyWith(
-                  color: AuraSurface.faint,
+                  color: chamberTone(context, AuraSurface.faint),
                   letterSpacing: 0.8,
                 ),
               ),
@@ -519,7 +520,7 @@ class _AllSection extends StatelessWidget {
               child: Text(
                 title,
                 style: AuraText.label.copyWith(
-                  color: AuraSurface.faint,
+                  color: chamberTone(context, AuraSurface.faint),
                   letterSpacing: 0.8,
                 ),
               ),
@@ -587,9 +588,9 @@ class _AnnouncementCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AuraRadius.card),
         child: Container(
           decoration: BoxDecoration(
-            color: AuraSurface.card,
+            color: chamberTone(context, AuraSurface.card),
             borderRadius: BorderRadius.circular(AuraRadius.card),
-            border: Border.all(color: AuraSurface.divider),
+            border: Border.all(color: chamberTone(context, AuraSurface.divider)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -616,10 +617,10 @@ class _AnnouncementCard extends StatelessWidget {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: AuraSurface.accentSoft,
+                        color: chamberTone(context, AuraSurface.accentSoft),
                         borderRadius: BorderRadius.circular(AuraRadius.r10),
                         border: Border.all(
-                          color: AuraSurface.accent.withValues(alpha: 0.25),
+                          color: chamberTone(context, AuraSurface.accent).withValues(alpha: 0.25),
                         ),
                       ),
                       child: Icon(
@@ -627,7 +628,7 @@ class _AnnouncementCard extends StatelessWidget {
                             ? Icons.push_pin_outlined
                             : Icons.campaign_outlined,
                         size: 16,
-                        color: AuraSurface.accentText,
+                        color: chamberTone(context, AuraSurface.accentText),
                       ),
                     ),
                     const SizedBox(width: AuraSpace.s12),
@@ -646,7 +647,7 @@ class _AnnouncementCard extends StatelessWidget {
                             Text(
                               _formatDate(publishedAt!),
                               style: AuraText.micro.copyWith(
-                                color: AuraSurface.faint,
+                                color: chamberTone(context, AuraSurface.faint),
                               ),
                             ),
                           ],
@@ -654,10 +655,10 @@ class _AnnouncementCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: AuraSpace.s8),
-                    const Icon(
+                    Icon(
                       Icons.chevron_right_rounded,
                       size: 16,
-                      color: AuraSurface.faint,
+                      color: chamberTone(context, AuraSurface.faint),
                     ),
                   ],
                 ),

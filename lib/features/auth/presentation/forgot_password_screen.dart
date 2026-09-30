@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -140,14 +141,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                       Container(
                         width: 44,
                         height: 44,
-                        decoration: const BoxDecoration(
-                          color: AuraSurface.accentSoft,
+                        decoration: BoxDecoration(
+                          color: chamberTone(context, AuraSurface.accentSoft),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.lock_reset_rounded,
                           size: 22,
-                          color: AuraSurface.accentText,
+                          color: chamberTone(context, AuraSurface.accentText),
                         ),
                       ),
                       const SizedBox(height: AuraSpace.s14),
@@ -156,7 +157,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                       Text(
                         'Enter your email and we will send you a secure link to set a new password.',
                         style: AuraText.body.copyWith(
-                          color: AuraSurface.muted,
+                          color: chamberTone(context, AuraSurface.muted),
                           height: 1.5,
                         ),
                       ),
@@ -166,7 +167,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         enabled: !_busy,
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.done,
-                        autofillHints: const [AutofillHints.email],
+                        autofillHints: [AutofillHints.email],
                         autocorrect: false,
                         inputFormatters: [
                           FilteringTextInputFormatter.deny(RegExp(r'\s')),

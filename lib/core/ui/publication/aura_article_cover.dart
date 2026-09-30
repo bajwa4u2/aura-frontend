@@ -1,3 +1,4 @@
+import '../aura_chamber.dart';
 import 'package:flutter/material.dart';
 
 import '../aura_radius.dart';
@@ -93,7 +94,7 @@ class AuraArticleCover extends StatelessWidget {
             final total = progress.expectedTotalBytes;
             return Container(
               height: 220,
-              color: AuraSurface.card,
+              color: chamberTone(context, AuraSurface.card),
               alignment: Alignment.center,
               child: SizedBox(
                 width: 120,
@@ -110,13 +111,13 @@ class AuraArticleCover extends StatelessWidget {
             if (!showFailure) return const SizedBox.shrink();
             return Container(
               height: 220,
-              color: AuraSurface.card,
+              color: chamberTone(context, AuraSurface.card),
               alignment: Alignment.center,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text('This cover could not be loaded.',
-                      style: AuraText.small.copyWith(color: AuraSurface.muted)),
+                      style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted))),
                   if (onRetry != null) ...[
                     const SizedBox(height: 8),
                     TextButton(onPressed: onRetry, child: const Text('Choose another')),

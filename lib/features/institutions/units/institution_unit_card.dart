@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/ui/aura_radius.dart';
@@ -28,9 +29,9 @@ class PublicUnitCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s14),
       decoration: BoxDecoration(
-        color: AuraSurface.card,
+        color: chamberTone(context, AuraSurface.card),
         borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,13 +52,13 @@ class PublicUnitCard extends StatelessWidget {
                   vertical: AuraSpace.s4,
                 ),
                 decoration: BoxDecoration(
-                  color: AuraSurface.accentSoft,
+                  color: chamberTone(context, AuraSurface.accentSoft),
                   borderRadius: BorderRadius.circular(AuraRadius.xl),
                 ),
                 child: Text(
                   unit.typeLabel,
                   style: AuraText.micro.copyWith(
-                    color: AuraSurface.accentText,
+                    color: chamberTone(context, AuraSurface.accentText),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -69,7 +70,7 @@ class PublicUnitCard extends StatelessWidget {
             Text(
               unit.description!,
               style: AuraText.small.copyWith(
-                color: AuraSurface.muted,
+                color: chamberTone(context, AuraSurface.muted),
                 height: 1.4,
               ),
             ),
@@ -118,12 +119,12 @@ class _MetaRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 13, color: AuraSurface.faint),
+          Icon(icon, size: 13, color: chamberTone(context, AuraSurface.faint)),
           const SizedBox(width: AuraSpace.s6),
           Expanded(
             child: Text(
               text,
-              style: AuraText.micro.copyWith(color: AuraSurface.muted),
+              style: AuraText.micro.copyWith(color: chamberTone(context, AuraSurface.muted)),
             ),
           ),
         ],

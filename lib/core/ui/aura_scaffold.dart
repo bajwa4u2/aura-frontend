@@ -1,3 +1,4 @@
+import 'aura_chamber.dart';
 import 'aura_responsive.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -222,8 +223,8 @@ class _Header extends StatelessWidget {
           if (showHomeAction)
             IconButton(
               tooltip: 'Home',
-              icon: const Icon(Icons.home_outlined,
-                  size: 20, color: AuraSurface.muted),
+              icon: Icon(Icons.home_outlined,
+                  size: 20, color: chamberTone(context, AuraSurface.muted)),
               onPressed: () => context.go(homePath),
             ),
           ...?actions,

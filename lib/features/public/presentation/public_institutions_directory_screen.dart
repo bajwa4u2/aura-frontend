@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import '../../../core/product/product_state_view.dart';
 import '../../../core/product/product_state.dart';
 import '../../../app/shell/shell_shared.dart';
@@ -282,7 +283,7 @@ class _Header extends ConsumerWidget {
           'Institutions participating publicly on Aura, under their '
           'official identity — what they say and commit to stays on the '
           'public record.',
-          style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.55),
+          style: AuraText.body.copyWith(color: chamberTone(context, AuraSurface.muted), height: 1.55),
         ),
         if (!isAuthed) ...[
           const SizedBox(height: AuraSpace.s14),
@@ -358,11 +359,11 @@ class _SearchAndFilters extends StatelessWidget {
             hintText: 'Search institutions by name, tagline, or description',
             prefixIcon: const Icon(Icons.search_rounded),
             filled: true,
-            fillColor: AuraSurface.card,
+            fillColor: chamberTone(context, AuraSurface.card),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AuraRadius.r12),
               borderSide: BorderSide(
-                color: AuraSurface.divider.withValues(alpha: 0.6),
+                color: chamberTone(context, AuraSurface.divider).withValues(alpha: 0.6),
               ),
             ),
           ),
@@ -470,7 +471,7 @@ class _DirectoryHeading extends StatelessWidget {
               width: 6,
               height: 18,
               decoration: BoxDecoration(
-                color: AuraSurface.muted,
+                color: chamberTone(context, AuraSurface.muted),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -483,17 +484,17 @@ class _DirectoryHeading extends StatelessWidget {
                 vertical: 2,
               ),
               decoration: BoxDecoration(
-                color: AuraSurface.card,
+                color: chamberTone(context, AuraSurface.card),
                 borderRadius: BorderRadius.circular(AuraRadius.pill),
                 border: Border.all(
-                  color: AuraSurface.divider.withValues(alpha: 0.6),
+                  color: chamberTone(context, AuraSurface.divider).withValues(alpha: 0.6),
                 ),
               ),
               child: Text(
                 '$count',
                 style: AuraText.micro.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: AuraSurface.faint,
+                  color: chamberTone(context, AuraSurface.faint),
                 ),
               ),
             ),
@@ -506,7 +507,7 @@ class _DirectoryHeading extends StatelessWidget {
             'Ordered by recent activity. The verified mark confirms the '
             'identity behind the name.',
             style: AuraText.small.copyWith(
-              color: AuraSurface.muted,
+              color: chamberTone(context, AuraSurface.muted),
               height: 1.4,
             ),
           ),
@@ -562,7 +563,7 @@ class _InstitutionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AuraSurface.card,
+      color: chamberTone(context, AuraSurface.card),
       borderRadius: BorderRadius.circular(AuraRadius.r14),
       child: InkWell(
         borderRadius: BorderRadius.circular(AuraRadius.r14),
@@ -572,7 +573,7 @@ class _InstitutionCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AuraRadius.r14),
             border: Border.all(
-              color: AuraSurface.divider.withValues(alpha: 0.6),
+              color: chamberTone(context, AuraSurface.divider).withValues(alpha: 0.6),
             ),
           ),
           child: Column(
@@ -627,7 +628,7 @@ class _InstitutionCard extends StatelessWidget {
                             child: Text(
                               item.category!,
                               style: AuraText.micro.copyWith(
-                                color: AuraSurface.faint,
+                                color: chamberTone(context, AuraSurface.faint),
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.5,
                               ),
@@ -643,7 +644,7 @@ class _InstitutionCard extends StatelessWidget {
                 Text(
                   item.tagline!,
                   style: AuraText.small.copyWith(
-                    color: AuraSurface.ink,
+                    color: chamberTone(context, AuraSurface.ink),
                     height: 1.4,
                   ),
                   maxLines: 2,
@@ -653,7 +654,7 @@ class _InstitutionCard extends StatelessWidget {
                 Text(
                   item.description!,
                   style: AuraText.small.copyWith(
-                    color: AuraSurface.muted,
+                    color: chamberTone(context, AuraSurface.muted),
                     height: 1.4,
                   ),
                   maxLines: 2,
@@ -739,17 +740,17 @@ class _MetaChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(color: AuraSurface.divider.withValues(alpha: 0.6)),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider).withValues(alpha: 0.6)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: AuraSurface.faint),
+          Icon(icon, size: 12, color: chamberTone(context, AuraSurface.faint)),
           const SizedBox(width: 4),
           Text(
             label,
             style: AuraText.micro.copyWith(
-              color: AuraSurface.faint,
+              color: chamberTone(context, AuraSurface.faint),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -876,7 +877,7 @@ class _BrowseBySectorHeading extends StatelessWidget {
           width: 6,
           height: 18,
           decoration: BoxDecoration(
-            color: AuraSurface.accent,
+            color: chamberTone(context, AuraSurface.accent),
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -887,7 +888,7 @@ class _BrowseBySectorHeading extends StatelessWidget {
           child: Text(
             'Explore institutions by class. Each sector opens an '
             'ecosystem view scoped to that classification.',
-            style: AuraText.small.copyWith(color: AuraSurface.muted),
+            style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -923,15 +924,15 @@ class _TypePill extends StatelessWidget {
           borderRadius: BorderRadius.circular(AuraRadius.pill),
           border: Border.all(
             color: selected
-                ? AuraSurface.accent.withValues(alpha: 0.4)
-                : AuraSurface.divider,
+                ? chamberTone(context, AuraSurface.accent).withValues(alpha: 0.4)
+                : chamberTone(context, AuraSurface.divider),
           ),
         ),
         alignment: Alignment.center,
         child: Text(
           label,
           style: AuraText.small.copyWith(
-            color: selected ? AuraSurface.accentText : AuraSurface.muted,
+            color: selected ? AuraSurface.accentText : chamberTone(context, AuraSurface.muted),
             fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
             fontSize: 12,
           ),

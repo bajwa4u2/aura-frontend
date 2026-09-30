@@ -11,6 +11,7 @@
 // via the "Your workspace" pill on this page). The onboarding path
 // for a brand-new institution remains `/institutions/get-started`.
 
+import '../core/ui/aura_chamber.dart';
 import 'package:flutter/material.dart';
 
 import '../features/public/presentation/public_institutions_directory_screen.dart';

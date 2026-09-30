@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -82,10 +83,10 @@ class DiscourseContinuityPanel extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s14),
       decoration: BoxDecoration(
-        color: AuraSurface.subtle,
+        color: chamberTone(context, AuraSurface.subtle),
         borderRadius: BorderRadius.circular(AuraRadius.r14),
         border: Border.all(
-          color: AuraSurface.divider.withValues(alpha: 0.6),
+          color: chamberTone(context, AuraSurface.divider).withValues(alpha: 0.6),
         ),
       ),
       child: Column(
@@ -157,7 +158,7 @@ class _PanelHeading extends StatelessWidget {
           width: 4,
           height: 14,
           decoration: BoxDecoration(
-            color: AuraSurface.accent,
+            color: chamberTone(context, AuraSurface.accent),
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -191,13 +192,13 @@ class _SectionHeading extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(icon, size: 14, color: AuraSurface.muted),
+            Icon(icon, size: 14, color: chamberTone(context, AuraSurface.muted)),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
                 label,
                 style: AuraText.small.copyWith(
-                  color: AuraSurface.ink,
+                  color: chamberTone(context, AuraSurface.ink),
                   fontWeight: FontWeight.w800,
                 ),
                 maxLines: 1,
@@ -210,7 +211,7 @@ class _SectionHeading extends StatelessWidget {
         Text(
           subtitle,
           style: AuraText.micro.copyWith(
-            color: AuraSurface.faint,
+            color: chamberTone(context, AuraSurface.faint),
             fontWeight: FontWeight.w600,
             fontSize: 11,
           ),

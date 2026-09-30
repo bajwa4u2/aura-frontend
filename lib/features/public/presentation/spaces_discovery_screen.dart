@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -66,7 +67,7 @@ class _SpacesDiscoveryScreenState extends ConsumerState<SpacesDiscoveryScreen> {
               'Public contexts for continuing conversation. Follow one to '
               'keep up with it, or open it to take part.',
               style: AuraText.body
-                  .copyWith(color: AuraSurface.muted, height: 1.5),
+                  .copyWith(color: chamberTone(context, AuraSurface.muted), height: 1.5),
             ),
             const SizedBox(height: AuraSpace.s20),
             page.when(

@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import '../../../core/product/product_state_view.dart';
 import '../../../core/product/product_state.dart';
 import 'package:flutter/material.dart';
@@ -226,9 +227,9 @@ class _SpaceIdentityPanel extends StatelessWidget {
             vertical: AuraSpace.s10,
           ),
           decoration: BoxDecoration(
-            color: AuraSurface.subtle,
+            color: chamberTone(context, AuraSurface.subtle),
             borderRadius: BorderRadius.circular(AuraRadius.lg),
-            border: Border.all(color: AuraSurface.divider),
+            border: Border.all(color: chamberTone(context, AuraSurface.divider)),
           ),
           child: Wrap(
             spacing: AuraSpace.s14,
@@ -271,12 +272,12 @@ class _CountChip extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 13, color: AuraSurface.muted),
+        Icon(icon, size: 13, color: chamberTone(context, AuraSurface.muted)),
         const SizedBox(width: 5),
         Text(
           label,
           style: AuraText.small.copyWith(
-            color: AuraSurface.muted,
+            color: chamberTone(context, AuraSurface.muted),
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -304,9 +305,9 @@ class _ComposeHintBand extends StatelessWidget {
             vertical: AuraSpace.s12,
           ),
           decoration: BoxDecoration(
-            color: AuraSurface.subtle,
+            color: chamberTone(context, AuraSurface.subtle),
             borderRadius: BorderRadius.circular(AuraRadius.lg),
-            border: Border.all(color: AuraSurface.divider),
+            border: Border.all(color: chamberTone(context, AuraSurface.divider)),
           ),
           child: Row(
             children: [
@@ -314,16 +315,16 @@ class _ComposeHintBand extends StatelessWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: AuraSurface.accentSoft,
+                  color: chamberTone(context, AuraSurface.accentSoft),
                   borderRadius: BorderRadius.circular(AuraRadius.r10),
                   border: Border.all(
-                    color: AuraSurface.accent.withValues(alpha: 0.3),
+                    color: chamberTone(context, AuraSurface.accent).withValues(alpha: 0.3),
                   ),
                 ),
                 child: Icon(
                   space.icon,
                   size: 16,
-                  color: AuraSurface.accentText,
+                  color: chamberTone(context, AuraSurface.accentText),
                 ),
               ),
               const SizedBox(width: AuraSpace.s10),
@@ -334,7 +335,7 @@ class _ComposeHintBand extends StatelessWidget {
                     Text(
                       'Start a statement in ${space.name}',
                       style: AuraText.body.copyWith(
-                        color: AuraSurface.muted,
+                        color: chamberTone(context, AuraSurface.muted),
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -342,17 +343,17 @@ class _ComposeHintBand extends StatelessWidget {
                     Text(
                       'Your post will be anchored to this space — no hashtag needed.',
                       style: AuraText.micro.copyWith(
-                        color: AuraSurface.faint,
+                        color: chamberTone(context, AuraSurface.faint),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.arrow_forward_rounded,
                 size: 16,
-                color: AuraSurface.muted,
+                color: chamberTone(context, AuraSurface.muted),
               ),
             ],
           ),
@@ -500,18 +501,18 @@ class _TabChip extends StatelessWidget {
           vertical: AuraSpace.s8,
         ),
         decoration: BoxDecoration(
-          color: selected ? AuraSurface.accentSoft : AuraSurface.subtle,
+          color: selected ? AuraSurface.accentSoft : chamberTone(context, AuraSurface.subtle),
           borderRadius: BorderRadius.circular(AuraRadius.pill),
           border: Border.all(
             color: selected
-                ? AuraSurface.accent.withValues(alpha: 0.4)
-                : AuraSurface.divider,
+                ? chamberTone(context, AuraSurface.accent).withValues(alpha: 0.4)
+                : chamberTone(context, AuraSurface.divider),
           ),
         ),
         child: Text(
           label,
           style: AuraText.small.copyWith(
-            color: selected ? AuraSurface.accentText : AuraSurface.muted,
+            color: selected ? AuraSurface.accentText : chamberTone(context, AuraSurface.muted),
             fontWeight: FontWeight.w700,
           ),
         ),

@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import '../../../core/ui/publication/aura_article_cover.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -127,7 +128,7 @@ class ArticleScreen extends ConsumerWidget {
                                     .proseName,
                                 style: AuraText.small.copyWith(
                                     fontWeight: FontWeight.w700,
-                                    color: AuraSurface.ink)),
+                                    color: chamberTone(context, AuraSurface.ink))),
                             if (article.publishedAt != null)
                               Text(
                                 AuraTemporal.calendar(ProductTime(
@@ -135,7 +136,7 @@ class ArticleScreen extends ConsumerWidget {
                                         TimeEvent.published)) +
                                     (article.revised ? ' · Edited' : ''),
                                 style: AuraText.micro
-                                    .copyWith(color: AuraSurface.muted),
+                                    .copyWith(color: chamberTone(context, AuraSurface.muted)),
                               ),
                           ],
                         ),
@@ -153,7 +154,7 @@ class ArticleScreen extends ConsumerWidget {
                     if ((article.slug ?? '').trim().isNotEmpty)
                       IconButton(
                         icon: const Icon(Icons.ios_share, size: 18),
-                        color: AuraSurface.muted,
+                        color: chamberTone(context, AuraSurface.muted),
                         tooltip: 'Share this article',
                         onPressed: () => showAuraShareSheet(
                           context,
@@ -181,7 +182,7 @@ class ArticleScreen extends ConsumerWidget {
                       // author will assume otherwise.
                       IconButton(
                         icon: const Icon(Icons.visibility_off_outlined, size: 18),
-                        color: AuraSurface.muted,
+                        color: chamberTone(context, AuraSurface.muted),
                         tooltip: 'Retract from public view',
                         onPressed: () => _retract(context, ref, article),
                       ),
@@ -254,7 +255,7 @@ class ArticleScreen extends ConsumerWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AuraSurface.page,
+        backgroundColor: chamberTone(context, AuraSurface.page),
         title: const Text('Retract this article?'),
         content: const Text(
           'It stops appearing publicly and its link stops resolving for '
@@ -309,7 +310,7 @@ class ArticleScreen extends ConsumerWidget {
     final commentary = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AuraSurface.page,
+        backgroundColor: chamberTone(context, AuraSurface.page),
         title: const Text('Reshare on Aura'),
         content: TextField(
           controller: controller,

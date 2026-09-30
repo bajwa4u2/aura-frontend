@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -114,9 +115,9 @@ class _SpaceEnvironmentTileState extends ConsumerState<SpaceEnvironmentTile> {
       child: Container(
         padding: const EdgeInsets.all(AuraSpace.s16),
         decoration: BoxDecoration(
-          color: AuraSurface.card,
+          color: chamberTone(context, AuraSurface.card),
           borderRadius: BorderRadius.circular(AuraRadius.card),
-          border: Border.all(color: AuraSurface.divider),
+          border: Border.all(color: chamberTone(context, AuraSurface.divider)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,11 +128,11 @@ class _SpaceEnvironmentTileState extends ConsumerState<SpaceEnvironmentTile> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: AuraSurface.accentSoft,
+                    color: chamberTone(context, AuraSurface.accentSoft),
                     borderRadius: BorderRadius.circular(AuraRadius.r12),
                   ),
                   child: Icon(spaceIcon(s.iconKey),
-                      size: 22, color: AuraSurface.accentText),
+                      size: 22, color: chamberTone(context, AuraSurface.accentText)),
                 ),
                 const SizedBox(width: AuraSpace.s12),
                 Expanded(
@@ -159,7 +160,7 @@ class _SpaceEnvironmentTileState extends ConsumerState<SpaceEnvironmentTile> {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: AuraText.small
-                  .copyWith(color: AuraSurface.muted, height: 1.4),
+                  .copyWith(color: chamberTone(context, AuraSurface.muted), height: 1.4),
             ),
             if (s.hasActivity) ...[
               const SizedBox(height: AuraSpace.s12),
@@ -276,9 +277,9 @@ class _InstitutionPresenceCardState
       child: Container(
         padding: const EdgeInsets.all(AuraSpace.s16),
         decoration: BoxDecoration(
-          color: AuraSurface.card,
+          color: chamberTone(context, AuraSurface.card),
           borderRadius: BorderRadius.circular(AuraRadius.card),
-          border: Border.all(color: AuraSurface.divider),
+          border: Border.all(color: chamberTone(context, AuraSurface.divider)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -305,8 +306,8 @@ class _InstitutionPresenceCardState
                           ),
                           if (i.verified) ...[
                             const SizedBox(width: AuraSpace.s4),
-                            const Icon(Icons.verified_rounded,
-                                size: 15, color: AuraSurface.accentText),
+                            Icon(Icons.verified_rounded,
+                                size: 15, color: chamberTone(context, AuraSurface.accentText)),
                           ],
                         ],
                       ),
@@ -317,7 +318,7 @@ class _InstitutionPresenceCardState
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: AuraText.small
-                              .copyWith(color: AuraSurface.muted, height: 1.4),
+                              .copyWith(color: chamberTone(context, AuraSurface.muted), height: 1.4),
                         ),
                       ],
                     ],
@@ -408,9 +409,9 @@ class ArticleEditorialCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: AuraSpace.s10),
         decoration: BoxDecoration(
-          color: AuraSurface.card,
+          color: chamberTone(context, AuraSurface.card),
           borderRadius: BorderRadius.circular(AuraRadius.card),
-          border: Border.all(color: AuraSurface.divider),
+          border: Border.all(color: chamberTone(context, AuraSurface.divider)),
         ),
         clipBehavior: Clip.antiAlias,
         child: ConstrainedBox(
@@ -470,7 +471,7 @@ class ArticleEditorialCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style:
-                              AuraText.micro.copyWith(color: AuraSurface.muted),
+                              AuraText.micro.copyWith(color: chamberTone(context, AuraSurface.muted)),
                         ),
                       ],
                       if (a.reason != null) ...[
@@ -500,9 +501,9 @@ class _Stat extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 13, color: AuraSurface.faint),
+        Icon(icon, size: 13, color: chamberTone(context, AuraSurface.faint)),
         const SizedBox(width: 4),
-        Text(label, style: AuraText.micro.copyWith(color: AuraSurface.muted)),
+        Text(label, style: AuraText.micro.copyWith(color: chamberTone(context, AuraSurface.muted))),
       ],
     );
   }
@@ -520,15 +521,15 @@ class _ReasonLine extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.auto_awesome_outlined,
-            size: 12, color: AuraSurface.faint),
+        Icon(Icons.auto_awesome_outlined,
+            size: 12, color: chamberTone(context, AuraSurface.faint)),
         const SizedBox(width: 4),
         Flexible(
           child: Text(
             reason,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: AuraText.micro.copyWith(color: AuraSurface.faint),
+            style: AuraText.micro.copyWith(color: chamberTone(context, AuraSurface.faint)),
           ),
         ),
       ],

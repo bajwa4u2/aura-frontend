@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -472,7 +473,7 @@ class _RegisterHero extends StatelessWidget {
                       'identity, conversations that keep their context, and '
                       'institutions accountable for what they say officially.',
             style: AuraText.body.copyWith(
-              color: AuraSurface.muted,
+              color: chamberTone(context, AuraSurface.muted),
               height: 1.6,
             ),
           ),
@@ -487,7 +488,7 @@ class _RegisterHero extends StatelessWidget {
                 ? 'After creating your account, you will be guided through the institutional verification flow.'
                 : 'Your identity, participation record, and conversations stay with you.',
             style: AuraText.small.copyWith(
-              color: AuraSurface.faint,
+              color: chamberTone(context, AuraSurface.faint),
               height: 1.5,
             ),
           ),
@@ -511,20 +512,20 @@ class _HeroFeatureRow extends StatelessWidget {
           width: 30,
           height: 30,
           decoration: BoxDecoration(
-            color: AuraSurface.accentSoft,
+            color: chamberTone(context, AuraSurface.accentSoft),
             borderRadius: BorderRadius.circular(AuraRadius.sm),
             border: Border.all(
-              color: AuraSurface.accent.withValues(alpha: 0.2),
+              color: chamberTone(context, AuraSurface.accent).withValues(alpha: 0.2),
             ),
           ),
-          child: Icon(icon, size: 14, color: AuraSurface.accentText),
+          child: Icon(icon, size: 14, color: chamberTone(context, AuraSurface.accentText)),
         ),
         const SizedBox(width: AuraSpace.s10),
         Expanded(
           child: Text(
             label,
             style: AuraText.small.copyWith(
-              color: AuraSurface.muted,
+              color: chamberTone(context, AuraSurface.muted),
               height: 1.4,
             ),
           ),
@@ -613,7 +614,7 @@ class _RegisterFormCard extends StatelessWidget {
               Text(
                 subtitle,
                 style: AuraText.small.copyWith(
-                  color: AuraSurface.muted,
+                  color: chamberTone(context, AuraSurface.muted),
                   height: 1.4,
                 ),
               ),
@@ -709,7 +710,7 @@ class _RegisterFormCard extends StatelessWidget {
               const SizedBox(height: AuraSpace.s4),
               Text(
                 'Private. Used to apply the right age rules, and never shown on your profile.',
-                style: AuraText.small.copyWith(color: AuraSurface.muted),
+                style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
               ),
               const SizedBox(height: AuraSpace.s10),
               TextFormField(
@@ -777,7 +778,7 @@ class _RegisterFormCard extends StatelessWidget {
                       obscurePassword
                           ? Icons.visibility_off_rounded
                           : Icons.visibility_rounded,
-                      color: AuraSurface.muted,
+                      color: chamberTone(context, AuraSurface.muted),
                       size: 20,
                     ),
                   ),
@@ -802,7 +803,7 @@ class _RegisterFormCard extends StatelessWidget {
                       obscureConfirmPassword
                           ? Icons.visibility_off_rounded
                           : Icons.visibility_rounded,
-                      color: AuraSurface.muted,
+                      color: chamberTone(context, AuraSurface.muted),
                       size: 20,
                     ),
                   ),
@@ -834,7 +835,7 @@ class _RegisterFormCard extends StatelessWidget {
                       child: RichText(
                         text: TextSpan(
                           style: AuraText.small.copyWith(
-                            color: AuraSurface.muted,
+                            color: chamberTone(context, AuraSurface.muted),
                             height: 1.45,
                           ),
                           children: [
@@ -844,7 +845,7 @@ class _RegisterFormCard extends StatelessWidget {
                             TextSpan(
                               text: 'Terms of Service',
                               style: AuraText.small.copyWith(
-                                color: AuraSurface.accentText,
+                                color: chamberTone(context, AuraSurface.accentText),
                                 decoration: TextDecoration.underline,
                                 height: 1.45,
                               ),

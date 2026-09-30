@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'dart:async';
 import '../../../core/media/aura_media_viewer.dart';
 import 'package:dio/dio.dart';
@@ -231,7 +232,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
       out.add(children[i]);
       if (i != children.length - 1) {
         out.add(
-          const Divider(height: 1, thickness: 1, color: AuraSurface.divider),
+          Divider(height: 1, thickness: 1, color: chamberTone(context, AuraSurface.divider)),
         );
       }
     }
@@ -270,7 +271,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
                 Icon(
                   leading,
                   size: 18,
-                  color: active ? AuraSurface.ink : AuraSurface.muted,
+                  color: active ? AuraSurface.ink : chamberTone(context, AuraSurface.muted),
                 ),
                 const SizedBox(width: AuraSpace.s12),
               ],
@@ -282,7 +283,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
                       title,
                       style: AuraText.body.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: active ? AuraSurface.ink : AuraSurface.muted,
+                        color: active ? AuraSurface.ink : chamberTone(context, AuraSurface.muted),
                       ),
                     ),
                     if (subtitle != null && subtitle.trim().isNotEmpty) ...[
@@ -290,7 +291,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
                       Text(
                         subtitle,
                         style: AuraText.small.copyWith(
-                          color: AuraSurface.muted,
+                          color: chamberTone(context, AuraSurface.muted),
                         ),
                       ),
                     ],
@@ -301,7 +302,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
                 Text(
                   trailing,
                   style: AuraText.small.copyWith(
-                    color: AuraSurface.muted,
+                    color: chamberTone(context, AuraSurface.muted),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -310,7 +311,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
               Icon(
                 Icons.chevron_right,
                 size: 18,
-                color: active ? AuraSurface.muted : AuraSurface.divider,
+                color: active ? AuraSurface.muted : chamberTone(context, AuraSurface.divider),
               ),
             ],
           ),
@@ -331,12 +332,12 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
     return AuraCard(
       child: Row(
         children: [
-          const Icon(Icons.info_outline_rounded, size: 18, color: AuraSurface.muted),
+          Icon(Icons.info_outline_rounded, size: 18, color: chamberTone(context, AuraSurface.muted)),
           const SizedBox(width: AuraSpace.s10),
           Expanded(
             child: Text(
               message,
-              style: AuraText.body.copyWith(color: AuraSurface.muted),
+              style: AuraText.body.copyWith(color: chamberTone(context, AuraSurface.muted)),
             ),
           ),
         ],
@@ -360,7 +361,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
     return AuraCard(
       child: Text(
         message,
-        style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
+        style: AuraText.body.copyWith(color: chamberTone(context, AuraSurface.muted), height: 1.5),
       ),
     );
   }
@@ -545,10 +546,10 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
                 fit: BoxFit.cover,
                 // A cover that fails to load falls back to the mark rather
                 // than to a broken-image glyph.
-                errorBuilder: (_, __, ___) => const Icon(
+                errorBuilder: (_, __, ___) => Icon(
                   Icons.menu_book_outlined,
                   size: 18,
-                  color: AuraSurface.ink,
+                  color: chamberTone(context, AuraSurface.ink),
                 ),
               ),
             ),
@@ -578,10 +579,10 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
                 width: 18,
                 height: 18,
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const Icon(
+                errorBuilder: (_, __, ___) => Icon(
                   Icons.link_outlined,
                   size: 18,
-                  color: AuraSurface.ink,
+                  color: chamberTone(context, AuraSurface.ink),
                 ),
               ),
             ),
@@ -718,14 +719,14 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AuraSurface.card,
+        color: chamberTone(context, AuraSurface.card),
         borderRadius: BorderRadius.circular(AuraRadius.xl),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       padding: const EdgeInsets.all(AuraSpace.s20),
       child: AuraTextBlock(
         bio,
-        style: AuraText.body.copyWith(height: 1.5, color: AuraSurface.ink),
+        style: AuraText.body.copyWith(height: 1.5, color: chamberTone(context, AuraSurface.ink)),
         selectable: true,
       ),
     );
@@ -1125,14 +1126,14 @@ class _MetaChip extends StatelessWidget {
     final chip = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
         borderRadius: BorderRadius.circular(AuraRadius.pill),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 13, color: AuraSurface.muted),
+            Icon(icon, size: 13, color: chamberTone(context, AuraSurface.muted)),
             const SizedBox(width: 6),
           ],
           Text(

@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -133,7 +134,7 @@ class _SupportAgentScreenState extends ConsumerState<SupportAgentScreen> {
 
           // ── Composer ──────────────────────────────────────────────────────
           if (!_escalated) ...[
-            const Divider(color: AuraSurface.divider, height: 1),
+            Divider(color: chamberTone(context, AuraSurface.divider), height: 1),
             _ComposerBar(
               ctrl: _msgCtrl,
               sending: state.sending,
@@ -200,9 +201,9 @@ class _SupportPageHeader extends StatelessWidget {
         AuraSpace.s20,
         AuraSpace.s14,
       ),
-      decoration: const BoxDecoration(
-        color: AuraSurface.subtle,
-        border: Border(bottom: BorderSide(color: AuraSurface.divider)),
+      decoration: BoxDecoration(
+        color: chamberTone(context, AuraSurface.subtle),
+        border: Border(bottom: BorderSide(color: chamberTone(context, AuraSurface.divider))),
       ),
       child: Row(
         children: [
@@ -210,16 +211,16 @@ class _SupportPageHeader extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: AuraSurface.accentSoft,
+              color: chamberTone(context, AuraSurface.accentSoft),
               borderRadius: BorderRadius.circular(AuraRadius.pill),
               border: Border.all(
-                color: AuraSurface.accent.withValues(alpha: 0.35),
+                color: chamberTone(context, AuraSurface.accent).withValues(alpha: 0.35),
               ),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.support_agent_rounded,
               size: 18,
-              color: AuraSurface.accentText,
+              color: chamberTone(context, AuraSurface.accentText),
             ),
           ),
           const SizedBox(width: AuraSpace.s12),
@@ -230,7 +231,7 @@ class _SupportPageHeader extends StatelessWidget {
                 const Text('Start a conversation', style: AuraText.subtitle),
                 Text(
                   'Powered by AI · Responses may take a moment',
-                  style: AuraText.micro.copyWith(color: AuraSurface.muted),
+                  style: AuraText.micro.copyWith(color: chamberTone(context, AuraSurface.muted)),
                 ),
               ],
             ),
@@ -242,25 +243,25 @@ class _SupportPageHeader extends StatelessWidget {
                 vertical: AuraSpace.s4,
               ),
               decoration: BoxDecoration(
-                color: AuraSurface.accentSoft,
+                color: chamberTone(context, AuraSurface.accentSoft),
                 borderRadius: BorderRadius.circular(AuraRadius.pill),
                 border: Border.all(
-                  color: AuraSurface.accent.withValues(alpha: 0.4),
+                  color: chamberTone(context, AuraSurface.accent).withValues(alpha: 0.4),
                 ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.label_outline_rounded,
                     size: 13,
-                    color: AuraSurface.accentText,
+                    color: chamberTone(context, AuraSurface.accentText),
                   ),
                   const SizedBox(width: AuraSpace.s4),
                   Text(
                     caseRef!,
                     style: AuraText.micro.copyWith(
-                      color: AuraSurface.accentText,
+                      color: chamberTone(context, AuraSurface.accentText),
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -282,7 +283,7 @@ class _LoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -291,11 +292,11 @@ class _LoadingState extends StatelessWidget {
             height: 28,
             child: CircularProgressIndicator(
               strokeWidth: 2.5,
-              color: AuraSurface.accentText,
+              color: chamberTone(context, AuraSurface.accentText),
             ),
           ),
-          SizedBox(height: AuraSpace.s12),
-          Text('Starting your support session…', style: AuraText.body),
+          const SizedBox(height: AuraSpace.s12),
+          const Text('Starting your support session…', style: AuraText.body),
         ],
       ),
     );
@@ -340,7 +341,7 @@ class _ErrorState extends StatelessWidget {
             const SizedBox(height: AuraSpace.s8),
             Text(
               'The support service is temporarily unavailable.\nYour conversation will start automatically when it\'s back.',
-              style: AuraText.body.copyWith(color: AuraSurface.muted),
+              style: AuraText.body.copyWith(color: chamberTone(context, AuraSurface.muted)),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AuraSpace.s20),
@@ -379,13 +380,13 @@ class _EmptyStartState extends StatelessWidget {
           Text(
             'Describe your issue or pick a topic below to get started. '
             'Our AI support agent will respond right away.',
-            style: AuraText.body.copyWith(color: AuraSurface.muted),
+            style: AuraText.body.copyWith(color: chamberTone(context, AuraSurface.muted)),
           ),
           const SizedBox(height: AuraSpace.s20),
           Text(
             'COMMON TOPICS',
             style: AuraText.micro.copyWith(
-              color: AuraSurface.muted,
+              color: chamberTone(context, AuraSurface.muted),
               fontWeight: FontWeight.w800,
               letterSpacing: 1.2,
             ),
@@ -446,10 +447,10 @@ class _AiDisclosureFooter extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
+          Icon(
             Icons.info_outline_rounded,
             size: 13,
-            color: AuraSurface.faint,
+            color: chamberTone(context, AuraSurface.faint),
           ),
           const SizedBox(width: AuraSpace.s6),
           Expanded(
@@ -457,7 +458,7 @@ class _AiDisclosureFooter extends StatelessWidget {
               'AI responses can be inaccurate or incomplete. '
               'Use the menu on any response to report something unsafe.',
               style: AuraText.micro.copyWith(
-                color: AuraSurface.faint,
+                color: chamberTone(context, AuraSurface.faint),
                 height: 1.5,
               ),
             ),
@@ -588,7 +589,7 @@ class _ComposerBar extends StatelessWidget {
         AuraSpace.s16,
         AuraSpace.s12,
       ),
-      color: AuraSurface.subtle,
+      color: chamberTone(context, AuraSurface.subtle),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -599,9 +600,9 @@ class _ComposerBar extends StatelessWidget {
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: AuraSurface.card,
+                    color: chamberTone(context, AuraSurface.card),
                     borderRadius: BorderRadius.circular(AuraRadius.r14),
-                    border: Border.all(color: AuraSurface.divider),
+                    border: Border.all(color: chamberTone(context, AuraSurface.divider)),
                   ),
                   // Bounded on purpose. AuraBoundedEditor keeps the bound
                   // without trapping the page: the editor scrolls its own text
@@ -615,7 +616,7 @@ class _ComposerBar extends StatelessWidget {
                       decoration: InputDecoration(
                         hintText: 'Describe your issue…',
                         hintStyle: AuraText.body.copyWith(
-                          color: AuraSurface.muted,
+                          color: chamberTone(context, AuraSurface.muted),
                         ),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(
@@ -643,16 +644,16 @@ class _ComposerBar extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.person_outline_rounded,
                     size: 14,
-                    color: AuraSurface.muted,
+                    color: chamberTone(context, AuraSurface.muted),
                   ),
                   const SizedBox(width: AuraSpace.s4),
                   Text(
                     'Talk to the Aura team',
                     style: AuraText.micro.copyWith(
-                      color: AuraSurface.muted,
+                      color: chamberTone(context, AuraSurface.muted),
                       decoration: TextDecoration.underline,
                     ),
                   ),
@@ -687,12 +688,12 @@ class _SendButton extends StatelessWidget {
         width: 42,
         height: 42,
         decoration: BoxDecoration(
-          color: active ? AuraSurface.accent : AuraSurface.card,
+          color: active ? AuraSurface.accent : chamberTone(context, AuraSurface.card),
           borderRadius: BorderRadius.circular(AuraRadius.r14),
           border: Border.all(
             color: active
-                ? AuraSurface.accent.withValues(alpha: 0.6)
-                : AuraSurface.divider,
+                ? chamberTone(context, AuraSurface.accent).withValues(alpha: 0.6)
+                : chamberTone(context, AuraSurface.divider),
           ),
         ),
         child: Center(
@@ -708,7 +709,7 @@ class _SendButton extends StatelessWidget {
               : Icon(
                   Icons.send_rounded,
                   size: 18,
-                  color: active ? Colors.white : AuraSurface.muted,
+                  color: active ? Colors.white : chamberTone(context, AuraSurface.muted),
                 ),
         ),
       ),
@@ -744,9 +745,9 @@ class _EscalateForm extends StatelessWidget {
       ),
       padding: const EdgeInsets.all(AuraSpace.s16),
       decoration: BoxDecoration(
-        color: AuraSurface.overlay,
+        color: chamberTone(context, AuraSurface.overlay),
         borderRadius: BorderRadius.circular(AuraRadius.md),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -756,7 +757,7 @@ class _EscalateForm extends StatelessWidget {
           const SizedBox(height: AuraSpace.s4),
           Text(
             'Add your contact details so we can follow up by email.',
-            style: AuraText.small.copyWith(color: AuraSurface.muted),
+            style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
           ),
           const SizedBox(height: AuraSpace.s12),
           _AuraTextField(ctrl: nameCtrl, label: 'Name (optional)'),
@@ -775,7 +776,7 @@ class _EscalateForm extends StatelessWidget {
                 onTap: onCancel,
                 child: Text(
                   'Cancel',
-                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                  style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
                 ),
               ),
             ],
@@ -805,9 +806,9 @@ class _AuraTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AuraSurface.card,
+        color: chamberTone(context, AuraSurface.card),
         borderRadius: BorderRadius.circular(AuraRadius.md),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: TextField(
         controller: ctrl,
@@ -815,7 +816,7 @@ class _AuraTextField extends StatelessWidget {
         keyboardType: keyboardType,
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: AuraText.small.copyWith(color: AuraSurface.muted),
+          labelStyle: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: AuraSpace.s14,
@@ -848,7 +849,7 @@ class _AuraFilledButton extends StatelessWidget {
           vertical: AuraSpace.s10,
         ),
         decoration: BoxDecoration(
-          color: AuraSurface.accent,
+          color: chamberTone(context, AuraSurface.accent),
           borderRadius: BorderRadius.circular(AuraRadius.pill),
         ),
         child: Row(

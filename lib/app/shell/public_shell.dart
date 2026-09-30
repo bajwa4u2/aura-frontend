@@ -45,27 +45,35 @@ class PublicShell extends StatelessWidget {
         final isDesktop = width >= desktopBreakpoint;
         final isTablet = width >= tabletBreakpoint;
 
-        return Scaffold(
-          backgroundColor: AuraSurface.page,
-          body: SafeArea(
-            top: true,
-            bottom: false,
-            // Phase 6.5 — `ShellFooter` is the public-trust closing surface
-            // for public pages. Public-shell screens append it to their own
-            // scroll so it flows below the page content (mission, privacy,
-            // hubs, public home). Workspace shells (Member / Institution /
-            // Admin) never reference `ShellFooter` — that is the boundary.
-            child: Column(
-              children: [
-                if (!isMeetingFocus)
-                  _PublicHeader(isDesktop: isDesktop, isTablet: isTablet),
-                if (!isMeetingFocus &&
-                    shouldShowAuraPublicAppAcquisition(
-                      GoRouterState.of(context).uri.path,
-                    ))
-                  const PublicAppAcquisition(),
-                Expanded(child: child),
-              ],
+        // Look B, "Night Chamber" (founder, 2026-09-30): every public page
+        // and the sign-in and registration screens wear it. The signed-in
+        // shells are left alone until the founder moves them.
+        return AuraChamberScope(
+          child: Theme(
+            data: auraChamberTheme(Theme.of(context)),
+            child: Scaffold(
+              backgroundColor: AuraChamber.ink,
+              body: SafeArea(
+                top: true,
+                bottom: false,
+                // Phase 6.5 — `ShellFooter` is the public-trust closing surface
+                // for public pages. Public-shell screens append it to their own
+                // scroll so it flows below the page content (mission, privacy,
+                // hubs, public home). Workspace shells (Member / Institution /
+                // Admin) never reference `ShellFooter` — that is the boundary.
+                child: Column(
+                  children: [
+                    if (!isMeetingFocus)
+                      _PublicHeader(isDesktop: isDesktop, isTablet: isTablet),
+                    if (!isMeetingFocus &&
+                        shouldShowAuraPublicAppAcquisition(
+                          GoRouterState.of(context).uri.path,
+                        ))
+                      const PublicAppAcquisition(),
+                    Expanded(child: child),
+                  ],
+                ),
+              ),
             ),
           ),
         );

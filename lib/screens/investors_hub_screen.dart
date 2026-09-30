@@ -1,3 +1,4 @@
+import '../core/ui/aura_chamber.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -50,7 +51,7 @@ class InvestorsHubScreen extends StatelessWidget {
       bands: [
         // I. Hero band.
         InvestorBand(
-          surface: AuraSurface.subtle,
+          surface: chamberTone(context, AuraSurface.subtle),
           bottomBorder: true,
           child: AuraPublicationHero(
             eyebrow: 'Investors & Partners',
@@ -92,9 +93,9 @@ class InvestorsHubScreen extends StatelessWidget {
         ),
 
         // II. Platform structure — visual architecture.
-        const InvestorBand(
-          surface: AuraSurface.page,
-          child: Column(
+        InvestorBand(
+          surface: chamberTone(context, AuraSurface.page),
+          child: const Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               InvestorSectionHeader(
@@ -138,10 +139,10 @@ class InvestorsHubScreen extends StatelessWidget {
         ),
 
         // III. Strategic pillars.
-        const InvestorBand(
-          surface: AuraSurface.page,
+        InvestorBand(
+          surface: chamberTone(context, AuraSurface.page),
           verticalPadding: AuraSpace.xxl,
-          child: Column(
+          child: const Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               InvestorSectionHeader(
@@ -184,11 +185,11 @@ class InvestorsHubScreen extends StatelessWidget {
         ),
 
         // IV. Why now — contrasting subtle band.
-        const InvestorBand(
-          surface: AuraSurface.subtle,
+        InvestorBand(
+          surface: chamberTone(context, AuraSurface.subtle),
           topBorder: true,
           bottomBorder: true,
-          child: Column(
+          child: const Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               InvestorSectionHeader(
@@ -261,10 +262,10 @@ class InvestorsHubScreen extends StatelessWidget {
         ),
 
         // V. Execution credibility.
-        const InvestorBand(
-          surface: AuraSurface.page,
+        InvestorBand(
+          surface: chamberTone(context, AuraSurface.page),
           verticalPadding: AuraSpace.xxl,
-          child: Column(
+          child: const Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               InvestorSectionHeader(
@@ -329,7 +330,7 @@ class InvestorsHubScreen extends StatelessWidget {
 
         // VI. Deck centerpiece.
         InvestorBand(
-          surface: AuraSurface.subtle,
+          surface: chamberTone(context, AuraSurface.subtle),
           topBorder: true,
           verticalPadding: AuraSpace.xxl,
           child: Column(
@@ -361,7 +362,7 @@ class InvestorsHubScreen extends StatelessWidget {
 
         // VII. Contact close.
         InvestorBand(
-          surface: AuraSurface.page,
+          surface: chamberTone(context, AuraSurface.page),
           verticalPadding: AuraSpace.xxl,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -421,7 +422,7 @@ class _Colophon extends StatelessWidget {
     return Text(
       'AURA PLATFORM LLC · INVESTORS & PARTNERS · MAY 2026',
       style: AuraText.label.copyWith(
-        color: AuraSurface.muted,
+        color: chamberTone(context, AuraSurface.muted),
         letterSpacing: 1.4,
         fontWeight: FontWeight.w600,
       ),

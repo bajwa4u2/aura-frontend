@@ -1,3 +1,4 @@
+import '../aura_chamber.dart';
 import 'package:flutter/material.dart';
 
 import '../aura_radius.dart';
@@ -90,14 +91,14 @@ class AuraPublicationHero extends StatelessWidget {
             vertical: 4,
           ),
           decoration: BoxDecoration(
-            color: AuraSurface.elevated,
+            color: chamberTone(context, AuraSurface.elevated),
             borderRadius: BorderRadius.circular(AuraRadius.pill),
-            border: Border.all(color: AuraSurface.divider),
+            border: Border.all(color: chamberTone(context, AuraSurface.divider)),
           ),
           child: Text(
             eyebrow.toUpperCase(),
             style: AuraText.label.copyWith(
-              color: AuraSurface.ink,
+              color: chamberTone(context, AuraSurface.ink),
               letterSpacing: 1.2,
             ),
           ),
@@ -106,7 +107,16 @@ class AuraPublicationHero extends StatelessWidget {
         const SizedBox(height: AuraSpace.md),
 
         // Title.
-        Text(title, style: headlineStyle),
+        // Look B: what is said is set in the serif (AuraChamberScope only).
+        Text(
+          title,
+          style: AuraChamberScope.of(context)
+              ? headlineStyle.copyWith(
+                  fontFamily: AuraChamber.serif,
+                  fontWeight: FontWeight.w500,
+                )
+              : headlineStyle,
+        ),
 
         if ((subtitle ?? '').trim().isNotEmpty) ...[
           const SizedBox(height: AuraSpace.md),
@@ -115,7 +125,7 @@ class AuraPublicationHero extends StatelessWidget {
             style: AuraText.body.copyWith(
               fontSize: isMobile ? 16 : 18,
               height: 1.65,
-              color: AuraSurface.ink,
+              color: chamberTone(context, AuraSurface.ink),
             ),
           ),
         ],
@@ -171,12 +181,12 @@ class _MetaItemView extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(item.icon, size: 14, color: AuraSurface.muted),
+        Icon(item.icon, size: 14, color: chamberTone(context, AuraSurface.muted)),
         const SizedBox(width: 6),
         Text(
           item.label,
           style: AuraText.small.copyWith(
-            color: AuraSurface.muted,
+            color: chamberTone(context, AuraSurface.muted),
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -190,7 +200,7 @@ class _MetaSeparator extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Text(
         '·',
-        style: AuraText.small.copyWith(color: AuraSurface.faint),
+        style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.faint)),
       );
 }
 

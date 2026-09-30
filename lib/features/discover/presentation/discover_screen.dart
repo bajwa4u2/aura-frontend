@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -66,7 +67,7 @@ class DiscoverScreen extends ConsumerWidget {
           const SizedBox(height: AuraSpace.s6),
           Text(
             'People, spaces, institutions and writing beyond what you already follow.',
-            style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.5),
+            style: AuraText.body.copyWith(color: chamberTone(context, AuraSurface.muted), height: 1.5),
           ),
           const SizedBox(height: AuraSpace.s16),
           DiscoverSearchField(autofocus: autofocusSearch),
@@ -118,7 +119,7 @@ class _CuratedDashboard extends StatelessWidget {
           );
         }
 
-        return Column(
+        return const Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -128,7 +129,7 @@ class _CuratedDashboard extends StatelessWidget {
             // fill an infinite box.
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Expanded(flex: 3, child: _SpacesSection()),
                 SizedBox(width: AuraSpace.s20),
                 Expanded(
@@ -177,7 +178,7 @@ class _DomainHeader extends StatelessWidget {
                 Text(title, style: AuraText.title),
                 const SizedBox(height: 2),
                 Text(subtitle,
-                    style: AuraText.small.copyWith(color: AuraSurface.muted)),
+                    style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted))),
               ],
             ),
           ),
@@ -218,7 +219,7 @@ class _Skeleton extends StatelessWidget {
             height: height,
             margin: const EdgeInsets.only(bottom: AuraSpace.s10),
             decoration: BoxDecoration(
-              color: AuraSurface.subtle,
+              color: chamberTone(context, AuraSurface.subtle),
               borderRadius: BorderRadius.circular(AuraRadius.card),
             ),
           ),
@@ -558,9 +559,9 @@ class _PersonResultTile extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: AuraSpace.s8),
         padding: const EdgeInsets.all(AuraSpace.s12),
         decoration: BoxDecoration(
-          color: AuraSurface.card,
+          color: chamberTone(context, AuraSurface.card),
           borderRadius: BorderRadius.circular(AuraRadius.card),
-          border: Border.all(color: AuraSurface.divider),
+          border: Border.all(color: chamberTone(context, AuraSurface.divider)),
         ),
         child: Row(
           children: [
@@ -598,7 +599,7 @@ class _PersonResultTile extends StatelessWidget {
                   if (handle.isNotEmpty)
                     Text('@$handle',
                         style:
-                            AuraText.micro.copyWith(color: AuraSurface.muted)),
+                            AuraText.micro.copyWith(color: chamberTone(context, AuraSurface.muted))),
                 ],
               ),
             ),

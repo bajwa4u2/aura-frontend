@@ -1,3 +1,4 @@
+import '../aura_chamber.dart';
 import 'package:flutter/material.dart';
 
 import '../aura_surface.dart';
@@ -69,7 +70,7 @@ class _AuraPublicationProgressState extends State<AuraPublicationProgress> {
       height: 3,
       child: Stack(
         children: [
-          Container(color: AuraSurface.divider),
+          Container(color: chamberTone(context, AuraSurface.divider)),
           FractionallySizedBox(
             alignment: Alignment.centerLeft,
             widthFactor: _progress,

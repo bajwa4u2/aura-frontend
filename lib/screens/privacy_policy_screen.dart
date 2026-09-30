@@ -1,3 +1,4 @@
+import '../core/ui/aura_chamber.dart';
 import 'package:flutter/material.dart';
 
 import '../core/ui/aura_design_system.dart';
@@ -26,9 +27,9 @@ class _PrivacyBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
+      children: [
         _PrivacyHero(),
         SizedBox(height: AuraSpace.lg),
         _SignalGrid(),
@@ -180,7 +181,7 @@ class _PrivacyHero extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: AuraGradients.hero,
         borderRadius: BorderRadius.circular(AuraRadius.xl),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,7 +193,7 @@ class _PrivacyHero extends StatelessWidget {
           const SizedBox(height: AuraSpace.sm),
           Text(
             'Data minimization. Identity integrity. No surveillance incentives.',
-            style: AuraText.emphasis.copyWith(color: AuraSurface.accentText),
+            style: AuraText.emphasis.copyWith(color: chamberTone(context, AuraSurface.accentText)),
           ),
           const SizedBox(height: AuraSpace.md),
           Text(
@@ -200,10 +201,10 @@ class _PrivacyHero extends StatelessWidget {
             style: AuraText.body.copyWith(height: 1.75),
           ),
           const SizedBox(height: AuraSpace.lg),
-          Wrap(
+          const Wrap(
             spacing: AuraSpace.sm,
             runSpacing: AuraSpace.sm,
-            children: const [
+            children: [
               _PrivacyPill('Account security'),
               _PrivacyPill('Institution identity'),
               _PrivacyPill('Invite controls'),
@@ -286,14 +287,14 @@ class _SignalCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.md),
       decoration: BoxDecoration(
-        color: AuraSurface.subtle,
+        color: chamberTone(context, AuraSurface.subtle),
         borderRadius: BorderRadius.circular(AuraRadius.lg),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: AuraSurface.accentText, size: 22),
+          Icon(icon, color: chamberTone(context, AuraSurface.accentText), size: 22),
           const SizedBox(height: AuraSpace.sm),
           Text(title, style: AuraText.emphasis),
           const SizedBox(height: AuraSpace.xs),
@@ -355,13 +356,13 @@ class _SectionNumber extends StatelessWidget {
       height: 42,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: AuraSurface.elevated,
+        color: chamberTone(context, AuraSurface.elevated),
         borderRadius: BorderRadius.circular(AuraRadius.md),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Text(
         value,
-        style: AuraText.label.copyWith(color: AuraSurface.accentText),
+        style: AuraText.label.copyWith(color: chamberTone(context, AuraSurface.accentText)),
       ),
     );
   }
@@ -382,8 +383,8 @@ class _Bullet extends StatelessWidget {
             width: 6,
             height: 6,
             margin: const EdgeInsets.only(top: 9),
-            decoration: const BoxDecoration(
-              color: AuraSurface.accentText,
+            decoration: BoxDecoration(
+              color: chamberTone(context, AuraSurface.accentText),
               shape: BoxShape.circle,
             ),
           ),
@@ -409,13 +410,13 @@ class _PrivacyPill extends StatelessWidget {
         vertical: AuraSpace.xs,
       ),
       decoration: BoxDecoration(
-        color: AuraSurface.accentSoft,
+        color: chamberTone(context, AuraSurface.accentSoft),
         borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Text(
         label,
-        style: AuraText.label.copyWith(color: AuraSurface.ink),
+        style: AuraText.label.copyWith(color: chamberTone(context, AuraSurface.ink)),
       ),
     );
   }
@@ -430,14 +431,14 @@ class _ClosingCallout extends StatelessWidget {
       margin: const EdgeInsets.only(top: AuraSpace.sm),
       padding: const EdgeInsets.all(AuraSpace.lg),
       decoration: BoxDecoration(
-        color: AuraSurface.elevated,
+        color: chamberTone(context, AuraSurface.elevated),
         borderRadius: BorderRadius.circular(AuraRadius.lg),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.privacy_tip_outlined, color: AuraSurface.accentText),
+          Icon(Icons.privacy_tip_outlined, color: chamberTone(context, AuraSurface.accentText)),
           const SizedBox(width: AuraSpace.md),
           Expanded(
             child: Text(

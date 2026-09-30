@@ -2,7 +2,6 @@ import '../aura_chamber.dart';
 import 'package:flutter/material.dart';
 
 import '../aura_radius.dart';
-import 'package:flutter/foundation.dart';
 import '../aura_responsive.dart';
 import '../aura_window.dart';
 import '../aura_space.dart';

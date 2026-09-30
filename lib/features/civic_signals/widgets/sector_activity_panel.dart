@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -54,10 +55,10 @@ class SectorActivityPanel extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s14),
       decoration: BoxDecoration(
-        color: AuraSurface.subtle,
+        color: chamberTone(context, AuraSurface.subtle),
         borderRadius: BorderRadius.circular(AuraRadius.r14),
         border: Border.all(
-          color: AuraSurface.divider.withValues(alpha: 0.6),
+          color: chamberTone(context, AuraSurface.divider).withValues(alpha: 0.6),
         ),
       ),
       child: Column(
@@ -69,7 +70,7 @@ class SectorActivityPanel extends ConsumerWidget {
                 width: 4,
                 height: 14,
                 decoration: BoxDecoration(
-                  color: AuraSurface.accent,
+                  color: chamberTone(context, AuraSurface.accent),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -90,7 +91,7 @@ class SectorActivityPanel extends ConsumerWidget {
           Text(
             'Public posts authored by institutions in this sector.',
             style: AuraText.small.copyWith(
-              color: AuraSurface.muted,
+              color: chamberTone(context, AuraSurface.muted),
               height: 1.4,
             ),
           ),

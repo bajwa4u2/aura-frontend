@@ -1,3 +1,4 @@
+import '../../../core/ui/aura_chamber.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -164,7 +165,7 @@ class _SectorHero extends StatelessWidget {
         Text(
           description,
           style: AuraText.body.copyWith(
-            color: AuraSurface.muted,
+            color: chamberTone(context, AuraSurface.muted),
             height: 1.55,
           ),
         ),
@@ -237,15 +238,15 @@ class _Pill extends StatelessWidget {
           borderRadius: BorderRadius.circular(AuraRadius.pill),
           border: Border.all(
             color: selected
-                ? AuraSurface.accent.withValues(alpha: 0.4)
-                : AuraSurface.divider,
+                ? chamberTone(context, AuraSurface.accent).withValues(alpha: 0.4)
+                : chamberTone(context, AuraSurface.divider),
           ),
         ),
         alignment: Alignment.center,
         child: Text(
           label,
           style: AuraText.small.copyWith(
-            color: selected ? AuraSurface.accentText : AuraSurface.muted,
+            color: selected ? AuraSurface.accentText : chamberTone(context, AuraSurface.muted),
             fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
             fontSize: 12,
           ),
@@ -402,13 +403,13 @@ class _RowHeader extends StatelessWidget {
             vertical: 2,
           ),
           decoration: BoxDecoration(
-            color: AuraSurface.subtle,
+            color: chamberTone(context, AuraSurface.subtle),
             borderRadius: BorderRadius.circular(AuraRadius.pill),
           ),
           child: Text(
             '$count',
             style: AuraText.micro.copyWith(
-              color: AuraSurface.muted,
+              color: chamberTone(context, AuraSurface.muted),
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -462,7 +463,7 @@ class _Card extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AuraSurface.card,
+      color: chamberTone(context, AuraSurface.card),
       borderRadius: BorderRadius.circular(AuraRadius.r14),
       child: InkWell(
         borderRadius: BorderRadius.circular(AuraRadius.r14),
@@ -471,7 +472,7 @@ class _Card extends StatelessWidget {
           padding: const EdgeInsets.all(AuraSpace.s14),
           decoration: BoxDecoration(
             border: Border.all(
-              color: AuraSurface.divider.withValues(alpha: 0.6),
+              color: chamberTone(context, AuraSurface.divider).withValues(alpha: 0.6),
             ),
             borderRadius: BorderRadius.circular(AuraRadius.r14),
           ),
@@ -497,7 +498,7 @@ class _Card extends StatelessWidget {
                 Text(
                   item.tagline!,
                   style: AuraText.small.copyWith(
-                    color: AuraSurface.muted,
+                    color: chamberTone(context, AuraSurface.muted),
                     height: 1.4,
                   ),
                   maxLines: 2,

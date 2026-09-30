@@ -1,3 +1,4 @@
+import '../aura_chamber.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -108,7 +109,7 @@ class AuraPublicationMarkdown extends StatelessWidget {
         p: AuraText.body.copyWith(
           fontSize: 16,
           height: 1.75,
-          color: AuraSurface.ink,
+          color: chamberTone(context, AuraSurface.ink),
         ),
         pPadding: const EdgeInsets.only(bottom: AuraSpace.md),
 
@@ -149,7 +150,7 @@ class AuraPublicationMarkdown extends StatelessWidget {
         listBullet: AuraText.body.copyWith(
           fontSize: 16,
           height: 1.75,
-          color: AuraSurface.muted,
+          color: chamberTone(context, AuraSurface.muted),
         ),
         listBulletPadding: const EdgeInsets.only(right: AuraSpace.s8),
         listIndent: AuraSpace.md,
@@ -159,13 +160,13 @@ class AuraPublicationMarkdown extends StatelessWidget {
           fontSize: 16,
           height: 1.75,
           fontStyle: FontStyle.italic,
-          color: AuraSurface.ink,
+          color: chamberTone(context, AuraSurface.ink),
         ),
         strong: AuraText.body.copyWith(
           fontSize: 16,
           height: 1.75,
           fontWeight: FontWeight.w700,
-          color: AuraSurface.ink,
+          color: chamberTone(context, AuraSurface.ink),
         ),
 
         // Inline + block code.
@@ -173,14 +174,14 @@ class AuraPublicationMarkdown extends StatelessWidget {
           fontFamily: 'monospace',
           fontSize: 14,
           height: 1.6,
-          color: AuraSurface.ink,
-          backgroundColor: AuraSurface.subtle,
+          color: chamberTone(context, AuraSurface.ink),
+          backgroundColor: chamberTone(context, AuraSurface.subtle),
         ),
         codeblockPadding: const EdgeInsets.all(AuraSpace.md),
         codeblockDecoration: BoxDecoration(
-          color: AuraSurface.subtle,
+          color: chamberTone(context, AuraSurface.subtle),
           borderRadius: BorderRadius.circular(AuraRadius.md),
-          border: Border.all(color: AuraSurface.divider),
+          border: Border.all(color: chamberTone(context, AuraSurface.divider)),
         ),
 
         // Blockquote — pulled-quote treatment, gold left rule.
@@ -188,7 +189,7 @@ class AuraPublicationMarkdown extends StatelessWidget {
           fontSize: 17,
           height: 1.7,
           fontWeight: FontWeight.w500,
-          color: AuraSurface.ink,
+          color: chamberTone(context, AuraSurface.ink),
         ),
         blockquotePadding: const EdgeInsets.fromLTRB(
           AuraSpace.md,
@@ -196,9 +197,9 @@ class AuraPublicationMarkdown extends StatelessWidget {
           AuraSpace.md,
           AuraSpace.md,
         ),
-        blockquoteDecoration: const BoxDecoration(
-          color: AuraSurface.subtle,
-          border: Border(
+        blockquoteDecoration: BoxDecoration(
+          color: chamberTone(context, AuraSurface.subtle),
+          border: const Border(
             left: BorderSide(color: goldAccent, width: 3),
           ),
         ),
@@ -214,22 +215,22 @@ class AuraPublicationMarkdown extends StatelessWidget {
         ),
 
         // Horizontal rule — turned into an elegant section break.
-        horizontalRuleDecoration: const BoxDecoration(
+        horizontalRuleDecoration: BoxDecoration(
           border: Border(
-            top: BorderSide(color: AuraSurface.divider, width: 1),
+            top: BorderSide(color: chamberTone(context, AuraSurface.divider), width: 1),
           ),
         ),
 
         // Tables.
         tableHead: AuraText.label.copyWith(
-          color: AuraSurface.ink,
+          color: chamberTone(context, AuraSurface.ink),
           letterSpacing: 1.0,
         ),
         tableBody: AuraText.body.copyWith(fontSize: 14, height: 1.5),
-        tableBorder: const TableBorder(
-          horizontalInside: BorderSide(color: AuraSurface.divider),
-          top: BorderSide(color: AuraSurface.divider),
-          bottom: BorderSide(color: AuraSurface.divider),
+        tableBorder: TableBorder(
+          horizontalInside: BorderSide(color: chamberTone(context, AuraSurface.divider)),
+          top: BorderSide(color: chamberTone(context, AuraSurface.divider)),
+          bottom: BorderSide(color: chamberTone(context, AuraSurface.divider)),
         ),
         tableCellsPadding: const EdgeInsets.symmetric(
           horizontal: AuraSpace.s10,

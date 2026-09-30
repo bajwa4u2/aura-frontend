@@ -1,3 +1,4 @@
+import 'aura_chamber.dart';
 import 'package:flutter/material.dart';
 
 import '../media/governed_image_variant.dart';
@@ -33,7 +34,7 @@ class AuraPageShell extends StatelessWidget {
     if (padding != null) body = Padding(padding: padding!, child: body);
 
     return DecoratedBox(
-      decoration: const BoxDecoration(gradient: AuraGradients.page),
+      decoration: BoxDecoration(gradient: chamberGradient(context, AuraGradients.page)),
       child: Align(
         alignment: alignTop ? Alignment.topCenter : Alignment.center,
         child: Center(
@@ -74,9 +75,9 @@ class AuraGradientHeader extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        gradient: AuraGradients.header,
+        gradient: chamberGradient(context, AuraGradients.header),
         borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
         boxShadow: AuraShadows.panel,
       ),
       child: Row(
@@ -96,7 +97,7 @@ class AuraGradientHeader extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: AuraText.body.copyWith(
-                      color: AuraSurface.muted,
+                      color: chamberTone(context, AuraSurface.muted),
                       height: 1.5,
                     ),
                   ),
@@ -179,8 +180,8 @@ class _AuraSkeletonState extends State<AuraSkeleton>
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
     _anim = ColorTween(
-      begin: AuraSurface.card,
-      end: AuraSurface.elevated,
+      begin: chamberTone(context, AuraSurface.card),
+      end: chamberTone(context, AuraSurface.elevated),
     ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
 
@@ -258,12 +259,12 @@ class AuraLoadingState extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(
+          SizedBox(
             width: 16,
             height: 16,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              color: AuraSurface.muted,
+              color: chamberTone(context, AuraSurface.muted),
             ),
           ),
           const SizedBox(width: AuraSpace.s10),
@@ -300,7 +301,7 @@ class AuraLoadingSurface extends StatelessWidget {
       child: Container(
         height: 10,
         decoration: BoxDecoration(
-          color: AuraSurface.elevated.withValues(alpha: opacity),
+          color: chamberTone(context, AuraSurface.elevated).withValues(alpha: opacity),
           borderRadius: BorderRadius.circular(5),
         ),
       ),
@@ -371,11 +372,11 @@ class AuraEmptyState extends StatelessWidget {
             width: 56,
             height: 56,
             decoration: BoxDecoration(
-              color: AuraSurface.subtle,
+              color: chamberTone(context, AuraSurface.subtle),
               borderRadius: BorderRadius.circular(AuraRadius.r16),
-              border: Border.all(color: AuraSurface.divider),
+              border: Border.all(color: chamberTone(context, AuraSurface.divider)),
             ),
-            child: Icon(icon, size: AuraIconSize.lg, color: AuraSurface.faint),
+            child: Icon(icon, size: AuraIconSize.lg, color: chamberTone(context, AuraSurface.faint)),
           ),
           const SizedBox(height: AuraSpace.s16),
           Text(title, style: AuraText.subtitle, textAlign: TextAlign.center),
@@ -467,6 +468,8 @@ class AuraPrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final chamber = AuraChamberScope.of(context);
+    final fg = chamber && onPressed != null ? AuraChamber.ink : Colors.white;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -475,8 +478,11 @@ class AuraPrimaryButton extends StatelessWidget {
         splashColor: Colors.white12,
         child: Ink(
           decoration: BoxDecoration(
-            gradient: onPressed != null ? AuraGradients.accent : null,
-            color: onPressed == null ? AuraSurface.faint : null,
+            // Look B inside AuraChamberScope: a gold fill with ink text.
+            gradient: onPressed != null && !chamber ? chamberGradient(context, AuraGradients.accent) : null,
+            color: onPressed == null
+                ? AuraSurface.faint
+                : (chamber ? AuraChamber.gold : null),
             borderRadius: BorderRadius.circular(AuraRadius.r14),
           ),
           child: Padding(
@@ -485,14 +491,14 @@ class AuraPrimaryButton extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (icon != null) ...[
-                  Icon(icon, size: AuraIconSize.sm, color: Colors.white),
+                  Icon(icon, size: AuraIconSize.sm, color: fg),
                   const SizedBox(width: AuraSpace.s8),
                 ],
                 Text(
                   label,
                   style: AuraText.body.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: fg,
                   ),
                 ),
               ],
@@ -576,19 +582,19 @@ class AuraActionPill extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AuraRadius.pill),
-        splashColor: AuraSurface.accentSoft,
+        splashColor: chamberTone(context, AuraSurface.accentSoft),
         child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AuraSpace.s12,
             vertical: AuraSpace.s8,
           ),
           decoration: BoxDecoration(
-            color: active ? AuraSurface.accentSoft : AuraSurface.subtle,
+            color: active ? AuraSurface.accentSoft : chamberTone(context, AuraSurface.subtle),
             borderRadius: BorderRadius.circular(AuraRadius.pill),
             border: Border.all(
               color: active
-                  ? AuraSurface.accent.withValues(alpha: 0.35)
-                  : AuraSurface.divider,
+                  ? chamberTone(context, AuraSurface.accent).withValues(alpha: 0.35)
+                  : chamberTone(context, AuraSurface.divider),
             ),
           ),
           child: Row(
@@ -597,13 +603,13 @@ class AuraActionPill extends StatelessWidget {
               Icon(
                 icon,
                 size: AuraIconSize.sm,
-                color: active ? AuraSurface.accentText : AuraSurface.muted,
+                color: active ? AuraSurface.accentText : chamberTone(context, AuraSurface.muted),
               ),
               const SizedBox(width: AuraSpace.s6),
               Text(
                 label,
                 style: AuraText.label.copyWith(
-                  color: active ? AuraSurface.accentText : AuraSurface.muted,
+                  color: active ? AuraSurface.accentText : chamberTone(context, AuraSurface.muted),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -756,9 +762,9 @@ class AuraAvatar extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: AuraGradients.accent,
+        gradient: chamberGradient(context, AuraGradients.accent),
       ),
       child: ClipOval(
         child: url.isEmpty
@@ -827,15 +833,15 @@ class AuraBadge extends StatelessWidget {
         vertical: AuraSpace.s6,
       ),
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: chamberTone(context, backgroundColor),
         borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(color: AuraSurface.divider),
+        border: Border.all(color: chamberTone(context, AuraSurface.divider)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: AuraIconSize.xs, color: textColor),
+            Icon(icon, size: AuraIconSize.xs, color: chamberTone(context, textColor)),
             const SizedBox(width: AuraSpace.s6),
           ],
           Flexible(
@@ -844,7 +850,7 @@ class AuraBadge extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AuraText.label.copyWith(
-                color: textColor,
+                color: chamberTone(context, textColor),
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -904,7 +910,7 @@ class AuraMetricCard extends StatelessWidget {
           Row(
             children: [
               if (icon != null) ...[
-                Icon(icon, color: AuraSurface.accent, size: AuraIconSize.md),
+                Icon(icon, color: chamberTone(context, AuraSurface.accent), size: AuraIconSize.md),
                 const SizedBox(width: AuraSpace.s8),
               ],
               Expanded(child: Text(label, style: AuraText.muted)),
@@ -946,7 +952,7 @@ class AuraAdminTile extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              gradient: AuraGradients.accent,
+              gradient: chamberGradient(context, AuraGradients.accent),
               borderRadius: BorderRadius.circular(AuraRadius.r12),
             ),
             child: Icon(icon, color: Colors.white, size: AuraIconSize.md),
@@ -1073,16 +1079,16 @@ class AuraNotificationTile extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: AuraSurface.accentSoft,
+              color: chamberTone(context, AuraSurface.accentSoft),
               borderRadius: BorderRadius.circular(AuraRadius.r12),
               border: Border.all(
-                color: AuraSurface.accent.withValues(alpha: 0.2),
+                color: chamberTone(context, AuraSurface.accent).withValues(alpha: 0.2),
               ),
             ),
             child: Icon(
               icon ?? Icons.notifications_none_rounded,
               size: AuraIconSize.sm,
-              color: AuraSurface.accentText,
+              color: chamberTone(context, AuraSurface.accentText),
             ),
           ),
           const SizedBox(width: AuraSpace.s12),
@@ -1126,10 +1132,10 @@ class AuraMessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isMine ? AuraSurface.accentSoft : AuraSurface.subtle;
+    final bg = isMine ? AuraSurface.accentSoft : chamberTone(context, AuraSurface.subtle);
     final borderColor = isMine
-        ? AuraSurface.accent.withValues(alpha: 0.3)
-        : AuraSurface.divider;
+        ? chamberTone(context, AuraSurface.accent).withValues(alpha: 0.3)
+        : chamberTone(context, AuraSurface.divider);
     final align = isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start;
 
     return Column(
@@ -1155,8 +1161,8 @@ class AuraMessageBubble extends StatelessWidget {
                 const SizedBox(height: AuraSpace.s8),
                 AuraStatusChip(
                   label: attachmentLabel!,
-                  backgroundColor: AuraSurface.page.withValues(alpha: 0.35),
-                  textColor: AuraSurface.ink,
+                  backgroundColor: chamberTone(context, AuraSurface.page).withValues(alpha: 0.35),
+                  textColor: chamberTone(context, AuraSurface.ink),
                 ),
               ],
             ],
@@ -1192,7 +1198,7 @@ class AuraCallBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AuraCard(
-      borderColor: AuraSurface.accent.withValues(alpha: 0.28),
+      borderColor: chamberTone(context, AuraSurface.accent).withValues(alpha: 0.28),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1200,7 +1206,7 @@ class AuraCallBanner extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              gradient: AuraGradients.accent,
+              gradient: chamberGradient(context, AuraGradients.accent),
               borderRadius: BorderRadius.circular(AuraRadius.r14),
             ),
             child: const Icon(

@@ -1,3 +1,4 @@
+import '../aura_chamber.dart';
 import 'package:flutter/material.dart';
 
 import '../aura_space.dart';
@@ -116,9 +117,9 @@ class AuraPublicationCallout extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: AuraSpace.lg),
       padding: const EdgeInsets.all(AuraSpace.lg),
-      decoration: const BoxDecoration(
-        color: AuraSurface.subtle,
-        border: Border(
+      decoration: BoxDecoration(
+        color: chamberTone(context, AuraSurface.subtle),
+        border: const Border(
           left: BorderSide(color: Color(0xFFC9A55C), width: 3),
         ),
       ),
@@ -131,7 +132,7 @@ class AuraPublicationCallout extends StatelessWidget {
               fontSize: 17,
               height: 1.65,
               fontWeight: FontWeight.w500,
-              color: AuraSurface.ink,
+              color: chamberTone(context, AuraSurface.ink),
             ),
           ),
           if ((attribution ?? '').trim().isNotEmpty) ...[
@@ -140,7 +141,7 @@ class AuraPublicationCallout extends StatelessWidget {
               attribution!.toUpperCase(),
               style: AuraText.micro.copyWith(
                 letterSpacing: 1.2,
-                color: AuraSurface.muted,
+                color: chamberTone(context, AuraSurface.muted),
               ),
             ),
           ],
@@ -163,19 +164,19 @@ class AuraPublicationDivider extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AuraSpace.xl),
       child: Row(
         children: [
-          const Expanded(child: Divider(color: AuraSurface.divider)),
+          Expanded(child: Divider(color: chamberTone(context, AuraSurface.divider))),
           if (ornament.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AuraSpace.md),
               child: Text(
                 ornament,
                 style: AuraText.label.copyWith(
-                  color: AuraSurface.muted,
+                  color: chamberTone(context, AuraSurface.muted),
                   letterSpacing: 1.2,
                 ),
               ),
             ),
-          const Expanded(child: Divider(color: AuraSurface.divider)),
+          Expanded(child: Divider(color: chamberTone(context, AuraSurface.divider))),
         ],
       ),
     );
@@ -210,7 +211,7 @@ class AuraPublicationColophon extends StatelessWidget {
         parts.join(' · '),
         style: AuraText.label.copyWith(
           letterSpacing: 1.0,
-          color: AuraSurface.muted,
+          color: chamberTone(context, AuraSurface.muted),
         ),
       ),
     );
