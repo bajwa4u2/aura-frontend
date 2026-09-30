@@ -379,7 +379,7 @@ class _EmptyStartState extends StatelessWidget {
           const SizedBox(height: AuraSpace.s8),
           Text(
             'Describe your issue or pick a topic below to get started. '
-            'Our AI support agent will respond right away.',
+            'Aura support will respond right away.',
             style: AuraText.body.copyWith(color: chamberTone(context, AuraSurface.muted)),
           ),
           const SizedBox(height: AuraSpace.s20),

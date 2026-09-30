@@ -91,7 +91,7 @@ class _ChildSafetyBody extends StatelessWidget {
           body:
               'Reports flagged as child-safety concerns are surfaced ahead of routine moderation work. Aura combines automated detection signals with human review by Trust & Safety reviewers trained on child-protection policy. Reviewers operate under documented playbooks so that decisions are consistent, auditable, and not driven by individual reviewer discretion.',
           bullets: [
-            'Automated systems pre-flag suspected CSAM, grooming patterns, and known abusive media so they can be removed quickly and routed for human review.',
+            'Automated text screening flags suspected exploitation language so it is routed quickly for human review. Reports from people remain the main way a concern reaches a reviewer.',
             'Trust & Safety reviewers verify, classify, and act on reports, including borderline and ambiguous cases.',
             'Confirmed CSAM is preserved in a controlled, access-restricted form only as necessary to meet legal preservation duties; the underlying material is removed from public surfaces immediately.',
             'Decisions are logged so enforcement can be reviewed, audited, and corrected if a mistake is identified.',
@@ -129,9 +129,8 @@ class _ChildSafetyBody extends StatelessWidget {
           body:
               'Aura operates a moderation and Trust & Safety function whose mandate explicitly includes child protection. Moderation is not advisory — it has the authority to remove content, restrict surfaces, and end accounts. Institutions on Aura are also responsible for moderating the surfaces they administer and may be held accountable for repeated child-safety failures within their authority.',
           bullets: [
-            'Continuous review of public posts, replies, direct messages, institution announcements, profiles, spaces, calls, and uploaded media for child-safety violations.',
-            'Proactive detection signals — including hash-matching against known abusive media where lawful and appropriate — augment, but do not replace, human review.',
-            'Repeat-offender controls block re-registration patterns associated with confirmed child-safety actors.',
+            'Review of reported public posts, replies, announcements, profiles, spaces and uploaded media, and of reported correspondence and calls, for child-safety violations.',
+            'Automated text screening supports, but does not replace, human review.',
             'Trust & Safety reviewers are supported with documented policy, escalation paths, and well-being safeguards appropriate to the work.',
           ],
         ),

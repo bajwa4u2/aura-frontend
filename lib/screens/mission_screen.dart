@@ -100,8 +100,8 @@ class MissionScreen extends StatelessWidget {
 
         PubText.h('What Aura does'),
         PubText.p(
-          'Aura is the communication side of the platform. It gives '
-          'people and institutions an accountable place to speak, '
+          'Aura is public-first communication. It gives people, and '
+          'the institutions they deal with, an accountable place to speak, '
           'respond, and record outcomes. Public discourse, '
           'institutional announcements, member conversations, and '
           'correspondence all share one identity layer, so positions '
@@ -110,11 +110,25 @@ class MissionScreen extends StatelessWidget {
 
         PubText.h('What Orchestrate does'),
         PubText.p(
-          'Orchestrate is the execution side of the platform. It is '
-          'AI-assisted revenue automation and operational execution, '
-          'from outreach to meetings to workflow to billing, for '
-          'institutional teams that need follow-through to stay '
-          'connected to the people accountable for it.',
+          'Orchestrate is a governed execution platform for business '
+          'relationships. It carries a relationship from first contact '
+          'to a paid, delivered engagement with AI present at every '
+          'step, but never acting ahead of a deterministic check. It '
+          'is built for businesses in regulated or reputation-sensitive '
+          'sectors.',
+        ),
+
+        PubText.h('What Colophon does'),
+        PubText.p(
+          'Colophon is reading, authorship and publishing for authored '
+          'work. A work keeps its author, its editions and its '
+          'provenance, so what was written stays attributable over '
+          'time.',
+        ),
+
+        PubText.p(
+          'The three products are built independently and share no code '
+          'or infrastructure. What they share is one governance pattern.',
         ),
 
         PubText.h('What we refuse'),

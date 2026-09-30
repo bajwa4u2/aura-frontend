@@ -245,9 +245,9 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                                 onPressed: () => showAuraShareSheet(
                                   context,
                                   shareUrl: canonicalPostUrl(postId),
-                                  headline: 'Share this work',
+                                  headline: 'Share this post',
                                   subtitle:
-                                      'A public, crawler-friendly link that previews on LinkedIn, X, Discord, Slack, Facebook.',
+                                      'A public link that shows a preview on LinkedIn, X, Discord, Slack and Facebook.',
                                   emailSubject: 'Aura post',
                                 ),
                               ),
@@ -276,7 +276,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   error: (e, _) => _ErrorCard(
                     message: AppErrorMapper.from(
                       e,
-                      feature: 'view this work',
+                      feature: 'view this post',
                     ).message,
                   ),
                 ),
@@ -322,7 +322,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                               ),
                               const SizedBox(height: AuraSpace.s8),
                               Text(
-                                'Be the first to respond to this work.',
+                                'Be the first to respond to this post.',
                                 style: AuraText.small.copyWith(
                                   color: chamberTone(context, AuraSurface.muted),
                                 ),

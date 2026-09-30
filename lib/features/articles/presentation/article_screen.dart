@@ -161,7 +161,7 @@ class ArticleScreen extends ConsumerWidget {
                           shareUrl: canonicalArticleUrl(article.slug!),
                           headline: 'Share this article',
                           subtitle:
-                              'A public, crawler-friendly link that previews on LinkedIn, X, Discord, Slack, Facebook.',
+                              'A public link that shows a preview on LinkedIn, X, Discord, Slack and Facebook.',
                           emailSubject: article.title,
                         ),
                       ),

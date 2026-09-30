@@ -55,14 +55,14 @@ class InvestorsHubScreen extends StatelessWidget {
           bottomBorder: true,
           child: AuraPublicationHero(
             eyebrow: 'Investors & Partners',
-            title: 'Infrastructure for accountable communication '
-                'and AI-assisted execution.',
+            title: 'Continuity infrastructure: one governance pattern, '
+                'three products.',
             subtitle:
-                'Aura Platform LLC builds the trust fabric beneath two '
-                'connected products — Aura for accountable public '
-                'discourse and institutional communication, and '
-                'Orchestrate for AI-assisted revenue and operational '
-                'execution.',
+                'Aura Platform LLC builds three independent products. Aura '
+                'for public-first communication and accountable '
+                'participation, Orchestrate for governed execution of '
+                'business relationships, and Colophon for reading, '
+                'authorship and publishing.',
             metaItems: const [
               AuraPublicationMetaItem(
                 icon: Icons.account_balance_outlined,
@@ -70,11 +70,11 @@ class InvestorsHubScreen extends StatelessWidget {
               ),
               AuraPublicationMetaItem(
                 icon: Icons.workspaces_outline,
-                label: 'Two-product platform',
+                label: 'Three products',
               ),
               AuraPublicationMetaItem(
                 icon: Icons.event_outlined,
-                label: 'Seed · May 2026',
+                label: 'Pre-seed',
               ),
             ],
             actions: [
@@ -101,22 +101,21 @@ class InvestorsHubScreen extends StatelessWidget {
               InvestorSectionHeader(
                 numeral: 'I',
                 eyebrow: 'Platform structure',
-                title: 'Two products. One trust fabric.',
+                title: 'Three products. One governance pattern.',
                 subtitle:
-                    'Aura and Orchestrate are not adjacent SaaS products. '
-                    'They sit on the same identity, governance, realtime, '
-                    'and records layer — the fabric beneath them is the '
-                    'company.',
+                    'Aura, Orchestrate and Colophon are built independently '
+                    'and share no code, database or infrastructure. What '
+                    'they share is the governing pattern each expresses in '
+                    'its own domain.',
               ),
               SizedBox(height: AuraSpace.xl),
               InvestorPlatformArchitecture(
-                fabricLabel: 'Shared infrastructure',
+                fabricLabel: 'Shared governing pattern (not shared code)',
                 fabricCells: [
                   'Identity',
-                  'Governance',
-                  'Realtime',
+                  'Authority',
                   'Records',
-                  'AI execution',
+                  'Continuity',
                 ],
                 products: [
                   InvestorArchitectureProduct(
@@ -129,8 +128,15 @@ class InvestorsHubScreen extends StatelessWidget {
                   InvestorArchitectureProduct(
                     name: 'Orchestrate',
                     tagline:
-                        'AI-assisted revenue and operational '
-                        'execution — outreach to billing.',
+                        'Governed execution for business relationships — AI '
+                        'present at every step, never ahead of a '
+                        'deterministic check.',
+                  ),
+                  InvestorArchitectureProduct(
+                    name: 'Colophon',
+                    tagline:
+                        'Reading, authorship and publishing — works and '
+                        'editions that keep their author and provenance.',
                   ),
                 ],
               ),
@@ -216,7 +222,7 @@ class InvestorsHubScreen extends StatelessWidget {
                         'of that mismatch is no longer absorbable.',
                   ),
                   InvestorMarketPoint(
-                    headline: 'AI as an actor, not a tool',
+                    headline: 'AI moving from answers to actions',
                     body:
                         'When AI takes operational actions on behalf '
                         'of people and institutions, identity and '
@@ -302,9 +308,10 @@ class InvestorsHubScreen extends StatelessWidget {
                     icon: Icons.menu_book_outlined,
                     label: 'Editorial posture',
                     body:
-                        'Bajwa Write — long-form work on conscience, '
-                        'institutional responsibility, and moral '
-                        'structure — informs the platform\'s voice.',
+                        'Long-form work on conscience, institutional '
+                        'responsibility and moral structure, published '
+                        'under the Bajwa Write imprint, informs the '
+                        'platform\'s voice.',
                   ),
                   InvestorExecutionTile(
                     icon: Icons.developer_board_outlined,

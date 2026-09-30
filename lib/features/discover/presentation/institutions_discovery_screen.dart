@@ -72,7 +72,7 @@ class InstitutionsDiscoveryScreen extends ConsumerWidget {
             const Text('Institutions', style: AuraText.display),
             const SizedBox(height: AuraSpace.s6),
             Text(
-              'Organisations participating publicly on Aura, under their '
+              'Organizations participating publicly on Aura, under their '
               'official identity.',
               style:
                   AuraText.body.copyWith(color: chamberTone(context, AuraSurface.muted), height: 1.5),

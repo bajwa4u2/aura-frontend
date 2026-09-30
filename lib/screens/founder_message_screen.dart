@@ -54,11 +54,11 @@ class FounderMessageScreen extends StatelessWidget {
           'attached to outcomes.',
         ),
         PubText.p(
-          'Bajwa Write — long-form work on conscience, institutional '
-          'responsibility, and moral structure — informs the platform\'s '
-          'editorial posture. Aura Platform is the engineering side of '
-          'the same instinct: systems where identity, action, and '
-          'records stay connected.',
+          'Long-form work on conscience, institutional responsibility '
+          'and moral structure, published under the Bajwa Write '
+          'imprint, informs the platform\'s editorial posture. Aura '
+          'Platform is the engineering side of the same instinct: '
+          'systems where identity, action, and records stay connected.',
         ),
 
         PubText.h('Why Aura'),
@@ -79,10 +79,10 @@ class FounderMessageScreen extends StatelessWidget {
           'Conversations live in one tool, scheduling in another, '
           'workflow in a third, billing in a fourth. Decisions move '
           'forward, but the people accountable for follow-through lose '
-          'context between the tabs. Orchestrate is AI-assisted '
-          'revenue automation and operational execution — from '
-          'outreach to meetings to workflow to billing — that keeps '
-          'action and identity attached end-to-end.',
+          'context between the tabs. Orchestrate is a governed '
+          'execution platform for business relationships: AI is '
+          'present at every step, from first contact to billing, but '
+          'never acts ahead of a deterministic check.',
         ),
 
         PubText.h('Builder principles'),

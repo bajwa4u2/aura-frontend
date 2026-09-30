@@ -1046,9 +1046,8 @@ class _HowItWorksSection extends StatelessWidget {
               // belongs to — instead of becoming Home's closing identity.
               _QuietContinuation(
                 text:
-                    'Some institutional actions are paid, such as priority '
-                    'responses and hosted sessions. Those are always '
-                    'labelled.',
+                    'Paid institutional actions are not offered yet. When '
+                    'they are, each will be labelled wherever it appears.',
                 label: 'How participation works',
                 onTap: () => context.push('/aura/participation'),
               ),

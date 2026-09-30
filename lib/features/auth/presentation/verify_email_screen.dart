@@ -293,7 +293,7 @@ class _VerifyEmailScreenState extends ConsumerState<VerifyEmailScreen> {
                         ),
                         const SizedBox(height: AuraSpace.s10),
                         AuraGhostButton(
-                          label: 'Back to login',
+                          label: 'Back to sign in',
                           onPressed: () {
                             if (redirect != null) {
                               context.go(

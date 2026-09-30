@@ -195,7 +195,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                       ],
                       const SizedBox(height: AuraSpace.s10),
                       AuraGhostButton(
-                        label: 'Back to login',
+                        label: 'Back to sign in',
                         onPressed: _busy
                             ? null
                             : () => context.go(

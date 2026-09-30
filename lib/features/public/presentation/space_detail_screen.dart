@@ -92,7 +92,7 @@ class SpaceDetailScreen extends ConsumerWidget {
               children: [
                 InsModeHeader(
                   title: 'Space not found',
-                  description: 'No space matches the slug "$slug".',
+                  description: 'There is no space at this address.',
                   primaryAction: AuraSecondaryButton(
                     label: 'See all spaces',
                     icon: Icons.grid_view_rounded,

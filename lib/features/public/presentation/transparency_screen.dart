@@ -110,14 +110,14 @@ class TransparencyScreen extends StatelessWidget {
 
           // ── D. What institutions can buy (paid, labeled) ──────
           const _SectionTitle(
-            'What institutions can buy (paid — always labeled in-context)',
+            'Paid institutional actions (not offered yet)',
           ),
           const SizedBox(height: AuraSpace.s8),
           const _Para(
-            'Paid actions are visible everywhere they appear. A reader '
-            'should never have to go off-screen to figure out whether an '
-            'amplification was paid for. The labels you see in the feed '
-            'and threads are the same labels institutions buy under:',
+            'No paid action is offered yet. When they are, each will be '
+            'labelled wherever it appears, so a reader never has to go '
+            'off-screen to find out whether a placement was paid for. '
+            'These are the labels planned:',
           ),
           const SizedBox(height: AuraSpace.s12),
           for (final entry in const [
@@ -151,11 +151,11 @@ class TransparencyScreen extends StatelessWidget {
             _PaidEntry(
               kind: MonetizationKind.paidDistribution,
               what:
-                  'Boost reach of a public post into the global discourse '
+                  'Paid distribution of a public post into the global '
                   'feed.',
               consequence:
-                  'Boosted posts render the PAID DISTRIBUTION label '
-                  'so readers can distinguish boost from organic momentum.',
+                  'Such posts carry the PAID DISTRIBUTION label, so '
+                  'readers can tell a paid placement from an unpaid one.',
             ),
           ])
             Padding(
@@ -187,10 +187,10 @@ class TransparencyScreen extends StatelessWidget {
           const _SectionTitle('Pricing'),
           const SizedBox(height: AuraSpace.s8),
           const _Para(
-            'Each institution sees its own pricing inside its workspace '
-            'billing screen. Pricing varies by plan and region; the '
-            'same pricing applies to every institution in the same '
-            'plan. There is no individualized pricing.',
+            'Pricing is not published yet, because no paid action is '
+            'offered yet. When it is, the same pricing will apply to every '
+            'institution in the same plan. There will be no individualized '
+            'pricing.',
           ),
           const SizedBox(height: AuraSpace.s24),
         ],

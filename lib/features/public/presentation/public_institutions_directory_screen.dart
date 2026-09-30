@@ -886,8 +886,7 @@ class _BrowseBySectorHeading extends StatelessWidget {
         const SizedBox(width: AuraSpace.s8),
         Flexible(
           child: Text(
-            'Explore institutions by class. Each sector opens an '
-            'ecosystem view scoped to that classification.',
+            'Each sector shows the institutions working in it.',
             style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,

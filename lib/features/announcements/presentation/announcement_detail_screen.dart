@@ -745,7 +745,7 @@ class _AnnouncementDetailScreenState
                                 shareUrl: canonicalAnnouncementUrl(a.slug),
                                 headline: 'Share this announcement',
                                 subtitle:
-                                    'A public, crawler-friendly link that previews on LinkedIn, X, Discord, Slack, Facebook.',
+                                    'A public link that shows a preview on LinkedIn, X, Discord, Slack and Facebook.',
                                 emailSubject: 'Aura announcement',
                               ),
                               borderRadius: BorderRadius.circular(

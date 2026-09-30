@@ -525,7 +525,7 @@ class _EmailCodeCard extends StatelessWidget {
             Row(
               children: [
                 AuraGhostButton(
-                  label: 'Back to login',
+                  label: 'Back to sign in',
                   onPressed: busy ? null : onBack,
                   icon: Icons.arrow_back_rounded,
                 ),
@@ -760,7 +760,7 @@ class _AuthHero extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const AuraBadge(label: 'Trusted access', icon: Icons.shield_outlined),
+          const AuraBadge(label: 'Your Aura account', icon: Icons.shield_outlined),
           const SizedBox(height: AuraSpace.s16),
           Text(
             title,

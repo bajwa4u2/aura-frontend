@@ -327,7 +327,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                       ),
                       const SizedBox(height: AuraSpace.s10),
                       AuraGhostButton(
-                        label: 'Back to login',
+                        label: 'Back to sign in',
                         onPressed: _busy
                             ? null
                             : () => context.go(
@@ -344,7 +344,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                       ),
                       const SizedBox(height: AuraSpace.s10),
                       AuraGhostButton(
-                        label: 'Back to login',
+                        label: 'Back to sign in',
                         onPressed: () => context.go(
                           '/login?redirect=${Uri.encodeComponent(redirect)}',
                         ),

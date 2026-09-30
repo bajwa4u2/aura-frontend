@@ -49,7 +49,7 @@ class PatronsHubScreen extends StatelessWidget {
           label: 'Infrastructure',
           body:
               'Hosting, storage, realtime, and AI operating costs that '
-              'keep both Aura and Orchestrate running reliably.',
+              'keep Aura, Orchestrate and Colophon running reliably.',
         ),
         const SizedBox(height: AuraSpace.s10),
         const _ValueBlock(
