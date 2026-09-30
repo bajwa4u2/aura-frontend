@@ -39,5 +39,6 @@ Source `108176b0`. iOS was built from `6a993d49`, whose only change is a test;
 ## Open
 
 - **"Require intent": switch back ON once Play and iOS are live**, not before, or older store builds cannot post.
-- Windows items still not checked by a person: a browser-recorded voice note, composer video attach, sound after unmute.
-- Firefox web calling is untested, and the callee is not told the caller dropped (Richard's call, 2026-09-28).
+- Windows, founder-checked 2026-09-30 ~10:40 AM ET: voice message playback good; feed video good. Still unchecked: composer video attach.
+- Firefox web calling is untested.
+- Caller dropped before connect: server rule `82f57d4` (backend), deployed 10:41 AM ET. The call ends 15 s after the caller is lost; no client change. A real-call proof is pending.
