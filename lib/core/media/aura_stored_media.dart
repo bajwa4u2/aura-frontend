@@ -193,6 +193,7 @@ Widget? _videoPresenter(BuildContext context, StoredMediaRequest r) {
       maxHeight: maxHeight,
       borderRadius: r.borderRadius,
       tap: AuraVideoTap.inline,
+      alignment: _alignFor(r.context),
     );
   }
 
@@ -210,6 +211,7 @@ Widget? _videoPresenter(BuildContext context, StoredMediaRequest r) {
     borderRadius: r.borderRadius,
     tap: tap,
     onOpenViewer: r.onOpenViewer,
+    alignment: _alignFor(r.context),
   );
 }
 
@@ -263,8 +265,16 @@ Widget? _imagePresenter(BuildContext context, StoredMediaRequest r) {
     semanticLabel: r.semanticLabel ?? media.caption,
     onTap: r.onOpenViewer,
     errorWidget: (_) => const BrokenMediaTile(),
+    alignment: _alignFor(r.context),
   );
 }
+
+/// Feeds and detail pages centre their media (2026-09-30); inside a message
+/// it keeps to the bubble's side.
+AlignmentGeometry _alignFor(StoredMediaContext context) =>
+    context == StoredMediaContext.message
+    ? AlignmentDirectional.centerStart
+    : AlignmentDirectional.center;
 
 /// Documents, archives and anything unrecognised keep their real identity and
 /// are offered the action appropriate to their kind.

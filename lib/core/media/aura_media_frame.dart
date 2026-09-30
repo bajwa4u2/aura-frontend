@@ -60,7 +60,7 @@ class AuraMediaFrame extends StatelessWidget {
     this.intrinsicWidth,
     this.intrinsicHeight,
     this.mode = AuraMediaFrameMode.feed,
-    this.alignment = AlignmentDirectional.centerStart,
+    this.alignment = AlignmentDirectional.center,
     this.borderRadius,
     this.semanticLabel,
     this.maxWidthOverride,
@@ -234,7 +234,11 @@ class AuraMediaFrame extends StatelessWidget {
       );
     }
 
-    // ── Apply width + height bounds and start-align ─────────────────
+    // ── Apply width + height bounds, centred ────────────────────────
+    //
+    // Centred by default (2026-09-30): on desktop a capped picture is
+    // narrower than its card, and start-aligned it hugged the left edge
+    // of every feed. A message passes its bubble's side explicitly.
     return Align(
       alignment: alignment,
       child: ConstrainedBox(

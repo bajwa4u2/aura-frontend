@@ -34,7 +34,7 @@ class CanonicalMediaThumb extends StatelessWidget {
     super.key,
     required this.media,
     this.mode = AuraMediaFrameMode.feed,
-    this.alignment = AlignmentDirectional.centerStart,
+    this.alignment = AlignmentDirectional.center,
     this.onTap,
     this.downloadContext = 'media',
     this.fillCell = false,

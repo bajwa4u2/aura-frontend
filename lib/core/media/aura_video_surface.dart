@@ -171,6 +171,7 @@ class AuraVideoSurface extends StatefulWidget {
     this.onOpenViewer,
     this.showDuration = true,
     this.canDecode,
+    this.alignment = AlignmentDirectional.center,
   });
 
   /// A directly fetchable video URL. Never handed to an image decoder.
@@ -196,6 +197,11 @@ class AuraVideoSurface extends StatefulWidget {
   final String? fileName;
 
   final double? maxHeight;
+
+  /// Where a height-capped video sits in a wider slot. Centred in feeds
+  /// (2026-09-30: it hugged the left edge on desktop); a message passes its
+  /// bubble's side.
+  final AlignmentGeometry alignment;
 
   /// FILL THE CELL THE CALLER HAS ALREADY MEASURED.
   ///
@@ -585,9 +591,13 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface>
         onTap: _onTap,
         child: widget.maxHeight == null
             ? content
-            : ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: widget.maxHeight!),
-                child: content,
+            : Align(
+                alignment: widget.alignment,
+                heightFactor: 1,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: widget.maxHeight!),
+                  child: content,
+                ),
               ),
       ),
     );
@@ -797,6 +807,7 @@ class AuraVideoMedia extends ConsumerWidget {
     this.tap = AuraVideoTap.inline,
     this.onOpenViewer,
     this.showDuration = true,
+    this.alignment = AlignmentDirectional.center,
   });
 
   final String mediaId;
@@ -812,6 +823,7 @@ class AuraVideoMedia extends ConsumerWidget {
   final AuraVideoTap tap;
   final VoidCallback? onOpenViewer;
   final bool showDuration;
+  final AlignmentGeometry alignment;
 
   /// See [AuraVideoSurface.fill] — the collage cell case.
   final bool fill;
@@ -829,6 +841,7 @@ class AuraVideoMedia extends ConsumerWidget {
     tap: tap,
     onOpenViewer: onOpenViewer,
     showDuration: showDuration,
+    alignment: alignment,
   );
 
   @override
