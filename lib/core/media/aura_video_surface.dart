@@ -302,7 +302,23 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface>
     if (on) {
       unawaited(_startInFeed());
     } else {
-      unawaited(_controller?.pause());
+      unawaited(_pauseInFeed());
+    }
+  }
+
+  /// Autoplay pauses a card when it leaves focus, and a paused card shows
+  /// the frame it stopped on. Stopped inside a black opening (the Colophon
+  /// film was found paused at 1.1 s, pure black, 2026-09-30), the card looks
+  /// broken. So a pause before the poster frame returns to the poster, and
+  /// the next play starts from the beginning again.
+  Future<void> _pauseInFeed() async {
+    final controller = _controller;
+    if (controller == null) return;
+    await controller.pause();
+    if (_posterAt > Duration.zero &&
+        controller.value.position < _posterAt) {
+      await controller.seekTo(_posterAt);
+      _startedFromTop = false;
     }
   }
 
