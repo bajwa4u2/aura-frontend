@@ -175,27 +175,6 @@ void main() {
       );
     });
 
-    testWidgets('the support marks stay on one row at phone width',
-        (tester) async {
-      // Orchestrate and Colophon both wrap this strip in a scale-down
-      // FittedBox so the three programmes read as one row at every width.
-      // Aura used a Wrap, which dropped "AWS Activate" onto a second line on
-      // a phone -- the same three relationships presented two different ways
-      // across the estate. Parity here is behavioural, not cosmetic.
-      await _pumpFooter(tester, 390);
-
-      // The badge is an image with a semantic label, so the two wordmarks
-      // carry the row: same centre line, and left-to-right in order.
-      final google = tester.getRect(find.text('Google for Startups').first);
-      final aws = tester.getRect(find.text('AWS Activate').first);
-
-      expect((aws.center.dy - google.center.dy).abs() < google.height, isTrue,
-          reason: 'support marks wrapped onto a second line at 390px');
-      expect(aws.left, greaterThan(google.left),
-          reason: 'support marks are not left-to-right in one row');
-
-    });
-
     testWidgets('the bottom row is at parity with the estate', (tester) async {
       // Orchestrate and Colophon both close on company-name-left,
       // sibling-products-right, each omitting itself. Aura does the same.
@@ -217,54 +196,28 @@ void main() {
     });
   });
 
-  group('made with support', () {
-    testWidgets('the band carries the estate label, sentence and marks', (
-      tester,
-    ) async {
+  group('startup programmes', () {
+    testWidgets('live on the company site only, never in the product footer',
+        (tester) async {
+      // Founder decision, 2026-10-01: the startup programmes belong to
+      // Aura Platform LLC, the member, not to any one product. Their marks and
+      // trademark notices live on company.auraplatform.org only, and products
+      // carry no band, no badge and no link line in their place.
       await _pumpFooter(tester, 1440);
-
-      expect(find.text('MADE WITH SUPPORT'), findsOneWidget);
-      expect(
-        find.textContaining('Aura is being built in an environment'),
-        findsOneWidget,
-      );
-      // EACH MARK IS PRESENT AND CARRIES AN ACCESSIBLE NAME.
-      //
-      // Asserted from the WIDGET tree, not the semantics tree and not the
-      // rendered text, because the three marks are not the same kind of thing:
-      // Microsoft is an image badge, the other two are wordmarks drawn as
-      // text. `find.text` therefore finds nothing for the badge — correctly —
-      // and `bySemanticsLabel` returned nothing for it either, so neither
-      // finder could tell an absent mark from a mark it cannot see. What every
-      // mark does share is a `Semantics(label: …)` wrapper, which is the thing
-      // the accessibility claim is actually about.
+      expect(find.text('MADE WITH SUPPORT'), findsNothing);
       for (final m in const [
         'Microsoft for Startups',
         'Google for Startups',
         'AWS Activate',
+        'NVIDIA Inception',
       ]) {
+        expect(find.textContaining(m), findsNothing, reason: '$m shown in Aura');
         expect(
-          find.byWidgetPredicate(
-            (w) => w is Semantics && w.properties.label == m,
-          ),
-          findsOneWidget,
-          reason: '$m is missing from the support band, or carries no '
-              'accessible name',
+          find.byWidgetPredicate((w) => w is Semantics && w.properties.label == m),
+          findsNothing,
+          reason: '$m mark shown in Aura',
         );
       }
-    });
-
-    testWidgets('the support band sits above the closing', (tester) async {
-      await _pumpFooter(tester, 1440);
-      final band = tester.getRect(find.text('MADE WITH SUPPORT'));
-      final closing = tester.getRect(
-        find.textContaining('Say it in the open'),
-      );
-      expect(
-        band.bottom,
-        lessThan(closing.top),
-        reason: 'the estate puts the support band above the footer',
-      );
     });
   });
 
