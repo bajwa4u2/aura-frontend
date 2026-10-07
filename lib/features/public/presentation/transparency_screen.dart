@@ -148,15 +148,6 @@ class TransparencyScreen extends StatelessWidget {
                   'the OFFICIAL BROADCAST chip in the call header. '
                   'Recording rules are visible to participants on join.',
             ),
-            _PaidEntry(
-              kind: MonetizationKind.paidDistribution,
-              what:
-                  'Paid distribution of a public post into the global '
-                  'feed.',
-              consequence:
-                  'Such posts carry the PAID DISTRIBUTION label, so '
-                  'readers can tell a paid placement from an unpaid one.',
-            ),
           ])
             Padding(
               padding: const EdgeInsets.only(bottom: AuraSpace.s10),

@@ -130,8 +130,6 @@ class _InstitutionActionSheetState
         return 'PRIORITY';
       case MonetizationKind.hostedSession:
         return 'HOSTED';
-      case MonetizationKind.paidDistribution:
-        return 'DISTRIBUTED';
       case MonetizationKind.officialResponse:
         // Free / verified — not a paid action; never sent over wire.
         return null;
