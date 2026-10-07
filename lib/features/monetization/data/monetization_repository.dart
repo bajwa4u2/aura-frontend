@@ -45,10 +45,7 @@ class MonetizationRepository {
   }) async {
     final res = await _dio.post(
       '/monetization/checkout/institution-plan',
-      data: {
-        'institutionId': institutionId.trim(),
-        'productCode': productCode,
-      },
+      data: {'institutionId': institutionId.trim(), 'productCode': productCode},
     );
     return _checkoutFrom(res.data);
   }
@@ -59,12 +56,47 @@ class MonetizationRepository {
   }) async {
     final res = await _dio.post(
       '/monetization/checkout/institution-credits',
-      data: {
-        'institutionId': institutionId.trim(),
-        'productCode': productCode,
-      },
+      data: {'institutionId': institutionId.trim(), 'productCode': productCode},
     );
     return _checkoutFrom(res.data);
+  }
+
+  /// The institution's latest grant request, or null if it never asked.
+  Future<InstitutionGrant?> fetchInstitutionGrant(String institutionId) async {
+    final res = await _dio.get(
+      '/monetization/institutions/${institutionId.trim()}/grant',
+    );
+    final payload = _unwrap(res.data);
+    if (payload is Map && payload.isNotEmpty) {
+      return InstitutionGrant.fromJson(Map<String, dynamic>.from(payload));
+    }
+    return null;
+  }
+
+  Future<void> requestInstitutionGrant({
+    required String institutionId,
+    required String requestedTier,
+    String? message,
+  }) async {
+    await _dio.post(
+      '/monetization/institutions/${institutionId.trim()}/grant-request',
+      data: {
+        'requestedTier': requestedTier,
+        if (message != null && message.trim().isNotEmpty)
+          'message': message.trim(),
+      },
+    );
+  }
+
+  /// A one-time link to the billing provider's own page, where the plan,
+  /// card, invoices and cancellation are managed.
+  Future<String?> openBillingPortal(String institutionId) async {
+    final res = await _dio.post(
+      '/monetization/institutions/${institutionId.trim()}/billing-portal',
+    );
+    final payload = _unwrap(res.data);
+    if (payload is Map) return payload['url'] as String?;
+    return null;
   }
 
   CheckoutSession _checkoutFrom(dynamic raw) {

@@ -48,16 +48,17 @@ class PlanConfig {
   });
 
   factory PlanConfig.fromJson(Map<String, dynamic> json) => PlanConfig(
-        code: (json['code'] ?? '').toString(),
-        label: (json['label'] ?? '').toString(),
-        description: (json['description'] ?? '').toString(),
-        capabilities: PlanCapabilities.fromJson(
-          Map<String, dynamic>.from(json['capabilities'] as Map? ?? const {}),
-        ),
-        memberLimit:
-            json['memberLimit'] is num ? (json['memberLimit'] as num).toInt() : null,
-        productCode: json['productCode'] as String?,
-      );
+    code: (json['code'] ?? '').toString(),
+    label: (json['label'] ?? '').toString(),
+    description: (json['description'] ?? '').toString(),
+    capabilities: PlanCapabilities.fromJson(
+      Map<String, dynamic>.from(json['capabilities'] as Map? ?? const {}),
+    ),
+    memberLimit: json['memberLimit'] is num
+        ? (json['memberLimit'] as num).toInt()
+        : null,
+    productCode: json['productCode'] as String?,
+  );
 
   final String code;
   final String label;
@@ -86,31 +87,70 @@ class CreditPackConfig {
   final String? displayPrice;
 }
 
+/// What one piece of institution work costs from the allowance. Calls and
+/// meetings are included, never metered (founder decision 5, 2026-10-07), so
+/// the per-minute realtime costs that stood here are gone.
 class FeatureCosts {
   FeatureCosts({
     required this.aiEditorShort,
     required this.aiEditorLong,
     required this.translationShort,
     required this.translationLong,
-    required this.realtimeAudioPerMinute,
-    required this.realtimeVideoPerMinute,
   });
 
   factory FeatureCosts.fromJson(Map<String, dynamic> json) => FeatureCosts(
-        aiEditorShort: _intOf(json['aiEditorShort']),
-        aiEditorLong: _intOf(json['aiEditorLong']),
-        translationShort: _intOf(json['translationShort']),
-        translationLong: _intOf(json['translationLong']),
-        realtimeAudioPerMinute: _intOf(json['realtimeAudioPerMinute']),
-        realtimeVideoPerMinute: _intOf(json['realtimeVideoPerMinute']),
-      );
+    aiEditorShort: _intOf(json['aiEditorShort']),
+    aiEditorLong: _intOf(json['aiEditorLong']),
+    translationShort: _intOf(json['translationShort']),
+    translationLong: _intOf(json['translationLong']),
+  );
 
   final int aiEditorShort;
   final int aiEditorLong;
   final int translationShort;
   final int translationLong;
-  final int realtimeAudioPerMinute;
-  final int realtimeVideoPerMinute;
+}
+
+/// One Pro tier as the backend publishes it (founder price list,
+/// 2026-10-07). Seats count staff only; the community is never counted.
+class PlanTier {
+  PlanTier({
+    required this.tier,
+    required this.label,
+    required this.audience,
+    required this.seatLimit,
+    required this.monthlyAllowance,
+    required this.monthlyCents,
+    required this.yearlyCents,
+    required this.monthlyProductCode,
+    required this.yearlyProductCode,
+  });
+
+  factory PlanTier.fromJson(Map<String, dynamic> json) => PlanTier(
+    tier: (json['tier'] ?? '').toString(),
+    label: (json['label'] ?? '').toString(),
+    audience: (json['audience'] ?? '').toString(),
+    seatLimit: json['seatLimit'] is num
+        ? (json['seatLimit'] as num).toInt()
+        : null,
+    monthlyAllowance: _intOf(json['monthlyAllowance']),
+    monthlyCents: _intOf(json['monthlyCents']),
+    yearlyCents: _intOf(json['yearlyCents']),
+    monthlyProductCode: (json['monthlyProductCode'] ?? '').toString(),
+    yearlyProductCode: (json['yearlyProductCode'] ?? '').toString(),
+  );
+
+  final String tier;
+  final String label;
+  final String audience;
+
+  /// Null means no staff-seat limit.
+  final int? seatLimit;
+  final int monthlyAllowance;
+  final int monthlyCents;
+  final int yearlyCents;
+  final String monthlyProductCode;
+  final String yearlyProductCode;
 }
 
 class ProviderFlags {
@@ -122,11 +162,11 @@ class ProviderFlags {
   });
 
   factory ProviderFlags.fromJson(Map<String, dynamic> json) => ProviderFlags(
-        stripe: _enabledOf(json['stripe']),
-        appleIap: _enabledOf(json['appleIap']),
-        googlePlay: _enabledOf(json['googlePlay']),
-        windowsStore: _enabledOf(json['windowsStore']),
-      );
+    stripe: _enabledOf(json['stripe']),
+    appleIap: _enabledOf(json['appleIap']),
+    googlePlay: _enabledOf(json['googlePlay']),
+    windowsStore: _enabledOf(json['windowsStore']),
+  );
 
   final bool stripe;
   final bool appleIap;
@@ -141,11 +181,14 @@ class MonetizationConfig {
     required this.creditPacks,
     required this.featureCosts,
     required this.providers,
+    this.tiers = const [],
+    this.nonprofitDiscountPercent = 0,
   });
 
   factory MonetizationConfig.fromJson(Map<String, dynamic> json) {
     final plansRaw = (json['plans'] as List?) ?? const [];
     final creditPacksRaw = (json['creditPacks'] as List?) ?? const [];
+    final tiersRaw = (json['tiers'] as List?) ?? const [];
 
     return MonetizationConfig(
       mode: _modeFrom(json['monetizationMode'] as String?),
@@ -163,6 +206,11 @@ class MonetizationConfig {
       providers: ProviderFlags.fromJson(
         Map<String, dynamic>.from(json['providers'] as Map? ?? const {}),
       ),
+      tiers: tiersRaw
+          .whereType<Map>()
+          .map((e) => PlanTier.fromJson(Map<String, dynamic>.from(e)))
+          .toList(growable: false),
+      nonprofitDiscountPercent: _intOf(json['nonprofitDiscountPercent']),
     );
   }
 
@@ -171,6 +219,20 @@ class MonetizationConfig {
   final List<CreditPackConfig> creditPacks;
   final FeatureCosts featureCosts;
   final ProviderFlags providers;
+
+  /// The Pro tiers, in the order the backend publishes them.
+  final List<PlanTier> tiers;
+
+  /// Discount for confirmed nonprofits, schools and faith institutions.
+  final int nonprofitDiscountPercent;
+
+  PlanTier? tierByCode(String? code) {
+    if (code == null) return null;
+    for (final t in tiers) {
+      if (t.tier == code) return t;
+    }
+    return null;
+  }
 
   bool get isVisible =>
       mode == MonetizationMode.visible ||
@@ -189,6 +251,13 @@ class InstitutionEntitlements {
     required this.memberLimit,
     required this.creditBalance,
     required this.mode,
+    this.planTier,
+    this.seatLimit,
+    this.seatsUsed,
+    this.allowanceBalance = 0,
+    this.allowanceMonthly = 0,
+    this.allowanceResetsAt,
+    this.grantEndsAt,
   });
 
   factory InstitutionEntitlements.fromJson(Map<String, dynamic> json) =>
@@ -197,8 +266,9 @@ class InstitutionEntitlements {
         plan: (json['plan'] ?? 'FREE').toString(),
         planLabel: (() {
           final config = json['planConfig'];
-          final label =
-              config is Map ? (config['label'] ?? '').toString().trim() : '';
+          final label = config is Map
+              ? (config['label'] ?? '').toString().trim()
+              : '';
           return label;
         })(),
         capabilities: PlanCapabilities.fromJson(
@@ -206,15 +276,52 @@ class InstitutionEntitlements {
         ),
         isVerified: json['isVerified'] == true,
         canSpeakOfficially: json['canSpeakOfficially'] == true,
-        memberLimit:
-            json['memberLimit'] is num ? (json['memberLimit'] as num).toInt() : null,
-        creditBalance:
-            json['creditBalance'] is num ? (json['creditBalance'] as num).toInt() : 0,
+        memberLimit: json['memberLimit'] is num
+            ? (json['memberLimit'] as num).toInt()
+            : null,
+        creditBalance: json['creditBalance'] is num
+            ? (json['creditBalance'] as num).toInt()
+            : 0,
         mode: _modeFrom(json['monetizationMode'] as String?),
+        planTier: json['planTier'] as String?,
+        seatLimit: json['seatLimit'] is num
+            ? (json['seatLimit'] as num).toInt()
+            : null,
+        seatsUsed: json['seatsUsed'] is num
+            ? (json['seatsUsed'] as num).toInt()
+            : null,
+        allowanceBalance: _intOf(json['allowanceBalance']),
+        allowanceMonthly: _intOf(json['allowanceMonthly']),
+        allowanceResetsAt: _dateOf(json['allowanceResetsAt']),
+        grantEndsAt: _dateOf(json['grantEndsAt']),
       );
 
   final String institutionId;
   final String plan;
+
+  /// The Pro tier (COMMUNITY, ORGANISATION, PUBLIC_BODY_*); null on Free.
+  final String? planTier;
+
+  /// Staff seats on this plan; null means no limit.
+  final int? seatLimit;
+
+  /// Staff seats in use; null when the server could not count them.
+  final int? seatsUsed;
+
+  /// What is left of this month's allowance (or of the grant's credits).
+  final int allowanceBalance;
+
+  /// The full monthly allowance (or the grant's credits while it runs).
+  final int allowanceMonthly;
+  final DateTime? allowanceResetsAt;
+
+  /// Set while the 30-day Institutional Grant is running.
+  final DateTime? grantEndsAt;
+
+  bool get grantRunning =>
+      grantEndsAt != null && grantEndsAt!.isAfter(DateTime.now());
+
+  bool get isPro => plan == 'PRO';
 
   /// Customer-facing plan name from the config wire. Retired enum values
   /// (legacy VERIFIED/TRUSTED rows) resolve to a neutral legacy label
@@ -239,7 +346,8 @@ class CheckoutSession {
     required this.productCode,
   });
 
-  factory CheckoutSession.fromJson(Map<String, dynamic> json) => CheckoutSession(
+  factory CheckoutSession.fromJson(Map<String, dynamic> json) =>
+      CheckoutSession(
         provider: (json['provider'] ?? '').toString(),
         externalSessionId: (json['externalSessionId'] ?? '').toString(),
         url: json['url'] as String?,
@@ -252,7 +360,57 @@ class CheckoutSession {
   final String productCode;
 }
 
+enum InstitutionGrantStatus { pending, approved, declined }
+
+/// The 30-day Institutional Grant (founder decisions, 2026-10-07): asked
+/// for by an owner, decided by Aura, once per institution and per person.
+class InstitutionGrant {
+  InstitutionGrant({
+    required this.id,
+    required this.status,
+    required this.requestedTier,
+    this.declineReason,
+    this.startsAt,
+    this.endsAt,
+    this.endedAt,
+  });
+
+  factory InstitutionGrant.fromJson(Map<String, dynamic> json) =>
+      InstitutionGrant(
+        id: (json['id'] ?? '').toString(),
+        status: switch ((json['status'] ?? '').toString()) {
+          'APPROVED' => InstitutionGrantStatus.approved,
+          'DECLINED' => InstitutionGrantStatus.declined,
+          _ => InstitutionGrantStatus.pending,
+        },
+        requestedTier: (json['requestedTier'] ?? '').toString(),
+        declineReason: json['declineReason'] as String?,
+        startsAt: _dateOf(json['startsAt']),
+        endsAt: _dateOf(json['endsAt']),
+        endedAt: _dateOf(json['endedAt']),
+      );
+
+  final String id;
+  final InstitutionGrantStatus status;
+  final String requestedTier;
+  final String? declineReason;
+  final DateTime? startsAt;
+  final DateTime? endsAt;
+  final DateTime? endedAt;
+
+  bool get running =>
+      status == InstitutionGrantStatus.approved &&
+      endedAt == null &&
+      endsAt != null &&
+      endsAt!.isAfter(DateTime.now());
+}
+
 int _intOf(dynamic v) => v is num ? v.toInt() : 0;
+
+/// Instants stay as the server sent them; presentation localises them through
+/// AuraTemporal, the one place human-facing time is converted.
+DateTime? _dateOf(dynamic v) =>
+    v is String && v.isNotEmpty ? DateTime.tryParse(v) : null;
 
 bool _enabledOf(dynamic v) {
   if (v is Map) {

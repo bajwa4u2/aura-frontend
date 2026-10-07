@@ -142,6 +142,15 @@ String? _payloadRefinedTitle(
     case 'MEDIA_QUARANTINE_LIFTED':
       return 'An attachment of yours is available again';
 
+    // Monetization (2026-10-07): written by Aura about an institution's plan,
+    // not by a person, so never actor-voiced. The backend states the exact
+    // sentence ("… has used 80% of this month's allowance", "Your 30-day
+    // grant has been approved").
+    case 'INSTITUTION_ALLOWANCE_NOTICE':
+    case 'INSTITUTION_GRANT_NOTICE':
+      final title = field('title');
+      return title.isNotEmpty ? title : 'An update about your institution\'s plan';
+
     case 'SPACE_ACTIVITY':
       final spaceName = field('spaceName');
       if (actorName.isEmpty) return null;
@@ -405,6 +414,8 @@ const Map<String, NotificationGroup> kNotificationGroups = <String, Notification
   'CAPABILITY_GRANTED': NotificationGroup.system,
   'CAPABILITY_REVOKED': NotificationGroup.system,
   'INSTITUTION_OWNERSHIP_RECOVERED': NotificationGroup.system,
+  'INSTITUTION_ALLOWANCE_NOTICE': NotificationGroup.system,
+  'INSTITUTION_GRANT_NOTICE': NotificationGroup.system,
   'MEDIA_QUARANTINED': NotificationGroup.system,
   'MEDIA_QUARANTINE_LIFTED': NotificationGroup.system,
   'IDENTITY': NotificationGroup.system,

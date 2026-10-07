@@ -1978,6 +1978,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 surface: _compositionSurface,
                 enabled: !_posting,
                 onApply: _applyAssistText,
+                actingForInstitutionId: widget.asInstitution
+                    ? widget.institutionId
+                    : null,
               ),
               const SizedBox(height: AuraSpace.s12),
             ],
