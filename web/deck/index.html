@@ -199,31 +199,34 @@ if (window.IntersectionObserver &&
   <!-- ── IV. the monetization architecture ──────────────────────────────── -->
   <section class="rv">
     <p class="sec-label">IV · The monetization architecture</p>
-    <h2>Two mechanisms, deliberately separate.</h2>
-    <p class="muted">Both are implemented in the running backend, with four payment providers
-    behind one internal product-code layer: Stripe for the web, Apple In-App Purchase, Google
-    Play Billing, and the Microsoft Store.</p>
+    <h2>One plan, paid by the institution.</h2>
+    <p class="muted">Implemented in the running backend. Plans are bought on the web, by card or
+    bank transfer; the phone apps show an institution what it has and sell nothing.</p>
 
     <div class="grid2">
       <div class="panel">
-        <h4>Plan: subscription, at the institution</h4>
-        <p class="small"><b>Free</b> is baseline access with no paid capabilities.
-        <b>Pro</b> carries official institutional publishing and expanded member capacity. The
-        subscription attaches to the institution, never to a person, and there are exactly two
-        tiers.</p>
+        <h4>Pro: a subscription at the institution</h4>
+        <p class="small"><b>Free</b> is a full public presence. <b>Pro</b> adds staff seats,
+        official publishing in the institution's own voice, and a monthly allowance for AI
+        checks and translation of what it publishes. Priced by who the institution is:
+        <b>Community $49</b>, <b>Organisation $249</b>, <b>Public body $490 to $1,490</b> a
+        month; yearly is ten months' price for twelve. Nonprofits, schools and faith
+        institutions pay 25% less.</p>
       </div>
       <div class="panel">
-        <h4>Credits: consumption, metered per use</h4>
-        <p class="small">AI-assisted composition, translation, and realtime audio and video are
-        metered per use rather than bundled into a tier, by the minute for realtime, by length
-        for composition. Credit packs in three sizes, and a ledger that records every debit
-        against its source.</p>
+        <h4>Seats, not people</h4>
+        <p class="small">Only staff seats are counted: the owners and administrators who speak
+        for the institution. Members, followers and the public are never counted and never
+        charged. Work done for the institution draws on its monthly allowance, with top-ups of
+        1,000 credits ($19) and 5,000 ($79) for a busy month and a ledger of every debit. Calls
+        and meetings are included, never metered.</p>
       </div>
     </div>
 
-    <p class="small" style="margin-top:16px">The separation is enforced in the product, not only
-    described. AI composition, translation and live sessions are paid by use in every plan; they
-    are never sold as features of a tier.</p>
+    <p class="small" style="margin-top:16px">The line is enforced in the product, not only
+    described. A person's own writing checks and translations are free, within a daily fair-use
+    limit; only work done for an institution draws on its allowance, and only someone holding
+    one of its staff seats can do it.</p>
 
     <blockquote class="frozen">
       <p>Verification is not purchasable. Trust is not for sale. Payment writes commercial
@@ -256,24 +259,24 @@ if (window.IntersectionObserver &&
       <div class="grant" data-held="no">
         <div class="grant__k">Paid</div>
         <div class="grant__t">An institution speaking officially</div>
-        <div class="grant__d">Official publishing in the institution's own voice, expanded
-        member capacity, and metered use of AI composition, translation and realtime
-        sessions.</div>
+        <div class="grant__d">Official publishing in the institution's own voice, staff seats,
+        and a monthly allowance for AI checks and translation. A 30-day grant lets an
+        institution set up and use Pro before it decides.</div>
         <div class="grant__bar"></div>
       </div>
     </div>
 
     <div class="facts">
       <div class="fact">
-        <div class="fact__t"><b>A person-side support path exists and deliberately does not
-        transact.</b> A support surface with named tiers sits on every profile route, and its
-        payments for it are a later integration. It is a placed surface, not revenue.</div>
-        <div class="fact__s">Profile support pages</div>
+        <div class="fact__t"><b>A 30-day grant, on request.</b> An institution can use Pro for
+        30 days with 500 credits, reviewed by the Aura team and given once. Nothing is charged
+        when it ends.</div>
+        <div class="fact__s">Institutional Grant</div>
       </div>
       <div class="fact">
-        <div class="fact__t"><b>Pro pricing is not yet published.</b> It follows the final decision on
-        what the Free plan includes.</div>
-        <div class="fact__s">Pricing status</div>
+        <div class="fact__t"><b>Prices are public.</b> The same price applies to every
+        institution on the same plan; there is no individual pricing.</div>
+        <div class="fact__s">Pricing</div>
       </div>
     </div>
   </section>
@@ -373,8 +376,8 @@ if (window.IntersectionObserver &&
       <div class="rung">
         <div class="rung__k">Last</div>
         <div class="rung__t">Enforce</div>
-        <div class="rung__d">The paid boundary is real. Comes only after a fresh product review
-        and a final pricing decision.</div>
+        <div class="rung__d">The paid boundary is real. Pricing is decided; this comes after a
+        full end-to-end payment test.</div>
       </div>
     </div>
 
@@ -438,8 +441,8 @@ if (window.IntersectionObserver &&
 
   <footer class="foot">
     <p><b>Aura</b>: a public-first platform for civic discourse and accountable communication,
-    from Aura Platform LLC. Pre-revenue, entering commercial validation. Pricing will be published
-    once it is set. <a href="https://company.auraplatform.org/overview">Company overview</a>.</p>
+    from Aura Platform LLC. Pre-revenue, entering commercial validation. Free for the public; institution
+    plans from $49 a month. <a href="https://company.auraplatform.org/overview">Company overview</a>.</p>
     <div class="navline">
       <a href="/demo">The product</a>
       <a href="/white-paper">White paper</a>

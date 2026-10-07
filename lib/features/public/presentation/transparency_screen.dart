@@ -187,10 +187,13 @@ class TransparencyScreen extends StatelessWidget {
           const _SectionTitle('Pricing'),
           const SizedBox(height: AuraSpace.s8),
           const _Para(
-            'Pricing is not published yet, because no paid action is '
-            'offered yet. When it is, the same pricing will apply to every '
-            'institution in the same plan. There will be no individualized '
-            'pricing.',
+            'Aura is free for the public, and it always will be. '
+            'Institutions that speak officially choose a Pro plan, priced '
+            'by staff seats; members and followers are never counted. The '
+            'same price applies to every institution on the same plan, with '
+            'less for confirmed nonprofits, schools and faith institutions. '
+            'There is no individual pricing, and verification is never '
+            'sold.',
           ),
           const SizedBox(height: AuraSpace.s24),
         ],
