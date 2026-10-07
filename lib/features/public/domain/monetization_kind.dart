@@ -17,14 +17,15 @@ enum MonetizationKind {
   /// Paid: extended-capacity hosted live session. Visible in-context.
   hostedSession,
 
-  /// Paid: distributes a public post into the global feed for boosted
-  /// reach. Visible in-context.
-  paidDistribution,
+  // Paid distribution (boosted reach into the feed) is RETIRED — founder
+  // decision 2026-10-07: Aura earns nothing from advertising, and paying
+  // for reach is advertising. A DISTRIBUTED row from before reads as organic.
 }
 
 extension MonetizationKindX on MonetizationKind {
   /// Parses the backend `PaidActionKind` wire token. Backend ships
-  /// PRIORITY / HOSTED / DISTRIBUTED — `OFFICIAL_RESPONSE` is purely
+  /// PRIORITY / HOSTED (DISTRIBUTED is retired and reads as no label) —
+  /// `OFFICIAL_RESPONSE` is purely
   /// frontend-derived (it's a "free verified" label, not a paid one).
   static MonetizationKind? fromPaidActionWire(dynamic raw) {
     if (raw == null) return null;
@@ -34,9 +35,6 @@ extension MonetizationKindX on MonetizationKind {
         return MonetizationKind.priorityResponse;
       case 'HOSTED':
         return MonetizationKind.hostedSession;
-      case 'DISTRIBUTED':
-      case 'DISTRIBUTION':
-        return MonetizationKind.paidDistribution;
       default:
         return null;
     }
@@ -51,7 +49,6 @@ extension MonetizationKindX on MonetizationKind {
         return false;
       case MonetizationKind.priorityResponse:
       case MonetizationKind.hostedSession:
-      case MonetizationKind.paidDistribution:
         return true;
     }
   }
@@ -64,8 +61,6 @@ extension MonetizationKindX on MonetizationKind {
         return 'Priority response';
       case MonetizationKind.hostedSession:
         return 'Hosted session';
-      case MonetizationKind.paidDistribution:
-        return 'Paid distribution';
     }
   }
 
@@ -78,8 +73,6 @@ extension MonetizationKindX on MonetizationKind {
         return 'PRIORITY · PAID';
       case MonetizationKind.hostedSession:
         return 'HOSTED SESSION · PAID';
-      case MonetizationKind.paidDistribution:
-        return 'PAID DISTRIBUTION';
     }
   }
 }
