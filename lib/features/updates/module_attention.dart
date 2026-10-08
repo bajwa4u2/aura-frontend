@@ -31,6 +31,8 @@ AttentionModule? attentionModuleForType(String type) {
     case 'ROLE_CHANGED':
     case 'CAPABILITY_GRANTED':
     case 'CAPABILITY_REVOKED':
+    case 'INSTITUTION_ALLOWANCE_NOTICE':
+    case 'INSTITUTION_GRANT_NOTICE':
       return AttentionModule.institutions;
     case 'MEETING_BOOKED':
     case 'MEETING_REMINDER':

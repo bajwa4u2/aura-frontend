@@ -30,7 +30,14 @@ class CompositionAssist extends ConsumerStatefulWidget {
     required this.onApply,
     this.enabled = true,
     this.note,
+    this.actingForInstitutionId,
   });
+
+  /// Set when the host is writing FOR an institution (speaking as it). The
+  /// check or translation is then the institution's work and is counted
+  /// against its allowance; otherwise it is personal and free, within the
+  /// daily fair-use limit (monetization WP3/WP7, 2026-10-07).
+  final String? actingForInstitutionId;
 
   /// Current text the host is editing (post body, or title+description).
   final String text;
@@ -127,7 +134,11 @@ class _CompositionAssistState extends ConsumerState<CompositionAssist> {
     try {
       final res = await _dio.post(
         '/composition/review',
-        data: {'text': text, 'surface': widget.surface.name},
+        data: {
+          'text': text,
+          'surface': widget.surface.name,
+          ..._actingFor,
+        },
       );
       if (!mounted) return;
       setState(() {
@@ -197,6 +208,11 @@ class _CompositionAssistState extends ConsumerState<CompositionAssist> {
     }
   }
 
+  Map<String, dynamic> get _actingFor {
+    final id = widget.actingForInstitutionId?.trim() ?? '';
+    return id.isEmpty ? const {} : {'actingForInstitutionId': id};
+  }
+
   Future<void> _translate() async {
     final text = widget.text.trim();
     if (text.isEmpty || _translateBusy) return;
@@ -207,7 +223,11 @@ class _CompositionAssistState extends ConsumerState<CompositionAssist> {
     try {
       final res = await _dio.post(
         '/composition/translate',
-        data: {'text': text, 'targetLanguage': _targetLanguage},
+        data: {
+          'text': text,
+          'targetLanguage': _targetLanguage,
+          ..._actingFor,
+        },
       );
       if (!mounted) return;
       final root = _asMap(res.data);
