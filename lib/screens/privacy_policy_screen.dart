@@ -49,6 +49,7 @@ class _PrivacyBody extends StatelessWidget {
             'Your date of birth, used only to apply the right age rules. It is never shown on your profile.',
             'Evidence of your authority to act for an institution, when you ask to speak for one.',
             'Meeting recordings, only where the participants have given their consent.',
+            'Billing records, when an institution buys a plan or credits: the plan, amounts, dates, payment status and the billing contact the payment processor returns. Aura never sees or stores full card or bank details.',
           ],
         ),
         _PrivacySection(
@@ -97,6 +98,7 @@ class _PrivacyBody extends StatelessWidget {
               'Aura shares information only where needed to operate the service, comply with law, protect the platform, or support a user-directed relationship.',
           bullets: [
             'With service providers that help operate infrastructure, email delivery, storage, security, analytics, support, and reliability tooling.',
+            'With Stripe, Aura's payment processor, when an institution pays. Card and bank details go directly to Stripe and are handled under Stripe's own privacy policy.',
             'With institutions, space administrators, or authorized members when role, membership, moderation, or workflow context requires it.',
             'When legally required, including valid legal process, regulatory obligations, safety investigations, or protection of rights and security.',
             'During a business transaction such as financing, merger, acquisition, restructuring, or asset transfer, subject to appropriate safeguards.',
@@ -211,7 +213,7 @@ class _PrivacyHero extends StatelessWidget {
           ),
           const SizedBox(height: AuraSpace.sm),
           Text(
-            'Last updated: Wednesday, September 30, 2026 · 3:45 AM ET',
+            'Last updated: Thursday, October 8, 2026 · 2:30 PM ET',
             style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
           ),
           const SizedBox(height: AuraSpace.lg),

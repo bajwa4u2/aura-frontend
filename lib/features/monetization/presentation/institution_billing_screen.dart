@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -803,6 +804,8 @@ class _PlansSectionState extends State<_PlansSection> {
       ),
       child: Column(
         children: [
+          const _RenewalDisclosure(),
+          const SizedBox(height: AuraSpace.s12),
           for (final t in tiers) ...[
             _TierRow(
               tier: t,
@@ -820,6 +823,40 @@ class _PlansSectionState extends State<_PlansSection> {
             'Yearly is ten months\' price for twelve. Calls and meetings are '
             'included on every plan.',
             style: AuraText.small.copyWith(color: AuraSurface.muted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// What a buyer must know before paying, stated before the prices
+/// (self-certified to the strictest auto-renewal rules, 2026-10-08): it
+/// renews, at what price, until when, and how to stop it.
+class _RenewalDisclosure extends StatelessWidget {
+  const _RenewalDisclosure();
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(
+            'Plans renew automatically every month or year at the price '
+            'shown, until you cancel. Cancel any time in Manage billing; the '
+            'plan runs to the end of the period paid for. ',
+            style: AuraText.small.copyWith(color: AuraSurface.muted),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(0, 32),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            onPressed: () => context.push('/terms'),
+            child: const Text('Paid-plan terms'),
           ),
         ],
       ),
