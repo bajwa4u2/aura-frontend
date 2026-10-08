@@ -418,8 +418,16 @@ String? _enforceCanonicalIdMatch(
   final projection = resolvedId.isEmpty
       ? ref.read(capabilityProjectionProvider)
       : ref.read(capabilityProjectionForProvider(resolvedId));
-  if (projection.standing == null &&
-      ref.read(institutionAccessProvider).isLoading) {
+  // UNKNOWN IS NOT REFUSED (2026-10-08). Waiting only while access was
+  // LOADING missed the other half of the window: an access re-check that
+  // briefly SETTLES on an empty answer (no memberships) before the next fetch
+  // restores them. Every capability-gated section (billing, domains,
+  // join-requests…) opened from a fresh page load was refused for an OWNER —
+  // including the page Stripe returns a paying customer to. A person who is
+  // not a member was already turned away above by the snapshot decision; here
+  // a missing standing only means "not known yet". A standing that IS known
+  // and lacks the capability is still refused, and the server enforces it.
+  if (projection.standing == null) {
     return null;
   }
   return institutionDestinationPermits(projection, section)

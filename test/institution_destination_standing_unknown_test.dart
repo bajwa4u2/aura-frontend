@@ -15,12 +15,15 @@ void main() {
   final gate = router.substring(router.indexOf('String? _enforceCanonicalIdMatch('));
   final body = gate.substring(0, gate.indexOf('\n}\n') > 0 ? gate.indexOf('\n}\n') : gate.length);
 
-  test('the destination gate waits while standing is unknown and access is loading', () {
-    final wait = body.indexOf('projection.standing == null');
+  test('the destination gate waits whenever standing is unknown', () {
+    final wait = body.indexOf('if (projection.standing == null) {');
     final deny = body.indexOf('kInstitutionDenialDestination');
     expect(wait, greaterThan(0));
-    expect(body.contains('institutionAccessProvider).isLoading'), isTrue);
     expect(wait, lessThan(deny), reason: 'the wait must come before the denial');
+    // 2026-10-08: an access re-check can SETTLE on an empty answer for a
+    // moment; waiting only while loading refused owners on a fresh page load.
+    expect(body.contains('projection.standing == null &&'), isFalse,
+        reason: 'unknown standing must not be conditioned on loading');
   });
 
   test('a settled refusal still reaches the denial destination', () {
