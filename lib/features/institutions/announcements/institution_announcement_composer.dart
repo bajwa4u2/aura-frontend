@@ -33,6 +33,8 @@ import '../data/institutions_repository.dart';
 import '../domain/communication_type.dart';
 import '../ui/institution_ds.dart';
 import 'integrity/announcement_integrity_review_sheet.dart';
+import '../../composition/domain/composition_models.dart';
+import '../../composition/presentation/composition_assist.dart';
 
 class InstitutionAnnouncementComposer extends ConsumerStatefulWidget {
   const InstitutionAnnouncementComposer({
@@ -105,6 +107,8 @@ class _InstitutionAnnouncementComposerState
   @override
   void initState() {
     super.initState();
+    // The writing-assistance panel reads the body as it is typed.
+    _bodyController.addListener(_onBodyChangedForAssist);
     final d = widget.initialData;
     if (d != null) {
       // Edit mode: peel the [OFFICIAL:TYPE] marker so the user edits the
@@ -184,6 +188,24 @@ class _InstitutionAnnouncementComposerState
     );
   }
 
+  void _onBodyChangedForAssist() {
+    if (mounted) setState(() {});
+  }
+
+  /// Writes an applied suggestion or translation back into the body, keeping
+  /// the caret where it was (as the personal composer does).
+  void _applyAssistText(String next) {
+    final sel = _bodyController.selection;
+    final offset = sel.baseOffset >= 0
+        ? sel.baseOffset.clamp(0, next.length)
+        : next.length;
+    _bodyController.value = TextEditingValue(
+      text: next,
+      selection: TextSelection.collapsed(offset: offset),
+      composing: TextRange.empty,
+    );
+  }
+
   AttachmentKind _attachmentKindFromServerType(String? type) {
     switch ((type ?? '').toUpperCase()) {
       case 'VIDEO':
@@ -203,6 +225,7 @@ class _InstitutionAnnouncementComposerState
     _linkDetector?.dispose();
     _titleController.dispose();
     _summaryController.dispose();
+    _bodyController.removeListener(_onBodyChangedForAssist);
     _bodyController.dispose();
     _bodyFocus.dispose();
     super.dispose();
@@ -895,6 +918,17 @@ class _InstitutionAnnouncementComposerState
                         onRemove: () => setState(() => _linkPreview = null),
                       ),
                   ],
+                  const SizedBox(height: AuraSpace.s16),
+                  // Writing assistance, as the institution: counted against
+                  // its allowance (2026-10-08). The integrity review above is
+                  // a different capability and stays separate.
+                  CompositionAssist(
+                    text: _bodyController.text,
+                    surface: CompositionSurface.announcement,
+                    enabled: !isBusy,
+                    onApply: _applyAssistText,
+                    actingForInstitutionId: widget.institutionId,
+                  ),
                   const SizedBox(height: AuraSpace.s16),
                   _buildMediaCard(disabled: isBusy),
                   const SizedBox(height: AuraSpace.s16),

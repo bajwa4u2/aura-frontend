@@ -51,6 +51,8 @@ import '../domain/institution_post.dart';
 import 'integrity/institution_post_integrity_review_sheet.dart';
 import '../ui/institution_ds.dart';
 import '../../monetization/domain/monetization_refusal_copy.dart';
+import '../../composition/domain/composition_models.dart';
+import '../../composition/presentation/composition_assist.dart';
 
 /// Composer for [InstitutionPost]s in create mode.
 ///
@@ -318,6 +320,21 @@ class _InstitutionPostComposerScreenState
     if (!mounted) return;
     setState(() {});
     _scheduleDraftSave();
+  }
+
+  /// Writes an applied suggestion or translation back into the body, keeping
+  /// the caret where it was (as the personal composer does).
+  void _applyAssistText(String next) {
+    final sel = _bodyCtrl.selection;
+    final offset = sel.baseOffset >= 0
+        ? sel.baseOffset.clamp(0, next.length)
+        : next.length;
+    _bodyCtrl.value = TextEditingValue(
+      text: next,
+      selection: TextSelection.collapsed(offset: offset),
+      composing: TextRange.empty,
+    );
+    // The body listener saves the draft and rebuilds.
   }
 
   // ── Local draft persistence ───────────────────────────────────────────────
@@ -1515,6 +1532,21 @@ class _InstitutionPostComposerScreenState
                             buildCounter: _zeroCounter,
                           ),
                         ),
+                      ),
+                    ),
+                    // Writing assistance, as the institution: the check and
+                    // the translation are the institution's work and are
+                    // counted against its allowance. The personal composer had
+                    // this; the institution's own composer did not, so a plan's
+                    // credits had nowhere to be spent (2026-10-08).
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: AuraSpace.s16),
+                      child: CompositionAssist(
+                        text: _bodyCtrl.text,
+                        surface: CompositionSurface.post,
+                        enabled: !_busy,
+                        onApply: _applyAssistText,
+                        actingForInstitutionId: widget.institutionId,
                       ),
                     ),
                     if (_linkPreview != null && _linkPreview!.eligible) ...[

@@ -1,87 +1,96 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 
 import '../domain/composition_models.dart';
 
+/// Writing assistance for hosts that do not use [CompositionAssist].
+///
+/// Goes through the app's shared [Dio] (its base URL owns `/v1`, and it
+/// refreshes the session). This used to post with `package:http` to
+/// `$apiBaseUrl/v1/composition/...`; the base URL already ends in `/v1`, so
+/// every review, apply and translation from the announcement editor went to
+/// `/v1/v1/...` and failed (2026-10-08).
 class CompositionRepository {
-  final String baseUrl;
-  final String token;
+  CompositionRepository(this._dio, {this.actingForInstitutionId});
 
-  CompositionRepository({
-    required this.baseUrl,
-    required this.token,
-  });
+  final Dio _dio;
 
-  Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      };
+  /// Set when writing FOR an institution: the work is counted against its
+  /// allowance, as in [CompositionAssist].
+  final String? actingForInstitutionId;
 
-  // REVIEW (light suggestions, no heavy mode)
+  Map<String, dynamic> get _actingFor {
+    final id = actingForInstitutionId?.trim() ?? '';
+    return id.isEmpty ? const {} : {'actingForInstitutionId': id};
+  }
+
   Future<CompositionReviewResult> review({
     required String text,
     required CompositionSurface surface,
   }) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/v1/composition/review'),
-      headers: _headers,
-      body: jsonEncode({
-        'text': text,
-        'surface': surface.name,
-      }),
+    final res = await _dio.post(
+      '/composition/review',
+      data: {'text': text, 'surface': surface.name, ..._actingFor},
     );
-
-    if (res.statusCode != 200) {
-      throw Exception('Review failed');
-    }
-
-    final data = jsonDecode(res.body);
-    return CompositionReviewResult.fromJson(data);
+    return CompositionReviewResult.fromJson(_asMap(res.data));
   }
 
-  // APPLY (already fixed contract)
   Future<String> apply({
     required String sessionId,
     required String suggestionId,
     required String currentText,
   }) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/v1/composition/apply'),
-      headers: _headers,
-      body: jsonEncode({
+    final res = await _dio.post(
+      '/composition/apply',
+      data: {
         'sessionId': sessionId,
         'findingId': suggestionId,
         'currentText': currentText,
-      }),
+      },
     );
-
-    if (res.statusCode != 200) {
-      throw Exception('Apply failed');
-    }
-
-    final data = jsonDecode(res.body);
-    return data['text'] ?? currentText;
+    final root = _asMap(res.data);
+    return _firstNonEmpty([
+      _str(root['text']),
+      _str(root['updatedText']),
+      _str(_asMap(root['data'])['text']),
+      _str(_asMap(root['data'])['updatedText']),
+    ], fallback: currentText);
   }
 
-  // TRANSLATION (new, clean)
   Future<CompositionTranslationResult> translate({
     required String text,
     required String targetLanguage,
   }) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl/v1/composition/translate'),
-      headers: _headers,
-      body: jsonEncode({
-        'text': text,
-        'targetLanguage': targetLanguage,
-      }),
+    final res = await _dio.post(
+      '/composition/translate',
+      data: {'text': text, 'targetLanguage': targetLanguage, ..._actingFor},
     );
+    final root = _asMap(res.data);
+    final translated = _firstNonEmpty([
+      _str(root['translatedText']),
+      _str(root['text']),
+      _str(_asMap(root['data'])['translatedText']),
+      _str(_asMap(root['data'])['text']),
+    ]);
+    if (translated.isEmpty) throw Exception('Translation was empty.');
+    return CompositionTranslationResult(
+      translatedText: translated,
+      targetLanguage: targetLanguage,
+    );
+  }
 
-    if (res.statusCode != 200) {
-      throw Exception('Translation failed');
+  static Map<String, dynamic> _asMap(dynamic v) {
+    if (v is Map<String, dynamic>) return v;
+    if (v is Map) return Map<String, dynamic>.from(v);
+    return <String, dynamic>{};
+  }
+
+  static String _str(dynamic v) => (v ?? '').toString().trim();
+
+  static String _firstNonEmpty(List<String?> values, {String fallback = ''}) {
+    for (final v in values) {
+      final s = (v ?? '').trim();
+      if (s.isNotEmpty) return s;
     }
-
-    final data = jsonDecode(res.body);
-    return CompositionTranslationResult.fromJson(data);
+    return fallback;
   }
 }

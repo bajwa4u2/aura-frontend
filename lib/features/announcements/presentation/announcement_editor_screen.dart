@@ -10,9 +10,7 @@ import 'package:go_router/go_router.dart';
 import '../data/announcements_repository.dart';
 import '../../../core/product/product_state.dart';
 import '../../../core/product/product_state_view.dart';
-import '../../../config.dart';
 import '../../../core/attachments/aura_media_upload.dart';
-import '../../../core/auth/auth_providers.dart';
 import '../../../core/composition/composition_authority.dart';
 import '../../../core/content_policy/content_length_policy.dart';
 import '../../../core/composition/content_intake.dart';
@@ -286,13 +284,8 @@ class _AnnouncementEditorScreenState
   TextStyle get _sectionTitleStyle =>
       AuraText.body.copyWith(fontWeight: FontWeight.w800);
 
-  CompositionRepository _compositionRepo() {
-    final token = ref.read(tokenStoreProvider).accessToken ?? '';
-    return CompositionRepository(
-      baseUrl: AppConfig.apiBaseUrl,
-      token: token,
-    );
-  }
+  CompositionRepository _compositionRepo() =>
+      CompositionRepository(ref.read(dioProvider));
 
   void _handleDraftChanged() {
     if (!mounted) return;
