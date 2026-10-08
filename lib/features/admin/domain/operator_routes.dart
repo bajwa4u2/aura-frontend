@@ -72,3 +72,10 @@ const String kOperatorInstitutionVerificationRoot =
 /// reachable, so neither can be changed without seeing the other. This constant
 /// exists so the route inventory is complete in the one file that lists routes.
 const String kOperatorFinanceRoot = '/admin/finance';
+
+/// WHERE INSTITUTIONAL GRANT REQUESTS ARE DECIDED.
+///
+/// Under WORK: a request is a decision waiting on an operator, and WORK is
+/// where operators look for those. A queue root, like institution
+/// verification, because an operator arrives wanting what is waiting.
+const String kOperatorGrantRequestsRoot = '/admin/work/grant-requests';

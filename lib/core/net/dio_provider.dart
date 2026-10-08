@@ -13,6 +13,34 @@ import '../client_identity/client_identity_provider.dart';
 import '../errors/app_error_mapper.dart';
 import 'platform_http_adapter.dart';
 
+/// Whether a refused response means the HOST is rate limiting this client.
+///
+/// Only a bare 429 does. A 429 whose body names a `code` (flat or under
+/// `error`) is one feature saying no (the public's daily fair-use limit on
+/// writing checks, for instance), and treating it as host-wide used to block
+/// EVERY request for a minute: one refused check froze the whole app.
+@visibleForTesting
+bool isHostWideRateLimit(Response<dynamic>? response) {
+  if (response?.statusCode != 429) return false;
+  dynamic body = response?.data;
+  if (body is String) {
+    final trimmed = body.trim();
+    if (trimmed.startsWith('{')) {
+      try {
+        body = jsonDecode(trimmed);
+      } catch (_) {}
+    }
+  }
+  if (body is Map) {
+    final nested = body['error'];
+    final code = nested is Map ? nested['code'] : null;
+    if (code is String && code.trim().isNotEmpty) return false;
+    final flat = body['code'];
+    if (flat is String && flat.trim().isNotEmpty) return false;
+  }
+  return true;
+}
+
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(
     BaseOptions(
@@ -524,7 +552,7 @@ final dioProvider = Provider<Dio>((ref) {
         final req = err.requestOptions;
         final skipAuth = shouldSkipAuth(req);
 
-        if (isRateLimitedStatus(status)) {
+        if (isRateLimitedStatus(status) && isHostWideRateLimit(err.response)) {
           // Parse Retry-After header; default to 60s if absent.
           final retryAfterHeader = err.response?.headers.value('retry-after');
           int delaySecs = 60;

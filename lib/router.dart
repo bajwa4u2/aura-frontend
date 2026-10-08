@@ -13,6 +13,7 @@ import 'features/admin/areas/discovery_area.dart';
 import 'features/admin/areas/operators_area.dart';
 import 'features/admin/areas/integrity_detail.dart';
 import 'features/admin/areas/identity_review.dart';
+import 'features/admin/areas/grant_requests_area.dart';
 import 'features/admin/areas/institution_verification_review.dart';
 import 'features/admin/domain/operator_routes.dart';
 import 'features/admin/areas/integrity_area.dart';
@@ -343,8 +344,7 @@ String? _enforceCanonicalIdMatch(
     final rest = path.startsWith('/institution/${pathId ?? ''}')
         ? path.substring('/institution/${pathId ?? ''}'.length)
         : '';
-    final query = state.uri.hasQuery ? '?${state.uri.query}' : '';
-    return '/institution/${address.canonicalSlug}$rest$query';
+    return carryQuery('/institution/${address.canonicalSlug}$rest', state.uri);
   }
 
   final canonical = institutionCanonicalRedirect(
@@ -357,7 +357,14 @@ String? _enforceCanonicalIdMatch(
     section: section,
     dashboardRoute: kInstitutionNoAffiliationDestination,
   );
-  if (canonical != null) return canonical;
+  // A canonical rewrite keeps the query: a link sent by email or by the
+  // payment page (`?checkout=success`) means nothing once it is dropped. The
+  // no-affiliation destination is a different page and takes none of it.
+  if (canonical != null) {
+    return canonical == kInstitutionNoAffiliationDestination
+        ? canonical
+        : carryQuery(canonical, state.uri);
+  }
 
   // DENIAL PROTECTS THE BOUNDARY SECOND.
   //
@@ -2037,6 +2044,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (_, __) =>
                 _operatorPage(const InstitutionVerificationReviewArea()),
           ),
+          // INSTITUTIONAL GRANT REQUESTS. A queue of decisions, in WORK.
+          GoRoute(
+            path: kOperatorGrantRequestsRoot,
+            pageBuilder: (_, __) => _operatorPage(const GrantRequestsArea()),
+          ),
           GoRoute(
             path: '/admin/integrity/moderation/:id',
             pageBuilder: (_, state) => _operatorPage(ModerationReportDetail(
@@ -2792,8 +2804,14 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
             builder: (context, state) => InstitutionRouteScope(
               address: state.pathParameters['institutionId'],
-              builder: (institutionId) =>
-                  InstitutionBillingScreen(institutionId: institutionId),
+              // `?checkout=success|cancelled` is how the payment page sends
+              // the person back; the screen says what happened.
+              builder: (institutionId) => InstitutionBillingScreen(
+                institutionId: institutionId,
+                checkoutReturn: checkoutReturnFrom(
+                  state.uri.queryParameters['checkout'],
+                ),
+              ),
             ),
           ),
           // /institution/:id/messages — restored to InstitutionMessagingScreen

@@ -50,6 +50,7 @@ import '../verification/presentation/speaking_authority_notice.dart';
 import '../domain/institution_post.dart';
 import 'integrity/institution_post_integrity_review_sheet.dart';
 import '../ui/institution_ds.dart';
+import '../../monetization/domain/monetization_refusal_copy.dart';
 
 /// Composer for [InstitutionPost]s in create mode.
 ///
@@ -1279,20 +1280,11 @@ class _InstitutionPostComposerScreenState
     // server's sentence already names the step; the banner adds the way to it.
     _authorityRefused = appError.code == kInstitutionAuthorityRequired;
 
-    // Map well-known monetization codes to friendly UI copy so users see a
-    // clear next step rather than the raw backend message.
-    switch (appError.code) {
-      case 'PLAN_REQUIRED_PRO':
-        return 'Official posts require Pro. Upgrade your institution to publish in the institution voice.';
-      case 'PLAN_REQUIRED_VERIFIED':
-        return 'This action requires a Verified institution.';
-      case 'MEMBER_LIMIT_REACHED':
-        return 'Your plan\'s member limit is reached. Upgrade to add more members.';
-      case 'CREDITS_REQUIRED':
-        return 'Not enough credits for this action.';
-      case 'BILLING_FORBIDDEN':
-        return 'Only institution owners or admins can perform this action.';
-    }
+    final planCopy = institutionPublishRefusalCopy(
+      appError.code,
+      serverMessage: appError.message,
+    );
+    if (planCopy != null) return planCopy;
 
     if (appError.hasIssues) {
       return '${appError.message} (${appError.issues!.join('; ')})';
@@ -2285,4 +2277,32 @@ class _TypeChip extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Plain sentences for the plan refusals publishing can meet (monetization,
+/// 2026-10-08), or null when [code] is not one of them.
+///
+/// No "Upgrade": the same binary ships to the stores, which do not allow an
+/// invitation to buy. Seats are no longer counted by member, so the old
+/// MEMBER_LIMIT_REACHED sentence is gone; the seat refusal carries the
+/// server's own sentence, which names the plan's seat count.
+@visibleForTesting
+String? institutionPublishRefusalCopy(
+  String? code, {
+  required String serverMessage,
+}) {
+  switch (code) {
+    case kPlanRequiredPro:
+      return kOfficialVoiceNeedsProSentence;
+    case 'PLAN_REQUIRED_VERIFIED':
+      return 'This action requires a Verified institution.';
+    case kSeatLimitReached:
+      final m = serverMessage.trim();
+      return m.isEmpty ? null : m;
+    case kCreditsRequired:
+      return kAllowanceUsedSentence;
+    case 'BILLING_FORBIDDEN':
+      return 'Only institution owners or admins can perform this action.';
+  }
+  return null;
 }

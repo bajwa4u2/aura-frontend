@@ -1,5 +1,5 @@
+import '../../../core/errors/server_refusal.dart';
 import '../../../core/trust/trust_marks.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -171,16 +171,8 @@ class _InstitutionMembersScreenState
     }
   }
 
-  String _message(Object error, String fallback) {
-    if (error is DioException) {
-      final data = error.response?.data;
-      if (data is Map) {
-        final msg = data['message']?.toString().trim() ?? '';
-        if (msg.isNotEmpty) return msg;
-      }
-    }
-    return fallback;
-  }
+  String _message(Object error, String fallback) =>
+      institutionMembersErrorMessage(error, fallback);
 
   String _roleBadge(String role) {
     switch (role.toUpperCase()) {
@@ -665,3 +657,13 @@ class _InstitutionMembersScreenState
     );
   }
 }
+
+/// The server's own sentence for a refused member change, else [fallback].
+///
+/// Reads the `{ok:false, error:{code, message}}` envelope as well as a flat
+/// `message`: it used to read only the flat one, so a refusal such as
+/// SEAT_LIMIT_REACHED, whose sentence says how many staff seats the plan
+/// holds, reached the owner as "Could not update role."
+@visibleForTesting
+String institutionMembersErrorMessage(Object error, String fallback) =>
+    ServerRefusal.of(error).message ?? fallback;

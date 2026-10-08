@@ -31,7 +31,11 @@ import 'package:go_router/go_router.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
+import '../data/operator_grants.dart';
 import '../data/operator_work.dart';
+import '../domain/operator_authority_provider.dart';
+import '../domain/operator_capability.dart';
+import '../domain/operator_routes.dart';
 import '../domain/operator_signal.dart';
 import '../ui/operator_kit.dart';
 import '../ui/operator_states.dart';
@@ -58,10 +62,10 @@ class WorkArea extends ConsumerWidget {
             Padding(
               padding: EdgeInsets.fromLTRB(pad, pad, pad, AuraSpace.s8),
               child: summary.maybeWhen(
-                orElse: () => const SizedBox(height: 36),
+                orElse: () => const _GrantRequestsChip(standalone: true),
                 data: (signal) => signal.hasValue
                     ? _SourceBar(summary: signal.value as OperatorWorkSummary)
-                    : const SizedBox(height: 36),
+                    : const _GrantRequestsChip(standalone: true),
               ),
             ),
             Expanded(
@@ -139,8 +143,43 @@ class _SourceBar extends ConsumerWidget {
                     .state = source.source
                 : null,
           ),
+        const _GrantRequestsChip(),
       ],
     );
+  }
+}
+
+/// INSTITUTIONAL GRANT REQUESTS, beside the queues the summary enumerates.
+///
+/// The work summary (`operator-work.service.ts`) does not carry this source,
+/// so the chip reads the grant queue itself and OPENS it rather than
+/// filtering the bench: these rows are not in the bench to filter. When the
+/// backend adds the source, this chip gives way to an ordinary one.
+class _GrantRequestsChip extends ConsumerWidget {
+  const _GrantRequestsChip({this.standalone = false});
+
+  /// Drawn without the rest of the bar (the summary did not answer), so it
+  /// keeps the bar's height whether or not it is shown.
+  final bool standalone;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final permitted = ref.watch(
+      hasOperatorCapabilityProvider(OperatorCapability.institutionsRead),
+    );
+    if (!permitted) {
+      return standalone ? const SizedBox(height: 36) : const SizedBox.shrink();
+    }
+    final pending = ref.watch(pendingGrantRequestsProvider);
+    final chip = _SourceChip(
+      label: 'Grant requests',
+      count: pending.valueOrNull?.length,
+      selected: false,
+      opensPage: true,
+      onTap: () => context.go(kOperatorGrantRequestsRoot),
+    );
+    if (!standalone) return chip;
+    return Align(alignment: Alignment.centerLeft, child: chip);
   }
 }
 
@@ -151,10 +190,14 @@ class _SourceChip extends StatelessWidget {
     this.count,
     this.onTap,
     this.unavailableReason,
+    this.opensPage = false,
   });
 
   final String label;
   final bool selected;
+
+  /// Tapping opens the queue's own page instead of filtering the bench.
+  final bool opensPage;
 
   /// Null when this source did not answer — the count is then unknown, and an
   /// unknown count must never be drawn as zero.
@@ -217,6 +260,11 @@ class _SourceChip extends StatelessWidget {
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
+                if (opensPage) ...[
+                  const SizedBox(width: AuraSpace.s4),
+                  const Icon(Icons.chevron_right_rounded,
+                      size: 15, color: AuraSurface.faint),
+                ],
               ],
             ),
           ),

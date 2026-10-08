@@ -47,6 +47,11 @@ enum OperatorArea {
       OperatorCapability.identityVerificationRead,
       OperatorCapability.productFeedbackRead,
       OperatorCapability.supportRead,
+      // INSTITUTIONAL GRANT REQUESTS are decided from WORK, under
+      // INSTITUTIONS_READ/WRITE (the backend's own gate on those endpoints).
+      // The permission that decides a queue has to open the area it lives in;
+      // otherwise the one operator who can decide it cannot see the door.
+      OperatorCapability.institutionsRead,
     ],
   ),
 

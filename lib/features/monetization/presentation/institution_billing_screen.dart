@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 import 'package:flutter/material.dart';
@@ -28,10 +30,113 @@ import '../providers/monetization_providers.dart';
 ///
 /// Store binaries show what the institution has (plan, seats, allowance, the
 /// grant) and nothing it could buy: no prices, no buttons, no destination.
-class InstitutionBillingScreen extends ConsumerWidget {
-  const InstitutionBillingScreen({super.key, required this.institutionId});
+///
+/// RETURNING FROM CHECKOUT. The payment page sends the person back to
+/// `/institution/<address>/billing?checkout=success` (or `=cancelled`). The
+/// plan itself changes only when the payment provider tells the server, which
+/// can land a few seconds after the person is back, so on success the page
+/// says so plainly and re-reads the plan until it changes.
+class InstitutionBillingScreen extends ConsumerStatefulWidget {
+  const InstitutionBillingScreen({
+    super.key,
+    required this.institutionId,
+    this.checkoutReturn = CheckoutReturn.none,
+  });
 
   final String institutionId;
+
+  /// Whether this page was opened by the return from a checkout.
+  final CheckoutReturn checkoutReturn;
+
+  @override
+  ConsumerState<InstitutionBillingScreen> createState() =>
+      _InstitutionBillingScreenState();
+}
+
+/// How the person came back from the payment page, read from `?checkout=`.
+enum CheckoutReturn { none, success, cancelled }
+
+CheckoutReturn checkoutReturnFrom(String? value) =>
+    switch (value?.trim().toLowerCase()) {
+      'success' => CheckoutReturn.success,
+      'cancelled' || 'canceled' => CheckoutReturn.cancelled,
+      _ => CheckoutReturn.none,
+    };
+
+/// After a successful checkout the plan is re-read this often...
+const Duration kCheckoutRefreshInterval = Duration(seconds: 5);
+
+/// ...at most this many times (about thirty seconds), stopping as soon as
+/// the plan changes.
+const int kCheckoutRefreshLimit = 6;
+
+class _InstitutionBillingScreenState
+    extends ConsumerState<InstitutionBillingScreen>
+    with WidgetsBindingObserver {
+  Timer? _poll;
+  int _polls = 0;
+  String? _baseline;
+
+  String get institutionId => widget.institutionId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    if (widget.checkoutReturn == CheckoutReturn.success) {
+      _poll = Timer.periodic(kCheckoutRefreshInterval, (_) => _afterCheckout());
+    }
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Coming back to the tab (or the app) re-reads the plan: a person who
+  /// paid or changed their plan in another tab should not see the old one.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refresh();
+  }
+
+  void _refresh() {
+    ref.invalidate(institutionEntitlementProvider(institutionId));
+    ref.invalidate(institutionGrantProvider(institutionId));
+  }
+
+  void _afterCheckout() {
+    final current = ref
+        .read(institutionEntitlementProvider(institutionId))
+        .valueOrNull;
+    if (current != null) {
+      final now = _planSignature(current);
+      if (_baseline == null) {
+        _baseline = now;
+      } else if (now != _baseline) {
+        _stopPolling();
+        return;
+      }
+    }
+    if (_polls >= kCheckoutRefreshLimit) {
+      _stopPolling();
+      return;
+    }
+    _polls++;
+    _refresh();
+  }
+
+  void _stopPolling() {
+    _poll?.cancel();
+    _poll = null;
+  }
+
+  /// What a checkout can change: the plan and tier (a plan checkout) or the
+  /// credits (a top-up).
+  static String _planSignature(InstitutionEntitlements e) =>
+      '${e.plan}|${e.planTier}|${e.creditBalance}|${e.allowanceMonthly}';
 
   bool get _purchaseAllowed => billingPurchaseAllowed(
     isWeb: kIsWeb,
@@ -44,7 +149,7 @@ class InstitutionBillingScreen extends ConsumerWidget {
   );
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final configAsync = ref.watch(monetizationConfigProvider);
     final entitlementsAsync = ref.watch(
       institutionEntitlementProvider(institutionId),
@@ -130,6 +235,10 @@ class InstitutionBillingScreen extends ConsumerWidget {
     children: [
       const InsModeHeader(title: 'Plan & Billing'),
       const InsModeHeaderGap(),
+      if (widget.checkoutReturn != CheckoutReturn.none) ...[
+        _CheckoutReturnBanner(result: widget.checkoutReturn),
+        const SizedBox(height: AuraSpace.s14),
+      ],
       ...body,
     ],
   );
@@ -211,7 +320,14 @@ class _PlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ent = entitlements;
-    final name = ent.isPro && tier != null ? 'Pro · ${tier!.label}' : 'Free';
+    // A Pro institution is Pro whether or not its tier is known: a tier the
+    // config does not list (or none recorded on an older subscription) used
+    // to make a paying institution read "Free".
+    final name = !ent.isPro
+        ? 'Free'
+        : tier != null
+        ? 'Pro · ${tier!.label}'
+        : 'Pro';
     final String detail;
     if (ent.grantRunning) {
       detail =
@@ -219,6 +335,10 @@ class _PlanCard extends StatelessWidget {
           'Nothing is charged when it ends.';
     } else if (ent.isPro && tier != null) {
       detail = tier!.audience;
+    } else if (ent.isPro) {
+      detail =
+          'Staff seats, an official voice and a monthly allowance for '
+          'checks and translation.';
     } else {
       detail =
           'Your community is free on Aura. Pro adds staff seats, '
@@ -874,6 +994,43 @@ class _MobilePurchaseNotice extends StatelessWidget {
             style: AuraText.body.copyWith(height: 1.4),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The calm word on return from the payment page.
+class _CheckoutReturnBanner extends StatelessWidget {
+  const _CheckoutReturnBanner({required this.result});
+  final CheckoutReturn result;
+
+  @override
+  Widget build(BuildContext context) {
+    final success = result == CheckoutReturn.success;
+    final tone = InsToneStyle.of(success ? InsTone.ok : InsTone.neutral);
+    return SizedBox(
+      width: double.infinity,
+      child: InsCard(
+        tone: success ? InsTone.ok : InsTone.neutral,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              success ? tone.icon : Icons.info_outline_rounded,
+              size: 18,
+              color: tone.fg,
+            ),
+            const SizedBox(width: AuraSpace.s10),
+            Expanded(
+              child: Text(
+                success
+                    ? 'Payment received. Your plan updates in a moment.'
+                    : 'Checkout was cancelled. Nothing was charged.',
+                style: AuraText.body.copyWith(height: 1.4),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

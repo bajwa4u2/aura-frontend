@@ -76,6 +76,7 @@ class OperatorAction {
     required this.perform,
     this.detail,
     this.requiresReason = false,
+    this.offersReason = false,
     this.reasonLabel = 'Reason',
     this.destructive = false,
   });
@@ -93,7 +94,13 @@ class OperatorAction {
   /// Some authorities refuse an action without a recorded reason. Where that
   /// is true, the field is required here too rather than failing at the API.
   final bool requiresReason;
+
+  /// The field is shown but may be left empty; an empty reason reaches
+  /// [perform] as null. Ignored when [requiresReason] is set.
+  final bool offersReason;
   final String reasonLabel;
+
+  bool get _showsReason => requiresReason || offersReason;
 
   final bool destructive;
 
@@ -151,8 +158,13 @@ class _ActionSheetState extends State<_ActionSheet> {
   Future<void> _confirm() async {
     setState(() => _phase = _Phase.running);
     try {
+      final written = _reason.text.trim();
       final outcome = await widget.action.perform(
-        widget.action.requiresReason ? _reason.text.trim() : null,
+        widget.action.requiresReason
+            ? written
+            : (widget.action.offersReason && written.isNotEmpty
+                ? written
+                : null),
       );
       if (!mounted) return;
       setState(() {
@@ -302,7 +314,7 @@ class _ActionSheetState extends State<_ActionSheet> {
                 ],
               ),
             ),
-          if (action.requiresReason) ...[
+          if (action._showsReason) ...[
             const SizedBox(height: AuraSpace.s8),
             // A bounded multi-line field otherwise claims the wheel and
             // strands the sheet scrolling behind it. AuraBoundedEditor hands

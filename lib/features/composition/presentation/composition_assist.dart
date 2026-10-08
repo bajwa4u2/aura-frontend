@@ -2,12 +2,14 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/errors/server_refusal.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../monetization/domain/monetization_refusal_copy.dart';
 import '../domain/composition_models.dart';
 
 /// Single, reusable composition-assist panel.
@@ -22,6 +24,26 @@ import '../domain/composition_models.dart';
 ///   POST /composition/review     { text, surface }
 ///   POST /composition/apply      { sessionId, findingId, currentText }
 ///   POST /composition/translate  { text, targetLanguage }
+/// What a person reads when a writing check or a translation is refused.
+///
+/// Never the raw exception: a DioException's text is a stack of transport
+/// detail nobody can act on, and it is what this panel used to print. The
+/// limits that stop these checks get their own plain sentences; anything else
+/// shows the server's own sentence when it sent one, else [fallback].
+@visibleForTesting
+String compositionAssistErrorText(Object error, {required String fallback}) {
+  final refusal = ServerRefusal.of(error);
+  switch (refusal.code) {
+    case kFairUseDailyLimit:
+      return kFairUseDailyLimitSentence;
+    case kCreditsRequired:
+      return kAllowanceUsedSentence;
+    case kNotActingForInstitution:
+      return refusal.message ?? fallback;
+  }
+  return refusal.message ?? fallback;
+}
+
 class CompositionAssist extends ConsumerStatefulWidget {
   const CompositionAssist({
     super.key,
@@ -148,7 +170,10 @@ class _CompositionAssistState extends ConsumerState<CompositionAssist> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _reviewError = 'Writing review could not run: $e');
+      setState(() => _reviewError = compositionAssistErrorText(
+            e,
+            fallback: 'Writing review could not run. Try again.',
+          ));
     } finally {
       if (mounted) setState(() => _reviewBusy = false);
     }
@@ -202,7 +227,10 @@ class _CompositionAssistState extends ConsumerState<CompositionAssist> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _reviewError = 'Could not apply suggestion: $e');
+      setState(() => _reviewError = compositionAssistErrorText(
+            e,
+            fallback: 'The suggestion could not be applied. Try again.',
+          ));
     } finally {
       if (mounted) setState(() => _applyingIds.remove(s.id));
     }
@@ -247,7 +275,10 @@ class _CompositionAssistState extends ConsumerState<CompositionAssist> {
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _translateError = 'Translation could not run: $e');
+      setState(() => _translateError = compositionAssistErrorText(
+            e,
+            fallback: 'Translation could not run. Try again.',
+          ));
     } finally {
       if (mounted) setState(() => _translateBusy = false);
     }

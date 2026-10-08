@@ -137,6 +137,18 @@ class InstitutionAuthoritySnapshot {
   bool holds(String id) => authorizedIds.contains(id) || activeId == id;
 }
 
+/// [target] with the query of the address that was asked for.
+///
+/// A redirect that drops the query breaks every link that carries one: the
+/// emailed link with a token, the payment page's `?checkout=success`. A
+/// target that already has its own query keeps it unchanged.
+String carryQuery(String target, Uri from) {
+  if (!from.hasQuery || from.query.isEmpty || target.contains('?')) {
+    return target;
+  }
+  return '$target?${from.query}';
+}
+
 /// Pure. No providers, no route, no clock — so every branch is testable.
 InstitutionRouteDecision decideInstitutionRoute({
   required InstitutionAuthoritySnapshot snapshot,
