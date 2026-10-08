@@ -20,7 +20,7 @@ import '../core/ui/document_scaffold.dart';
 class ChildSafetyScreen extends StatelessWidget {
   const ChildSafetyScreen({super.key});
 
-  static const String safetyEmail = 'safety@auraplatform.org';
+  static const String safetyEmail = 'support@auraplatform.org';
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +80,7 @@ class _ChildSafetyBody extends StatelessWidget {
               'Reporting is available to anyone — Aura users, institutions, parents, guardians, educators, researchers, and the public. You do not need an Aura account to report by email. Child-safety reports go to the front of Aura’s review queue and alert Aura’s safety contact immediately.',
           bullets: [
             'In the app: use Report on a post, reply, announcement, message, or profile, and choose “Child safety or exploitation”. That report goes to the front of the queue and alerts Aura’s safety contact at once.',
-            'Email: write to safety@auraplatform.org with a description, the affected URL or username if known, and any context that helps reviewers act quickly.',
+            'Email: write to support@auraplatform.org with a description, the affected URL or username if known, and any context that helps reviewers act quickly.',
             'Emergency: if you believe a child is in immediate danger, contact local emergency services first, then report to Aura. We will cooperate with the investigating authority.',
             'You are not required to give your name. An email address lets us follow up, but is not needed to act on a report.',
           ],
@@ -119,7 +119,7 @@ class _ChildSafetyBody extends StatelessWidget {
           bullets: [
             'Apparent CSAM is reported to NCMEC’s CyberTipline and is never forwarded, shared, or downloaded outside that process.',
             'Aura responds to subpoenas, court orders, search warrants, and emergency-disclosure requests from competent authorities.',
-            'Investigators may contact Aura at safety@auraplatform.org for child-safety matters; legal process should be served through the channels published in our legal contact.',
+            'Investigators may contact Aura at support@auraplatform.org for child-safety matters; legal process should be served through the channels published in our legal contact.',
             'Aura preserves account, content, and access records as required by law when a valid preservation request is received.',
           ],
         ),
