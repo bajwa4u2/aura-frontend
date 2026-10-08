@@ -2819,6 +2819,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 checkoutReturn: checkoutReturnFrom(
                   state.uri.queryParameters['checkout'],
                 ),
+                checkoutSessionId: state.uri.queryParameters['session_id'],
               ),
             ),
           ),

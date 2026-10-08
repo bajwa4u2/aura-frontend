@@ -61,6 +61,17 @@ class MonetizationRepository {
     return _checkoutFrom(res.data);
   }
 
+  /// What became of one checkout, in the server's words: PAID, CONFIRMING,
+  /// PROCESSING, OPEN, FAILED or REFUNDED.
+  Future<String> fetchCheckoutStatus(String institutionId, String sessionId) async {
+    final res = await _dio.get(
+      '/monetization/institutions/${institutionId.trim()}/checkout/'
+      '${Uri.encodeComponent(sessionId.trim())}',
+    );
+    final payload = _unwrap(res.data);
+    return payload is Map ? (payload['status'] ?? '').toString() : '';
+  }
+
   /// The institution's latest grant request, or null if it never asked.
   Future<InstitutionGrant?> fetchInstitutionGrant(String institutionId) async {
     final res = await _dio.get(

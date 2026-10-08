@@ -41,9 +41,14 @@ class InstitutionBillingScreen extends ConsumerStatefulWidget {
     super.key,
     required this.institutionId,
     this.checkoutReturn = CheckoutReturn.none,
+    this.checkoutSessionId,
   });
 
   final String institutionId;
+
+  /// The checkout Stripe returned from (`?session_id=`); the page asks the
+  /// server what became of it rather than trusting `?checkout=success`.
+  final String? checkoutSessionId;
 
   /// Whether this page was opened by the return from a checkout.
   final CheckoutReturn checkoutReturn;
@@ -51,6 +56,43 @@ class InstitutionBillingScreen extends ConsumerStatefulWidget {
   @override
   ConsumerState<InstitutionBillingScreen> createState() =>
       _InstitutionBillingScreenState();
+}
+
+/// What the return banner says. Only the server's PAID is "received": the
+/// link alone (`?checkout=success`) is not proof of payment (2026-10-08).
+({String text, bool confirmed}) checkoutReturnMessage({
+  required CheckoutReturn result,
+  String? serverStatus,
+  bool gaveUp = false,
+  bool hasSession = false,
+}) {
+  if (result == CheckoutReturn.cancelled) {
+    return (text: 'Checkout was cancelled. Nothing was charged.', confirmed: false);
+  }
+  switch (serverStatus) {
+    case 'PAID':
+      return (text: 'Payment received. Your plan and credits are up to date.', confirmed: true);
+    case 'PROCESSING':
+      return (
+        text: 'Your bank payment is being processed. This can take a few '
+            'business days; your plan starts when it clears.',
+        confirmed: false,
+      );
+    case 'OPEN':
+      return (text: 'This checkout was not completed. Nothing was charged.', confirmed: false);
+    case 'FAILED':
+      return (text: 'This payment did not go through. Nothing was charged.', confirmed: false);
+    case 'REFUNDED':
+      return (text: 'This payment was refunded.', confirmed: false);
+  }
+  if (gaveUp || !hasSession) {
+    return (
+      text: 'We could not confirm a payment yet. If you paid, it will show '
+          'here shortly.',
+      confirmed: false,
+    );
+  }
+  return (text: 'Confirming your payment…', confirmed: false);
 }
 
 /// How the person came back from the payment page, read from `?checkout=`.
@@ -77,6 +119,10 @@ class _InstitutionBillingScreenState
   int _polls = 0;
   String? _baseline;
 
+  /// The server's answer for the returned checkout; null while unknown.
+  String? _checkoutStatus;
+  bool _checkoutStatusGaveUp = false;
+
   String get institutionId => widget.institutionId;
 
   @override
@@ -85,6 +131,7 @@ class _InstitutionBillingScreenState
     WidgetsBinding.instance.addObserver(this);
     if (widget.checkoutReturn == CheckoutReturn.success) {
       _poll = Timer.periodic(kCheckoutRefreshInterval, (_) => _afterCheckout());
+      _readCheckoutStatus();
     }
   }
 
@@ -117,15 +164,36 @@ class _InstitutionBillingScreenState
         _baseline = now;
       } else if (now != _baseline) {
         _stopPolling();
+        _readCheckoutStatus();
         return;
       }
     }
     if (_polls >= kCheckoutRefreshLimit) {
       _stopPolling();
+      if (mounted && !_checkoutSettled) setState(() => _checkoutStatusGaveUp = true);
       return;
     }
     _polls++;
     _refresh();
+    _readCheckoutStatus();
+  }
+
+  bool get _checkoutSettled =>
+      _checkoutStatus != null && _checkoutStatus != 'CONFIRMING';
+
+  Future<void> _readCheckoutStatus() async {
+    final sessionId = widget.checkoutSessionId?.trim() ?? '';
+    if (sessionId.isEmpty || _checkoutSettled) return;
+    try {
+      final status = await ref
+          .read(monetizationRepositoryProvider)
+          .fetchCheckoutStatus(institutionId, sessionId);
+      if (!mounted || status.isEmpty) return;
+      setState(() => _checkoutStatus = status);
+      if (status == 'PAID') _refresh();
+    } catch (_) {
+      // Unknown stays unknown; the banner says so when polling ends.
+    }
   }
 
   void _stopPolling() {
@@ -236,7 +304,12 @@ class _InstitutionBillingScreenState
       const InsModeHeader(title: 'Plan & Billing'),
       const InsModeHeaderGap(),
       if (widget.checkoutReturn != CheckoutReturn.none) ...[
-        _CheckoutReturnBanner(result: widget.checkoutReturn),
+        _CheckoutReturnBanner(
+          result: widget.checkoutReturn,
+          serverStatus: _checkoutStatus,
+          gaveUp: _checkoutStatusGaveUp,
+          hasSession: (widget.checkoutSessionId ?? '').trim().isNotEmpty,
+        ),
         const SizedBox(height: AuraSpace.s14),
       ],
       ...body,
@@ -1001,12 +1074,26 @@ class _MobilePurchaseNotice extends StatelessWidget {
 
 /// The calm word on return from the payment page.
 class _CheckoutReturnBanner extends StatelessWidget {
-  const _CheckoutReturnBanner({required this.result});
+  const _CheckoutReturnBanner({
+    required this.result,
+    this.serverStatus,
+    this.gaveUp = false,
+    this.hasSession = false,
+  });
   final CheckoutReturn result;
+  final String? serverStatus;
+  final bool gaveUp;
+  final bool hasSession;
 
   @override
   Widget build(BuildContext context) {
-    final success = result == CheckoutReturn.success;
+    final message = checkoutReturnMessage(
+      result: result,
+      serverStatus: serverStatus,
+      gaveUp: gaveUp,
+      hasSession: hasSession,
+    );
+    final success = message.confirmed;
     final tone = InsToneStyle.of(success ? InsTone.ok : InsTone.neutral);
     return SizedBox(
       width: double.infinity,
@@ -1023,9 +1110,7 @@ class _CheckoutReturnBanner extends StatelessWidget {
             const SizedBox(width: AuraSpace.s10),
             Expanded(
               child: Text(
-                success
-                    ? 'Payment received. Your plan updates in a moment.'
-                    : 'Checkout was cancelled. Nothing was charged.',
+                message.text,
                 style: AuraText.body.copyWith(height: 1.4),
               ),
             ),

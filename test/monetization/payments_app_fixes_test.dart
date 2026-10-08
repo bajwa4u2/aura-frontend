@@ -89,6 +89,33 @@ Future<void> _pumpBilling(
 
 void main() {
   group('1. the return from checkout', () {
+    test('only the server says a payment was received (2026-10-08)', () {
+      String say(String? status, {bool gaveUp = false}) => checkoutReturnMessage(
+            result: CheckoutReturn.success,
+            serverStatus: status,
+            gaveUp: gaveUp,
+            hasSession: true,
+          ).text;
+      expect(say(null), 'Confirming your payment…');
+      expect(say('CONFIRMING'), 'Confirming your payment…');
+      expect(checkoutReturnMessage(result: CheckoutReturn.success, serverStatus: 'PAID', hasSession: true).confirmed, isTrue);
+      expect(say('PROCESSING'), contains('bank payment is being processed'));
+      expect(say('OPEN'), 'This checkout was not completed. Nothing was charged.');
+      expect(say('FAILED'), 'This payment did not go through. Nothing was charged.');
+      expect(say(null, gaveUp: true), startsWith('We could not confirm a payment yet'));
+      for (final s in [null, 'CONFIRMING', 'PROCESSING', 'OPEN', 'FAILED', 'REFUNDED']) {
+        expect(
+          checkoutReturnMessage(result: CheckoutReturn.success, serverStatus: s, hasSession: true).confirmed,
+          isFalse,
+          reason: '$s is not a received payment',
+        );
+      }
+      expect(
+        checkoutReturnMessage(result: CheckoutReturn.cancelled).text,
+        'Checkout was cancelled. Nothing was charged.',
+      );
+    });
+
     test('reads ?checkout= into what happened', () {
       expect(checkoutReturnFrom('success'), CheckoutReturn.success);
       expect(checkoutReturnFrom('cancelled'), CheckoutReturn.cancelled);
@@ -126,8 +153,12 @@ void main() {
         },
       );
 
+      // No session id on this link: the page does not claim a payment.
       expect(
-        find.text('Payment received. Your plan updates in a moment.'),
+        find.text(
+          'We could not confirm a payment yet. If you paid, it will show '
+          'here shortly.',
+        ),
         findsOneWidget,
       );
       expect(find.text('Free'), findsOneWidget);
