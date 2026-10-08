@@ -1694,6 +1694,18 @@
   "parent": ""
  },
  {
+  "path": "/admin/work/grant-requests",
+  "segments": 3,
+  "params": [],
+  "renders": true,
+  "hasRedirect": false,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
   "path": "/admin/integrity/moderation/:id",
   "segments": 4,
   "params": [
