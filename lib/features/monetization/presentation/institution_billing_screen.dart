@@ -398,8 +398,8 @@ class _UsageCard extends StatelessWidget {
             label: 'Staff seats',
             value: seatsLine,
             helper:
-                'Owners and administrators. Members and followers are '
-                'never counted.',
+                'Owners, administrators and official voices. Meeting '
+                'hosts, members and followers are never counted.',
             fraction: ent.seatLimit == null || ent.seatLimit == 0
                 ? null
                 : (ent.seatsUsed ?? 0) / ent.seatLimit!,
