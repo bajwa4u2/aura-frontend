@@ -23,6 +23,11 @@ enum ReportTargetType {
   /// AURA CONVERSATION SYSTEM (canon 2026-08-16): canonical conversation
   /// message.
   conversationMessage,
+
+  /// Institution posts and announcements (child-safety audit, 2026-10-08):
+  /// the server always accepted them; the app never offered them.
+  institutionPost,
+  announcement,
 }
 
 extension ReportTargetTypeWire on ReportTargetType {
@@ -31,7 +36,10 @@ extension ReportTargetTypeWire on ReportTargetType {
       case ReportTargetType.post:
         return 'POST';
       case ReportTargetType.reply:
-        return 'REPLY';
+        // A reply IS a Post on the server. 'REPLY' was never a target the
+        // server accepted, so every reply report failed (child-safety audit,
+        // 2026-10-08). The server now also accepts 'REPLY' for older builds.
+        return 'POST';
       case ReportTargetType.user:
         return 'USER';
       case ReportTargetType.message:
@@ -40,11 +48,17 @@ extension ReportTargetTypeWire on ReportTargetType {
         return 'INSTITUTION';
       case ReportTargetType.conversationMessage:
         return 'CONVERSATION_MESSAGE';
+      case ReportTargetType.institutionPost:
+        return 'INSTITUTION_POST';
+      case ReportTargetType.announcement:
+        return 'ANNOUNCEMENT';
     }
   }
 }
 
 enum ReportReason {
+  // First, deliberately: the one that must never be hard to find.
+  childSafety,
   harassment,
   hate,
   sexual,
@@ -59,6 +73,8 @@ extension ReportReasonMeta on ReportReason {
   /// histogram per reason category.
   String get wire {
     switch (this) {
+      case ReportReason.childSafety:
+        return 'CHILD_SAFETY';
       case ReportReason.harassment:
         return 'HARASSMENT_OR_ABUSE';
       case ReportReason.hate:
@@ -76,6 +92,8 @@ extension ReportReasonMeta on ReportReason {
 
   String get label {
     switch (this) {
+      case ReportReason.childSafety:
+        return 'Child safety or exploitation';
       case ReportReason.harassment:
         return 'Harassment or abuse';
       case ReportReason.hate:

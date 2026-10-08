@@ -8,7 +8,11 @@ import '../../../app/shell/rail/rail_composition.dart';
 import '../../../config.dart';
 
 import '../../../core/product/product_language.dart';
+import '../../../core/compliance/report_block_menu.dart';
+import '../../../core/compliance/report_repository.dart';
 import '../../../core/ui/aura_platform_components.dart';
+import '../../posts/presentation/widgets/post_card.dart'
+    show viewerIdentityProvider;
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_responsive.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -343,6 +347,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                     : null,
                 onBack: () =>
                     context.canPop() ? context.pop() : context.go('/'),
+                onReport: _reportActionFor(detailAsync.valueOrNull),
                 onShare: () async {
                   // Native share intent isn't shipped on every platform
                   // path yet (Web Share API + iOS/Android share sheets).
@@ -669,6 +674,38 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
   /// don't have a reaction endpoint yet — fall back to a user-post
   /// shaped target so callers can still hide the bar by checking the
   /// id; the actual interaction widgets read FeedItem.type and skip.
+  /// Report / Block on the post this discussion is about. The top of a
+  /// discussion had neither (child-safety audit, 2026-10-08). Hidden on the
+  /// viewer's own post; Block only when a person (not an institution) wrote it.
+  VoidCallback? _reportActionFor(FeedItem? item) {
+    if (item == null) return null;
+    final id = item.id.trim();
+    final authorId = item.author.id.trim();
+    final viewerId =
+        ref.watch(viewerIdentityProvider).valueOrNull?.userId ?? '';
+    final isPerson = item.authorType == FeedAuthorType.user;
+    if (id.isEmpty || (isPerson && authorId.isNotEmpty && authorId == viewerId)) {
+      return null;
+    }
+    final (ReportTargetType type, String target, String label) = switch (item.type) {
+      FeedItemType.userPost => (ReportTargetType.post, id, 'this post'),
+      FeedItemType.institutionPost =>
+        (ReportTargetType.institutionPost, id, 'this post'),
+      FeedItemType.announcement =>
+        (ReportTargetType.announcement, id, 'this announcement'),
+      FeedItemType.article => (ReportTargetType.user, authorId, 'this author'),
+    };
+    if (target.isEmpty) return null;
+    return () => showReportBlockMenu(
+          context,
+          ref,
+          targetType: type,
+          targetId: target,
+          contextLabel: label,
+          blockUserId: isPerson ? authorId : null,
+        );
+  }
+
   ReactionTarget _reactionTargetFor(FeedItem item) {
     switch (item.type) {
       case FeedItemType.userPost:
@@ -705,10 +742,14 @@ class _ThreadAppBar extends StatelessWidget {
     required this.onBack,
     required this.onShare,
     this.followablePostId,
+    this.onReport,
   });
 
   final VoidCallback onBack;
   final VoidCallback onShare;
+
+  /// Report / Block for the post at the top; null on the viewer's own post.
+  final VoidCallback? onReport;
 
   /// When non-null, render the Follow toggle for this thread post id.
   final String? followablePostId;
@@ -740,6 +781,13 @@ class _ThreadAppBar extends StatelessWidget {
             color: AuraSurface.muted,
             onPressed: onShare,
           ),
+          if (onReport != null)
+            IconButton(
+              tooltip: 'Report or block',
+              icon: const Icon(Icons.more_horiz, size: 20),
+              color: AuraSurface.muted,
+              onPressed: onReport,
+            ),
         ],
       ),
     );

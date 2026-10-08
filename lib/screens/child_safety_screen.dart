@@ -20,7 +20,7 @@ import '../core/ui/document_scaffold.dart';
 class ChildSafetyScreen extends StatelessWidget {
   const ChildSafetyScreen({super.key});
 
-  static const String safetyEmail = 'safety@auraplatform.org';
+  static const String safetyEmail = 'support@auraplatform.org';
 
   @override
   Widget build(BuildContext context) {
@@ -77,22 +77,22 @@ class _ChildSafetyBody extends StatelessWidget {
           number: '03',
           title: 'How to report a child-safety concern',
           body:
-              'Reporting is available to anyone — Aura users, institutions, parents, guardians, educators, researchers, and the public. You do not need an account to report CSAM or grooming. Reports are routed to Aura’s Trust & Safety review queue and are treated with priority.',
+              'Reporting is available to anyone — Aura users, institutions, parents, guardians, educators, researchers, and the public. You do not need an Aura account to report by email. Child-safety reports go to the front of Aura’s review queue and alert Aura’s safety contact immediately.',
           bullets: [
-            'In-app: use the report control on any post, reply, message, profile, institution, or space. Select a child-safety reason where applicable so the report enters the priority queue.',
-            'Email: write to safety@auraplatform.org with a description, the affected URL or username if known, and any context that helps reviewers act quickly.',
+            'In the app: use Report on a post, reply, announcement, message, or profile, and choose “Child safety or exploitation”. That report goes to the front of the queue and alerts Aura’s safety contact at once.',
+            'Email: write to support@auraplatform.org with a description, the affected URL or username if known, and any context that helps reviewers act quickly.',
             'Emergency: if you believe a child is in immediate danger, contact local emergency services first, then report to Aura. We will cooperate with the investigating authority.',
-            'Anonymous reports are accepted. Reporters are not required to identify themselves to Aura.',
+            'You are not required to give your name. An email address lets us follow up, but is not needed to act on a report.',
           ],
         ),
         const _SafetySection(
           number: '04',
           title: 'How we review reports',
           body:
-              'Reports flagged as child-safety concerns are surfaced ahead of routine moderation work. Aura combines automated detection signals with human review by Trust & Safety reviewers trained on child-protection policy. Reviewers operate under documented playbooks so that decisions are consistent, auditable, and not driven by individual reviewer discretion.',
+              'Reports flagged as child-safety concerns are surfaced ahead of routine moderation work, and a person reviews every report. Reviewers follow Aura’s written child-safety response procedure so that decisions are consistent and auditable.',
           bullets: [
-            'Automated text screening flags suspected exploitation language so it is routed quickly for human review. Reports from people remain the main way a concern reaches a reviewer.',
-            'Trust & Safety reviewers verify, classify, and act on reports, including borderline and ambiguous cases.',
+            'Automated text screening flags suspected exploitation language in public posts for human review. Reports from people remain the main way a concern reaches a reviewer.',
+            'Reviewers verify, classify, and act on reports, including borderline and ambiguous cases.',
             'Confirmed CSAM is preserved in a controlled, access-restricted form only as necessary to meet legal preservation duties; the underlying material is removed from public surfaces immediately.',
             'Decisions are logged so enforcement can be reviewed, audited, and corrected if a mistake is identified.',
           ],
@@ -115,11 +115,11 @@ class _ChildSafetyBody extends StatelessWidget {
           number: '06',
           title: 'Cooperation with law enforcement',
           body:
-              'Aura cooperates with valid legal requests from law-enforcement agencies investigating child exploitation. We respond to lawful process, preserve records when properly requested, and proactively report suspected CSAM through the channels available to platforms.',
+              'Aura cooperates with valid legal requests from law-enforcement agencies investigating child exploitation. We respond to lawful process, preserve records when properly requested, and report apparent CSAM to the National Center for Missing & Exploited Children (NCMEC) CyberTipline, as United States law requires.',
           bullets: [
-            'Reports of apparent CSAM are submitted to NCMEC where Aura is required or permitted to do so.',
+            'Apparent CSAM is reported to NCMEC’s CyberTipline and is never forwarded, shared, or downloaded outside that process.',
             'Aura responds to subpoenas, court orders, search warrants, and emergency-disclosure requests from competent authorities.',
-            'Investigators may contact Aura at safety@auraplatform.org for child-safety matters; legal process should be served through the channels published in our legal contact.',
+            'Investigators may contact Aura at support@auraplatform.org for child-safety matters; legal process should be served through the channels published in our legal contact.',
             'Aura preserves account, content, and access records as required by law when a valid preservation request is received.',
           ],
         ),
@@ -129,16 +129,16 @@ class _ChildSafetyBody extends StatelessWidget {
           body:
               'Aura operates a moderation and Trust & Safety function whose mandate explicitly includes child protection. Moderation is not advisory — it has the authority to remove content, restrict surfaces, and end accounts. Institutions on Aura are also responsible for moderating the surfaces they administer and may be held accountable for repeated child-safety failures within their authority.',
           bullets: [
-            'Review of reported public posts, replies, announcements, profiles, spaces and uploaded media, and of reported correspondence and calls, for child-safety violations.',
+            'Review of reported posts, replies, announcements, profiles, and private messages for child-safety violations, with the power to remove them and to close accounts.',
             'Automated text screening supports, but does not replace, human review.',
-            'Trust & Safety reviewers are supported with documented policy, escalation paths, and well-being safeguards appropriate to the work.',
+            'Reviewers work from a written procedure with a defined escalation path for urgent reports.',
           ],
         ),
         const _SafetySection(
           number: '08',
           title: 'Age, account integrity, and minors on Aura',
           body:
-              'Aura is built for accountable adult communication, including institutional and civic participation. The platform applies controls intended to keep accounts truthful and to limit exposure of minors to inappropriate behavior.',
+              'Aura is for accountable public and institutional communication. In the United States you must be 13 or older to hold an account (16 elsewhere), 16 or older to publish publicly (18 elsewhere), and 18 or older to represent an institution. A date of birth is required to join, and a change to it that would unlock publishing or representing an institution is reviewed with proof of age.',
           bullets: [
             'Accounts must represent a real person or a legitimately authorized institution; impersonation and identity laundering are prohibited.',
             'Aura does not knowingly permit registration by users below the age required by applicable law in their region.',
@@ -244,7 +244,7 @@ class _SafetyHero extends StatelessWidget {
           ),
           const SizedBox(height: AuraSpace.md),
           Text(
-            'Last updated: Wednesday, September 30, 2026 · 3:45 AM ET',
+            'Last updated: Thursday, October 8, 2026 · 7:45 AM ET',
             style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
           ),
         ],

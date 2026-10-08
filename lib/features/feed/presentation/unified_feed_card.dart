@@ -18,6 +18,8 @@ import '../../../core/media/stored_media.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/substrate_chip.dart';
+import '../../../core/compliance/report_block_menu.dart';
+import '../../../core/compliance/report_repository.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
@@ -848,14 +850,14 @@ ReactionTarget? _replyReactionTargetFor(FeedItem parent, String replyId) {
 /// code entirely absent.
 extension _UnifiedFeedCardOwnerActions on UnifiedFeedCard {
   Widget? _ownerActions(BuildContext context, WidgetRef ref) {
-    if (item.type != FeedItemType.userPost) return null;
-    if (item.authorType != FeedAuthorType.user) return null;
-
     final viewerId = ref.watch(viewerIdentityProvider).valueOrNull?.userId ?? '';
     final authorId = item.author.id.trim();
-    if (viewerId.isEmpty || authorId.isEmpty || authorId != viewerId) {
-      return null;
-    }
+    final isOwnUserPost = item.type == FeedItemType.userPost &&
+        item.authorType == FeedAuthorType.user &&
+        viewerId.isNotEmpty &&
+        authorId.isNotEmpty &&
+        authorId == viewerId;
+    if (!isOwnUserPost) return _reportActions(context, ref, viewerId);
 
     final postId = item.id.trim();
     if (postId.isEmpty) return null;
@@ -884,6 +886,48 @@ extension _UnifiedFeedCardOwnerActions on UnifiedFeedCard {
           );
         }
       },
+    );
+  }
+}
+
+/// REPORT AND BLOCK ON SOMEONE ELSE'S CARD.
+///
+/// The main feed card had no way to report or block (child-safety audit,
+/// 2026-10-08) — only older surfaces did, so the place most content is met
+/// was the one place it could not be reported. Every card that is not the
+/// viewer's own now carries the shared Report/Block menu.
+extension _UnifiedFeedCardReportActions on UnifiedFeedCard {
+  Widget? _reportActions(BuildContext context, WidgetRef ref, String viewerId) {
+    final id = item.id.trim();
+    final authorId = item.author.id.trim();
+    if (id.isEmpty) return null;
+    final isPerson = item.authorType == FeedAuthorType.user;
+    if (isPerson && authorId == viewerId) return null;
+
+    final (ReportTargetType type, String target, String label) = switch (item.type) {
+      FeedItemType.userPost => (ReportTargetType.post, id, 'this post'),
+      FeedItemType.institutionPost =>
+        (ReportTargetType.institutionPost, id, 'this post'),
+      FeedItemType.announcement =>
+        (ReportTargetType.announcement, id, 'this announcement'),
+      // An article is not a moderation target of its own yet; its author is.
+      FeedItemType.article => (ReportTargetType.user, authorId, 'this author'),
+    };
+    if (target.isEmpty) return null;
+
+    return IconButton(
+      tooltip: 'Report or block',
+      padding: EdgeInsets.zero,
+      visualDensity: VisualDensity.compact,
+      icon: const Icon(Icons.more_horiz, size: 20, color: AuraSurface.faint),
+      onPressed: () => showReportBlockMenu(
+        context,
+        ref,
+        targetType: type,
+        targetId: target,
+        contextLabel: label,
+        blockUserId: isPerson ? authorId : null,
+      ),
     );
   }
 }
