@@ -40,7 +40,6 @@
 6 lib/features/home/presentation/public_home_screen.dart
 1 lib/features/institution_ontology/widgets/sector_grid.dart
 2 lib/features/institutions/announcements/institution_announcements_screen.dart
-1 lib/features/institutions/engagement/engagement_detail_screen.dart
 2 lib/features/institutions/engagement/engagement_list_screen.dart
 2 lib/features/institutions/explore/institution_explore_screen.dart
 1 lib/features/institutions/live/institution_live_invite_widget.dart
@@ -50,7 +49,6 @@
 1 lib/features/institutions/posts/institution_post_detail_screen.dart
 # admin_workspace_screen 14 -> 0: screen deleted; the operator hub replaces it
 3 lib/features/institutions/presentation/institution_detail_screen.dart
-1 lib/features/institutions/presentation/institution_members_screen.dart
 2 lib/features/institutions/profile/institution_profile_screen.dart
 # 2026-08-16 onboarding residue retirement: 7 -> 6 (the fourth path card
 # "Existing institution admin -> /institution/sign-in" retired — one

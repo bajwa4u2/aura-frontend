@@ -50,7 +50,8 @@ class _InstitutionMembersScreenState extends ConsumerState<InstitutionMembersScr
   String? _updateError;
   bool _attentionMarked = false;
 
-  late String _tab = widget.initialTab ?? 'members';
+  // A tab from a link (`?tab=`) is honoured only if it is one of ours.
+  late String _tab = const {'members', 'requests', 'invites'}.contains(widget.initialTab) ? widget.initialTab! : 'members';
 
   /// The invite form, opened by the gold Invite action from any tab.
   bool _showCreate = false;

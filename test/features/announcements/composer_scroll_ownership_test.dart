@@ -146,6 +146,12 @@ void main() {
         final owners = RegExp(r'SingleChildScrollView\(|CustomScrollView\(|ListView\(')
             .allMatches(src)
             .length;
+        // DD-43: a composer built on the workspace frame scrolls in the
+        // frame's one column; it must then declare none of its own.
+        if (src.contains('WorkspacePage(')) {
+          expect(owners, 0, reason: 'The workspace frame is the one scroll owner of this composer.');
+          return;
+        }
         expect(
           owners,
           1,

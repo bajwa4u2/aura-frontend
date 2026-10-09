@@ -1502,8 +1502,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
             builder: (context, state) => InstitutionRouteScope(
               address: state.pathParameters['institutionId'],
-              builder: (institutionId) =>
-                  MeetingsHomeScreen(institutionId: institutionId),
+              // `?tab=` opens a tab (DD-43): upcoming, followup, past, booking.
+              builder: (institutionId) => MeetingsHomeScreen(
+                institutionId: institutionId,
+                initialTab: state.uri.queryParameters['tab'],
+              ),
             ),
           ),
           // Institution-owned scheduling — created meetings carry the
@@ -2664,8 +2667,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
             builder: (context, state) => InstitutionRouteScope(
               address: state.pathParameters['institutionId'],
-              builder: (institutionId) =>
-                  InstitutionMembersScreen(institutionId: institutionId),
+              // `?tab=` opens a tab (DD-43): members, requests, invites.
+              builder: (institutionId) => InstitutionMembersScreen(
+                institutionId: institutionId,
+                initialTab: state.uri.queryParameters['tab'],
+              ),
             ),
           ),
           GoRoute(

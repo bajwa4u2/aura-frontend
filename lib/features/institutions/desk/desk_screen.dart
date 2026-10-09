@@ -16,7 +16,6 @@ import '../engagement/question_record.dart';
 import '../workspace/workspace_page.dart';
 import 'desk_models.dart';
 import 'desk_providers.dart';
-import '../../../core/product/product_language.dart';
 
 /// THE DESK (DD-43, 2026-10-09): the institution workspace's first screen.
 ///
