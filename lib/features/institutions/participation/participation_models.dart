@@ -84,11 +84,11 @@ enum ParticipationStatus {
   String get routingNote {
     switch (this) {
       case ParticipationStatus.active:
-        return 'Routing active — public posts on this topic reach your workspace.';
+        return 'Public questions and issues on this topic reach your workspace.';
       case ParticipationStatus.paused:
-        return 'Routing paused — posts are not currently reaching you.';
+        return 'Paused: nothing on this topic reaches you until you resume.';
       case ParticipationStatus.inactive:
-        return 'Inactive — not receiving posts on this topic.';
+        return 'Off: nothing on this topic reaches you.';
     }
   }
 
@@ -117,6 +117,7 @@ class InstitutionParticipation {
     this.notes,
     this.createdAt,
     this.updatedAt,
+    this.activatedAt,
   });
 
   final String id;
@@ -128,6 +129,10 @@ class InstitutionParticipation {
   final String? notes;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  /// When it was first switched on; null means it never has been, so the
+  /// action is "Start", not "Reactivate" (2026-10-09).
+  final DateTime? activatedAt;
 
   static String? _opt(Map<String, dynamic> m, List<String> keys) {
     for (final k in keys) {
@@ -155,6 +160,7 @@ class InstitutionParticipation {
       notes: _opt(m, ['notes']),
       createdAt: readDate(m['createdAt']),
       updatedAt: readDate(m['updatedAt']),
+      activatedAt: readDate(m['activatedAt']),
     );
   }
 }

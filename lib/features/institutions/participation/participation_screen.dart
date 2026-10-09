@@ -352,33 +352,33 @@ class _ParticipationCard extends StatelessWidget {
                 ),
                 const SizedBox(width: AuraSpace.s8),
                 _DestructiveAction(
-                  label: 'Deactivate',
+                  label: 'Turn off',
                   onConfirm: () =>
                       onStatusChanged(ParticipationStatus.inactive.wire),
-                  confirmTitle: 'Deactivate participation?',
+                  confirmTitle: 'Stop answering on this topic?',
                   confirmBody:
-                      'Posts on ${topicLabel.toLowerCase()} will no longer route to your workspace. '
-                      'You can reactivate at any time.',
+                      'Questions and issues on ${topicLabel.toLowerCase()} will stop reaching your workspace. '
+                      'You can turn it back on at any time.',
                 ),
               ] else if (isPaused) ...[
                 _PrimaryAction(
-                  label: 'Reactivate',
+                  label: 'Resume',
                   icon: Icons.play_arrow_rounded,
                   onTap: () => onStatusChanged(ParticipationStatus.active.wire),
                 ),
                 const SizedBox(width: AuraSpace.s8),
                 _DestructiveAction(
-                  label: 'Deactivate',
+                  label: 'Turn off',
                   onConfirm: () =>
                       onStatusChanged(ParticipationStatus.inactive.wire),
-                  confirmTitle: 'Deactivate participation?',
+                  confirmTitle: 'Stop answering on this topic?',
                   confirmBody:
-                      'Posts on ${topicLabel.toLowerCase()} will no longer route to your workspace. '
-                      'You can reactivate at any time.',
+                      'Questions and issues on ${topicLabel.toLowerCase()} will stop reaching your workspace. '
+                      'You can turn it back on at any time.',
                 ),
               ] else if (isInactive) ...[
                 _PrimaryAction(
-                  label: 'Reactivate',
+                  label: item.activatedAt == null ? 'Start' : 'Turn back on',
                   icon: Icons.play_arrow_rounded,
                   onTap: () => onStatusChanged(ParticipationStatus.active.wire),
                 ),
@@ -540,12 +540,12 @@ class _EmptyState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AuraSpace.s16),
-            const Text('No participation declarations', style: AuraText.title),
+            const Text('No topics yet', style: AuraText.title),
             const SizedBox(height: AuraSpace.s8),
             Text(
-              'Declare the topics your institution responds to or is accountable '
-              'on. Active declarations route matching public posts to your '
-              'engagement workspace.',
+              'Choose the topics your institution answers for. Public questions '
+              'and issues on those topics then reach your workspace, and the '
+              'people who answer for you are told.',
               style: AuraText.body.copyWith(color: AuraSurface.muted),
               textAlign: TextAlign.center,
             ),
@@ -553,7 +553,7 @@ class _EmptyState extends StatelessWidget {
             FilledButton.icon(
               onPressed: onAdd,
               icon: const Icon(Icons.add, size: 18),
-              label: const Text('Declare participation'),
+              label: const Text('Take on a topic'),
               style: FilledButton.styleFrom(
                 backgroundColor: AuraSurface.accent,
                 foregroundColor: AuraSurface.onAccent,
@@ -598,6 +598,9 @@ class _CreateParticipationSheetState
     super.dispose();
   }
 
+  /// Start receiving questions on this topic straight away (default).
+  bool _startNow = true;
+
   Future<void> _save() async {
     if (_topic == null) {
       setState(() => _error = 'Select a topic to continue.');
@@ -608,7 +611,7 @@ class _CreateParticipationSheetState
       _error = null;
     });
     try {
-      await widget.repo.create(
+      final created = await widget.repo.create(
         institutionId: widget.institutionId,
         topic: _topic!.wire,
         mode: _mode.wire,
@@ -616,6 +619,16 @@ class _CreateParticipationSheetState
             ? null
             : _notesController.text.trim(),
       );
+      // A new topic is created switched off; it used to wait behind a
+      // "Reactivate" button nobody knew to press (2026-10-09). Taking it on
+      // switches it on in the same step unless the person chose later.
+      if (_startNow && created.id.isNotEmpty) {
+        await widget.repo.updateStatus(
+          institutionId: widget.institutionId,
+          participationId: created.id,
+          status: ParticipationStatus.active.wire,
+        );
+      }
       if (!mounted) return;
       Navigator.of(context).pop(true);
     } on DioException catch (e) {
@@ -667,11 +680,11 @@ class _CreateParticipationSheetState
                 ),
               ),
               const SizedBox(height: AuraSpace.s16),
-              const Text('Declare participation', style: AuraText.title),
+              const Text('Take on a topic', style: AuraText.title),
               const SizedBox(height: AuraSpace.s4),
               Text(
-                'Choose a topic and how your institution participates. '
-                'Active declarations route matching public posts to your workspace.',
+                'Choose a topic and how your institution answers for it. '
+                'Public questions and issues on it will reach your workspace.',
                 style: AuraText.small.copyWith(
                   color: AuraSurface.muted,
                   height: 1.5,
@@ -792,6 +805,18 @@ class _CreateParticipationSheetState
               ),
               const SizedBox(height: AuraSpace.s20),
 
+              CheckboxListTile(
+                value: _startNow,
+                onChanged: _saving ? null : (v) => setState(() => _startNow = v ?? true),
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: const Text('Start answering on this topic now', style: AuraText.body),
+                subtitle: Text(
+                  'Questions and issues on it reach your workspace from today.',
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                ),
+              ),
+              const SizedBox(height: AuraSpace.s8),
               FilledButton(
                 onPressed: _saving ? null : _save,
                 style: FilledButton.styleFrom(
@@ -809,7 +834,7 @@ class _CreateParticipationSheetState
                           color: Colors.white,
                         ),
                       )
-                    : const Text('Save declaration'),
+                    : Text(_startNow ? 'Take it on and start answering' : 'Save, start later'),
               ),
             ],
           ),
