@@ -110,6 +110,11 @@ class _InstitutionMembersScreenState
     _load();
   }
 
+  /// Staff seats in use and the plan's limit (null = no limit), as the server
+  /// counts them (2026-10-09). Shown to people who manage members.
+  int? _seatsUsed;
+  int? _seatsLimit;
+
   Future<void> _load() async {
     setState(() {
       _loading = true;
@@ -125,6 +130,9 @@ class _InstitutionMembersScreenState
       setState(() {
         _members = members;
         _callerRole = (data['callerRole'] ?? '').toString().trim();
+        final seats = data['seats'];
+        _seatsUsed = seats is Map ? (seats['used'] as num?)?.toInt() : null;
+        _seatsLimit = seats is Map ? (seats['limit'] as num?)?.toInt() : null;
         _loading = false;
       });
     } catch (e) {
@@ -231,6 +239,9 @@ class _InstitutionMembersScreenState
     };
     final isRepresentative = caps.contains('OFFICIAL_REPRESENTATION');
     final isHost = caps.contains('HOST_MEETINGS');
+    // Seat holding comes from the server's own rule (owners, admins and
+    // official voices); the app never re-derives it.
+    final holdsSeat = member['holdsSeat'] == true;
     final isRemoving = _removing == memberId;
     final isUpdating = _updating == memberId;
     final isBusy = isRemoving || isUpdating;
@@ -311,12 +322,17 @@ class _InstitutionMembersScreenState
               _pill(_roleBadge(role), _roleColor(role), _roleBg(role)),
               // Capabilities that read as institutional STANDING carry a
               // visible badge — responsibility is visible to everyone.
+              // Standing in plain words (DD-42 phase 2, 2026-10-09).
               if (isRepresentative)
-                _pill('Representative', AuraSurface.accentText,
+                _pill('Official voice', AuraSurface.accentText,
                     AuraSurface.accentSoft),
-                if (isHost)
-                _pill('Host', AuraSurface.coSun,
+              if (isHost)
+                _pill('Meeting host', AuraSurface.coSun,
                     AuraSurface.coSun.withValues(alpha: 0.16)),
+              // A seat is a plan matter: shown to those who manage members.
+              if (holdsSeat && _canManageMembers)
+                _pill('Staff seat', AuraSurface.muted,
+                    AuraSurface.muted.withValues(alpha: 0.14)),
             ],
           ),
           if (_canManageThisMember(role)) ...[
@@ -370,14 +386,14 @@ class _InstitutionMembersScreenState
                       value: isRepresentative ? 'REVOKE_REP' : 'GRANT_REP',
                       child: Text(
                           isRepresentative
-                              ? 'Remove Representative'
-                              : 'Make Representative',
+                              ? 'Remove as official voice'
+                              : 'Make official voice',
                           style: AuraText.small),
                     ),
                   if (role.toUpperCase() == 'MEMBER')
                     PopupMenuItem(
                       value: isHost ? 'REVOKE_HOST' : 'GRANT_HOST',
-                      child: Text(isHost ? 'Remove Host' : 'Make Host',
+                      child: Text(isHost ? 'Remove as meeting host' : 'Make meeting host',
                           style: AuraText.small),
                     ),
                   const PopupMenuDivider(),
@@ -612,7 +628,13 @@ class _InstitutionMembersScreenState
         Row(
           children: [
             Text(
-              '${_members.length} member${_members.length == 1 ? '' : 's'}',
+              [
+                '${_members.length} member${_members.length == 1 ? '' : 's'}',
+                if (_canManageMembers && _seatsUsed != null)
+                  _seatsLimit == null
+                      ? '$_seatsUsed staff seat${_seatsUsed == 1 ? '' : 's'} in use'
+                      : '$_seatsUsed of $_seatsLimit staff seats in use',
+              ].join(' · '),
               style: AuraText.small.copyWith(color: AuraSurface.muted),
             ),
             const Spacer(),
@@ -644,7 +666,7 @@ class _InstitutionMembersScreenState
       // just operators. The previous "institutional access" wording read
       // as admin-panel language in a regular workspace surface; use the
       // plain product terms (people who belong, what they can do).
-      subtitle: 'People who belong to this institution, what they can do, and pending join requests.',
+      subtitle: 'People who belong to this institution and what each of them may do.',
       trailing: _canManageMembers
           ? AuraPrimaryButton(
               label: 'Invite',

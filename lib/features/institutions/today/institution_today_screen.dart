@@ -320,7 +320,7 @@ class _PublicQuestions extends ConsumerWidget {
           final waiting = records.where((r) => r.status == RoutedRecordStatus.pending).toList();
           if (waiting.isEmpty) {
             return const _Quiet(
-              'No questions are waiting. When someone asks this institution something in public, it appears here.',
+              'No questions are waiting. When someone asks a question or raises an issue on a topic this institution has taken on, it appears here.',
             );
           }
           return Column(

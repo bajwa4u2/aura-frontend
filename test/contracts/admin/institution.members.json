@@ -19,7 +19,8 @@
             "IDENTITY"
           ]
         }
-      }
+      },
+      "holdsSeat": null
     },
     {
       "id": "cmomember0002",
@@ -37,7 +38,8 @@
         "verification": {
           "classes": []
         }
-      }
+      },
+      "holdsSeat": null
     },
     {
       "id": "cmomember0003",
@@ -55,7 +57,8 @@
         "verification": {
           "classes": []
         }
-      }
+      },
+      "holdsSeat": null
     },
     {
       "id": "cmomember0004",
@@ -73,7 +76,8 @@
         "verification": {
           "classes": []
         }
-      }
+      },
+      "holdsSeat": null
     },
     {
       "id": "cmomember0005",
@@ -91,8 +95,10 @@
         "verification": {
           "classes": []
         }
-      }
+      },
+      "holdsSeat": null
     }
   ],
-  "callerRole": "PLATFORM_ADMIN"
+  "callerRole": "PLATFORM_ADMIN",
+  "seats": null
 }
