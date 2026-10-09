@@ -89,7 +89,14 @@ class AccountabilityLifecycle {
     required this.routedAt,
     required this.updatedAt,
     this.institutionName = '',
+    this.commitmentDueAt,
+    this.commitmentDateMoved = false,
   });
+
+  /// DD-43: the day the institution committed to act by, and whether that
+  /// day has been moved since it was first set.
+  final DateTime? commitmentDueAt;
+  final bool commitmentDateMoved;
 
   final String institutionId;
 
@@ -131,6 +138,8 @@ class AccountabilityLifecycle {
       updatedAt:
           DateTime.tryParse(_asString(j['updatedAt']) ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
+      commitmentDueAt: DateTime.tryParse(_asString(j['commitmentDueAt']) ?? ''),
+      commitmentDateMoved: j['commitmentDateMoved'] == true,
     );
   }
 }

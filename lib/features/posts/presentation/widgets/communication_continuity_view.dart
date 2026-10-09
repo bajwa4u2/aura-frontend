@@ -12,6 +12,7 @@ import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
 import '../../data/continuity_providers.dart';
 import '../../domain/communication_continuity.dart';
+import '../../../../core/product/temporal.dart';
 
 /// Communication Governance v1.0, Roadmap Milestone 8.
 ///
@@ -308,6 +309,14 @@ class _AccountabilityLifecycleRowState extends ConsumerState<_AccountabilityLife
       case AccountabilityStatus.responded:
         return 'Responded';
       case AccountabilityStatus.committed:
+        // DD-43: a commitment says when, and says so if the date moved.
+        final due = l.commitmentDueAt;
+        final moved = l.commitmentDateMoved ? ' (date moved)' : '';
+        if (due != null) {
+          return l.overdue
+              ? 'Committed · was due ${AuraTemporal.dueDay(due)}$moved'
+              : 'Committed · due ${AuraTemporal.dueDay(due)}$moved';
+        }
         return l.overdue ? 'Committed · Overdue' : 'Committed';
       case AccountabilityStatus.resolved:
         return 'Resolved';

@@ -261,6 +261,15 @@ class AuraTemporal {
     return '${_weekdays[l.weekday - 1].substring(0, 3)}, ${_months[l.month - 1]} ${l.day}, ${l.year} · ${_clock(l)}';
   }
 
+  /// A due date is a calendar day, not an instant (DD-43): stored as the
+  /// end of that day in UTC, so it is read in UTC and never shifted a day by
+  /// the viewer's zone. "Tue, Oct 20", with the year when it is not this one.
+  static String dueDay(DateTime due) {
+    final u = due.toUtc();
+    final base = '${_weekdays[u.weekday - 1].substring(0, 3)}, ${_months[u.month - 1]} ${u.day}';
+    return u.year == _now().year ? base : '$base, ${u.year}';
+  }
+
   static String _date(DateTime l) {
     final now = _now();
     final month = _months[l.month - 1];

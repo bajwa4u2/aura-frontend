@@ -100,7 +100,14 @@ class RoutedRecord {
     this.acknowledgedAt,
     this.reopenedAt,
     this.resolutions = const [],
+    this.commitmentDueAt,
+    this.commitmentDueChanges = const [],
   });
+
+  /// DD-43: the day a commitment is due by, and each time that day moved
+  /// (oldest first; the first entry is when it was set).
+  final DateTime? commitmentDueAt;
+  final List<({DateTime? from, DateTime? to, DateTime? changedAt})> commitmentDueChanges;
 
   /// When it reached this institution, and what has been done since
   /// (2026-10-09): the workspace shows the record's whole history.
@@ -210,6 +217,12 @@ class RoutedRecord {
               statement: (r['statement'] ?? '').toString(),
               at: readDate(r['resolvedAt']),
             ),
+      ],
+      commitmentDueAt: readDate(m['commitmentDueAt']),
+      commitmentDueChanges: [
+        if (m['commitmentDueChanges'] is List)
+          for (final c in (m['commitmentDueChanges'] as List).whereType<Map>())
+            (from: readDate(c['from']), to: readDate(c['to']), changedAt: readDate(c['changedAt'])),
       ],
     );
   }
