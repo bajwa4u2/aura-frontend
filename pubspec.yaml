@@ -47,6 +47,8 @@ dependencies:
 
   # External links
   url_launcher: ^6.3.0
+  # Reads the App Store country only (US storefront may link to web billing).
+  in_app_purchase_storekit: 0.4.11+2
   # Platform-owned store review. Android uses Google Play In-App Review and
   # iOS uses SKStoreReviewController -- the OS decides whether a prompt is
   # actually shown, and it deliberately gives no result back. That is the

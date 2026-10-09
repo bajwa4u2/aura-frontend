@@ -119,7 +119,7 @@ void main() {
           expect(find.text('Buy'), findsNothing);
           expect(find.textContaining('auraplatform.org'), findsNothing);
           expect(
-            find.text('Plan changes are not available in this app'),
+            find.text('Plans are not bought in this app'),
             findsOneWidget,
           );
           // The free grant may still be asked for: it is not a purchase.

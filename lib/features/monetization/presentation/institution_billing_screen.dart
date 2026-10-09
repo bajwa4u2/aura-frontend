@@ -19,6 +19,7 @@ import '../../../core/ui/substrate_chip.dart';
 import '../../institutions/ui/institution_ds.dart';
 import '../../institutions/workspace/workspace_page.dart';
 import '../data/monetization_repository.dart';
+import '../data/store_country.dart';
 import '../domain/monetization_models.dart';
 import '../providers/monetization_providers.dart';
 
@@ -213,9 +214,11 @@ class _InstitutionBillingScreenState
     platform: kIsWeb ? null : defaultTargetPlatform,
   );
 
-  bool get _mayInviteExternalPurchase => billingMayInviteExternalPurchase(
+  bool _mayInviteExternalPurchase(MonetizationConfig config) => billingMayInviteExternalPurchase(
     isWeb: kIsWeb,
     platform: kIsWeb ? null : defaultTargetPlatform,
+    appStoreCountry: ref.watch(appStoreCountryProvider).valueOrNull,
+    appStoreWebLinkUnitedStates: config.appStoreWebLinkUnitedStates,
   );
 
   @override
@@ -297,8 +300,8 @@ class _InstitutionBillingScreenState
                     ),
                   ],
                 ] else ...[
-                  if (_mayInviteExternalPurchase)
-                    const _MobilePurchaseNotice()
+                  if (_mayInviteExternalPurchase(config))
+                    _MobilePurchaseNotice(institutionId: institutionId)
                   else
                     const _BillingNotInThisAppNotice(),
                 ],
@@ -1044,11 +1047,20 @@ class _ManageBillingCard extends StatelessWidget {
 bool billingMayInviteExternalPurchase({
   required bool isWeb,
   required TargetPlatform? platform,
+  String? appStoreCountry,
+  bool appStoreWebLinkUnitedStates = false,
 }) {
   if (isWeb) return true;
   switch (platform) {
     case TargetPlatform.iOS:
+      // Apple allows a link to web purchase on the UNITED STATES storefront
+      // only (3.1.1(a), since 30 Apr 2025), so the App Store country decides,
+      // never the device region; and the server can switch it off if the
+      // rulings change. Everywhere else it stays a forbidden call to action.
+      return appStoreWebLinkUnitedStates && appStoreCountry == 'USA';
     case TargetPlatform.android:
+      // Google Play needs Aura enrolled in its US external-links program
+      // first (a founder decision, with a fee). Until then, no invitation.
       return false;
     default:
       // Windows, macOS and Linux are not distributed under store purchase
@@ -1073,7 +1085,7 @@ bool billingPurchaseAllowed({
 }
 
 /// Billing exists, and it is not done here. No price, no destination, no
-/// invitation — the three things 3.1.1 is about.
+/// invitation: the three things 3.1.1 is about outside the US storefront.
 class _BillingNotInThisAppNotice extends StatelessWidget {
   const _BillingNotInThisAppNotice();
 
@@ -1083,14 +1095,11 @@ class _BillingNotInThisAppNotice extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Plan changes are not available in this app',
-            style: AuraText.title,
-          ),
+          const Text('Plans are not bought in this app', style: AuraText.title),
           const SizedBox(height: AuraSpace.s6),
           Text(
             'Your current plan, seats and allowance are shown above. '
-            'An owner of this institution can change the plan.',
+            'An owner of this institution chooses and changes the plan.',
             style: AuraText.body.copyWith(height: 1.4),
           ),
         ],
@@ -1099,22 +1108,36 @@ class _BillingNotInThisAppNotice extends StatelessWidget {
   }
 }
 
+/// On the US App Store: where plans are chosen, and a way there. Opens this institution's billing page in the browser, where
+/// Stripe checkout takes the payment (founder, 9 Oct 2026: "we stay with
+/// web through stripe").
 class _MobilePurchaseNotice extends StatelessWidget {
-  const _MobilePurchaseNotice();
+  const _MobilePurchaseNotice({required this.institutionId});
+
+  final String institutionId;
 
   @override
   Widget build(BuildContext context) {
+    final url = Uri.parse('https://auraplatform.org/institution/$institutionId/billing');
     return _FullWidthCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Manage your plan on the web', style: AuraText.title),
+          const Text('Choose or change your plan on the web', style: AuraText.title),
           const SizedBox(height: AuraSpace.s6),
           Text(
-            'Plans and top-ups are handled on app.auraplatform.org. Sign in '
-            'there with the same account to manage billing for this '
-            'institution.',
+            'Plans, yearly billing and credit top-ups are bought on '
+            'auraplatform.org. Sign in there with this account; the plan '
+            'applies here as soon as it is paid.',
             style: AuraText.body.copyWith(height: 1.4),
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          WorkspacePrimaryButton(
+            action: WorkspaceAction(
+              label: 'Open billing on the web',
+              icon: Icons.open_in_new_rounded,
+              onPressed: () => launchUrl(url, mode: LaunchMode.externalApplication),
+            ),
           ),
         ],
       ),

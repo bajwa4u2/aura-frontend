@@ -183,6 +183,8 @@ class MonetizationConfig {
     required this.providers,
     this.tiers = const [],
     this.nonprofitDiscountPercent = 0,
+    this.appStoreWebLinkUnitedStates = false,
+    this.playWebLinkUnitedStates = false,
   });
 
   factory MonetizationConfig.fromJson(Map<String, dynamic> json) {
@@ -211,6 +213,11 @@ class MonetizationConfig {
           .map((e) => PlanTier.fromJson(Map<String, dynamic>.from(e)))
           .toList(growable: false),
       nonprofitDiscountPercent: _intOf(json['nonprofitDiscountPercent']),
+      // Absent (an older server) means no link: the safe answer.
+      appStoreWebLinkUnitedStates:
+          (json['storeWebLink'] as Map?)?['appStoreUnitedStates'] == true,
+      playWebLinkUnitedStates:
+          (json['storeWebLink'] as Map?)?['playUnitedStates'] == true,
     );
   }
 
@@ -225,6 +232,12 @@ class MonetizationConfig {
 
   /// Discount for confirmed nonprofits, schools and faith institutions.
   final int nonprofitDiscountPercent;
+
+  /// Whether a store app may point an owner to web billing on a US
+  /// storefront (server switch, 9 Oct 2026): Apple's US App Store, and
+  /// Google Play in the US once Aura is enrolled in its links program.
+  final bool appStoreWebLinkUnitedStates;
+  final bool playWebLinkUnitedStates;
 
   PlanTier? tierByCode(String? code) {
     if (code == null) return null;

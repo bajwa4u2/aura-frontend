@@ -65,7 +65,47 @@ void main() {
       );
     });
 
-    test('Android is held to the same rule', () {
+    // Founder, 9 Oct 2026: "we stay with web through stripe", and give
+    // owners clarity in the store apps. Apple allows the link on the UNITED
+    // STATES storefront only (3.1.1(a)); the App Store country decides.
+    test('iOS on the US App Store may, while the server allows it', () {
+      expect(
+        billingMayInviteExternalPurchase(
+          isWeb: false,
+          platform: TargetPlatform.iOS,
+          appStoreCountry: 'USA',
+          appStoreWebLinkUnitedStates: true,
+        ),
+        isTrue,
+      );
+      expect(
+        billingMayInviteExternalPurchase(
+          isWeb: false,
+          platform: TargetPlatform.iOS,
+          appStoreCountry: 'USA',
+          appStoreWebLinkUnitedStates: false,
+        ),
+        isFalse,
+        reason: 'the server switch turns it off without a release',
+      );
+    });
+
+    test('any other App Store country, or an unknown one, may not', () {
+      for (final country in ['GBR', 'PAK', 'CAN', null]) {
+        expect(
+          billingMayInviteExternalPurchase(
+            isWeb: false,
+            platform: TargetPlatform.iOS,
+            appStoreCountry: country,
+            appStoreWebLinkUnitedStates: true,
+          ),
+          isFalse,
+          reason: '$country',
+        );
+      }
+    });
+
+    test('Android is held to the same rule, until Aura enrolls in the Play US links program', () {
       expect(
         billingMayInviteExternalPurchase(
           isWeb: false,
@@ -98,8 +138,8 @@ void main() {
     ).readAsStringSync();
 
     test('the external-purchase card is behind the invitation rule', () {
-      expect(src, contains('if (_mayInviteExternalPurchase)'));
-      expect(src, contains('const _MobilePurchaseNotice()'));
+      expect(src, contains('if (_mayInviteExternalPurchase(config))'));
+      expect(src, contains('_MobilePurchaseNotice(institutionId: institutionId)'));
       expect(src, contains('const _BillingNotInThisAppNotice()'));
     });
 
