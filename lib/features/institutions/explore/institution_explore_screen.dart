@@ -145,18 +145,16 @@ class _InstitutionExploreScreenState
     ];
   }
 
-  /// WHERE EXPLORE OPENS (founder ruling D2, 2026-08-23).
+  /// WHERE EXPLORE OPENS: PUBLIC (founder, 2026-10-09, superseding ruling D2
+  /// of 2026-08-23).
   ///
-  /// Entering the institution workspace as a member opens the MEMBER
-  /// projection. Public remains a legitimate scope and stays available — but
-  /// the entry to a workspace should be the workspace's own view, not the
-  /// global feed that happens to sit first in the list.
-  ///
-  /// Contextual, not a global default: someone with no standing has no member
-  /// scope, so they open on Public, which is the correct public experience.
+  /// Explore sits under PUBLIC in the workspace, and Aura is public-first: it
+  /// opens on what the public sees. Member and Internal stay one tap away.
+  /// D2 opened members on the Member projection; the founder: "explore lands
+  /// on members by default rather than public".
   int _entryScopeIndex(List<_ExploreScopeKey> scopes) {
-    final member = scopes.indexOf(_ExploreScopeKey.member);
-    return member >= 0 ? member : 0;
+    final public = scopes.indexOf(_ExploreScopeKey.public);
+    return public >= 0 ? public : 0;
   }
 
   void _onCompose(_ExploreScopeKey scope) {
