@@ -194,9 +194,17 @@ KindComposition compositionForKind(WidgetRef ref, String? kind) {
 /// as the signed-in person's own institution identity says. An institution
 /// the identity does not describe gets the neutral composition.
 KindComposition compositionForInstitution(WidgetRef ref, String address) {
-  final idn = ref.watch(institutionIdentityProvider);
   final a = address.trim();
-  final matches = idn != null && a.isNotEmpty && (idn.id == a || idn.slug == a || idn.workspaceAddress == a);
+  if (a.isEmpty) return KindComposition.neutral;
+  // Every institution the person belongs to carries its kind; the one in the
+  // address decides, not the person's oldest membership.
+  for (final m in ref.watch(myAffiliationsProvider)) {
+    if ((m.id == a || m.slug == a) && (m.kind ?? '').isNotEmpty) {
+      return compositionForKind(ref, m.kind);
+    }
+  }
+  final idn = ref.watch(institutionIdentityProvider);
+  final matches = idn != null && (idn.id == a || idn.slug == a || idn.workspaceAddress == a);
   return compositionForKind(ref, matches ? idn.kind : null);
 }
 

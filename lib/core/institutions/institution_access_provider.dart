@@ -26,7 +26,11 @@ class MemberAffiliation {
     required this.canSpeakOfficially,
     required this.isVerified,
     this.capabilities = const <String>{},
+    this.kind,
   });
+
+  /// The kind it is composed as (DD-42 phase 3), as the server reports it.
+  final String? kind;
 
   final String id;
   final String name;
@@ -69,6 +73,7 @@ class MemberAffiliation {
               .where((s) => s.isNotEmpty),
       },
       isVerified: inst['isVerified'] == true || status == 'VERIFIED',
+      kind: (inst['kind'] ?? '').toString().trim().isEmpty ? null : (inst['kind'] ?? '').toString().trim(),
     );
   }
 }

@@ -310,7 +310,12 @@ class InstitutionShell extends ConsumerWidget {
     final identity = ref.watch(institutionIdentityProvider);
     final path = GoRouterState.of(context).uri.path;
     final isPreview = _isPublicPreviewPath(path);
-    final composition = compositionForKind(ref, identity?.kind);
+    // The institution in the address decides the composition, not the
+    // person's oldest membership (DD-42 phase 3).
+    final addressedParts = path.split('/')..removeWhere((p) => p.isEmpty);
+    final composition = institutionAddressedIn(path) && addressedParts.length >= 2
+        ? compositionForInstitution(ref, addressedParts[1])
+        : compositionForKind(ref, identity?.kind);
 
     // Pending-attention counts power the nav badges. Only admins can read the
     // underlying endpoints, so we only subscribe for them; everyone else sees
