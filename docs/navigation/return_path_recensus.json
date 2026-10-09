@@ -979,6 +979,17 @@
   "verdict": "COMPLIANT"
  },
  {
+  "route": "/me/questions",
+  "sample": "/me/questions",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "parentReturn",
+  "deepLinkDestination": "/me",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
   "route": "/articles/:slug",
   "sample": "/articles/x-slug",
   "renders": true,
@@ -1597,13 +1608,13 @@
  {
   "route": "/institution/:institutionId/dashboard",
   "sample": "/institution/x-institutionid/dashboard",
-  "renders": true,
+  "renders": false,
   "protected": false,
   "deepLinkSemantic": "contextReturn",
   "deepLinkDestination": "/institution/x-institutionid/explore",
   "inAppSemantic": "stackReturn",
   "affordance": true,
-  "verdict": "COMPLIANT"
+  "verdict": "NOT_A_SURFACE"
  },
  {
   "route": "/institution/domains",
@@ -1751,13 +1762,13 @@
  {
   "route": "/institution/:institutionId/request-verification",
   "sample": "/institution/x-institutionid/request-verification",
-  "renders": true,
+  "renders": false,
   "protected": false,
   "deepLinkSemantic": "flowCancel",
   "deepLinkDestination": "/institution/x-institutionid/explore",
   "inAppSemantic": "flowCancel",
   "affordance": true,
-  "verdict": "COMPLIANT"
+  "verdict": "NOT_A_SURFACE"
  },
  {
   "route": "/institution/correspondence",
@@ -1903,6 +1914,17 @@
   "verdict": "COMPLIANT"
  },
  {
+  "route": "/institution/:institutionId/today",
+  "sample": "/institution/x-institutionid/today",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "deepLinkFallback",
+  "deepLinkDestination": "/institution/x-institutionid/explore",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
   "route": "/institution/:institutionId/explore",
   "sample": "/institution/x-institutionid/explore",
   "renders": true,
@@ -2037,21 +2059,21 @@
  {
   "route": "/institution/:institutionId/messages",
   "sample": "/institution/x-institutionid/messages",
-  "renders": true,
+  "renders": false,
   "protected": false,
   "deepLinkSemantic": "contextReturn",
   "deepLinkDestination": "/institution/x-institutionid/explore",
   "inAppSemantic": "stackReturn",
   "affordance": true,
-  "verdict": "COMPLIANT"
+  "verdict": "NOT_A_SURFACE"
  },
  {
   "route": "/institution/:institutionId/messages/direct",
   "sample": "/institution/x-institutionid/messages/direct",
   "renders": false,
   "protected": false,
-  "deepLinkSemantic": "parentReturn",
-  "deepLinkDestination": "/institution/x-institutionid/messages",
+  "deepLinkSemantic": "deepLinkFallback",
+  "deepLinkDestination": "/institution/x-institutionid/explore",
   "inAppSemantic": "stackReturn",
   "affordance": true,
   "verdict": "NOT_A_SURFACE"
@@ -2061,8 +2083,8 @@
   "sample": "/institution/x-institutionid/messages/direct/archived",
   "renders": false,
   "protected": false,
-  "deepLinkSemantic": "parentReturn",
-  "deepLinkDestination": "/institution/x-institutionid/messages",
+  "deepLinkSemantic": "deepLinkFallback",
+  "deepLinkDestination": "/institution/x-institutionid/explore",
   "inAppSemantic": "stackReturn",
   "affordance": true,
   "verdict": "NOT_A_SURFACE"

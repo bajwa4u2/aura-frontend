@@ -80,28 +80,47 @@ Future<_Capture> _open(WidgetTester t, RoutedRecord record, {CapabilityProjectio
 void main() {
   testWidgets('responding to an issue can commit the institution, in one request to respond', (t) async {
     final capture = await _open(t, _record());
-    expect(find.text('Waiting for a response'), findsOneWidget);
+    expect(find.textContaining('Waiting for a response'), findsOneWidget);
 
     await t.tap(find.text('Respond'));
     await t.pumpAndSettle();
     await t.enterText(find.byType(TextField).first, 'We will replace it by Friday.');
     await t.tap(find.text('Commits to act'));
-    await t.pump();
+    await t.pumpAndSettle();
+
+    // DD-43: a commitment says when. Without a day nothing is sent.
+    await t.tap(find.text('Send response'));
+    await t.pumpAndSettle();
+    expect(capture.requests.where((r) => r.path.endsWith('/respond')), isEmpty);
+    expect(find.textContaining('choose a due date'), findsOneWidget);
+
+    // The picker opens a week out; accept it.
+    await t.tap(find.text('Choose'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('OK'));
+    await t.pumpAndSettle();
+    final day = DateUtils.dateOnly(DateTime.now()).add(const Duration(days: 7));
+    final iso = '${day.year.toString().padLeft(4, '0')}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
+
     await t.tap(find.text('Send response'));
     await t.pumpAndSettle();
 
     final sent = capture.requests.where((r) => r.path.endsWith('/respond')).toList();
     expect(sent, hasLength(1));
     expect(sent.single.path, '/institutions/inst-1/engagement/rec-1/respond');
-    expect(sent.single.data, {'text': 'We will replace it by Friday.', 'outcome': 'COMMITMENT'});
+    expect(sent.single.data, {'text': 'We will replace it by Friday.', 'outcome': 'COMMITMENT', 'dueAt': iso});
     // Nothing is published as a separate institution post any more.
     expect(capture.requests.any((r) => r.path.contains('/posts')), isFalse);
   });
 
   testWidgets('a question is answered: no commit or resolve is offered', (t) async {
     await _open(t, _record(intent: 'ASK'));
-    expect(find.text('Waiting for an answer'), findsOneWidget);
+    expect(find.textContaining('Waiting for an answer'), findsOneWidget);
+    await t.tap(find.text('More'));
+    await t.pumpAndSettle();
     expect(find.text('Acknowledge'), findsNothing); // issues only
+    await t.tapAt(const Offset(5, 5));
+    await t.pumpAndSettle();
     await t.tap(find.text('Respond'));
     await t.pumpAndSettle();
     expect(find.text('Commits to act'), findsNothing);
@@ -110,9 +129,13 @@ void main() {
 
   testWidgets('an issue waiting for a response can be acknowledged', (t) async {
     final capture = await _open(t, _record());
+    // DD-43: everything but the one gold action is under More.
+    await t.tap(find.text('More'));
+    await t.pumpAndSettle();
     await t.tap(find.text('Acknowledge'));
     await t.pumpAndSettle();
-    expect(capture.requests.last.path, '/institutions/inst-1/engagement/rec-1/acknowledge');
+    // The record and Memory refresh afterwards, so look for the request itself.
+    expect(capture.requests.map((r) => r.path), contains('/institutions/inst-1/engagement/rec-1/acknowledge'));
   });
 
   testWidgets('someone who does not speak for the institution is told why there is no Respond', (t) async {
