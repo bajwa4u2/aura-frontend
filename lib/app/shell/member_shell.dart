@@ -422,6 +422,11 @@ class InstitutionShell extends ConsumerWidget {
               : _InstitutionMobileBar(
                   identity: identity,
                   pendingTotal: pendingJoinRequests + pendingInvites,
+                  // The bottom bar's More opens the same drawer; a second
+                  // menu button above it read as two (founder, 9 Oct 2026).
+                  // In a meeting the bottom bar steps aside, so this one
+                  // returns as the only way to the navigation.
+                  showMenu: isMeetingFocus,
                 ),
           child: AuraSurfaceScaffold(
             type: AuraSurfaceType.institutionWorkspace,
@@ -828,10 +833,13 @@ class _PreviewChip extends StatelessWidget {
 // =============================================================================
 
 class _InstitutionMobileBar extends StatelessWidget {
-  const _InstitutionMobileBar({required this.identity, this.pendingTotal = 0});
+  const _InstitutionMobileBar({required this.identity, this.pendingTotal = 0, this.showMenu = true});
 
   final InstitutionIdentity? identity;
   final int pendingTotal;
+
+  /// Only when there is no bottom bar to open the drawer from.
+  final bool showMenu;
 
   @override
   Widget build(BuildContext context) {
@@ -848,7 +856,7 @@ class _InstitutionMobileBar extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Stack(
+            if (showMenu) Stack(
               clipBehavior: Clip.none,
               children: [
                 IconButton(
@@ -868,7 +876,7 @@ class _InstitutionMobileBar extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(width: AuraSpace.s2),
+            SizedBox(width: showMenu ? AuraSpace.s2 : AuraSpace.s8),
             _InstitutionAvatarSmall(name: name, logoUrl: identity?.logoUrl),
             const SizedBox(width: AuraSpace.s8),
             Expanded(
