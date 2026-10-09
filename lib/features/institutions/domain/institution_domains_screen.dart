@@ -17,6 +17,8 @@ import '../../../core/institutions/institution_access_provider.dart';
 import '../ui/institution_ds.dart';
 import 'institution_domains_providers.dart';
 import 'institution_domains_repository.dart';
+import '../institution_words.dart';
+import '../../../core/product/temporal.dart';
 
 class InstitutionDomainsScreen extends ConsumerStatefulWidget {
   const InstitutionDomainsScreen({super.key, this.institutionId});
@@ -391,7 +393,7 @@ class _InstitutionDomainsScreenState
                   borderRadius: BorderRadius.circular(AuraRadius.xl),
                 ),
                 child: Text(
-                  status.replaceAll('_', ' '),
+                  domainStatusWords(status),
                   style: AuraText.small.copyWith(
                     color: statusColor,
                     fontWeight: FontWeight.w600,
@@ -407,14 +409,14 @@ class _InstitutionDomainsScreenState
               'Primary domain',
               style: AuraText.small.copyWith(color: AuraText.small.color),
             ),
-          if (trustLevel.isNotEmpty && isVerified)
+          if (domainTrustWords(trustLevel).isNotEmpty && isVerified)
             Text(
-              'Trust: $trustLevel',
+              domainTrustWords(trustLevel),
               style: AuraText.small,
             ),
-          if (verifiedAt.isNotEmpty)
+          if (DateTime.tryParse(verifiedAt) != null)
             Text(
-              'Verified: $verifiedAt',
+              'Confirmed ${AuraTemporal.fullShort(DateTime.parse(verifiedAt))}',
               style: AuraText.small,
             ),
           const SizedBox(height: AuraSpace.s12),
@@ -434,15 +436,15 @@ class _InstitutionDomainsScreenState
               runSpacing: AuraSpace.s8,
               children: [
                 AuraSecondaryButton(
-                  label: 'DNS challenge',
+                  label: 'Get the record to add',
                   onPressed: () => issueChallenge(id),
                 ),
                 AuraSecondaryButton(
-                  label: 'Verify',
+                  label: 'Check the record',
                   onPressed: () => verifyDomain(id),
                 ),
                 AuraSecondaryButton(
-                  label: 'Auto verify',
+                  label: 'Check automatically',
                   onPressed: () => startAutoVerify(id),
                 ),
                 AuraSecondaryButton(
@@ -470,9 +472,9 @@ class _InstitutionDomainsScreenState
               style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: AuraSpace.s8),
-            if (slug.isNotEmpty) Text('Slug: $slug'),
-            if (institutionState != null && institutionState!.isNotEmpty)
-              Text('Standing: $institutionState'),
+            if (slug.isNotEmpty) Text('auraplatform.org/i/$slug'),
+            if (institutionStandingWords(institutionState).isNotEmpty)
+              Text(institutionStandingWords(institutionState)),
           ],
         ),
       );

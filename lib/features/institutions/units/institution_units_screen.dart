@@ -18,6 +18,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/document_scaffold.dart';
 import '../domain/institution.dart';
+import '../institution_words.dart';
 
 class InstitutionUnitsScreen extends ConsumerStatefulWidget {
   const InstitutionUnitsScreen({super.key, required this.institutionId});
@@ -476,13 +477,13 @@ class _UpsertUnitSheetState extends ConsumerState<_UpsertUnitSheet> {
 
   Future<void> _save() async {
     final name = _nameCtrl.text.trim();
-    final slug = _slugCtrl.text.trim();
+    // The address is made from the name (phase 2, 2026-10-09): people were
+    // asked for a "Slug", a developer's word for something they never need to
+    // choose. An existing unit keeps the address it already has.
+    final existing = _slugCtrl.text.trim();
+    final slug = existing.isNotEmpty ? existing : unitAddressFromName(name);
     if (name.isEmpty) {
       _snack('Enter a unit name.');
-      return;
-    }
-    if (slug.isEmpty) {
-      _snack('Enter a slug.');
       return;
     }
 
@@ -548,16 +549,7 @@ class _UpsertUnitSheetState extends ConsumerState<_UpsertUnitSheet> {
             const SizedBox(height: AuraSpace.s20),
             TextField(
               controller: _nameCtrl,
-              decoration: const InputDecoration(labelText: 'Name *'),
-              enabled: !_saving,
-            ),
-            const SizedBox(height: AuraSpace.s12),
-            TextField(
-              controller: _slugCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Slug *',
-                helperText: 'URL-safe identifier, e.g. north-branch',
-              ),
+              decoration: const InputDecoration(labelText: 'Name'),
               enabled: !_saving,
             ),
             const SizedBox(height: AuraSpace.s12),

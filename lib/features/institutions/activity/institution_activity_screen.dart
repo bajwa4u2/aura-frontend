@@ -16,9 +16,11 @@ import '../data/institutions_repository.dart';
 import '../domain/institution_activity_event.dart';
 import '../ui/institution_ds.dart';
 import '../../../core/identity/person_identity_model.dart';
+import '../institution_words.dart';
 
-/// Human-readable summary for known activity event kinds. Unknown kinds
-/// fall back to the raw `kind` string verbatim.
+/// Human-readable summary for activity event kinds. A kind not named here
+/// says so in plain words — the server's code never reaches the screen
+/// (phase 2, 2026-10-09).
 String _summaryForKind(InstitutionActivityEvent e) {
   // F053/F116 — the same reader and the same fallback order as every other
   // surface. This chain already ended in 'Someone', which is what the shared
@@ -35,12 +37,26 @@ String _summaryForKind(InstitutionActivityEvent e) {
     case 'ROLE_CHANGED':
       final newRole = e.metadata?['newRole']?.toString().trim() ?? '';
       return newRole.isNotEmpty
-          ? "$actorName's role changed to $newRole."
+          ? "$actorName is now ${_article(institutionRoleWord(newRole))}."
           : "$actorName's role was updated.";
     case 'INVITE_SENT':
       return '$actorName sent an invite.';
     case 'INVITE_ACCEPTED':
       return '$actorName accepted an invite.';
+    case 'INVITE_REVOKED':
+      return '$actorName withdrew an invite.';
+    case 'CAPABILITY_GRANTED':
+      return '$actorName gave someone permission to '
+          '${institutionCapabilityWords(e.metadata?['capability'])}.';
+    case 'CAPABILITY_REVOKED':
+      return '$actorName took back permission to '
+          '${institutionCapabilityWords(e.metadata?['capability'])}.';
+    case 'OWNERSHIP_TRANSFERRED':
+      return 'Ownership of the institution was handed over.';
+    case 'OWNERSHIP_RECOVERY':
+      return 'Aura restored an owner to the institution.';
+    case 'INSTITUTION_APPROVED':
+      return 'The institution was set up on Aura.';
     case 'JOIN_REQUEST_CREATED':
       return '$actorName requested to join.';
     case 'JOIN_REQUEST_APPROVED':
@@ -55,6 +71,16 @@ String _summaryForKind(InstitutionActivityEvent e) {
       return 'A post was archived.';
     case 'POST_SUBMITTED':
       return '$actorName submitted a post for review.';
+    case 'POST_UPDATED':
+      return '$actorName edited a post.';
+    case 'POST_DELETED':
+      return 'A post was deleted.';
+    case 'INSTITUTION_POST_INTEGRITY_SATISFIED':
+    case 'ANNOUNCEMENT_INTEGRITY_SATISFIED':
+      return 'A notice passed its review.';
+    case 'INSTITUTION_POST_INTEGRITY_ESCALATED':
+    case 'ANNOUNCEMENT_INTEGRITY_ESCALATED':
+      return 'A notice was sent for a second review.';
     case 'INSTITUTION_VERIFIED':
       return 'Institution was verified.';
     case 'INSTITUTION_SUSPENDED':
@@ -79,9 +105,14 @@ String _summaryForKind(InstitutionActivityEvent e) {
           ? '$actorName saved outcomes for "$mTitle"$countLabel.'
           : '$actorName saved meeting outcomes$countLabel.';
     default:
-      return e.kind;
+      return actorName.isNotEmpty && actorName != 'Someone'
+          ? 'Activity by $actorName.'
+          : 'Activity in the workspace.';
   }
 }
+
+String _article(String word) =>
+    RegExp(r'^[aeiou]').hasMatch(word) ? 'an $word' : 'a $word';
 
 class InstitutionActivityScreen extends ConsumerStatefulWidget {
   const InstitutionActivityScreen({
@@ -491,7 +522,7 @@ class _ActivityCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AuraAvatar(
-            name: actorName.isNotEmpty ? actorName : event.kind,
+            name: actorName.isNotEmpty ? actorName : 'Aura',
             imageUrl: actor.avatarUrl,
             size: 32,
           ),
@@ -510,16 +541,7 @@ class _ActivityCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Row(
                   children: [
-                    Text(
-                      event.kind,
-                      style:
-                          AuraText.micro.copyWith(color: AuraSurface.faint),
-                    ),
                     if (time.isNotEmpty) ...[
-                      const SizedBox(width: AuraSpace.s8),
-                      const Text('·',
-                          style: TextStyle(color: AuraSurface.faint)),
-                      const SizedBox(width: AuraSpace.s8),
                       Text(
                         time,
                         style: AuraText.micro

@@ -20,6 +20,7 @@ import '../../posts/presentation/widgets/post_card/post_card_utils.dart';
 import '../../share/aura_share_sheet.dart';
 import '../data/institutions_repository.dart';
 import '../ui/institution_ds.dart';
+import '../institution_words.dart';
 
 class InstitutionAnnouncementsScreen extends ConsumerStatefulWidget {
   const InstitutionAnnouncementsScreen({
@@ -334,7 +335,7 @@ class _InstitutionAnnouncementsScreenState
           Row(
             children: [
               Text(
-                kind[0] + kind.substring(1).toLowerCase(),
+                announcementKindWords(kind),
                 style: AuraText.micro.copyWith(color: AuraSurface.faint),
               ),
               if (!isDraft && publishedAt.isNotEmpty) ...[
