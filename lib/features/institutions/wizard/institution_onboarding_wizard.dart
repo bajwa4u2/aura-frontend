@@ -589,7 +589,7 @@ class _InstitutionOnboardingWizardState
         ),
         const SizedBox(height: AuraSpace.s8),
         Text(
-          'All four are needed: the reviewer checks them before the institution is set up.',
+          'Every field here is needed: the reviewer checks them before the institution is set up.',
           style: AuraText.small.copyWith(color: AuraSurface.muted),
         ),
         if (_error != null) ...[
