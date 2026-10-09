@@ -176,14 +176,14 @@ class _InstitutionPostDetailScreenState
       }
     }
 
-    // DD-43: a Record page. "Back to Explore", Reply as the one gold
+    // DD-43: a Record page. "Back to Posts", Reply as the one gold
     // action, Edit and Delete under More for those who govern the post.
     return WorkspacePage(
       type: WorkspacePageType.record,
       title: 'Post',
       purpose: 'The post and the replies to it.',
       back: WorkspaceBack(
-        label: 'Explore',
+        label: 'Posts',
         path: institutionWorkspacePath(institutionId, InstitutionSection.explore),
       ),
       primary: WorkspaceAction(label: 'Reply', icon: Icons.reply_rounded, onPressed: onReply),

@@ -1343,7 +1343,7 @@ class _InstitutionPostComposerScreenState
         type: WorkspacePageType.composer,
         title: 'Speaking for ${identity!.name}',
         back: WorkspaceBack(
-          label: 'Explore',
+          label: 'Posts',
           path: institutionWorkspacePath(widget.institutionId, InstitutionSection.explore),
         ),
         children: [
@@ -1360,7 +1360,7 @@ class _InstitutionPostComposerScreenState
         type: WorkspacePageType.composer,
         title: 'New post',
         back: WorkspaceBack(
-          label: 'Explore',
+          label: 'Posts',
           path: institutionWorkspacePath(widget.institutionId, InstitutionSection.explore),
         ),
         children: const [
@@ -1378,7 +1378,7 @@ class _InstitutionPostComposerScreenState
         type: WorkspacePageType.composer,
         title: widget.isEditing ? 'Edit post' : 'New post',
         back: WorkspaceBack(
-          label: 'Explore',
+          label: 'Posts',
           path: institutionWorkspacePath(widget.institutionId, InstitutionSection.explore),
         ),
         loading: true,
@@ -1386,7 +1386,7 @@ class _InstitutionPostComposerScreenState
     }
 
     final back = WorkspaceBack(
-      label: 'Explore',
+      label: 'Posts',
       path: institutionWorkspacePath(widget.institutionId, InstitutionSection.explore),
     );
     final name = identity?.name.trim() ?? '';

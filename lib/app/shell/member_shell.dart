@@ -374,6 +374,21 @@ class InstitutionShell extends ConsumerWidget {
         // The result recovers vertical space and lets page content start high.
         final showLeftRail = isTablet;
 
+        // The section's own screens, above its section-level pages.
+        InstitutionSectionStrip? strip;
+        if (!isPreview && !isMeetingFocus && InstitutionSectionStrip.appliesTo(path)) {
+          final sections = groupInstitutionWorkspaceSections(buildInstitutionWorkspaceEntries(
+            identity,
+            pendingJoinRequests: pendingJoinRequests,
+            pendingInvites: pendingInvites,
+            composition: composition,
+          ));
+          final current = sections.where((x) => x.isSelected(path, identity)).firstOrNull;
+          if (current != null && current.entries.length > 1) {
+            strip = InstitutionSectionStrip(section: current, currentPath: path, identity: identity);
+          }
+        }
+
         final sideNav = _InstitutionSideNav(
           posture: win.navPosture,
           composition: composition,
@@ -419,7 +434,7 @@ class InstitutionShell extends ConsumerWidget {
                       Expanded(child: child),
                     ],
                   )
-                : child,
+                : (strip == null ? child : Column(children: [strip, Expanded(child: child)])),
             contextRail: isDesktop
                 ? AuraContextRail(
                     modules: _institutionContextModules(context, identity),
@@ -2327,16 +2342,16 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       pathMatcher: (p) => under(p, 'public-engagement'),
     ),
     InstWorkspaceEntry(
-      label: 'Explore',
+      // DD-43 menu merge (founder, 9 Oct 2026): Explore is called Posts.
+      label: 'Posts',
       icon: Icons.explore_outlined,
       selectedIcon: Icons.explore_rounded,
       pathBuilder: (_) => at(InstitutionSection.explore),
       pathMatcher: (p) => under(p, 'explore'),
     ),
 
-    // ── ANNOUNCEMENTS ──────────────────────────────────────────────────────
+    // Announcements belongs to Public (DD-43 menu merge).
     InstWorkspaceEntry(
-      sectionLabel: 'ANNOUNCEMENTS',
       label: 'Announcements',
       icon: Icons.campaign_outlined,
       selectedIcon: Icons.campaign_rounded,
@@ -2464,6 +2479,178 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
   return visible;
 }
 
+/// ONE RAIL ENTRY PER SECTION (DD-43 menu merge, founder 9 Oct 2026).
+///
+/// Fifteen rail entries became five: Desk, Public, Community, Meetings,
+/// Settings. A section is the run of entries from one `sectionLabel` to the
+/// next, after capability filtering and the kind's ordering, so the section
+/// opens on its first visible screen (the kind's lead) and holds only what
+/// this person may use. Every screen keeps its own address.
+class InstWorkspaceSection {
+  const InstWorkspaceSection({
+    required this.key,
+    required this.title,
+    required this.icon,
+    required this.selectedIcon,
+    required this.entries,
+  });
+
+  final String key;
+  final String title;
+  final IconData icon;
+  final IconData selectedIcon;
+  final List<InstWorkspaceEntry> entries;
+
+  bool isSelected(String path, InstitutionIdentity? identity) =>
+      entries.any((e) => e.isSelected(path, identity));
+
+  int get badge => entries.fold(0, (sum, e) => sum + e.badge);
+
+  /// The section as one rail destination: its first screen, its total badge.
+  InstWorkspaceEntry get asEntry => InstWorkspaceEntry(
+        label: title,
+        icon: icon,
+        selectedIcon: selectedIcon,
+        pathBuilder: entries.first.pathBuilder,
+        badge: badge,
+      );
+}
+
+const _kSectionLooks = <String, (String, IconData, IconData)>{
+  'DESK': ('Desk', Icons.inbox_outlined, Icons.inbox_rounded),
+  'PUBLIC': ('Public', Icons.public_outlined, Icons.public_rounded),
+  'COMMUNITY': ('Community', Icons.groups_outlined, Icons.groups_rounded),
+  'MEETINGS': ('Meetings', Icons.videocam_outlined, Icons.videocam_rounded),
+  'SETTINGS': ('Settings', Icons.settings_outlined, Icons.settings_rounded),
+};
+
+List<InstWorkspaceSection> groupInstitutionWorkspaceSections(List<InstWorkspaceEntry> visible) {
+  final out = <InstWorkspaceSection>[];
+  String? key;
+  var run = <InstWorkspaceEntry>[];
+  void flush() {
+    final k = key;
+    if (k == null || run.isEmpty) return;
+    final look = _kSectionLooks[k] ?? (run.first.label, run.first.icon, run.first.selectedIcon);
+    out.add(InstWorkspaceSection(key: k, title: look.$1, icon: look.$2, selectedIcon: look.$3, entries: run));
+  }
+
+  for (final e in visible) {
+    if (e.sectionLabel != null) {
+      flush();
+      key = e.sectionLabel;
+      run = <InstWorkspaceEntry>[];
+    }
+    run.add(e);
+  }
+  flush();
+  return out;
+}
+
+/// The section's own screens, as a strip at the top of its section-level
+/// pages (records and composers keep their own "Back to ..." instead).
+/// Shown only when the section holds more than one screen for this person.
+class InstitutionSectionStrip extends StatelessWidget {
+  const InstitutionSectionStrip({
+    super.key,
+    required this.section,
+    required this.currentPath,
+    required this.identity,
+  });
+
+  final InstWorkspaceSection section;
+  final String currentPath;
+  final InstitutionIdentity? identity;
+
+  /// Whether [path] is a section-level page that should carry the strip.
+  static bool appliesTo(String path) {
+    final parts = path.split('/')..removeWhere((p) => p.isEmpty);
+    return parts.length == 3 && parts[0] == 'institution';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(builder: (context, box) {
+      final gutter = box.maxWidth < 600 ? AuraSpace.s16 : (box.maxWidth < 1024 ? AuraSpace.s24 : AuraSpace.s32);
+      return Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          color: AuraSurface.page,
+          border: Border(bottom: BorderSide(color: AuraSurface.divider)),
+        ),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: EdgeInsets.symmetric(horizontal: gutter - AuraSpace.s8),
+          child: Row(
+            children: [
+              for (final e in section.entries)
+                _SectionStripLink(
+                  entry: e,
+                  selected: e.isSelected(currentPath, identity),
+                  path: e.resolvedPath(identity),
+                ),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+}
+
+class _SectionStripLink extends StatelessWidget {
+  const _SectionStripLink({required this.entry, required this.selected, required this.path});
+
+  final InstWorkspaceEntry entry;
+  final bool selected;
+  final String? path;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      selected: selected,
+      button: true,
+      child: InkWell(
+        onTap: path == null || selected ? null : () => context.go(path!),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(AuraSpace.s8, AuraSpace.s14, AuraSpace.s8, AuraSpace.s12),
+          margin: const EdgeInsets.only(right: AuraSpace.s12),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: selected ? AuraSurface.accent : Colors.transparent, width: 2),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                entry.label,
+                style: TextStyle(
+                  fontFamily: 'AuraSans',
+                  fontSize: 14,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                  color: selected ? AuraSurface.ink : AuraSurface.muted,
+                ),
+              ),
+              if (entry.badge > 0) ...[
+                const SizedBox(width: AuraSpace.s6),
+                Text(
+                  '${entry.badge}',
+                  style: const TextStyle(
+                    fontFamily: 'AuraSans',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AuraSurface.accentText,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _InstitutionSideNav extends StatelessWidget {
   const _InstitutionSideNav({
     required this.currentPath,
@@ -2509,49 +2696,18 @@ class _InstitutionSideNav extends StatelessWidget {
         // old context bar). It is the workspace's anchor on every screen.
         _RailIdentityHeader(identity: identity, compact: compact),
         const SizedBox(height: AuraSpace.s4),
-        for (final entry in entries) ...[
-          if (entry.sectionLabel != null)
-            // A SECTION STILL SEPARATES, EVEN WITHOUT ROOM TO NAME ITSELF.
-            //
-            // WORKSPACE / ADMIN / GOVERNANCE / IDENTITY are real groupings and
-            // dropping them entirely would turn the compact rail into an
-            // undifferentiated stack of glyphs. A rule keeps the grouping
-            // legible at a width that cannot hold the word.
-            compact
-                ? const Padding(
-                    padding: EdgeInsets.fromLTRB(
-                        AuraSpace.s20, AuraSpace.s12, AuraSpace.s20,
-                        AuraSpace.s6),
-                    child: Divider(
-                        height: 1, thickness: 1, color: Color(0x1AFFFFFF)),
-                  )
-                : Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AuraSpace.s20,
-                      AuraSpace.s12,
-                      AuraSpace.s12,
-                      AuraSpace.s4,
-                    ),
-                    child: Text(
-                      entry.sectionLabel!,
-                      style: AuraText.micro.copyWith(
-                        color: _institutionAccent.withValues(alpha: 0.6),
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.2,
-                        fontSize: 9.5,
-                      ),
-                    ),
-                  ),
+        // DD-43 MENU MERGE (founder, 9 Oct 2026: "reduce navigation items by
+        // merging related screens"): one entry per section. A section's own
+        // screens are the strip at the top of its pages.
+        for (final section in groupInstitutionWorkspaceSections(entries))
           _InstitutionSideNavTile(
-            entry: entry,
-            selected: entry.isSelected(currentPath, identity),
+            entry: section.asEntry,
+            selected: section.isSelected(currentPath, identity),
             identity: identity,
             currentPath: currentPath,
             compact: compact,
-            onNavigate:
-                inDrawer ? () => Navigator.of(context).maybePop() : null,
+            onNavigate: inDrawer ? () => Navigator.of(context).maybePop() : null,
           ),
-        ],
       ],
     );
 
@@ -2971,8 +3127,8 @@ class _InstitutionBottomBar extends StatelessWidget {
     final address = _address;
     final items = <(String, IconData, IconData, InstitutionSection, List<String>)>[
       ('Desk', Icons.inbox_outlined, Icons.inbox_rounded, InstitutionSection.desk, ['desk', 'today', 'dashboard']),
-      ('Questions', Icons.record_voice_over_outlined, Icons.record_voice_over_rounded, InstitutionSection.publicEngagement, ['public-engagement', 'explore']),
-      ('Community', Icons.forum_outlined, Icons.forum_rounded, InstitutionSection.spaces, ['spaces', 'members', 'live-rooms']),
+      ('Public', Icons.public_outlined, Icons.public_rounded, InstitutionSection.publicEngagement, ['public-engagement', 'explore', 'announcements', 'posts']),
+      ('Community', Icons.groups_outlined, Icons.groups_rounded, InstitutionSection.members, ['spaces', 'members', 'live-rooms', 'join-requests', 'invites']),
       ('Meetings', Icons.videocam_outlined, Icons.videocam_rounded, InstitutionSection.meetings, ['meetings', 'availability']),
     ];
     final parts = currentPath.split('/')..removeWhere((p) => p.isEmpty);
@@ -3069,7 +3225,7 @@ String? _toolOf(InstWorkspaceEntry e) {
   switch (e.label) {
     case 'Questions':
       return 'questions';
-    case 'Explore':
+    case 'Posts':
       return 'explore';
     case 'Announcements':
       return 'announcements';

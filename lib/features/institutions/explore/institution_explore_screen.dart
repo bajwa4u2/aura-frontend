@@ -160,7 +160,7 @@ class _InstitutionExploreScreenState
     if (id.isEmpty) {
       return WorkspacePage(
         type: WorkspacePageType.collection,
-        title: 'Explore',
+        title: 'Posts',
         children: [
           WorkspaceEmpty(
             icon: Icons.apartment_outlined,
@@ -184,7 +184,7 @@ class _InstitutionExploreScreenState
 
     return WorkspacePage(
       type: WorkspacePageType.collection,
-      title: 'Explore',
+      title: 'Posts',
       purpose: 'What this institution has posted, by who can see it.',
       primary: canCompose
           ? WorkspaceAction(

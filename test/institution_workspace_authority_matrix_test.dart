@@ -98,7 +98,7 @@ void main() {
 
       // UNDEREXPOSURE: a member must not lose the institution they belong to.
       for (final expected in [
-        'Explore',
+        'Posts',
         'Activity',
         'Announcements',
         'Live',
@@ -228,12 +228,22 @@ void main() {
     // GOVERNANCE / IDENTITY. Administration lives under SETTINGS, which opens
     // with Profile -- something every member may see -- so a member's
     // SETTINGS never reveals that administrative entries exist.
-    test('the workspace has exactly the six sections, in order', () {
+    // DD-43 menu merge (founder, 9 Oct 2026): fifteen rail entries became
+    // five sections; Announcements belongs to Public.
+    test('the workspace has exactly five sections, in order', () {
       final sections = buildInstitutionWorkspaceEntries(owner)
           .map((e) => e.sectionLabel)
           .whereType<String>()
           .toList();
-      expect(sections, ['DESK', 'PUBLIC', 'ANNOUNCEMENTS', 'COMMUNITY', 'MEETINGS', 'SETTINGS']);
+      expect(sections, ['DESK', 'PUBLIC', 'COMMUNITY', 'MEETINGS', 'SETTINGS']);
+    });
+
+    test('the rail shows one entry per section, opening on its first screen', () {
+      final sections = groupInstitutionWorkspaceSections(buildInstitutionWorkspaceEntries(owner));
+      expect(sections.map((s) => s.title), ['Desk', 'Public', 'Community', 'Meetings', 'Settings']);
+      final public = sections[1];
+      expect(public.entries.map((e) => e.label), containsAll(['Questions', 'Posts', 'Announcements']));
+      expect(public.asEntry.resolvedPath(owner), public.entries.first.resolvedPath(owner));
     });
 
     test('settings opens with what every member may see', () {
