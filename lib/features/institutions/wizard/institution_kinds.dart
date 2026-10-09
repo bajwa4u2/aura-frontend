@@ -14,6 +14,9 @@ class InstitutionKind {
     required this.existenceProof,
     required this.authorityProof,
     required this.alwaysReviewed,
+    this.registryLabel,
+    this.registryHint,
+    this.mayBeUnregistered = false,
   });
 
   final String wire;
@@ -31,6 +34,15 @@ class InstitutionKind {
 
   /// A person at Aura always reviews this kind (policy §1.3).
   final bool alwaysReviewed;
+
+  /// The registration number this kind's review turns on, asked at intake
+  /// as REQUIRED (founder 2026-10-09). Null where the website is enough.
+  final String? registryLabel;
+  final String? registryHint;
+
+  /// A faith institution may have no register; it says so and shows a
+  /// document later instead.
+  final bool mayBeUnregistered;
 
   static InstitutionKind? fromWire(String? wire) {
     for (final k in all) {
@@ -72,6 +84,8 @@ class InstitutionKind {
       authorityProof:
           'Approval from someone who already speaks for it on Aura, or a letter or minutes naming your role.',
       alwaysReviewed: false,
+      registryLabel: 'EIN or registration number',
+      registryHint: 'e.g. 12-3456789',
     ),
     InstitutionKind(
       wire: 'RELIGIOUS',
@@ -83,6 +97,9 @@ class InstitutionKind {
       authorityProof:
           'A letter from its board or leadership naming your role, or approval from someone who already speaks for it on Aura.',
       alwaysReviewed: false,
+      registryLabel: 'Registry or EIN number',
+      registryHint: 'As registered with the state or the IRS',
+      mayBeUnregistered: true,
     ),
     InstitutionKind(
       wire: 'CORPORATE_BUSINESS',
@@ -93,6 +110,8 @@ class InstitutionKind {
       authorityProof:
           'The state filing listing you as an officer, or approval from someone who already speaks for it on Aura.',
       alwaysReviewed: false,
+      registryLabel: 'State filing number',
+      registryHint: 'The number on its state business registration',
     ),
     InstitutionKind(
       wire: 'MEDIA',
@@ -115,6 +134,8 @@ class InstitutionKind {
       authorityProof:
           'A letter naming your role, or approval from someone who already speaks for it on Aura.',
       alwaysReviewed: true,
+      registryLabel: 'NPI or licence number',
+      registryHint: 'The organisation NPI, or its state licence number',
     ),
   ];
 }

@@ -48,6 +48,9 @@ class _InstitutionOnboardingWizardState
   final _website = TextEditingController();
   final _jurisdiction = TextEditingController();
   final _description = TextEditingController();
+  // The registration number the kind's review turns on (founder 2026-10-09).
+  final _registry = TextEditingController();
+  bool _unregistered = false;
   // DD-42 (2026-10-08): the kind is asked first, from the seven kinds.
   InstitutionKind? _kind;
   Map<String, dynamic>? _selectedInstitution; // for claim path
@@ -86,6 +89,7 @@ class _InstitutionOnboardingWizardState
     _website.dispose();
     _jurisdiction.dispose();
     _description.dispose();
+    _registry.dispose();
     _phone.dispose();
     _roleTitle.dispose();
     _purpose.dispose();
@@ -135,6 +139,10 @@ class _InstitutionOnboardingWizardState
       return;
     }
     if (_isIdentityStep && !_validateIdentityStep()) return;
+    if (_isRoleStep && _roleTitle.text.trim().isEmpty) {
+      setState(() => _error = 'Enter your role at the institution.');
+      return;
+    }
 
     setState(() {
       _step++;
@@ -161,6 +169,14 @@ class _InstitutionOnboardingWizardState
       (_path == _WizardPath.create && _step == 2) ||
       (_path == _WizardPath.claim && _step == 1);
 
+  bool get _isRoleStep =>
+      (_path == _WizardPath.create && _step == 4) ||
+      (_path == _WizardPath.claim && _step == 2);
+
+  /// The kind's registration field, when this path asks for it.
+  InstitutionKind? get _registryKind =>
+      _path == _WizardPath.create && _kind?.registryLabel != null ? _kind : null;
+
   bool _validateIdentityStep() {
     if (_orgName.text.trim().isEmpty) {
       setState(() => _error = 'Enter the institution name.');
@@ -168,6 +184,29 @@ class _InstitutionOnboardingWizardState
     }
     if (_path == _WizardPath.claim && _selectedInstitution == null) {
       setState(() => _error = 'Search and select the institution you want to claim.');
+      return false;
+    }
+    // Everything the review needs is required (founder 2026-10-09: "website,
+    // jurisidection, description").
+    if (_website.text.trim().isEmpty) {
+      setState(() => _error = "Enter the institution's website.");
+      return false;
+    }
+    if (_jurisdiction.text.trim().isEmpty) {
+      setState(() => _error = 'Enter where the institution is.');
+      return false;
+    }
+    final registryKind = _registryKind;
+    if (registryKind != null &&
+        _registry.text.trim().isEmpty &&
+        !(registryKind.mayBeUnregistered && _unregistered)) {
+      setState(() => _error = registryKind.mayBeUnregistered
+          ? 'Enter its ${registryKind.registryLabel!.toLowerCase()}, or tick that it is not registered.'
+          : 'Enter its ${registryKind.registryLabel!.toLowerCase()}.');
+      return false;
+    }
+    if (_description.text.trim().isEmpty) {
+      setState(() => _error = 'Describe the institution in a few words.');
       return false;
     }
     return true;
@@ -223,9 +262,12 @@ class _InstitutionOnboardingWizardState
       'organizationName': _orgName.text.trim(),
       'websiteUrl': opt(_website),
       'jurisdiction': opt(_jurisdiction),
+      'description': opt(_description),
+      if (_registryKind != null) 'registryReference': opt(_registry),
+      if (_registryKind?.mayBeUnregistered == true && opt(_registry) == null) 'unregistered': _unregistered,
       'roleTitle': opt(_roleTitle),
       'phone': opt(_phone),
-      'purpose': opt(_description) ?? opt(_purpose),
+      'purpose': opt(_purpose),
     });
     return _asMap(res.data);
   }
@@ -500,26 +542,55 @@ class _InstitutionOnboardingWizardState
         const SizedBox(height: AuraSpace.s16),
         AuraInput(
           controller: _website,
-          label: 'Website (optional)',
-          hint: 'https://yourorganisation.org — leave blank if there is none',
+          label: 'Website',
+          hint: 'https://yourinstitution.org',
           keyboardType: TextInputType.url,
           textInputAction: TextInputAction.next,
         ),
         const SizedBox(height: AuraSpace.s16),
         AuraInput(
           controller: _jurisdiction,
-          label: 'Location / jurisdiction (optional)',
-          hint: 'City, country, or region',
+          label: 'Location',
+          hint: 'City and state, or city and country',
           textInputAction: TextInputAction.next,
         ),
+        if (_registryKind != null) ...[
+          const SizedBox(height: AuraSpace.s16),
+          if (!_unregistered)
+            AuraInput(
+              controller: _registry,
+              label: _registryKind!.registryLabel!,
+              hint: _registryKind!.registryHint,
+              textInputAction: TextInputAction.next,
+            ),
+          if (_registryKind!.mayBeUnregistered)
+            CheckboxListTile(
+              value: _unregistered,
+              onChanged: (v) => setState(() {
+                _unregistered = v ?? false;
+                if (_unregistered) _registry.clear();
+              }),
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: const Text(
+                'It is not registered. I will show a letter, lease or utility bill instead.',
+                style: AuraText.body,
+              ),
+            ),
+        ],
         const SizedBox(height: AuraSpace.s16),
         AuraInput(
           controller: _description,
-          label: 'Short description (optional)',
-          hint: 'What does this institution do?',
+          label: 'Description',
+          hint: 'What it is and who it serves. Shown on its public page.',
           maxLines: 3,
           minLines: 2,
           textInputAction: TextInputAction.newline,
+        ),
+        const SizedBox(height: AuraSpace.s8),
+        Text(
+          'All four are needed: the reviewer checks them before the institution is set up.',
+          style: AuraText.small.copyWith(color: AuraSurface.muted),
         ),
         if (_error != null) ...[
           const SizedBox(height: AuraSpace.s12),
@@ -693,14 +764,19 @@ class _InstitutionOnboardingWizardState
         _ReviewSection(title: 'Institution', rows: [
           _ReviewRow('Name', _orgName.text.trim()),
           if (_kind != null) _ReviewRow('Kind', _kind!.title),
-          if (_website.text.trim().isNotEmpty) _ReviewRow('Website', _website.text.trim()),
-          if (_jurisdiction.text.trim().isNotEmpty) _ReviewRow('Location', _jurisdiction.text.trim()),
-          if (_description.text.trim().isNotEmpty) _ReviewRow('Description', _description.text.trim()),
+          _ReviewRow('Website', _website.text.trim()),
+          _ReviewRow('Location', _jurisdiction.text.trim()),
+          if (_registryKind != null)
+            _ReviewRow(
+              _registryKind!.registryLabel!,
+              _unregistered ? 'Not registered — a document will be shown' : _registry.text.trim(),
+            ),
+          _ReviewRow('Description', _description.text.trim()),
         ]),
         const SizedBox(height: AuraSpace.s16),
         _ReviewSection(title: 'You', rows: [
           const _ReviewRow('Asking as', 'Yourself, from your Aura account'),
-          if (_roleTitle.text.trim().isNotEmpty) _ReviewRow('Role', _roleTitle.text.trim()),
+          _ReviewRow('Role', _roleTitle.text.trim()),
           if (_phone.text.trim().isNotEmpty) _ReviewRow('Phone', _phone.text.trim()),
           if (_purpose.text.trim().isNotEmpty) _ReviewRow('Notes', _purpose.text.trim()),
         ]),

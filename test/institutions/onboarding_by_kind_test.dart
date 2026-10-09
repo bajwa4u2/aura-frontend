@@ -34,6 +34,13 @@ void main() {
     expect(InstitutionKind.fromWire('RELIGIOUS')!.existenceProof, contains('If not'));
   });
 
+  test('kinds whose review turns on a number ask for it; faith may be unregistered', () {
+    final asks = InstitutionKind.all.where((k) => k.registryLabel != null).map((k) => k.wire).toSet();
+    expect(asks, {'NONPROFIT_COMMUNITY', 'RELIGIOUS', 'CORPORATE_BUSINESS', 'HEALTHCARE'});
+    final unregistered = InstitutionKind.all.where((k) => k.mayBeUnregistered).map((k) => k.wire).toSet();
+    expect(unregistered, {'RELIGIOUS'});
+  });
+
   group('the wizard', () {
     final src = File('lib/features/institutions/wizard/institution_onboarding_wizard.dart').readAsStringSync();
 
@@ -53,6 +60,19 @@ void main() {
     test('never points people at a separate institution sign-in or a universal DNS step', () {
       expect(src.contains('/institution/sign-in'), isFalse);
       expect(src.contains('add a DNS record'), isFalse);
+    });
+
+    // Founder, 2026-10-09: "website, jurisidection, description" — what the
+    // review needs is never labelled optional.
+    test('nothing the review needs is labelled optional', () {
+      for (final label in ["'Website (optional)'", "'Location / jurisdiction (optional)'", "'Short description (optional)'"]) {
+        expect(src.contains(label), isFalse, reason: label);
+      }
+      expect(src.contains("_error = \"Enter the institution's website.\""), isTrue);
+      expect(src.contains("'Enter where the institution is.'"), isTrue);
+      expect(src.contains("'Describe the institution in a few words.'"), isTrue);
+      expect(src.contains("'Enter your role at the institution.'"), isTrue);
+      expect(src.contains("'description': opt(_description)"), isTrue);
     });
 
     test('a reviewer question is answered in the app', () {
