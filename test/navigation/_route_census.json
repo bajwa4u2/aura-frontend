@@ -1865,7 +1865,7 @@
   "params": [
    "institutionId"
   ],
-  "renders": true,
+  "renders": false,
   "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
@@ -1949,7 +1949,7 @@
    "institutionId"
   ],
   "renders": true,
-  "hasRedirect": false,
+  "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
    "ShellRoute#0"
@@ -1963,7 +1963,7 @@
    "institutionId"
   ],
   "renders": true,
-  "hasRedirect": false,
+  "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
    "ShellRoute#0"
@@ -1978,7 +1978,7 @@
    "recordId"
   ],
   "renders": true,
-  "hasRedirect": false,
+  "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
    "ShellRoute#0"
@@ -2242,6 +2242,20 @@
   "parent": ""
  },
  {
+  "path": "/institution/:institutionId/today",
+  "segments": 3,
+  "params": [
+   "institutionId"
+  ],
+  "renders": true,
+  "hasRedirect": true,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
   "path": "/institution/:institutionId/explore",
   "segments": 3,
   "params": [
@@ -2416,8 +2430,8 @@
   "params": [
    "institutionId"
   ],
-  "renders": true,
-  "hasRedirect": false,
+  "renders": false,
+  "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
    "ShellRoute#0"

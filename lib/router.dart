@@ -95,7 +95,6 @@ import 'features/profile/presentation/follow_requests_screen.dart';
 import 'features/profile/presentation/followers_screen.dart';
 import 'features/profile/presentation/following_screen.dart';
 import 'features/institutions/presentation/institution_detail_screen.dart';
-import 'features/institutions/presentation/institution_dashboard_screen.dart';
 import 'features/institutions/presentation/institution_standing_screen.dart';
 import 'features/institutions/presentation/institution_members_screen.dart';
 import 'features/institutions/presentation/institution_invites_screen.dart';
@@ -128,7 +127,6 @@ import 'features/articles/presentation/article_editor_screen.dart';
 import 'features/articles/presentation/article_screen.dart';
 import 'features/discover/presentation/articles_discovery_screen.dart';
 import 'features/discover/presentation/institutions_discovery_screen.dart';
-import 'features/institutions/messaging/institution_messaging_screen.dart';
 import 'features/institutions/activity/institution_activity_screen.dart';
 import 'features/monetization/presentation/institution_billing_screen.dart';
 import 'features/saves/presentation/saved_screen.dart';
@@ -175,6 +173,7 @@ import 'features/media_governance/presentation/restricted_media_screen.dart';
 import 'features/identity/presentation/identity_verification_screen.dart';
 import 'features/feedback/presentation/feedback_screen.dart';
 import 'features/feedback/presentation/my_feedback_screen.dart';
+import 'features/institutions/today/institution_today_screen.dart';
 
 const String kInstitutionDashboardRoute = '/institution/dashboard';
 const String kInstitutionCreateRoute = '/institution/create';
@@ -2261,17 +2260,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           // screen, and an id the person does not hold resolves through the
           // same authority every other canonical destination uses.
           GoRoute(
+            // RETIRED (DD-42 phase 2, 2026-10-09): Overview was admin-only;
+            // Today is the front door for everyone. Old links and bookmarks
+            // (and their query) arrive at Today.
             path: '/institution/:institutionId/dashboard',
-            redirect: (context, state) => _enforceCanonicalIdMatch(
-              ref,
-              state,
-              state.pathParameters['institutionId'],
-              'dashboard',
-            ),
-            builder: (context, state) => InstitutionRouteScope(
-              address: state.pathParameters['institutionId'],
-              builder: (institutionId) =>
-                  InstitutionDashboardScreen(institutionId: institutionId),
+            redirect: (context, state) => carryQuery(
+              '/institution/${state.pathParameters['institutionId']}/today',
+              state.uri,
             ),
           ),
 
@@ -2363,6 +2358,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           // Public Engagement workspace — list + detail + participation settings.
           GoRoute(
             path: '/institution/:institutionId/public-engagement',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'public-engagement',
+            ),
             builder: (_, state) => InstitutionRouteScope(
               address: state.pathParameters['institutionId'],
               builder: (institutionId) =>
@@ -2371,6 +2372,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/institution/:institutionId/public-engagement/participation',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'public-engagement',
+            ),
             builder: (_, state) => InstitutionRouteScope(
               address: state.pathParameters['institutionId'],
               builder: (institutionId) =>
@@ -2379,6 +2386,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/institution/:institutionId/public-engagement/:recordId',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'public-engagement',
+            ),
             builder: (_, state) => InstitutionRouteScope(
               address: state.pathParameters['institutionId'],
               builder: (institutionId) => EngagementDetailScreen(
@@ -2680,6 +2693,21 @@ final routerProvider = Provider<GoRouter>((ref) {
                   InstitutionJoinRequestsScreen(institutionId: institutionId),
             ),
           ),
+          // TODAY — the institution's front door for every member (DD-42).
+          GoRoute(
+            path: '/institution/:institutionId/today',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'today',
+            ),
+            builder: (context, state) => InstitutionRouteScope(
+              address: state.pathParameters['institutionId'],
+              builder: (institutionId) =>
+                  InstitutionTodayScreen(institutionId: institutionId),
+            ),
+          ),
           GoRoute(
             path: '/institution/:institutionId/explore',
             redirect: (context, state) => _enforceCanonicalIdMatch(
@@ -2862,13 +2890,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           // (existing workspace messaging). The new actor-aware direct
           // inbox lives at /institution/:id/messages/direct.
           GoRoute(
+            // RETIRED (DD-42 phase 2, 2026-10-09): this listed the same
+            // spaces as Spaces, under a second name. It now opens Spaces.
             path: '/institution/:institutionId/messages',
-            // C3 — the institution-inbox destination states its context
-            // EXPLICITLY; the path itself confers nothing.
-            builder: (context, state) => InstitutionRouteScope(
-              address: state.pathParameters['institutionId'],
-              builder: (institutionId) =>
-                  InstitutionMessagingScreen(institutionId: institutionId),
+            redirect: (context, state) => carryQuery(
+              '/institution/${state.pathParameters['institutionId']}/spaces',
+              state.uri,
             ),
           ),
           // The institution-context legacy inbox, retired with its member

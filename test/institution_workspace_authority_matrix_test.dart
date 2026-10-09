@@ -103,7 +103,8 @@ void main() {
         'Announcements',
         'Live',
         'Spaces',
-        'Messages',
+        'Today',
+        'Questions',
         'Meetings',
         'Members',
         'Profile',
@@ -118,13 +119,13 @@ void main() {
 
       // OVEREXPOSURE: none of these may follow from standing alone.
       for (final forbidden in [
-        'Overview',
-        'Join Requests',
+        'Verification',
+        'Join requests',
         'Invites',
         'Booking pages',
-        'Domains',
+        'Web addresses',
         'Billing',
-        'Edit Profile',
+        'Edit profile',
       ]) {
         expect(labels, isNot(contains(forbidden)),
             reason: '$forbidden requires a delegated capability');
@@ -143,11 +144,11 @@ void main() {
       final labels = labelsFor(memberRep);
 
       for (final forbidden in [
-        'Join Requests',
+        'Join requests',
         'Invites',
         'Billing',
-        'Domains',
-        'Overview',
+        'Web addresses',
+        'Verification',
       ]) {
         expect(labels, isNot(contains(forbidden)));
       }
@@ -163,9 +164,9 @@ void main() {
     test('admin holds the operational workspace', () {
       final labels = labelsFor(admin);
       for (final expected in [
-        'Overview',
+        'Verification',
         'Members',
-        'Join Requests',
+        'Join requests',
         'Invites',
         'Booking pages',
       ]) {
@@ -177,9 +178,9 @@ void main() {
       // Owner-held capabilities are delegable, but only BY the owner — an
       // ADMIN does not receive them by role.
       final labels = labelsFor(admin);
-      expect(labels, isNot(contains('Domains')));
+      expect(labels, isNot(contains('Web addresses')));
       expect(labels, isNot(contains('Billing')));
-      expect(labels, isNot(contains('Edit Profile')));
+      expect(labels, isNot(contains('Edit profile')));
     });
 
     test('an owner-delegated capability reaches an ADMIN without a role change', () {
@@ -192,16 +193,16 @@ void main() {
       );
       expect(labelsFor(delegated), contains('Billing'));
       // ...and grants nothing it did not name.
-      expect(labelsFor(delegated), isNot(contains('Domains')));
+      expect(labelsFor(delegated), isNot(contains('Web addresses')));
     });
 
     test('owner holds governance', () {
       final labels = labelsFor(owner);
       for (final expected in [
-        'Domains',
+        'Web addresses',
         'Billing',
-        'Edit Profile',
-        'Overview',
+        'Edit profile',
+        'Verification',
       ]) {
         expect(labels, contains(expected));
       }
@@ -222,18 +223,29 @@ void main() {
       expect(members.sectionLabel, isNot('ADMIN'));
     });
 
-    test('ADMIN is anchored by a genuinely administrative destination', () {
-      final entries = buildInstitutionWorkspaceEntries(owner);
-      final adminAnchor =
-          entries.firstWhere((e) => e.sectionLabel == 'ADMIN');
-      expect(adminAnchor.label, 'Overview');
-      expect(adminAnchor.requiresAny, isNotEmpty);
+    // DD-42 phase 2 (2026-10-09): six sections replace WORKSPACE / ADMIN /
+    // GOVERNANCE / IDENTITY. Administration lives under SETTINGS, which opens
+    // with Profile -- something every member may see -- so a member's
+    // SETTINGS never reveals that administrative entries exist.
+    test('the workspace has exactly the six sections, in order', () {
+      final sections = buildInstitutionWorkspaceEntries(owner)
+          .map((e) => e.sectionLabel)
+          .whereType<String>()
+          .toList();
+      expect(sections, ['TODAY', 'PUBLIC', 'ANNOUNCEMENTS', 'COMMUNITY', 'MEETINGS', 'SETTINGS']);
+    });
+
+    test('settings opens with what every member may see', () {
+      final anchor = buildInstitutionWorkspaceEntries(member)
+          .firstWhere((e) => e.sectionLabel == 'SETTINGS');
+      expect(anchor.label, 'Profile');
+      expect(anchor.requiresAny, isEmpty);
     });
 
     test('seeing the roster is not authority over it', () {
       // Member holds the destination; the administrative acts remain absent.
       expect(labelsFor(member), contains('Members'));
-      for (final forbidden in ['Join Requests', 'Invites', 'Overview']) {
+      for (final forbidden in ['Join requests', 'Invites', 'Verification']) {
         expect(labelsFor(member), isNot(contains(forbidden)));
       }
     });

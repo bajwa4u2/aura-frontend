@@ -99,9 +99,13 @@ enum AuraRailVisibility {
   /// Render only at the desktop breakpoint (≥ kDesktopBreak).
   desktopOnly,
 
-  /// Render at tablet and above (≥ kTabletBreak). Used by the institution
-  /// workspace, whose left rail is the single navigation home on tablet too.
+  /// Render at tablet and above (≥ kTabletBreak).
   tabletUp,
+
+  /// Render on anything wider than a phone (≥ kMobileBreak). The institution
+  /// workspace (DD-42 phase 2): a tablet gets a compact rail, never a
+  /// drawer, and only a phone gets the bottom bar.
+  notHandset,
 
   /// Never render.
   never,
@@ -178,8 +182,8 @@ class AuraSurfacePolicy {
         return const AuraSurfacePolicy(
           measure: AuraMeasure.working,
           composition: AuraSurfaceComposition.multiZone,
-          // The institution left rail is the single nav home on tablet too.
-          leftRailVisibility: AuraRailVisibility.tabletUp,
+          // The institution left rail is the single nav home from tablet up.
+          leftRailVisibility: AuraRailVisibility.notHandset,
           contextRailVisibility: AuraRailVisibility.desktopOnly,
           density: AuraSurfaceDensity.balanced,
           bodyHorizontalPadding:
@@ -430,6 +434,8 @@ class AuraSurfaceScaffold extends StatelessWidget {
         // px. This was not an exotic window size; it was the default setting
         // on a common machine.
         return win.width >= kTabletBreak;
+      case AuraRailVisibility.notHandset:
+        return win.width >= kMobileBreak;
       case AuraRailVisibility.never:
         return false;
     }

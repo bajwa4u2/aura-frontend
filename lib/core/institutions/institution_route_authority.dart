@@ -433,12 +433,13 @@ String? institutionShorthandRedirect(
 
 /// Where entering an institution lands.
 ///
-/// Founder ruling 2026-08-22: **Explore**, not Overview. Overview is
-/// administrative/operational standing and setup information; the institution's
-/// primary experience is what is happening inside it.
+/// DD-42 phase 2 (2026-10-09): **Today**, for every member. It supersedes the
+/// 2026-08-22 ruling (Explore, not Overview) in the same spirit: the front
+/// door leads with what is happening, starting with what the public is
+/// asking, and Explore stays one tap away under Public.
 String institutionEntryDestination(String institutionId) {
   final id = institutionId.trim();
-  return id.isEmpty ? kInstitutionNoAffiliationDestination : '/institution/$id/explore';
+  return id.isEmpty ? kInstitutionNoAffiliationDestination : '/institution/$id/today';
 }
 
 /// Where a person is sent when an institution REFUSES them.

@@ -18,6 +18,12 @@
 /// Wire values map 1:1 to GoRoute paths:
 ///   `/institution/:institutionId/<value>`
 enum InstitutionSection {
+  /// The front door (DD-42 phase 2): what the public is asking, what waits
+  /// for you, what is coming up, what the institution last said.
+  today('today'),
+  publicEngagement('public-engagement'),
+  meetings('meetings'),
+  availability('availability'),
   dashboard('dashboard'),
   profile('profile'),
   editProfile('edit-profile'),

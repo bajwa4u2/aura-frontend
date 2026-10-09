@@ -351,7 +351,11 @@ class InstitutionShell extends ConsumerWidget {
         //
         // One number, asked once, shared by the decision to SHOW the rail and
         // the decision to REPLACE it.
-        final isTablet = win.width >= kTabletBreak && !isMeetingFocus;
+        // DD-42 phase 2 (2026-10-09): a tablet gets the compact rail, never a
+        // clipped drawer. Only a phone (< kMobileBreak) goes without a rail,
+        // and it gets a bottom bar instead. The surface policy
+        // (`AuraRailVisibility.notHandset`) asks the same number.
+        final isTablet = win.width >= kMobileBreak && !isMeetingFocus;
 
         // Workspace navigation doctrine (institution workspace only):
         //   * DESKTOP / TABLET (≥900): the persistent LEFT RAIL is the single
@@ -413,8 +417,15 @@ class InstitutionShell extends ConsumerWidget {
                     modules: _institutionContextModules(context, identity),
                   )
                 : null,
-            // Institution bottom navigation removed from the workspace.
-            footer: null,
+            // PHONE: the four places a person uses most, plus More (DD-42
+            // phase 2). More opens the full navigation in the drawer.
+            footer: (showLeftRail || isMeetingFocus)
+                ? null
+                : _InstitutionBottomBar(
+                    currentPath: path,
+                    identity: identity,
+                    pendingTotal: pendingJoinRequests + pendingInvites,
+                  ),
           ),
         );
 
@@ -2260,123 +2271,127 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
   // the router canonicalizes on arrival.
   final address = identity?.workspaceAddress ?? '';
 
-  String? sectionPath(String section) =>
-      address.isNotEmpty ? '/institution/$address/$section' : null;
-
   // The left rail is the single home for ALL institution navigation, grouped
   // by intent (WORKSPACE / ADMIN / GOVERNANCE / IDENTITY). GOVERNANCE V1:
   // entries a member lacks authority for are HIDDEN, not greyed.
+  // SIX SECTIONS (DD-42 phase 2, 2026-10-09): Today · Public · Announcements
+  // · Community · Meetings · Settings. Public-first: the front door leads
+  // with what the public is asking. Entries a person lacks authority for are
+  // HIDDEN, not greyed (GOVERNANCE V1). Retired: Overview (Today replaces it
+  // for everyone) and Messages (it listed the same spaces as Spaces).
+  String? at(InstitutionSection section) => address.isNotEmpty
+      ? institutionWorkspacePath(address, section)
+      : null;
+  bool under(String p, String segment) =>
+      p.startsWith('/institution/') && p.contains('/$segment');
+
   final all = <InstWorkspaceEntry>[
-    // ── WORKSPACE ──────────────────────────────────────────────────────────
+    // ── TODAY ──────────────────────────────────────────────────────────────
     InstWorkspaceEntry(
-      sectionLabel: 'WORKSPACE',
+      sectionLabel: 'TODAY',
+      label: 'Today',
+      icon: Icons.wb_sunny_outlined,
+      selectedIcon: Icons.wb_sunny_rounded,
+      pathBuilder: (_) => at(InstitutionSection.today),
+      pathMatcher: (p) => under(p, 'today') || p.endsWith('/dashboard'),
+    ),
+
+    // ── PUBLIC ─────────────────────────────────────────────────────────────
+    InstWorkspaceEntry(
+      sectionLabel: 'PUBLIC',
+      label: 'Questions',
+      icon: Icons.record_voice_over_outlined,
+      selectedIcon: Icons.record_voice_over_rounded,
+      pathBuilder: (_) => at(InstitutionSection.publicEngagement),
+      pathMatcher: (p) => under(p, 'public-engagement'),
+    ),
+    InstWorkspaceEntry(
       label: 'Explore',
       icon: Icons.explore_outlined,
       selectedIcon: Icons.explore_rounded,
-      pathBuilder: (_) =>
-          address.isNotEmpty ? '/institution/$address/explore' : '/institution/dashboard',
-      pathMatcher: (p) =>
-          p.startsWith('/institution/') && p.contains('/explore'),
+      pathBuilder: (_) => at(InstitutionSection.explore),
+      pathMatcher: (p) => under(p, 'explore'),
     ),
+
+    // ── ANNOUNCEMENTS ──────────────────────────────────────────────────────
     InstWorkspaceEntry(
-      label: 'Activity',
-      icon: Icons.timeline_outlined,
-      selectedIcon: Icons.timeline_rounded,
-      pathBuilder: (_) => sectionPath('activity'),
-      pathMatcher: (p) =>
-          p.startsWith('/institution/') && p.contains('/activity'),
-    ),
-    InstWorkspaceEntry(
+      sectionLabel: 'ANNOUNCEMENTS',
       label: 'Announcements',
       icon: Icons.campaign_outlined,
       selectedIcon: Icons.campaign_rounded,
-      pathBuilder: (_) => sectionPath('announcements'),
-      pathMatcher: (p) =>
-          p.startsWith('/institution/') && p.contains('/announcements'),
+      pathBuilder: (_) => at(InstitutionSection.announcements),
+      pathMatcher: (p) => under(p, 'announcements'),
+    ),
+
+    // ── COMMUNITY ──────────────────────────────────────────────────────────
+    // Members is participation, not administration (founder ruling
+    // 2026-08-23): every member may see who speaks and hosts for the
+    // institution; MANAGE_MEMBERS governs the controls inside it.
+    InstWorkspaceEntry(
+      sectionLabel: 'COMMUNITY',
+      label: 'Spaces',
+      icon: Icons.forum_outlined,
+      selectedIcon: Icons.forum_rounded,
+      pathBuilder: (_) => at(InstitutionSection.spaces),
+      pathMatcher: (p) => under(p, 'spaces') || under(p, 'messages'),
+    ),
+    InstWorkspaceEntry(
+      label: 'Members',
+      icon: Icons.people_outline_rounded,
+      selectedIcon: Icons.people_rounded,
+      pathBuilder: (_) => at(InstitutionSection.members),
+      pathMatcher: (p) => under(p, 'members'),
     ),
     InstWorkspaceEntry(
       label: 'Live',
       icon: Icons.sensors_outlined,
       selectedIcon: Icons.sensors_rounded,
-      pathBuilder: (_) => address.isNotEmpty ? '/institution/$address/live-rooms' : null,
-      pathMatcher: (p) =>
-          p.startsWith('/institution/') && p.contains('/live'),
+      pathBuilder: (_) => at(InstitutionSection.liveRooms),
+      pathMatcher: (p) => under(p, 'live'),
     ),
+
+    // ── MEETINGS ───────────────────────────────────────────────────────────
     InstWorkspaceEntry(
-      label: 'Spaces',
-      icon: Icons.forum_outlined,
-      selectedIcon: Icons.forum_rounded,
-      pathBuilder: (_) => sectionPath('spaces'),
-      pathMatcher: (p) =>
-          p.startsWith('/institution/') && p.contains('/spaces'),
-    ),
-    InstWorkspaceEntry(
-      label: 'Messages',
-      icon: Icons.chat_bubble_outline_rounded,
-      selectedIcon: Icons.chat_bubble_rounded,
-      pathBuilder: (_) => sectionPath('messages'),
-      pathMatcher: (p) =>
-          p.startsWith('/institution/') && p.contains('/messages'),
-    ),
-    InstWorkspaceEntry(
+      sectionLabel: 'MEETINGS',
       label: 'Meetings',
       icon: Icons.videocam_outlined,
       selectedIcon: Icons.videocam_rounded,
-      pathBuilder: (_) => address.isNotEmpty ? '/institution/$address/meetings' : null,
-      pathMatcher: (p) =>
-          p.startsWith('/meetings/') ||
-          (p.startsWith('/institution/') && p.contains('/meetings')),
+      pathBuilder: (_) => at(InstitutionSection.meetings),
+      pathMatcher: (p) => p.startsWith('/meetings/') || under(p, 'meetings'),
     ),
-    // MEMBERS IS A PARTICIPATION DESTINATION, not an administrative one
-    // (founder ruling 2026-08-23, superseding the earlier ordering
-    // assumption). Canonical doctrine in institutions.service.ts states
-    // "visibility follows responsibility: every member sees who holds
-    // delegated capabilities" -- so seeing who speaks and hosts for your
-    // institution IS participation. A member must not have to enter an ADMIN
-    // section to reach something doctrine says members may see.
-    //
-    // The RESOURCE is separated from AUTHORITY OVER THE RESOURCE: the roster
-    // is baseline, while MANAGE_MEMBERS governs the controls inside it.
     InstWorkspaceEntry(
-      label: 'Members',
-      icon: Icons.people_outline_rounded,
-      selectedIcon: Icons.people_rounded,
-      pathBuilder: (_) => address.isNotEmpty ? '/institution/$address/members' : null,
-      pathMatcher: (p) =>
-          p.contains('/members') && p.startsWith('/institution/'),
+      label: 'Booking pages',
+      icon: Icons.calendar_today_outlined,
+      selectedIcon: Icons.calendar_today_rounded,
+      requiresAny: kInstitutionDestinationAuthority['availability']!,
+      pathBuilder: (_) => at(InstitutionSection.availability),
+      pathMatcher: (p) => p.startsWith('/institution/') && p.endsWith('/availability'),
     ),
 
-    // ── ADMIN ──────────────────────────────────────────────────────────────
-    // D6: Overview is the OPERATIONAL institution destination and now ANCHORS
-    // the ADMIN section. It is no longer the standing surface
-    // and no longer the id-less address -- both were the dual-purpose overload
-    // the ruling retires.
-    //
-    // "Operational authority" is expressed compositionally, as holding ANY
-    // administrative capability, rather than as a role test. That is what
-    // keeps a pure Representative or Host -- who hold real authority, but not
-    // administrative authority -- out of an operational surface without
-    // needing a variant of this entry per role.
+    // ── SETTINGS ───────────────────────────────────────────────────────────
     InstWorkspaceEntry(
-      sectionLabel: 'ADMIN',
-      label: 'Overview',
-      icon: Icons.grid_view_outlined,
-      selectedIcon: Icons.grid_view_rounded,
-      requiresAny: kOperationalInstitutionAuthority,
-      pathBuilder: (_) => address.isNotEmpty ? '/institution/$address/dashboard' : null,
-      pathMatcher: (p) =>
-          p.startsWith('/institution/') && p.endsWith('/dashboard'),
+      sectionLabel: 'SETTINGS',
+      label: 'Profile',
+      icon: Icons.badge_outlined,
+      selectedIcon: Icons.badge_rounded,
+      pathBuilder: (_) => at(InstitutionSection.profile),
+      pathMatcher: (p) => p.startsWith('/institution/') && p.endsWith('/profile'),
     ),
     InstWorkspaceEntry(
-      label: 'Join Requests',
+      label: 'Edit profile',
+      icon: Icons.edit_outlined,
+      selectedIcon: Icons.edit_rounded,
+      requiresAny: kInstitutionDestinationAuthority['edit-profile']!,
+      pathBuilder: (_) => at(InstitutionSection.editProfile),
+    ),
+    InstWorkspaceEntry(
+      label: 'Join requests',
       icon: Icons.person_add_outlined,
       selectedIcon: Icons.person_add_rounded,
       requiresAny: kInstitutionDestinationAuthority['join-requests']!,
       badge: pendingJoinRequests,
-      pathBuilder: (_) =>
-          address.isNotEmpty ? '/institution/$address/join-requests' : null,
-      pathMatcher: (p) =>
-          p.contains('/join-requests') && p.startsWith('/institution/'),
+      pathBuilder: (_) => at(InstitutionSection.joinRequests),
+      pathMatcher: (p) => under(p, 'join-requests'),
     ),
     InstWorkspaceEntry(
       label: 'Invites',
@@ -2384,95 +2399,49 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       selectedIcon: Icons.mail_rounded,
       requiresAny: kInstitutionDestinationAuthority['invites']!,
       badge: pendingInvites,
-      pathBuilder: (_) => address.isNotEmpty ? '/institution/$address/invites' : null,
-      pathMatcher: (p) =>
-          p.contains('/invite') && p.startsWith('/institution/'),
+      pathBuilder: (_) => at(InstitutionSection.invites),
+      pathMatcher: (p) => under(p, 'invites'),
     ),
-    // UNITS — STRUCTURAL MANAGEMENT ONLY.
-    //
-    // Discovery lives on Profile, where institutional identity lives: a unit is
-    // an operating context INSIDE the institution, not a peer destination, so
-    // it earns no primary navigation entry. What earns an ADMIN entry is the
-    // structural act — creating, retiring and editing the institution's
-    // operating topology — which founder ruling U5 keeps separate from
-    // operating inside a unit.
-    //
-    // Gated on the same authority the backend enforces, so a member who may
-    // participate in a unit is not offered the surface that restructures them.
+    // Units: structural management only (founder ruling U5); a unit is an
+    // operating context reached from Profile, not a peer destination.
     InstWorkspaceEntry(
       label: 'Units',
       icon: Icons.account_tree_outlined,
       selectedIcon: Icons.account_tree_rounded,
       requiresAny: const [ConsequentialAct.administerUnits],
-      pathBuilder: (_) =>
-          address.isNotEmpty ? '/institution/$address/units' : null,
-      pathMatcher: (p) =>
-          p.startsWith('/institution/') && p.endsWith('/units'),
+      pathBuilder: (_) => at(InstitutionSection.units),
+      pathMatcher: (p) => p.startsWith('/institution/') && p.endsWith('/units'),
     ),
     InstWorkspaceEntry(
-      label: 'Booking pages',
-      icon: Icons.calendar_today_outlined,
-      selectedIcon: Icons.calendar_today_rounded,
-      requiresAny: kInstitutionDestinationAuthority['availability']!,
-      pathBuilder: (_) =>
-          address.isNotEmpty ? '/institution/$address/availability' : null,
-      pathMatcher: (p) =>
-          p.startsWith('/institution/') && p.endsWith('/availability'),
+      label: 'Verification',
+      icon: Icons.verified_outlined,
+      selectedIcon: Icons.verified_rounded,
+      requiresAny: kInstitutionDestinationAuthority['verification']!,
+      pathBuilder: (_) => at(InstitutionSection.verification),
+      pathMatcher: (p) => under(p, 'verification'),
     ),
-
-    // ── GOVERNANCE (owner-held; hidden from operators without the capability)
     InstWorkspaceEntry(
-      sectionLabel: 'GOVERNANCE',
-      label: 'Domains',
+      label: 'Web addresses',
       icon: Icons.language_rounded,
       selectedIcon: Icons.language_rounded,
       requiresAny: kInstitutionDestinationAuthority['domains']!,
-      pathBuilder: (_) => address.isNotEmpty
-          ? institutionWorkspacePath(address, InstitutionSection.domains)
-          : null,
+      pathBuilder: (_) => at(InstitutionSection.domains),
     ),
     InstWorkspaceEntry(
       label: 'Billing',
       icon: Icons.account_balance_wallet_outlined,
       selectedIcon: Icons.account_balance_wallet_rounded,
       requiresAny: kInstitutionDestinationAuthority['billing']!,
-      pathBuilder: (_) => address.isNotEmpty ? '/institution/$address/billing' : null,
-      pathMatcher: (p) =>
-          p.startsWith('/institution/') && p.endsWith('/billing'),
-    ),
-
-    // ── IDENTITY ───────────────────────────────────────────────────────────
-    InstWorkspaceEntry(
-      sectionLabel: 'IDENTITY',
-      label: 'Profile',
-      icon: Icons.badge_outlined,
-      selectedIcon: Icons.badge_rounded,
-      pathBuilder: (_) => address.isNotEmpty
-          ? institutionWorkspacePath(address, InstitutionSection.profile)
-          : null,
+      pathBuilder: (_) => at(InstitutionSection.billing),
+      pathMatcher: (p) => p.startsWith('/institution/') && p.endsWith('/billing'),
     ),
     InstWorkspaceEntry(
-      label: 'Edit Profile',
-      icon: Icons.edit_outlined,
-      selectedIcon: Icons.edit_rounded,
-      requiresAny: kInstitutionDestinationAuthority['edit-profile']!,
-      pathBuilder: (_) => address.isNotEmpty
-          ? institutionWorkspacePath(address, InstitutionSection.editProfile)
-          : null,
+      label: 'Activity',
+      icon: Icons.timeline_outlined,
+      selectedIcon: Icons.timeline_rounded,
+      pathBuilder: (_) => at(InstitutionSection.activity),
+      pathMatcher: (p) => under(p, 'activity'),
     ),
-    // PUBLIC PREVIEW IS AN ACTION, NOT A DESTINATION.
-    //
-    // Founder refinement 2026-08-22: seeing how the institution looks to the
-    // public is something you do WHILE looking at the profile, not a separate
-    // place you go. The capability and its route are unchanged and remain
-    // reachable contextually from Profile; only the duplicate rail entry is
-    // removed.
-    //
-    // The general rule this states: a rail entry earns its place by being a
-    // DESTINATION -- somewhere with its own standing content and its own
-    // reason to return. A contextual action or an alternate view of a
-    // destination already in the rail inflates the rail without adding
-    // anywhere to go.
   ];
 
   // Filter to entries the acting member may use, then reflow section labels
@@ -2913,4 +2882,127 @@ String institutionWorkspaceHome(BuildContext context, String? fallbackId) {
   }
   final id = (addressed ?? fallbackId ?? '').trim();
   return id.isEmpty ? kInstitutionStandingRoute : institutionEntryDestination(id);
+}
+
+/// THE PHONE'S BOTTOM BAR (DD-42 phase 2, 2026-10-09).
+///
+/// Today · Questions · Community · Meetings · More. Destinations are minted
+/// for the institution in the ADDRESS, falling back to the shell's identity,
+/// so the bar never sends somebody into a different institution. More opens
+/// the same navigation the rail holds, in the drawer.
+class _InstitutionBottomBar extends StatelessWidget {
+  const _InstitutionBottomBar({
+    required this.currentPath,
+    required this.identity,
+    this.pendingTotal = 0,
+  });
+
+  final String currentPath;
+  final InstitutionIdentity? identity;
+  final int pendingTotal;
+
+  String get _address {
+    if (institutionAddressedIn(currentPath)) {
+      final parts = currentPath.split('/')..removeWhere((p) => p.isEmpty);
+      return parts[1];
+    }
+    return identity?.workspaceAddress ?? '';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final address = _address;
+    final items = <(String, IconData, IconData, InstitutionSection, List<String>)>[
+      ('Today', Icons.wb_sunny_outlined, Icons.wb_sunny_rounded, InstitutionSection.today, ['today', 'dashboard']),
+      ('Questions', Icons.record_voice_over_outlined, Icons.record_voice_over_rounded, InstitutionSection.publicEngagement, ['public-engagement', 'explore']),
+      ('Community', Icons.forum_outlined, Icons.forum_rounded, InstitutionSection.spaces, ['spaces', 'members', 'live-rooms']),
+      ('Meetings', Icons.videocam_outlined, Icons.videocam_rounded, InstitutionSection.meetings, ['meetings', 'availability']),
+    ];
+    final parts = currentPath.split('/')..removeWhere((p) => p.isEmpty);
+    final section = parts.length >= 3 ? parts[2] : '';
+    final anySelected = items.any((i) => i.$5.contains(section));
+
+    Widget tab({
+      required String label,
+      required IconData icon,
+      required IconData selectedIcon,
+      required bool selected,
+      required VoidCallback? onTap,
+      int badge = 0,
+    }) {
+      final color = selected ? _institutionAccent : AuraSurface.muted;
+      return Expanded(
+        child: Semantics(
+          button: true,
+          selected: selected,
+          label: label,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AuraSpace.s8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Icon(selected ? selectedIcon : icon, size: 22, color: color),
+                      if (badge > 0)
+                        Positioned(
+                          right: -8,
+                          top: -4,
+                          child: IgnorePointer(child: _NavCountBadge(count: badge)),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AuraText.micro.copyWith(
+                      color: color,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: _institutionHeaderGradient,
+        border: Border(top: BorderSide(color: Color(0x220D9488))),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            for (final i in items)
+              tab(
+                label: i.$1,
+                icon: i.$2,
+                selectedIcon: i.$3,
+                selected: i.$5.contains(section),
+                onTap: address.isEmpty
+                    ? null
+                    : () => context.go(institutionWorkspacePath(address, i.$4)),
+              ),
+            tab(
+              label: 'More',
+              icon: Icons.menu_rounded,
+              selectedIcon: Icons.menu_rounded,
+              selected: !anySelected,
+              badge: pendingTotal,
+              onTap: () => _institutionScaffoldKey.currentState?.openDrawer(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
