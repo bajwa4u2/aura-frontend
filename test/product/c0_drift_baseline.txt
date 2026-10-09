@@ -61,7 +61,6 @@ G4 1 lib/features/devices/presentation/devices_screen.dart
 G4 1 lib/features/institutions/announcements/integrity/announcement_integrity_review_sheet.dart
 G4 1 lib/features/institutions/posts/institution_post_composer_screen.dart
 G4 1 lib/features/institutions/posts/integrity/institution_post_integrity_review_sheet.dart
-G4 1 lib/features/institutions/wizard/institution_onboarding_wizard.dart
 G4 1 lib/features/me/presentation/me/me_participation_continuity.dart
 G4 1 lib/features/meetings/presentation/booking_confirm_screen.dart
 G4 1 lib/features/meetings/presentation/booking_reschedule_screen.dart

@@ -14,6 +14,8 @@ import '../../../core/ui/substrate_chip.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/trust/trust_marks.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../core/institutions/institution_route_authority.dart';
+import 'institution_kinds.dart';
 
 // ─── Wizard entry point ───────────────────────────────────────────────────────
 
@@ -24,7 +26,7 @@ class InstitutionOnboardingWizard extends ConsumerStatefulWidget {
     this.inviteCode,
   });
 
-  /// 'create' | 'claim' | 'join' | 'signin'
+  /// 'create' | 'claim' | 'join'
   final String? mode;
   final String? inviteCode;
 
@@ -46,20 +48,15 @@ class _InstitutionOnboardingWizardState
   final _website = TextEditingController();
   final _jurisdiction = TextEditingController();
   final _description = TextEditingController();
-  String? _institutionType;
+  // DD-42 (2026-10-08): the kind is asked first, from the seven kinds.
+  InstitutionKind? _kind;
   Map<String, dynamic>? _selectedInstitution; // for claim path
 
-  // Step 3 — Representative
-  final _firstName = TextEditingController();
-  final _lastName = TextEditingController();
-  final _workEmail = TextEditingController();
+  // Your role. The person is the one signed in: name and email come from
+  // their account and are never typed again (DD-42).
   final _phone = TextEditingController();
   final _roleTitle = TextEditingController();
   final _purpose = TextEditingController();
-  final _password = TextEditingController();
-  final _confirmPassword = TextEditingController();
-  bool _obscurePassword = true;
-  bool _obscureConfirm = true;
 
   // Step 4 — Join by invite
   final _inviteCode = TextEditingController();
@@ -70,16 +67,6 @@ class _InstitutionOnboardingWizardState
   String? _error;
   Map<String, dynamic>? _submittedRequest;
 
-  static const _institutionTypes = <String>[
-    'Government',
-    'University or school',
-    'Nonprofit or foundation',
-    'Company',
-    'Media organization',
-    'Research institute',
-    'Faith institution',
-    'Other',
-  ];
 
   @override
   void initState() {
@@ -87,12 +74,10 @@ class _InstitutionOnboardingWizardState
     if (widget.inviteCode != null) {
       _inviteCode.text = widget.inviteCode!;
     }
+    // "signin" used to send people to a separate institution sign-in. There
+    // is one identity (founder ruling 2026-08-16; DD-42): it shows the
+    // ordinary choices.
     _path = _pathFromMode(widget.mode);
-    if (_path == _WizardPath.signin) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) context.go('/institution/sign-in');
-      });
-    }
   }
 
   @override
@@ -101,14 +86,9 @@ class _InstitutionOnboardingWizardState
     _website.dispose();
     _jurisdiction.dispose();
     _description.dispose();
-    _firstName.dispose();
-    _lastName.dispose();
-    _workEmail.dispose();
     _phone.dispose();
     _roleTitle.dispose();
     _purpose.dispose();
-    _password.dispose();
-    _confirmPassword.dispose();
     _inviteCode.dispose();
     super.dispose();
   }
@@ -121,8 +101,6 @@ class _InstitutionOnboardingWizardState
         return _WizardPath.claim;
       case 'join':
         return _WizardPath.join;
-      case 'signin':
-        return _WizardPath.signin;
       default:
         return null;
     }
@@ -132,7 +110,8 @@ class _InstitutionOnboardingWizardState
 
   int get _totalSteps {
     if (_path == _WizardPath.join) return 2; // invite code + status
-    if (_path == _WizardPath.create) return 4; // identity + rep + review + status
+    // kind + institution + what you'll need + your role + review, then status
+    if (_path == _WizardPath.create) return 6;
     if (_path == _WizardPath.claim) return 4; // identity + rep + review + status
     return 1;
   }
@@ -151,10 +130,11 @@ class _InstitutionOnboardingWizardState
       return;
     }
 
-    if (_step == 2) {
-      // identity step validation
-      if (!_validateIdentityStep()) return;
+    if (_path == _WizardPath.create && _step == 1 && _kind == null) {
+      setState(() => _error = 'Choose what kind of institution this is.');
+      return;
     }
+    if (_isIdentityStep && !_validateIdentityStep()) return;
 
     setState(() {
       _step++;
@@ -177,13 +157,13 @@ class _InstitutionOnboardingWizardState
     });
   }
 
+  bool get _isIdentityStep =>
+      (_path == _WizardPath.create && _step == 2) ||
+      (_path == _WizardPath.claim && _step == 1);
+
   bool _validateIdentityStep() {
     if (_orgName.text.trim().isEmpty) {
       setState(() => _error = 'Enter the institution name.');
-      return false;
-    }
-    if (_institutionType == null) {
-      setState(() => _error = 'Select an institution type.');
       return false;
     }
     if (_path == _WizardPath.claim && _selectedInstitution == null) {
@@ -195,31 +175,9 @@ class _InstitutionOnboardingWizardState
 
   Future<void> _submit() async {
     if (_submitting) return;
-
-    if (!_isAuthed && _path == _WizardPath.create) {
-      // Validate account fields
-      if (_firstName.text.trim().isEmpty || _lastName.text.trim().isEmpty) {
-        setState(() => _error = 'Enter your first and last name.');
-        return;
-      }
-      if (!_workEmail.text.trim().contains('@')) {
-        setState(() => _error = 'Enter a valid work email.');
-        return;
-      }
-      if (_password.text.length < 8) {
-        setState(() => _error = 'Password must be at least 8 characters.');
-        return;
-      }
-      if (_password.text != _confirmPassword.text) {
-        setState(() => _error = 'Passwords do not match.');
-        return;
-      }
-    }
-
-    if (_isAuthed && (_path == _WizardPath.claim || _path == _WizardPath.create)) {
-      if (_workEmail.text.trim().isEmpty) {
-        // For authed claim flow, email defaults to their own; allow empty
-      }
+    if (!_isAuthed) {
+      _showAuthRequiredDialog();
+      return;
     }
 
     setState(() {
@@ -231,9 +189,9 @@ class _InstitutionOnboardingWizardState
       final dio = ref.read(dioProvider);
       Map<String, dynamic> result;
 
-      if (_path == _WizardPath.create && !_isAuthed) {
+      if (_path == _WizardPath.create) {
         result = await _submitCreate(dio);
-      } else if (_path == _WizardPath.claim || (_path == _WizardPath.create && _isAuthed)) {
+      } else if (_path == _WizardPath.claim) {
         result = await _submitClaim(dio);
       } else {
         throw Exception('Unexpected path state.');
@@ -259,19 +217,15 @@ class _InstitutionOnboardingWizardState
   }
 
   Future<Map<String, dynamic>> _submitCreate(Dio dio) async {
-    final res = await dio.post('/institutions/verification-request', data: {
-      'firstName': _firstName.text.trim(),
-      'lastName': _lastName.text.trim(),
+    String? opt(TextEditingController c) => c.text.trim().isEmpty ? null : c.text.trim();
+    final res = await dio.post('/institutions/create-request', data: {
+      'kind': _kind!.wire,
       'organizationName': _orgName.text.trim(),
-      'institutionType': _institutionType ?? 'Other',
-      'websiteUrl': _website.text.trim().isNotEmpty ? _website.text.trim() : null,
-      'workEmail': _workEmail.text.trim().toLowerCase(),
-      'phone': _phone.text.trim().isNotEmpty ? _phone.text.trim() : null,
-      'password': _password.text,
-      'confirmPassword': _confirmPassword.text,
-      'roleTitle': _roleTitle.text.trim().isNotEmpty ? _roleTitle.text.trim() : null,
-      'jurisdiction': _jurisdiction.text.trim().isNotEmpty ? _jurisdiction.text.trim() : null,
-      'purpose': _description.text.trim().isNotEmpty ? _description.text.trim() : (_purpose.text.trim().isNotEmpty ? _purpose.text.trim() : null),
+      'websiteUrl': opt(_website),
+      'jurisdiction': opt(_jurisdiction),
+      'roleTitle': opt(_roleTitle),
+      'phone': opt(_phone),
+      'purpose': opt(_description) ?? opt(_purpose),
     });
     return _asMap(res.data);
   }
@@ -284,7 +238,6 @@ class _InstitutionOnboardingWizardState
       'claimTargetInstitutionId': targetId,
       'organizationName': _orgName.text.trim(),
       'websiteUrl': _website.text.trim().isNotEmpty ? _website.text.trim() : null,
-      'workEmail': _workEmail.text.trim().isNotEmpty ? _workEmail.text.trim().toLowerCase() : null,
       'phone': _phone.text.trim().isNotEmpty ? _phone.text.trim() : null,
       'roleTitle': _roleTitle.text.trim().isNotEmpty ? _roleTitle.text.trim() : null,
       'jurisdiction': _jurisdiction.text.trim().isNotEmpty ? _jurisdiction.text.trim() : null,
@@ -347,7 +300,8 @@ class _InstitutionOnboardingWizardState
   String _dioMessage(DioException e, String fallback) {
     final data = e.response?.data;
     if (data is Map) {
-      final msg = data['message'];
+      final err = data['error'];
+      final msg = err is Map ? err['message'] : data['message'];
       if (msg is String && msg.trim().isNotEmpty) return msg.trim();
     }
     return e.message?.trim().isNotEmpty == true ? e.message! : fallback;
@@ -386,10 +340,6 @@ class _InstitutionOnboardingWizardState
   Widget _buildCurrentStep() {
     if (_path == null) return _buildPathChooser();
 
-    if (_path == _WizardPath.signin) {
-      return const _RedirectingStep(message: 'Redirecting to institution sign in…');
-    }
-
     if (_path == _WizardPath.join) {
       if (_submitted) return _buildJoinSuccess();
       return _buildJoinStep();
@@ -398,6 +348,21 @@ class _InstitutionOnboardingWizardState
     // Create / Claim
     if (_submitted || _step >= _totalSteps) return _buildStatusStep();
 
+    if (_path == _WizardPath.create) {
+      switch (_step) {
+        case 1:
+          return _buildKindStep();
+        case 2:
+          return _buildIdentityStep();
+        case 3:
+          return _buildProofStep();
+        case 4:
+          return _buildRepresentativeStep();
+        case 5:
+          return _buildReviewStep();
+      }
+      return _buildStatusStep();
+    }
     switch (_step) {
       case 1:
         return _buildIdentityStep();
@@ -423,11 +388,20 @@ class _InstitutionOnboardingWizardState
           style: AuraText.body.copyWith(color: AuraSurface.muted),
         ),
         const SizedBox(height: AuraSpace.s24),
+        if (_isAuthed) ...[
+          const _MyRequestsSection(),
+        ],
         _PathCard(
           icon: Icons.apartment_outlined,
           title: 'Create new institution',
-          subtitle: 'Register your institution on Aura for the first time.',
-          onTap: () => _selectPath(_WizardPath.create),
+          subtitle: 'Set up your institution on Aura for the first time.',
+          onTap: () {
+            if (!_isAuthed) {
+              _showAuthRequiredDialog();
+              return;
+            }
+            _selectPath(_WizardPath.create);
+          },
         ),
         const SizedBox(height: AuraSpace.s12),
         _PathCard(
@@ -493,10 +467,10 @@ class _InstitutionOnboardingWizardState
         _StepTitle(
           title: _path == _WizardPath.claim
               ? 'Which institution are you claiming?'
-              : 'Institution identity',
+              : 'The institution',
           subtitle: _path == _WizardPath.claim
               ? 'Search for the institution already listed on Aura, then tell us about your role.'
-              : 'Basic information about the institution.',
+              : (_kind == null ? 'Basic information about the institution.' : _kind!.title),
         ),
         const SizedBox(height: AuraSpace.s24),
         if (_path == _WizardPath.claim) ...[
@@ -524,16 +498,10 @@ class _InstitutionOnboardingWizardState
           textInputAction: TextInputAction.next,
         ),
         const SizedBox(height: AuraSpace.s16),
-        _TypeDropdown(
-          value: _institutionType,
-          items: _institutionTypes,
-          onChanged: (v) => setState(() => _institutionType = v),
-        ),
-        const SizedBox(height: AuraSpace.s16),
         AuraInput(
           controller: _website,
-          label: 'Official website',
-          hint: 'https://yourorganisation.org',
+          label: 'Website (optional)',
+          hint: 'https://yourorganisation.org — leave blank if there is none',
           keyboardType: TextInputType.url,
           textInputAction: TextInputAction.next,
         ),
@@ -575,48 +543,20 @@ class _InstitutionOnboardingWizardState
   // ── Step 2: Representative ─────────────────────────────────────────────────
 
   Widget _buildRepresentativeStep() {
-    final showAccountFields = _path == _WizardPath.create && !_isAuthed;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const _StepTitle(
-          title: 'Your authority',
-          subtitle: 'Tell us who you are and your role at the institution.',
-        ),
-        const SizedBox(height: AuraSpace.s24),
-        Row(
-          children: [
-            Expanded(
-              child: AuraInput(
-                controller: _firstName,
-                label: 'First name',
-                textInputAction: TextInputAction.next,
-              ),
-            ),
-            const SizedBox(width: AuraSpace.s12),
-            Expanded(
-              child: AuraInput(
-                controller: _lastName,
-                label: 'Last name',
-                textInputAction: TextInputAction.next,
-              ),
-            ),
-          ],
+          title: 'Your role',
+          subtitle: 'You are asking as yourself. Your name and email come from your Aura account.',
         ),
         const SizedBox(height: AuraSpace.s16),
+        const _YouCard(),
+        const SizedBox(height: AuraSpace.s20),
         AuraInput(
           controller: _roleTitle,
-          label: 'Your role / title',
-          hint: 'e.g. Director of Communications',
-          textInputAction: TextInputAction.next,
-        ),
-        const SizedBox(height: AuraSpace.s16),
-        AuraInput(
-          controller: _workEmail,
-          label: showAccountFields ? 'Institution email (account)' : 'Work email',
-          hint: 'name@yourinstitution.org',
-          keyboardType: TextInputType.emailAddress,
+          label: 'Your role or title',
+          hint: 'e.g. Secretary, Imam, Principal, Director',
           textInputAction: TextInputAction.next,
         ),
         const SizedBox(height: AuraSpace.s16),
@@ -629,44 +569,11 @@ class _InstitutionOnboardingWizardState
         const SizedBox(height: AuraSpace.s16),
         AuraInput(
           controller: _purpose,
-          label: 'Why are you submitting this request? (optional)',
-          hint: 'Context for the review team',
+          label: 'Anything the reviewer should know? (optional)',
           maxLines: 3,
           minLines: 2,
           textInputAction: TextInputAction.newline,
         ),
-        if (showAccountFields) ...[
-          const SizedBox(height: AuraSpace.s20),
-          const _SectionLabel(label: 'Create your institution account'),
-          const SizedBox(height: AuraSpace.s12),
-          AuraInput(
-            controller: _password,
-            label: 'Password',
-            obscureText: _obscurePassword,
-            textInputAction: TextInputAction.next,
-            suffixIcon: IconButton(
-              icon: Icon(_obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined, size: 18, color: AuraSurface.muted),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-            ),
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          AuraInput(
-            controller: _confirmPassword,
-            label: 'Confirm password',
-            obscureText: _obscureConfirm,
-            textInputAction: TextInputAction.done,
-            suffixIcon: IconButton(
-              icon: Icon(_obscureConfirm ? Icons.visibility_outlined : Icons.visibility_off_outlined, size: 18, color: AuraSurface.muted),
-              onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
-            ),
-          ),
-          const SizedBox(height: AuraSpace.s12),
-          Text(
-            'This creates a dedicated institution account tied to your institution email. '
-            'You can sign in at /institution/sign-in after your request is approved.',
-            style: AuraText.small.copyWith(color: AuraSurface.muted),
-          ),
-        ],
         if (_error != null) ...[
           const SizedBox(height: AuraSpace.s12),
           _ErrorBanner(message: _error!),
@@ -676,8 +583,94 @@ class _InstitutionOnboardingWizardState
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             AuraPrimaryButton(
-              label: 'Review submission',
+              label: 'Review',
               icon: Icons.checklist_rounded,
+              onPressed: _next,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ── Create, step 1: what kind of institution ──────────────────────────────
+
+  Widget _buildKindStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _StepTitle(
+          title: 'What kind of institution is it?',
+          subtitle: 'This decides what you are asked to show and how Aura sets up your workspace.',
+        ),
+        const SizedBox(height: AuraSpace.s20),
+        for (final k in InstitutionKind.all) ...[
+          _KindOption(
+            kind: k,
+            selected: _kind?.wire == k.wire,
+            onTap: () => setState(() {
+              _kind = k;
+              _error = null;
+            }),
+          ),
+          const SizedBox(height: AuraSpace.s10),
+        ],
+        if (_error != null) ...[
+          const SizedBox(height: AuraSpace.s12),
+          _ErrorBanner(message: _error!),
+        ],
+        const SizedBox(height: AuraSpace.s16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            AuraPrimaryButton(
+              label: 'Continue',
+              icon: Icons.arrow_forward_rounded,
+              onPressed: _next,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ── Create, step 3: what you'll need, in this kind's words ────────────────
+
+  Widget _buildProofStep() {
+    final k = _kind!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _StepTitle(
+          title: 'What you will be asked to show',
+          subtitle: 'After your request is approved, you show two things. You can prepare them now.',
+        ),
+        const SizedBox(height: AuraSpace.s20),
+        _NeedCard(
+          icon: Icons.verified_outlined,
+          title: 'That the institution exists',
+          body: k.existenceProof,
+        ),
+        const SizedBox(height: AuraSpace.s12),
+        _NeedCard(
+          icon: Icons.badge_outlined,
+          title: 'That you may speak for it',
+          body: k.authorityProof,
+        ),
+        const SizedBox(height: AuraSpace.s12),
+        Text(
+          k.alwaysReviewed
+              ? 'A person at Aura reviews every ${k.title.toLowerCase()}.'
+              : 'A person at Aura reviews it when the checks cannot confirm it on their own.',
+          style: AuraText.small.copyWith(color: AuraSurface.muted),
+        ),
+        const SizedBox(height: AuraSpace.s24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            AuraPrimaryButton(
+              label: 'Continue',
+              icon: Icons.arrow_forward_rounded,
               onPressed: _next,
             ),
           ],
@@ -689,37 +682,30 @@ class _InstitutionOnboardingWizardState
   // ── Step 3: Review & submit ────────────────────────────────────────────────
 
   Widget _buildReviewStep() {
-    final showAccountInfo = _path == _WizardPath.create && !_isAuthed;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const _StepTitle(
-          title: 'Review and submit',
+          title: 'Review and send',
           subtitle: 'Check everything before sending your request for review.',
         ),
         const SizedBox(height: AuraSpace.s24),
         _ReviewSection(title: 'Institution', rows: [
           _ReviewRow('Name', _orgName.text.trim()),
-          _ReviewRow('Type', _institutionType ?? '—'),
+          if (_kind != null) _ReviewRow('Kind', _kind!.title),
           if (_website.text.trim().isNotEmpty) _ReviewRow('Website', _website.text.trim()),
           if (_jurisdiction.text.trim().isNotEmpty) _ReviewRow('Location', _jurisdiction.text.trim()),
           if (_description.text.trim().isNotEmpty) _ReviewRow('Description', _description.text.trim()),
         ]),
         const SizedBox(height: AuraSpace.s16),
-        _ReviewSection(title: 'Representative', rows: [
-          _ReviewRow('Name', '${_firstName.text.trim()} ${_lastName.text.trim()}'.trim()),
+        _ReviewSection(title: 'You', rows: [
+          const _ReviewRow('Asking as', 'Yourself, from your Aura account'),
           if (_roleTitle.text.trim().isNotEmpty) _ReviewRow('Role', _roleTitle.text.trim()),
-          _ReviewRow('Work email', _workEmail.text.trim()),
           if (_phone.text.trim().isNotEmpty) _ReviewRow('Phone', _phone.text.trim()),
           if (_purpose.text.trim().isNotEmpty) _ReviewRow('Notes', _purpose.text.trim()),
         ]),
         const SizedBox(height: AuraSpace.s20),
         _AuthorityNote(path: _path!),
-        if (showAccountInfo) ...[
-          const SizedBox(height: AuraSpace.s12),
-          _AccountCreationNote(),
-        ],
         if (_error != null) ...[
           const SizedBox(height: AuraSpace.s12),
           _ErrorBanner(message: _error!),
@@ -729,7 +715,7 @@ class _InstitutionOnboardingWizardState
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             AuraPrimaryButton(
-              label: _submitting ? 'Submitting…' : 'Submit request',
+              label: _submitting ? 'Sending…' : 'Send for review',
               icon: _submitting ? null : Icons.send_rounded,
               onPressed: _submitting ? null : _submit,
             ),
@@ -793,8 +779,13 @@ class _InstitutionOnboardingWizardState
     return _SuccessPanel(
       title: 'Welcome!',
       message: 'You have joined $institutionName as a ${role.toLowerCase()}.',
-      primaryLabel: 'Go to institution dashboard',
-      onPrimary: () => context.go('/institution/dashboard'),
+      primaryLabel: 'Open the institution',
+      // Overview is for administrators; a new member enters the
+      // institution where members belong (inventory 2026-10-08).
+      onPrimary: () {
+        final id = _asMap(data['institution'])['id']?.toString() ?? '';
+        context.go(institutionEntryDestination(id));
+      },
       secondaryLabel: 'Return home',
       onSecondary: () => context.go('/'),
     );
@@ -819,7 +810,7 @@ class _InstitutionOnboardingWizardState
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
-enum _WizardPath { create, claim, join, signin }
+enum _WizardPath { create, claim, join }
 
 // ─── Widgets ──────────────────────────────────────────────────────────────────
 
@@ -844,8 +835,6 @@ class _WizardHeader extends StatelessWidget {
         return 'Claim institution';
       case _WizardPath.join:
         return 'Join with invite';
-      case _WizardPath.signin:
-        return 'Institution sign in';
       case null:
         return 'Get started';
     }
@@ -884,7 +873,8 @@ class _WizardHeader extends StatelessWidget {
                 style: AuraText.subtitle,
               ),
               const Spacer(),
-              if (path != null && totalSteps > 1 && step > 0)
+              // The final status screen is not a step ('Step 6 of 5').
+              if (path != null && totalSteps > 1 && step > 0 && step < totalSteps)
                 Text(
                   'Step $step of ${totalSteps - 1}',
                   style: AuraText.small.copyWith(color: AuraSurface.muted),
@@ -926,24 +916,6 @@ class _StepTitle extends StatelessWidget {
           Text(subtitle!, style: AuraText.body.copyWith(color: AuraSurface.muted)),
         ],
       ],
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: AuraText.small.copyWith(
-        fontWeight: FontWeight.w700,
-        color: AuraSurface.muted,
-        letterSpacing: 0.08,
-      ),
     );
   }
 }
@@ -1004,33 +976,6 @@ class _PathCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _TypeDropdown extends StatelessWidget {
-  const _TypeDropdown({
-    required this.value,
-    required this.items,
-    required this.onChanged,
-  });
-
-  final String? value;
-  final List<String> items;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return DropdownButtonFormField<String>(
-      // ignore: deprecated_member_use
-      value: value,
-      hint: const Text('Institution type'),
-      decoration: const InputDecoration(labelText: 'Institution type'),
-      items: items
-          .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-          .toList(),
-      onChanged: onChanged,
-      style: AuraText.body,
     );
   }
 }
@@ -1420,8 +1365,8 @@ class _AuthorityNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = path == _WizardPath.claim
-        ? 'Claim requests are reviewed by Aura admins. Authority over this institution is granted only after verification. Submitting this does not grant access immediately.'
-        : 'Create requests are reviewed by Aura admins. Your institution workspace will become active only after approval. No institutional authority is granted before that point.';
+        ? 'A person at Aura reviews this. You can speak for the institution only after your authority is confirmed.'
+        : 'A person at Aura reviews this. The workspace opens on approval; you speak for the institution only after its proofs are confirmed.';
 
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s12),
@@ -1439,25 +1384,6 @@ class _AuthorityNote extends StatelessWidget {
             child: Text(text, style: AuraText.small.copyWith(color: AuraSurface.infoInk)),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _AccountCreationNote extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AuraSpace.s12),
-      decoration: BoxDecoration(
-        color: AuraSurface.elevated,
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: Text(
-        'A dedicated institution account will be created with the email and password you provided. '
-        'This is separate from any personal Aura account.',
-        style: AuraText.small.copyWith(color: AuraSurface.muted),
       ),
     );
   }
@@ -1514,12 +1440,12 @@ class _SubmittedStatusPanel extends StatelessWidget {
   String _statusDescription(String status) {
     switch (status) {
       case 'UNDER_REVIEW':
-        return 'Your request has been submitted and is under review. '
-            'Check your email for updates. This typically takes 1–5 business days.';
+        return 'A person at Aura is reviewing it. You will get an email, and you can follow it '
+            'under Your requests on this page.';
       case 'APPROVED':
-        return 'Your request has been approved! You can now access your institution workspace.';
+        return 'Approved. Your institution is set up and awaits verification of its proofs.';
       case 'NEEDS_INFO':
-        return 'The review team has requested additional information. Check your email for details.';
+        return 'The reviewer asked a question. Answer it under Your requests on this page.';
       default:
         return 'Your request has been submitted and is being processed.';
     }
@@ -1552,26 +1478,20 @@ class _NextStepsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final steps = [
-      if (path == _WizardPath.create)
-        const _NextStep(
-          icon: Icons.mark_email_unread_outlined,
-          title: 'Verify your email',
-          subtitle: 'Check your inbox and click the verification link.',
-        ),
       const _NextStep(
         icon: Icons.hourglass_empty_rounded,
-        title: 'Wait for review',
-        subtitle: 'Aura admins will review your request and follow up by email.',
+        title: 'A person reviews your request',
+        subtitle: 'You get an email when it is decided. If they ask something, answer it here under Your requests.',
       ),
       const _NextStep(
-        icon: Icons.dashboard_outlined,
-        title: 'Access your workspace',
-        subtitle: 'Once approved, sign in at /institution/sign-in to access your institution dashboard.',
+        icon: Icons.apartment_outlined,
+        title: 'Your workspace opens',
+        subtitle: 'Once approved, the institution appears in your account. No separate sign-in.',
       ),
       const _NextStep(
-        icon: Icons.domain_verification_outlined,
-        title: 'Verify your domain',
-        subtitle: 'After approval, add a DNS record to verify your institution\'s domain.',
+        icon: Icons.verified_outlined,
+        title: 'Show your proofs',
+        subtitle: 'From the workspace, show that the institution exists and that you may speak for it.',
       ),
     ];
 
@@ -1616,14 +1536,6 @@ class _NextStepsPanel extends StatelessWidget {
                   ],
                 ),
               )),
-          const SizedBox(height: AuraSpace.s8),
-          GestureDetector(
-            onTap: () => context.go('/institution/sign-in'),
-            child: Text(
-              'Go to institution sign in →',
-              style: AuraText.small.copyWith(color: AuraSurface.accent, fontWeight: FontWeight.w700),
-            ),
-          ),
         ],
       ),
     );
@@ -1719,10 +1631,10 @@ class _TrustNote extends StatelessWidget {
         children: [
           Text('How Aura institution trust works', style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: AuraSpace.s8),
-          const _TrustLine(icon: Icons.person_outlined, text: 'Personal and institutional identities are kept separate.'),
-          const _TrustLine(icon: Icons.verified_outlined, text: 'Authority is granted only after review and verification.'),
+          const _TrustLine(icon: Icons.person_outlined, text: 'You act as yourself. An institution speaks only through people it has authorised.'),
+          const _TrustLine(icon: Icons.verified_outlined, text: 'Authority to speak for it is confirmed separately, after review.'),
           const _TrustLine(icon: Icons.lock_outlined, text: 'Institutional actions are audited and role-gated.'),
-          const _TrustLine(icon: Icons.domain_verification_outlined, text: 'Domain verification confirms institutional ownership.'),
+          const _TrustLine(icon: Icons.domain_verification_outlined, text: 'That the institution exists is shown with proof suited to its kind.'),
         ],
       ),
     );
@@ -1745,26 +1657,6 @@ class _TrustLine extends StatelessWidget {
           Icon(icon, size: 14, color: AuraSurface.muted),
           const SizedBox(width: AuraSpace.s8),
           Expanded(child: Text(text, style: AuraText.small.copyWith(color: AuraSurface.muted))),
-        ],
-      ),
-    );
-  }
-}
-
-class _RedirectingStep extends StatelessWidget {
-  const _RedirectingStep({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        children: [
-          const SizedBox(height: AuraSpace.s32),
-          const CircularProgressIndicator(),
-          const SizedBox(height: AuraSpace.s16),
-          Text(message, style: AuraText.body.copyWith(color: AuraSurface.muted)),
         ],
       ),
     );
@@ -1797,6 +1689,287 @@ class _AuthRequiredDialog extends StatelessWidget {
           onPressed: onSignIn,
         ),
       ],
+    );
+  }
+}
+
+// ─── Onboarding by kind (DD-42, 2026-10-08) ──────────────────────────────────
+
+/// One of the seven kinds, as a choice.
+class _KindOption extends StatelessWidget {
+  const _KindOption({required this.kind, required this.selected, required this.onTap});
+
+  final InstitutionKind kind;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: '${kind.title}. ${kind.examples}',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        child: Container(
+          padding: const EdgeInsets.all(AuraSpace.s16),
+          decoration: BoxDecoration(
+            color: selected ? AuraSurface.elevated : AuraSurface.card,
+            borderRadius: BorderRadius.circular(AuraRadius.card),
+            border: Border.all(
+              color: selected ? AuraSurface.accent : AuraSurface.divider,
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(kind.icon, size: 22, color: selected ? AuraSurface.accent : AuraSurface.muted),
+              const SizedBox(width: AuraSpace.s14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(kind.title, style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 2),
+                    Text(kind.examples, style: AuraText.small.copyWith(color: AuraSurface.muted)),
+                  ],
+                ),
+              ),
+              if (selected) const Icon(Icons.check_circle_rounded, size: 20, color: AuraSurface.accent),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One thing the person will be asked to show.
+class _NeedCard extends StatelessWidget {
+  const _NeedCard({required this.icon, required this.title, required this.body});
+
+  final IconData icon;
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AuraSpace.s16),
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: AuraSurface.accent),
+          const SizedBox(width: AuraSpace.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                const SizedBox(height: AuraSpace.s4),
+                Text(body, style: AuraText.body.copyWith(color: AuraSurface.muted, height: 1.4)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The signed-in person, as the account knows them — never retyped.
+class _YouCard extends ConsumerWidget {
+  const _YouCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final me = ref.watch(authMeDataProvider).valueOrNull ?? const <String, dynamic>{};
+    final user = me['user'] is Map ? Map<String, dynamic>.from(me['user'] as Map) : me;
+    final name = (user['displayName'] ?? user['name'] ?? '').toString().trim();
+    final email = (user['email'] ?? '').toString().trim();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AuraSpace.s14),
+      decoration: BoxDecoration(
+        color: AuraSurface.elevated,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.person_outline_rounded, size: 20, color: AuraSurface.muted),
+          const SizedBox(width: AuraSpace.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name.isEmpty ? 'You' : name, style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                if (email.isNotEmpty) Text(email, style: AuraText.small.copyWith(color: AuraSurface.muted)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The person's institution requests, and their answer when a reviewer asks.
+class _MyRequestsSection extends ConsumerStatefulWidget {
+  const _MyRequestsSection();
+
+  @override
+  ConsumerState<_MyRequestsSection> createState() => _MyRequestsSectionState();
+}
+
+class _MyRequestsSectionState extends ConsumerState<_MyRequestsSection> {
+  List<Map<String, dynamic>> _rows = const [];
+  bool _loaded = false;
+  final Map<String, TextEditingController> _answers = {};
+  String? _sendingId;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    for (final c in _answers.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final res = await ref.read(dioProvider).get('/institutions/my-requests');
+      final data = res.data is Map ? (res.data as Map)['data'] : res.data;
+      final list = data is List ? data : const [];
+      if (!mounted) return;
+      setState(() {
+        _rows = [for (final r in list) if (r is Map) Map<String, dynamic>.from(r)];
+        _loaded = true;
+      });
+    } catch (_) {
+      // Nothing to show is the honest fallback here; the paths below still work.
+      if (mounted) setState(() => _loaded = true);
+    }
+  }
+
+  Future<void> _send(String id) async {
+    final text = _answers[id]?.text.trim() ?? '';
+    if (text.isEmpty) {
+      setState(() => _error = 'Write your answer first.');
+      return;
+    }
+    setState(() {
+      _sendingId = id;
+      _error = null;
+    });
+    try {
+      await ref.read(dioProvider).post('/institutions/my-requests/$id/respond', data: {'message': text});
+      _answers[id]?.clear();
+      await _load();
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Your answer could not be sent. Try again.');
+    } finally {
+      if (mounted) setState(() => _sendingId = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_loaded || _rows.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Your requests', style: AuraText.title.copyWith(fontSize: 18)),
+          const SizedBox(height: AuraSpace.s12),
+          for (final r in _rows) ...[
+            _requestCard(r),
+            const SizedBox(height: AuraSpace.s10),
+          ],
+          if (_error != null) _ErrorBanner(message: _error!),
+        ],
+      ),
+    );
+  }
+
+  Widget _requestCard(Map<String, dynamic> r) {
+    final id = (r['id'] ?? '').toString();
+    final status = (r['status'] ?? '').toString();
+    final name = (r['organizationName'] ?? '').toString();
+    final kind = InstitutionKind.fromWire(r['requestedKind']?.toString());
+    final question = (r['reviewNotes'] ?? '').toString().trim();
+    final waiting = status == 'NEEDS_INFO';
+    final controller = _answers.putIfAbsent(id, TextEditingController.new);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AuraSpace.s16),
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(AuraRadius.card),
+        border: Border.all(color: waiting ? AuraSurface.accent : AuraSurface.divider),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(name, style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+                    if (kind != null) Text(kind.title, style: AuraText.small.copyWith(color: AuraSurface.muted)),
+                  ],
+                ),
+              ),
+              _StatusPill(status: status),
+            ],
+          ),
+          if (question.isNotEmpty && (waiting || status == 'REJECTED')) ...[
+            const SizedBox(height: AuraSpace.s12),
+            Text(
+              waiting ? 'The reviewer asks' : 'The reviewer wrote',
+              style: AuraText.small.copyWith(color: AuraSurface.muted),
+            ),
+            const SizedBox(height: AuraSpace.s4),
+            Text(question, style: AuraText.body.copyWith(height: 1.4)),
+          ],
+          if (waiting) ...[
+            const SizedBox(height: AuraSpace.s12),
+            AuraInput(
+              controller: controller,
+              label: 'Your answer',
+              maxLines: 4,
+              minLines: 2,
+              textInputAction: TextInputAction.newline,
+            ),
+            const SizedBox(height: AuraSpace.s12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: AuraPrimaryButton(
+                label: _sendingId == id ? 'Sending…' : 'Send answer',
+                icon: _sendingId == id ? null : Icons.send_rounded,
+                onPressed: _sendingId == null ? () => _send(id) : null,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
