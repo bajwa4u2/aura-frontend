@@ -1617,6 +1617,17 @@
   "verdict": "NOT_A_SURFACE"
  },
  {
+  "route": "/institution/:institutionId/today",
+  "sample": "/institution/x-institutionid/today",
+  "renders": false,
+  "protected": false,
+  "deepLinkSemantic": "deepLinkFallback",
+  "deepLinkDestination": "/institution/x-institutionid/explore",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "NOT_A_SURFACE"
+ },
+ {
   "route": "/institution/domains",
   "sample": "/institution/domains",
   "renders": true,
@@ -1914,8 +1925,8 @@
   "verdict": "COMPLIANT"
  },
  {
-  "route": "/institution/:institutionId/today",
-  "sample": "/institution/x-institutionid/today",
+  "route": "/institution/:institutionId/desk",
+  "sample": "/institution/x-institutionid/desk",
   "renders": true,
   "protected": false,
   "deepLinkSemantic": "deepLinkFallback",
