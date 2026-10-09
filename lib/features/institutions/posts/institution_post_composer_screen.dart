@@ -1544,6 +1544,8 @@ class _InstitutionPostComposerScreenState
     // the writing.
     final audience = WorkspaceSection(
       title: 'Who sees it',
+      // The audience and distribution controls carry their own frames.
+      boxed: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1645,6 +1647,7 @@ class _InstitutionPostComposerScreenState
           audience,
           WorkspaceSection(
             title: 'What it is about',
+            boxed: false,
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: placement),
           ),
         ],
@@ -1681,7 +1684,8 @@ class _InstitutionPostComposerScreenState
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(AuraRadius.md),
-      borderSide: const BorderSide(color: AuraSurface.coTeal, width: 1.5),
+      // The workspace's one focus colour (DD-43).
+      borderSide: const BorderSide(color: AuraSurface.accent, width: 1.5),
     ),
     contentPadding: const EdgeInsets.symmetric(
       horizontal: AuraSpace.s14,

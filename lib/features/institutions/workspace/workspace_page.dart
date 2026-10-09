@@ -933,10 +933,13 @@ class WorkspaceBar extends StatelessWidget {
         AuraSpace.s20,
         AuraSpace.s12 + MediaQuery.paddingOf(context).bottom,
       ),
-      child: Row(
+      child: LayoutBuilder(builder: (context, box) => Row(
         children: [
+          // On a phone the acts need the room; the status line steps aside.
           Expanded(
-            child: status == null ? const SizedBox.shrink() : Text(status!, style: AuraText.small, maxLines: 1, overflow: TextOverflow.ellipsis),
+            child: status == null || box.maxWidth < 520
+                ? const SizedBox.shrink()
+                : Text(status!, style: AuraText.small, maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
           if (cancel != null) ...[
             TextButton(
@@ -965,7 +968,7 @@ class WorkspaceBar extends StatelessWidget {
           ],
           WorkspacePrimaryButton(action: primary),
         ],
-      ),
+      )),
     );
   }
 }
