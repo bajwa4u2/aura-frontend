@@ -455,10 +455,12 @@ class WorkspaceMoreButton extends StatelessWidget {
                   ),
                   const SizedBox(width: AuraSpace.s12),
                 ],
-                Text(
-                  actions[i].label,
-                  style: AuraText.body.copyWith(
-                    color: actions[i].destructive ? AuraSurface.dangerInk : AuraSurface.ink,
+                Flexible(
+                  child: Text(
+                    actions[i].label,
+                    style: AuraText.body.copyWith(
+                      color: actions[i].destructive ? AuraSurface.dangerInk : AuraSurface.ink,
+                    ),
                   ),
                 ),
               ],
@@ -907,10 +909,13 @@ class WorkspaceSection extends StatelessWidget {
 
 /// The Save or Publish bar: one Cancel, one gold action, a status line.
 class WorkspaceBar extends StatelessWidget {
-  const WorkspaceBar({super.key, required this.primary, this.cancel, this.status});
+  const WorkspaceBar({super.key, required this.primary, this.cancel, this.secondary, this.status});
 
   final WorkspaceAction primary;
   final WorkspaceAction? cancel;
+
+  /// One quiet second act beside the gold one ("Save draft"). Never gold.
+  final WorkspaceAction? secondary;
 
   /// "All changes saved", "3 things to look at".
   final String? status;
@@ -941,6 +946,20 @@ class WorkspaceBar extends StatelessWidget {
                 textStyle: const TextStyle(fontFamily: 'AuraSans', fontSize: 14, fontWeight: FontWeight.w600),
               ),
               child: Text(cancel!.label),
+            ),
+            const SizedBox(width: AuraSpace.s8),
+          ],
+          if (secondary != null) ...[
+            OutlinedButton(
+              onPressed: secondary!.onPressed,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AuraSurface.ink,
+                side: const BorderSide(color: AuraSurface.divider),
+                minimumSize: const Size(0, 40),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                textStyle: const TextStyle(fontFamily: 'AuraSans', fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              child: Text(secondary!.label),
             ),
             const SizedBox(width: AuraSpace.s8),
           ],
