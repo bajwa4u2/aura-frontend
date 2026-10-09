@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
+import '../../../core/product/temporal.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../search/providers.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -81,6 +82,14 @@ class _InstitutionOnboardingWizardState
     // is one identity (founder ruling 2026-08-16; DD-42): it shows the
     // ordinary choices.
     _path = _pathFromMode(widget.mode);
+    for (final c in [_orgName, _website, _jurisdiction, _description, _registry, _roleTitle]) {
+      c.addListener(_clearError);
+    }
+  }
+
+  /// A message about a field goes away once the person changes the fields.
+  void _clearError() {
+    if (_error != null && !_submitting) setState(() => _error = null);
   }
 
   @override
@@ -201,8 +210,8 @@ class _InstitutionOnboardingWizardState
         _registry.text.trim().isEmpty &&
         !(registryKind.mayBeUnregistered && _unregistered)) {
       setState(() => _error = registryKind.mayBeUnregistered
-          ? 'Enter its ${registryKind.registryLabel!.toLowerCase()}, or tick that it is not registered.'
-          : 'Enter its ${registryKind.registryLabel!.toLowerCase()}.');
+          ? 'Enter its ${registryKind.registryNoun}, or tick that it is not registered.'
+          : 'Enter its ${registryKind.registryNoun}.');
       return false;
     }
     if (_description.text.trim().isEmpty) {
@@ -1983,6 +1992,12 @@ class _MyRequestsSectionState extends ConsumerState<_MyRequestsSection> {
     );
   }
 
+  /// "Thu, Oct 8, 2026 · 11:40 PM", in the person's own time.
+  static String? _sentOn(Object? raw) {
+    final at = DateTime.tryParse(raw?.toString() ?? '');
+    return at == null ? null : AuraTemporal.fullShort(at);
+  }
+
   Widget _requestCard(Map<String, dynamic> r) {
     final id = (r['id'] ?? '').toString();
     final status = (r['status'] ?? '').toString();
@@ -2009,7 +2024,14 @@ class _MyRequestsSectionState extends ConsumerState<_MyRequestsSection> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(name, style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
-                    if (kind != null) Text(kind.title, style: AuraText.small.copyWith(color: AuraSurface.muted)),
+                    Text(
+                      [
+                        (r['requestType'] ?? '').toString() == 'CLAIM' ? 'Request to represent' : 'Request to create',
+                        if (kind != null) kind.title,
+                        if (_sentOn(r['createdAt']) != null) 'sent ${_sentOn(r['createdAt'])}',
+                      ].join(' · '),
+                      style: AuraText.small.copyWith(color: AuraSurface.muted),
+                    ),
                   ],
                 ),
               ),

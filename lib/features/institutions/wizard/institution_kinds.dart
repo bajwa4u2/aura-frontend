@@ -40,6 +40,15 @@ class InstitutionKind {
   final String? registryLabel;
   final String? registryHint;
 
+  /// The label as it reads inside a sentence ("Enter its EIN or …").
+  String? get registryNoun {
+    final label = registryLabel;
+    if (label == null || label.isEmpty) return null;
+    final first = label.split(' ').first;
+    // Acronyms (EIN, NPI) keep their capitals; ordinary words do not.
+    return first == first.toUpperCase() ? label : label[0].toLowerCase() + label.substring(1);
+  }
+
   /// A faith institution may have no register; it says so and shows a
   /// document later instead.
   final bool mayBeUnregistered;

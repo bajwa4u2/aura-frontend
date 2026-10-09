@@ -41,6 +41,15 @@ void main() {
     expect(unregistered, {'RELIGIOUS'});
   });
 
+  test('a registration number reads properly inside a sentence', () {
+    String noun(String w) => InstitutionKind.fromWire(w)!.registryNoun!;
+    expect(noun('NONPROFIT_COMMUNITY'), 'EIN or registration number');
+    expect(noun('HEALTHCARE'), 'NPI or licence number');
+    expect(noun('CORPORATE_BUSINESS'), 'state filing number');
+    expect(noun('RELIGIOUS'), 'registry or EIN number');
+    expect(InstitutionKind.fromWire('MEDIA')!.registryNoun, isNull);
+  });
+
   group('the wizard', () {
     final src = File('lib/features/institutions/wizard/institution_onboarding_wizard.dart').readAsStringSync();
 
