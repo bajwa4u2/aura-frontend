@@ -173,7 +173,8 @@ import 'features/media_governance/presentation/restricted_media_screen.dart';
 import 'features/identity/presentation/identity_verification_screen.dart';
 import 'features/feedback/presentation/feedback_screen.dart';
 import 'features/feedback/presentation/my_feedback_screen.dart';
-import 'features/institutions/today/institution_today_screen.dart';
+import 'features/institutions/desk/desk_models.dart';
+import 'features/institutions/desk/desk_screen.dart';
 import 'features/me/presentation/my_questions_screen.dart';
 
 const String kInstitutionDashboardRoute = '/institution/dashboard';
@@ -2265,12 +2266,21 @@ final routerProvider = Provider<GoRouter>((ref) {
           // screen, and an id the person does not hold resolves through the
           // same authority every other canonical destination uses.
           GoRoute(
-            // RETIRED (DD-42 phase 2, 2026-10-09): Overview was admin-only;
-            // Today is the front door for everyone. Old links and bookmarks
-            // (and their query) arrive at Today.
+            // RETIRED (DD-42 phase 2, 2026-10-09): Overview was admin-only.
+            // The Desk is the front door for everyone (DD-43). Old links and
+            // bookmarks (and their query) arrive at the Desk.
             path: '/institution/:institutionId/dashboard',
             redirect: (context, state) => carryQuery(
-              '/institution/${state.pathParameters['institutionId']}/today',
+              '/institution/${state.pathParameters['institutionId']}/desk',
+              state.uri,
+            ),
+          ),
+          GoRoute(
+            // RETIRED (DD-43, 2026-10-09): the Desk replaced Today. Emailed
+            // and bookmarked links keep working, with their query.
+            path: '/institution/:institutionId/today',
+            redirect: (context, state) => carryQuery(
+              '/institution/${state.pathParameters['institutionId']}/desk',
               state.uri,
             ),
           ),
@@ -2698,19 +2708,24 @@ final routerProvider = Provider<GoRouter>((ref) {
                   InstitutionJoinRequestsScreen(institutionId: institutionId),
             ),
           ),
-          // TODAY — the institution's front door for every member (DD-42).
+          // THE DESK — the institution's front door for every member (DD-43):
+          // one queue of what waits for this person. `?tab=` opens a tab.
           GoRoute(
-            path: '/institution/:institutionId/today',
+            path: '/institution/:institutionId/desk',
             redirect: (context, state) => _enforceCanonicalIdMatch(
               ref,
               state,
               state.pathParameters['institutionId'],
-              'today',
+              'desk',
             ),
             builder: (context, state) => InstitutionRouteScope(
               address: state.pathParameters['institutionId'],
-              builder: (institutionId) =>
-                  InstitutionTodayScreen(institutionId: institutionId),
+              builder: (institutionId) => DeskScreen(
+                institutionId: institutionId,
+                initialTab: DeskTab.values
+                    .where((t) => t.wire == state.uri.queryParameters['tab'])
+                    .firstOrNull,
+              ),
             ),
           ),
           GoRoute(

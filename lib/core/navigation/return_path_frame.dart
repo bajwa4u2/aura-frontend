@@ -164,6 +164,10 @@ class _ReturnPathFrameState extends ConsumerState<ReturnPathFrame> {
     if (_returnIsAlreadyVisible(context, widget.path)) {
       return widget.child;
     }
+    // THE WORKSPACE FRAME OWNS ITS WAY BACK (DD-43, 2026-10-09).
+    if (workspaceFrameOwnsReturn(location)) {
+      return widget.child;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -293,6 +297,33 @@ void performReturn(BuildContext context, ReturnAction action) {
   // deeper — the loop this chapter is removing.
   GoRouter.of(context).go(target);
 }
+
+/// Whether the institution workspace frame presents this page's way out.
+///
+/// The founder (2026-10-09): "every screen is another world"; one of the
+/// worlds was four different Backs above workspace pages ("Back", "Back to
+/// Institution", "Back to Institutions", "Cancel"). DD-43's rule:
+///
+///  * A SECTION page (`/institution/:address/<section>`) has no Back. The
+///    rail, or the phone's bottom bar, is where you are and how you move.
+///  * A record, composer or sub-page draws its own "Back to <section>"
+///    inside the page, so the shell must not draw a second one. Those pages
+///    are listed here by pattern, and only those: any other deeper route
+///    (a space's conversation, a live room) keeps the governed affordance.
+bool workspaceFrameOwnsReturn(String path) {
+  final parts = path.split('/')..removeWhere((p) => p.isEmpty);
+  if (parts.length < 3 || parts[0] != 'institution') return false;
+  if (parts.length == 3) return true;
+  final rest = parts.sublist(2).join('/');
+  return _workspacePagesWithTheirOwnBack.any((r) => r.hasMatch(rest));
+}
+
+final _workspacePagesWithTheirOwnBack = <RegExp>[
+  RegExp(r'^public-engagement/participation$'),
+  RegExp(r'^public-engagement/[^/]+$'),
+  RegExp(r'^announcements/new$'),
+  RegExp(r'^announcements/[^/]+/edit$'),
+];
 
 /// Whether the place this path would return TO is already on screen.
 ///

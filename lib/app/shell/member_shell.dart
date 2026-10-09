@@ -2295,11 +2295,11 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
   // The left rail is the single home for ALL institution navigation, grouped
   // by intent (WORKSPACE / ADMIN / GOVERNANCE / IDENTITY). GOVERNANCE V1:
   // entries a member lacks authority for are HIDDEN, not greyed.
-  // SIX SECTIONS (DD-42 phase 2, 2026-10-09): Today · Public · Announcements
-  // · Community · Meetings · Settings. Public-first: the front door leads
-  // with what the public is asking. Entries a person lacks authority for are
-  // HIDDEN, not greyed (GOVERNANCE V1). Retired: Overview (Today replaces it
-  // for everyone) and Messages (it listed the same spaces as Spaces).
+  // SIX SECTIONS (DD-42 phase 2, 2026-10-09): Desk · Public · Announcements
+  // · Community · Meetings · Settings. The Desk (DD-43) replaced Today: one
+  // queue of what waits for this person, public questions among it. Entries
+  // a person lacks authority for are HIDDEN, not greyed (GOVERNANCE V1).
+  // Retired: Overview and Messages (it listed the same spaces as Spaces).
   String? at(InstitutionSection section) => address.isNotEmpty
       ? institutionWorkspacePath(address, section)
       : null;
@@ -2307,14 +2307,14 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       p.startsWith('/institution/') && p.contains('/$segment');
 
   final all = <InstWorkspaceEntry>[
-    // ── TODAY ──────────────────────────────────────────────────────────────
+    // ── DESK ───────────────────────────────────────────────────────────────
     InstWorkspaceEntry(
-      sectionLabel: 'TODAY',
-      label: 'Today',
-      icon: Icons.wb_sunny_outlined,
-      selectedIcon: Icons.wb_sunny_rounded,
-      pathBuilder: (_) => at(InstitutionSection.today),
-      pathMatcher: (p) => under(p, 'today') || p.endsWith('/dashboard'),
+      sectionLabel: 'DESK',
+      label: 'Desk',
+      icon: Icons.inbox_outlined,
+      selectedIcon: Icons.inbox_rounded,
+      pathBuilder: (_) => at(InstitutionSection.desk),
+      pathMatcher: (p) => under(p, 'desk') || under(p, 'today') || p.endsWith('/dashboard'),
     ),
 
     // ── PUBLIC ─────────────────────────────────────────────────────────────
@@ -2971,7 +2971,7 @@ String institutionWorkspaceHome(BuildContext context, String? fallbackId) {
 
 /// THE PHONE'S BOTTOM BAR (DD-42 phase 2, 2026-10-09).
 ///
-/// Today · Questions · Community · Meetings · More. Destinations are minted
+/// Desk · Questions · Community · Meetings · More. Destinations are minted
 /// for the institution in the ADDRESS, falling back to the shell's identity,
 /// so the bar never sends somebody into a different institution. More opens
 /// the same navigation the rail holds, in the drawer.
@@ -2998,7 +2998,7 @@ class _InstitutionBottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final address = _address;
     final items = <(String, IconData, IconData, InstitutionSection, List<String>)>[
-      ('Today', Icons.wb_sunny_outlined, Icons.wb_sunny_rounded, InstitutionSection.today, ['today', 'dashboard']),
+      ('Desk', Icons.inbox_outlined, Icons.inbox_rounded, InstitutionSection.desk, ['desk', 'today', 'dashboard']),
       ('Questions', Icons.record_voice_over_outlined, Icons.record_voice_over_rounded, InstitutionSection.publicEngagement, ['public-engagement', 'explore']),
       ('Community', Icons.forum_outlined, Icons.forum_rounded, InstitutionSection.spaces, ['spaces', 'members', 'live-rooms']),
       ('Meetings', Icons.videocam_outlined, Icons.videocam_rounded, InstitutionSection.meetings, ['meetings', 'availability']),

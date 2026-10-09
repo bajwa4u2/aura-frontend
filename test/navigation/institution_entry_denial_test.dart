@@ -16,11 +16,11 @@ import 'package:aura/core/institutions/institution_route_authority.dart';
 // shared constant would have handed a denied person the very workspace they
 // had just been refused.
 void main() {
-  // DD-42 phase 2 (2026-10-09): Today is the front door for every member.
+  // DD-43 (2026-10-09): the Desk is the front door for every member.
   // It supersedes "Explore, not Overview" (2026-08-22) in the same spirit:
   // it is not the admin Overview, and it leads with what the public is asking.
-  test('entering an institution lands on Today', () {
-    expect(institutionEntryDestination('inst_1'), '/institution/inst_1/today');
+  test('entering an institution lands on the Desk', () {
+    expect(institutionEntryDestination('inst_1'), '/institution/inst_1/desk');
   });
 
   test('entry is id-scoped, and degrades honestly without one', () {

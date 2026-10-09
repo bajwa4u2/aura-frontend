@@ -433,13 +433,13 @@ String? institutionShorthandRedirect(
 
 /// Where entering an institution lands.
 ///
-/// DD-42 phase 2 (2026-10-09): **Today**, for every member. It supersedes the
-/// 2026-08-22 ruling (Explore, not Overview) in the same spirit: the front
-/// door leads with what is happening, starting with what the public is
-/// asking, and Explore stays one tap away under Public.
+/// DD-43 (2026-10-09): **the Desk**, for every member. It replaced Today
+/// (DD-42 phase 2), which superseded the 2026-08-22 ruling (Explore, not
+/// Overview): the front door is what is waiting for this person, starting
+/// with what the public is asking, and Explore stays one tap away.
 String institutionEntryDestination(String institutionId) {
   final id = institutionId.trim();
-  return id.isEmpty ? kInstitutionNoAffiliationDestination : '/institution/$id/today';
+  return id.isEmpty ? kInstitutionNoAffiliationDestination : '/institution/$id/desk';
 }
 
 /// Where a person is sent when an institution REFUSES them.

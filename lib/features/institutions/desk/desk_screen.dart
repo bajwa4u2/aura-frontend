@@ -7,6 +7,8 @@ import '../../../core/authority/capability_projection.dart';
 import '../../../core/errors/server_refusal.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/institutions/institution_paths.dart';
+import '../../../core/navigation/navigation_authority.dart';
+import '../../../core/product/product_language.dart';
 import '../../../core/product/temporal.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../topics/topic.dart';
@@ -55,10 +57,10 @@ class _DeskScreenState extends ConsumerState<DeskScreen> {
       case DeskItemType.draft:
         context.push('${_path(InstitutionSection.announcements)}/${item.id}/edit');
       case DeskItemType.meeting:
-        context.push('/meetings/${item.id}');
+        context.push(NavigationAuthority.meetingRoute(item.id));
       case DeskItemType.followUp:
         final meetingId = item.meta['meetingId']?.toString();
-        context.push(meetingId == null ? _path(InstitutionSection.meetings) : '/meetings/$meetingId');
+        context.push(meetingId == null ? _path(InstitutionSection.meetings) : NavigationAuthority.meetingRoute(meetingId));
       default:
         break;
     }
@@ -129,7 +131,7 @@ class _DeskScreenState extends ConsumerState<DeskScreen> {
                 title: 'The Desk could not be loaded',
                 body: ServerRefusal.of(async.error!).message ?? 'Check the connection and try again.',
                 action: WorkspaceAction(
-                  label: 'Try again',
+                  label: ProductLabels.of(ProductAction.retry),
                   icon: Icons.refresh_rounded,
                   onPressed: () => ref.invalidate(deskProvider(widget.institutionId)),
                 ),

@@ -449,6 +449,7 @@ const Map<String, InstitutionRoutePolicy> kInstitutionSectionPolicy = {
   'request-verification': InstitutionRoutePolicy.adminOrSpeaker,
 
   // Ordinary workspace surfaces: membership is the requirement.
+  'desk': InstitutionRoutePolicy.member,
   'today': InstitutionRoutePolicy.member,
   'dashboard': InstitutionRoutePolicy.member,
   'profile': InstitutionRoutePolicy.member,

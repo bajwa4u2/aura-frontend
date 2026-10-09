@@ -1886,6 +1886,20 @@
   "parent": ""
  },
  {
+  "path": "/institution/:institutionId/today",
+  "segments": 3,
+  "params": [
+   "institutionId"
+  ],
+  "renders": false,
+  "hasRedirect": true,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
   "path": "/institution/domains",
   "segments": 2,
   "params": [],
@@ -2254,7 +2268,7 @@
   "parent": ""
  },
  {
-  "path": "/institution/:institutionId/today",
+  "path": "/institution/:institutionId/desk",
   "segments": 3,
   "params": [
    "institutionId"

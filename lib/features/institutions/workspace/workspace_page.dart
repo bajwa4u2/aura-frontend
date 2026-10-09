@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
@@ -537,13 +538,13 @@ class _TabChip extends StatelessWidget {
       button: true,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AuraRadius.pill),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 140),
           padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s14, vertical: AuraSpace.s8),
           decoration: BoxDecoration(
             color: selected ? AuraSurface.accentSoft : Colors.transparent,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(AuraRadius.pill),
             border: Border.all(color: selected ? AuraSurface.accent : AuraSurface.divider),
           ),
           child: Row(
@@ -601,7 +602,7 @@ class WorkspacePill extends StatelessWidget {
     final (bg, ink) = colors(tone);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s8, vertical: 3),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(AuraRadius.pill)),
       child: Text(
         label,
         style: TextStyle(fontFamily: 'AuraSans', fontSize: 12, fontWeight: FontWeight.w600, color: ink, height: 1.3),

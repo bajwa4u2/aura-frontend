@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/authority/authority_providers.dart';
 import '../../../core/authority/capability_projection.dart';
 import '../../../core/errors/server_refusal.dart';
+import '../../../core/navigation/navigation_authority.dart';
 import '../../../core/net/dio_provider.dart';
+import '../../../core/product/product_language.dart';
 import '../../../core/product/temporal.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_space.dart';
@@ -199,7 +201,7 @@ class _QuestionRecordState extends ConsumerState<QuestionRecord> {
             title: 'This question could not be opened',
             body: ServerRefusal.of(e).message ?? 'Check the connection and try again.',
             action: WorkspaceAction(
-              label: 'Try again',
+              label: ProductLabels.of(ProductAction.retry),
               icon: Icons.refresh_rounded,
               onPressed: () => ref.invalidate(engagementDetailProvider(_key)),
             ),
@@ -279,7 +281,7 @@ class _QuestionRecordState extends ConsumerState<QuestionRecord> {
           WorkspaceAction(
             label: 'Open their post',
             icon: Icons.open_in_new_rounded,
-            onPressed: () => context.push('/posts/${record.postId}'),
+            onPressed: () => context.push(NavigationAuthority.postRoute(record.postId)),
           ),
       ],
     );

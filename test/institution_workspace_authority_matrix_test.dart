@@ -103,7 +103,7 @@ void main() {
         'Announcements',
         'Live',
         'Spaces',
-        'Today',
+        'Desk',
         'Questions',
         'Meetings',
         'Members',
@@ -232,7 +232,7 @@ void main() {
           .map((e) => e.sectionLabel)
           .whereType<String>()
           .toList();
-      expect(sections, ['TODAY', 'PUBLIC', 'ANNOUNCEMENTS', 'COMMUNITY', 'MEETINGS', 'SETTINGS']);
+      expect(sections, ['DESK', 'PUBLIC', 'ANNOUNCEMENTS', 'COMMUNITY', 'MEETINGS', 'SETTINGS']);
     });
 
     test('settings opens with what every member may see', () {
