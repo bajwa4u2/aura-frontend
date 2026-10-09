@@ -135,7 +135,7 @@ class _ReturnPathFrameState extends ConsumerState<ReturnPathFrame> {
     final isAuthed =
         store.isLoaded && (store.accessToken?.trim().isNotEmpty ?? false);
 
-    final location = router.routeInformationProvider.value.uri.path;
+    final location = livePath(router);
     if (ReturnPathAuthority.isProtectedDomain(location)) return widget.child;
 
     final registry = RouteRegistry.fromRoutes(router.configuration.routes);
@@ -254,7 +254,7 @@ class _ReturnBar extends StatelessWidget {
 ReturnAction? _live(BuildContext context, bool isAuthed) {
   final router = GoRouter.of(context);
   return ReturnPathAuthority.resolve(
-    path: router.routeInformationProvider.value.uri.path,
+    path: livePath(router),
     canPop: router.canPop(),
     isAuthed: isAuthed,
     exists: RouteRegistry.fromRoutes(router.configuration.routes).exists,
@@ -296,6 +296,25 @@ void performReturn(BuildContext context, ReturnAction action) {
   // would grow history in the wrong direction and make the next Back go
   // deeper — the loop this chapter is removing.
   GoRouter.of(context).go(target);
+}
+
+/// WHERE THE PERSON IS NOW (2026-10-09).
+///
+/// The route information provider reports what the browser's address was last
+/// set to, and an in-app pop does not always move it: after replying to an
+/// institution post and cancelling, the post page kept the composer's
+/// "Cancel" above its own "Back to Explore", seen live. The delegate's current
+/// state is the page actually on top. Falls back to the provider when
+/// the delegate has nothing yet (first frame).
+String livePath(GoRouter router) {
+  try {
+    // The top page, pushed ones included.
+    final path = router.state.uri.path;
+    if (path.isNotEmpty) return path;
+  } catch (_) {
+    // No configuration yet.
+  }
+  return router.routeInformationProvider.value.uri.path;
 }
 
 /// Whether the institution workspace frame presents this page's way out.
