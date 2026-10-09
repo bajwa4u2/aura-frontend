@@ -238,6 +238,7 @@ class NavigationAuthority {
 
   /// Aura's Terms (section 10A covers paid plans).
   static const String termsRoute = '/terms';
+  static const String loginRoute = '/login';
   static const String devicesRoute = '/devices';
   static const String changePasswordRoute = '/change-password';
   static const String editProfileRoute = '/me/edit';

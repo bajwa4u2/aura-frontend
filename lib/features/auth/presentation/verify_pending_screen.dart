@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/session_providers.dart';
+import '../../../core/navigation/navigation_authority.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -35,6 +36,11 @@ class VerifyPendingScreen extends ConsumerStatefulWidget {
 
 class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
   late final _email = TextEditingController(text: (widget.email ?? '').trim());
+
+  // The code beside the link (2026-10-09): a workplace mail filter can strip
+  // or block a link, and a code still gets through.
+  final _code = TextEditingController();
+  bool _checkingCode = false;
 
   bool _busy = false;
   String? _msg;
@@ -221,9 +227,64 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
     }
   }
 
+  Future<void> _verifyCode() async {
+    if (_busy || _checkingCode) return;
+    FocusScope.of(context).unfocus();
+
+    final email = _email.text.trim();
+    final code = _code.text.replaceAll(RegExp(r'\s'), '');
+    if (!_isValidEmail(email)) {
+      setState(() {
+        _msg = 'Enter the email address you signed up with.';
+        _msgIsError = true;
+      });
+      return;
+    }
+    if (!RegExp(r'^\d{6}$').hasMatch(code)) {
+      setState(() {
+        _msg = 'Enter the 6-digit code from the email.';
+        _msgIsError = true;
+      });
+      return;
+    }
+
+    setState(() {
+      _checkingCode = true;
+      _msg = null;
+      _msgIsError = false;
+    });
+
+    try {
+      await ref.read(dioProvider).post(
+        '/auth/verify-email-code',
+        data: {'email': email, 'code': code},
+      );
+      if (!mounted) return;
+      ref.invalidate(emailVerifiedProvider);
+      final redirect = _safeRedirectOrNull(widget.redirectTo);
+      final qp = <String, String>{'verified': '1', 'email': email};
+      if (redirect != null) qp['redirect'] = redirect;
+      context.go(Uri(path: NavigationAuthority.loginRoute, queryParameters: qp).toString());
+    } on DioException catch (e) {
+      if (!mounted) return;
+      final status = e.response?.statusCode;
+      setState(() {
+        _msg = status == 429
+            ? 'Too many tries with this code. Send a new email and use the new code.'
+            : (status == 401 || status == 400)
+                ? 'That code is not right, or it has expired. Check it, or send a new email.'
+                : 'We could not check the code just now. Please try again.';
+        _msgIsError = true;
+      });
+    } finally {
+      if (mounted) setState(() => _checkingCode = false);
+    }
+  }
+
   @override
   void dispose() {
     _email.dispose();
+    _code.dispose();
     super.dispose();
   }
 
@@ -283,7 +344,7 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                     const Text('Almost there', style: AuraText.title),
                     const SizedBox(height: AuraSpace.s8),
                     Text(
-                      'We need to verify your email before you can continue. Open the email we sent and click the link.',
+                      'We need to verify your email before you can continue. Open the email we sent and click the link, or enter the 6-digit code it contains.',
                       style: AuraText.body.copyWith(
                         color: chamberTone(context, AuraSurface.muted),
                         height: 1.5,
@@ -299,6 +360,24 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                     ],
                     const SizedBox(height: AuraSpace.s20),
                     TextField(
+                      controller: _code,
+                      enabled: !_busy && !_checkingCode,
+                      keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.done,
+                      autofillHints: const [AutofillHints.oneTimeCode],
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                        LengthLimitingTextInputFormatter(6),
+                      ],
+                      style: AuraText.body.copyWith(letterSpacing: 4),
+                      decoration: const InputDecoration(
+                        labelText: 'Code from the email',
+                        hintText: '6 digits',
+                      ),
+                      onSubmitted: (_) => _verifyCode(),
+                    ),
+                    const SizedBox(height: AuraSpace.s12),
+                    TextField(
                       controller: _email,
                       enabled: !_busy,
                       keyboardType: TextInputType.emailAddress,
@@ -310,12 +389,26 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                       ],
                       style: AuraText.body,
                       decoration: const InputDecoration(
-                        labelText: 'Email (for resend)',
+                        labelText: 'Your email',
                         hintText: 'name@example.com',
                       ),
-                      onSubmitted: (_) => _busy ? null : _resend(),
+                      onSubmitted: (_) => _verifyCode(),
+                    ),
+                    const SizedBox(height: AuraSpace.s12),
+                    AuraPrimaryButton(
+                      label: _checkingCode ? 'Checking…' : 'Verify with code',
+                      icon: Icons.verified_outlined,
+                      onPressed: _busy || _checkingCode ? null : _verifyCode,
                     ),
                     const SizedBox(height: AuraSpace.s20),
+                    Text(
+                      'No email after a few minutes? Check spam or junk. A work address may hold mail from a new sender in quarantine; your IT team can release it.',
+                      style: AuraText.small.copyWith(
+                        color: chamberTone(context, AuraSurface.muted),
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: AuraSpace.s12),
                     if (_busy) ...[
                       const AuraPrimaryButton(
                         label: 'Sending…',
@@ -337,10 +430,9 @@ class _VerifyPendingScreenState extends ConsumerState<VerifyPendingScreen> {
                         },
                       ),
                     ] else ...[
-                      AuraPrimaryButton(
-                        label: 'Resend verification',
-                        onPressed: _resend,
-                        icon: Icons.send_rounded,
+                      AuraGhostButton(
+                        label: 'Send a new email',
+                        onPressed: _checkingCode ? null : _resend,
                       ),
                     ],
                     const SizedBox(height: AuraSpace.s10),
