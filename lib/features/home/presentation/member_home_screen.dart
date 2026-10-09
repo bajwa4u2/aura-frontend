@@ -31,6 +31,7 @@ import '../../public/widgets/discourse_card.dart';
 import '../../public/widgets/public_composer.dart';
 import '../../public/widgets/since_you_were_here.dart';
 import '../../public/widgets/space_card.dart';
+import 'start_here_card.dart';
 
 Map<String, dynamic> _asMap(dynamic v) {
   if (v is Map<String, dynamic>) return v;
@@ -256,6 +257,10 @@ class _MemberHomeScreenState extends ConsumerState<MemberHomeScreen> {
                   // booked, attended, or hosted — surfaces where they land.
                   // Self-hides when nothing is ahead.
                   const _NextMeetingSection(),
+
+                  // ── Start here: a new person's first minutes (2026-10-09).
+                  // Shows until they follow a few people or say they are set.
+                  if (isAuthed) const StartHereCard(),
 
                   // ── Public composer (primary discourse entry)
                   const PublicComposer(),
@@ -508,11 +513,13 @@ class _DiscourseStream extends ConsumerWidget {
                 ],
                 const SizedBox(height: AuraSpace.s14),
               ],
+              // Says what to DO, not only that nothing is here (2026-10-09).
               const AuraProductState(
                 state: ProductState.empty,
-                headline: 'Quiet on the public stream right now',
+                headline: 'Nothing on your Home yet',
                 detail:
-                    'When people publish, their statements will appear here.',
+                    'Follow people and institutions, or ask the first question. '
+                    'What they say appears here.',
                 icon: Icons.forum_outlined,
               ),
               // Spaces is rendered earlier in the feed (above _DiscourseStream)
