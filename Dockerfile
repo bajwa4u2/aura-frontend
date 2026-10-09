@@ -56,7 +56,9 @@ RUN dart run tool/web/generate_route_metadata.dart
 RUN find build/web -type f -size +1k \( -name '*.js' -o -name '*.css' -o -name '*.json' -o -name '*.svg' -o -name '*.wasm' -o -name '*.ttf' -o -name '*.otf' \) -exec gzip -9 -k -f {} \;
 
 # ---- runtime stage ----
-FROM nginx:alpine
+# The official nginx image through the Google mirror of Docker Hub. Docker Hub
+# rate-limited the Railway builder (429) twice on 9 Oct 2026 and the deploy failed.
+FROM mirror.gcr.io/library/nginx:alpine
 
 # Railway sets PORT at runtime; default for local
 ENV PORT=8080
