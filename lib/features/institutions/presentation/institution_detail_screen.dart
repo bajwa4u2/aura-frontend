@@ -29,6 +29,7 @@ import '../../institution_ontology/widgets/ontology_identity_chips.dart';
 import '../data/institutions_repository.dart';
 import '../domain/institution.dart';
 import '../units/institution_unit_card.dart';
+import 'answer_record_section.dart';
 
 final institutionDetailProvider = FutureProvider.family<Institution, String>((
   ref,
@@ -186,6 +187,9 @@ class _InstitutionDetailBody extends ConsumerWidget {
                         ),
                         const SizedBox(height: AuraSpace.s14),
                       ],
+                      // How it has answered the public (2026-10-09). Hides
+                      // itself when nothing has reached the institution.
+                      AnswerRecordSection(slug: institution.slug),
                       _InfoSection(
                         title: 'Domains & verification',
                         rows: [
