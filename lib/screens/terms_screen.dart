@@ -109,33 +109,20 @@ class _TermsBody extends StatelessWidget {
           eyebrow: '10A',
           title: 'Paid plans for institutions',
           body:
-              'People never pay to use Aura. Paid plans are for institutions, and only an institution's owner, or someone the owner delegates billing to, can buy, change or cancel one. The institution is the customer.
-
-Plans and prices. Each plan has a set number of staff seats and a monthly allowance of credits for writing checks and translation done for the institution. The price, seats and allowance are shown on the institution's Plan & Billing page and again at checkout, before you pay. Prices are in US dollars and do not include any tax that applies.
-
-Automatic renewal. A plan renews automatically every month or every year, as chosen, and the payment method on file is charged the plan's price at each renewal until the plan is cancelled. After each purchase Aura emails the institution's owners what was bought, when it renews and how to cancel. For a yearly plan, Aura emails a reminder at least 30 days before it renews.
-
-Cancelling. You can cancel at any time, online, from Plan & Billing (Manage billing), with no call or message needed. The plan stays active until the end of the period already paid for, then the institution returns to Free. Nothing is deleted: members, posts and records stay; seats over the Free limit are kept, but no new ones can be added.
-
-Refunds. Payments are not refunded for partly used periods, except where the law requires it or where Aura was unavailable for a material part of the period. If a plan payment is refunded in full, the plan ends.
-
-Changing plans. A change takes effect straight away; the difference is charged or credited proportionally on the next invoice.
-
-Allowance and credits. The monthly allowance resets at the start of each monthly period, and unused allowance does not carry over. Top-up credits bought separately do not expire while the institution has an account and are used after the monthly allowance. Credits have no cash value and cannot be transferred. If a top-up is refunded, its unused credits are removed.
-
-Failed payments. If a renewal payment fails, Aura and its payment provider will try again and tell the owner. If payment is not made, the plan ends and the institution returns to Free.
-
-When limits apply. Plans are open now. Limits on seats and credits begin only after at least 30 days' notice to every institution affected.
-
-Price changes. Aura gives at least 30 days' notice of a price change by email and on Plan & Billing. The new price applies from the first renewal after the notice period, and you can cancel before then.
-
-Nonprofit, school and faith discount. Institutions whose category Aura has confirmed as a nonprofit, school or place of worship pay 25% less for as long as the plan continues. It is applied at checkout; an institution confirmed after buying can ask for it at support@auraplatform.org, and it applies from the next renewal.
-
-30-day grant. Aura may give an institution one free 30-day period of a Pro plan. A grant is reviewed by Aura, is given once per institution and once per person, and ends by itself; nothing is charged when it ends.
-
-Public bodies. Government bodies that need to pay by invoice or purchase order can ask at support@auraplatform.org; Aura issues the invoice through Stripe.
-
-Payment processing. Payments are processed by Stripe. Aura does not see or store full card or bank details.',
+              "People never pay to use Aura. Paid plans are for institutions, and only an institution's owner, or someone the owner delegates billing to, can buy, change or cancel one. The institution is the customer.\n\n"
+              "Plans and prices. Each plan has a set number of staff seats and a monthly allowance of credits for writing checks and translation done for the institution. The price, seats and allowance are shown on the institution's Plan & Billing page and again at checkout, before you pay. Prices are in US dollars and do not include any tax that applies.\n\n"
+              "Automatic renewal. A plan renews automatically every month or every year, as chosen, and the payment method on file is charged the plan's price at each renewal until the plan is cancelled. After each purchase Aura emails the institution's owners what was bought, when it renews and how to cancel. For a yearly plan, Aura emails a reminder at least 30 days before it renews.\n\n"
+              "Cancelling. You can cancel at any time, online, from Plan & Billing (Manage billing), with no call or message needed. The plan stays active until the end of the period already paid for, then the institution returns to Free. Nothing is deleted: members, posts and records stay; seats over the Free limit are kept, but no new ones can be added.\n\n"
+              "Refunds. Payments are not refunded for partly used periods, except where the law requires it or where Aura was unavailable for a material part of the period. If a plan payment is refunded in full, the plan ends.\n\n"
+              "Changing plans. A change takes effect straight away; the difference is charged or credited proportionally on the next invoice.\n\n"
+              "Allowance and credits. The monthly allowance resets at the start of each monthly period, and unused allowance does not carry over. Top-up credits bought separately do not expire while the institution has an account and are used after the monthly allowance. Credits have no cash value and cannot be transferred. If a top-up is refunded, its unused credits are removed.\n\n"
+              "Failed payments. If a renewal payment fails, Aura and its payment provider will try again and tell the owner. If payment is not made, the plan ends and the institution returns to Free.\n\n"
+              "When limits apply. Plans are open now. Limits on seats and credits begin only after at least 30 days' notice to every institution affected.\n\n"
+              "Price changes. Aura gives at least 30 days' notice of a price change by email and on Plan & Billing. The new price applies from the first renewal after the notice period, and you can cancel before then.\n\n"
+              "Nonprofit, school and faith discount. Institutions whose category Aura has confirmed as a nonprofit, school or place of worship pay 25% less for as long as the plan continues. It is applied at checkout; an institution confirmed after buying can ask for it at support@auraplatform.org, and it applies from the next renewal.\n\n"
+              "30-day grant. Aura may give an institution one free 30-day period of a Pro plan. A grant is reviewed by Aura, is given once per institution and once per person, and ends by itself; nothing is charged when it ends.\n\n"
+              "Public bodies. Government bodies that need to pay by invoice or purchase order can ask at support@auraplatform.org; Aura issues the invoice through Stripe.\n\n"
+              "Payment processing. Payments are processed by Stripe. Aura does not see or store full card or bank details.",
         ),
         const _Section(
           eyebrow: '11',

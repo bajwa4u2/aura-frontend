@@ -235,6 +235,9 @@ class NavigationAuthority {
   static const String adminFeedbackRoute = '/admin/integrity/feedback';
 
   static const String securityRoute = '/security';
+
+  /// Aura's Terms (section 10A covers paid plans).
+  static const String termsRoute = '/terms';
   static const String devicesRoute = '/devices';
   static const String changePasswordRoute = '/change-password';
   static const String editProfileRoute = '/me/edit';

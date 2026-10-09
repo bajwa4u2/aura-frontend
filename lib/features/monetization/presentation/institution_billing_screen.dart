@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/navigation/navigation_authority.dart';
 import '../../../core/product/temporal.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -855,7 +856,7 @@ class _RenewalDisclosure extends StatelessWidget {
               minimumSize: const Size(0, 32),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            onPressed: () => context.push('/terms'),
+            onPressed: () => context.push(NavigationAuthority.termsRoute),
             child: const Text('Paid-plan terms'),
           ),
         ],

@@ -98,7 +98,7 @@ class _PrivacyBody extends StatelessWidget {
               'Aura shares information only where needed to operate the service, comply with law, protect the platform, or support a user-directed relationship.',
           bullets: [
             'With service providers that help operate infrastructure, email delivery, storage, security, analytics, support, and reliability tooling.',
-            'With Stripe, Aura's payment processor, when an institution pays. Card and bank details go directly to Stripe and are handled under Stripe's own privacy policy.',
+            "With Stripe, Aura's payment processor, when an institution pays. Card and bank details go directly to Stripe and are handled under Stripe's own privacy policy.",
             'With institutions, space administrators, or authorized members when role, membership, moderation, or workflow context requires it.',
             'When legally required, including valid legal process, regulatory obligations, safety investigations, or protection of rights and security.',
             'During a business transaction such as financing, merger, acquisition, restructuring, or asset transfer, subject to appropriate safeguards.',
