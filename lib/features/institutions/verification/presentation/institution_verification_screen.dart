@@ -8,15 +8,12 @@ import '../../../../core/media/media_acquisition.dart';
 import '../../../../core/net/dio_provider.dart';
 import '../../../../core/navigation/navigation_authority.dart';
 import '../../../../core/product/product_language.dart';
-import '../../../../core/product/product_state.dart';
-import '../../../../core/product/product_state_view.dart';
 import '../../../../core/product/temporal.dart';
-import '../../../../core/ui/aura_card.dart';
 import '../../../../core/ui/aura_radius.dart';
-import '../../../../core/ui/aura_scaffold.dart';
 import '../../../../core/ui/aura_platform_components.dart';
 import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_text.dart';
+import '../../workspace/workspace_page.dart';
 import '../data/institution_verification_repository.dart';
 
 /// VERIFYING YOUR AUTHORITY FOR AN INSTITUTION — one flow, not two journeys.
@@ -112,26 +109,35 @@ class _InstitutionVerificationScreenState
       institutionVerificationStandingProvider(widget.institutionId),
     );
 
-    return AuraScaffold(
-      title: 'Verification',
-      body: standing.when(
-        loading: () => const AuraProductState(state: ProductState.loading),
-        // A failure to LOAD is not a failure of the verification, so this is
-        // retryable and says so.
-        error: (e, _) => AuraProductState(
-          state: ProductState.retryableError,
-          headline: 'We could not load this verification',
-          detail: e is InstitutionVerificationException ? e.message : null,
-          action: AuraSecondaryButton(
-            label: ProductLabels.of(ProductAction.retry),
-            onPressed: () => ref.invalidate(
-              institutionVerificationStandingProvider(widget.institutionId),
-            ),
-            icon: Icons.refresh_rounded,
-          ),
-        ),
-        data: _body,
+    return standing.when(
+      loading: () => const WorkspacePage(
+        type: WorkspacePageType.settings,
+        title: 'Verification',
+        loading: true,
       ),
+      // A failure to LOAD is not a failure of the verification, so this is
+      // retryable and says so.
+      error: (e, _) => WorkspacePage(
+        type: WorkspacePageType.settings,
+        title: 'Verification',
+        children: [
+          WorkspaceEmpty(
+            icon: Icons.error_outline_rounded,
+            title: 'We could not load this verification',
+            body: e is InstitutionVerificationException
+                ? e.message
+                : 'Check the connection and try again.',
+            action: WorkspaceAction(
+              label: ProductLabels.of(ProductAction.retry),
+              icon: Icons.refresh_rounded,
+              onPressed: () => ref.invalidate(
+                institutionVerificationStandingProvider(widget.institutionId),
+              ),
+            ),
+          ),
+        ],
+      ),
+      data: _body,
     );
   }
 
@@ -157,7 +163,10 @@ class _InstitutionVerificationScreenState
     // NO CURRENT IDENTITY: the one thing that genuinely comes first, and the
     // only case where this screen mentions identity verification at all.
     if (!s.identityVerified && !s.mayAct) {
-      children.add(const _IdentityFirstCard());
+      children.add(const WorkspaceSection(
+        title: 'Verify your identity first',
+        child: _IdentityFirstCard(),
+      ));
       return _page(children);
     }
 
@@ -169,67 +178,55 @@ class _InstitutionVerificationScreenState
         ..add(const SizedBox(height: AuraSpace.lg));
     }
 
+    // The two proofs, as two sections (DD-43).
     children
-      ..add(_authorityCard(s))
-      ..add(const SizedBox(height: AuraSpace.md))
-      ..add(_InstitutionRecordLine(standing: s));
-
-    // THE ONLY PLACE THE INSTITUTION'S OWN UPLOAD APPEARS: a reviewer has
-    // asked for something about the institution specifically. Then the ask is
-    // shown verbatim, with a way to answer it.
-    if (s.existence.state == ExistenceState.needsInfo) {
-      children
-        ..add(const SizedBox(height: AuraSpace.lg))
-        ..add(_institutionAskCard(s));
-    }
-
-    children
-      ..add(const SizedBox(height: AuraSpace.lg))
-      ..add(const _ReviewerNote());
-
-    return _page(children);
-  }
-
-  Widget _page(List<Widget> children) => SingleChildScrollView(
-        padding: const EdgeInsets.all(AuraSpace.lg),
-        child: Center(
-          child: ConstrainedBox(
-            // Narrow layouts get the same content, not a reduced one. A person
-            // completing this on a phone is the common case.
-            constraints: const BoxConstraints(maxWidth: 720),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: children,
-            ),
-          ),
-        ),
-      );
-
-  // ── the one card ──────────────────────────────────────────────────────────
-
-  Widget _authorityCard(InstitutionVerificationStanding s) {
-    return AuraCard(
-      child: Padding(
-        padding: const EdgeInsets.all(AuraSpace.lg),
+      ..add(WorkspaceSection(
+        title: 'Verify your authority for this institution',
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Verify your authority for this institution',
-              style: AuraText.title,
-            ),
-            const SizedBox(height: AuraSpace.xs),
-            _StandingChip(
-              label: _authorityLabel(s.authority.state),
-              tone: _authorityTone(s.authority.state),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: _StandingChip(
+                label: _authorityLabel(s.authority.state),
+                tone: _authorityTone(s.authority.state),
+              ),
             ),
             const SizedBox(height: AuraSpace.sm),
             ..._authorityContent(s),
           ],
         ),
-      ),
-    );
+      ))
+      ..add(WorkspaceSection(
+        title: 'The institution',
+        description: 'Whether the institution itself exists is answered separately.',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _InstitutionRecordLine(standing: s),
+            // THE ONLY PLACE THE INSTITUTION'S OWN UPLOAD APPEARS: a reviewer
+            // has asked for something about the institution specifically.
+            // Then the ask is shown verbatim, with a way to answer it.
+            if (s.existence.state == ExistenceState.needsInfo) ...[
+              const SizedBox(height: AuraSpace.lg),
+              _institutionAsk(s),
+            ],
+          ],
+        ),
+      ))
+      ..add(const _ReviewerNote());
+
+    return _page(children);
   }
+
+  /// The Settings page type, at the workspace's normal column width: the
+  /// same content on a phone, not a reduced one.
+  Widget _page(List<Widget> children) => WorkspacePage(
+        type: WorkspacePageType.settings,
+        title: 'Verification',
+        purpose: 'Two proofs, decided separately: that you may speak for this institution, and that the institution exists.',
+        children: children,
+      );
 
   List<Widget> _authorityContent(InstitutionVerificationStanding s) {
     switch (s.authority.state) {
@@ -449,14 +446,11 @@ class _InstitutionVerificationScreenState
 
   // ── the institution, asked for only when a reviewer asked ─────────────────
 
-  Widget _institutionAskCard(InstitutionVerificationStanding s) {
-    return AuraCard(
-      child: Padding(
-        padding: const EdgeInsets.all(AuraSpace.lg),
-        child: Column(
+  Widget _institutionAsk(InstitutionVerificationStanding s) {
+    return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('About the institution itself', style: AuraText.title),
+            const Text('About the institution itself', style: WorkspaceType.rowTitle),
             const SizedBox(height: AuraSpace.sm),
             const Text(
               'The reviewer asked for something more about the organisation, '
@@ -503,8 +497,6 @@ class _InstitutionVerificationScreenState
                       }),
             ),
           ],
-        ),
-      ),
     );
   }
 
@@ -814,6 +806,7 @@ class _RoleField extends StatelessWidget {
               labelText: 'Your role at this institution',
               hintText: 'For example: Founder and managing member',
               helperText: 'The reviewer checks your evidence against this.',
+              helperMaxLines: 2,
             ),
           ),
           if (proposed != null)
@@ -1106,17 +1099,9 @@ class _IdentityFirstCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AuraCard(
-      child: Padding(
-        padding: const EdgeInsets.all(AuraSpace.lg),
-        child: Column(
+    return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Verify your identity first',
-              style: AuraText.title,
-            ),
-            const SizedBox(height: AuraSpace.sm),
             const Text(
               'Once that is done, this step opens here and you will be asked '
               'only for evidence of your relationship or authority — nothing '
@@ -1131,8 +1116,6 @@ class _IdentityFirstCard extends StatelessWidget {
                   context.push(NavigationAuthority.identityVerificationRoute),
             ),
           ],
-        ),
-      ),
     );
   }
 }

@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import '../kind/kind_composition.dart';
+import '../../../core/product/product_language.dart';
 import 'package:flutter/material.dart';
-import '../../../core/ui/aura_radius.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -12,14 +12,13 @@ import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/authority/capability_projection.dart';
 
 import '../../../core/net/dio_provider.dart';
-import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../../core/ui/document_scaffold.dart';
 import '../domain/institution.dart';
 import '../institution_words.dart';
+import '../workspace/workspace_page.dart';
 
 class InstitutionUnitsScreen extends ConsumerStatefulWidget {
   const InstitutionUnitsScreen({super.key, required this.institutionId});
@@ -136,116 +135,100 @@ class _InstitutionUnitsScreenState
     );
   }
 
+  /// Active or Archived (DD-43: the one tabs idiom, not an ARCHIVED heading).
+  String _tab = 'active';
+
   @override
   Widget build(BuildContext context) {
     final canAdminister = _canAdministerUnits(ref);
-    return DocumentScaffold(
-      // What this kind calls its units: Departments, Campuses… (DD-42 phase 3).
-      title: compositionForInstitution(ref, widget.institutionId).unitPlural,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Doc.title(compositionForInstitution(ref, widget.institutionId).unitPlural),
-          const SizedBox(height: AuraSpace.s10),
-          Doc.meta('Manage public-facing units under this institution.'),
-          Doc.lede(
-            'Add departments, branches, offices, products, or services '
-            'that appear on the public institution profile.',
-          ),
-          const SizedBox(height: AuraSpace.s16),
-          if (canAdminister) AuraPrimaryButton(
-            label: 'Add unit',
-            icon: Icons.add,
-            onPressed: () => _openUpsertSheet(),
-          ),
-          const SizedBox(height: AuraSpace.s16),
-          if (_loading)
-            const Center(
-              child: AuraLoadingState(message: 'Loading units…'),
+    // What this kind calls its units: Departments, Campuses… (DD-42 phase 3).
+    final composition = compositionForInstitution(ref, widget.institutionId);
+    final active = _units.where((u) => !u.isArchived).toList();
+    final archived = _units.where((u) => u.isArchived).toList();
+    final showing = _tab == 'archived' ? archived : active;
+
+    return WorkspacePage(
+      type: WorkspacePageType.collection,
+      title: composition.unitPlural,
+      purpose: 'Departments, branches, offices, products or services that appear on the public institution profile.',
+      primary: canAdminister
+          ? WorkspaceAction(
+              label: 'New ${composition.unitSingular.toLowerCase()}',
+              icon: Icons.add_rounded,
+              onPressed: () => _openUpsertSheet(),
             )
-          else if (_error != null)
-            AuraCard(child: Text(_error!))
-          else if (_units.isEmpty)
-            const AuraCard(
-              child: Text(
-                'No units yet. Add a branch, department, or product to get started.',
-              ),
-            )
-          else
-            ..._buildUnitList(canAdminister: canAdminister),
-        ],
-      ),
+          : null,
+      tabs: [
+        WorkspaceTab(id: 'active', label: 'Active', count: _loading ? null : active.length),
+        if (archived.isNotEmpty || _tab == 'archived')
+          WorkspaceTab(id: 'archived', label: 'Archived', count: _loading ? null : archived.length),
+      ],
+      selectedTab: _tab,
+      onTab: (id) => setState(() => _tab = id),
+      loading: _loading,
+      children: [
+        if (_error != null)
+          WorkspaceEmpty(
+            icon: Icons.error_outline_rounded,
+            title: 'Could not load ${composition.unitPlural.toLowerCase()}',
+            body: _error!,
+            action: WorkspaceAction(label: ProductLabels.of(ProductAction.retry), icon: Icons.refresh_rounded, onPressed: _load),
+          )
+        else if (showing.isEmpty)
+          WorkspaceEmpty(
+            icon: Icons.account_tree_outlined,
+            title: _tab == 'archived'
+                ? 'Nothing archived'
+                : 'No ${composition.unitPlural.toLowerCase()} yet',
+            body: _tab == 'archived'
+                ? 'Archived ${composition.unitPlural.toLowerCase()} wait here and can be restored.'
+                : 'Add a branch, department, or product to get started.',
+            action: canAdminister && _tab != 'archived'
+                ? WorkspaceAction(
+                    label: 'New ${composition.unitSingular.toLowerCase()}',
+                    icon: Icons.add_rounded,
+                    onPressed: () => _openUpsertSheet(),
+                  )
+                : null,
+          )
+        else
+          ..._buildUnitList(showing, canAdminister: canAdminister),
+      ],
     );
   }
 
-  List<Widget> _buildUnitList({required bool canAdminister}) {
+  List<Widget> _buildUnitList(List<InstitutionUnit> units, {required bool canAdminister}) {
     // The institution's canonical address, so unit links carry the same
     // identity the rest of the workspace does.
     final identity = ref.watch(institutionIdentityProvider);
-    final active = _units.where((u) => !u.isArchived).toList();
-    final archived = _units.where((u) => u.isArchived).toList();
-
     return [
-      if (active.isNotEmpty) ...[
-        ...active.map(
-          (u) => Padding(
-            padding: const EdgeInsets.only(bottom: AuraSpace.s10),
-            child: _UnitCard(
-              unit: u,
-              // A unit is an operating context, so the card leads INTO it.
-              // Opening is participation; administering it is gated above.
-              // BOTH SLUGS (founder ruling, step 2), matching the public
-              // precedent /institutions/:slug/units/:unitSlug rather than
-              // inventing a second shape for the same resource. A unit slug is
-              // unique within its institution, so the pair is exact.
-              onOpen: () => context.push(
-                institutionUnitContextPath(
-                  identity?.workspaceAddress ?? widget.institutionId,
-                  u.slug.trim().isNotEmpty ? u.slug : u.id,
-                ),
-              ),
-              onEdit: canAdminister
-                  ? () => _openUpsertSheet(existing: u)
-                  : null,
-              onArchive: canAdminister
-                  ? () => _archiveUnit(u.id, false)
-                  : null,
-            ),
-          ),
+      for (final u in units)
+        _UnitCard(
+          unit: u,
+          // A unit is an operating context, so the row leads INTO it.
+          // Opening is participation; administering it is gated above.
+          // BOTH SLUGS (founder ruling, step 2), matching the public
+          // precedent /institutions/:slug/units/:unitSlug rather than
+          // inventing a second shape for the same resource. A unit slug is
+          // unique within its institution, so the pair is exact.
+          onOpen: u.isArchived
+              ? null
+              : () => context.push(
+                    institutionUnitContextPath(
+                      identity?.workspaceAddress ?? widget.institutionId,
+                      u.slug.trim().isNotEmpty ? u.slug : u.id,
+                    ),
+                  ),
+          onEdit: u.isArchived
+              ? () => _openUpsertSheet(existing: u)
+              : (canAdminister ? () => _openUpsertSheet(existing: u) : null),
+          onArchive: canAdminister ? () => _archiveUnit(u.id, u.isArchived) : null,
         ),
-      ],
-      if (active.isNotEmpty && archived.isNotEmpty)
-        const SizedBox(height: AuraSpace.s8),
-      if (archived.isNotEmpty) ...[
-        Padding(
-          padding: const EdgeInsets.only(bottom: AuraSpace.s8),
-          child: Text(
-            'ARCHIVED',
-            style: AuraText.small.copyWith(
-              color: AuraSurface.faint,
-              letterSpacing: 0.8,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        ...archived.map(
-          (u) => Padding(
-            padding: const EdgeInsets.only(bottom: AuraSpace.s10),
-            child: _UnitCard(
-              unit: u,
-              onEdit: () => _openUpsertSheet(existing: u),
-              onArchive: canAdminister
-                  ? () => _archiveUnit(u.id, true)
-                  : null,
-            ),
-          ),
-        ),
-      ],
     ];
   }
 }
 
-// ── Unit card ─────────────────────────────────────────────────────────────────
+// ── Unit row ──────────────────────────────────────────────────────────────────
 
 class _UnitCard extends StatelessWidget {
   const _UnitCard({
@@ -256,112 +239,60 @@ class _UnitCard extends StatelessWidget {
   });
 
   final InstitutionUnit unit;
-  /// Null when the viewer may not administer units. Absent, not disabled —
-  /// a control someone can never enable is noise, not information.
+
   /// Entering the unit as an operating context. Always available to whoever
   /// can already see the unit — the server decides what they find inside.
   final VoidCallback? onOpen;
 
+  /// Null when the viewer may not administer units. Absent, not disabled —
+  /// a control someone can never enable is noise, not information.
   final VoidCallback? onEdit;
   final VoidCallback? onArchive;
 
   @override
   Widget build(BuildContext context) {
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  unit.name,
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AuraSpace.s8,
-                  vertical: AuraSpace.s4,
-                ),
-                decoration: BoxDecoration(
-                  color: AuraSurface.accentSoft,
-                  borderRadius: BorderRadius.circular(AuraRadius.xl),
-                ),
-                child: Text(
-                  unit.typeLabel,
-                  style: AuraText.micro.copyWith(
-                    color: AuraSurface.accentText,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AuraSpace.s8),
-              if (!unit.isPublic)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AuraSpace.s8,
-                    vertical: AuraSpace.s4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AuraSurface.coSun.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(AuraRadius.xl),
-                  ),
-                  child: Text(
-                    'Hidden',
-                    style: AuraText.micro.copyWith(
-                      color: AuraSurface.coSun,
-                      fontWeight: FontWeight.w600,
+    final contextLine = <String>[
+      unit.typeLabel,
+      if (unit.description != null && unit.description!.isNotEmpty) unit.description!,
+      if (unit.description == null || unit.description!.isEmpty) ...[
+        if (unit.websiteUrl != null) unit.websiteUrl!,
+        if (unit.contactEmail != null) unit.contactEmail!,
+      ],
+    ].join(' · ');
+    final actions = <(String, IconData, VoidCallback)>[
+      if (onEdit != null) ('Edit', Icons.edit_outlined, onEdit!),
+      if (onArchive != null)
+        (unit.isArchived ? 'Restore' : 'Archive', unit.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined, onArchive!),
+    ];
+    return WorkspaceRow(
+      leading: const WorkspaceIcon(Icons.account_tree_outlined),
+      title: unit.name,
+      context: contextLine,
+      pill: unit.isPublic
+          ? const WorkspacePill(label: 'On profile', tone: WorkspaceTone.done)
+          : const WorkspacePill(label: 'Hidden', tone: WorkspaceTone.waiting),
+      onTap: onOpen,
+      trailing: actions.isEmpty
+          ? null
+          : PopupMenuButton<int>(
+              tooltip: 'Actions for ${unit.name}',
+              color: AuraSurface.overlay,
+              icon: const Icon(Icons.more_vert_rounded, size: 20, color: AuraSurface.muted),
+              onSelected: (i) => actions[i].$3(),
+              itemBuilder: (_) => [
+                for (var i = 0; i < actions.length; i++)
+                  PopupMenuItem<int>(
+                    value: i,
+                    child: Row(
+                      children: [
+                        Icon(actions[i].$2, size: 18, color: AuraSurface.muted),
+                        const SizedBox(width: AuraSpace.s12),
+                        Text(actions[i].$1, style: AuraText.body),
+                      ],
                     ),
                   ),
-                ),
-            ],
-          ),
-          if (unit.description != null && unit.description!.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text(
-              unit.description!,
-              style: AuraText.small.copyWith(color: AuraSurface.muted),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+              ],
             ),
-          ],
-          if (unit.websiteUrl != null || unit.contactEmail != null) ...[
-            const SizedBox(height: AuraSpace.s6),
-            if (unit.websiteUrl != null)
-              Text(
-                unit.websiteUrl!,
-                style: AuraText.micro.copyWith(color: AuraSurface.faint),
-              ),
-            if (unit.contactEmail != null)
-              Text(
-                unit.contactEmail!,
-                style: AuraText.micro.copyWith(color: AuraSurface.faint),
-              ),
-          ],
-          const SizedBox(height: AuraSpace.s12),
-          Wrap(
-            spacing: AuraSpace.s8,
-            children: [
-              if (onOpen != null)
-                AuraGhostButton(
-                  label: 'Open',
-                  onPressed: onOpen,
-                ),
-              if (onEdit != null)
-                AuraGhostButton(
-                  label: 'Edit',
-                  onPressed: onEdit,
-                ),
-              if (onArchive != null)
-                AuraGhostButton(
-                  label: unit.isArchived ? 'Restore' : 'Archive',
-                  onPressed: onArchive,
-                ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }
