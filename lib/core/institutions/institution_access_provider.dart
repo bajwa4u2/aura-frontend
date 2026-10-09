@@ -145,7 +145,12 @@ class InstitutionIdentity {
     this.speakingAuthorityConfirmed,
     this.speakingAuthorityState,
     this.canSpeakByRole = false,
+    this.kind,
   });
+
+  /// The kind it is composed as (DD-42 phase 3): one of the seven
+  /// InstitutionCategory wire values, or null when unknown.
+  final String? kind;
 
   final String id;
   final String name;
@@ -381,7 +386,30 @@ InstitutionIdentity? _identityFrom(InstitutionAccess? access) {
     speakingAuthorityConfirmed: authority is Map ? authority['confirmed'] == true : null,
     speakingAuthorityState: authority is Map ? readOpt(Map<String, dynamic>.from(authority), ['state']) : null,
     canSpeakByRole: membership?['canSpeakOfficiallyByRole'] == true,
+    kind: readOpt(inst, ['kind']) ?? _kindFromClass(readOpt(inst, ['institutionClass'])),
   );
+}
+
+/// Older servers send only the discovery class; the kind follows from it.
+String? _kindFromClass(String? institutionClass) {
+  switch ((institutionClass ?? '').toUpperCase()) {
+    case 'GOVERNMENT':
+      return 'GOVERNMENT_CIVIC';
+    case 'EDUCATIONAL':
+      return 'EDUCATIONAL';
+    case 'NONPROFIT':
+      return 'NONPROFIT_COMMUNITY';
+    case 'RELIGIOUS':
+      return 'RELIGIOUS';
+    case 'COMMERCIAL':
+      return 'CORPORATE_BUSINESS';
+    case 'MEDIA':
+      return 'MEDIA';
+    case 'HEALTHCARE':
+      return 'HEALTHCARE';
+    default:
+      return null;
+  }
 }
 
 /// All institutions the current member is affiliated with (primary-first).

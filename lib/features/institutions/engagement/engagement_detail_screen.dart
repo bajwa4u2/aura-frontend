@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../kind/kind_composition.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -406,6 +407,18 @@ class _RespondSheetState extends ConsumerState<_RespondSheet> {
             style: AuraText.small.copyWith(color: AuraSurface.muted),
           ),
           const SizedBox(height: AuraSpace.s12),
+          // The kind's guard, where the institution writes in its own voice
+          // (DD-42 phase 3): official speech, minors, health information.
+          Consumer(
+            builder: (context, ref, _) {
+              final composition = compositionForInstitution(ref, widget.institutionId);
+              if (composition.guards.isEmpty) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AuraSpace.s12),
+                child: KindGuardNotice(composition: composition),
+              );
+            },
+          ),
           AuraInput(
             controller: _text,
             label: _outcome == _Outcome.resolve ? 'What was done, or why no action was needed' : 'Your response',

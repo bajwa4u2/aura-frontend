@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../kind/kind_composition.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -1474,6 +1475,18 @@ class _InstitutionPostComposerScreenState
                         onChanged: (t) =>
                             setState(() => _communicationType = t),
                       ),
+                    ),
+                    // The kind's guard, where the institution writes in its own voice
+                    // (DD-42 phase 3): official speech, minors, health information.
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final composition = compositionForInstitution(ref, widget.institutionId);
+                        if (composition.guards.isEmpty) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: AuraSpace.s12),
+                          child: KindGuardNotice(composition: composition),
+                        );
+                      },
                     ),
                     _LabeledField(
                       label: 'Title (optional — derived from body if empty)',

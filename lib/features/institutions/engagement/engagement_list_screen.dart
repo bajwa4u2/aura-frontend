@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../kind/kind_composition.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -40,7 +41,8 @@ class _EngagementListScreenState extends ConsumerState<EngagementListScreen> {
     final summaryAsync = ref.watch(engagementSummaryProvider(institutionId));
 
     return AuraScaffold(
-      title: 'Questions from the public',
+      // "Questions from residents", "from the congregation" (DD-42 phase 3).
+      title: 'Questions from ${compositionForInstitution(ref, institutionId).publicWord}',
       showHomeAction: false,
       actions: [
         IconButton(

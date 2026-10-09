@@ -41,6 +41,7 @@ import 'rail/rail_composition.dart';
 import '../../core/identity/person_identity_model.dart';
 import '../../core/institutions/institution_route_authority.dart';
 import '../../core/diagnostics/call_teardown_diag.dart';
+import '../../features/institutions/kind/kind_composition.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // INSTITUTION COLOR PALETTE — teal authority, calm workspace
@@ -309,6 +310,7 @@ class InstitutionShell extends ConsumerWidget {
     final identity = ref.watch(institutionIdentityProvider);
     final path = GoRouterState.of(context).uri.path;
     final isPreview = _isPublicPreviewPath(path);
+    final composition = compositionForKind(ref, identity?.kind);
 
     // Pending-attention counts power the nav badges. Only admins can read the
     // underlying endpoints, so we only subscribe for them; everyone else sees
@@ -369,6 +371,7 @@ class InstitutionShell extends ConsumerWidget {
 
         final sideNav = _InstitutionSideNav(
           posture: win.navPosture,
+          composition: composition,
           currentPath: path,
           identity: identity,
           pendingJoinRequests: pendingJoinRequests,
@@ -444,6 +447,7 @@ class InstitutionShell extends ConsumerWidget {
                   backgroundColor: _institutionNavBg1,
                   width: 288,
                   child: _InstitutionSideNav(
+                    composition: composition,
                     currentPath: path,
                     identity: identity,
                     pendingJoinRequests: pendingJoinRequests,
@@ -2238,6 +2242,17 @@ class InstWorkspaceEntry {
   String? resolvedPath(InstitutionIdentity? identity) =>
       pathBuilder?.call(identity);
 
+  /// A copy with no section label (used when the kind reorders a section).
+  InstWorkspaceEntry withoutSectionLabel() => InstWorkspaceEntry(
+        label: label,
+        icon: icon,
+        selectedIcon: selectedIcon,
+        pathBuilder: pathBuilder,
+        pathMatcher: pathMatcher,
+        requiresAny: requiresAny,
+        badge: badge,
+      );
+
   /// Returns a copy carrying [section] as its section label (used to reflow
   /// section headers onto the first visible entry after capability filtering).
   InstWorkspaceEntry withSectionLabel(String section) => InstWorkspaceEntry(
@@ -2264,6 +2279,7 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
   InstitutionIdentity? identity, {
   int pendingJoinRequests = 0,
   int pendingInvites = 0,
+  KindComposition composition = KindComposition.neutral,
 }) {
   // THE ADDRESS, NOT THE ID (founder ruling AD2, 2026-08-23). Every rail
   // destination is minted from the institution's canonical slug; the raw
@@ -2405,7 +2421,8 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
     // Units: structural management only (founder ruling U5); a unit is an
     // operating context reached from Profile, not a peer destination.
     InstWorkspaceEntry(
-      label: 'Units',
+      // What this kind calls its units: Departments, Campuses, Branches…
+      label: composition.unitPlural,
       icon: Icons.account_tree_outlined,
       selectedIcon: Icons.account_tree_rounded,
       requiresAny: const [ConsequentialAct.administerUnits],
@@ -2444,6 +2461,14 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
     ),
   ];
 
+  // THE KIND DECIDES EMPHASIS (DD-42 phase 3): within each section, the
+  // kind's leading tools come first and its receding ones last. Nothing is
+  // hidden or gated by kind; the section stays labelled on its first entry.
+  final ordered = _orderByKind(all, composition);
+  all
+    ..clear()
+    ..addAll(ordered);
+
   // Filter to entries the acting member may use, then reflow section labels
   // so a section whose anchor was hidden still labels its first visible entry
   // (and a fully hidden section disappears entirely).
@@ -2470,7 +2495,11 @@ class _InstitutionSideNav extends StatelessWidget {
     this.pendingInvites = 0,
     this.inDrawer = false,
     this.posture = AuraNavPosture.expanded,
+    this.composition = KindComposition.neutral,
   });
+
+  /// How this institution's kind composes the rail (DD-42 phase 3).
+  final KindComposition composition;
 
   /// Matches the member rail's posture so the shell's left edge is the same
   /// width on both sides of a move between them.
@@ -2491,6 +2520,7 @@ class _InstitutionSideNav extends StatelessWidget {
       identity,
       pendingJoinRequests: pendingJoinRequests,
       pendingInvites: pendingInvites,
+      composition: composition,
     );
 
     final compact = !inDrawer && posture == AuraNavPosture.compact;
@@ -3055,4 +3085,66 @@ class _InstitutionBottomBar extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Which workspace tool an entry is, for the kind catalogue's lead/recede.
+String? _toolOf(InstWorkspaceEntry e) {
+  switch (e.label) {
+    case 'Questions':
+      return 'questions';
+    case 'Explore':
+      return 'explore';
+    case 'Announcements':
+      return 'announcements';
+    case 'Spaces':
+      return 'spaces';
+    case 'Members':
+      return 'members';
+    case 'Live':
+      return 'live';
+    case 'Meetings':
+      return 'meetings';
+    case 'Booking pages':
+      return 'booking';
+    default:
+      return null;
+  }
+}
+
+/// Reorders entries within each section by the kind's lead/recede lists.
+List<InstWorkspaceEntry> _orderByKind(List<InstWorkspaceEntry> entries, KindComposition c) {
+  if (c.lead.isEmpty && c.recede.isEmpty) return List.of(entries);
+  int rank(InstWorkspaceEntry e) {
+    final tool = _toolOf(e);
+    if (tool == null) return 100;
+    final l = c.lead.indexOf(tool);
+    if (l >= 0) return l;
+    if (c.recede.contains(tool)) return 1000;
+    return 100;
+  }
+
+  final out = <InstWorkspaceEntry>[];
+  var i = 0;
+  while (i < entries.length) {
+    final section = entries[i].sectionLabel;
+    var j = i + 1;
+    while (j < entries.length && entries[j].sectionLabel == null) {
+      j++;
+    }
+    final group = entries.sublist(i, j);
+    final sorted = List.of(group);
+    // A stable sort: equal ranks keep the order the section was written in.
+    final indexed = [for (var k = 0; k < sorted.length; k++) (k, sorted[k])];
+    indexed.sort((a, b) {
+      final d = rank(a.$2) - rank(b.$2);
+      return d != 0 ? d : a.$1 - b.$1;
+    });
+    for (var k = 0; k < indexed.length; k++) {
+      final e = indexed[k].$2;
+      final bare = e.sectionLabel == null ? e : e.withoutSectionLabel();
+      out.add(k == 0 && section != null ? bare.withSectionLabel(section) : bare);
+    }
+    i = j;
+  }
+  return out;
 }

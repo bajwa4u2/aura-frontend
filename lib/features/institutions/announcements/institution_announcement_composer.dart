@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import '../kind/kind_composition.dart';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -838,6 +839,18 @@ class _InstitutionAnnouncementComposerState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // The kind's guard, where the institution writes in its own voice
+                        // (DD-42 phase 3): official speech, minors, health information.
+                        Consumer(
+                          builder: (context, ref, _) {
+                            final composition = compositionForInstitution(ref, widget.institutionId);
+                            if (composition.guards.isEmpty) return const SizedBox.shrink();
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: AuraSpace.s12),
+                              child: KindGuardNotice(composition: composition),
+                            );
+                          },
+                        ),
                         TextFormField(
                           controller: _titleController,
                           style: AuraText.body.copyWith(

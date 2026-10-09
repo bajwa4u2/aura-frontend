@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../kind/kind_composition.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -48,6 +49,7 @@ class InstitutionTodayScreen extends ConsumerWidget {
         _may(projection, ConsequentialAct.manageMeetings);
 
     String path(InstitutionSection s) => institutionWorkspacePath(institutionId, s);
+    final composition = compositionForInstitution(ref, institutionId);
 
     // Verification not finished: say so to whoever can finish it. The shell's
     // identity says whether it is verified, so it is asked only when it names
@@ -95,22 +97,30 @@ class InstitutionTodayScreen extends ConsumerWidget {
               invitesPath: mayInvite ? path(InstitutionSection.invites) : null,
               announcementsPath: mayWrite ? path(InstitutionSection.announcements) : null,
             ),
-          _PublicQuestions(
-            institutionId: institutionId,
-            allPath: path(InstitutionSection.publicEngagement),
-          ),
-          const SizedBox(height: AuraSpace.s16),
-          _MeetingsAhead(
-            institutionId: institutionId,
-            allPath: path(InstitutionSection.meetings),
-            newPath: mayHost ? '${path(InstitutionSection.meetings)}/new' : null,
-          ),
-          const SizedBox(height: AuraSpace.s16),
-          _LatestAnnouncement(
-            institutionId: institutionId,
-            allPath: path(InstitutionSection.announcements),
-            writePath: mayWrite ? '${path(InstitutionSection.announcements)}/new' : null,
-          ),
+          // The kind decides the order below what waits for this person
+          // (DD-42 phase 3): a school leads with its notices, a city with
+          // what residents are asking.
+          for (final block in composition.todayOrder) ...[
+            if (block == 'public')
+              _PublicQuestions(
+                institutionId: institutionId,
+                allPath: path(InstitutionSection.publicEngagement),
+                publicWord: composition.publicWord,
+              )
+            else if (block == 'meetings')
+              _MeetingsAhead(
+                institutionId: institutionId,
+                allPath: path(InstitutionSection.meetings),
+                newPath: mayHost ? '${path(InstitutionSection.meetings)}/new' : null,
+              )
+            else if (block == 'announcement')
+              _LatestAnnouncement(
+                institutionId: institutionId,
+                allPath: path(InstitutionSection.announcements),
+                writePath: mayWrite ? '${path(InstitutionSection.announcements)}/new' : null,
+              ),
+            const SizedBox(height: AuraSpace.s16),
+          ],
         ],
       ),
     );
@@ -300,17 +310,21 @@ class _WaitingForYou extends ConsumerWidget {
 // ── What the public is asking ───────────────────────────────────────────────
 
 class _PublicQuestions extends ConsumerWidget {
-  const _PublicQuestions({required this.institutionId, required this.allPath});
+  const _PublicQuestions({required this.institutionId, required this.allPath, this.publicWord = 'the public'});
 
   final String institutionId;
   final String allPath;
+
+  /// "residents", "the congregation" — the kind's word for its public.
+  final String publicWord;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(engagementListProvider(institutionId));
     return _Block(
       icon: Icons.record_voice_over_outlined,
-      title: 'What the public is asking',
+      // "What residents are asking" / "What the congregation is asking".
+      title: 'What $publicWord ${publicWord.startsWith('the ') ? 'is' : 'are'} asking',
       actionLabel: 'All questions',
       actionPath: allPath,
       child: async.when(

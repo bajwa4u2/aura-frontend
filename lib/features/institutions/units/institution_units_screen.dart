@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../kind/kind_composition.dart';
 import 'package:flutter/material.dart';
 import '../../../core/ui/aura_radius.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -139,11 +140,12 @@ class _InstitutionUnitsScreenState
   Widget build(BuildContext context) {
     final canAdminister = _canAdministerUnits(ref);
     return DocumentScaffold(
-      title: 'Units & branches',
+      // What this kind calls its units: Departments, Campuses… (DD-42 phase 3).
+      title: compositionForInstitution(ref, widget.institutionId).unitPlural,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Doc.title('Units & branches'),
+          Doc.title(compositionForInstitution(ref, widget.institutionId).unitPlural),
           const SizedBox(height: AuraSpace.s10),
           Doc.meta('Manage public-facing units under this institution.'),
           Doc.lede(
