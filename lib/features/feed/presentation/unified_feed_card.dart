@@ -980,29 +980,31 @@ class _AuthorRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                // NAME FIRST, BADGE BESIDE IT OR BELOW IT (9 Oct 2026). In a
+                // Row both were Flexible, so on a phone they split the line
+                // and each was cut: "Aura Platfor…" beside "Verified i…".
+                // A Wrap keeps the name whole and moves the badge to the
+                // next line when the two do not fit together.
+                Wrap(
+                  spacing: AuraSpace.s6,
+                  runSpacing: 2,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Flexible(
-                      child: Text(
-                        author.name.isNotEmpty
-                            ? author.name
-                            : (author.handleOrSlug.isNotEmpty
-                                  ? '@${author.handleOrSlug}'
-                                  : 'Unknown'),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AuraText.small.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                    Text(
+                      author.name.isNotEmpty
+                          ? author.name
+                          : (author.handleOrSlug.isNotEmpty
+                                ? '@${author.handleOrSlug}'
+                                : 'Unknown'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AuraText.small.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     if (author.context != null &&
-                        author.context!.isMeaningful) ...[
-                      const SizedBox(width: AuraSpace.s6),
-                      Flexible(
-                        child: AuraIdentityBadge(context: author.context!),
-                      ),
-                    ],
+                        author.context!.isMeaningful)
+                      AuraIdentityBadge(context: author.context!),
                   ],
                 ),
                 if (author.handleOrSlug.isNotEmpty && author.name.isNotEmpty)
