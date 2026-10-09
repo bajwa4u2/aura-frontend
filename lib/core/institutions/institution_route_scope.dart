@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../product/product_language.dart';
 import '../product/product_state.dart';
 import '../product/product_state_view.dart';
+import '../ui/aura_space.dart';
+import '../ui/aura_surface.dart';
 import 'institution_route_authority.dart';
 
 /// THE BOUNDARY BETWEEN A PRODUCT ADDRESS AND A PERSISTENCE ID.
@@ -50,12 +51,7 @@ class InstitutionRouteScope extends ConsumerWidget {
 
     // Still finding out. Not "no institution" — deciding here is the RC2
     // defect that made refresh unsurvivable.
-    if (!snapshot.resolved) {
-      return const AuraProductState(
-        state: ProductState.loading,
-        subject: ProductNoun.institution,
-      );
-    }
+    if (!snapshot.resolved) return const _WorkspaceOutline();
 
     final resolved = resolveInstitutionAddress(snapshot, address);
     if (resolved != null) return builder(resolved.institutionId);
@@ -68,10 +64,7 @@ class InstitutionRouteScope extends ConsumerWidget {
     );
 
     return remote.when(
-      loading: () => const AuraProductState(
-        state: ProductState.loading,
-        subject: ProductNoun.institution,
-      ),
+      loading: () => const _WorkspaceOutline(),
       // An error is resolved-but-unknown, never an eternal spinner (F068).
       error: (_, __) => const AuraProductState(
         state: ProductState.empty,
@@ -86,6 +79,72 @@ class InstitutionRouteScope extends ConsumerWidget {
         }
         return builder(institutionId);
       },
+    );
+  }
+}
+
+/// While the address resolves: an outline of a workspace page in place (a
+/// title, a tabs row, three rows), never a centred "Just a moment" (DD-43).
+/// Built from core tokens so core does not depend on the workspace feature;
+/// it mirrors `WorkspaceLoading` there.
+class _WorkspaceOutline extends StatelessWidget {
+  const _WorkspaceOutline();
+
+  @override
+  Widget build(BuildContext context) {
+    Widget bar(double w, double h, {double r = 6}) => Container(
+          width: w,
+          height: h,
+          decoration: BoxDecoration(color: AuraSurface.elevated, borderRadius: BorderRadius.circular(r)),
+        );
+    Widget row() => Container(
+          margin: const EdgeInsets.only(bottom: AuraSpace.s8),
+          padding: const EdgeInsets.all(AuraSpace.s14),
+          decoration: BoxDecoration(
+            color: AuraSurface.card,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          child: Row(children: [
+            Container(width: 36, height: 36, decoration: const BoxDecoration(color: AuraSurface.elevated, shape: BoxShape.circle)),
+            const SizedBox(width: AuraSpace.s12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                bar(200, 12),
+                const SizedBox(height: AuraSpace.s8),
+                bar(120, 10),
+              ]),
+            ),
+          ]),
+        );
+    return Semantics(
+      label: 'Loading',
+      child: Material(
+        color: AuraSurface.page,
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 880 + 2 * AuraSpace.s32),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(AuraSpace.s32, AuraSpace.s24, AuraSpace.s32, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Align(alignment: Alignment.centerLeft, child: bar(180, 24)),
+                  const SizedBox(height: AuraSpace.s8),
+                  Align(alignment: Alignment.centerLeft, child: bar(280, 12)),
+                  const SizedBox(height: AuraSpace.s20),
+                  Row(children: [bar(90, 32, r: 16), const SizedBox(width: AuraSpace.s8), bar(90, 32, r: 16)]),
+                  const SizedBox(height: AuraSpace.s20),
+                  row(),
+                  row(),
+                  row(),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
