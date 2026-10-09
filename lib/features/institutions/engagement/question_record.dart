@@ -22,6 +22,8 @@ import '../kind/kind_composition.dart';
 import '../workspace/workspace_page.dart';
 import 'engagement_models.dart';
 import 'engagement_providers.dart';
+import '../../../core/product/product_language.dart';
+import '../../../core/navigation/navigation_authority.dart';
 
 /// ONE QUESTION OR ISSUE: the Record page type (DD-43).
 ///
@@ -250,7 +252,7 @@ class _QuestionRecordState extends ConsumerState<QuestionRecord> {
         canRespond && isIssue && record.status == RoutedRecordStatus.pending && record.acknowledgedAt == null;
     final committed = record.status == RoutedRecordStatus.committed;
 
-    final header = WorkspaceHeader(
+    final header = _RecordHeader(
       title: title,
       purpose: '${engagementStatusWords(record)}$reached',
       back: widget.back,
@@ -279,7 +281,7 @@ class _QuestionRecordState extends ConsumerState<QuestionRecord> {
           ),
         if (record.postId.isNotEmpty)
           WorkspaceAction(
-            label: 'Open their post',
+            label: 'Open the post',
             icon: Icons.open_in_new_rounded,
             onPressed: () => context.push(NavigationAuthority.postRoute(record.postId)),
           ),
@@ -540,6 +542,49 @@ class _QuestionRecordState extends ConsumerState<QuestionRecord> {
   }
 }
 
+/// The record's header. Wide: actions beside the title, as on every page.
+/// Narrow (a phone): the title keeps the full width and the actions sit on
+/// their own line beneath it, still one gold action and one More.
+class _RecordHeader extends StatelessWidget {
+  const _RecordHeader({required this.title, this.purpose, this.back, this.primary, this.more = const []});
+
+  final String title;
+  final String? purpose;
+  final WorkspaceBack? back;
+  final WorkspaceAction? primary;
+  final List<WorkspaceAction> more;
+
+  static const double _stackBelow = 560;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, box) {
+        if (box.maxWidth >= _stackBelow) {
+          return WorkspaceHeader(title: title, purpose: purpose, back: back, primary: primary, more: more);
+        }
+        final hasActions = primary != null || more.isNotEmpty;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            WorkspaceHeader(title: title, purpose: purpose, back: back),
+            if (hasActions) ...[
+              const SizedBox(height: AuraSpace.s12),
+              Row(
+                children: [
+                  if (primary != null) WorkspacePrimaryButton(action: primary!),
+                  if (primary != null && more.isNotEmpty) const SizedBox(width: AuraSpace.s8),
+                  if (more.isNotEmpty) WorkspaceMoreButton(actions: more),
+                ],
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
 /// What they wrote, as they wrote it.
 class _PostCard extends StatelessWidget {
   const _PostCard({required this.record});
@@ -581,11 +626,11 @@ class _PostCard extends StatelessWidget {
               if (topic != null) WorkspacePill(label: topic),
             ],
           ),
-          const SizedBox(height: AuraSpace.s12),
-          Text(
-            (record.postText ?? '').trim().isEmpty ? 'Their post has no text.' : record.postText!.trim(),
-            style: AuraText.body.copyWith(height: 1.6),
-          ),
+          // An empty post shows nothing: no placeholder stands in for it.
+          if ((record.postText ?? '').trim().isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s12),
+            Text(record.postText!.trim(), style: AuraText.body.copyWith(height: 1.6)),
+          ],
         ],
       ),
     );

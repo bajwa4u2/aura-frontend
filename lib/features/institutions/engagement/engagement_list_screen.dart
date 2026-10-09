@@ -1,25 +1,28 @@
 import 'package:flutter/material.dart';
-import '../kind/kind_composition.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/errors/server_refusal.dart';
+import '../../../core/product/temporal.dart';
 import '../../../core/ui/aura_platform_components.dart';
-import '../../../core/ui/aura_radius.dart';
-import '../../../core/ui/aura_scaffold.dart';
-import '../../../core/ui/aura_space.dart';
-import '../../../core/ui/aura_surface.dart';
-import '../../../core/ui/aura_text.dart';
-import '../../../core/utils/relative_time.dart';
+import '../kind/kind_composition.dart';
+import '../workspace/workspace_page.dart';
 import 'engagement_models.dart';
 import 'engagement_providers.dart';
+import 'question_record.dart';
+import '../../../core/product/product_language.dart';
 
-/// The filters, in the order a person works through them (2026-10-09).
-const _filters = <(String label, String? wire)>[
-  ('Waiting', 'PENDING'),
-  ('Answered', 'RESPONDED'),
-  ('Committed', 'COMMITTED'),
-  ('Resolved', 'RESOLVED'),
-  ('All', null),
+/// QUESTIONS: a Collection page (DD-43).
+///
+/// Every question and raised issue that reached this institution, by where
+/// it stands. On wide screens a question opens beside the list and is
+/// answered there; on narrow screens it opens as its own page.
+const _tabs = <(String id, String label, String? wire)>[
+  ('waiting', 'Waiting', 'PENDING'),
+  ('answered', 'Answered', 'RESPONDED'),
+  ('committed', 'Committed', 'COMMITTED'),
+  ('resolved', 'Resolved', 'RESOLVED'),
+  ('all', 'All', null),
 ];
 
 class EngagementListScreen extends ConsumerStatefulWidget {
@@ -32,383 +35,153 @@ class EngagementListScreen extends ConsumerStatefulWidget {
 }
 
 class _EngagementListScreenState extends ConsumerState<EngagementListScreen> {
-  String? _status = 'PENDING';
+  String _tab = 'waiting';
+  String? _openId;
+
+  String? get _status => _tabs.firstWhere((t) => t.$1 == _tab).$3;
+
+  int? _count(EngagementSummary? s, String id) {
+    if (s == null) return null;
+    return switch (id) {
+      'waiting' => s.pending,
+      'answered' => s.responded,
+      'committed' => s.committed,
+      'resolved' => s.resolved,
+      _ => s.total,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
     final institutionId = widget.institutionId;
     final listAsync = ref.watch(engagementFilteredListProvider((institutionId, _status)));
-    final summaryAsync = ref.watch(engagementSummaryProvider(institutionId));
+    // Counts need analytics standing; without it the tabs simply carry none.
+    final summary = ref.watch(engagementSummaryProvider(institutionId)).valueOrNull;
+    final publicWord = compositionForInstitution(ref, institutionId).publicWord;
+    final records = listAsync.valueOrNull ?? const <RoutedRecord>[];
 
-    return AuraScaffold(
-      // "Questions from residents", "from the congregation" (DD-42 phase 3).
-      title: 'Questions from ${compositionForInstitution(ref, institutionId).publicWord}',
-      showHomeAction: false,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.settings_outlined),
-          tooltip: 'Participation settings',
-          onPressed: () => context.push(
-            '/institution/$institutionId/public-engagement/participation',
+    return LayoutBuilder(
+      builder: (context, box) {
+        final beside = WorkspacePage.opensBeside(context, box.maxWidth);
+        RoutedRecord? open;
+        if (beside && records.isNotEmpty) {
+          open = records.where((r) => r.id == _openId).firstOrNull ?? records.first;
+        }
+
+        return WorkspacePage(
+          type: WorkspacePageType.collection,
+          // "Questions from residents", "from the congregation" (DD-42 phase 3).
+          title: 'Questions from $publicWord',
+          purpose: 'What $publicWord ask and raise on the topics you have taken on, by where each stands.',
+          primary: WorkspaceAction(
+            // No icon: a compact header would otherwise show a bare "+".
+            label: 'Take on a topic',
+            onPressed: () => context.push('/institution/$institutionId/public-engagement/participation'),
           ),
-        ),
-      ],
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(
-            child: summaryAsync.whenOrNull(
-              data: (s) => s.total > 0 ? _SummaryBar(summary: s) : null,
-            ) ?? const SizedBox.shrink(),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, 0),
-              child: Wrap(
-                spacing: AuraSpace.s8,
-                runSpacing: AuraSpace.s8,
-                children: [
-                  for (final f in _filters)
-                    ChoiceChip(
-                      label: Text(f.$1),
-                      selected: _status == f.$2,
-                      onSelected: (_) => setState(() => _status = f.$2),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          listAsync.when(
-            loading: () => const SliverFillRemaining(
-              child: Center(child: AuraLoadingState(message: 'Loading…')),
-            ),
-            error: (e, _) => SliverFillRemaining(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(AuraSpace.s16),
-                  child: AuraErrorState(
-                    title: 'Could not load public engagement',
-                    body: e.toString(),
-                  ),
+          tabs: [
+            for (final t in _tabs) WorkspaceTab(id: t.$1, label: t.$2, count: _count(summary, t.$1)),
+          ],
+          selectedTab: _tab,
+          onTab: (id) => setState(() {
+            _tab = id;
+            _openId = null;
+          }),
+          loading: listAsync.isLoading && !listAsync.hasValue,
+          detail: open == null
+              ? null
+              : QuestionRecord(
+                  key: ValueKey(open.id),
+                  institutionId: institutionId,
+                  recordId: open.id,
                 ),
-              ),
-            ),
-            data: (list) {
-              if (list.isEmpty) {
-                return SliverFillRemaining(
-                  child: _EmptyState(filtered: _status != null),
-                );
-              }
-              return SliverPadding(
-                padding: const EdgeInsets.all(AuraSpace.s16),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (_, i) {
-                      if (i.isOdd) {
-                        return const SizedBox(height: AuraSpace.s12);
-                      }
-                      final record = list[i ~/ 2];
-                      return _RecordCard(
-                        record: record,
-                        onTap: () => context.push(
-                          '/institution/$institutionId/public-engagement/${record.id}',
-                        ),
-                      );
-                    },
-                    childCount: list.length * 2 - 1,
-                  ),
+          children: [
+            if (listAsync.hasError && !listAsync.hasValue)
+              WorkspaceEmpty(
+                icon: Icons.error_outline_rounded,
+                title: 'Questions could not be loaded',
+                body: ServerRefusal.of(listAsync.error!).message ?? 'Check the connection and try again.',
+                action: WorkspaceAction(
+                  label: ProductLabels.of(ProductAction.retry),
+                  icon: Icons.refresh_rounded,
+                  onPressed: () => ref.invalidate(engagementFilteredListProvider((institutionId, _status))),
                 ),
-              );
-            },
-          ),
-        ],
-      ),
+              )
+            else if (records.isEmpty)
+              _empty(publicWord)
+            else
+              for (final r in records)
+                _QuestionRow(
+                  record: r,
+                  selected: open?.id == r.id,
+                  onTap: () {
+                    if (beside) {
+                      setState(() => _openId = r.id);
+                    } else {
+                      context.push('/institution/$institutionId/public-engagement/${r.id}');
+                    }
+                  },
+                ),
+          ],
+        );
+      },
     );
+  }
+
+  Widget _empty(String publicWord) {
+    final (title, body) = switch (_tab) {
+      'waiting' => ('Nothing is waiting', 'When $publicWord ask or raise an issue on a topic you have taken on, it appears here.'),
+      'answered' => ('Nothing answered yet', 'Questions you have answered appear here.'),
+      'committed' => ('No open commitments', 'When you commit to act on an issue, it stays here with its date until it is resolved.'),
+      'resolved' => ('Nothing resolved yet', 'Issues you have resolved appear here, with what was done.'),
+      _ => ('No questions yet', 'When someone asks a question or raises an issue on a topic this institution has taken on, it appears here.'),
+    };
+    return WorkspaceEmpty(icon: Icons.inbox_outlined, title: title, body: body);
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SUMMARY BAR
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _SummaryBar extends StatelessWidget {
-  const _SummaryBar({required this.summary});
-
-  final EngagementSummary summary;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(
-        AuraSpace.s16,
-        AuraSpace.s16,
-        AuraSpace.s16,
-        0,
-      ),
-      padding: const EdgeInsets.all(AuraSpace.s14),
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: Row(
-        children: [
-          _Counter(
-            label: 'Waiting',
-            count: summary.pending,
-            urgent: summary.pending > 0,
-          ),
-          const _Divider(),
-          _Counter(label: 'Answered', count: summary.responded),
-          const _Divider(),
-          _Counter(label: 'Committed', count: summary.committed),
-          const _Divider(),
-          _Counter(
-            label: 'Resolved',
-            count: summary.resolved,
-            highlight: true,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Counter extends StatelessWidget {
-  const _Counter({
-    required this.label,
-    required this.count,
-    this.urgent = false,
-    this.highlight = false,
-  });
-
-  final String label;
-  final int count;
-  final bool urgent;
-  final bool highlight;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = urgent
-        ? AuraSurface.coSun
-        : highlight
-            ? AuraSurface.coVerdant
-            : AuraSurface.ink;
-
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            count.toString(),
-            style: AuraText.title.copyWith(
-              color: color,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: AuraText.micro.copyWith(
-              color: AuraSurface.muted,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Divider extends StatelessWidget {
-  const _Divider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      height: 32,
-      color: AuraSurface.divider,
-      margin: const EdgeInsets.symmetric(horizontal: AuraSpace.s8),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// RECORD CARD
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _RecordCard extends StatelessWidget {
-  const _RecordCard({required this.record, required this.onTap});
+class _QuestionRow extends StatelessWidget {
+  const _QuestionRow({required this.record, required this.selected, required this.onTap});
 
   final RoutedRecord record;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = switch (record.status) {
-      RoutedRecordStatus.pending => AuraSurface.coSun,
-      RoutedRecordStatus.responded => AuraSurface.accent,
-      RoutedRecordStatus.committed => AuraSurface.accent,
-      RoutedRecordStatus.resolved => AuraSurface.coVerdant,
+    final who = record.authorName;
+    final when = record.postCreatedAt ?? record.routedAt;
+    final due = record.commitmentDueAt;
+    final overdue = record.status == RoutedRecordStatus.committed && due != null && due.isBefore(DateTime.now());
+
+    final pill = switch (record.status) {
+      RoutedRecordStatus.pending => WorkspacePill(
+          label: record.acknowledgedAt != null ? 'Acknowledged' : 'Waiting',
+          tone: WorkspaceTone.waiting,
+        ),
+      RoutedRecordStatus.responded => WorkspacePill(label: engagementStatusWords(record)),
+      RoutedRecordStatus.committed => due == null
+          ? const WorkspacePill(label: 'Committed', tone: WorkspaceTone.waiting)
+          : overdue
+              ? WorkspacePill(label: 'Was due ${AuraTemporal.dueDay(due)}', tone: WorkspaceTone.problem)
+              : WorkspacePill(label: 'Due ${AuraTemporal.dueDay(due)}', tone: WorkspaceTone.waiting),
+      RoutedRecordStatus.resolved => const WorkspacePill(label: 'Resolved', tone: WorkspaceTone.done),
     };
 
-    return InkWell(
+    final text = (record.postText ?? '').trim();
+    final kind = record.intent == RecordIntent.issue ? 'Raised issue' : 'Question';
+    return WorkspaceRow(
+      leading: AuraAvatar(name: who ?? '?', imageUrl: record.author.avatarUrl, size: 36),
+      title: text.isEmpty ? kind : text,
+      context: [
+        kind,
+        if (who != null) who,
+        if (record.topic != null) record.topic!.label,
+        if (when != null) AuraTemporal.fullShort(when),
+      ].join(' · '),
+      pill: pill,
+      selected: selected,
+      emphasis: overdue ? WorkspaceTone.problem : null,
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AuraRadius.card),
-      child: Container(
-        padding: const EdgeInsets.all(AuraSpace.s14),
-        decoration: BoxDecoration(
-          color: AuraSurface.card,
-          borderRadius: BorderRadius.circular(AuraRadius.card),
-          border: Border.all(color: AuraSurface.divider),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                if (record.intent != RecordIntent.unknown) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AuraSpace.s8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AuraSurface.subtle,
-                      borderRadius: BorderRadius.circular(AuraRadius.pill),
-                      border: Border.all(color: AuraSurface.divider),
-                    ),
-                    child: Text(
-                      record.intent == RecordIntent.issue ? 'Raised issue' : 'Question',
-                      style: AuraText.micro.copyWith(
-                        color: AuraSurface.muted,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AuraSpace.s8),
-                ],
-                if (record.topic != null) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AuraSpace.s8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AuraSurface.subtle,
-                      borderRadius: BorderRadius.circular(AuraRadius.pill),
-                      border: Border.all(color: AuraSurface.divider),
-                    ),
-                    child: Text(
-                      record.topic!.label,
-                      style: AuraText.micro.copyWith(
-                        color: AuraSurface.muted,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AuraSpace.s8),
-                ],
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AuraSpace.s8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(AuraRadius.pill),
-                  ),
-                  child: Text(
-                    engagementStatusWords(record),
-                    style: AuraText.micro.copyWith(
-                      color: statusColor,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if ((record.postText ?? '').trim().isNotEmpty) ...[
-              const SizedBox(height: AuraSpace.s10),
-              Text(
-                record.postText!.trim(),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: AuraText.body.copyWith(
-                  color: AuraSurface.ink,
-                  height: 1.5,
-                ),
-              ),
-            ],
-            const SizedBox(height: AuraSpace.s10),
-            Row(
-              children: [
-                if ((record.authorName ?? '').trim().isNotEmpty) ...[
-                  Text(
-                    record.authorName!,
-                    style: AuraText.small.copyWith(color: AuraSurface.muted),
-                  ),
-                  const SizedBox(width: AuraSpace.s8),
-                ],
-                if (record.postCreatedAt != null)
-                  Text(
-                    formatRelative(record.postCreatedAt!),
-                    style: AuraText.micro.copyWith(color: AuraSurface.faint),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// EMPTY STATE
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({this.filtered = false});
-
-  /// A filter that matches nothing is not "no records yet".
-  final bool filtered;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AuraSpace.s24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: const BoxDecoration(
-                color: AuraSurface.subtle,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.inbox_outlined,
-                size: 24,
-                color: AuraSurface.muted,
-              ),
-            ),
-            const SizedBox(height: AuraSpace.s16),
-            Text(filtered ? 'Nothing here' : 'No questions yet', style: AuraText.title),
-            const SizedBox(height: AuraSpace.s8),
-            Text(
-              filtered
-                  ? 'Nothing is in this state right now. Try another filter.'
-                  : 'When someone asks a question or raises an issue on a topic '
-                      'this institution has taken on, it appears here.',
-              style: AuraText.body.copyWith(color: AuraSurface.muted),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

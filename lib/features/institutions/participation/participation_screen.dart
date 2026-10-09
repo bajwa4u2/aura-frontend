@@ -2,16 +2,17 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/ui/aura_platform_components.dart';
+import '../../../core/errors/server_refusal.dart';
 import '../../../core/ui/aura_radius.dart';
-import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../topics/topic.dart';
+import '../workspace/workspace_page.dart';
 import 'participation_models.dart';
 import 'participation_providers.dart';
 import 'participation_repository.dart';
+import '../../../core/product/product_language.dart';
 
 // Brief description of what types of posts fall under each topic.
 // Used in the create sheet to help admins choose wisely.
@@ -35,6 +36,11 @@ const _kTopicHints = <AuraTopic, String>{
   AuraTopic.housing: 'Rent, housing supply, tenants, affordable housing.',
 };
 
+/// THE TOPICS AN INSTITUTION ANSWERS FOR: a Settings page (DD-43).
+///
+/// One section per topic, each with what it does and the one thing to do
+/// next (start, pause, resume, turn off). Taking on a new topic is the page's
+/// one gold action.
 class ParticipationScreen extends ConsumerWidget {
   const ParticipationScreen({super.key, required this.institutionId});
 
@@ -43,50 +49,52 @@ class ParticipationScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(participationListProvider(institutionId));
+    final list = async.valueOrNull ?? const <InstitutionParticipation>[];
 
-    return AuraScaffold(
-      title: 'Public Participation',
-      showHomeAction: false,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.add),
-          tooltip: 'Declare participation',
-          onPressed: () => _showCreateSheet(context, ref),
-        ),
-      ],
-      body: async.when(
-        loading: () =>
-            const Center(child: AuraLoadingState(message: 'Loading…')),
-        error: (e, _) => Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AuraSpace.s16),
-            child: AuraErrorState(
-              title: 'Could not load participation',
-              body: e.toString(),
-            ),
-          ),
-        ),
-        data: (list) {
-          if (list.isEmpty) {
-            return _EmptyState(onAdd: () => _showCreateSheet(context, ref));
-          }
-          return ListView(
-            padding: const EdgeInsets.all(AuraSpace.s16),
-            children: [
-              _DoctrineNote(),
-              const SizedBox(height: AuraSpace.s16),
-              ...list.map((item) => Padding(
-                    padding: const EdgeInsets.only(bottom: AuraSpace.s12),
-                    child: _ParticipationCard(
-                      item: item,
-                      onStatusChanged: (newStatus) =>
-                          _updateStatus(context, ref, item.id, newStatus),
-                    ),
-                  )),
-            ],
-          );
-        },
+    return WorkspacePage(
+      type: WorkspacePageType.settings,
+      title: 'Topics you answer for',
+      purpose: 'Questions and issues on an active topic reach your workspace. '
+          'On an accountable topic, your commitments also show on your public profile.',
+      back: WorkspaceBack(label: 'Questions', path: '/institution/$institutionId/public-engagement'),
+      // No icon: a compact header would otherwise show a bare "+".
+      primary: WorkspaceAction(
+        label: 'Take on a topic',
+        onPressed: () => _showCreateSheet(context, ref),
       ),
+      loading: async.isLoading && !async.hasValue,
+      children: [
+        if (async.hasError && !async.hasValue)
+          WorkspaceEmpty(
+            icon: Icons.error_outline_rounded,
+            title: 'Your topics could not be loaded',
+            body: ServerRefusal.of(async.error!).message ?? 'Check the connection and try again.',
+            action: WorkspaceAction(
+              label: ProductLabels.of(ProductAction.retry),
+              icon: Icons.refresh_rounded,
+              onPressed: () => ref.invalidate(participationListProvider(institutionId)),
+            ),
+          )
+        else if (list.isEmpty)
+          WorkspaceEmpty(
+            icon: Icons.domain_outlined,
+            title: 'No topics yet',
+            body: 'Choose the topics your institution answers for. Public questions '
+                'and issues on those topics then reach your workspace, and the '
+                'people who answer for you are told.',
+            action: WorkspaceAction(
+              label: 'Take on a topic',
+              icon: Icons.add_rounded,
+              onPressed: () => _showCreateSheet(context, ref),
+            ),
+          )
+        else
+          for (final item in list)
+            _ParticipationSection(
+              item: item,
+              onStatusChanged: (newStatus) => _updateStatus(context, ref, item.id, newStatus),
+            ),
+      ],
     );
   }
 
@@ -133,53 +141,11 @@ class ParticipationScreen extends ConsumerWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DOCTRINE NOTE
+// ONE TOPIC
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _DoctrineNote extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AuraSpace.s12),
-      decoration: BoxDecoration(
-        color: AuraSurface.accent.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(
-          color: AuraSurface.accent.withValues(alpha: 0.20),
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.info_outline_rounded,
-            size: 15,
-            color: AuraSurface.accent,
-          ),
-          const SizedBox(width: AuraSpace.s8),
-          Expanded(
-            child: Text(
-              'Active declarations route matching public posts to your '
-              'engagement workspace. Accountable declarations track '
-              'commitments on your public profile.',
-              style: AuraText.small.copyWith(
-                color: AuraSurface.muted,
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CARD
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _ParticipationCard extends StatelessWidget {
-  const _ParticipationCard({
+class _ParticipationSection extends StatelessWidget {
+  const _ParticipationSection({
     required this.item,
     required this.onStatusChanged,
   });
@@ -190,32 +156,23 @@ class _ParticipationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final topicLabel = item.topic?.label ?? 'Unknown topic';
-
-    final statusColor = switch (item.status) {
-      ParticipationStatus.active => AuraSurface.coVerdant,
-      ParticipationStatus.paused => AuraSurface.coSun,
-      ParticipationStatus.inactive => AuraSurface.faint,
-    };
-
     final isActive = item.status == ParticipationStatus.active;
     final isPaused = item.status == ParticipationStatus.paused;
     final isInactive = item.status == ParticipationStatus.inactive;
+    final tone = switch (item.status) {
+      ParticipationStatus.active => WorkspaceTone.done,
+      ParticipationStatus.paused => WorkspaceTone.waiting,
+      ParticipationStatus.inactive => WorkspaceTone.neutral,
+    };
+    const offTitle = 'Stop answering on this topic?';
+    final offBody = 'Questions and issues on ${topicLabel.toLowerCase()} will stop reaching your workspace. '
+        'You can turn it back on at any time.';
 
-    return Container(
-      padding: const EdgeInsets.all(AuraSpace.s14),
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(
-          color: isActive
-              ? AuraSurface.coVerdant.withValues(alpha: 0.25)
-              : AuraSurface.divider,
-        ),
-      ),
+    return WorkspaceSection(
+      title: topicLabel,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Topic + status badge
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -223,166 +180,71 @@ class _ParticipationCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      topicLabel,
-                      style: AuraText.body.copyWith(
-                        color: AuraSurface.ink,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      item.mode.label,
-                      style: AuraText.small.copyWith(
-                        color: AuraSurface.accent,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    Text(item.mode.label, style: WorkspaceType.rowTitle),
                     const SizedBox(height: 2),
-                    Text(
-                      item.mode.shortDescription,
-                      style: AuraText.micro.copyWith(
-                        color: AuraSurface.muted,
-                        height: 1.4,
-                      ),
-                    ),
+                    Text(item.mode.shortDescription, style: AuraText.small),
                   ],
                 ),
               ),
-              const SizedBox(width: AuraSpace.s10),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AuraSpace.s8,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(AuraRadius.pill),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: statusColor,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    Text(
-                      item.status.label,
-                      style: AuraText.micro.copyWith(
-                        color: statusColor,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              const SizedBox(width: AuraSpace.s12),
+              WorkspacePill(label: item.status.label, tone: tone),
             ],
           ),
-
-          // Routing note
-          const SizedBox(height: AuraSpace.s10),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AuraSpace.s10,
-              vertical: 6,
-            ),
-            decoration: BoxDecoration(
-              color: isActive
-                  ? AuraSurface.coVerdant.withValues(alpha: 0.07)
-                  : AuraSurface.subtle,
-              borderRadius: BorderRadius.circular(AuraRadius.md),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  isActive
-                      ? Icons.alt_route_rounded
-                      : isPaused
-                          ? Icons.pause_circle_outline_rounded
-                          : Icons.remove_circle_outline_rounded,
-                  size: 13,
-                  color: isActive
-                      ? AuraSurface.coVerdant
-                      : AuraSurface.faint,
-                ),
-                const SizedBox(width: AuraSpace.s6),
-                Expanded(
-                  child: Text(
-                    item.status.routingNote,
-                    style: AuraText.micro.copyWith(
-                      color: isActive
-                          ? AuraSurface.coVerdant
-                          : AuraSurface.muted,
-                      height: 1.4,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Admin notes
-          if ((item.notes ?? '').trim().isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s10),
-            Text(
-              item.notes!.trim(),
-              style: AuraText.small.copyWith(
-                color: AuraSurface.muted,
-                height: 1.5,
-              ),
-            ),
-          ],
-
-          // Status actions
-          const SizedBox(height: AuraSpace.s12),
-          const Divider(color: AuraSurface.divider, height: 1),
           const SizedBox(height: AuraSpace.s12),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (isActive) ...[
+              Icon(
+                isActive
+                    ? Icons.alt_route_rounded
+                    : isPaused
+                        ? Icons.pause_circle_outline_rounded
+                        : Icons.remove_circle_outline_rounded,
+                size: 16,
+                color: AuraSurface.muted,
+              ),
+              const SizedBox(width: AuraSpace.s8),
+              Expanded(child: Text(item.status.routingNote, style: AuraText.small)),
+            ],
+          ),
+          if ((item.notes ?? '').trim().isNotEmpty) ...[
+            const SizedBox(height: AuraSpace.s10),
+            Text(item.notes!.trim(), style: AuraText.small.copyWith(height: 1.5)),
+          ],
+          const SizedBox(height: AuraSpace.s14),
+          const Divider(color: AuraSurface.divider, height: 1),
+          const SizedBox(height: AuraSpace.s10),
+          Wrap(
+            spacing: AuraSpace.s8,
+            runSpacing: AuraSpace.s8,
+            children: [
+              if (isActive)
                 _ActionButton(
                   label: 'Pause',
                   icon: Icons.pause_rounded,
                   onTap: () => onStatusChanged(ParticipationStatus.paused.wire),
                 ),
-                const SizedBox(width: AuraSpace.s8),
-                _DestructiveAction(
-                  label: 'Turn off',
-                  onConfirm: () =>
-                      onStatusChanged(ParticipationStatus.inactive.wire),
-                  confirmTitle: 'Stop answering on this topic?',
-                  confirmBody:
-                      'Questions and issues on ${topicLabel.toLowerCase()} will stop reaching your workspace. '
-                      'You can turn it back on at any time.',
-                ),
-              ] else if (isPaused) ...[
-                _PrimaryAction(
+              if (isPaused)
+                _ActionButton(
                   label: 'Resume',
                   icon: Icons.play_arrow_rounded,
+                  emphasis: true,
                   onTap: () => onStatusChanged(ParticipationStatus.active.wire),
                 ),
-                const SizedBox(width: AuraSpace.s8),
-                _DestructiveAction(
-                  label: 'Turn off',
-                  onConfirm: () =>
-                      onStatusChanged(ParticipationStatus.inactive.wire),
-                  confirmTitle: 'Stop answering on this topic?',
-                  confirmBody:
-                      'Questions and issues on ${topicLabel.toLowerCase()} will stop reaching your workspace. '
-                      'You can turn it back on at any time.',
-                ),
-              ] else if (isInactive) ...[
-                _PrimaryAction(
+              if (isInactive)
+                _ActionButton(
                   label: item.activatedAt == null ? 'Start' : 'Turn back on',
                   icon: Icons.play_arrow_rounded,
+                  emphasis: true,
                   onTap: () => onStatusChanged(ParticipationStatus.active.wire),
                 ),
-              ],
+              if (isActive || isPaused)
+                _DestructiveAction(
+                  label: 'Turn off',
+                  onConfirm: () => onStatusChanged(ParticipationStatus.inactive.wire),
+                  confirmTitle: offTitle,
+                  confirmBody: offBody,
+                ),
             ],
           ),
         ],
@@ -391,60 +253,34 @@ class _ParticipationCard extends StatelessWidget {
   }
 }
 
+/// A quiet action inside a section. Never gold: the page has one gold action.
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.label,
     required this.icon,
     required this.onTap,
+    this.emphasis = false,
   });
 
   final String label;
   final IconData icon;
   final VoidCallback onTap;
+
+  /// The next step for this topic: drawn in the accent, outlined.
+  final bool emphasis;
 
   @override
   Widget build(BuildContext context) {
     return OutlinedButton.icon(
       onPressed: onTap,
-      icon: Icon(icon, size: 14),
+      icon: Icon(icon, size: 16),
       label: Text(label),
       style: OutlinedButton.styleFrom(
-        foregroundColor: AuraSurface.muted,
-        side: const BorderSide(color: AuraSurface.divider),
-        padding:
-            const EdgeInsets.symmetric(horizontal: AuraSpace.s12, vertical: 7),
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        textStyle: AuraText.small.copyWith(fontWeight: FontWeight.w600),
-      ),
-    );
-  }
-}
-
-class _PrimaryAction extends StatelessWidget {
-  const _PrimaryAction({
-    required this.label,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return FilledButton.icon(
-      onPressed: onTap,
-      icon: Icon(icon, size: 14),
-      label: Text(label),
-      style: FilledButton.styleFrom(
-        backgroundColor: AuraSurface.accent,
-        foregroundColor: AuraSurface.onAccent,
-        padding:
-            const EdgeInsets.symmetric(horizontal: AuraSpace.s12, vertical: 7),
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        foregroundColor: emphasis ? AuraSurface.accentText : AuraSurface.muted,
+        side: BorderSide(color: emphasis ? AuraSurface.accent : AuraSurface.divider),
+        padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s12, vertical: AuraSpace.s8),
+        minimumSize: const Size(0, 36),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         textStyle: AuraText.small.copyWith(fontWeight: FontWeight.w600),
       ),
     );
@@ -497,71 +333,12 @@ class _DestructiveAction extends StatelessWidget {
     return TextButton(
       onPressed: () => _handleTap(context),
       style: TextButton.styleFrom(
-        foregroundColor: AuraSurface.coRose,
-        padding:
-            const EdgeInsets.symmetric(horizontal: AuraSpace.s10, vertical: 7),
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        foregroundColor: AuraSurface.dangerInk,
+        padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s12, vertical: AuraSpace.s8),
+        minimumSize: const Size(0, 36),
         textStyle: AuraText.small.copyWith(fontWeight: FontWeight.w600),
       ),
       child: Text(label),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// EMPTY STATE
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.onAdd});
-
-  final VoidCallback onAdd;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AuraSpace.s24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: AuraSurface.accent.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.domain_outlined,
-                size: 24,
-                color: AuraSurface.accent,
-              ),
-            ),
-            const SizedBox(height: AuraSpace.s16),
-            const Text('No topics yet', style: AuraText.title),
-            const SizedBox(height: AuraSpace.s8),
-            Text(
-              'Choose the topics your institution answers for. Public questions '
-              'and issues on those topics then reach your workspace, and the '
-              'people who answer for you are told.',
-              style: AuraText.body.copyWith(color: AuraSurface.muted),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AuraSpace.s20),
-            FilledButton.icon(
-              onPressed: onAdd,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Take on a topic'),
-              style: FilledButton.styleFrom(
-                backgroundColor: AuraSurface.accent,
-                foregroundColor: AuraSurface.onAccent,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

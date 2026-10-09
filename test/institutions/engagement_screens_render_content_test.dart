@@ -68,7 +68,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(_postText), findsOneWidget);
-    expect(find.text('Alice'), findsOneWidget);
+    // DD-43: the author is named in the row's context line.
+    expect(find.textContaining('Alice'), findsOneWidget);
   });
 
   testWidgets('the engagement DETAIL renders the same routed post content',

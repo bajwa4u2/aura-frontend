@@ -174,7 +174,15 @@ void main() {
     // what the ceremony exists to establish.
     //
     // The population rises to 21.
-    expect(full, 21,
+    //
+    // DD-43 (2026-10-09) retires one: the question page's Respond sheet. The
+    // response is now written in place on the record (beside the Desk or the
+    // Questions list, or on the question's own page), so the person keeps the
+    // question and its Memory in view while answering. Nothing that BEHAVES
+    // as a sheet was reclassified; a sheet simply no longer exists.
+    //
+    // The population falls to 20.
+    expect(full, 20,
         reason: 'the full-height sheet population changed — reclassify it '
             'against §6 (behaviour, not dimensions) rather than adjusting '
             'this number');
