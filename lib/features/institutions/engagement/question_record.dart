@@ -22,8 +22,6 @@ import '../kind/kind_composition.dart';
 import '../workspace/workspace_page.dart';
 import 'engagement_models.dart';
 import 'engagement_providers.dart';
-import '../../../core/product/product_language.dart';
-import '../../../core/navigation/navigation_authority.dart';
 
 /// ONE QUESTION OR ISSUE: the Record page type (DD-43).
 ///

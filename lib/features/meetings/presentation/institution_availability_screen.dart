@@ -4,15 +4,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config.dart';
-import '../../institutions/ui/institution_ds.dart';
-import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
+import '../../../core/ui/aura_surface.dart';
+import '../../../core/ui/aura_text.dart';
+import '../../institutions/workspace/workspace_page.dart';
 import 'package:go_router/go_router.dart';
 import '../../institutions/data/institutions_repository.dart';
 import '../application/meetings_provider.dart';
 import '../domain/availability_profile.dart';
 import '../../../core/identity/person_identity_model.dart';
 import '../../../core/ui/aura_bounded_editor.dart';
+import 'meetings_home_screen.dart';
+import '../../../core/product/product_language.dart';
 
 Future<void> _refreshInstitutionProfiles(WidgetRef ref, String institutionId) {
   return ref.refresh(institutionProfilesProvider(institutionId).future);
@@ -27,58 +30,74 @@ Future<void> _afterPopupClosed(
   await action();
 }
 
-// Institution/workspace admin screen for creating and managing
-// booking profiles. Accessible at /institution/:id/availability.
-// Gated by institution ADMIN role on the backend.
-class InstitutionAvailabilityScreen extends ConsumerWidget {
+/// `/institution/:id/availability`: booking pages are a tab of Meetings
+/// (DD-43). The route keeps working and opens Meetings on that tab.
+class InstitutionAvailabilityScreen extends StatelessWidget {
   final String institutionId;
   const InstitutionAvailabilityScreen({super.key, required this.institutionId});
+
+  @override
+  Widget build(BuildContext context) =>
+      MeetingsHomeScreen(institutionId: institutionId, initialTab: 'booking');
+}
+
+/// THE BOOKING PAGES TAB (DD-43): every booking page of the institution as
+/// one Settings-style section, with ONE way to add a page. Gated by
+/// MANAGE_AVAILABILITY; the caller decides whether to show it.
+class InstitutionBookingPages extends ConsumerWidget {
+  final String institutionId;
+  const InstitutionBookingPages({super.key, required this.institutionId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profilesAsync = ref.watch(institutionProfilesProvider(institutionId));
 
-    return AuraScaffold(
-      title: 'Booking pages',
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.add_rounded),
-          tooltip: 'Create booking page',
-          onPressed: () => _showCreateDialog(context, ref),
+    return profilesAsync.when(
+      loading: () => const WorkspaceLoading(type: WorkspacePageType.settings, rows: 2),
+      error: (e, _) => WorkspaceEmpty(
+        icon: Icons.error_outline_rounded,
+        title: 'Booking pages could not be loaded',
+        body: 'Check the connection and try again.',
+        action: WorkspaceAction(
+          label: ProductLabels.of(ProductAction.retry),
+          icon: Icons.refresh_rounded,
+          onPressed: () => ref.invalidate(institutionProfilesProvider(institutionId)),
         ),
-      ],
-      body: profilesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => const Center(child: Text('Unable to load availability settings.')),
-        data: (profiles) {
-          return ListView(
-            padding: const EdgeInsets.all(AuraSpace.s16),
-            children: [
-              const _Header(),
-              const SizedBox(height: AuraSpace.s20),
-              if (profiles.isEmpty)
-                _EmptyState(onCreateTap: () => _showCreateDialog(context, ref))
-              else ...[
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text('New booking page'),
-                  onPressed: () => _showCreateDialog(context, ref),
-                ),
-                const SizedBox(height: AuraSpace.s16),
-                ...profiles.map(
-                  (profile) => Padding(
-                    padding: const EdgeInsets.only(bottom: AuraSpace.s8),
-                    child: _ProfileCard(
-                      profile: profile,
-                      institutionId: institutionId,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          );
-        },
       ),
+      data: (profiles) {
+        if (profiles.isEmpty) {
+          return WorkspaceEmpty(
+            icon: Icons.calendar_today_rounded,
+            title: 'No booking pages',
+            body: 'Create a booking page so visitors can schedule meetings with your workspace.',
+            action: WorkspaceAction(
+              label: 'New booking page',
+              icon: Icons.add_rounded,
+              onPressed: () => _showCreateDialog(context, ref),
+            ),
+          );
+        }
+        return WorkspaceSection(
+          title: 'Booking pages',
+          description:
+              'The booking pages, public links, and availability windows used by the institution workspace.',
+          boxed: false,
+          link: WorkspaceAction(
+            label: 'New booking page',
+            onPressed: () => _showCreateDialog(context, ref),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final profile in profiles)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AuraSpace.s12),
+                  child: _ProfileCard(profile: profile, institutionId: institutionId),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -91,60 +110,6 @@ class InstitutionAvailabilityScreen extends ConsumerWidget {
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header();
-
-  @override
-  Widget build(BuildContext context) {
-    return const InsModeHeader(
-      title: 'Booking pages',
-      description:
-          'Manage the booking pages, public links, and availability windows used by the institution workspace.',
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final VoidCallback onCreateTap;
-  const _EmptyState({required this.onCreateTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AuraSpace.s32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.calendar_today_rounded,
-              size: 56,
-              color: Color(0xFFA9AEB9),
-            ),
-            const SizedBox(height: AuraSpace.s16),
-            Text(
-              'No booking pages',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: AuraSpace.s8),
-            const Text(
-              'Create a booking page so visitors can schedule meetings with your workspace.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF8C919C)),
-            ),
-            const SizedBox(height: AuraSpace.s20),
-            FilledButton.icon(
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Create booking page'),
-              onPressed: onCreateTap,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _ProfileCard extends ConsumerWidget {
   final AvailabilityProfile profile;
   final String institutionId;
@@ -152,7 +117,6 @@ class _ProfileCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final baseHost = AppConfig.publicWebUrl.replaceFirst(
       RegExp(r'^https?://'),
       '',
@@ -160,7 +124,23 @@ class _ProfileCard extends ConsumerWidget {
     final publicUrl = '$baseHost${profile.publicUrl}';
     final host = profile.effectiveHost;
 
-    return InsCard(
+    Widget quiet(String text) => Container(
+          padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s8, vertical: 3),
+          decoration: BoxDecoration(
+            color: AuraSurface.subtle,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          child: Text(text, style: AuraText.small.copyWith(fontSize: 12, color: AuraSurface.muted)),
+        );
+
+    return Container(
+      padding: const EdgeInsets.all(AuraSpace.s18),
+      decoration: BoxDecoration(
+        color: AuraSurface.card,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AuraSurface.divider),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -168,17 +148,21 @@ class _ProfileCard extends ConsumerWidget {
           Row(
             children: [
               Expanded(
-                child: Text(
-                  profile.name,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                child: Text(profile.name, style: WorkspaceType.rowTitle),
               ),
-              _StatusBadge(isActive: profile.isActive),
-              const SizedBox(width: AuraSpace.s8),
+              WorkspacePill(
+                label: profile.isActive ? 'Active' : 'Disabled',
+                tone: profile.isActive ? WorkspaceTone.done : WorkspaceTone.neutral,
+              ),
+              const SizedBox(width: AuraSpace.s4),
               PopupMenuButton<String>(
-                icon: const Icon(Icons.more_horiz_rounded, size: 20),
+                tooltip: 'More',
+                color: AuraSurface.overlay,
+                padding: EdgeInsets.zero,
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: AuraSpace.s6, vertical: 2),
+                  child: Icon(Icons.more_horiz_rounded, size: 20, color: AuraSurface.muted),
+                ),
                 onSelected: (v) async {
                   if (v == 'copy') {
                     Clipboard.setData(
@@ -248,7 +232,7 @@ class _ProfileCard extends ConsumerWidget {
                     value: 'delete',
                     child: Text(
                       'Delete',
-                      style: TextStyle(color: Color(0xFFEF4444)),
+                      style: TextStyle(color: AuraSurface.dangerInk),
                     ),
                   ),
                 ],
@@ -256,102 +240,59 @@ class _ProfileCard extends ConsumerWidget {
             ],
           ),
 
-          const SizedBox(height: AuraSpace.s4),
-          Text(
-            profile.meetingTitle,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: const Color(0xFF8C919C),
-            ),
-          ),
+          Text(profile.meetingTitle, style: WorkspaceType.rowContext),
 
           // Assigned host
           if (host != null) ...[
             const SizedBox(height: AuraSpace.s8),
             Row(
               children: [
-                const Icon(
-                  Icons.person_outline_rounded,
-                  size: 14,
-                  color: Color(0xFFA9AEB9),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Host: ${host.name}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFFA9AEB9),
-                  ),
-                ),
+                const Icon(Icons.person_outline_rounded, size: 14, color: AuraSurface.muted),
+                const SizedBox(width: AuraSpace.s4),
+                Text('Host: ${host.name}', style: AuraText.small),
               ],
             ),
           ],
 
-          // Duration chips
-          const SizedBox(height: AuraSpace.s8),
+          // Durations, then the weekly windows: quiet facts.
+          const SizedBox(height: AuraSpace.s12),
           Wrap(
             spacing: AuraSpace.s6,
-            children: profile.durationOptions
-                .map(
-                  (d) => Chip(
-                    label: Text(
-                      _durationLabel(d),
-                      style: const TextStyle(fontSize: 11),
-                    ),
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                  ),
-                )
-                .toList(),
+            runSpacing: AuraSpace.s6,
+            children: [
+              for (final d in profile.durationOptions) quiet(_durationLabel(d)),
+            ],
           ),
-
-          // Availability windows
           if (profile.windows.isNotEmpty) ...[
             const SizedBox(height: AuraSpace.s8),
             Wrap(
               spacing: AuraSpace.s6,
-              runSpacing: 4,
-              children: profile.windows
-                  .map(
-                    (w) => Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF374151),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        '${_dayAbbr(w.dayOfWeek)} ${w.label}',
-                        style: const TextStyle(
-                          color: Color(0xFFD6D2C8),
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-                  )
-                  .toList(),
+              runSpacing: AuraSpace.s6,
+              children: [
+                for (final w in profile.windows) quiet('${_dayAbbr(w.dayOfWeek)} ${w.label}'),
+              ],
             ),
           ],
 
-          const SizedBox(height: AuraSpace.s10),
+          const SizedBox(height: AuraSpace.s12),
 
           // Public link
           Row(
             children: [
+              const Icon(Icons.link_rounded, size: 16, color: AuraSurface.faint),
+              const SizedBox(width: AuraSpace.s6),
               Expanded(
                 child: Text(
                   publicUrl,
-                  style: const TextStyle(
-                    color: Color(0xFFA9AEB9),
-                    fontSize: 12,
-                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraText.small,
                 ),
               ),
               IconButton(
                 tooltip: 'Copy the public booking link',
                 icon: const Icon(Icons.copy_rounded, size: 16),
-                color: const Color(0xFFA9AEB9),
+                color: AuraSurface.muted,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                 onPressed: () {
@@ -364,6 +305,7 @@ class _ProfileCard extends ConsumerWidget {
             ],
           ),
 
+          const Divider(height: AuraSpace.s16, color: AuraSurface.divider),
           // Window management
           _WindowManager(profile: profile, institutionId: institutionId),
         ],
@@ -435,31 +377,6 @@ class _ProfileCard extends ConsumerWidget {
   };
 }
 
-class _StatusBadge extends StatelessWidget {
-  final bool isActive;
-  const _StatusBadge({required this.isActive});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: (isActive ? const Color(0xFF10B981) : const Color(0xFFA9AEB9))
-            .withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        isActive ? 'Active' : 'Disabled',
-        style: TextStyle(
-          color: isActive ? const Color(0xFF10B981) : const Color(0xFFA9AEB9),
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
 class _WindowManager extends ConsumerStatefulWidget {
   final AvailabilityProfile profile;
   final String institutionId;
@@ -488,7 +405,7 @@ class _WindowManagerState extends ConsumerState<_WindowManager> {
                 const Expanded(
                   child: Text(
                     'Manage availability windows',
-                    style: TextStyle(fontSize: 13, color: Color(0xFF8C919C)),
+                    style: TextStyle(fontSize: 13, color: AuraSurface.muted, fontWeight: FontWeight.w600),
                   ),
                 ),
                 Icon(
