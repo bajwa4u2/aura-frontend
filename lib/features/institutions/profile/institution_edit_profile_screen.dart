@@ -1,18 +1,15 @@
 import 'package:dio/dio.dart';
+import '../../../core/product/product_language.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/authority/authority_providers.dart';
 import '../../../core/authority/capability_projection.dart';
-import '../../../core/product/product_state.dart';
-import '../../../core/product/product_state_view.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/institutions/institution_paths.dart';
 import '../../../core/net/dio_provider.dart';
-import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
-import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
@@ -23,6 +20,7 @@ import '../../institution_ontology/models.dart';
 import '../../institution_ontology/providers.dart';
 import '../data/institutions_repository.dart';
 import '../ui/institution_ds.dart';
+import '../workspace/workspace_page.dart';
 
 /// Phase 6.6b — Institution Edit Profile / Identity Studio.
 ///
@@ -551,61 +549,65 @@ class _InstitutionEditProfileScreenState
             .presentationFor(ConsequentialAct.manageBranding) ==
         ControlPresentation.available;
 
-    return AuraScaffold(
-      showHeader: false,
-      body: accessAsync.when(
-        loading: () => const AuraProductState(
-          state: ProductState.loading,
-          headline: 'Loading identity studio…',
-        ),
-        error: (e, _) => Padding(
-          padding: const EdgeInsets.all(InsSpacing.screenHPad),
-          child: AuraProductState(
-            state: ProductState.retryableError,
-            headline: 'Could not load the identity studio',
-            detail: '$e',
-            onRecover: () => ref.invalidate(institutionAccessProvider),
-          ),
-        ),
-        data: (access) {
-          if (identity == null || !canEdit) {
-            // A denial is NOT an error (C0 doctrine): neutral presentation,
-            // with the honest capability-based explanation.
-            return Padding(
-              padding: const EdgeInsets.all(InsSpacing.screenHPad),
-              child: AuraProductState(
-                state: ProductState.unauthorized,
-                headline: 'You do not have access',
-                detail:
-                    'Editing the institution profile requires the branding '
-                    'responsibility for this institution.',
-                action: AuraSecondaryButton(
-                  label: 'Back to profile',
-                  onPressed: () => context.go(
-                    (identity?.id.isNotEmpty ?? false)
-                        ? institutionWorkspacePath(
-                                    identity!.workspaceAddress,
-                            InstitutionSection.profile,
-                          )
-                        : '/institution/dashboard',
-                  ),
-                ),
-              ),
-            );
-          }
+    final profilePath = (identity?.id.isNotEmpty ?? false)
+        ? institutionWorkspacePath(identity!.workspaceAddress, InstitutionSection.profile)
+        : '/institution/dashboard';
+    final back = WorkspaceBack(label: 'Profile', path: profilePath);
 
-          final inst =
-              access.institution ??
-              (access.membership?['institution'] is Map
-                  ? Map<String, dynamic>.from(
-                      access.membership!['institution'] as Map,
-                    )
-                  : null);
-          if (inst != null) _populate(inst);
-
-          return _StudioBody(state: this, institutionId: identity.id);
-        },
+    return accessAsync.when(
+      loading: () => WorkspacePage(
+        type: WorkspacePageType.settings,
+        title: 'Edit profile',
+        back: back,
+        loading: true,
       ),
+      error: (e, _) => WorkspacePage(
+        type: WorkspacePageType.settings,
+        title: 'Edit profile',
+        back: back,
+        children: [
+          WorkspaceEmpty(
+            icon: Icons.error_outline_rounded,
+            title: 'Could not load the identity studio',
+            body: '$e',
+            action: WorkspaceAction(
+              label: ProductLabels.of(ProductAction.retry),
+              icon: Icons.refresh_rounded,
+              onPressed: () => ref.invalidate(institutionAccessProvider),
+            ),
+          ),
+        ],
+      ),
+      data: (access) {
+        if (identity == null || !canEdit) {
+          // A denial is NOT an error (C0 doctrine): neutral presentation,
+          // with the honest capability-based explanation.
+          return WorkspacePage(
+            type: WorkspacePageType.settings,
+            title: 'Edit profile',
+            back: back,
+            children: const [
+              WorkspaceEmpty(
+                icon: Icons.lock_outline_rounded,
+                title: 'You do not have access',
+                body: 'Editing the institution profile requires the branding '
+                    'responsibility for this institution.',
+              ),
+            ],
+          );
+        }
+
+        final inst =
+            access.institution ??
+            (access.membership?['institution'] is Map
+                ? Map<String, dynamic>.from(
+                    access.membership!['institution'] as Map,
+                  )
+                : null);
+        if (inst != null) _populate(inst);
+
+        return _StudioBody(state: this, institutionId: identity.id);
+      },
     );
   }
 }
@@ -622,30 +624,45 @@ class _StudioBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Form(
-          key: state._formKey,
-          child: InsScreen(
-            children: [
-              // ── Mode header ───────────────────────────────────────────
-              InsModeHeader(
-                title: 'Identity',
-                primaryAction: AuraSecondaryButton(
-                  label: 'Cancel',
-                  icon: Icons.close_rounded,
-                  onPressed: () => context.go(
-                    institutionId.isNotEmpty
-                        ? institutionWorkspacePath(
-                            institutionId,
-                            InstitutionSection.profile,
-                          )
-                        : '/institution/dashboard',
-                  ),
-                ),
-              ),
-              const SizedBox(height: AuraSpace.s8),
+    final profilePath = institutionId.isNotEmpty
+        ? institutionWorkspacePath(institutionId, InstitutionSection.profile)
+        : '/institution/dashboard';
+    void leave() => context.go(profilePath);
 
+    return Form(
+      key: state._formKey,
+      child: WorkspacePage(
+        type: WorkspacePageType.settings,
+        title: 'Edit profile',
+        purpose: 'What people see on your public page.',
+        back: WorkspaceBack(label: 'Profile', path: profilePath),
+        more: [
+          WorkspaceAction(
+            label: 'Preview',
+            icon: Icons.visibility_outlined,
+            onPressed: state._busy
+                ? null
+                : () => context.go(
+                      institutionId.isNotEmpty ? '$profilePath?preview=1' : '/institution/dashboard',
+                    ),
+          ),
+        ],
+        // ONE bar, ONE Cancel (DD-43). The outcome belongs where the action
+        // was taken: the bar carries the error, so someone who scrolls down,
+        // presses Save and stays there sees why it refused.
+        bar: WorkspaceBar(
+          status: state._error ??
+              (state._saving
+                  ? 'Saving changes…'
+                  : (state._dirty ? 'Unsaved changes' : 'All changes saved')),
+          cancel: WorkspaceAction(label: 'Cancel', onPressed: state._busy ? null : leave),
+          primary: WorkspaceAction(
+            label: state._saving ? 'Saving…' : 'Save changes',
+            icon: Icons.check_rounded,
+            onPressed: state._busy ? null : () => state._save(institutionId),
+          ),
+        ),
+        children: [
               // ── Live preview (secondary — collapsed by default) ────────
               // On an edit surface the public-profile preview must not push
               // the editable fields below the fold. It is a compact, on-demand
@@ -676,10 +693,10 @@ class _StudioBody extends StatelessWidget {
               ],
 
               // ── 1. Basic identity ─────────────────────────────────────
-              InsSection(
-                eyebrow: 'Section 1',
+              WorkspaceSection(
+                boxed: false,
                 title: 'Basic identity',
-                helper:
+                description:
                     'Display name, tagline, category, and the institution’s public media.',
                 child: InsCard(
                   child: Column(
@@ -799,10 +816,10 @@ class _StudioBody extends StatelessWidget {
               const InsSectionGap(),
 
               // ── 2. About ──────────────────────────────────────────────
-              InsSection(
-                eyebrow: 'Section 2',
+              WorkspaceSection(
+                boxed: false,
                 title: 'About',
-                helper:
+                description:
                     'A long-form description of the institution. Plain text, will appear on the public profile.',
                 child: InsCard(
                   child: _StudioCountedField(
@@ -832,10 +849,10 @@ class _StudioBody extends StatelessWidget {
               const InsSectionGap(),
 
               // ── 3. Contact ────────────────────────────────────────────
-              InsSection(
-                eyebrow: 'Section 3',
+              WorkspaceSection(
+                boxed: false,
                 title: 'Contact',
-                helper:
+                description:
                     'How members of the public can reach this institution off-platform.',
                 child: InsCard(
                   child: Column(
@@ -913,10 +930,10 @@ class _StudioBody extends StatelessWidget {
               const InsSectionGap(),
 
               // ── 4. Representation ─────────────────────────────────────
-              InsSection(
-                eyebrow: 'Section 4',
+              WorkspaceSection(
+                boxed: false,
                 title: 'Representation',
-                helper:
+                description:
                     'Mission, services, audience, and history. The substance behind the identity.',
                 child: InsCard(
                   child: Column(
@@ -977,10 +994,10 @@ class _StudioBody extends StatelessWidget {
               const InsSectionGap(),
 
               // ── 5. Social ─────────────────────────────────────────────
-              InsSection(
-                eyebrow: 'Section 5',
+              WorkspaceSection(
+                boxed: false,
                 title: 'Social',
-                helper:
+                description:
                     'Optional links to where this institution lives elsewhere on the web.',
                 child: InsCard(
                   child: Column(
@@ -1033,40 +1050,8 @@ class _StudioBody extends StatelessWidget {
               const SizedBox(height: AuraSpace.s24),
 
               const _ManagedFieldsNote(),
-
-              // Bottom breath — leaves room above the sticky save bar so
-              // the last field is never trapped under it.
-              const SizedBox(height: 96),
-            ],
-          ),
-        ),
-        // Sticky save bar.
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: _SaveBar(
-            saving: state._saving,
-            busy: state._busy,
-            dirty: state._dirty,
-            error: state._error,
-            onSave: () => state._save(institutionId),
-            onCancel: () => context.go(
-              institutionId.isNotEmpty
-                  ? institutionWorkspacePath(
-                      institutionId,
-                      InstitutionSection.profile,
-                    )
-                  : '/institution/dashboard',
-            ),
-            onPreview: () => context.go(
-              institutionId.isNotEmpty
-                  ? '${institutionWorkspacePath(institutionId, InstitutionSection.profile)}?preview=1'
-                  : '/institution/dashboard',
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1256,158 +1241,6 @@ class _LivePreviewCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Sticky save bar
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _SaveBar extends StatelessWidget {
-  const _SaveBar({
-    required this.saving,
-    required this.busy,
-    required this.dirty,
-    required this.error,
-    required this.onSave,
-    required this.onCancel,
-    required this.onPreview,
-  });
-
-  final bool saving;
-  final bool busy;
-  final bool dirty;
-
-  /// WHY THE BAR CARRIES THE ERROR.
-  ///
-  /// The failure message renders in a banner at the TOP of a long form while
-  /// Save is a sticky bar at the BOTTOM. Someone who scrolls down, presses
-  /// Save and stays there sees nothing change — which reads exactly like
-  /// "saving is broken" even when the server said precisely why it refused.
-  /// The outcome belongs where the action was taken.
-  final String? error;
-  final VoidCallback onSave;
-  final VoidCallback onCancel;
-  final VoidCallback onPreview;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AuraSurface.page.withValues(alpha: 0.96),
-        border: const Border(top: BorderSide(color: AuraSurface.divider)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x44000000),
-            blurRadius: 14,
-            offset: Offset(0, -4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            InsSpacing.screenHPad,
-            AuraSpace.s10,
-            InsSpacing.screenHPad,
-            AuraSpace.s10,
-          ),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: InsSpacing.contentMaxWidth,
-              ),
-              child: LayoutBuilder(
-                builder: (context, c) {
-                  // At phone widths the four-element row (status + Preview +
-                  // Cancel + Save changes) overflowed and clipped "Save
-                  // changes". On narrow widths we keep only the essential
-                  // actions (Cancel + Save) plus a status dot; Preview stays
-                  // reachable from the live-preview card above.
-                  final narrow = c.maxWidth < 480;
-                  final statusDot = Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: error != null
-                          ? AuraSurface.coRose
-                          : (dirty ? AuraSurface.coSun : AuraSurface.faint),
-                      shape: BoxShape.circle,
-                    ),
-                  );
-
-                  if (narrow) {
-                    return Row(
-                      children: [
-                        statusDot,
-                        const Spacer(),
-                        AuraSecondaryButton(
-                          label: 'Cancel',
-                          onPressed: busy ? null : onCancel,
-                        ),
-                        const SizedBox(width: AuraSpace.s8),
-                        AuraPrimaryButton(
-                          label: saving ? 'Saving…' : 'Save changes',
-                          icon: saving ? null : Icons.check_rounded,
-                          onPressed: busy ? null : onSave,
-                        ),
-                      ],
-                    );
-                  }
-
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            statusDot,
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                error != null
-                                    ? error!
-                                    : saving
-                                        ? 'Saving changes…'
-                                        : (dirty
-                                              ? 'You have unsaved changes'
-                                              : 'All changes saved'),
-                                style: AuraText.small.copyWith(
-                                  color: AuraSurface.muted,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      AuraGhostButton(
-                        label: 'Preview',
-                        icon: Icons.visibility_outlined,
-                        onPressed: busy ? null : onPreview,
-                      ),
-                      const SizedBox(width: AuraSpace.s8),
-                      AuraSecondaryButton(
-                        label: 'Cancel',
-                        onPressed: busy ? null : onCancel,
-                      ),
-                      const SizedBox(width: AuraSpace.s8),
-                      AuraPrimaryButton(
-                        label: saving ? 'Saving…' : 'Save changes',
-                        icon: saving ? null : Icons.check_rounded,
-                        onPressed: busy ? null : onSave,
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }

@@ -12,12 +12,12 @@ import '../../../core/navigation/navigation_authority.dart';
 import '../../../core/product/temporal.dart';
 import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
-import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/substrate_chip.dart';
 import '../../institutions/ui/institution_ds.dart';
+import '../../institutions/workspace/workspace_page.dart';
 import '../data/monetization_repository.dart';
 import '../domain/monetization_models.dart';
 import '../providers/monetization_providers.dart';
@@ -226,10 +226,12 @@ class _InstitutionBillingScreenState
     );
     final grantAsync = ref.watch(institutionGrantProvider(institutionId));
 
-    return AuraScaffold(
-      showHeader: false,
-      body: configAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+    return configAsync.when(
+        loading: () => const WorkspacePage(
+          type: WorkspacePageType.settings,
+          title: 'Plan & Billing',
+          loading: true,
+        ),
         error: (e, _) => _frame(const [_ErrorState()]),
         data: (config) {
           if (config.mode == MonetizationMode.disabled) {
@@ -237,16 +239,26 @@ class _InstitutionBillingScreenState
           }
 
           return entitlementsAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const WorkspacePage(
+          type: WorkspacePageType.settings,
+          title: 'Plan & Billing',
+          loading: true,
+        ),
             error: (e, _) => _frame(const [_ErrorState()]),
             data: (ent) {
               final tier = config.tierByCode(ent.planTier);
               final grant = grantAsync.valueOrNull;
               return _frame([
-                _PlanCard(entitlements: ent, tier: tier),
-                const SizedBox(height: AuraSpace.s14),
-                _UsageCard(entitlements: ent),
-                const SizedBox(height: AuraSpace.s20),
+                WorkspaceSection(
+                  title: 'Plan',
+                  boxed: false,
+                  child: _PlanCard(entitlements: ent, tier: tier),
+                ),
+                WorkspaceSection(
+                  title: 'Seats and credits',
+                  boxed: false,
+                  child: _UsageCard(entitlements: ent),
+                ),
                 if (!ent.isPro || ent.grantRunning) ...[
                   _GrantSection(
                     institutionId: institutionId,
@@ -255,7 +267,6 @@ class _InstitutionBillingScreenState
                     grant: grant,
                     loading: grantAsync.isLoading,
                   ),
-                  const SizedBox(height: AuraSpace.s20),
                 ],
                 if (_purchaseAllowed) ...[
                   _PlansSection(
@@ -272,7 +283,6 @@ class _InstitutionBillingScreenState
                             productCode: productCode,
                           ),
                   ),
-                  const SizedBox(height: AuraSpace.s20),
                   _TopUpsSection(
                     config: config,
                     onBuy: (productCode) => _runCreditsCheckout(
@@ -282,7 +292,6 @@ class _InstitutionBillingScreenState
                     ),
                   ),
                   if (ent.isPro && !ent.grantRunning) ...[
-                    const SizedBox(height: AuraSpace.s20),
                     _ManageBillingCard(
                       onOpen: () => _openPortal(context: context, ref: ref),
                     ),
@@ -297,14 +306,15 @@ class _InstitutionBillingScreenState
             },
           );
         },
-      ),
     );
   }
 
-  Widget _frame(List<Widget> body) => InsScreen(
+  /// The Settings page type (DD-43).
+  Widget _frame(List<Widget> body) => WorkspacePage(
+    type: WorkspacePageType.settings,
+    title: 'Plan & Billing',
+    purpose: 'What your institution has, and what it can add.',
     children: [
-      const InsModeHeader(title: 'Plan & Billing'),
-      const InsModeHeaderGap(),
       if (widget.checkoutReturn != CheckoutReturn.none) ...[
         _CheckoutReturnBanner(
           result: widget.checkoutReturn,
@@ -653,10 +663,10 @@ class _GrantSectionState extends ConsumerState<_GrantSection> {
     }
 
     final running = ent.grantRunning || (grant?.running ?? false);
-    return InsSection(
-      eyebrow: running ? null : 'Try Pro',
-      title: running ? 'Your 30-day grant' : '30-day grant',
-      helper: running
+    return WorkspaceSection(
+      boxed: false,
+      title: running ? 'Your 30-day grant' : 'Try Pro for 30 days',
+      description: running
           ? null
           : 'Set up your institution and use Pro for 30 days, with 500 '
                 'credits. It is free, reviewed by the Aura team, and given once.',
@@ -786,25 +796,26 @@ class _PlansSectionState extends State<_PlansSection> {
     final discount = widget.config.nonprofitDiscountPercent;
     final ent = widget.entitlements;
 
-    return InsSection(
-      eyebrow: 'Pro',
+    return WorkspaceSection(
+      boxed: false,
       title: 'Plans',
-      helper: discount > 0
+      description: discount > 0
           ? 'Nonprofits, schools and faith institutions pay $discount% less '
                 'once the institution\'s category is confirmed. The discount '
                 'is applied at checkout.'
           : null,
-      trailing: SegmentedButton<bool>(
-        segments: const [
-          ButtonSegment(value: false, label: Text('Monthly')),
-          ButtonSegment(value: true, label: Text('Yearly')),
-        ],
-        selected: {_yearly},
-        showSelectedIcon: false,
-        onSelectionChanged: (s) => setState(() => _yearly = s.first),
-      ),
       child: Column(
         children: [
+          // Monthly or yearly: the frame's one tabs idiom.
+          WorkspaceTabs(
+            tabs: const [
+              WorkspaceTab(id: 'monthly', label: 'Monthly'),
+              WorkspaceTab(id: 'yearly', label: 'Yearly'),
+            ],
+            selected: _yearly ? 'yearly' : 'monthly',
+            onSelected: (id) => setState(() => _yearly = id == 'yearly'),
+          ),
+          const SizedBox(height: AuraSpace.s12),
           const _RenewalDisclosure(),
           const SizedBox(height: AuraSpace.s12),
           for (final t in tiers) ...[
@@ -951,9 +962,10 @@ class _TopUpsSection extends StatelessWidget {
         .toList(growable: false);
     if (packs.isEmpty) return const SizedBox.shrink();
 
-    return InsSection(
+    return WorkspaceSection(
+      boxed: false,
       title: 'Top-ups',
-      helper:
+      description:
           'Extra credits for a busy month. Used after the monthly '
           'allowance, and they do not expire.',
       child: InsCard(
@@ -1164,19 +1176,11 @@ class _DisabledState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const _FullWidthCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Plans are not open yet', style: AuraText.title),
-          SizedBox(height: AuraSpace.s6),
-          Text(
-            'Everything your institution uses today stays free until plans '
-            'open. Nothing is charged.',
-            style: AuraText.body,
-          ),
-        ],
-      ),
+    return const WorkspaceEmpty(
+      icon: Icons.schedule_rounded,
+      title: 'Plans are not open yet',
+      body: 'Everything your institution uses today stays free until plans '
+          'open. Nothing is charged.',
     );
   }
 }
@@ -1186,18 +1190,10 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const _FullWidthCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Could not load billing', style: AuraText.title),
-          SizedBox(height: AuraSpace.s6),
-          Text(
-            'Check your connection and open this page again.',
-            style: AuraText.body,
-          ),
-        ],
-      ),
+    return const WorkspaceEmpty(
+      icon: Icons.error_outline_rounded,
+      title: 'Could not load billing',
+      body: 'Check your connection and open this page again.',
     );
   }
 }

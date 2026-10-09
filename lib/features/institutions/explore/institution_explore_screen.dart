@@ -6,7 +6,6 @@ import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
-import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
@@ -20,7 +19,8 @@ import '../live_rooms/institution_live_rooms_screen.dart'
     show institutionLiveRoomsProvider;
 import '../live_rooms/institution_session_meta.dart';
 import '../live_rooms/live_now_card.dart';
-import '../ui/institution_ds.dart';
+import '../workspace/workspace_filter.dart';
+import '../workspace/workspace_page.dart';
 
 /// Institution Explore — three distinct surfaces, all served by the unified
 /// feed contract:
@@ -76,57 +76,10 @@ extension on _ExploreScopeKey {
 }
 
 class _InstitutionExploreScreenState
-    extends ConsumerState<InstitutionExploreScreen>
-    // Plural mixin: each scope-set change creates a new TabController
-    // (with its own ticker). The old ticker is disposed first by
-    // `_refreshScopes`, but the singular mixin asserts "multiple tickers
-    // were created" the moment we ask for a second one — which was the
-    // source of `error.boundary` fires whenever the identity arrived
-    // after first render.
-    with TickerProviderStateMixin {
-  late TabController _tabController;
-  List<_ExploreScopeKey> _visibleScopes = const [];
-
-  @override
-  void initState() {
-    super.initState();
-    // Bootstrap controller with the safe baseline length so build can run
-    // even before the identity provider resolves. The post-frame callback
-    // (and the ref.listen registered in build) then bring the controller
-    // and the rendered scopes back into lockstep.
-    _tabController = TabController(length: 1, vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshScopes());
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  /// Sync the cached `_visibleScopes` and the live TabController with
-  /// the current institution identity. Must be called OUTSIDE the build
-  /// pass — Flutter asserts when a TabController is disposed / created
-  /// during a build (the prior `_ensureTabController` was called from
-  /// `build`, which is what produced both the "multiple tickers" assert
-  /// and the "TabController used after disposed" finalize-tree error
-  /// the global runtime trace surfaced).
-  void _refreshScopes() {
-    if (!mounted) return;
-    final identity = ref.read(institutionIdentityProvider);
-    final newScopes = _scopesFor(identity);
-    if (_listEquals(newScopes, _visibleScopes)) return;
-    _tabController.dispose();
-    setState(() {
-      _visibleScopes = newScopes;
-      _tabController = TabController(
-        length: newScopes.length.clamp(1, 3),
-        initialIndex: _entryScopeIndex(newScopes)
-            .clamp(0, newScopes.length.clamp(1, 3) - 1),
-        vsync: this,
-      );
-    });
-  }
+    extends ConsumerState<InstitutionExploreScreen> {
+  /// The scope the person chose. Null until they choose: Explore opens on
+  /// Public (founder, 2026-10-09, superseding ruling D2 of 2026-08-23).
+  _ExploreScopeKey? _chosen;
 
   List<_ExploreScopeKey> _scopesFor(InstitutionIdentity? identity) {
     final canPublishOfficially = identity?.canPublishPosts ?? false;
@@ -152,9 +105,10 @@ class _InstitutionExploreScreenState
   /// opens on what the public sees. Member and Internal stay one tap away.
   /// D2 opened members on the Member projection; the founder: "explore lands
   /// on members by default rather than public".
-  int _entryScopeIndex(List<_ExploreScopeKey> scopes) {
-    final public = scopes.indexOf(_ExploreScopeKey.public);
-    return public >= 0 ? public : 0;
+  _ExploreScopeKey _activeScope(List<_ExploreScopeKey> scopes) {
+    final chosen = _chosen;
+    if (chosen != null && scopes.contains(chosen)) return chosen;
+    return scopes.contains(_ExploreScopeKey.public) ? _ExploreScopeKey.public : scopes.first;
   }
 
   void _onCompose(_ExploreScopeKey scope) {
@@ -165,33 +119,36 @@ class _InstitutionExploreScreenState
     );
   }
 
-  // Topic + Resources controls — share the global feedFilterProvider with
-  // Works so the doctrine is identical across surfaces.
-  Widget _topicDropdown() {
-    final filter = ref.watch(feedFilterProvider);
-    final t = AuraTopic.fromWire(filter.topic);
-    return LabeledFilterDropdown<AuraTopic?>(
-      label: 'Topic',
-      current: t?.label ?? 'All Topics',
-      selected: t != null,
-      onSelected: (v) => ref.read(feedFilterProvider.notifier).state =
-          FeedFilter(topic: v?.wire, source: filter.source),
-      items: [
-        (null, 'All Topics'),
-        for (final x in AuraTopic.values) (x, x.label),
+  /// Topic and Resources, as ONE Filter control (DD-43). They share the
+  /// global feedFilterProvider with Works so the doctrine is identical
+  /// across surfaces.
+  void _openFilter() {
+    final filter = ref.read(feedFilterProvider);
+    showWorkspaceFilterSheet(
+      context,
+      groups: [
+        WorkspaceFilterGroup<String?>(
+          title: 'Topic',
+          options: [
+            (null, 'All Topics'),
+            for (final x in AuraTopic.values) (x.wire, x.label),
+          ],
+          selected: filter.topic,
+          onSelected: (v) {
+            final now = ref.read(feedFilterProvider);
+            ref.read(feedFilterProvider.notifier).state = FeedFilter(topic: v, source: now.source);
+          },
+        ),
+        WorkspaceFilterGroup<String?>(
+          title: 'Resources',
+          options: FeedFilterBar.resources,
+          selected: filter.source,
+          onSelected: (v) {
+            final now = ref.read(feedFilterProvider);
+            ref.read(feedFilterProvider.notifier).state = FeedFilter(topic: now.topic, source: v);
+          },
+        ),
       ],
-    );
-  }
-
-  Widget _resourcesDropdown() {
-    final filter = ref.watch(feedFilterProvider);
-    return LabeledFilterDropdown<String?>(
-      label: 'Resources',
-      current: FeedFilterBar.resourceLabel(filter.source),
-      selected: filter.source != null,
-      onSelected: (v) => ref.read(feedFilterProvider.notifier).state =
-          FeedFilter(topic: filter.topic, source: v),
-      items: FeedFilterBar.resources,
     );
   }
 
@@ -201,184 +158,60 @@ class _InstitutionExploreScreenState
     final id = widget.institutionId.trim();
 
     if (id.isEmpty) {
-      return AuraScaffold(
-        showHeader: false,
-        body: InsScreen(
-          children: [
-            InsModeHeader(
-              title: 'Explore',
-              primaryAction: AuraSecondaryButton(
-                label: 'Go to dashboard',
-                icon: Icons.arrow_forward_rounded,
-                onPressed: () => context.go('/institution/dashboard'),
-              ),
+      return WorkspacePage(
+        type: WorkspacePageType.collection,
+        title: 'Explore',
+        children: [
+          WorkspaceEmpty(
+            icon: Icons.apartment_outlined,
+            title: 'Institution not selected',
+            body: 'Open the institution dashboard to enter the workspace.',
+            action: WorkspaceAction(
+              label: 'Go to dashboard',
+              icon: Icons.arrow_forward_rounded,
+              onPressed: () => context.go('/institution/dashboard'),
             ),
-            const InsModeHeaderGap(),
-            const InsEmptyState(
-              icon: Icons.apartment_outlined,
-              title: 'Institution not selected',
-              description:
-                  'Open the institution dashboard to enter the workspace.',
-            ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
-    // Identity changes (including the post-login transition from null
-    // to authorizedSpeaker) drive a TabController length change. Doing
-    // that mutation during build asserted in Flutter; do it from a
-    // ref.listen callback, which fires AFTER this build is committed.
-    // The current frame keeps using `_visibleScopes` (which matches the
-    // live `_tabController.length`); the listener calls setState so the
-    // next frame renders the new scopes and the new controller in
-    // lockstep.
-    ref.listen<InstitutionIdentity?>(
-      institutionIdentityProvider,
-      (_, __) => _refreshScopes(),
-    );
-
-    final scopes = _visibleScopes;
-
+    final scopes = _scopesFor(identity);
+    final active = _activeScope(scopes);
     final canCompose = identity?.canCreatePosts ?? false;
-    final activeScope = scopes.isEmpty
-        ? _ExploreScopeKey.public
-        : scopes[_tabController.index.clamp(0, scopes.length - 1)];
+    final filter = ref.watch(feedFilterProvider);
+    final filtersOn = (filter.topic != null ? 1 : 0) + (filter.source != null ? 1 : 0);
 
-    return AuraScaffold(
-      showHeader: false,
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              InsSpacing.screenHPad,
-              InsSpacing.screenVPad,
-              InsSpacing.screenHPad,
-              AuraSpace.s8,
-            ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: InsSpacing.contentMaxWidth,
-                ),
-                // Single operational command row: page context + filters +
-                // primary action. No explanatory text, no separate filter row.
-                // On narrow widths Compose collapses to an icon so the scope
-                // filters keep usable room instead of being squeezed.
-                child: LayoutBuilder(
-                  builder: (context, c) {
-                    final narrow = c.maxWidth < 520;
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const Text('Explore', style: AuraText.title),
-                        if (scopes.isNotEmpty) ...[
-                          const SizedBox(width: AuraSpace.s12),
-                          // Visibility tabs (Public/Member/Internal) PLUS the
-                          // Topic + Resources controls inline on the same row
-                          // (horizontally scrollable when space is tight).
-                          Expanded(
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: [
-                                  _ScopeTabs(
-                                    controller: _tabController,
-                                    scopes: scopes,
-                                    onChanged: (_) => setState(() {}),
-                                  ),
-                                  const SizedBox(width: AuraSpace.s12),
-                                  _topicDropdown(),
-                                  const SizedBox(width: AuraSpace.s8),
-                                  _resourcesDropdown(),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ] else
-                          Expanded(
-                            child: SingleChildScrollView(
-                              scrollDirection: Axis.horizontal,
-                              child: Row(
-                                children: [
-                                  _topicDropdown(),
-                                  const SizedBox(width: AuraSpace.s8),
-                                  _resourcesDropdown(),
-                                ],
-                              ),
-                            ),
-                          ),
-                        if (canCompose) ...[
-                          const SizedBox(width: AuraSpace.s8),
-                          if (narrow)
-                            SizedBox(
-                              height: 38,
-                              width: 38,
-                              child: IconButton(
-                                onPressed: () => _onCompose(activeScope),
-                                icon: const Icon(Icons.edit_rounded, size: 18),
-                                tooltip: 'Compose',
-                                style: IconButton.styleFrom(
-                                  backgroundColor: AuraSurface.accent,
-                                  foregroundColor: AuraSurface.onAccent,
-                                  padding: EdgeInsets.zero,
-                                ),
-                              ),
-                            )
-                          else
-                            AuraPrimaryButton(
-                              label: 'Compose',
-                              icon: Icons.edit_rounded,
-                              onPressed: () => _onCompose(activeScope),
-                            ),
-                        ],
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: scopes.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: InsSpacing.screenHPad,
-                    ),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          maxWidth: InsSpacing.contentMaxWidth,
-                        ),
-                        child: const _NoScopeAccess(),
-                      ),
-                    ),
-                  )
-                : Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxWidth: InsSpacing.contentMaxWidth,
-                      ),
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          for (final scope in scopes)
-                            _UnifiedFeedList(
-                              institutionId: widget.institutionId,
-                              scope: scope.wire,
-                              emptyTitle: _emptyTitle(scope),
-                              emptyBody: _emptyBody(scope),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-          ),
-        ],
-      ),
+    return WorkspacePage(
+      type: WorkspacePageType.collection,
+      title: 'Explore',
+      purpose: 'What this institution has posted, by who can see it.',
+      primary: canCompose
+          ? WorkspaceAction(
+              label: 'Compose',
+              icon: Icons.edit_rounded,
+              onPressed: () => _onCompose(active),
+            )
+          : null,
+      tabs: [
+        for (final scope in scopes) WorkspaceTab(id: scope.wire, label: scope.label),
+      ],
+      selectedTab: active.wire,
+      onTab: (wire) => setState(() {
+        _chosen = scopes.firstWhere((s) => s.wire == wire);
+      }),
+      tabTrailing: WorkspaceFilterButton(active: filtersOn, onPressed: _openFilter),
+      children: [
+        _UnifiedFeedList(
+          key: ValueKey('explore-${active.wire}'),
+          institutionId: widget.institutionId,
+          scope: active.wire,
+          emptyTitle: _emptyTitle(active),
+          emptyBody: _emptyBody(active),
+        ),
+      ],
     );
   }
-
 
   String _emptyTitle(_ExploreScopeKey scope) {
     switch (scope) {
@@ -401,85 +234,18 @@ class _InstitutionExploreScreenState
         return 'Internal posts visible only to admins and editors will appear here.';
     }
   }
-
-  bool _listEquals(List<_ExploreScopeKey> a, List<_ExploreScopeKey> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
-}
-
-// ── Tab strip ────────────────────────────────────────────────────────────────
-
-class _ScopeTabs extends StatelessWidget {
-  const _ScopeTabs({
-    required this.controller,
-    required this.scopes,
-    required this.onChanged,
-  });
-
-  final TabController controller;
-  final List<_ExploreScopeKey> scopes;
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AuraSurface.subtle,
-        borderRadius: BorderRadius.circular(AuraRadius.pill),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: TabBar(
-        controller: controller,
-        isScrollable: true,
-        tabAlignment: TabAlignment.start,
-        onTap: onChanged,
-        indicator: BoxDecoration(
-          color: AuraSurface.accentSoft,
-          borderRadius: BorderRadius.circular(AuraRadius.pill),
-        ),
-        indicatorSize: TabBarIndicatorSize.tab,
-        dividerColor: Colors.transparent,
-        labelColor: AuraSurface.accentText,
-        unselectedLabelColor: AuraSurface.muted,
-        labelStyle: AuraText.small.copyWith(fontWeight: FontWeight.w700),
-        unselectedLabelStyle:
-            AuraText.small.copyWith(fontWeight: FontWeight.w600),
-        padding: const EdgeInsets.all(4),
-        tabs: [
-          for (final scope in scopes) Tab(text: scope.label, height: 34),
-        ],
-      ),
-    );
-  }
-}
-
-class _NoScopeAccess extends StatelessWidget {
-  const _NoScopeAccess();
-
-  @override
-  Widget build(BuildContext context) {
-    return const InsEmptyState(
-      icon: Icons.lock_outline_rounded,
-      title: 'No content available',
-      description: 'You do not have access to any post visibility scope yet.',
-    );
-  }
 }
 
 // ── Unified-feed list ────────────────────────────────────────────────────────
 //
-// One list widget for all three scopes. It binds to
-// `institutionExploreFeedProvider(institutionId, scope)` and delegates each
-// row to `UnifiedFeedCard`. Phase 2 swaps in `_PublicGlobalList` /
-// `_InstitutionScopedList`; we keep a `KeepAlive` mixin so cross-tab swipes
-// don't refetch.
+// One list for all three scopes, inside the workspace frame's column (the
+// frame owns the scrolling). It binds to
+// `institutionExploreFeedPagedProvider(institutionId, scope)` and delegates
+// each post to `UnifiedFeedCard`, unchanged.
 
 class _UnifiedFeedList extends ConsumerStatefulWidget {
   const _UnifiedFeedList({
+    super.key,
     required this.institutionId,
     required this.scope,
     required this.emptyTitle,
@@ -495,14 +261,9 @@ class _UnifiedFeedList extends ConsumerStatefulWidget {
   ConsumerState<_UnifiedFeedList> createState() => _UnifiedFeedListState();
 }
 
-class _UnifiedFeedListState extends ConsumerState<_UnifiedFeedList>
-    with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
-
+class _UnifiedFeedListState extends ConsumerState<_UnifiedFeedList> {
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     final args = InstitutionExploreFeedArgs(
       institutionId: widget.institutionId,
       scope: widget.scope,
@@ -510,34 +271,23 @@ class _UnifiedFeedListState extends ConsumerState<_UnifiedFeedList>
     final feed = ref.watch(institutionExploreFeedPagedProvider(args));
 
     return feed.when(
-      loading: () => const AuraLoadingState(message: 'Loading…'),
-      error: (e, _) => ListView(
-        padding: const EdgeInsets.all(AuraSpace.s16),
-        children: [
-          AuraErrorState(
-            title: 'Could not load posts',
-            body: '$e',
-            action: AuraSecondaryButton(
-              label: ProductLabels.of(ProductAction.retry),
-              icon: Icons.refresh_rounded,
-              onPressed: () => ref
-                  .read(institutionExploreFeedPagedProvider(args).notifier)
-                  .refresh(),
-            ),
-          ),
-        ],
+      loading: () => const WorkspaceLoading(),
+      error: (e, _) => WorkspaceEmpty(
+        icon: Icons.error_outline_rounded,
+        title: 'Could not load posts',
+        body: '$e',
+        action: WorkspaceAction(
+          label: ProductLabels.of(ProductAction.retry),
+          icon: Icons.refresh_rounded,
+          onPressed: () => ref.read(institutionExploreFeedPagedProvider(args).notifier).refresh(),
+        ),
       ),
       data: (page) {
         if (page.items.isEmpty) {
-          return ListView(
-            padding: const EdgeInsets.all(AuraSpace.s16),
-            children: [
-              InsEmptyState(
-                icon: _emptyIcon(),
-                title: widget.emptyTitle,
-                description: widget.emptyBody,
-              ),
-            ],
+          return WorkspaceEmpty(
+            icon: _emptyIcon(),
+            title: widget.emptyTitle,
+            body: widget.emptyBody,
           );
         }
         // Phase 2 — client-side priority sort. Backend ordering is preserved
@@ -550,11 +300,9 @@ class _UnifiedFeedListState extends ConsumerState<_UnifiedFeedList>
             ? ordered
             : [for (final i in ordered) if (!identical(i, pinned)) i];
 
-        // Distribution Phase 1 — synthesize a "LIVE NOW" band at the top
-        // of the feed when there is an active institution session.
-        // Reuses the existing live rooms provider so we don't fan out
-        // a new request, and degrades silently when there's no active
-        // session.
+        // Distribution Phase 1 — a "LIVE NOW" band at the top of the feed
+        // when there is an active institution session. Reuses the live rooms
+        // provider and degrades silently when no session is active.
         final liveRooms =
             ref.watch(institutionLiveRoomsProvider(widget.institutionId));
         final activeSession = liveRooms.maybeWhen(
@@ -565,51 +313,44 @@ class _UnifiedFeedListState extends ConsumerState<_UnifiedFeedList>
           orElse: () => null,
         );
 
-        return RefreshIndicator(
-          onRefresh: () async {
-            await ref
-                .read(institutionExploreFeedPagedProvider(args).notifier)
-                .refresh();
-          },
-          child: ListView(
-            padding: const EdgeInsets.all(AuraSpace.s16),
-            children: [
-              if (activeSession != null) ...[
-                _LiveNowBand(
-                  institutionId: widget.institutionId,
-                  session: activeSession,
-                ),
-                const SizedBox(height: AuraSpace.s10),
-              ],
-              if (pinned != null) ...[
-                _PinnedAnnouncementBand(item: pinned),
-                const SizedBox(height: AuraSpace.s10),
-              ],
-              for (var i = 0; i < rest.length; i++) ...[
-                UnifiedFeedCard(item: rest[i]),
-                if (i < rest.length - 1)
-                  const SizedBox(height: AuraSpace.s10),
-              ],
-              // Phase 3 — Load more for the institution explore feed.
-              if (page.hasMore) ...[
-                const SizedBox(height: AuraSpace.s14),
-                Center(
-                  child: AuraSecondaryButton(
-                    label: page.loadingMore ? 'Loading…' : 'Load more',
-                    icon: page.loadingMore
-                        ? Icons.hourglass_empty_rounded
-                        : Icons.expand_more_rounded,
-                    onPressed: page.loadingMore
-                        ? null
-                        : () => ref
-                            .read(institutionExploreFeedPagedProvider(args)
-                                .notifier)
-                            .loadMore(),
-                  ),
-                ),
-              ],
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (activeSession != null) ...[
+              _LiveNowBand(
+                institutionId: widget.institutionId,
+                session: activeSession,
+              ),
+              const SizedBox(height: AuraSpace.s10),
             ],
-          ),
+            if (pinned != null) ...[
+              _PinnedAnnouncementBand(item: pinned),
+              const SizedBox(height: AuraSpace.s10),
+            ],
+            for (var i = 0; i < rest.length; i++) ...[
+              UnifiedFeedCard(item: rest[i]),
+              if (i < rest.length - 1)
+                const SizedBox(height: AuraSpace.s10),
+            ],
+            // Phase 3 — Load more for the institution explore feed.
+            if (page.hasMore) ...[
+              const SizedBox(height: AuraSpace.s14),
+              Center(
+                child: AuraSecondaryButton(
+                  label: page.loadingMore ? 'Loading…' : 'Load more',
+                  icon: page.loadingMore
+                      ? Icons.hourglass_empty_rounded
+                      : Icons.expand_more_rounded,
+                  onPressed: page.loadingMore
+                      ? null
+                      : () => ref
+                          .read(institutionExploreFeedPagedProvider(args)
+                              .notifier)
+                          .loadMore(),
+                ),
+              ),
+            ],
+          ],
         );
       },
     );

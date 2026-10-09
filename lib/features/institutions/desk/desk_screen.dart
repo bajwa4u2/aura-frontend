@@ -7,7 +7,6 @@ import '../../../core/authority/capability_projection.dart';
 import '../../../core/errors/server_refusal.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/institutions/institution_paths.dart';
-import '../../../core/navigation/navigation_authority.dart';
 import '../../../core/product/product_language.dart';
 import '../../../core/product/temporal.dart';
 import '../../../core/ui/aura_platform_components.dart';
@@ -57,10 +56,15 @@ class _DeskScreenState extends ConsumerState<DeskScreen> {
       case DeskItemType.draft:
         context.push('${_path(InstitutionSection.announcements)}/${item.id}/edit');
       case DeskItemType.meeting:
-        context.push(NavigationAuthority.meetingRoute(item.id));
+        // Inside the institution's own Meetings, so the workspace stays around it.
+        final meeting = '${_path(InstitutionSection.meetings)}/${item.id}';
+        context.push(meeting);
       case DeskItemType.followUp:
         final meetingId = item.meta['meetingId']?.toString();
-        context.push(meetingId == null ? _path(InstitutionSection.meetings) : NavigationAuthority.meetingRoute(meetingId));
+        final target = meetingId == null
+            ? _path(InstitutionSection.meetings)
+            : '${_path(InstitutionSection.meetings)}/$meetingId';
+        context.push(target);
       default:
         break;
     }

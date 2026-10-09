@@ -337,9 +337,6 @@ class NavigationAuthority {
   static String directThreadRoute(String id) => '/direct/$id';
   static String postRoute(String id) => '/posts/$id';
 
-  /// A meeting's own page (the Desk opens meetings and their follow-ups).
-  static String meetingRoute(String id) => '/meetings/$id';
-
   /// ONE CALL THAT HAPPENED, addressed on its own.
   ///
   /// Founder ruling 2026-09-09: a Call History item resolves to the SPECIFIC

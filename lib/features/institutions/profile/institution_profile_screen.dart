@@ -8,9 +8,7 @@ import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/institutions/institution_paths.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/product/product_language.dart';
-import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
-import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
@@ -19,6 +17,7 @@ import '../../feed/presentation/unified_feed_card.dart';
 import '../../monetization/domain/monetization_models.dart';
 import '../../monetization/providers/monetization_providers.dart';
 import '../ui/institution_ds.dart';
+import '../workspace/workspace_page.dart';
 
 /// Phase 6.6c — Institution Profile / Workspace Identity hub.
 ///
@@ -57,43 +56,52 @@ class InstitutionProfileScreen extends ConsumerWidget {
         ? ref.watch(institutionWorkspaceIdentityProvider(routeId))
         : ambient;
 
-    return AuraScaffold(
-      showHeader: false,
-      body: accessAsync.when(
-        loading: () => const AuraLoadingState(message: 'Loading profile…'),
-        error: (e, _) => Padding(
-          padding: const EdgeInsets.all(InsSpacing.screenHPad),
-          child: AuraErrorState(
+    return accessAsync.when(
+      loading: () => const WorkspacePage(
+        type: WorkspacePageType.record,
+        title: 'Profile',
+        loading: true,
+      ),
+      error: (e, _) => WorkspacePage(
+        type: WorkspacePageType.record,
+        title: 'Profile',
+        children: [
+          WorkspaceEmpty(
+            icon: Icons.error_outline_rounded,
             title: 'Profile unavailable',
             body: '$e',
-            action: AuraSecondaryButton(
+            action: WorkspaceAction(
               label: ProductLabels.of(ProductAction.retry),
-              onPressed: () => ref.invalidate(institutionAccessProvider),
               icon: Icons.refresh_rounded,
+              onPressed: () => ref.invalidate(institutionAccessProvider),
             ),
           ),
-        ),
-        data: (access) {
-          final inst = access.institution ??
-              (access.membership?['institution'] is Map
-                  ? Map<String, dynamic>.from(
-                      access.membership!['institution'] as Map,
-                    )
-                  : null);
+        ],
+      ),
+      data: (access) {
+        final inst = access.institution ??
+            (access.membership?['institution'] is Map
+                ? Map<String, dynamic>.from(
+                    access.membership!['institution'] as Map,
+                  )
+                : null);
 
-          if (inst == null) {
-            return const Padding(
-              padding: EdgeInsets.all(InsSpacing.screenHPad),
-              child: AuraErrorState(
+        if (inst == null) {
+          return const WorkspacePage(
+            type: WorkspacePageType.record,
+            title: 'Profile',
+            children: [
+              WorkspaceEmpty(
+                icon: Icons.apartment_outlined,
                 title: 'No institution',
                 body: 'Institution data is not available for this account.',
               ),
-            );
-          }
+            ],
+          );
+        }
 
-          return _ProfileBody(inst: inst, identity: identity);
-        },
-      ),
+        return _ProfileBody(inst: inst, identity: identity);
+      },
     );
   }
 }
@@ -258,9 +266,74 @@ class _ProfileBody extends ConsumerWidget {
         InsFact(icon: Icons.public_rounded, text: jurisdiction),
     ];
 
-    // ── Compose ──────────────────────────────────────────────────────────
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(0, AuraSpace.s12, 0, AuraSpace.s32),
+    // ── Compose: the Record page type (DD-43) ────────────────────────────
+    // C2 §9: backend guards profile editing with MANAGE_BRANDING; role is
+    // not the question.
+    final canEdit = identity != null &&
+        identity!.canManageBranding &&
+        identity!.id.isNotEmpty;
+    final canPreview = identity != null &&
+        identity!.slug.isNotEmpty &&
+        identity!.id.isNotEmpty;
+    // Hide the "Manage billing" dead-end when monetization is disabled in
+    // this environment. Unknown (still loading) is treated as enabled so a
+    // real feature never flickers hidden.
+    final billingEnabled =
+        ref.watch(monetizationConfigProvider).valueOrNull?.mode !=
+            MonetizationMode.disabled;
+
+    return WorkspacePage(
+      type: WorkspacePageType.record,
+      title: 'Profile',
+      purpose: 'Your public page, as people see it.',
+      primary: canEdit
+          ? WorkspaceAction(
+              label: 'Edit profile',
+              icon: Icons.edit_outlined,
+              onPressed: () => context.go(
+                institutionWorkspacePath(
+                  identity!.workspaceAddress,
+                  InstitutionSection.editProfile,
+                ),
+              ),
+            )
+          : null,
+      more: [
+        if (canPreview)
+          WorkspaceAction(
+            label: 'View as the public',
+            icon: Icons.visibility_outlined,
+            onPressed: () => context.push('/institutions/${identity!.slug}'),
+          ),
+        // "Share" copied the same link as "Copy link"; one action, once.
+        if (publicLink.isNotEmpty)
+          WorkspaceAction(
+            label: 'Copy public link',
+            icon: Icons.link_rounded,
+            onPressed: () => _copyLink(context, publicLink),
+          ),
+        WorkspaceAction(
+          label: 'Web addresses',
+          icon: Icons.language_rounded,
+          onPressed: () => context.go(
+            (identity?.id.isNotEmpty ?? false)
+                ? institutionWorkspacePath(
+                    identity!.workspaceAddress, InstitutionSection.domains)
+                : '/institution/dashboard',
+          ),
+        ),
+        // Billing only for those who manage the institution AND only when
+        // monetization is actually enabled. Backend enforces admin on
+        // POST /v1/monetization/checkout/*.
+        if (canEdit && billingEnabled)
+          WorkspaceAction(
+            label: 'Manage billing',
+            icon: Icons.receipt_long_rounded,
+            onPressed: () => context.push(
+              '/institution/${identity!.workspaceAddress}/billing',
+            ),
+          ),
+      ],
       children: [
         InsCoverHeader(
           name: name,
@@ -286,328 +359,145 @@ class _ProfileBody extends ConsumerWidget {
           badges: badges,
           facts: facts,
         ),
-        const SizedBox(height: AuraSpace.s20),
-        Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: InsSpacing.contentMaxWidth,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: InsSpacing.screenHPad,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Mode header ──────────────────────────────────────
-                  InsModeHeader(
-                    title: 'Profile',
-                    primaryAction:
-                        (identity != null &&
-                                // C2 §9: backend guards profile editing with
-                                // MANAGE_BRANDING; role is not the question.
-                                identity!.canManageBranding &&
-                                identity!.id.isNotEmpty)
-                            ? AuraPrimaryButton(
-                                label: 'Edit profile',
-                                icon: Icons.edit_outlined,
-                                onPressed: () => context.go(
-                                  institutionWorkspacePath(
-                                    identity!.workspaceAddress,
-                                    InstitutionSection.editProfile,
-                                  ),
-                                ),
-                              )
-                            : null,
-                  ),
+        const SizedBox(height: AuraSpace.s24),
 
-                  const InsModeHeaderGap(),
-
-                  // ── Action group ─────────────────────────────────────
-                  _ActionGroup(
-                    identity: identity,
-                    publicLink: publicLink,
-                    // Hide the "Manage billing" dead-end when monetization is
-                    // disabled in this environment. Unknown (still loading)
-                    // is treated as enabled so a real feature never flickers
-                    // hidden.
-                    billingEnabled: ref
-                            .watch(monetizationConfigProvider)
-                            .valueOrNull
-                            ?.mode !=
-                        MonetizationMode.disabled,
-                  ),
-
-                  const InsSectionGap(),
-
-                  // ── About ────────────────────────────────────────────
-                  if (description.isNotEmpty) ...[
-                    InsSection(
-                      eyebrow: 'About',
-                      title: 'What this institution is',
-                      child: InsCard(
-                        child: Text(
-                          description,
-                          style: AuraText.body.copyWith(
-                            color: AuraSurface.ink,
-                            height: 1.7,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const InsSectionGap(),
-                  ],
-
-                  // ── Mission & representation ─────────────────────────
-                  if (mission.isNotEmpty ||
-                      services.isNotEmpty ||
-                      audience.isNotEmpty) ...[
-                    InsSection(
-                      eyebrow: 'Representation',
-                      title: 'Mission, services, audience',
-                      child: InsCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (mission.isNotEmpty)
-                              _LabeledBlock(label: 'Mission', text: mission),
-                            if (services.isNotEmpty)
-                              _LabeledBlock(label: 'Services', text: services),
-                            if (audience.isNotEmpty)
-                              _LabeledBlock(
-                                label: 'Audience',
-                                text: audience,
-                                isLast: true,
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const InsSectionGap(),
-                  ],
-
-                  // ── Contact ──────────────────────────────────────────
-                  if (hasContact || locationLine.isNotEmpty) ...[
-                    InsSection(
-                      eyebrow: 'Contact',
-                      title: 'How to reach this institution',
-                      child: InsCard(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (publicEmail.isNotEmpty)
-                              _KeyValue(label: 'Email', value: publicEmail),
-                            if (phone.isNotEmpty)
-                              _KeyValue(label: 'Phone', value: phone),
-                            if (website.isNotEmpty)
-                              _KeyValue(
-                                label: 'Website',
-                                value: website,
-                                isLink: true,
-                              ),
-                            if (address.isNotEmpty)
-                              _KeyValue(label: 'Address', value: address),
-                            if (locationLine.isNotEmpty)
-                              _KeyValue(label: 'Location', value: locationLine),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const InsSectionGap(),
-                  ],
-
-                  // ── Domains & verification ───────────────────────────
-                  InsSection(
-                    eyebrow: 'Trust',
-                    title: 'Domains & verification',
-                    child: InsCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _KeyValue(
-                            label: 'Institution',
-                            value: isVerified ? 'Verified' : 'Unverified',
-                            valueColor: isVerified
-                                ? AuraSurface.coVerdant
-                                : AuraSurface.muted,
-                          ),
-                          _KeyValue(
-                            label: 'Domain DNS',
-                            value: domainVerified
-                                ? 'Verified'
-                                : 'Not verified',
-                            valueColor: domainVerified
-                                ? AuraSurface.coVerdant
-                                : AuraSurface.muted,
-                          ),
-                          if (domain.isNotEmpty)
-                            _KeyValue(label: 'Domain', value: domain),
-                          if (jurisdiction.isNotEmpty)
-                            _KeyValue(
-                              label: 'Jurisdiction',
-                              value: jurisdiction,
-                            ),
-                          if (category.isNotEmpty)
-                            _KeyValue(
-                              label: 'Category',
-                              value: category,
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  if (hasSocial) ...[
-                    const InsSectionGap(),
-                    InsSection(
-                      eyebrow: 'Social',
-                      title: 'Where this institution lives elsewhere',
-                      child: InsCard(
-                        child: _SocialList(
-                          linkedinUrl: linkedinUrl,
-                          xUrl: xUrl,
-                          facebookUrl: facebookUrl,
-                          instagramUrl: instagramUrl,
-                          youtubeUrl: youtubeUrl,
-                        ),
-                      ),
-                    ),
-                  ],
-
-                  // UNITS ARE INSTITUTIONAL IDENTITY, so this is where they
-                  // belong and where a legitimate viewer discovers them.
-                  //
-                  // Founder finding (2026-08-23): the Unit architecture existed
-                  // but nothing in the workspace linked to it, so a real
-                  // capability was unreachable. The answer is NOT a primary nav
-                  // entry -- a unit is an operating context inside the
-                  // institution, not a peer destination. Profile already
-                  // carries what the institution IS; its operating contexts are
-                  // part of that, and each one is a door into its context.
-                  //
-                  // Structural management (create, retire, edit) is separately
-                  // administrative and lives under ADMIN, gated on the
-                  // capability -- discovery and governance are different acts.
-                  if (identity?.id != null && identity!.id.isNotEmpty) ...[
-                    const InsSectionGap(),
-                    _UnitsSection(institutionId: identity!.id),
-                  ],
-
-                  if (slug.isNotEmpty &&
-                      identity?.id != null &&
-                      identity!.id.isNotEmpty) ...[
-                    // The posts stay; the framing around them does not. A
-                    // heading that labels the institution's own posts as
-                    // "recent public posts", plus a second door to the public
-                    // profile, added chrome to a surface whose contextual
-                    // actions already sit above.
-                    const InsSectionGap(),
-                    _PublicPostsPreview(
-                      institutionId: identity!.id,
-                    ),
-                  ],
-                ],
+        // ── About ────────────────────────────────────────────
+        if (description.isNotEmpty)
+          WorkspaceSection(
+            title: 'About',
+            description: 'What this institution is',
+            child: Text(
+              description,
+              style: AuraText.body.copyWith(
+                color: AuraSurface.ink,
+                height: 1.7,
               ),
             ),
           ),
+
+        // ── Mission & representation ─────────────────────────
+        if (mission.isNotEmpty || services.isNotEmpty || audience.isNotEmpty)
+          WorkspaceSection(
+            title: 'Representation',
+            description: 'Mission, services, audience',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (mission.isNotEmpty)
+                  _LabeledBlock(label: 'Mission', text: mission),
+                if (services.isNotEmpty)
+                  _LabeledBlock(label: 'Services', text: services),
+                if (audience.isNotEmpty)
+                  _LabeledBlock(
+                    label: 'Audience',
+                    text: audience,
+                    isLast: true,
+                  ),
+              ],
+            ),
+          ),
+
+        // ── Contact ──────────────────────────────────────────
+        if (hasContact || locationLine.isNotEmpty)
+          WorkspaceSection(
+            title: 'Contact',
+            description: 'How to reach this institution',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (publicEmail.isNotEmpty)
+                  _KeyValue(label: 'Email', value: publicEmail),
+                if (phone.isNotEmpty) _KeyValue(label: 'Phone', value: phone),
+                if (website.isNotEmpty)
+                  _KeyValue(label: 'Website', value: website, isLink: true),
+                if (address.isNotEmpty)
+                  _KeyValue(label: 'Address', value: address),
+                if (locationLine.isNotEmpty)
+                  _KeyValue(label: 'Location', value: locationLine),
+              ],
+            ),
+          ),
+
+        // ── Domains & verification ───────────────────────────
+        WorkspaceSection(
+          title: 'Trust',
+          description: 'Web addresses and verification',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _KeyValue(
+                label: 'Institution',
+                value: isVerified ? 'Verified' : 'Unverified',
+                valueColor:
+                    isVerified ? AuraSurface.coVerdant : AuraSurface.muted,
+              ),
+              _KeyValue(
+                label: 'Domain DNS',
+                value: domainVerified ? 'Verified' : 'Not verified',
+                valueColor:
+                    domainVerified ? AuraSurface.coVerdant : AuraSurface.muted,
+              ),
+              if (domain.isNotEmpty) _KeyValue(label: 'Domain', value: domain),
+              if (jurisdiction.isNotEmpty)
+                _KeyValue(label: 'Jurisdiction', value: jurisdiction),
+              if (category.isNotEmpty)
+                _KeyValue(label: 'Category', value: category),
+            ],
+          ),
         ),
+
+        if (hasSocial)
+          WorkspaceSection(
+            title: 'Social',
+            description: 'Where this institution lives elsewhere',
+            child: _SocialList(
+              linkedinUrl: linkedinUrl,
+              xUrl: xUrl,
+              facebookUrl: facebookUrl,
+              instagramUrl: instagramUrl,
+              youtubeUrl: youtubeUrl,
+            ),
+          ),
+
+        // UNITS ARE INSTITUTIONAL IDENTITY, so this is where they
+        // belong and where a legitimate viewer discovers them.
+        //
+        // Founder finding (2026-08-23): the Unit architecture existed
+        // but nothing in the workspace linked to it, so a real
+        // capability was unreachable. The answer is NOT a primary nav
+        // entry -- a unit is an operating context inside the
+        // institution, not a peer destination. Profile already
+        // carries what the institution IS; its operating contexts are
+        // part of that, and each one is a door into its context.
+        //
+        // Structural management (create, retire, edit) is separately
+        // administrative and lives under ADMIN, gated on the
+        // capability -- discovery and governance are different acts.
+        if (identity?.id != null && identity!.id.isNotEmpty)
+          _UnitsSection(institutionId: identity!.id),
+
+        if (slug.isNotEmpty &&
+            identity?.id != null &&
+            identity!.id.isNotEmpty)
+          // The posts stay; the framing around them does not. A heading that
+          // labels the institution's own posts as "recent public posts", plus
+          // a second door to the public profile, added chrome to a surface
+          // whose contextual actions already sit above.
+          _PublicPostsPreview(
+            institutionId: identity!.id,
+          ),
       ],
     );
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Action group — primary Edit + secondary cluster
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _ActionGroup extends StatelessWidget {
-  const _ActionGroup({
-    required this.identity,
-    required this.publicLink,
-    this.billingEnabled = true,
-  });
-
-  final InstitutionIdentity? identity;
-  final String publicLink;
-  final bool billingEnabled;
-
-  Future<void> _copyLink(BuildContext context) async {
-    if (publicLink.isEmpty) return;
-    await Clipboard.setData(ClipboardData(text: publicLink));
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Public link copied')),
-    );
-  }
-
-  Future<void> _share(BuildContext context) async {
-    if (publicLink.isEmpty) return;
-    await Clipboard.setData(ClipboardData(text: publicLink));
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Public link copied — paste anywhere to share'),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // C2 §9: capability question (MANAGE_BRANDING), matching the backend guard.
-    final canEdit = identity != null && identity!.canManageBranding;
-    final canPreview = identity != null &&
-        identity!.slug.isNotEmpty &&
-        identity!.id.isNotEmpty;
-
-    // Primary "Edit profile" lives in the Mode Header above; this row
-    // carries only secondary actions so the workspace stays consistent.
-    return InsActionGroup(
-      secondary: [
-        if (canPreview)
-          AuraSecondaryButton(
-            label: 'Public preview',
-            icon: Icons.visibility_outlined,
-            onPressed: () => context.push(
-              '/institutions/${identity!.slug}',
-            ),
-          ),
-        if (publicLink.isNotEmpty)
-          AuraSecondaryButton(
-            label: 'Copy link',
-            icon: Icons.link_rounded,
-            onPressed: () => _copyLink(context),
-          ),
-        if (publicLink.isNotEmpty)
-          AuraSecondaryButton(
-            label: 'Share',
-            icon: Icons.ios_share_rounded,
-            onPressed: () => _share(context),
-          ),
-        AuraSecondaryButton(
-          label: 'Domains',
-          icon: Icons.language_rounded,
-          onPressed: () => context.go(
-            (identity?.id.isNotEmpty ?? false)
-                ? institutionWorkspacePath(
-                                    identity!.workspaceAddress, InstitutionSection.domains)
-                : '/institution/dashboard',
-          ),
-        ),
-        // Surface billing only for institution admins/owners AND only when
-        // monetization is actually enabled — otherwise it routes to a
-        // "Billing unavailable" dead-end. Backend enforces admin on
-        // POST /v1/monetization/checkout/*.
-        if (canEdit && billingEnabled && (identity?.id.isNotEmpty ?? false))
-          AuraSecondaryButton(
-            label: 'Manage billing',
-            icon: Icons.receipt_long_rounded,
-            onPressed: () => context.push(
-              '/institution/${identity!.workspaceAddress}/billing',
-            ),
-          ),
-      ],
-    );
-  }
+Future<void> _copyLink(BuildContext context, String publicLink) async {
+  if (publicLink.isEmpty) return;
+  await Clipboard.setData(ClipboardData(text: publicLink));
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Public link copied')),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -861,41 +751,32 @@ class _PublicPostsPreview extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(institutionProfileFeedProvider(institutionId));
-    return InsCard(
-      child: async.when(
-        loading: () => const Padding(
-          padding: EdgeInsets.symmetric(vertical: AuraSpace.s16),
-          child: AuraLoadingState(message: 'Loading posts…'),
-        ),
-        error: (e, _) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: AuraSpace.s10),
-          child: Text(
-            'Could not load posts: $e',
-            style: AuraText.small.copyWith(color: AuraSurface.muted),
-          ),
-        ),
-        data: (page) {
-          if (page.items.isEmpty) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: AuraSpace.s10),
-              child: Text(
-                'No public posts yet. Posts you publish to the institution feed will appear here.',
-                style: AuraText.small.copyWith(color: AuraSurface.muted),
-              ),
-            );
-          }
-          final preview = page.items.take(3).toList();
-          return Column(
-            children: [
-              for (var i = 0; i < preview.length; i++) ...[
-                UnifiedFeedCard(item: preview[i]),
-                if (i < preview.length - 1)
-                  const SizedBox(height: AuraSpace.s10),
-              ],
-            ],
-          );
-        },
+    return async.when(
+      loading: () => const WorkspaceLoading(rows: 2),
+      error: (e, _) => Text(
+        'Could not load posts: $e',
+        style: AuraText.small.copyWith(color: AuraSurface.muted),
       ),
+      data: (page) {
+        if (page.items.isEmpty) {
+          return const WorkspaceEmpty(
+            icon: Icons.article_outlined,
+            title: 'No public posts yet',
+            body: 'Posts you publish to the institution feed will appear here.',
+          );
+        }
+        final preview = page.items.take(3).toList();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < preview.length; i++) ...[
+              UnifiedFeedCard(item: preview[i]),
+              if (i < preview.length - 1)
+                const SizedBox(height: AuraSpace.s10),
+            ],
+          ],
+        );
+      },
     );
   }
 }
@@ -965,11 +846,10 @@ class _UnitsSectionState extends ConsumerState<_UnitsSection> {
     final identity = ref.watch(institutionIdentityProvider);
     final address = identity?.workspaceAddress ?? widget.institutionId;
 
-    return InsSection(
-      eyebrow: 'Operating contexts',
+    return WorkspaceSection(
       title: 'Units',
-      child: InsCard(
-        child: Column(
+      description: 'Operating contexts',
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             for (final u in _units)
@@ -1033,7 +913,6 @@ class _UnitsSectionState extends ConsumerState<_UnitsSection> {
               ),
           ],
         ),
-      ),
     );
   }
 }

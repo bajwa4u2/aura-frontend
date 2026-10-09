@@ -6,15 +6,13 @@ import 'package:go_router/go_router.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
-import '../../../core/ui/aura_radius.dart';
-import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../feed/domain/feed_item.dart';
 import '../data/institutions_repository.dart';
 import '../domain/institution_activity_event.dart';
-import '../ui/institution_ds.dart';
+import '../workspace/workspace_page.dart';
 import '../../../core/identity/person_identity_model.dart';
 import '../institution_words.dart';
 
@@ -131,34 +129,11 @@ class _InstitutionActivityScreenState
     extends ConsumerState<InstitutionActivityScreen> {
   String _filter = 'all'; // all | members | posts | admin
 
-  final _scrollController = ScrollController();
   final List<InstitutionActivityEvent> _additional = [];
   String? _cursor;
   bool _exhausted = false;
   bool _loadingMore = false;
   String? _moreError;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void dispose() {
-    _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (_loadingMore || _exhausted) return;
-    if (!_scrollController.hasClients) return;
-    final pos = _scrollController.position;
-    if (pos.pixels >= pos.maxScrollExtent - 240) {
-      _loadMore();
-    }
-  }
 
   Future<void> _loadMore() async {
     if (_cursor == null || _cursor!.isEmpty) {
@@ -210,6 +185,16 @@ class _InstitutionActivityScreenState
     return events.where((e) => e.category == _filter).toList();
   }
 
+  void _refresh(InstitutionActivityArgs args) {
+    setState(() {
+      _additional.clear();
+      _cursor = null;
+      _exhausted = false;
+      _moreError = null;
+    });
+    ref.invalidate(institutionActivityFirstPageProvider(args));
+  }
+
   @override
   Widget build(BuildContext context) {
     final identity = ref.watch(institutionIdentityProvider);
@@ -218,134 +203,91 @@ class _InstitutionActivityScreenState
     final args = InstitutionActivityArgs(institutionId: widget.institutionId);
     final firstPage = ref.watch(institutionActivityFirstPageProvider(args));
 
-    return AuraScaffold(
-      showHeader: false,
-      body: firstPage.when(
-        loading: () => const AuraLoadingState(message: 'Loading activity…'),
-        error: (e, _) => InsScreen(
-          children: [
-            AuraErrorState(
-              title: 'Could not load activity',
-              body: '$e',
-              action: AuraSecondaryButton(
-                label: ProductLabels.of(ProductAction.retry),
-                icon: Icons.refresh_rounded,
-                onPressed: () => ref
-                    .invalidate(institutionActivityFirstPageProvider(args)),
-              ),
+    // The one tabs idiom (DD-43), from the same filter it always had.
+    final tabs = <WorkspaceTab>[
+      const WorkspaceTab(id: 'all', label: 'All'),
+      const WorkspaceTab(id: 'members', label: 'Members'),
+      const WorkspaceTab(id: 'posts', label: 'Posts'),
+      if (isAdminLike) const WorkspaceTab(id: 'admin', label: 'Admin'),
+    ];
+
+    WorkspacePage page(List<Widget> children, {bool loading = false}) => WorkspacePage(
+          type: WorkspacePageType.collection,
+          title: 'Activity',
+          purpose: 'What has happened at the institution, newest first.',
+          more: [
+            WorkspaceAction(
+              label: 'Refresh',
+              icon: Icons.refresh_rounded,
+              onPressed: () => _refresh(args),
             ),
           ],
-        ),
-        data: (page) {
-          if (_cursor == null && !_exhausted) {
-            _cursor = page.nextCursor;
-            _exhausted = !page.hasMore;
-          }
-          final all = <InstitutionActivityEvent>[
-            ...page.items,
-            ..._additional,
-          ];
-          final filtered = _applyFilter(all);
-          final grouped = _groupByDay(filtered);
+          tabs: tabs,
+          selectedTab: _filter,
+          onTab: _selectFilter,
+          loading: loading,
+          children: children,
+        );
 
-          return RefreshIndicator(
-            onRefresh: () async {
-              setState(() {
-                _additional.clear();
-                _cursor = null;
-                _exhausted = false;
-                _moreError = null;
-              });
-              ref.invalidate(institutionActivityFirstPageProvider(args));
-            },
-            child: ListView(
-              controller: _scrollController,
-              padding: const EdgeInsets.fromLTRB(
-                InsSpacing.screenHPad,
-                InsSpacing.screenVPad,
-                InsSpacing.screenHPad,
-                AuraSpace.s32,
+    return firstPage.when(
+      loading: () => page(const [], loading: true),
+      error: (e, _) => page([
+        WorkspaceEmpty(
+          icon: Icons.error_outline_rounded,
+          title: 'Could not load activity',
+          body: '$e',
+          action: WorkspaceAction(
+            label: ProductLabels.of(ProductAction.retry),
+            icon: Icons.refresh_rounded,
+            onPressed: () => ref.invalidate(institutionActivityFirstPageProvider(args)),
+          ),
+        ),
+      ]),
+      data: (firstPageData) {
+        if (_cursor == null && !_exhausted) {
+          _cursor = firstPageData.nextCursor;
+          _exhausted = !firstPageData.hasMore;
+        }
+        final all = <InstitutionActivityEvent>[
+          ...firstPageData.items,
+          ..._additional,
+        ];
+        final filtered = _applyFilter(all);
+        final grouped = _groupByDay(filtered);
+
+        return page([
+          if (filtered.isEmpty)
+            const WorkspaceEmpty(
+              icon: Icons.timeline_rounded,
+              title: 'No activity yet',
+              body: 'When members do things, events will appear here.',
+            )
+          else
+            for (final group in grouped) ...[
+              _DaySectionHeader(label: group.label),
+              const SizedBox(height: AuraSpace.s8),
+              for (final e in group.events) _ActivityCard(event: e),
+              const SizedBox(height: AuraSpace.s14),
+            ],
+          // The frame owns the scrolling, so more is asked for, not sensed.
+          if (!_exhausted && filtered.isNotEmpty)
+            Center(
+              child: AuraSecondaryButton(
+                label: _loadingMore ? 'Loading…' : 'Load more',
+                icon: _loadingMore ? Icons.hourglass_empty_rounded : Icons.expand_more_rounded,
+                onPressed: _loadingMore ? null : _loadMore,
               ),
-              children: [
-                Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: InsSpacing.contentMaxWidth,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Single command row: page context + filters.
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            const Text('Activity', style: AuraText.title),
-                            const SizedBox(width: AuraSpace.s16),
-                            Expanded(
-                              child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: _FilterRow(
-                                  current: _filter,
-                                  onSelect: _selectFilter,
-                                  showAdmin: isAdminLike,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AuraSpace.s10),
-                        if (filtered.isEmpty)
-                          const InsEmptyState(
-                            icon: Icons.timeline_rounded,
-                            title: 'No activity yet',
-                            description:
-                                'When members do things, events will appear here.',
-                          )
-                        else
-                          ...grouped.expand(
-                            (group) => [
-                              _DaySectionHeader(label: group.label),
-                              const SizedBox(height: AuraSpace.s8),
-                              ...group.events.map(
-                                (e) => Padding(
-                                  padding: const EdgeInsets.only(
-                                      bottom: AuraSpace.s8),
-                                  child: _ActivityCard(event: e),
-                                ),
-                              ),
-                              const SizedBox(height: AuraSpace.s14),
-                            ],
-                          ),
-                        if (_loadingMore)
-                          const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(AuraSpace.s16),
-                              child: SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2),
-                              ),
-                            ),
-                          ),
-                        if (_moreError != null)
-                          Padding(
-                            padding: const EdgeInsets.all(AuraSpace.s12),
-                            child: Text(
-                              _moreError!,
-                              style: AuraText.small
-                                  .copyWith(color: AuraSurface.coRose),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
             ),
-          );
-        },
-      ),
+          if (_moreError != null)
+            Padding(
+              padding: const EdgeInsets.all(AuraSpace.s12),
+              child: Text(
+                _moreError!,
+                style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+              ),
+            ),
+        ]);
+      },
     );
   }
 }
@@ -389,83 +331,6 @@ List<_DayGroup> _groupByDay(List<InstitutionActivityEvent> events) {
   return [for (final l in order) _DayGroup(label: l, events: groups[l]!)];
 }
 
-class _FilterRow extends StatelessWidget {
-  const _FilterRow({
-    required this.current,
-    required this.onSelect,
-    required this.showAdmin,
-  });
-
-  final String current;
-  final ValueChanged<String> onSelect;
-  final bool showAdmin;
-
-  @override
-  Widget build(BuildContext context) {
-    final chips = <(String, String)>[
-      ('all', 'All'),
-      ('members', 'Members'),
-      ('posts', 'Posts'),
-      if (showAdmin) ('admin', 'Admin'),
-    ];
-
-    return Wrap(
-      spacing: AuraSpace.s8,
-      runSpacing: AuraSpace.s8,
-      children: [
-        for (final c in chips)
-          _FilterChip(
-            label: c.$2,
-            selected: current == c.$1,
-            onTap: () => onSelect(c.$1),
-          ),
-      ],
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AuraRadius.pill),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s14,
-          vertical: AuraSpace.s8,
-        ),
-        decoration: BoxDecoration(
-          color: selected ? AuraSurface.accentSoft : AuraSurface.subtle,
-          borderRadius: BorderRadius.circular(AuraRadius.pill),
-          border: Border.all(
-            color: selected
-                ? AuraSurface.accent.withValues(alpha: 0.4)
-                : AuraSurface.divider,
-          ),
-        ),
-        child: Text(
-          label,
-          style: AuraText.small.copyWith(
-            color: selected ? AuraSurface.accentText : AuraSurface.muted,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _DaySectionHeader extends StatelessWidget {
   const _DaySectionHeader({required this.label});
 
@@ -473,14 +338,7 @@ class _DaySectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: AuraText.micro.copyWith(
-        color: AuraSurface.faint,
-        fontWeight: FontWeight.w800,
-        letterSpacing: 0.8,
-      ),
-    );
+    return Text(label.toUpperCase(), style: WorkspaceType.eyebrow);
   }
 }
 
@@ -511,70 +369,26 @@ class _ActivityCard extends StatelessWidget {
             currentPath: GoRouterState.of(context).uri.path,
           );
 
-    final card = Container(
-      padding: const EdgeInsets.all(AuraSpace.s12),
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.divider),
+    return WorkspaceRow(
+      leading: AuraAvatar(
+        name: actorName.isNotEmpty ? actorName : 'Aura',
+        imageUrl: actor.avatarUrl,
+        size: 36,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AuraAvatar(
-            name: actorName.isNotEmpty ? actorName : 'Aura',
-            imageUrl: actor.avatarUrl,
-            size: 32,
-          ),
-          const SizedBox(width: AuraSpace.s12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  summary,
-                  style: AuraText.body.copyWith(
-                    color: AuraSurface.ink,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    if (time.isNotEmpty) ...[
-                      Text(
-                        time,
-                        style: AuraText.micro
-                            .copyWith(color: AuraSurface.faint),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          ),
-          if (adapted != null)
-            const Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 12,
-              color: AuraSurface.faint,
-            ),
-        ],
-      ),
-    );
-
-    if (adapted == null) return card;
-    return InkWell(
-      onTap: () => context.push(adapted),
-      borderRadius: BorderRadius.circular(AuraRadius.card),
-      child: card,
+      title: summary,
+      context: time.isEmpty ? null : time,
+      trailing: adapted == null
+          ? null
+          : const Icon(Icons.chevron_right_rounded, size: 18, color: AuraSurface.faint),
+      onTap: adapted == null ? null : () => context.push(adapted),
     );
   }
 
   String _formatTime(DateTime dt) {
     final local = dt.toLocal();
-    final hh = local.hour.toString().padLeft(2, '0');
+    // The product writes times as "9:04 AM", never "09:04".
+    final h = local.hour % 12 == 0 ? 12 : local.hour % 12;
     final mm = local.minute.toString().padLeft(2, '0');
-    return '$hh:$mm';
+    return '$h:$mm ${local.hour >= 12 ? 'PM' : 'AM'}';
   }
 }

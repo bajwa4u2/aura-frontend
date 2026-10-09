@@ -1,20 +1,18 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
-import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_surface.dart';
+import '../../../core/product/product_language.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../core/ui/aura_card.dart';
 import '../../../core/ui/aura_platform_components.dart';
-import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/institutions/institution_access_provider.dart';
-import '../ui/institution_ds.dart';
+import '../workspace/workspace_page.dart';
 import 'institution_domains_providers.dart';
 import 'institution_domains_repository.dart';
 import '../institution_words.dart';
@@ -356,6 +354,8 @@ class _InstitutionDomainsScreenState
     }
   }
 
+  /// One address as one row (DD-43): what it is, where it stands, and its
+  /// actions in the row's menu.
   Widget buildDomainCard(Map<String, dynamic> d) {
     final id = d['id']?.toString() ?? '';
     final domain = d['domain']?.toString() ?? '';
@@ -365,93 +365,52 @@ class _InstitutionDomainsScreenState
     final isPrimary = d['isPrimary'] == true;
     final isVerified = status == 'VERIFIED';
 
-    Color statusColor;
-    if (isVerified) {
-      statusColor = AuraSurface.goodInk;
-    } else if (status == 'CHALLENGE_ISSUED') {
-      statusColor = AuraSurface.infoInk;
-    } else {
-      statusColor = AuraSurface.warnInk;
-    }
+    final tone = isVerified
+        ? WorkspaceTone.done
+        : (status == 'CHALLENGE_ISSUED' ? WorkspaceTone.live : WorkspaceTone.waiting);
 
-    return AuraCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  domain,
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(AuraRadius.xl),
-                ),
-                child: Text(
-                  domainStatusWords(status),
-                  style: AuraText.small.copyWith(
-                    color: statusColor,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11,
+    final facts = <String>[
+      if (isPrimary) 'Primary domain',
+      if (domainTrustWords(trustLevel).isNotEmpty && isVerified) domainTrustWords(trustLevel),
+      if (DateTime.tryParse(verifiedAt) != null)
+        'Confirmed ${AuraTemporal.fullShort(DateTime.parse(verifiedAt))}',
+    ];
+
+    final actions = <(String, IconData, VoidCallback, bool)>[
+      if (!isVerified) ...[
+        ('Get the record to add', Icons.dns_outlined, () => issueChallenge(id), false),
+        ('Check the record', Icons.fact_check_outlined, () => verifyDomain(id), false),
+        ('Check automatically', Icons.autorenew_rounded, () => startAutoVerify(id), false),
+      ],
+      ('Remove', Icons.delete_outline_rounded, () => removeDomain(id), true),
+    ];
+
+    return WorkspaceRow(
+      leading: WorkspaceIcon(Icons.language_rounded, tone: tone),
+      title: domain,
+      context: facts.isEmpty
+          ? (isVerified ? null : 'Add the record we give you to your DNS, then check it.')
+          : facts.join(' · '),
+      pill: WorkspacePill(label: domainStatusWords(status), tone: tone),
+      trailing: PopupMenuButton<int>(
+        tooltip: 'Actions for $domain',
+        color: AuraSurface.overlay,
+        icon: const Icon(Icons.more_vert_rounded, size: 20, color: AuraSurface.muted),
+        onSelected: (i) => actions[i].$3(),
+        itemBuilder: (_) => [
+          for (var i = 0; i < actions.length; i++)
+            PopupMenuItem<int>(
+              value: i,
+              child: Row(
+                children: [
+                  Icon(actions[i].$2, size: 18, color: actions[i].$4 ? AuraSurface.dangerInk : AuraSurface.muted),
+                  const SizedBox(width: AuraSpace.s12),
+                  Text(
+                    actions[i].$1,
+                    style: AuraText.body.copyWith(color: actions[i].$4 ? AuraSurface.dangerInk : AuraSurface.ink),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: AuraSpace.s6),
-          if (isPrimary)
-            Text(
-              'Primary domain',
-              style: AuraText.small.copyWith(color: AuraText.small.color),
-            ),
-          if (domainTrustWords(trustLevel).isNotEmpty && isVerified)
-            Text(
-              domainTrustWords(trustLevel),
-              style: AuraText.small,
-            ),
-          if (DateTime.tryParse(verifiedAt) != null)
-            Text(
-              'Confirmed ${AuraTemporal.fullShort(DateTime.parse(verifiedAt))}',
-              style: AuraText.small,
-            ),
-          const SizedBox(height: AuraSpace.s12),
-          if (isVerified)
-            Wrap(
-              spacing: AuraSpace.s8,
-              children: [
-                AuraSecondaryButton(
-                  label: 'Remove',
-                  onPressed: () => removeDomain(id),
-                ),
-              ],
-            )
-          else
-            Wrap(
-              spacing: AuraSpace.s8,
-              runSpacing: AuraSpace.s8,
-              children: [
-                AuraSecondaryButton(
-                  label: 'Get the record to add',
-                  onPressed: () => issueChallenge(id),
-                ),
-                AuraSecondaryButton(
-                  label: 'Check the record',
-                  onPressed: () => verifyDomain(id),
-                ),
-                AuraSecondaryButton(
-                  label: 'Check automatically',
-                  onPressed: () => startAutoVerify(id),
-                ),
-                AuraSecondaryButton(
-                  label: 'Remove',
-                  onPressed: () => removeDomain(id),
-                ),
-              ],
             ),
         ],
       ),
@@ -463,20 +422,18 @@ class _InstitutionDomainsScreenState
     final slug = institution?['slug']?.toString() ?? '';
 
     if (canManageDomains) {
-      return AuraCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              name,
-              style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: AuraSpace.s8),
-            if (slug.isNotEmpty) Text('auraplatform.org/i/$slug'),
-            if (institutionStandingWords(institutionState).isNotEmpty)
-              Text(institutionStandingWords(institutionState)),
-          ],
-        ),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            name,
+            style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: AuraSpace.s8),
+          if (slug.isNotEmpty) Text('auraplatform.org/i/$slug', style: AuraText.muted),
+          if (institutionStandingWords(institutionState).isNotEmpty)
+            Text(institutionStandingWords(institutionState), style: AuraText.muted),
+        ],
       );
     }
 
@@ -497,14 +454,14 @@ class _InstitutionDomainsScreenState
           'This institutional standing is suspended. Domain management is temporarily unavailable.';
     }
 
-    return AuraCard(child: Text(message));
+    return Text(message, style: AuraText.body);
   }
 
   Widget _emptyState() {
-    return const InsEmptyState(
+    return const WorkspaceEmpty(
       icon: Icons.domain_outlined,
       title: 'No domains added yet',
-      description:
+      body:
           'Add your institution’s web domains and verify ownership to strengthen public trust.',
     );
   }
@@ -525,83 +482,68 @@ class _InstitutionDomainsScreenState
   void _focusAddDomainField() {
     if (canManageDomains && !_submitting) {
       // No explicit FocusNode is wired up; the form sits directly below the
-      // mode header so a scroll-into-view is sufficient. The user types into
-      // the existing input.
+      // header so a scroll-into-view is sufficient. The user types into the
+      // existing input.
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return AuraScaffold(
-      showHeader: false,
-      body: InsScreen(
-        children: [
-          InsModeHeader(
-            title: 'Domains & Trust',
-            primaryAction: AuraPrimaryButton(
-              label: _submitting ? 'Adding…' : 'Add domain',
-              icon: Icons.add_rounded,
-              onPressed: (_submitting || !canManageDomains) ? null : addDomain,
+    return WorkspacePage(
+      type: WorkspacePageType.settings,
+      title: 'Web addresses',
+      purpose: 'Your institution’s web domains. A verified domain shows the public it is really you.',
+      primary: WorkspaceAction(
+        label: _submitting ? 'Adding…' : 'Add address',
+        icon: Icons.add_rounded,
+        onPressed: (_submitting || !canManageDomains) ? null : addDomain,
+      ),
+      children: [
+        WorkspaceSection(title: 'This institution', child: _statusCard()),
+        WorkspaceSection(
+          title: 'Add an address',
+          child: TextField(
+            controller: domainController,
+            enabled: canManageDomains && !_submitting,
+            decoration: InputDecoration(
+              hintText: 'example.org',
+              helperMaxLines: 3,
+              helperText: canManageDomains
+                  ? 'Enter only the domain name, then choose Add address.'
+                  : 'Domain management becomes active once institutional membership is active.',
             ),
+            onTap: _focusAddDomainField,
+            onSubmitted: (_) {
+              if (canManageDomains && !_submitting) {
+                addDomain();
+              }
+            },
           ),
-          const InsModeHeaderGap(),
-
-          _statusCard(),
-          const SizedBox(height: AuraSpace.s12),
-
-          AuraCard(
+        ),
+        if (canManageDomains || loading || loadError != null)
+          WorkspaceSection(
+            title: 'Addresses',
+            boxed: false,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  'Add domain',
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: AuraSpace.s10),
-                TextField(
-                  controller: domainController,
-                  enabled: canManageDomains && !_submitting,
-                  decoration: InputDecoration(
-                    hintText: 'example.org',
-                    helperText: canManageDomains
-                        ? 'Enter only the domain name. Use the action above to add.'
-                        : 'Domain management becomes active once institutional membership is active.',
-                  ),
-                  onTap: _focusAddDomainField,
-                  onSubmitted: (_) {
-                    if (canManageDomains && !_submitting) {
-                      addDomain();
-                    }
-                  },
-                ),
+                if (loading)
+                  const WorkspaceLoading(rows: 2)
+                else if (loadError != null)
+                  WorkspaceEmpty(
+                    icon: Icons.error_outline_rounded,
+                    title: 'Could not load domains',
+                    body: loadError!,
+                    action: WorkspaceAction(label: ProductLabels.of(ProductAction.retry), icon: Icons.refresh_rounded, onPressed: loadDomains),
+                  )
+                else if (domains.isEmpty)
+                  _emptyState()
+                else
+                  for (final d in domains) buildDomainCard(d),
               ],
             ),
           ),
-
-          const SizedBox(height: AuraSpace.s12),
-
-          if (loading)
-            const Center(child: AuraLoadingState(message: 'Loading domains…'))
-          else if (loadError != null)
-            InsEmptyState(
-              icon: Icons.error_outline_rounded,
-              title: 'Could not load domains',
-              description: loadError!,
-              tone: InsTone.danger,
-            )
-          else if (!canManageDomains)
-            const SizedBox.shrink()
-          else if (domains.isEmpty)
-            _emptyState()
-          else
-            ...domains.map(
-              (d) => Padding(
-                padding: const EdgeInsets.only(bottom: AuraSpace.s10),
-                child: buildDomainCard(d),
-              ),
-            ),
-        ],
-      ),
+      ],
     );
   }
 }
