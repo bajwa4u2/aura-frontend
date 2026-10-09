@@ -323,6 +323,8 @@ final _workspacePagesWithTheirOwnBack = <RegExp>[
   RegExp(r'^public-engagement/[^/]+$'),
   RegExp(r'^announcements/new$'),
   RegExp(r'^announcements/[^/]+/edit$'),
+  RegExp(r'^posts/new$'),
+  RegExp(r'^posts/[^/]+/edit$'),
 ];
 
 /// Whether the place this path would return TO is already on screen.

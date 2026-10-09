@@ -17,11 +17,13 @@ void main() {
     expect(workspaceFrameOwnsReturn('/institution/x/public-engagement/participation'), isTrue);
     expect(workspaceFrameOwnsReturn('/institution/x/announcements/new'), isTrue);
     expect(workspaceFrameOwnsReturn('/institution/x/announcements/a1/edit'), isTrue);
+    expect(workspaceFrameOwnsReturn('/institution/x/posts/new'), isTrue);
+    expect(workspaceFrameOwnsReturn('/institution/x/posts/p1/edit'), isTrue);
   });
 
   test('other deeper routes and everything outside the workspace keep the shell Back', () {
     expect(workspaceFrameOwnsReturn('/institution/x/spaces/s1'), isFalse);
-    expect(workspaceFrameOwnsReturn('/institution/x/posts/new'), isFalse);
+    expect(workspaceFrameOwnsReturn('/institution/x/posts/p1'), isFalse);
     expect(workspaceFrameOwnsReturn('/institutions/x'), isFalse);
     expect(workspaceFrameOwnsReturn('/messages/c/1'), isFalse);
     expect(workspaceFrameOwnsReturn('/institution/x'), isFalse);
