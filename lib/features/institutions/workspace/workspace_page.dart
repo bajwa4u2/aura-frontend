@@ -61,20 +61,26 @@ class WorkspaceBack {
 }
 
 /// Widths. Measured against the content area beside the rail, not the window.
+///
+/// PAGES FILL THE SPACE (founder, 9 Oct 2026, on the Windows app: "screens
+/// stretch to left and not filling space"). An 880 column pinned left left a
+/// wide empty band beside every page at real widths and the founder's 175%
+/// text. Pages now take the content area; these caps only stop lines growing
+/// absurdly long on very large screens.
 class WorkspaceLayout {
   WorkspaceLayout._();
 
-  /// Collections, records and settings: one reading column.
-  static const double column = 880;
+  /// Collections, records and settings.
+  static const double column = 1280;
 
-  /// The Board and composers: room for two columns of blocks.
-  static const double wide = 1080;
+  /// The Desk's board and composers.
+  static const double wide = 1440;
 
   /// The list's width when an item is open beside it.
-  static const double list = 420;
+  static const double list = 460;
 
-  /// The open item's widest reading measure.
-  static const double detail = 760;
+  /// The open item beside a list.
+  static const double detail = 1080;
 
   /// From this content width an item opens beside its list.
   static const double splitFrom = 1040;

@@ -790,9 +790,12 @@ class InsCoverHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    // Fills the page's column (DD-43, founder 9 Oct 2026: "not filling
+    // space"); the workspace frame sets the width. Its only use is Profile.
+    return Align(
+      alignment: Alignment.topLeft,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: InsSpacing.contentMaxWidth),
+        constraints: const BoxConstraints(maxWidth: double.infinity),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

@@ -124,7 +124,7 @@ class _WorkspaceOutline extends StatelessWidget {
         child: Align(
           alignment: Alignment.topLeft,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 880 + 2 * AuraSpace.s32),
+            constraints: const BoxConstraints(maxWidth: 1280 + 2 * AuraSpace.s32),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(AuraSpace.s32, AuraSpace.s24, AuraSpace.s32, 0),
               child: Column(
