@@ -2750,10 +2750,60 @@ class _InstitutionSideNavTile extends StatelessWidget {
                       horizontal: compact ? AuraSpace.s6 : AuraSpace.s12,
                       vertical: AuraSpace.s8,
                     ),
-                    child: Row(
-                      mainAxisAlignment: compact
-                          ? MainAxisAlignment.center
-                          : MainAxisAlignment.start,
+                    // COMPACT CARRIES A CAPTION (DD-42 phase 2, 2026-10-09).
+                    // Eighteen bare glyphs asked people to hover each one to
+                    // learn what it was; the member rail already captions its
+                    // icons. Two short lines fit at 92 px.
+                    child: compact
+                        ? Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  Icon(
+                                    selected ? entry.selectedIcon : entry.icon,
+                                    size: AuraIconSize.md,
+                                    color: iconColor,
+                                  ),
+                                  if (!isDisabled && entry.badge > 0)
+                                    Positioned(
+                                      right: -12,
+                                      top: -6,
+                                      child: _NavCountBadge(count: entry.badge),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 3),
+                              // Two words may take two lines; one long word
+                              // ("Announcements") shrinks a little rather
+                              // than break in the middle.
+                              Builder(builder: (context) {
+                                final caption = Text(
+                                  entry.label,
+                                  maxLines: entry.label.contains(' ') ? 2 : 1,
+                                  textAlign: TextAlign.center,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AuraText.micro.copyWith(
+                                    fontSize: 10,
+                                    height: 1.15,
+                                    fontWeight: selected
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                    color: textColor,
+                                  ),
+                                );
+                                return entry.label.contains(' ')
+                                    ? caption
+                                    : FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: caption,
+                                      );
+                              }),
+                            ],
+                          )
+                        : Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
                         Icon(
                           selected ? entry.selectedIcon : entry.icon,
