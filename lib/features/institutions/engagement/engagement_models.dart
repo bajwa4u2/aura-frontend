@@ -96,7 +96,20 @@ class RoutedRecord {
     this.author = AuraPersonIdentity.unknown,
     this.postText,
     this.postCreatedAt,
+    this.routedAt,
+    this.acknowledgedAt,
+    this.reopenedAt,
+    this.resolutions = const [],
   });
+
+  /// When it reached this institution, and what has been done since
+  /// (2026-10-09): the workspace shows the record's whole history.
+  final DateTime? routedAt;
+  final DateTime? acknowledgedAt;
+  final DateTime? reopenedAt;
+
+  /// Each resolution statement, oldest first, with when it was made.
+  final List<({String statement, DateTime? at})> resolutions;
 
   final String id;
   final String postId;
@@ -187,6 +200,17 @@ class RoutedRecord {
       author: AuraPersonIdentity.fromJson(authorRaw),
       postText: _opt(postRaw, ['text']),
       postCreatedAt: readDate(postRaw['createdAt']),
+      routedAt: readDate(m['routedAt']),
+      acknowledgedAt: readDate(m['acknowledgedAt']),
+      reopenedAt: readDate(m['reopenedAt']),
+      resolutions: [
+        if (m['resolutions'] is List)
+          for (final r in (m['resolutions'] as List).whereType<Map>())
+            (
+              statement: (r['statement'] ?? '').toString(),
+              at: readDate(r['resolvedAt']),
+            ),
+      ],
     );
   }
 }
@@ -232,4 +256,20 @@ class EngagementSummary {
     committed: 0,
     resolved: 0,
   );
+}
+
+/// Where a record stands, in words that fit what it is (2026-10-09): a
+/// question is answered; an issue is responded to, committed to, resolved.
+String engagementStatusWords(RoutedRecord r) {
+  final ask = r.intent == RecordIntent.ask;
+  switch (r.status) {
+    case RoutedRecordStatus.pending:
+      return ask ? 'Waiting for an answer' : 'Waiting for a response';
+    case RoutedRecordStatus.responded:
+      return ask ? 'Answered' : 'Responded';
+    case RoutedRecordStatus.committed:
+      return 'Committed to act';
+    case RoutedRecordStatus.resolved:
+      return 'Resolved';
+  }
 }

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/navigation/navigation_authority.dart';
 import '../../../router.dart' show kMePreferencesRoute;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -863,6 +864,12 @@ class _MeScreenState extends ConsumerState<MeScreen>
     return MeSection(
       title: 'Personal Record',
       children: [
+        MeSettingsItem(
+          label: 'My questions and issues',
+          icon: Icons.record_voice_over_outlined,
+          subtitle: 'What institutions did with what you asked or raised',
+          onTap: () => context.push(NavigationAuthority.myQuestionsRoute),
+        ),
         MeSettingsItem(
           label: 'Saved posts',
           icon: Icons.bookmark_outline,

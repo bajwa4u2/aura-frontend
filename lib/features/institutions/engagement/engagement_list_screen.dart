@@ -12,18 +12,35 @@ import '../../../core/utils/relative_time.dart';
 import 'engagement_models.dart';
 import 'engagement_providers.dart';
 
-class EngagementListScreen extends ConsumerWidget {
+/// The filters, in the order a person works through them (2026-10-09).
+const _filters = <(String label, String? wire)>[
+  ('Waiting', 'PENDING'),
+  ('Answered', 'RESPONDED'),
+  ('Committed', 'COMMITTED'),
+  ('Resolved', 'RESOLVED'),
+  ('All', null),
+];
+
+class EngagementListScreen extends ConsumerStatefulWidget {
   const EngagementListScreen({super.key, required this.institutionId});
 
   final String institutionId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final listAsync = ref.watch(engagementListProvider(institutionId));
+  ConsumerState<EngagementListScreen> createState() => _EngagementListScreenState();
+}
+
+class _EngagementListScreenState extends ConsumerState<EngagementListScreen> {
+  String? _status = 'PENDING';
+
+  @override
+  Widget build(BuildContext context) {
+    final institutionId = widget.institutionId;
+    final listAsync = ref.watch(engagementFilteredListProvider((institutionId, _status)));
     final summaryAsync = ref.watch(engagementSummaryProvider(institutionId));
 
     return AuraScaffold(
-      title: 'Public Engagement',
+      title: 'Questions from the public',
       showHomeAction: false,
       actions: [
         IconButton(
@@ -40,6 +57,23 @@ class EngagementListScreen extends ConsumerWidget {
             child: summaryAsync.whenOrNull(
               data: (s) => s.total > 0 ? _SummaryBar(summary: s) : null,
             ) ?? const SizedBox.shrink(),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(AuraSpace.s16, AuraSpace.s12, AuraSpace.s16, 0),
+              child: Wrap(
+                spacing: AuraSpace.s8,
+                runSpacing: AuraSpace.s8,
+                children: [
+                  for (final f in _filters)
+                    ChoiceChip(
+                      label: Text(f.$1),
+                      selected: _status == f.$2,
+                      onSelected: (_) => setState(() => _status = f.$2),
+                    ),
+                ],
+              ),
+            ),
           ),
           listAsync.when(
             loading: () => const SliverFillRemaining(
@@ -58,8 +92,8 @@ class EngagementListScreen extends ConsumerWidget {
             ),
             data: (list) {
               if (list.isEmpty) {
-                return const SliverFillRemaining(
-                  child: _EmptyState(),
+                return SliverFillRemaining(
+                  child: _EmptyState(filtered: _status != null),
                 );
               }
               return SliverPadding(
@@ -116,13 +150,13 @@ class _SummaryBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _Counter(label: 'Total', count: summary.total),
-          const _Divider(),
           _Counter(
-            label: 'Needs Response',
+            label: 'Waiting',
             count: summary.pending,
             urgent: summary.pending > 0,
           ),
+          const _Divider(),
+          _Counter(label: 'Answered', count: summary.responded),
           const _Divider(),
           _Counter(label: 'Committed', count: summary.committed),
           const _Divider(),
@@ -242,7 +276,7 @@ class _RecordCard extends StatelessWidget {
                       border: Border.all(color: AuraSurface.divider),
                     ),
                     child: Text(
-                      record.intent.label,
+                      record.intent == RecordIntent.issue ? 'Raised issue' : 'Question',
                       style: AuraText.micro.copyWith(
                         color: AuraSurface.muted,
                         fontWeight: FontWeight.w700,
@@ -283,7 +317,7 @@ class _RecordCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AuraRadius.pill),
                   ),
                   child: Text(
-                    record.status.label,
+                    engagementStatusWords(record),
                     style: AuraText.micro.copyWith(
                       color: statusColor,
                       fontWeight: FontWeight.w700,
@@ -333,7 +367,10 @@ class _RecordCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState();
+  const _EmptyState({this.filtered = false});
+
+  /// A filter that matches nothing is not "no records yet".
+  final bool filtered;
 
   @override
   Widget build(BuildContext context) {
@@ -357,11 +394,13 @@ class _EmptyState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AuraSpace.s16),
-            const Text('No public records yet', style: AuraText.title),
+            Text(filtered ? 'Nothing here' : 'No questions yet', style: AuraText.title),
             const SizedBox(height: AuraSpace.s8),
             Text(
-              'When members of the public raise issues or ask questions '
-              'on your topics, they will appear here.',
+              filtered
+                  ? 'Nothing is in this state right now. Try another filter.'
+                  : 'When someone asks a question or raises an issue on a topic '
+                      'this institution has taken on, it appears here.',
               style: AuraText.body.copyWith(color: AuraSurface.muted),
               textAlign: TextAlign.center,
             ),

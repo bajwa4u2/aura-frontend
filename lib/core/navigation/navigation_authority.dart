@@ -225,6 +225,10 @@ class NavigationAuthority {
   static const String feedbackRoute = '/feedback';
   static const String myFeedbackRoute = '/feedback/mine';
 
+  /// The person's own questions and raised issues, with what became of each
+  /// (2026-10-09).
+  static const String myQuestionsRoute = '/me/questions';
+
   /// The operator's side of feedback. Permission-gated, and separate from the
   /// member surface for the same reason identity review is: telling us
   /// something and deciding what we do about it are different capabilities.

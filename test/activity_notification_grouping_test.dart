@@ -7,6 +7,8 @@ import 'package:aura/core/notifications/notification_presentation.dart';
 /// makes the drift visible instead of letting the new kind fall silently into
 /// System forever.
 const kBackendNotificationTypes = <String>[
+  // 2026-10-09: a public question or issue reached an institution.
+  'PUBLIC_RECORD_ARRIVED',
   'FOLLOW', 'FOLLOW_REQUEST', 'FOLLOW_ACCEPTED', 'LIKE', 'SAVE', 'REPLY',
   'REPOST', 'MESSAGE', 'MENTION', 'SPACE_INVITE', 'THREAD_INVITE',
   'INVITE_ACCEPTED', 'POST_PUBLISHED', 'POST_PUBLISH_FAILED', 'SYSTEM',

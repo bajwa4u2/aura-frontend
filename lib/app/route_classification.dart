@@ -310,6 +310,9 @@ bool isMemberShellPath(String path) {
       path == '/feedback' ||
       path == '/feedback/mine' ||
       path == '/me/follow-requests' ||
+      // My questions and issues (2026-10-09): the account's own asks and
+      // what became of them. MEMBER.
+      path == '/me/questions' ||
       path == '/me/invitations' ||
       path == '/invite' ||
       path == '/invite/create' ||

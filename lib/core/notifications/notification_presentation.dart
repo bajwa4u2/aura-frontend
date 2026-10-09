@@ -197,6 +197,16 @@ String? _payloadRefinedTitle(
           return 'Your content was reviewed by moderation';
       }
 
+    // The people who answer for an institution are told a public question or
+    // issue reached it, and once more if it waits three days (2026-10-09).
+    // The actor is the institution, so the sentence names it.
+    case 'PUBLIC_RECORD_ARRIVED':
+      final what = field('intent').toUpperCase() == 'ISSUE' ? 'issue' : 'question';
+      final where = actorName.isNotEmpty ? actorName : 'your institution';
+      return payload['reminder'] == true || data['reminder'] == true
+          ? 'A public $what is still waiting for $where'
+          : 'A public $what reached $where';
+
     // One class covers every stage of the accountability lifecycle; the stage
     // rides in the payload.
     case 'ACCOUNTABILITY_TAGGED':
@@ -205,7 +215,7 @@ String? _payloadRefinedTitle(
         case 'RESOLVED':
           return '$actorName marked your issue as Resolved';
         case 'COMMITMENT':
-          return '$actorName committed to a response on your issue';
+          return '$actorName committed to act on your issue';
         case 'UPDATE':
           return '$actorName posted an update on your issue';
         case 'REOPENED':
@@ -398,6 +408,7 @@ const Map<String, NotificationGroup> kNotificationGroups = <String, Notification
   'REPLY': NotificationGroup.social,
   'REPOST': NotificationGroup.social,
   'ACCOUNTABILITY_TAGGED': NotificationGroup.social,
+  'PUBLIC_RECORD_ARRIVED': NotificationGroup.system,
   'PRIORITY_PINNED': NotificationGroup.social,
   'THREAD_ACTIVITY': NotificationGroup.social,
   'SPACE_ACTIVITY': NotificationGroup.social,

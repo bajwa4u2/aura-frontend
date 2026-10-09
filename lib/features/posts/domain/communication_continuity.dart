@@ -88,9 +88,14 @@ class AccountabilityLifecycle {
     required this.reopenedAt,
     required this.routedAt,
     required this.updatedAt,
+    this.institutionName = '',
   });
 
   final String institutionId;
+
+  /// Who this is with, named (2026-10-09): the label used to be
+  /// "Institution 1a2b3c4d" for anyone not in the institution.
+  final String institutionName;
   final AccountabilityStatus status;
   final bool overdue;
   final DateTime? acknowledgedAt;
@@ -114,6 +119,7 @@ class AccountabilityLifecycle {
     }
     return AccountabilityLifecycle(
       institutionId: _asString(j['institutionId']) ?? '',
+      institutionName: _asString(_asMap(j['institution'])['name']) ?? '',
       status: _statusFromWire(_asString(j['status'])),
       overdue: j['overdue'] == true,
       acknowledgedAt: DateTime.tryParse(_asString(j['acknowledgedAt']) ?? ''),
@@ -171,7 +177,16 @@ sealed class ContinuityResult {
       );
     }
     if (intent == 'ASK') {
-      return AskContinuity(status: _askStatusFromWire(_asString(map['status'])));
+      List<String> names(dynamic raw) => [
+            if (raw is List)
+              for (final e in raw)
+                if ((_asString(_asMap(e)['name']) ?? '').isNotEmpty) _asString(_asMap(e)['name'])!,
+          ];
+      return AskContinuity(
+        status: _askStatusFromWire(_asString(map['status'])),
+        routedTo: names(map['routedTo']),
+        answeredBy: names(map['answeredBy']),
+      );
     }
     return const ContinuityNone();
   }
@@ -188,9 +203,18 @@ class RaiseIssueContinuity extends ContinuityResult {
 }
 
 class AskContinuity extends ContinuityResult {
-  const AskContinuity({required this.status});
+  const AskContinuity({
+    required this.status,
+    this.routedTo = const [],
+    this.answeredBy = const [],
+  });
 
   final AskContinuityStatus status;
+
+  /// Names of the institutions the question reached, and of those that
+  /// answered it officially (2026-10-09).
+  final List<String> routedTo;
+  final List<String> answeredBy;
 }
 
 /// Share Update, or any post with no Accountability Lifecycle to show.

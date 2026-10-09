@@ -56,7 +56,12 @@ class CommunicationContinuityView extends ConsumerWidget {
           return const SizedBox.shrink();
         }
         if (result is AskContinuity) {
-          return _AskContinuityCard(status: result.status, postId: postId);
+          return _AskContinuityCard(
+            status: result.status,
+            postId: postId,
+            routedTo: result.routedTo,
+            answeredBy: result.answeredBy,
+          );
         }
         if (result is RaiseIssueContinuity) {
           return _RaiseIssueContinuityCard(
@@ -122,10 +127,17 @@ Widget _sectionFrame({required Widget child}) {
 }
 
 class _AskContinuityCard extends StatelessWidget {
-  const _AskContinuityCard({required this.status, required this.postId});
+  const _AskContinuityCard({
+    required this.status,
+    required this.postId,
+    this.routedTo = const [],
+    this.answeredBy = const [],
+  });
 
   final AskContinuityStatus status;
   final String postId;
+  final List<String> routedTo;
+  final List<String> answeredBy;
 
   @override
   Widget build(BuildContext context) {
@@ -137,7 +149,12 @@ class _AskContinuityCard extends StatelessWidget {
               const Icon(Icons.check_circle_outline, size: 16, color: AuraSurface.coVerdant),
               const SizedBox(width: AuraSpace.s8),
               Expanded(
-                child: Text('Answered.', style: AuraText.small.copyWith(fontWeight: FontWeight.w700)),
+                child: Text(
+                  // Named when an institution itself answered (2026-10-09);
+                  // "Answered." alone may mean anyone replied.
+                  answeredBy.isEmpty ? 'Answered.' : 'Answered by ${answeredBy.join(', ')}.',
+                  style: AuraText.small.copyWith(fontWeight: FontWeight.w700),
+                ),
               ),
             ],
           ),
@@ -160,6 +177,14 @@ class _AskContinuityCard extends StatelessWidget {
           ),
         );
       case AskContinuityStatus.pending:
+        // Say who it reached, so the person knows someone is responsible.
+        if (routedTo.isEmpty) return const SizedBox.shrink();
+        return _sectionFrame(
+          child: Text(
+            'Sent to ${routedTo.join(', ')}. Waiting for an answer.',
+            style: AuraText.small.copyWith(color: AuraSurface.muted),
+          ),
+        );
       case AskContinuityStatus.unknown:
         return const SizedBox.shrink();
     }
@@ -268,6 +293,8 @@ class _AccountabilityLifecycleRowState extends ConsumerState<_AccountabilityLife
   }
 
   String _institutionLabel() {
+    final named = widget.lifecycle.institutionName.trim();
+    if (named.isNotEmpty) return named;
     final name = _affiliation?.name.trim() ?? '';
     if (name.isNotEmpty) return name;
     final id = widget.lifecycle.institutionId;
@@ -417,7 +444,10 @@ class _AccountabilityLifecycleRowState extends ConsumerState<_AccountabilityLife
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (widget.multiInstitution) ...[
+        // The institution is always named now that the record carries it
+        // (2026-10-09); without a name only a multi-institution post shows
+        // the fallback label.
+        if (widget.multiInstitution || l.institutionName.trim().isNotEmpty) ...[
           Text(
             _institutionLabel(),
             style: AuraText.small.copyWith(fontWeight: FontWeight.w800),
@@ -475,9 +505,10 @@ class _AccountabilityLifecycleRowState extends ConsumerState<_AccountabilityLife
                 label: 'Acknowledge',
                 onPressed: _busy ? null : _acknowledge,
               ),
-            if ((l.status == AccountabilityStatus.pending ||
-                    l.status == AccountabilityStatus.responded ||
-                    l.status == AccountabilityStatus.committed) &&
+            // A reopened or stale issue can be resolved again; Resolve used to
+            // vanish after a reopen (2026-10-09).
+            if (l.status != AccountabilityStatus.resolved &&
+                l.status != AccountabilityStatus.institutionNoLongerActive &&
                 _canResolve)
               AuraSecondaryButton(
                 label: 'Resolve',

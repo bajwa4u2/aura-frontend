@@ -104,7 +104,6 @@ G5 3 lib/features/direct_threads/presentation/direct_intent_screen.dart
 G5 2 lib/features/institutions/activity/institution_activity_screen.dart
 G5 2 lib/features/institutions/announcements/institution_announcements_screen.dart
 G5 1 lib/features/institutions/domain/institution_domains_screen.dart
-G5 2 lib/features/institutions/engagement/engagement_detail_screen.dart
 G5 2 lib/features/institutions/engagement/engagement_list_screen.dart
 G5 2 lib/features/institutions/explore/institution_explore_screen.dart
 G5 3 lib/features/institutions/live_rooms/institution_live_rooms_screen.dart

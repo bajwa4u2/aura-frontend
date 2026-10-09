@@ -1,12 +1,14 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/content_policy/content_length_policy.dart';
-import '../../../core/institutions/institution_access_provider.dart';
-import '../../../core/tagging/governed_tag_field.dart';
-import '../../../core/tagging/tag_entities.dart';
+import '../../../core/authority/authority_providers.dart';
+import '../../../core/authority/capability_projection.dart';
+import '../../../core/errors/server_refusal.dart';
+import '../../../core/net/dio_provider.dart';
+import '../../../core/product/product_state.dart';
+import '../../../core/product/product_state_view.dart';
+import '../../../core/product/temporal.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_scaffold.dart';
@@ -14,11 +16,18 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/utils/relative_time.dart';
-import '../data/institutions_repository.dart';
-import '../domain/institution_post.dart';
 import 'engagement_models.dart';
 import 'engagement_providers.dart';
 
+/// ONE QUESTION OR ISSUE, AS THE INSTITUTION SEES IT (2026-10-09).
+///
+/// "Reply Officially" used to publish a separate institution post that was
+/// never attached to the person's post: the record stayed "needs response",
+/// the person was never told, and a tag failed after the post was public.
+/// Responding now puts a real official reply ON their post (they are told),
+/// and for a raised issue the response may also commit the institution to
+/// act or record how it was resolved. Acknowledging and the record's whole
+/// history live here too.
 class EngagementDetailScreen extends ConsumerWidget {
   const EngagementDetailScreen({
     super.key,
@@ -31,68 +40,132 @@ class EngagementDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(
-      engagementDetailProvider((institutionId, recordId)),
-    );
-    final identity = ref.watch(institutionIdentityProvider);
-    final canPublish = identity?.canPublishPosts ?? false;
+    final async = ref.watch(engagementDetailProvider((institutionId, recordId)));
+    final projection = ref.watch(capabilityProjectionForProvider(institutionId));
+    bool may(ConsequentialAct act) =>
+        projection.presentationFor(act) == ControlPresentation.available;
 
-    return async.when(
-      loading: () => AuraScaffold(
-        title: 'Public Record',
-        showHomeAction: false,
-        body: const Center(child: AuraLoadingState(message: 'Loading…')),
-      ),
-      error: (e, _) => AuraScaffold(
-        title: 'Public Record',
-        showHomeAction: false,
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AuraSpace.s16),
-            child: AuraErrorState(
-              title: 'Could not load record',
-              body: e.toString(),
-            ),
-          ),
+    return AuraScaffold(
+      title: 'Public question',
+      showHomeAction: false,
+      body: async.when(
+        loading: () => const AuraProductState(state: ProductState.loading),
+        error: (e, _) => AuraProductState(
+          state: ProductState.retryableError,
+          headline: 'This question could not be loaded',
+          detail: ServerRefusal.of(e).message,
+          onRecover: () => ref.invalidate(engagementDetailProvider((institutionId, recordId))),
         ),
-      ),
-      data: (record) => AuraScaffold(
-        title: 'Public Record',
-        showHomeAction: false,
-        body: _DetailBody(
+        data: (record) => _DetailBody(
           record: record,
           institutionId: institutionId,
-          canPublish: canPublish,
+          canRespond: may(ConsequentialAct.authorOfficialContent),
+          canSettle: may(ConsequentialAct.publishInstitutionPost),
         ),
       ),
     );
   }
 }
 
-class _DetailBody extends StatelessWidget {
+String _modeWords(String? mode) {
+  switch ((mode ?? '').toUpperCase()) {
+    case 'ACCOUNTABLE':
+      return 'You answer for this topic';
+    case 'RESPONDING':
+      return 'You respond on this topic';
+    default:
+      return '';
+  }
+}
+
+class _DetailBody extends ConsumerStatefulWidget {
   const _DetailBody({
     required this.record,
     required this.institutionId,
-    required this.canPublish,
+    required this.canRespond,
+    required this.canSettle,
   });
 
   final RoutedRecord record;
   final String institutionId;
-  final bool canPublish;
+  final bool canRespond;
+  final bool canSettle;
+
+  @override
+  ConsumerState<_DetailBody> createState() => _DetailBodyState();
+}
+
+class _DetailBodyState extends ConsumerState<_DetailBody> {
+  bool _acknowledging = false;
+
+  void _refresh() {
+    ref.invalidate(engagementDetailProvider((widget.institutionId, widget.record.id)));
+    ref.invalidate(engagementListProvider(widget.institutionId));
+    ref.invalidate(engagementSummaryProvider(widget.institutionId));
+  }
+
+  Future<void> _acknowledge() async {
+    setState(() => _acknowledging = true);
+    try {
+      await ref.read(dioProvider).post(
+            '/institutions/${widget.institutionId}/engagement/${widget.record.id}/acknowledge',
+          );
+      _refresh();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(ServerRefusal.of(e).message ?? 'Could not acknowledge it just now.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _acknowledging = false);
+    }
+  }
+
+  Future<void> _respond() async {
+    final done = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AuraSurface.page,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AuraRadius.lg)),
+      ),
+      builder: (_) => _RespondSheet(
+        record: widget.record,
+        institutionId: widget.institutionId,
+        canSettle: widget.canSettle,
+      ),
+    );
+    if (done == true) {
+      _refresh();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Your response is on their post, and they have been told.')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final record = widget.record;
+    final isIssue = record.intent == RecordIntent.issue;
     final statusColor = switch (record.status) {
       RoutedRecordStatus.pending => AuraSurface.coSun,
-      RoutedRecordStatus.responded => AuraSurface.accent,
-      RoutedRecordStatus.committed => AuraSurface.accent,
       RoutedRecordStatus.resolved => AuraSurface.coVerdant,
+      _ => AuraSurface.accent,
     };
+    final mode = _modeWords(record.participationMode);
+    final canAcknowledge = widget.canRespond &&
+        isIssue &&
+        record.status == RoutedRecordStatus.pending &&
+        record.acknowledgedAt == null;
+    final canAnswer = widget.canRespond && record.status != RoutedRecordStatus.resolved;
 
     return ListView(
       padding: const EdgeInsets.all(AuraSpace.s16),
       children: [
-        // Status header
+        // Where it stands.
         Container(
           padding: const EdgeInsets.all(AuraSpace.s14),
           decoration: BoxDecoration(
@@ -103,29 +176,25 @@ class _DetailBody extends StatelessWidget {
           child: Row(
             children: [
               Icon(
-                switch (record.status) {
-                  RoutedRecordStatus.resolved =>
-                    Icons.check_circle_outline_rounded,
-                  RoutedRecordStatus.pending => Icons.hourglass_empty_rounded,
-                  _ => Icons.verified_outlined,
-                },
+                record.status == RoutedRecordStatus.resolved
+                    ? Icons.check_circle_outline_rounded
+                    : record.status == RoutedRecordStatus.pending
+                        ? Icons.hourglass_empty_rounded
+                        : Icons.verified_outlined,
                 size: 20,
                 color: statusColor,
               ),
               const SizedBox(width: AuraSpace.s10),
-              Text(
-                record.status.label,
-                style: AuraText.body.copyWith(
-                  color: statusColor,
-                  fontWeight: FontWeight.w700,
+              Expanded(
+                child: Text(
+                  engagementStatusWords(record),
+                  style: AuraText.body.copyWith(color: statusColor, fontWeight: FontWeight.w700),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: AuraSpace.s16),
-
-        // Meta chips
+        const SizedBox(height: AuraSpace.s12),
         Wrap(
           spacing: AuraSpace.s8,
           runSpacing: AuraSpace.s8,
@@ -133,33 +202,16 @@ class _DetailBody extends StatelessWidget {
             if (record.intent != RecordIntent.unknown)
               _MetaChip(
                 icon: Icons.chat_bubble_outline_rounded,
-                label: record.intent.label,
+                label: isIssue ? 'Raised issue' : 'Question',
               ),
-            if (record.topic != null)
-              _MetaChip(
-                icon: Icons.label_outline_rounded,
-                label: record.topic!.label,
-              ),
-            if ((record.participationMode ?? '').isNotEmpty)
-              _MetaChip(
-                icon: Icons.domain_outlined,
-                label: _modeLabel(record.participationMode),
-              ),
+            if (record.topic != null) _MetaChip(icon: Icons.label_outline_rounded, label: record.topic!.label),
+            if (mode.isNotEmpty) _MetaChip(icon: Icons.domain_outlined, label: mode),
           ],
         ),
-        const SizedBox(height: AuraSpace.s20),
+        const SizedBox(height: AuraSpace.s16),
 
-        // Post body
+        // What they wrote.
         if ((record.postText ?? '').trim().isNotEmpty) ...[
-          Text(
-            'Public post',
-            style: AuraText.small.copyWith(
-              color: AuraSurface.muted,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: AuraSpace.s8),
           Container(
             padding: const EdgeInsets.all(AuraSpace.s14),
             decoration: BoxDecoration(
@@ -170,610 +222,250 @@ class _DetailBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  record.postText!.trim(),
-                  style: AuraText.body.copyWith(
-                    color: AuraSurface.ink,
-                    height: 1.6,
-                  ),
-                ),
-                if ((record.authorName ?? '').isNotEmpty ||
-                    record.postCreatedAt != null) ...[
+                Text(record.postText!.trim(), style: AuraText.body.copyWith(color: AuraSurface.ink, height: 1.6)),
+                if ((record.authorName ?? '').isNotEmpty || record.postCreatedAt != null) ...[
                   const SizedBox(height: AuraSpace.s12),
                   Row(
                     children: [
                       if ((record.authorName ?? '').isNotEmpty) ...[
-                        Text(
-                          record.authorName!,
-                          style: AuraText.small
-                              .copyWith(color: AuraSurface.muted),
-                        ),
+                        Text(record.authorName!, style: AuraText.small.copyWith(color: AuraSurface.muted)),
                         const SizedBox(width: AuraSpace.s8),
                       ],
                       if (record.postCreatedAt != null)
-                        Text(
-                          formatRelative(record.postCreatedAt!),
-                          style: AuraText.micro
-                              .copyWith(color: AuraSurface.faint),
-                        ),
+                        Text(formatRelative(record.postCreatedAt!),
+                            style: AuraText.micro.copyWith(color: AuraSurface.faint)),
                     ],
                   ),
                 ],
               ],
             ),
           ),
-          const SizedBox(height: AuraSpace.s20),
+          const SizedBox(height: AuraSpace.s16),
         ],
 
-        // View original post
-        if (record.postId.trim().isNotEmpty)
-          OutlinedButton.icon(
-            onPressed: () => context.push('/posts/${record.postId}'),
-            icon: const Icon(Icons.open_in_new_rounded, size: 16),
-            label: const Text('View original post'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AuraSurface.muted,
-              side: const BorderSide(color: AuraSurface.divider),
-            ),
-          ),
-
-        // Reply Officially — only for admins/owners
-        if (canPublish) ...[
-          const SizedBox(height: AuraSpace.s12),
-          Consumer(
-            builder: (context, ref, _) => FilledButton.icon(
-              onPressed: () => _showOfficialReplySheet(context, ref),
-              icon: const Icon(Icons.reply_rounded, size: 16),
-              label: const Text('Reply Officially'),
-              style: FilledButton.styleFrom(
-                backgroundColor: AuraSurface.accent,
-                foregroundColor: AuraSurface.onAccent,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AuraSpace.s16,
-                  vertical: AuraSpace.s12,
-                ),
+        // What to do.
+        Wrap(
+          spacing: AuraSpace.s8,
+          runSpacing: AuraSpace.s8,
+          children: [
+            if (canAnswer)
+              AuraPrimaryButton(
+                label: record.status == RoutedRecordStatus.pending ? 'Respond' : 'Respond again',
+                icon: Icons.reply_rounded,
+                onPressed: _respond,
               ),
+            if (canAcknowledge)
+              AuraSecondaryButton(
+                label: _acknowledging ? 'Acknowledging…' : 'Acknowledge',
+                onPressed: _acknowledging ? null : _acknowledge,
+              ),
+            if (record.postId.trim().isNotEmpty)
+              AuraGhostButton(
+                label: 'View their post',
+                onPressed: () => context.push('/posts/${record.postId}'),
+              ),
+          ],
+        ),
+        if (!widget.canRespond)
+          Padding(
+            padding: const EdgeInsets.only(top: AuraSpace.s8),
+            child: Text(
+              'Only someone who speaks officially for the institution can respond.',
+              style: AuraText.small.copyWith(color: AuraSurface.muted),
             ),
           ),
-        ],
+        const SizedBox(height: AuraSpace.s20),
+
+        // What has happened so far.
+        Text('History', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
+        const SizedBox(height: AuraSpace.s8),
+        if (record.routedAt != null)
+          _HistoryLine(icon: Icons.call_received_rounded, text: 'Reached the institution', at: record.routedAt),
+        if (record.acknowledgedAt != null)
+          _HistoryLine(icon: Icons.visibility_outlined, text: 'Acknowledged', at: record.acknowledgedAt),
+        if (record.status != RoutedRecordStatus.pending)
+          _HistoryLine(icon: Icons.reply_rounded, text: isIssue ? 'Responded officially' : 'Answered officially'),
+        if (record.status == RoutedRecordStatus.committed)
+          const _HistoryLine(icon: Icons.handshake_outlined, text: 'Committed to act'),
+        for (final r in record.resolutions)
+          _HistoryLine(icon: Icons.check_circle_outline_rounded, text: 'Resolved: ${r.statement}', at: r.at),
+        if (record.reopenedAt != null)
+          _HistoryLine(icon: Icons.replay_rounded, text: 'Reopened by the person who raised it', at: record.reopenedAt),
       ],
     );
   }
+}
 
-  void _showOfficialReplySheet(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AuraSurface.page,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AuraRadius.lg),
-        ),
-      ),
-      builder: (_) => _OfficialReplySheet(
-        institutionId: institutionId,
-        record: record,
+class _HistoryLine extends StatelessWidget {
+  const _HistoryLine({required this.icon, required this.text, this.at});
+
+  final IconData icon;
+  final String text;
+  final DateTime? at;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AuraSpace.s6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: AuraSurface.muted),
+          const SizedBox(width: AuraSpace.s10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(text, style: AuraText.body.copyWith(height: 1.4)),
+                if (at != null)
+                  Text(AuraTemporal.fullShort(at!), style: AuraText.small.copyWith(color: AuraSurface.muted)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
-
-  String _modeLabel(String? mode) {
-    switch ((mode ?? '').toUpperCase()) {
-      case 'ACCOUNTABLE':
-        return 'Accountable';
-      case 'RESPONDING':
-        return 'Responding';
-      default:
-        return mode ?? '';
-    }
-  }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// OFFICIAL REPLY SHEET
-// ─────────────────────────────────────────────────────────────────────────────
+enum _Outcome { answerOnly, commit, resolve }
 
-enum _AccountabilityTag {
-  none,
-  commitment,
-  update,
-  resolved;
+/// Write the response; for a raised issue, choose what it also settles.
+class _RespondSheet extends ConsumerStatefulWidget {
+  const _RespondSheet({required this.record, required this.institutionId, required this.canSettle});
 
-  String get label {
-    switch (this) {
-      case _AccountabilityTag.none:
-        return 'None';
-      case _AccountabilityTag.commitment:
-        return 'Commitment';
-      case _AccountabilityTag.update:
-        return 'Update';
-      case _AccountabilityTag.resolved:
-        return 'Resolved';
-    }
-  }
-
-  String? get wire {
-    switch (this) {
-      case _AccountabilityTag.none:
-        return null;
-      case _AccountabilityTag.commitment:
-        return 'COMMITMENT';
-      case _AccountabilityTag.update:
-        return 'UPDATE';
-      case _AccountabilityTag.resolved:
-        return 'RESOLVED';
-    }
-  }
-}
-
-class _OfficialReplySheet extends ConsumerStatefulWidget {
-  const _OfficialReplySheet({
-    required this.institutionId,
-    required this.record,
-  });
-
-  final String institutionId;
   final RoutedRecord record;
+  final String institutionId;
+  final bool canSettle;
 
   @override
-  ConsumerState<_OfficialReplySheet> createState() =>
-      _OfficialReplySheetState();
+  ConsumerState<_RespondSheet> createState() => _RespondSheetState();
 }
 
-class _OfficialReplySheetState extends ConsumerState<_OfficialReplySheet> {
-  final _bodyCtrl = TextEditingController();
-  final _bodyFocus = FocusNode();
-  final List<TagReference> _selectedTagReferences = <TagReference>[];
-  _AccountabilityTag _tag = _AccountabilityTag.none;
-  bool _busy = false;
+class _RespondSheetState extends ConsumerState<_RespondSheet> {
+  final _text = TextEditingController();
+  _Outcome _outcome = _Outcome.answerOnly;
+  bool _sending = false;
   String? _error;
 
-  // Publishes through the same createInstitutionPost path as the main
-  // Institution Post composer (an official reply IS an Institution Post,
-  // accountability-tagged back to the original), so it shares that
-  // composer's governed content length and mention support.
-  static const int _maxChars = ContentLengthPolicy.institutionPostBody;
+  bool get _isIssue => widget.record.intent == RecordIntent.issue;
 
   @override
   void dispose() {
-    _bodyCtrl.dispose();
-    _bodyFocus.dispose();
+    _text.dispose();
     super.dispose();
   }
 
-  void _rememberSelectedTag(TagReference reference) {
-    if (!reference.isMention) return;
-    final id = reference.canonicalId.trim();
-    final inserted = reference.insertText.trim();
-    if (id.isEmpty || inserted.isEmpty) return;
-    _selectedTagReferences.removeWhere(
-      (existing) =>
-          existing.kind == reference.kind && existing.canonicalId == id,
-    );
-    _selectedTagReferences.add(reference);
-  }
-
-  List<Map<String, dynamic>> _currentMentionPayload() {
-    final text = _bodyCtrl.text;
-    final seen = <String>{};
-    final out = <Map<String, dynamic>>[];
-    for (final reference in _selectedTagReferences) {
-      if (!reference.isMention) continue;
-      if (!text.contains(reference.insertText)) continue;
-      final key = '${reference.kind.name}:${reference.canonicalId}';
-      if (!seen.add(key)) continue;
-      out.add(reference.toJson());
-    }
-    return out;
-  }
-
-  String _resolvedTitle() {
-    final body = _bodyCtrl.text.trim();
-    if (body.isEmpty) return '';
-    final firstLine = body
-        .split('\n')
-        .firstWhere((l) => l.trim().isNotEmpty, orElse: () => '')
-        .trim();
-    if (firstLine.isEmpty) return body.substring(0, body.length.clamp(0, 80));
-    return firstLine.length > 80 ? firstLine.substring(0, 80).trim() : firstLine;
-  }
-
-  Future<void> _submit() async {
-    final body = _bodyCtrl.text.trim();
-    if (body.isEmpty) {
-      setState(() => _error = 'Reply body is required.');
+  Future<void> _send() async {
+    final text = _text.text.trim();
+    if (text.isEmpty) {
+      setState(() => _error = 'Write the response first.');
       return;
     }
-    if (body.length > _maxChars) {
-      setState(() => _error = 'Reply must be $_maxChars characters or fewer.');
-      return;
-    }
-
     setState(() {
-      _busy = true;
+      _sending = true;
       _error = null;
     });
-
     try {
-      final repo = ref.read(institutionsRepositoryProvider);
-
-      final post = await repo.createInstitutionPost(
-        widget.institutionId,
-        <String, dynamic>{
-          'title': _resolvedTitle(),
-          'body': body,
-          'visibility': InstitutionPostVisibility.publicAll.wire,
-          'distribution': InstitutionPostDistribution.globalEligible.wire,
-          'tagReferences': _currentMentionPayload(),
+      await ref.read(dioProvider).post(
+        '/institutions/${widget.institutionId}/engagement/${widget.record.id}/respond',
+        data: {
+          'text': text,
+          if (_outcome == _Outcome.commit) 'outcome': 'COMMITMENT',
+          if (_outcome == _Outcome.resolve) 'outcome': 'RESOLVED',
         },
-        status: 'PUBLISHED',
       );
-
-      final tagWire = _tag.wire;
-      final publicPostId = widget.record.postId.trim();
-      if (tagWire != null && publicPostId.isNotEmpty) {
-        await repo.patchAccountabilityTag(
-          widget.institutionId,
-          post.id,
-          tagWire,
-          publicPostId,
-        );
-      }
-
-      ref.invalidate(engagementDetailProvider(
-        (widget.institutionId, widget.record.id),
-      ));
-      ref.invalidate(engagementListProvider(widget.institutionId));
-      ref.invalidate(engagementSummaryProvider(widget.institutionId));
-
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(
-          content: Text('Official reply published'),
-          duration: Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } on DioException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _busy = false;
-        _error = _readError(e);
-      });
+      if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _busy = false;
-        _error = e.toString();
-      });
-    }
-  }
-
-  String _readError(DioException e) {
-    final data = e.response?.data;
-    if (data is Map) {
-      final err = data['error'];
-      String? msg;
-      if (err is Map) {
-        msg = err['message']?.toString();
-      } else {
-        msg = data['message']?.toString();
+      if (mounted) {
+        setState(() => _error = ServerRefusal.of(e).message ?? 'Your response could not be sent. Nothing was published.');
       }
-      if (msg != null && msg.trim().isNotEmpty) return msg.trim();
+    } finally {
+      if (mounted) setState(() => _sending = false);
     }
-    return 'Could not publish reply. Please try again.';
   }
 
   @override
   Widget build(BuildContext context) {
-    final identity = ref.watch(institutionIdentityProvider);
-    final instName = identity?.name ?? 'Your institution';
-    final charCount = _bodyCtrl.text.length;
-    final atLimit = charCount > _maxChars;
-
+    final showOutcomes = _isIssue && widget.canSettle;
     return Padding(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        left: AuraSpace.s16,
+        right: AuraSpace.s16,
+        top: AuraSpace.s16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + AuraSpace.s16,
       ),
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AuraSpace.s16,
-            AuraSpace.s12,
-            AuraSpace.s16,
-            AuraSpace.s24,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(_isIssue ? 'Respond to this issue' : 'Answer this question', style: AuraText.title.copyWith(fontSize: 18)),
+          const SizedBox(height: AuraSpace.s4),
+          Text(
+            'Your response appears on their post, in the institution\'s name, and they are told.',
+            style: AuraText.small.copyWith(color: AuraSurface.muted),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Drag handle
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AuraSurface.divider,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+          const SizedBox(height: AuraSpace.s12),
+          AuraInput(
+            controller: _text,
+            label: _outcome == _Outcome.resolve ? 'What was done, or why no action was needed' : 'Your response',
+            maxLines: 6,
+            minLines: 3,
+            textInputAction: TextInputAction.newline,
+          ),
+          if (showOutcomes) ...[
+            const SizedBox(height: AuraSpace.s12),
+            Text('This response also…', style: AuraText.small.copyWith(color: AuraSurface.muted)),
+            const SizedBox(height: AuraSpace.s6),
+            Wrap(
+              spacing: AuraSpace.s8,
+              runSpacing: AuraSpace.s8,
+              children: [
+                ChoiceChip(
+                  label: const Text('Just responds'),
+                  selected: _outcome == _Outcome.answerOnly,
+                  onSelected: (_) => setState(() => _outcome = _Outcome.answerOnly),
                 ),
-              ),
-              const SizedBox(height: AuraSpace.s16),
-
-              // Header
-              Row(
-                children: [
-                  const Icon(
-                    Icons.reply_rounded,
-                    size: 18,
-                    color: AuraSurface.muted,
+                if (widget.record.status != RoutedRecordStatus.committed)
+                  ChoiceChip(
+                    label: const Text('Commits to act'),
+                    selected: _outcome == _Outcome.commit,
+                    onSelected: (_) => setState(() => _outcome = _Outcome.commit),
                   ),
-                  const SizedBox(width: AuraSpace.s8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Reply Officially', style: AuraText.headline),
-                        Text(
-                          'Posting as $instName',
-                          style: AuraText.small
-                              .copyWith(color: AuraSurface.muted),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AuraSpace.s16),
-
-              // Error
-              if (_error != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(AuraSpace.s12),
-                  decoration: BoxDecoration(
-                    color: AuraSurface.coRose.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(AuraRadius.md),
-                    border: Border.all(
-                      color: AuraSurface.coRose.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error_outline,
-                          size: 15, color: AuraSurface.coRose),
-                      const SizedBox(width: AuraSpace.s8),
-                      Expanded(
-                        child: Text(
-                          _error!,
-                          style:
-                              AuraText.small.copyWith(color: AuraSurface.coRose),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AuraSpace.s12),
-              ],
-
-              // Body field
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'STATEMENT',
-                    style: AuraText.micro.copyWith(
-                      color: AuraSurface.faint,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
-                  Text(
-                    '$charCount / $_maxChars',
-                    style: AuraText.micro.copyWith(
-                      color: atLimit ? AuraSurface.coRose : AuraSurface.faint,
-                      fontWeight:
-                          atLimit ? FontWeight.w800 : FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AuraSpace.s6),
-              // AXR-1 — governed @/# autocomplete, matching the main
-              // Institution Post composer this reply publishes through.
-              GovernedTagAutocomplete(
-                controller: _bodyCtrl,
-                focusNode: _bodyFocus,
-                onTagSelected: _rememberSelectedTag,
-                child: TextField(
-                controller: _bodyCtrl,
-                focusNode: _bodyFocus,
-                maxLength: _maxChars,
-                maxLines: null,
-                minLines: 5,
-                onChanged: (_) => setState(() {}),
-                enabled: !_busy,
-                style: AuraText.body,
-                buildCounter:
-                    (context, {required currentLength, required isFocused, maxLength}) =>
-                        null,
-                decoration: InputDecoration(
-                  hintText: 'Write the official institutional response…',
-                  hintStyle:
-                      AuraText.body.copyWith(color: AuraSurface.faint),
-                  filled: true,
-                  fillColor: AuraSurface.subtle,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AuraRadius.md),
-                    borderSide:
-                        const BorderSide(color: AuraSurface.divider),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AuraRadius.md),
-                    borderSide:
-                        const BorderSide(color: AuraSurface.divider),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AuraRadius.md),
-                    borderSide: const BorderSide(
-                        color: AuraSurface.coTeal, width: 1.5),
-                  ),
-                  contentPadding: const EdgeInsets.all(AuraSpace.s14),
-                ),
-                ),
-              ),
-              const SizedBox(height: AuraSpace.s16),
-
-              // Accountability tag
-              Text(
-                'ACCOUNTABILITY TAG',
-                style: AuraText.micro.copyWith(
-                  color: AuraSurface.faint,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.6,
-                ),
-              ),
-              const SizedBox(height: AuraSpace.s8),
-              Wrap(
-                spacing: AuraSpace.s8,
-                runSpacing: AuraSpace.s8,
-                children: _AccountabilityTag.values
-                    .map((t) => _TagChip(
-                          tag: t,
-                          selected: _tag == t,
-                          onTap: _busy ? null : () => setState(() => _tag = t),
-                        ))
-                    .toList(),
-              ),
-              if (_tag != _AccountabilityTag.none) ...[
-                const SizedBox(height: AuraSpace.s8),
-                Text(
-                  _tagHint(_tag),
-                  style: AuraText.micro
-                      .copyWith(color: AuraSurface.muted, height: 1.45),
+                ChoiceChip(
+                  label: const Text('Marks it resolved'),
+                  selected: _outcome == _Outcome.resolve,
+                  onSelected: (_) => setState(() => _outcome = _Outcome.resolve),
                 ),
               ],
-              const SizedBox(height: AuraSpace.s20),
-
-              // Actions
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed:
-                          _busy ? null : () => Navigator.of(context).pop(),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AuraSurface.muted,
-                        side: const BorderSide(color: AuraSurface.divider),
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AuraSpace.s12,
-                        ),
-                      ),
-                      child: const Text('Cancel'),
-                    ),
-                  ),
-                  const SizedBox(width: AuraSpace.s10),
-                  Expanded(
-                    flex: 2,
-                    child: FilledButton.icon(
-                      onPressed: _busy || atLimit ? null : _submit,
-                      icon: _busy
-                          ? const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.publish_rounded, size: 16),
-                      label: Text(_busy ? 'Publishing…' : 'Publish reply'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AuraSurface.accent,
-                        foregroundColor: AuraSurface.onAccent,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AuraSpace.s12,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+            ),
+            if (_outcome == _Outcome.resolve)
+              Padding(
+                padding: const EdgeInsets.only(top: AuraSpace.s8),
+                child: Text(
+                  'A resolution is recorded permanently. The person who raised it can reopen it within 30 days.',
+                  style: AuraText.small.copyWith(color: AuraSurface.muted),
+                ),
               ),
-            ],
+          ],
+          if (_error != null) ...[
+            const SizedBox(height: AuraSpace.s12),
+            Text(_error!, style: AuraText.small.copyWith(color: AuraSurface.coRose)),
+          ],
+          const SizedBox(height: AuraSpace.s16),
+          Align(
+            alignment: Alignment.centerRight,
+            child: AuraPrimaryButton(
+              label: _sending ? 'Sending…' : 'Send response',
+              icon: _sending ? null : Icons.send_rounded,
+              onPressed: _sending ? null : _send,
+            ),
           ),
-        ),
-      ),
-    );
-  }
-
-  String _tagHint(_AccountabilityTag tag) {
-    switch (tag) {
-      case _AccountabilityTag.commitment:
-        return 'Marks this public record as Committed — your institution has pledged action.';
-      case _AccountabilityTag.update:
-        return 'Signals progress without advancing to Committed or Resolved.';
-      case _AccountabilityTag.resolved:
-        return 'Marks this public record as Resolved — the matter has been addressed.';
-      default:
-        return '';
-    }
-  }
-}
-
-class _TagChip extends StatelessWidget {
-  const _TagChip({
-    required this.tag,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final _AccountabilityTag tag;
-  final bool selected;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color activeColor = switch (tag) {
-      _AccountabilityTag.commitment => AuraSurface.accent,
-      _AccountabilityTag.resolved => AuraSurface.coVerdant,
-      _AccountabilityTag.update => AuraSurface.accent,
-      _AccountabilityTag.none => AuraSurface.muted,
-    };
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AuraRadius.pill),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s12,
-          vertical: AuraSpace.s8,
-        ),
-        decoration: BoxDecoration(
-          color: selected
-              ? activeColor.withValues(alpha: 0.14)
-              : AuraSurface.subtle,
-          borderRadius: BorderRadius.circular(AuraRadius.pill),
-          border: Border.all(
-            color: selected
-                ? activeColor.withValues(alpha: 0.5)
-                : AuraSurface.divider,
-            width: selected ? 1.5 : 1.0,
-          ),
-        ),
-        child: Text(
-          tag.label,
-          style: AuraText.small.copyWith(
-            color: selected ? activeColor : AuraSurface.muted,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        ],
       ),
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _MetaChip extends StatelessWidget {
   const _MetaChip({required this.icon, required this.label});
@@ -784,10 +476,7 @@ class _MetaChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AuraSpace.s10,
-        vertical: 5,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s10, vertical: 5),
       decoration: BoxDecoration(
         color: AuraSurface.subtle,
         borderRadius: BorderRadius.circular(AuraRadius.pill),
@@ -798,13 +487,7 @@ class _MetaChip extends StatelessWidget {
         children: [
           Icon(icon, size: 13, color: AuraSurface.muted),
           const SizedBox(width: 5),
-          Text(
-            label,
-            style: AuraText.small.copyWith(
-              color: AuraSurface.muted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          Text(label, style: AuraText.small.copyWith(color: AuraSurface.muted, fontWeight: FontWeight.w600)),
         ],
       ),
     );

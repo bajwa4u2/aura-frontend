@@ -1162,6 +1162,18 @@
   "parent": ""
  },
  {
+  "path": "/me/questions",
+  "segments": 2,
+  "params": [],
+  "renders": true,
+  "hasRedirect": false,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
   "path": "/articles/:slug",
   "segments": 2,
   "params": [

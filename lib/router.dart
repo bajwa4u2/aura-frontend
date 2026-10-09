@@ -174,6 +174,7 @@ import 'features/identity/presentation/identity_verification_screen.dart';
 import 'features/feedback/presentation/feedback_screen.dart';
 import 'features/feedback/presentation/my_feedback_screen.dart';
 import 'features/institutions/today/institution_today_screen.dart';
+import 'features/me/presentation/my_questions_screen.dart';
 
 const String kInstitutionDashboardRoute = '/institution/dashboard';
 const String kInstitutionCreateRoute = '/institution/create';
@@ -1826,6 +1827,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/feedback/mine',
             builder: (context, state) => const MyFeedbackScreen(),
+          ),
+          GoRoute(
+            path: NavigationAuthority.myQuestionsRoute,
+            builder: (context, state) => const MyQuestionsScreen(),
           ),
           GoRoute(
             path: '/articles/:slug',

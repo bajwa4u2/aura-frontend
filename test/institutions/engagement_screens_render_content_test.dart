@@ -54,7 +54,7 @@ void main() {
     await tester.pumpWidget(_harness(
       const EngagementListScreen(institutionId: 'inst-1'),
       [
-        engagementListProvider('inst-1').overrideWith((ref) async => [_record()]),
+        engagementFilteredListProvider(('inst-1', 'PENDING')).overrideWith((ref) async => [_record()]),
         engagementSummaryProvider('inst-1').overrideWith(
           (ref) async => EngagementSummary.fromJson(const {
             'total': 1,
