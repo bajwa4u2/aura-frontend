@@ -21,6 +21,7 @@ import '../domain/meeting_lifecycle.dart';
 import '../domain/meeting_room.dart';
 import 'institution_availability_screen.dart';
 import '../../../core/product/product_language.dart';
+import '../../../core/institutions/institution_route_authority.dart';
 
 /// MEETINGS (DD-43): one Collection page. Tabs Upcoming · Follow-up · Past ·
 /// Booking pages; one gold "New meeting"; "Start now" and "Join by code"
@@ -270,7 +271,7 @@ class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
           meeting: m,
           relationship: _relationshipLabel(m, meId: meId, institutionId: institutionId),
           attention: attention.contains(m.id),
-          onTap: () => context.push(_meetingPathFor(m, institutionId)),
+          onTap: () => context.push(_meetingPathFor(context, m, institutionId)),
         ),
     ];
   }
@@ -424,7 +425,7 @@ class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
         _MeetingRow(
           meeting: m,
           relationship: _relationshipLabel(m, meId: meId, institutionId: institutionId),
-          onTap: () => context.push(_meetingPathFor(m, institutionId)),
+          onTap: () => context.push(_meetingPathFor(context, m, institutionId)),
         ),
       if (filtered.length > shown.length)
         Align(
@@ -577,7 +578,7 @@ class _OutcomeRow extends ConsumerWidget {
             ),
       emphasis: overdue ? WorkspaceTone.problem : null,
       onTap: () {
-        context.push(_meetingPath(outcome.meetingInstitutionId, outcome.meetingId, institutionId));
+        context.push(_meetingPath(context, outcome.meetingInstitutionId, outcome.meetingId, institutionId));
       },
     );
   }
@@ -729,15 +730,23 @@ bool _isAttentionItem(Meeting meeting, String meId) {
   return delta.inMinutes <= 180 && delta.inMinutes >= -15;
 }
 
-String _meetingPathFor(Meeting meeting, String? institutionId) =>
-    _meetingPath(meeting.owningInstitutionId ?? meeting.organizationId, meeting.id, institutionId);
+String _meetingPathFor(BuildContext context, Meeting meeting, String? institutionId) =>
+    _meetingPath(context, meeting.owningInstitutionId ?? meeting.organizationId, meeting.id, institutionId);
 
 /// Where a meeting opens: inside the institution that owns it, else inside
 /// this one, else at its personal address.
-String _meetingPath(String? owningInstitutionId, String meetingId, String? institutionId) {
+///
+/// THE ADDRESS IS THE SLUG (AD2): the meeting carries the institution's id,
+/// and opening it put that id in the address bar (seen live, 9 Oct 2026). The
+/// authority snapshot already maps every held institution's id to its
+/// address; an id it does not know stays an id, which the router still
+/// resolves.
+String _meetingPath(BuildContext context, String? owningInstitutionId, String meetingId, String? institutionId) {
   final owning = (owningInstitutionId ?? '').trim();
-  final inst = owning.isNotEmpty ? owning : (institutionId ?? '').trim();
-  if (inst.isNotEmpty) {
+  final id = owning.isNotEmpty ? owning : (institutionId ?? '').trim();
+  if (id.isNotEmpty) {
+    final slugs = ProviderScope.containerOf(context, listen: false).read(institutionAuthoritySnapshotProvider).idToSlug;
+    final inst = slugs[id] ?? id;
     return '/institution/$inst/meetings/$meetingId';
   }
   // A personal meeting has a canonical address. Sending its own card to

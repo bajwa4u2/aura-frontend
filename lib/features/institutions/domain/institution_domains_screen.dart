@@ -479,11 +479,16 @@ class _InstitutionDomainsScreenState
     super.dispose();
   }
 
-  void _focusAddDomainField() {
-    if (canManageDomains && !_submitting) {
-      // No explicit FocusNode is wired up; the form sits directly below the
-      // header so a scroll-into-view is sufficient. The user types into the
-      // existing input.
+  /// ONE WAY TO ADD (seen live, 9 Oct 2026): the gold "Add address" sat
+  /// above an add field that was always open. The field now opens from the
+  /// gold action and closes with Cancel or once the address is added.
+  bool _adding = false;
+
+  Future<void> _add() async {
+    final before = domains.length;
+    await addDomain();
+    if (mounted && domains.length > before) {
+      setState(() => _adding = false);
     }
   }
 
@@ -493,33 +498,59 @@ class _InstitutionDomainsScreenState
       type: WorkspacePageType.settings,
       title: 'Web addresses',
       purpose: 'Your institution’s web domains. A verified domain shows the public it is really you.',
-      primary: WorkspaceAction(
-        label: _submitting ? 'Adding…' : 'Add address',
-        icon: Icons.add_rounded,
-        onPressed: (_submitting || !canManageDomains) ? null : addDomain,
-      ),
+      // While the add form is open its own Add is the one gold action.
+      primary: canManageDomains && !_adding
+          ? WorkspaceAction(
+              label: 'Add address',
+              icon: Icons.add_rounded,
+              onPressed: () => setState(() => _adding = true),
+            )
+          : null,
       children: [
         WorkspaceSection(title: 'This institution', child: _statusCard()),
-        WorkspaceSection(
-          title: 'Add an address',
-          child: TextField(
-            controller: domainController,
-            enabled: canManageDomains && !_submitting,
-            decoration: InputDecoration(
-              hintText: 'example.org',
-              helperMaxLines: 3,
-              helperText: canManageDomains
-                  ? 'Enter only the domain name, then choose Add address.'
-                  : 'Domain management becomes active once institutional membership is active.',
+        if (_adding && canManageDomains)
+          WorkspaceSection(
+            title: 'Add an address',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: domainController,
+                  autofocus: true,
+                  enabled: !_submitting,
+                  decoration: const InputDecoration(
+                    hintText: 'example.org',
+                    helperMaxLines: 3,
+                    helperText: 'Enter only the domain name, then choose Add.',
+                  ),
+                  onSubmitted: (_) => _submitting ? null : _add(),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: _submitting
+                          ? null
+                          : () => setState(() {
+                                _adding = false;
+                                domainController.clear();
+                              }),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 8),
+                    WorkspacePrimaryButton(
+                      action: WorkspaceAction(
+                        label: _submitting ? 'Adding…' : 'Add',
+                        icon: Icons.add_rounded,
+                        onPressed: _submitting ? null : _add,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            onTap: _focusAddDomainField,
-            onSubmitted: (_) {
-              if (canManageDomains && !_submitting) {
-                addDomain();
-              }
-            },
           ),
-        ),
         if (canManageDomains || loading || loadError != null)
           WorkspaceSection(
             title: 'Addresses',
