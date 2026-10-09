@@ -6,29 +6,51 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/product/product_language.dart';
-import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/institution_pending_counts.dart';
 import '../data/institutions_repository.dart';
-import '../ui/institution_ds.dart';
-import 'institution_page.dart';
+import '../workspace/workspace_page.dart';
+import 'institution_members_screen.dart';
 import '../../../core/identity/person_identity_model.dart';
 
-class InstitutionInvitesScreen extends ConsumerStatefulWidget {
+/// INVITES (DD-43, 2026-10-09): this route is the Members page on its
+/// Invites tab.
+class InstitutionInvitesScreen extends StatelessWidget {
   const InstitutionInvitesScreen({super.key, required this.institutionId});
 
   final String institutionId;
 
   @override
-  ConsumerState<InstitutionInvitesScreen> createState() =>
-      _InstitutionInvitesScreenState();
+  Widget build(BuildContext context) =>
+      InstitutionMembersScreen(institutionId: institutionId, initialTab: 'invites');
 }
 
-class _InstitutionInvitesScreenState
-    extends ConsumerState<InstitutionInvitesScreen> {
+/// The Invites tab: the invite form (opened by the page's gold Invite) and
+/// every invite sent, with its status.
+class InstitutionInvitesPanel extends ConsumerStatefulWidget {
+  const InstitutionInvitesPanel({
+    super.key,
+    required this.institutionId,
+    required this.showCreate,
+    required this.onCloseCreate,
+    this.onInvite,
+  });
+
+  final String institutionId;
+  final bool showCreate;
+  final VoidCallback onCloseCreate;
+
+  /// Opens the form from the empty state.
+  final VoidCallback? onInvite;
+
+  @override
+  ConsumerState<InstitutionInvitesPanel> createState() => _InvitesPanelState();
+}
+
+class _InvitesPanelState extends ConsumerState<InstitutionInvitesPanel> {
   bool _loading = true;
   String? _error;
 
@@ -43,14 +65,12 @@ class _InstitutionInvitesScreenState
   String? _copiedCode;
   String? _revoking;
   String? _revokeError;
-  bool _showCreate = false;
 
   // GOVERNANCE V1: ownership is never granted by invite (only by transfer),
   // and EDITOR was retired. Admins invite MEMBERs; only the OWNER may invite
   // an ADMIN. Representative/Host are capabilities delegated after joining.
   List<String> get _roles {
-    final isOwner =
-        ref.read(institutionIdentityProvider)?.isOwner ?? false;
+    final isOwner = ref.read(institutionIdentityProvider)?.isOwner ?? false;
     return isOwner ? const ['MEMBER', 'ADMIN'] : const ['MEMBER'];
   }
 
@@ -76,14 +96,15 @@ class _InstitutionInvitesScreenState
 
     try {
       final invites = await _repo.listInvites(widget.institutionId);
+      if (!mounted) return;
       setState(() {
         _invites = invites;
         _loading = false;
+        _revoking = null;
       });
-      ref.invalidate(
-        institutionPendingCountsProvider(widget.institutionId),
-      );
+      ref.invalidate(institutionPendingCountsProvider(widget.institutionId));
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = _message(e, 'Could not load invites.');
         _loading = false;
@@ -110,8 +131,8 @@ class _InstitutionInvitesScreenState
         _selectedRole = 'MEMBER';
         _expiresInDays = 7;
         _creating = false;
-        _showCreate = false;
       });
+      widget.onCloseCreate();
       await _load();
     } catch (e) {
       setState(() {
@@ -156,14 +177,12 @@ class _InstitutionInvitesScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text('Cancel',
-                style: AuraText.small.copyWith(color: AuraSurface.muted)),
+            child: Text('Cancel', style: AuraText.small.copyWith(color: AuraSurface.muted)),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             child: Text('Revoke',
-                style: AuraText.small.copyWith(
-                    color: AuraSurface.coRose, fontWeight: FontWeight.w700)),
+                style: AuraText.small.copyWith(color: AuraSurface.coRose, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -218,27 +237,11 @@ class _InstitutionInvitesScreenState
     return 'Active';
   }
 
-  Color _statusColor(String status) {
-    switch (status) {
-      case 'Active':
-        return AuraSurface.coVerdant;
-      case 'Expired':
-        return AuraSurface.coRose;
-      default:
-        return AuraSurface.muted;
-    }
-  }
-
-  Color _statusBg(String status) {
-    switch (status) {
-      case 'Active':
-        return AuraSurface.coVerdant.withValues(alpha: 0.16);
-      case 'Expired':
-        return AuraSurface.coRose.withValues(alpha: 0.16);
-      default:
-        return AuraSurface.subtle;
-    }
-  }
+  WorkspaceTone _statusTone(String status) => switch (status) {
+        'Active' => WorkspaceTone.done,
+        'Expired' => WorkspaceTone.problem,
+        _ => WorkspaceTone.neutral,
+      };
 
   String _formatDate(String? raw) {
     if (raw == null || raw.isEmpty) return '';
@@ -247,36 +250,38 @@ class _InstitutionInvitesScreenState
     return AuraTemporal.fullShort(dt);
   }
 
-  Widget _buildCreateSection() {
-    return Container(
-      padding: const EdgeInsets.all(AuraSpace.s16),
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.divider),
-      ),
+  Widget _dropdown<T>({
+    required String label,
+    required T value,
+    required List<T> values,
+    required String Function(T) text,
+    required ValueChanged<T> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: AuraText.small.copyWith(color: AuraSurface.muted, fontWeight: FontWeight.w600)),
+        const SizedBox(height: AuraSpace.s6),
+        DropdownButton<T>(
+          value: value,
+          isExpanded: true,
+          dropdownColor: AuraSurface.overlay,
+          items: values.map((v) => DropdownMenuItem(value: v, child: Text(text(v), style: AuraText.small))).toList(),
+          onChanged: (v) {
+            if (v != null) onChanged(v);
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _createSection() {
+    return WorkspaceSection(
+      title: 'Create invite',
+      description: 'An invite is a code and a link. Add an email to send it as well.',
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Create invite',
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                ),
-              ),
-              GestureDetector(
-                onTap: () => setState(() => _showCreate = false),
-                child: const Icon(
-                  Icons.close_rounded,
-                  size: 18,
-                  color: AuraSurface.muted,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AuraSpace.s14),
           TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
@@ -290,381 +295,191 @@ class _InstitutionInvitesScreenState
           Row(
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Role',
-                      style: AuraText.small.copyWith(
-                        color: AuraSurface.muted,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: AuraSpace.s6),
-                    DropdownButton<String>(
-                      value: _selectedRole,
-                      isExpanded: true,
-                      items: _roles
-                          .map((r) => DropdownMenuItem(
-                                value: r,
-                                child: Text(
-                                  r[0] + r.substring(1).toLowerCase(),
-                                  style: AuraText.small,
-                                ),
-                              ))
-                          .toList(),
-                      onChanged: (v) {
-                        if (v != null) setState(() => _selectedRole = v);
-                      },
-                    ),
-                  ],
+                child: _dropdown<String>(
+                  label: 'Role',
+                  value: _selectedRole,
+                  values: _roles,
+                  text: (r) => r[0] + r.substring(1).toLowerCase(),
+                  onChanged: (v) => setState(() => _selectedRole = v),
                 ),
               ),
               const SizedBox(width: AuraSpace.s12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Valid for',
-                      style: AuraText.small.copyWith(
-                        color: AuraSurface.muted,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: AuraSpace.s6),
-                    DropdownButton<int>(
-                      value: _expiresInDays,
-                      isExpanded: true,
-                      items: [1, 3, 7, 14, 30]
-                          .map((d) => DropdownMenuItem(
-                                value: d,
-                                child: Text(
-                                  '$d day${d == 1 ? '' : 's'}',
-                                  style: AuraText.small,
-                                ),
-                              ))
-                          .toList(),
-                      onChanged: (v) {
-                        if (v != null) setState(() => _expiresInDays = v);
-                      },
-                    ),
-                  ],
+                child: _dropdown<int>(
+                  label: 'Valid for',
+                  value: _expiresInDays,
+                  values: const [1, 3, 7, 14, 30],
+                  text: (d) => '$d day${d == 1 ? '' : 's'}',
+                  onChanged: (v) => setState(() => _expiresInDays = v),
                 ),
               ),
             ],
           ),
           if (_createError != null) ...[
             const SizedBox(height: AuraSpace.s12),
-            Container(
-              padding: const EdgeInsets.all(AuraSpace.s10),
-              decoration: BoxDecoration(
-                color: AuraSurface.coRose.withValues(alpha: 0.16),
-                borderRadius: BorderRadius.circular(AuraRadius.md),
-                border: Border.all(
-                  color: AuraSurface.coRose.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Text(
-                _createError!,
-                style: AuraText.small.copyWith(color: AuraSurface.coRose),
-              ),
-            ),
+            WorkspaceNotice(message: _createError!),
           ],
           const SizedBox(height: AuraSpace.s16),
-          AuraPrimaryButton(
-            label: _creating ? 'Creating…' : 'Create invite',
-            onPressed: _creating ? null : _create,
-            icon: Icons.add_rounded,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: _creating ? null : widget.onCloseCreate,
+                style: TextButton.styleFrom(foregroundColor: AuraSurface.muted),
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: AuraSpace.s8),
+              WorkspacePrimaryButton(
+                action: WorkspaceAction(
+                  label: _creating ? 'Creating…' : 'Create invite',
+                  icon: Icons.add_rounded,
+                  onPressed: _creating ? null : _create,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInviteTile(Map<String, dynamic> invite) {
+  Widget _invite(Map<String, dynamic> invite) {
     final inviteId = invite['id']?.toString() ?? '';
     final code = invite['code']?.toString() ?? '';
     final email = invite['email']?.toString().trim() ?? '';
     final role = invite['role']?.toString() ?? '';
+    final created = _formatDate(invite['createdAt']?.toString());
     final expiresAt = _formatDate(invite['expiresAt']?.toString());
-    final usedBy = invite['usedBy'] is Map
-        ? Map<String, dynamic>.from(invite['usedBy'] as Map)
-        : null;
+    final usedBy = invite['usedBy'] is Map ? Map<String, dynamic>.from(invite['usedBy'] as Map) : null;
     final status = _inviteStatus(invite);
     final isCopied = _copiedCode == code;
     final isRevoking = _revoking == inviteId;
     // Invite creation and email delivery are different truths — a valid,
     // usable invite can still have a failed send. Surface that honestly
     // rather than implying the recipient was notified when they weren't.
-    final deliveryStatus = invite['emailDeliveryStatus']?.toString();
-    final deliveryFailed = deliveryStatus == 'FAILED';
+    final deliveryFailed = invite['emailDeliveryStatus']?.toString() == 'FAILED';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AuraSpace.s8),
-      padding: const EdgeInsets.all(AuraSpace.s14),
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  code,
-                  style: AuraText.small.copyWith(
-                    fontFamily: 'monospace',
-                    color: AuraSurface.ink,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+    final contextLine = [
+      if (email.isNotEmpty) 'Code $code',
+      if (role.isNotEmpty) role[0] + role.substring(1).toLowerCase(),
+      if (created.isNotEmpty) 'sent $created',
+      if (usedBy != null)
+        // F053/F116 — the shared fallback order.
+        'used by ${AuraPersonIdentity.fromJson(usedBy).label}'
+      else if (expiresAt.isNotEmpty && status != 'Used')
+        status == 'Expired' ? 'expired $expiresAt' : 'expires $expiresAt',
+    ].join(' · ');
+
+    // Clear, labelled management surface per invite. Active invites can be
+    // copied or revoked; used/expired invites have no actions.
+    final Widget? menu = status != 'Active'
+        ? null
+        : isRevoking
+            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+            : PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, size: 18, color: AuraSurface.muted),
+                tooltip: 'Invite options',
+                color: AuraSurface.overlay,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: AuraSurface.divider),
                 ),
-              ),
-              const SizedBox(width: AuraSpace.s8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AuraSpace.s8,
-                  vertical: AuraSpace.s4,
-                ),
-                decoration: BoxDecoration(
-                  color: _statusBg(status),
-                  borderRadius: BorderRadius.circular(AuraRadius.pill),
-                ),
-                child: Text(
-                  status,
-                  style: AuraText.micro.copyWith(
-                    color: _statusColor(status),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AuraSpace.s4),
-              // Clear, labelled management surface per invite. Active invites
-              // can be copied or revoked; used/expired invites have no actions.
-              if (status == 'Active')
-                if (isRevoking)
-                  const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                else
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert,
-                        size: 18, color: AuraSurface.muted),
-                    tooltip: 'Invite options',
-                    color: AuraSurface.card,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AuraRadius.md),
-                      side: const BorderSide(color: AuraSurface.divider),
+                itemBuilder: (_) => [
+                  PopupMenuItem(
+                    value: 'copy',
+                    child: Row(
+                      children: [
+                        Icon(isCopied ? Icons.check_rounded : Icons.link_rounded, size: 16, color: AuraSurface.accentText),
+                        const SizedBox(width: AuraSpace.s10),
+                        Text(isCopied ? 'Copied' : 'Copy invite link', style: AuraText.small.copyWith(color: AuraSurface.ink)),
+                      ],
                     ),
-                    itemBuilder: (_) => [
-                      PopupMenuItem(
-                        value: 'copy',
-                        child: Row(
-                          children: [
-                            Icon(
-                              isCopied
-                                  ? Icons.check_rounded
-                                  : Icons.link_rounded,
-                              size: 16,
-                              color: AuraSurface.accentText,
-                            ),
-                            const SizedBox(width: AuraSpace.s10),
-                            Text(isCopied ? 'Copied' : 'Copy invite link',
-                                style: AuraText.small),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'revoke',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.link_off_rounded,
-                                size: 16, color: AuraSurface.coRose),
-                            const SizedBox(width: AuraSpace.s10),
-                            Text('Revoke invite',
-                                style: AuraText.small
-                                    .copyWith(color: AuraSurface.coRose)),
-                          ],
-                        ),
-                      ),
-                    ],
-                    onSelected: (v) {
-                      if (v == 'copy') {
-                        _copyLink(code);
-                      } else if (v == 'revoke') {
-                        _confirmRevoke(inviteId, code);
-                      }
-                    },
                   ),
-            ],
-          ),
-          const SizedBox(height: AuraSpace.s8),
-          Wrap(
-            spacing: AuraSpace.s16,
-            children: [
-              if (email.isNotEmpty)
-                _MetaChip(label: email, icon: Icons.email_outlined),
-              if (role.isNotEmpty)
-                _MetaChip(label: role[0] + role.substring(1).toLowerCase(), icon: Icons.badge_outlined),
-              if (expiresAt.isNotEmpty)
-                _MetaChip(
-                  label: status == 'Used' ? 'Used' : 'Expires $expiresAt',
-                  icon: Icons.schedule_rounded,
-                ),
-              if (usedBy != null) ...[
-                _MetaChip(
-                  // F053/F116 — the shared fallback order; '@?' was a label
-                  // for someone this screen had failed to resolve.
-                  label: AuraPersonIdentity.fromJson(usedBy).label,
-                  icon: Icons.person_rounded,
-                ),
-              ],
-            ],
-          ),
-          if (deliveryFailed && email.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s8),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AuraSpace.s10,
-                vertical: AuraSpace.s8,
-              ),
-              decoration: BoxDecoration(
-                color: AuraSurface.coRose.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(AuraRadius.md),
-                border: Border.all(color: AuraSurface.coRose.withValues(alpha: 0.28)),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.mail_lock_outlined, size: 14, color: AuraSurface.coRose),
-                  const SizedBox(width: AuraSpace.s8),
-                  Expanded(
-                    child: Text(
-                      'Invite email could not be delivered. The code above still works — '
-                      'share it directly.',
-                      style: AuraText.micro.copyWith(color: AuraSurface.coRose),
+                  PopupMenuItem(
+                    value: 'revoke',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.link_off_rounded, size: 16, color: AuraSurface.dangerInk),
+                        const SizedBox(width: AuraSpace.s10),
+                        Text('Revoke invite', style: AuraText.small.copyWith(color: AuraSurface.dangerInk)),
+                      ],
                     ),
                   ),
                 ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBody() {
-    if (_loading) {
-      return const AuraLoadingState(message: 'Loading invites…');
-    }
-
-    if (_error != null) {
-      return AuraErrorState(
-        title: 'Could not load invites',
-        body: _error!,
-        action: AuraSecondaryButton(
-          label: ProductLabels.of(ProductAction.retry),
-          onPressed: _load,
-          icon: Icons.refresh_rounded,
-        ),
-      );
-    }
+                onSelected: (v) {
+                  if (v == 'copy') {
+                    _copyLink(code);
+                  } else if (v == 'revoke') {
+                    _confirmRevoke(inviteId, code);
+                  }
+                },
+              );
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (_showCreate) ...[
-          _buildCreateSection(),
-          const SizedBox(height: AuraSpace.s16),
-        ],
-        if (_revokeError != null) ...[
-          Container(
-            padding: const EdgeInsets.all(AuraSpace.s12),
-            decoration: BoxDecoration(
-              color: AuraSurface.coRose.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(AuraRadius.md),
-              border: Border.all(color: AuraSurface.coRose.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.error_outline, size: 16, color: AuraSurface.coRose),
-                const SizedBox(width: AuraSpace.s8),
-                Expanded(
-                  child: Text(
-                    _revokeError!,
-                    style: AuraText.small.copyWith(color: AuraSurface.coRose),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => setState(() => _revokeError = null),
-                  child: const Icon(Icons.close, size: 16, color: AuraSurface.coRose),
-                ),
-              ],
-            ),
+        WorkspaceRow(
+          leading: WorkspaceIcon(
+            email.isNotEmpty ? Icons.mail_outline_rounded : Icons.link_rounded,
+            tone: status == 'Active' ? WorkspaceTone.waiting : WorkspaceTone.neutral,
           ),
-          const SizedBox(height: AuraSpace.s12),
-        ],
-        Padding(
-          padding: const EdgeInsets.only(left: AuraSpace.s4, bottom: AuraSpace.s12),
-          child: Text(
-            'Existing invites',
-            style: AuraText.label.copyWith(
-              color: AuraSurface.faint,
-              letterSpacing: 0.8,
-            ),
-          ),
+          // Who it is for when an email was given; otherwise the code itself.
+          title: email.isNotEmpty ? email : code,
+          context: contextLine,
+          pill: WorkspacePill(label: status, tone: _statusTone(status)),
+          trailing: menu,
         ),
-        if (_invites.isEmpty)
-          const InsEmptyState(
-            icon: Icons.group_add_outlined,
-            title: 'No invites yet',
-            description: 'Create one with Invite.',
-          )
-        else
-          ..._invites.map(_buildInviteTile),
+        if (deliveryFailed && email.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(62, 0, 0, AuraSpace.s8),
+            child: Text(
+              'Invite email could not be delivered. The code above still works — share it directly.',
+              style: AuraText.small.copyWith(color: AuraSurface.dangerInk),
+            ),
+          ),
       ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return InstitutionPage(
-      title: 'Invites',
-      subtitle: 'Create and manage invite codes for your institution.',
-      trailing: AuraPrimaryButton(
-        label: _showCreate ? 'Hide form' : 'Invite',
-        icon: _showCreate ? Icons.close_rounded : Icons.person_add_alt_1_rounded,
-        onPressed: () => setState(() => _showCreate = !_showCreate),
-      ),
-      body: _buildBody(),
-    );
-  }
-}
-
-class _MetaChip extends StatelessWidget {
-  const _MetaChip({required this.label, required this.icon});
-
-  final String label;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    final form = widget.showCreate ? [_createSection()] : const <Widget>[];
+    if (_loading) return Column(children: [...form, const WorkspaceLoading()]);
+    if (_error != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ...form,
+          WorkspaceEmpty(
+            icon: Icons.error_outline_rounded,
+            title: 'Could not load invites',
+            body: _error!,
+            action: WorkspaceAction(
+              label: ProductLabels.of(ProductAction.retry),
+              icon: Icons.refresh_rounded,
+              onPressed: _load,
+            ),
+          ),
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Icon(icon, size: 12, color: AuraSurface.muted),
-        const SizedBox(width: AuraSpace.s4),
-        Text(
-          label,
-          style: AuraText.micro.copyWith(color: AuraSurface.muted),
-        ),
+        ...form,
+        if (_revokeError != null)
+          WorkspaceNotice(message: _revokeError!, onDismiss: () => setState(() => _revokeError = null)),
+        if (_invites.isEmpty)
+          WorkspaceEmpty(
+            icon: Icons.group_add_outlined,
+            title: 'No invites yet',
+            body: 'Create one with Invite.',
+            action: widget.showCreate || widget.onInvite == null
+                ? null
+                : WorkspaceAction(label: 'Invite', icon: Icons.person_add_alt_1_rounded, onPressed: widget.onInvite),
+          )
+        else
+          ..._invites.map(_invite),
       ],
     );
   }

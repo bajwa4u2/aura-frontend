@@ -2,7 +2,6 @@ import '../../../core/errors/server_refusal.dart';
 import '../../../core/trust/trust_marks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/authority/authority_providers.dart';
 import '../../../core/authority/capability_projection.dart';
@@ -12,24 +11,34 @@ import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../data/institution_pending_counts.dart';
 import '../data/institutions_repository.dart';
 import '../../updates/providers.dart';
-import '../ui/institution_ds.dart';
-import 'institution_page.dart';
+import '../workspace/workspace_page.dart';
+import 'institution_invites_screen.dart';
+import 'institution_join_requests_screen.dart';
 import '../../../core/identity/person_identity_model.dart';
 
+/// MEMBERS (DD-43, 2026-10-09): one Collection page with three tabs.
+///
+/// Members, Join requests and Invites were three pages, each its own world.
+/// They are now tabs of one page on the workspace frame: the roster, the
+/// people asking to join, and the invites sent. Join requests and Invites
+/// show only to people who may act on them. The one gold action is Invite.
 class InstitutionMembersScreen extends ConsumerStatefulWidget {
-  const InstitutionMembersScreen({super.key, required this.institutionId});
+  const InstitutionMembersScreen({super.key, required this.institutionId, this.initialTab});
 
   final String institutionId;
 
+  /// 'members' (default), 'requests' or 'invites'. The old Join requests and
+  /// Invites routes open this page on their tab.
+  final String? initialTab;
+
   @override
-  ConsumerState<InstitutionMembersScreen> createState() =>
-      _InstitutionMembersScreenState();
+  ConsumerState<InstitutionMembersScreen> createState() => _InstitutionMembersScreenState();
 }
 
-class _InstitutionMembersScreenState
-    extends ConsumerState<InstitutionMembersScreen> {
+class _InstitutionMembersScreenState extends ConsumerState<InstitutionMembersScreen> {
   bool _loading = true;
   String? _error;
 
@@ -41,8 +50,12 @@ class _InstitutionMembersScreenState
   String? _updateError;
   bool _attentionMarked = false;
 
-  InstitutionsRepository get _repo =>
-      ref.read(institutionsRepositoryProvider);
+  late String _tab = widget.initialTab ?? 'members';
+
+  /// The invite form, opened by the gold Invite action from any tab.
+  bool _showCreate = false;
+
+  InstitutionsRepository get _repo => ref.read(institutionsRepositoryProvider);
 
   /// PLATFORM_ADMIN is what listMembers returns when the caller is a platform
   /// admin — the service short-circuits on that check before it ever reads
@@ -53,8 +66,11 @@ class _InstitutionMembersScreenState
   /// It is a genuinely different axis from institutional capability: platform
   /// administration is accountable oversight of the platform, not standing
   /// inside this institution.
-  bool get _platformAdminBypass =>
-      _callerRole.toUpperCase() == 'PLATFORM_ADMIN';
+  bool get _platformAdminBypass => _callerRole.toUpperCase() == 'PLATFORM_ADMIN';
+
+  bool _may(ConsequentialAct act) =>
+      ref.watch(capabilityProjectionForProvider(widget.institutionId)).presentationFor(act) ==
+      ControlPresentation.available;
 
   /// MAY THIS VIEWER MANAGE MEMBERSHIP?
   ///
@@ -62,12 +78,15 @@ class _InstitutionMembersScreenState
   /// the backend actually enforces and an OWNER may delegate to someone who is
   /// not an admin at all. Seeing the roster is baseline participation; acting
   /// on it is this.
-  bool get _canManageMembers =>
-      _platformAdminBypass ||
-      ref.watch(capabilityProjectionForProvider(widget.institutionId)).presentationFor(
-            ConsequentialAct.manageMembers,
-          ) ==
-          ControlPresentation.available;
+  bool get _canManageMembers => _platformAdminBypass || _may(ConsequentialAct.manageMembers);
+
+  /// Join requests: whoever may answer them (MANAGE_JOIN_REQUESTS, which
+  /// owners and admins hold by role), asked as a capability, never a role.
+  bool get _canSeeRequests => _platformAdminBypass || _may(ConsequentialAct.manageJoinRequests);
+
+  /// Invites: whoever may send them; the Invite action followed the roster's
+  /// management rule before, and still does.
+  bool get _canInvite => _canManageMembers || _may(ConsequentialAct.manageInvitations);
 
   @override
   void didChangeDependencies() {
@@ -75,15 +94,12 @@ class _InstitutionMembersScreenState
     if (_attentionMarked) return;
     _attentionMarked = true;
     Future.microtask(() {
-      ref.read(notificationsControllerProvider.notifier).markReadForTarget(
-        institutionId: widget.institutionId,
-        types: const [
-          'FOLLOW',
-          'ROLE_CHANGED',
-          'CAPABILITY_GRANTED',
-          'CAPABILITY_REVOKED',
-        ],
-      );
+      ref
+          .read(notificationsControllerProvider.notifier)
+          .markReadForTarget(
+            institutionId: widget.institutionId,
+            types: const ['FOLLOW', 'ROLE_CHANGED', 'CAPABILITY_GRANTED', 'CAPABILITY_REVOKED'],
+          );
     });
   }
 
@@ -97,12 +113,7 @@ class _InstitutionMembersScreenState
   /// So it asks the canonical authority for a GOVERNANCE act
   /// (`ActingRequirement.governance(InstitutionRole.owner)`) rather than
   /// comparing a role string here.
-  bool get _canGovernRoles =>
-      _platformAdminBypass ||
-      ref.watch(capabilityProjectionForProvider(widget.institutionId)).presentationFor(
-            ConsequentialAct.appointAdmin,
-          ) ==
-          ControlPresentation.available;
+  bool get _canGovernRoles => _platformAdminBypass || _may(ConsequentialAct.appointAdmin);
 
   @override
   void initState() {
@@ -179,8 +190,7 @@ class _InstitutionMembersScreenState
     }
   }
 
-  String _message(Object error, String fallback) =>
-      institutionMembersErrorMessage(error, fallback);
+  String _message(Object error, String fallback) => institutionMembersErrorMessage(error, fallback);
 
   String _roleBadge(String role) {
     switch (role.toUpperCase()) {
@@ -195,36 +205,8 @@ class _InstitutionMembersScreenState
     }
   }
 
-  Color _roleColor(String role) {
-    switch (role.toUpperCase()) {
-      case 'OWNER':
-        return AuraSurface.coVerdant;
-      case 'ADMIN':
-        return AuraSurface.accentText;
-      case 'EDITOR':
-        return AuraSurface.coSun;
-      default:
-        return AuraSurface.muted;
-    }
-  }
-
-  Color _roleBg(String role) {
-    switch (role.toUpperCase()) {
-      case 'OWNER':
-        return AuraSurface.coVerdant.withValues(alpha: 0.16);
-      case 'ADMIN':
-        return AuraSurface.accentSoft;
-      case 'EDITOR':
-        return AuraSurface.coSun.withValues(alpha: 0.16);
-      default:
-        return AuraSurface.subtle;
-    }
-  }
-
-  Widget _buildMemberTile(Map<String, dynamic> member) {
-    final user = member['user'] is Map
-        ? Map<String, dynamic>.from(member['user'] as Map)
-        : <String, dynamic>{};
+  Widget _buildMemberRow(Map<String, dynamic> member) {
+    final user = member['user'] is Map ? Map<String, dynamic>.from(member['user'] as Map) : <String, dynamic>{};
     final memberId = member['userId']?.toString() ?? '';
     // F053/F116 — the person half; `role` and `capabilities` below are
     // membership state and stay local.
@@ -234,8 +216,7 @@ class _InstitutionMembersScreenState
     final role = member['role']?.toString().trim() ?? 'MEMBER';
     final caps = <String>{
       if (member['capabilities'] is List)
-        ...(member['capabilities'] as List)
-            .map((e) => e.toString().trim().toUpperCase()),
+        ...(member['capabilities'] as List).map((e) => e.toString().trim().toUpperCase()),
     };
     final isRepresentative = caps.contains('OFFICIAL_REPRESENTATION');
     final isHost = caps.contains('HOST_MEETINGS');
@@ -246,205 +227,137 @@ class _InstitutionMembersScreenState
     // publishing officially, or from the older "speaks officially" flag; the
     // seat rule counts all three, so the pill names all three (2026-10-09:
     // a member held a seat while the roster called him only "Member").
-    final speaksOfficially = isRepresentative ||
+    final speaksOfficially =
+        isRepresentative ||
         caps.contains('PUBLISH_OFFICIAL') ||
-        (member['canSpeakOfficially'] == true &&
-            !const {'OWNER', 'ADMIN'}.contains(role.toUpperCase()));
-    final isRemoving = _removing == memberId;
-    final isUpdating = _updating == memberId;
-    final isBusy = isRemoving || isUpdating;
+        (member['canSpeakOfficially'] == true && !const {'OWNER', 'ADMIN'}.contains(role.toUpperCase()));
+    final isBusy = _removing == memberId || _updating == memberId;
 
     final nameOrHandle = displayName.isNotEmpty ? displayName : (handle.isNotEmpty ? '@$handle' : 'Unknown');
+    final ownerRow = role.toUpperCase() == 'OWNER';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AuraSpace.s8),
-      padding: const EdgeInsets.all(AuraSpace.s14),
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.divider),
+    // One pill per row (the frame's rule): the institution's voice first,
+    // because responsibility is visible to everyone; otherwise ownership.
+    // Everything else is said in the context line.
+    final WorkspacePill? pill = speaksOfficially
+        ? const WorkspacePill(label: 'Official voice', tone: WorkspaceTone.waiting)
+        : ownerRow
+        ? const WorkspacePill(label: 'Owner', tone: WorkspaceTone.done)
+        : null;
+    final contextLine = [
+      if (handle.isNotEmpty) '@$handle',
+      // The role is named here unless the pill already names it.
+      if (!(ownerRow && pill?.label == 'Owner')) _roleBadge(role),
+      if (isHost) 'Meeting host',
+      // A seat is a plan matter: shown to those who manage members.
+      if (holdsSeat && _canManageMembers) 'Staff seat',
+      // Lifecycle truth, only when it is not the ordinary case: a roster
+      // should say plainly that someone's account is no longer active.
+      if ((person.accountStatus ?? 'ACTIVE') != 'ACTIVE')
+        person.accountStatus == 'DELETED' ? 'Account deleted' : 'Account disabled',
+    ].join(' · ');
+
+    return WorkspaceRow(
+      // THE PERSON'S OWN FACE, NOT AN INITIAL STANDING IN FOR IT.
+      leading: AuraAvatar(name: nameOrHandle, imageUrl: person.avatarUrl, size: 36),
+      title: nameOrHandle,
+      context: contextLine,
+      pill: pill,
+      // TRUST IS PART OF WHO SOMEONE IS: rendered through the canonical
+      // presentation, so a person cannot be verified here and unverified there.
+      trailing: personTrailing(
+        person,
+        !_canManageThisMember(role)
+            ? null
+            : isBusy
+            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+            : _memberMenu(
+                memberId: memberId,
+                name: nameOrHandle,
+                role: role,
+                isRepresentative: isRepresentative,
+                isHost: isHost,
+              ),
       ),
-      child: Row(
-        children: [
-          // THE PERSON'S OWN FACE, NOT AN INITIAL STANDING IN FOR IT.
-          //
-          // This row already read the canonical identity for the name — and
-          // then rendered the avatar from that name alone, discarding
-          // `avatarUrl`. Established people appeared as generic initials on
-          // the roster while their photo rendered everywhere else.
-          AuraAvatar(
-            name: nameOrHandle,
-            imageUrl: person.avatarUrl,
-            size: 36,
+    );
+  }
+
+  Widget _memberMenu({
+    required String memberId,
+    required String name,
+    required String role,
+    required bool isRepresentative,
+    required bool isHost,
+  }) {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert, size: 18, color: AuraSurface.muted),
+      tooltip: 'Member options',
+      color: AuraSurface.overlay,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AuraSurface.divider),
+      ),
+      itemBuilder: (_) => [
+        // GOVERNANCE: appointing/removing admins and transferring
+        // ownership are OWNER-exclusive; delegating Representative
+        // and Host is available to admins.
+        if (_canGovernRoles && role.toUpperCase() == 'MEMBER')
+          PopupMenuItem(
+            value: 'PROMOTE',
+            child: Text('Promote to Admin', style: AuraText.small.copyWith(color: AuraSurface.ink)),
           ),
-          const SizedBox(width: AuraSpace.s12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        nameOrHandle,
-                        overflow: TextOverflow.ellipsis,
-                        style: AuraText.small
-                            .copyWith(fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                    // TRUST IS PART OF WHO SOMEONE IS. Rendered through the
-                    // canonical presentation rather than a roster-local badge,
-                    // so a person cannot be verified here and unverified
-                    // there. Renders nothing when nothing is verified.
-                    if (person.verification.hasAny) ...[
-                      const SizedBox(width: AuraSpace.s4),
-                      PersonVerificationMarks(
-                        verification: person.verification,
-                        size: TrustMarkSize.micro,
-                      ),
-                    ],
-                  ],
-                ),
-                if (handle.isNotEmpty)
-                  Text(
-                    '@$handle',
-                    style: AuraText.micro.copyWith(color: AuraSurface.muted),
-                  ),
-                // Lifecycle truth, only when it is not the ordinary case: a
-                // roster should say plainly that someone's account is no
-                // longer active rather than presenting them as present.
-                if ((person.accountStatus ?? 'ACTIVE') != 'ACTIVE')
-                  Text(
-                    person.accountStatus == 'DELETED'
-                        ? 'Account deleted'
-                        : 'Account disabled',
-                    style: AuraText.micro.copyWith(color: AuraSurface.muted),
-                  ),
-              ],
+        if (_canGovernRoles && role.toUpperCase() == 'ADMIN')
+          PopupMenuItem(
+            value: 'DEMOTE',
+            child: Text('Demote to Member', style: AuraText.small.copyWith(color: AuraSurface.ink)),
+          ),
+        if (_canGovernRoles && role.toUpperCase() != 'OWNER')
+          PopupMenuItem(
+            value: 'TRANSFER',
+            child: Text('Transfer ownership…', style: AuraText.small.copyWith(color: AuraSurface.ink)),
+          ),
+        if (role.toUpperCase() == 'MEMBER')
+          PopupMenuItem(
+            value: isRepresentative ? 'REVOKE_REP' : 'GRANT_REP',
+            child: Text(
+              isRepresentative ? 'Remove as official voice' : 'Make official voice',
+              style: AuraText.small.copyWith(color: AuraSurface.ink),
             ),
           ),
-          Wrap(
-            spacing: AuraSpace.s4,
-            children: [
-              _pill(_roleBadge(role), _roleColor(role), _roleBg(role)),
-              // Capabilities that read as institutional STANDING carry a
-              // visible badge — responsibility is visible to everyone.
-              // Standing in plain words (DD-42 phase 2, 2026-10-09).
-              if (speaksOfficially)
-                _pill('Official voice', AuraSurface.accentText,
-                    AuraSurface.accentSoft),
-              if (isHost)
-                _pill('Meeting host', AuraSurface.coSun,
-                    AuraSurface.coSun.withValues(alpha: 0.16)),
-              // A seat is a plan matter: shown to those who manage members.
-              if (holdsSeat && _canManageMembers)
-                _pill('Staff seat', AuraSurface.muted,
-                    AuraSurface.muted.withValues(alpha: 0.14)),
-            ],
+        if (role.toUpperCase() == 'MEMBER')
+          PopupMenuItem(
+            value: isHost ? 'REVOKE_HOST' : 'GRANT_HOST',
+            child: Text(
+              isHost ? 'Remove as meeting host' : 'Make meeting host',
+              style: AuraText.small.copyWith(color: AuraSurface.ink),
+            ),
           ),
-          if (_canManageThisMember(role)) ...[
-            const SizedBox(width: AuraSpace.s4),
-            if (isBusy)
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            else
-              PopupMenuButton<String>(
-                icon: const Icon(
-                  Icons.more_vert,
-                  size: 18,
-                  color: AuraSurface.muted,
-                ),
-                tooltip: 'Member options',
-                color: AuraSurface.card,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AuraRadius.md),
-                  side: const BorderSide(color: AuraSurface.divider),
-                ),
-                itemBuilder: (_) => [
-                  // GOVERNANCE: appointing/removing admins and transferring
-                  // ownership are OWNER-exclusive; delegating Representative
-                  // and Host is available to admins.
-                  if (_canGovernRoles && role.toUpperCase() == 'MEMBER')
-                    PopupMenuItem(
-                      value: 'PROMOTE',
-                      child: Text('Promote to Admin',
-                          style: AuraText.small
-                              .copyWith(color: AuraSurface.accentText)),
-                    ),
-                  if (_canGovernRoles && role.toUpperCase() == 'ADMIN')
-                    PopupMenuItem(
-                      value: 'DEMOTE',
-                      child: Text('Demote to Member',
-                          style:
-                              AuraText.small.copyWith(color: AuraSurface.coSun)),
-                    ),
-                  if (_canGovernRoles && role.toUpperCase() != 'OWNER')
-                    PopupMenuItem(
-                      value: 'TRANSFER',
-                      child: Text('Transfer ownership…',
-                          style: AuraText.small
-                              .copyWith(color: AuraSurface.coVerdant)),
-                    ),
-                  if (role.toUpperCase() == 'MEMBER')
-                    PopupMenuItem(
-                      value: isRepresentative ? 'REVOKE_REP' : 'GRANT_REP',
-                      child: Text(
-                          isRepresentative
-                              ? 'Remove as official voice'
-                              : 'Make official voice',
-                          style: AuraText.small),
-                    ),
-                  if (role.toUpperCase() == 'MEMBER')
-                    PopupMenuItem(
-                      value: isHost ? 'REVOKE_HOST' : 'GRANT_HOST',
-                      child: Text(isHost ? 'Remove as meeting host' : 'Make meeting host',
-                          style: AuraText.small),
-                    ),
-                  const PopupMenuDivider(),
-                  PopupMenuItem(
-                    value: 'REMOVE',
-                    child: Text('Remove',
-                        style:
-                            AuraText.small.copyWith(color: AuraSurface.coRose)),
-                  ),
-                ],
-                onSelected: (value) {
-                  switch (value) {
-                    case 'REMOVE':
-                      _confirmRemove(memberId, nameOrHandle);
-                      break;
-                    case 'PROMOTE':
-                      _changeRole(memberId, 'ADMIN');
-                      break;
-                    case 'DEMOTE':
-                      _changeRole(memberId, 'MEMBER');
-                      break;
-                    case 'TRANSFER':
-                      _confirmTransfer(memberId, nameOrHandle);
-                      break;
-                    case 'GRANT_REP':
-                      _changeCapability(memberId, 'OFFICIAL_REPRESENTATION', true);
-                      break;
-                    case 'REVOKE_REP':
-                      _changeCapability(
-                          memberId, 'OFFICIAL_REPRESENTATION', false);
-                      break;
-                    case 'GRANT_HOST':
-                      _changeCapability(memberId, 'HOST_MEETINGS', true);
-                      break;
-                    case 'REVOKE_HOST':
-                      _changeCapability(memberId, 'HOST_MEETINGS', false);
-                      break;
-                  }
-                },
-              ),
-          ],
-        ],
-      ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: 'REMOVE',
+          child: Text('Remove', style: AuraText.small.copyWith(color: AuraSurface.dangerInk)),
+        ),
+      ],
+      onSelected: (value) {
+        switch (value) {
+          case 'REMOVE':
+            _confirmRemove(memberId, name);
+          case 'PROMOTE':
+            _changeRole(memberId, 'ADMIN');
+          case 'DEMOTE':
+            _changeRole(memberId, 'MEMBER');
+          case 'TRANSFER':
+            _confirmTransfer(memberId, name);
+          case 'GRANT_REP':
+            _changeCapability(memberId, 'OFFICIAL_REPRESENTATION', true);
+          case 'REVOKE_REP':
+            _changeCapability(memberId, 'OFFICIAL_REPRESENTATION', false);
+          case 'GRANT_HOST':
+            _changeCapability(memberId, 'HOST_MEETINGS', true);
+          case 'REVOKE_HOST':
+            _changeCapability(memberId, 'HOST_MEETINGS', false);
+        }
+      },
     );
   }
 
@@ -456,26 +369,7 @@ class _InstitutionMembersScreenState
     return _canManageMembers;
   }
 
-  Widget _pill(String label, Color fg, Color bg) => Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AuraSpace.s8,
-          vertical: AuraSpace.s4,
-        ),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(AuraRadius.pill),
-        ),
-        child: Text(
-          label,
-          style: AuraText.micro.copyWith(color: fg, fontWeight: FontWeight.w700),
-        ),
-      );
-
-  Future<void> _changeCapability(
-    String userId,
-    String capability,
-    bool grant,
-  ) async {
+  Future<void> _changeCapability(String userId, String capability, bool grant) async {
     if (_updating != null) return;
     setState(() {
       _updating = userId;
@@ -502,9 +396,7 @@ class _InstitutionMembersScreenState
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AuraSurface.card,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AuraRadius.card),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AuraRadius.card)),
         title: const Text('Transfer ownership', style: AuraText.subtitle),
         content: Text(
           'Make $name the owner of this institution? You will become an admin. '
@@ -514,15 +406,14 @@ class _InstitutionMembersScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text('Cancel',
-                style: AuraText.small.copyWith(color: AuraSurface.muted)),
+            child: Text('Cancel', style: AuraText.small.copyWith(color: AuraSurface.muted)),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text('Transfer',
-                style: AuraText.small.copyWith(
-                    color: AuraSurface.coVerdant,
-                    fontWeight: FontWeight.w700)),
+            child: Text(
+              'Transfer',
+              style: AuraText.small.copyWith(color: AuraSurface.coVerdant, fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
@@ -549,9 +440,7 @@ class _InstitutionMembersScreenState
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AuraSurface.card,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AuraRadius.card),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AuraRadius.card)),
         title: const Text('Remove member', style: AuraText.subtitle),
         content: Text(
           'Remove $name from this institution? This cannot be undone.',
@@ -560,19 +449,13 @@ class _InstitutionMembersScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(
-              'Cancel',
-              style: AuraText.small.copyWith(color: AuraSurface.muted),
-            ),
+            child: Text('Cancel', style: AuraText.small.copyWith(color: AuraSurface.muted)),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             child: Text(
               'Remove',
-              style: AuraText.small.copyWith(
-                color: AuraSurface.coRose,
-                fontWeight: FontWeight.w700,
-              ),
+              style: AuraText.small.copyWith(color: AuraSurface.coRose, fontWeight: FontWeight.w700),
             ),
           ),
         ],
@@ -581,109 +464,153 @@ class _InstitutionMembersScreenState
     if (confirmed == true) await _remove(userId);
   }
 
-  Widget _buildBody() {
-    if (_loading) {
-      return const AuraLoadingState(message: 'Loading members…');
-    }
-
+  List<Widget> _membersTab() {
     if (_error != null) {
-      return AuraErrorState(
-        title: 'Could not load members',
-        body: _error!,
-        action: AuraSecondaryButton(
-          label: ProductLabels.of(ProductAction.retry),
-          onPressed: _load,
-          icon: Icons.refresh_rounded,
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final err in [_removeError, _updateError].whereType<String>()) ...[
-          Container(
-            padding: const EdgeInsets.all(AuraSpace.s12),
-            margin: const EdgeInsets.only(bottom: AuraSpace.s12),
-            decoration: BoxDecoration(
-              color: AuraSurface.coRose.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(AuraRadius.md),
-              border: Border.all(
-                color: AuraSurface.coRose.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.error_outline, size: 16, color: AuraSurface.coRose),
-                const SizedBox(width: AuraSpace.s8),
-                Expanded(
-                  child: Text(
-                    err,
-                    style: AuraText.small.copyWith(color: AuraSurface.coRose),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => setState(() {
-                    _removeError = null;
-                    _updateError = null;
-                  }),
-                  child: const Icon(Icons.close, size: 16, color: AuraSurface.coRose),
-                ),
-              ],
-            ),
+      return [
+        WorkspaceEmpty(
+          icon: Icons.error_outline_rounded,
+          title: 'Could not load members',
+          body: _error!,
+          action: WorkspaceAction(
+            label: ProductLabels.of(ProductAction.retry),
+            icon: Icons.refresh_rounded,
+            onPressed: _load,
           ),
-        ],
-        Row(
-          children: [
-            Text(
-              [
-                '${_members.length} member${_members.length == 1 ? '' : 's'}',
-                if (_canManageMembers && _seatsUsed != null)
-                  _seatsLimit == null
-                      ? '$_seatsUsed staff seat${_seatsUsed == 1 ? '' : 's'} in use'
-                      : '$_seatsUsed of $_seatsLimit staff seats in use',
-              ].join(' · '),
-              style: AuraText.small.copyWith(color: AuraSurface.muted),
-            ),
-            const Spacer(),
-            if (_canManageMembers)
-              Text(
-                'Tap ⋮ for options',
-                style: AuraText.micro.copyWith(color: AuraSurface.faint),
-              ),
-          ],
         ),
-        const SizedBox(height: AuraSpace.s12),
-        if (_members.isEmpty)
-          const InsEmptyState(
-            icon: Icons.people_outline_rounded,
-            title: 'No members yet',
-            description: 'Invite colleagues with Invite.',
-          )
-        else
-          ..._members.map(_buildMemberTile),
-      ],
-    );
+      ];
+    }
+    return [
+      for (final err in [_removeError, _updateError].whereType<String>())
+        WorkspaceNotice(
+          message: err,
+          onDismiss: () => setState(() {
+            _removeError = null;
+            _updateError = null;
+          }),
+        ),
+      if (_members.isEmpty)
+        WorkspaceEmpty(
+          icon: Icons.people_outline_rounded,
+          title: 'No members yet',
+          body: 'Invite colleagues with Invite.',
+          action: _canInvite ? _inviteAction(label: 'Invite') : null,
+        )
+      else
+        ..._members.map(_buildMemberRow),
+    ];
   }
+
+  WorkspaceAction _inviteAction({String label = 'Invite'}) => WorkspaceAction(
+    label: label,
+    icon: Icons.person_add_alt_1_rounded,
+    onPressed: () => setState(() {
+      _tab = 'invites';
+      _showCreate = true;
+    }),
+  );
 
   @override
   Widget build(BuildContext context) {
-    return InstitutionPage(
+    final showRequests = _canSeeRequests;
+    final showInvites = _canInvite;
+    final tab = (_tab == 'requests' && !showRequests) || (_tab == 'invites' && !showInvites) ? 'members' : _tab;
+    final pending = (showRequests || showInvites)
+        ? ref.watch(institutionPendingCountsProvider(widget.institutionId)).valueOrNull
+        : null;
+
+    final seatLine = _canManageMembers && _seatsUsed != null
+        ? (_seatsLimit == null
+              ? '$_seatsUsed staff seat${_seatsUsed == 1 ? '' : 's'} in use'
+              : '$_seatsUsed of $_seatsLimit staff seats in use')
+        : null;
+
+    final List<Widget> children = switch (tab) {
+      'requests' => [InstitutionJoinRequestsPanel(institutionId: widget.institutionId)],
+      'invites' => [
+        InstitutionInvitesPanel(
+          institutionId: widget.institutionId,
+          showCreate: _showCreate,
+          onCloseCreate: () => setState(() => _showCreate = false),
+          onInvite: _inviteAction().onPressed,
+        ),
+      ],
+      _ => _membersTab(),
+    };
+
+    return WorkspacePage(
+      type: WorkspacePageType.collection,
       title: 'Members',
       // Subtitle is shown to every member who can see this screen, not
-      // just operators. The previous "institutional access" wording read
-      // as admin-panel language in a regular workspace surface; use the
-      // plain product terms (people who belong, what they can do).
-      subtitle: 'People who belong to this institution and what each of them may do.',
-      trailing: _canManageMembers
-          ? AuraPrimaryButton(
-              label: 'Invite',
-              icon: Icons.person_add_alt_1_rounded,
-              onPressed: () =>
-                  context.push('/institution/${widget.institutionId}/invites'),
-            )
-          : null,
-      body: _buildBody(),
+      // just operators: the plain product terms (people who belong, what
+      // they can do), then the seat count for those who manage members.
+      purpose: [
+        'People who belong to this institution and what each of them may do.',
+        if (seatLine != null) seatLine,
+      ].join(' · '),
+      primary: showInvites && !(tab == 'invites' && _showCreate) ? _inviteAction() : null,
+      tabs: [
+        WorkspaceTab(id: 'members', label: 'Members', count: _loading ? null : _members.length),
+        if (showRequests) WorkspaceTab(id: 'requests', label: 'Join requests', count: pending?.joinRequests),
+        if (showInvites) WorkspaceTab(id: 'invites', label: 'Invites', count: pending?.invites),
+      ],
+      selectedTab: tab,
+      onTab: (id) => setState(() => _tab = id),
+      loading: tab == 'members' && _loading,
+      children: children,
+    );
+  }
+}
+
+/// The person's verification, in its canonical presentation, followed by
+/// whatever the row offers (a menu, Approve/Reject). The frame's row holds
+/// the name as text, so the mark sits at the row's end, beside the actions.
+Widget? personTrailing(AuraPersonIdentity person, Widget? rest) {
+  if (!person.verification.hasAny) return rest;
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      PersonVerificationMarks(verification: person.verification, size: TrustMarkSize.micro),
+      if (rest != null) ...[const SizedBox(width: AuraSpace.s8), rest],
+    ],
+  );
+}
+
+/// A refusal or failure from an action on this page, in the list's own
+/// place, dismissible. (Not in the frame: the frame has no inline notice.)
+class WorkspaceNotice extends StatelessWidget {
+  const WorkspaceNotice({super.key, required this.message, this.onDismiss, this.tone = WorkspaceTone.problem});
+
+  final String message;
+  final VoidCallback? onDismiss;
+  final WorkspaceTone tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final (bg, ink) = WorkspacePill.colors(tone);
+    return Container(
+      margin: const EdgeInsets.only(bottom: AuraSpace.s12),
+      padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s14, vertical: AuraSpace.s12),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: ink.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(tone == WorkspaceTone.done ? Icons.check_circle_outline : Icons.error_outline, size: 16, color: ink),
+          const SizedBox(width: AuraSpace.s8),
+          Expanded(
+            child: Text(message, style: AuraText.small.copyWith(color: ink)),
+          ),
+          if (onDismiss != null)
+            InkWell(
+              onTap: onDismiss,
+              borderRadius: BorderRadius.circular(8),
+              child: Icon(Icons.close, size: 16, color: ink),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -695,5 +622,4 @@ class _InstitutionMembersScreenState
 /// SEAT_LIMIT_REACHED, whose sentence says how many staff seats the plan
 /// holds, reached the owner as "Could not update role."
 @visibleForTesting
-String institutionMembersErrorMessage(Object error, String fallback) =>
-    ServerRefusal.of(error).message ?? fallback;
+String institutionMembersErrorMessage(Object error, String fallback) => ServerRefusal.of(error).message ?? fallback;

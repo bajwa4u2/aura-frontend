@@ -9,9 +9,11 @@ void main() {
   final src = File('lib/features/institutions/presentation/institution_members_screen.dart').readAsStringSync();
 
   test('standing reads in plain words', () {
-    expect(src.contains("_pill('Official voice'"), isTrue);
-    expect(src.contains("_pill('Meeting host'"), isTrue);
-    expect(src.contains("_pill('Representative'"), isFalse);
+    // DD-43: the voice is the row's pill; the rest of standing is named in
+    // the row's context line.
+    expect(src.contains("WorkspacePill(label: 'Official voice'"), isTrue);
+    expect(src.contains("if (isHost) 'Meeting host'"), isTrue);
+    expect(src.contains("'Representative'"), isFalse);
     expect(src.contains("'Make official voice'"), isTrue);
     expect(src.contains("'Make meeting host'"), isTrue);
   });

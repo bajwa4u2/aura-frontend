@@ -1,23 +1,28 @@
 import 'package:aura/core/product/temporal.dart';
-import '../../../core/trust/trust_marks.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/authority/authority_providers.dart';
+import '../../../core/authority/capability_projection.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_platform_components.dart';
-import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/institution_pending_counts.dart';
 import '../data/institutions_repository.dart';
-import '../ui/institution_ds.dart';
-import 'institution_page.dart';
+import '../workspace/workspace_page.dart';
+import 'institution_members_screen.dart';
 import '../../../core/identity/person_identity_model.dart';
 
-class InstitutionJoinRequestsScreen extends ConsumerStatefulWidget {
+/// JOIN REQUESTS (DD-43, 2026-10-09).
+///
+/// For people who answer requests, this route is the Members page on its
+/// Join requests tab. For someone outside the institution it is the request
+/// form itself, a Settings page with one Submit bar.
+class InstitutionJoinRequestsScreen extends ConsumerWidget {
   const InstitutionJoinRequestsScreen({
     super.key,
     required this.institutionId,
@@ -26,56 +31,44 @@ class InstitutionJoinRequestsScreen extends ConsumerStatefulWidget {
   final String institutionId;
 
   @override
-  ConsumerState<InstitutionJoinRequestsScreen> createState() =>
-      _InstitutionJoinRequestsScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Single source of truth for admin gating — never trust route query
+    // params. Subscribed so role changes re-render the right page.
+    final adminByIdentity = ref.watch(institutionIdentityProvider)?.isAdmin ?? false;
+    final mayAnswer = ref.watch(capabilityProjectionForProvider(institutionId)).presentationFor(
+              ConsequentialAct.manageJoinRequests,
+            ) ==
+        ControlPresentation.available;
+    if (adminByIdentity || mayAnswer) {
+      return InstitutionMembersScreen(institutionId: institutionId, initialTab: 'requests');
+    }
+    return _RequestAccessPage(institutionId: institutionId);
+  }
 }
 
-class _InstitutionJoinRequestsScreenState
-    extends ConsumerState<InstitutionJoinRequestsScreen> {
+/// The Join requests tab: the people asking to join, answered in place.
+class InstitutionJoinRequestsPanel extends ConsumerStatefulWidget {
+  const InstitutionJoinRequestsPanel({super.key, required this.institutionId});
+
+  final String institutionId;
+
+  @override
+  ConsumerState<InstitutionJoinRequestsPanel> createState() => _JoinRequestsPanelState();
+}
+
+class _JoinRequestsPanelState extends ConsumerState<InstitutionJoinRequestsPanel> {
   bool _loading = true;
   String? _error;
-  bool _initialLoadStarted = false;
-
   List<Map<String, dynamic>> _requests = const [];
-
   String? _actingOn;
   String? _actionError;
 
-  // Non-member: request-to-join state
-  bool _submittingJoin = false;
-  String? _joinError;
-  String? _joinSuccess;
-  final _messageController = TextEditingController();
-
   InstitutionsRepository get _repo => ref.read(institutionsRepositoryProvider);
-
-  /// Single source of truth for admin gating — never trust route query params.
-  bool get _isAdmin =>
-      ref.read(institutionIdentityProvider)?.isAdmin ?? false;
 
   @override
   void initState() {
     super.initState();
-    // Defer the admin-only load until the first build — at initState the
-    // institution identity may still be settling, so reading it here can
-    // race the access provider.
-  }
-
-  void _ensureInitialLoad() {
-    if (_initialLoadStarted) return;
-    if (!_isAdmin) {
-      _initialLoadStarted = true;
-      _loading = false;
-      return;
-    }
-    _initialLoadStarted = true;
     _load();
-  }
-
-  @override
-  void dispose() {
-    _messageController.dispose();
-    super.dispose();
   }
 
   Future<void> _load() async {
@@ -85,18 +78,19 @@ class _InstitutionJoinRequestsScreenState
     });
     try {
       final items = await _repo.listJoinRequests(widget.institutionId);
+      if (!mounted) return;
       setState(() {
         _requests = items;
         _loading = false;
+        _actingOn = null;
       });
-      // Keep the shared attention counts (dashboard queue + nav badges) in
-      // sync with what this screen just loaded / changed.
-      ref.invalidate(
-        institutionPendingCountsProvider(widget.institutionId),
-      );
+      // Keep the shared attention counts (tab count + nav badges) in sync
+      // with what this tab just loaded / changed.
+      ref.invalidate(institutionPendingCountsProvider(widget.institutionId));
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _error = _message(e, 'Could not load join requests.');
+        _error = _joinRequestMessage(e, 'Could not load join requests.');
         _loading = false;
       });
     }
@@ -113,7 +107,7 @@ class _InstitutionJoinRequestsScreenState
       await _load();
     } catch (e) {
       setState(() {
-        _actionError = _message(e, 'Could not approve request.');
+        _actionError = _joinRequestMessage(e, 'Could not approve request.');
         _actingOn = null;
       });
     }
@@ -130,10 +124,138 @@ class _InstitutionJoinRequestsScreenState
       await _load();
     } catch (e) {
       setState(() {
-        _actionError = _message(e, 'Could not reject request.');
+        _actionError = _joinRequestMessage(e, 'Could not reject request.');
         _actingOn = null;
       });
     }
+  }
+
+  Widget _request(Map<String, dynamic> req) {
+    final reqId = req['id']?.toString() ?? '';
+    final user = req['user'] is Map ? Map<String, dynamic>.from(req['user'] as Map) : <String, dynamic>{};
+    // F053/F116 — canonical read; 'Unknown' was this screen's own invented
+    // label for a person it failed to resolve.
+    final person = AuraPersonIdentity.fromJson(user);
+    final message = req['message']?.toString().trim() ?? '';
+    final created = DateTime.tryParse(req['createdAt']?.toString() ?? '');
+    final isActing = _actingOn == reqId;
+
+    final actions = isActing
+        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton(
+                onPressed: () => _reject(reqId),
+                style: TextButton.styleFrom(foregroundColor: AuraSurface.muted),
+                child: const Text('Reject'),
+              ),
+              TextButton.icon(
+                onPressed: () => _approve(reqId),
+                icon: const Icon(Icons.check_rounded, size: 18),
+                label: const Text('Approve'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AuraSurface.accentText,
+                  textStyle: const TextStyle(fontFamily: 'AuraSans', fontSize: 14, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          );
+
+    // Admitting someone is a trust decision, so their verification travels
+    // with their name, and what they wrote is shown in full under the row.
+    // On a narrow screen Approve and Reject move under it, so neither the
+    // name nor the mark is squeezed.
+    return LayoutBuilder(
+      builder: (context, box) {
+        final narrow = box.maxWidth < 560;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            WorkspaceRow(
+              leading: AuraAvatar(name: person.label, imageUrl: person.avatarUrl, size: 36),
+              title: person.label,
+              context: [
+                if (person.handle.isNotEmpty) '@${person.handle}',
+                if (created != null) 'asked ${AuraTemporal.fullShort(created)}',
+              ].join(' · '),
+              trailing: personTrailing(person, narrow ? null : actions),
+            ),
+            if (message.isNotEmpty)
+              Padding(
+                padding: EdgeInsets.fromLTRB(narrow ? AuraSpace.s14 : 62, 0, AuraSpace.s14, AuraSpace.s12),
+                child: Container(
+                  padding: const EdgeInsets.only(left: AuraSpace.s12),
+                  decoration: const BoxDecoration(
+                    border: Border(left: BorderSide(color: AuraSurface.divider, width: 2)),
+                  ),
+                  child: Text(message, style: AuraText.body.copyWith(height: 1.5)),
+                ),
+              ),
+            if (narrow)
+              Padding(
+                padding: const EdgeInsets.only(bottom: AuraSpace.s12),
+                child: Align(alignment: Alignment.centerRight, child: actions),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) return const WorkspaceLoading();
+    if (_error != null) {
+      return WorkspaceEmpty(
+        icon: Icons.error_outline_rounded,
+        title: 'Could not load join requests',
+        body: _error!,
+        action: WorkspaceAction(
+          label: ProductLabels.of(ProductAction.retry),
+          icon: Icons.refresh_rounded,
+          onPressed: _load,
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_actionError != null)
+          WorkspaceNotice(message: _actionError!, onDismiss: () => setState(() => _actionError = null)),
+        if (_requests.isEmpty)
+          const WorkspaceEmpty(
+            icon: Icons.inbox_outlined,
+            title: 'No pending requests',
+            body: 'Requests to join appear here.',
+          )
+        else
+          ..._requests.map(_request),
+      ],
+    );
+  }
+}
+
+/// Someone outside the institution asking to join it.
+class _RequestAccessPage extends ConsumerStatefulWidget {
+  const _RequestAccessPage({required this.institutionId});
+
+  final String institutionId;
+
+  @override
+  ConsumerState<_RequestAccessPage> createState() => _RequestAccessPageState();
+}
+
+class _RequestAccessPageState extends ConsumerState<_RequestAccessPage> {
+  bool _submittingJoin = false;
+  String? _joinError;
+  String? _joinSuccess;
+  final _messageController = TextEditingController();
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
   }
 
   Future<void> _submitJoin() async {
@@ -144,12 +266,10 @@ class _InstitutionJoinRequestsScreenState
       _joinSuccess = null;
     });
     try {
-      await _repo.createJoinRequest(
-        widget.institutionId,
-        message: _messageController.text.trim().isEmpty
-            ? null
-            : _messageController.text.trim(),
-      );
+      await ref.read(institutionsRepositoryProvider).createJoinRequest(
+            widget.institutionId,
+            message: _messageController.text.trim().isEmpty ? null : _messageController.text.trim(),
+          );
       _messageController.clear();
       setState(() {
         _submittingJoin = false;
@@ -157,312 +277,55 @@ class _InstitutionJoinRequestsScreenState
       });
     } catch (e) {
       setState(() {
-        _joinError = _message(e, 'Could not submit join request.');
+        _joinError = _joinRequestMessage(e, 'Could not submit join request.');
         _submittingJoin = false;
       });
     }
   }
 
-  String _message(Object error, String fallback) {
-    if (error is DioException) {
-      final data = error.response?.data;
-      if (data is Map) {
-        final msg = data['message']?.toString().trim() ?? '';
-        if (msg.isNotEmpty) return msg;
-      }
-    }
-    return fallback;
-  }
-
-  Widget _buildRequestTile(Map<String, dynamic> req) {
-    final reqId = req['id']?.toString() ?? '';
-    final user = req['user'] is Map
-        ? Map<String, dynamic>.from(req['user'] as Map)
-        : <String, dynamic>{};
-    // F053/F116 — canonical read; 'Unknown' was this screen's own invented
-    // label for a person it failed to resolve.
-    final person = AuraPersonIdentity.fromJson(user);
-    final handle = person.handle;
-    final message = req['message']?.toString().trim() ?? '';
-    final createdAt = req['createdAt']?.toString() ?? '';
-    final nameOrHandle = person.label;
-    final isActing = _actingOn == reqId;
-
-    final date = () {
-      final dt = DateTime.tryParse(createdAt);
-      if (dt == null) return '';
-      return AuraTemporal.fullShort(dt);
-    }();
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: AuraSpace.s10),
-      padding: const EdgeInsets.all(AuraSpace.s16),
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              // Same rule as the roster: the request names a PERSON, and the
-              // canonical identity already read above supplies their face.
-              AuraAvatar(
-                name: nameOrHandle,
-                imageUrl: person.avatarUrl,
-                size: 36,
-              ),
-              const SizedBox(width: AuraSpace.s12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Admitting someone is a trust decision, so their
-                    // verification travels with their name — the canonical
-                    // presentation, never a local badge.
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            nameOrHandle,
-                            overflow: TextOverflow.ellipsis,
-                            style: AuraText.small
-                                .copyWith(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                        if (person.verification.hasAny) ...[
-                          const SizedBox(width: AuraSpace.s4),
-                          PersonVerificationMarks(
-                            verification: person.verification,
-                            size: TrustMarkSize.micro,
-                          ),
-                        ],
-                      ],
-                    ),
-                    if (handle.isNotEmpty)
-                      Text(
-                        '@$handle',
-                        style: AuraText.micro.copyWith(color: AuraSurface.muted),
-                      ),
-                  ],
-                ),
-              ),
-              if (date.isNotEmpty)
-                Text(
-                  date,
-                  style: AuraText.micro.copyWith(color: AuraSurface.faint),
-                ),
-            ],
-          ),
-          if (message.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AuraSpace.s10),
-              decoration: BoxDecoration(
-                color: AuraSurface.subtle,
-                borderRadius: BorderRadius.circular(AuraRadius.md),
-              ),
-              child: Text(
-                message,
-                style: AuraText.small.copyWith(
-                  color: AuraSurface.ink,
-                  height: 1.5,
-                ),
-              ),
-            ),
-          ],
-          const SizedBox(height: AuraSpace.s12),
-          if (isActing)
-            const Center(
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            )
-          else
-            Row(
-              children: [
-                Expanded(
-                  child: AuraPrimaryButton(
-                    label: 'Approve',
-                    onPressed: () => _approve(reqId),
-                    icon: Icons.check_rounded,
-                  ),
-                ),
-                const SizedBox(width: AuraSpace.s10),
-                Expanded(
-                  child: AuraSecondaryButton(
-                    label: 'Reject',
-                    onPressed: () => _reject(reqId),
-                    icon: Icons.close_rounded,
-                  ),
-                ),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAdminBody() {
-    if (_loading) return const AuraLoadingState(message: 'Loading requests…');
-
-    if (_error != null) {
-      return AuraErrorState(
-        title: 'Could not load join requests',
-        body: _error!,
-        action: AuraSecondaryButton(
-          label: ProductLabels.of(ProductAction.retry),
-          onPressed: _load,
-          icon: Icons.refresh_rounded,
-        ),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_actionError != null) ...[
-          Container(
-            padding: const EdgeInsets.all(AuraSpace.s12),
-            margin: const EdgeInsets.only(bottom: AuraSpace.s12),
-            decoration: BoxDecoration(
-              color: AuraSurface.coRose.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(AuraRadius.md),
-              border: Border.all(color: AuraSurface.coRose.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.error_outline, size: 16, color: AuraSurface.coRose),
-                const SizedBox(width: AuraSpace.s8),
-                Expanded(
-                  child: Text(
-                    _actionError!,
-                    style: AuraText.small.copyWith(color: AuraSurface.coRose),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => setState(() => _actionError = null),
-                  child: const Icon(Icons.close, size: 16, color: AuraSurface.coRose),
-                ),
-              ],
-            ),
-          ),
-        ],
-        Text(
-          '${_requests.length} pending request${_requests.length == 1 ? '' : 's'}',
-          style: AuraText.small.copyWith(color: AuraSurface.muted),
-        ),
-        const SizedBox(height: AuraSpace.s12),
-        if (_requests.isEmpty)
-          const InsEmptyState(
-            icon: Icons.inbox_outlined,
-            title: 'No pending requests',
-            description: 'Requests to join appear here.',
-          )
-        else
-          ..._requests.map(_buildRequestTile),
-      ],
-    );
-  }
-
-  Widget _buildNonMemberBody() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(AuraSpace.s16),
-          decoration: BoxDecoration(
-            color: AuraSurface.card,
-            borderRadius: BorderRadius.circular(AuraRadius.card),
-            border: Border.all(color: AuraSurface.divider),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                controller: _messageController,
-                maxLines: null,
-                style: AuraText.body,
-                enabled: _joinSuccess == null,
-                decoration: const InputDecoration(
-                  labelText: 'Message (optional)',
-                  hintText: 'Briefly explain why you\'d like to join…',
-                  alignLabelWithHint: true,
-                ),
-              ),
-              if (_joinError != null) ...[
-                const SizedBox(height: AuraSpace.s12),
-                Container(
-                  padding: const EdgeInsets.all(AuraSpace.s10),
-                  decoration: BoxDecoration(
-                    color: AuraSurface.coRose.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(AuraRadius.md),
-                    border: Border.all(color: AuraSurface.coRose.withValues(alpha: 0.3)),
-                  ),
-                  child: Text(
-                    _joinError!,
-                    style: AuraText.small.copyWith(color: AuraSurface.coRose),
-                  ),
-                ),
-              ],
-              if (_joinSuccess != null) ...[
-                const SizedBox(height: AuraSpace.s12),
-                Container(
-                  padding: const EdgeInsets.all(AuraSpace.s10),
-                  decoration: BoxDecoration(
-                    color: AuraSurface.coVerdant.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(AuraRadius.md),
-                    border: Border.all(color: AuraSurface.coVerdant.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.check_circle_outline, size: 16, color: AuraSurface.coVerdant),
-                      const SizedBox(width: AuraSpace.s8),
-                      Expanded(
-                        child: Text(
-                          _joinSuccess!,
-                          style: AuraText.small.copyWith(color: AuraSurface.coVerdant),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Subscribe so role changes drive a rebuild and re-render the right body.
-    ref.watch(institutionIdentityProvider);
-    _ensureInitialLoad();
-
-    final Widget? trailing = _isAdmin
-        ? null
-        : AuraPrimaryButton(
-            label: _submittingJoin ? 'Submitting…' : 'Submit request',
-            icon: Icons.send_rounded,
-            onPressed:
-                _joinSuccess != null || _submittingJoin ? null : _submitJoin,
-          );
-
-    return InstitutionPage(
-      title: _isAdmin ? 'Join requests' : 'Request access',
-      subtitle: _isAdmin
-          ? 'Review and approve or reject member requests.'
-          : 'Send a request to the institution admins. They will review and approve or reject it.',
-      trailing: trailing,
-      body: _isAdmin ? _buildAdminBody() : _buildNonMemberBody(),
+    return WorkspacePage(
+      type: WorkspacePageType.settings,
+      title: 'Request access',
+      purpose: 'Send a request to the institution admins. They will review and approve or reject it.',
+      bar: WorkspaceBar(
+        primary: WorkspaceAction(
+          label: _submittingJoin ? 'Submitting…' : 'Submit request',
+          icon: Icons.send_rounded,
+          onPressed: _joinSuccess != null || _submittingJoin ? null : _submitJoin,
+        ),
+      ),
+      children: [
+        if (_joinError != null) WorkspaceNotice(message: _joinError!),
+        if (_joinSuccess != null) WorkspaceNotice(message: _joinSuccess!, tone: WorkspaceTone.done),
+        WorkspaceSection(
+          title: 'Your request',
+          child: TextFormField(
+            controller: _messageController,
+            maxLines: null,
+            minLines: 3,
+            style: AuraText.body,
+            enabled: _joinSuccess == null,
+            decoration: const InputDecoration(
+              labelText: 'Message (optional)',
+              hintText: 'Briefly explain why you\'d like to join…',
+              alignLabelWithHint: true,
+            ),
+          ),
+        ),
+      ],
     );
   }
+}
+
+String _joinRequestMessage(Object error, String fallback) {
+  if (error is DioException) {
+    final data = error.response?.data;
+    if (data is Map) {
+      final msg = data['message']?.toString().trim() ?? '';
+      if (msg.isNotEmpty) return msg;
+    }
+  }
+  return fallback;
 }
