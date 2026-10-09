@@ -552,7 +552,9 @@ class _InstitutionMembersScreenState extends ConsumerState<InstitutionMembersScr
       tabs: [
         WorkspaceTab(id: 'members', label: 'Members', count: _loading ? null : _members.length),
         if (showRequests) WorkspaceTab(id: 'requests', label: 'Join requests', count: pending?.joinRequests),
-        if (showInvites) WorkspaceTab(id: 'invites', label: 'Invites', count: pending?.invites),
+        // No number: the tab lists every invite, used and expired too, and a
+        // pending-only count beside them read as "0 invites" (live, 9 Oct).
+        if (showInvites) const WorkspaceTab(id: 'invites', label: 'Invites'),
       ],
       selectedTab: tab,
       onTab: (id) => setState(() => _tab = id),

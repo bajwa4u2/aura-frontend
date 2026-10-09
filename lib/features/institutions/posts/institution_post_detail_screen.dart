@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/shell/rail/rail_composition.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/product/product_language.dart';
@@ -27,8 +26,9 @@ import '../../posts/data/reactions_repository.dart';
 import '../../updates/providers.dart';
 import '../data/institutions_repository.dart';
 import '../domain/communication_type.dart';
-import '../presentation/institution_page.dart';
 import '../ui/institution_ds.dart';
+import '../../../core/institutions/institution_paths.dart';
+import '../workspace/workspace_page.dart';
 
 /// Detail surface for a single InstitutionPost.
 ///
@@ -176,20 +176,30 @@ class _InstitutionPostDetailScreenState
       }
     }
 
-    return InstitutionPage(
+    // DD-43: a Record page. "Back to Explore", Reply as the one gold
+    // action, Edit and Delete under More for those who govern the post.
+    return WorkspacePage(
+      type: WorkspacePageType.record,
       title: 'Post',
-      subtitle: 'Discussion thread for this institutional post.',
-      showBack: true,
-      // Contextual rail — keeps the institutional record connected to
-      // the live discourse ecosystem around it.
-      railModules: discourseDetailRailModules(),
-      trailing: AuraPrimaryButton(
-        label: 'Reply',
-        icon: Icons.reply_rounded,
-        onPressed: onReply,
+      purpose: 'The post and the replies to it.',
+      back: WorkspaceBack(
+        label: 'Explore',
+        path: institutionWorkspacePath(institutionId, InstitutionSection.explore),
       ),
-      body: detailAsync.when(
-        loading: () => const AuraLoadingState(message: 'Loading post…'),
+      primary: WorkspaceAction(label: 'Reply', icon: Icons.reply_rounded, onPressed: onReply),
+      more: [
+        if (canGovern) ...[
+          WorkspaceAction(
+            label: 'Edit',
+            icon: Icons.edit_outlined,
+            onPressed: () => context.push('/institution/$institutionId/posts/$postId/edit'),
+          ),
+          WorkspaceAction(label: 'Delete', icon: Icons.delete_outline_rounded, destructive: true, onPressed: onDelete),
+        ],
+      ],
+      children: [
+        detailAsync.when(
+        loading: () => const WorkspaceLoading(type: WorkspacePageType.record, rows: 2),
         error: (e, _) => AuraErrorState(
           title: 'Could not load post',
           body: AppErrorMapper.from(e, feature: 'view this post').message,
@@ -269,26 +279,6 @@ class _InstitutionPostDetailScreenState
               // Governance — edit / delete, only for an authorized
               // operator of this institution (gated above; backend
               // re-enforces). Hidden from public and member viewers.
-              if (canGovern) ...[
-                const SizedBox(height: AuraSpace.s10),
-                Row(
-                  children: [
-                    AuraSecondaryButton(
-                      label: 'Edit',
-                      icon: Icons.edit_outlined,
-                      onPressed: () => context.push(
-                        '/institution/$institutionId/posts/$postId/edit',
-                      ),
-                    ),
-                    const SizedBox(width: AuraSpace.s10),
-                    AuraSecondaryButton(
-                      label: 'Delete',
-                      icon: Icons.delete_outline_rounded,
-                      onPressed: onDelete,
-                    ),
-                  ],
-                ),
-              ],
               const SizedBox(height: AuraSpace.s14),
               if (item.activity?.recentReply == true) ...[
                 Row(
@@ -365,6 +355,7 @@ class _InstitutionPostDetailScreenState
           );
         },
       ),
+      ],
     );
   }
 }

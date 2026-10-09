@@ -163,12 +163,13 @@ void main() {
   group('administrative and governance authority', () {
     test('admin holds the operational workspace', () {
       final labels = labelsFor(admin);
+      // DD-43 (2026-10-09): Join requests and Invites are Members tabs and
+      // Booking pages a Meetings tab, each still gated by its capability
+      // inside that page; the rail holds the sections.
       for (final expected in [
         'Verification',
         'Members',
-        'Join requests',
-        'Invites',
-        'Booking pages',
+        'Meetings',
       ]) {
         expect(labels, contains(expected));
       }
@@ -198,10 +199,10 @@ void main() {
 
     test('owner holds governance', () {
       final labels = labelsFor(owner);
+      // DD-43: Edit profile is Profile's gold action, gated there.
       for (final expected in [
         'Web addresses',
         'Billing',
-        'Edit profile',
         'Verification',
       ]) {
         expect(labels, contains(expected));

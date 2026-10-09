@@ -158,7 +158,9 @@ void main() {
         guestShell += g;
         if (g > 0) guestShellFiles.add(f.path.replaceAll(r'\', '/'));
       }
-      expect(institutionPage, 1,
+      // DD-43 (2026-10-09): the last InstitutionPage(showBack) — the
+      // institution post page — moved to the workspace frame's own Back.
+      expect(institutionPage, 0,
           reason: 'InstitutionPage showBack adoption changed — re-run census');
       expect(guestShell, 14,
           reason: 'GuestShell showBackButton adoption changed — re-run census');

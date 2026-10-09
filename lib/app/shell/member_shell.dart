@@ -2360,8 +2360,11 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       label: 'Members',
       icon: Icons.people_outline_rounded,
       selectedIcon: Icons.people_rounded,
+      // DD-43: Join requests and Invites are tabs here now, so the requests
+      // waiting on you are counted here.
+      badge: pendingJoinRequests,
       pathBuilder: (_) => at(InstitutionSection.members),
-      pathMatcher: (p) => under(p, 'members'),
+      pathMatcher: (p) => under(p, 'members') || under(p, 'join-requests') || under(p, 'invites'),
     ),
     InstWorkspaceEntry(
       label: 'Live',
@@ -2378,15 +2381,8 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       icon: Icons.videocam_outlined,
       selectedIcon: Icons.videocam_rounded,
       pathBuilder: (_) => at(InstitutionSection.meetings),
-      pathMatcher: (p) => p.startsWith('/meetings/') || under(p, 'meetings'),
-    ),
-    InstWorkspaceEntry(
-      label: 'Booking pages',
-      icon: Icons.calendar_today_outlined,
-      selectedIcon: Icons.calendar_today_rounded,
-      requiresAny: kInstitutionDestinationAuthority['availability']!,
-      pathBuilder: (_) => at(InstitutionSection.availability),
-      pathMatcher: (p) => p.startsWith('/institution/') && p.endsWith('/availability'),
+      // DD-43: Booking pages is a Meetings tab.
+      pathMatcher: (p) => p.startsWith('/meetings/') || under(p, 'meetings') || under(p, 'availability'),
     ),
 
     // ── SETTINGS ───────────────────────────────────────────────────────────
@@ -2396,32 +2392,8 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       icon: Icons.badge_outlined,
       selectedIcon: Icons.badge_rounded,
       pathBuilder: (_) => at(InstitutionSection.profile),
-      pathMatcher: (p) => p.startsWith('/institution/') && p.endsWith('/profile'),
-    ),
-    InstWorkspaceEntry(
-      label: 'Edit profile',
-      icon: Icons.edit_outlined,
-      selectedIcon: Icons.edit_rounded,
-      requiresAny: kInstitutionDestinationAuthority['edit-profile']!,
-      pathBuilder: (_) => at(InstitutionSection.editProfile),
-    ),
-    InstWorkspaceEntry(
-      label: 'Join requests',
-      icon: Icons.person_add_outlined,
-      selectedIcon: Icons.person_add_rounded,
-      requiresAny: kInstitutionDestinationAuthority['join-requests']!,
-      badge: pendingJoinRequests,
-      pathBuilder: (_) => at(InstitutionSection.joinRequests),
-      pathMatcher: (p) => under(p, 'join-requests'),
-    ),
-    InstWorkspaceEntry(
-      label: 'Invites',
-      icon: Icons.mail_outline_rounded,
-      selectedIcon: Icons.mail_rounded,
-      requiresAny: kInstitutionDestinationAuthority['invites']!,
-      badge: pendingInvites,
-      pathBuilder: (_) => at(InstitutionSection.invites),
-      pathMatcher: (p) => under(p, 'invites'),
+      // DD-43: Edit profile is Profile's gold action, not a rail entry.
+      pathMatcher: (p) => p.startsWith('/institution/') && (p.endsWith('/profile') || p.endsWith('/edit-profile')),
     ),
     // Units: structural management only (founder ruling U5); a unit is an
     // operating context reached from Profile, not a peer destination.

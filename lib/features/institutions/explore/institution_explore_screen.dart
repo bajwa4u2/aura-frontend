@@ -206,8 +206,11 @@ class _InstitutionExploreScreenState
           key: ValueKey('explore-${active.wire}'),
           institutionId: widget.institutionId,
           scope: active.wire,
-          emptyTitle: _emptyTitle(active),
-          emptyBody: _emptyBody(active),
+          // With a filter on, "no posts yet" is untrue: say the filter hid them.
+          emptyTitle: filtersOn > 0 ? 'Nothing matches the filter' : _emptyTitle(active),
+          emptyBody: filtersOn > 0
+              ? 'Open Filter and choose All Topics and All Resources to see every post.'
+              : _emptyBody(active),
         ),
       ],
     );

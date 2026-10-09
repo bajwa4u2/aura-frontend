@@ -98,7 +98,7 @@ G5 2 lib/features/communications/presentation/widgets/digest_preferences_panel.d
 G5 3 lib/features/direct_threads/presentation/direct_intent_screen.dart
 # member_home G5 2 -> 0: Public Home reconstruction (C2, 2026-08-16)
 # public_home G5 4 -> 0: Public Home reconstruction (C2, 2026-08-16)
-G5 4 lib/features/institutions/posts/institution_post_detail_screen.dart
+G5 3 lib/features/institutions/posts/institution_post_detail_screen.dart
 # admin_workspace_screen G5 4 -> 0: screen deleted; the operator hub replaces it
 G5 2 lib/features/institutions/presentation/institution_detail_screen.dart
 G5 1 lib/features/institutions/presentation/institution_page.dart
