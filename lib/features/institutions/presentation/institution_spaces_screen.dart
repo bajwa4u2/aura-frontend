@@ -10,14 +10,13 @@ import '../../../core/authority/capability_projection.dart';
 import '../../../core/authority/authority_providers.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/product/product_language.dart';
-import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/institutions_repository.dart';
-import '../ui/institution_ds.dart';
-import 'institution_page.dart';
+import '../workspace/workspace_page.dart';
+import '../workspace/workspace_row_menu.dart';
 
 class InstitutionSpacesScreen extends ConsumerStatefulWidget {
   const InstitutionSpacesScreen({
@@ -245,55 +244,24 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
     }
   }
 
-  Color _visibilityColor(String v) {
-    switch (v.toUpperCase()) {
-      case 'DISCOVERABLE': return AuraSurface.coVerdant;
-      case 'INVITE_ONLY': return AuraSurface.accentText;
-      case 'PRIVATE': return AuraSurface.muted;
-      default: return AuraSurface.muted;
-    }
-  }
-
-  Color _visibilityBg(String v) {
-    switch (v.toUpperCase()) {
-      case 'DISCOVERABLE': return AuraSurface.coVerdant.withValues(alpha: 0.16);
-      case 'INVITE_ONLY': return AuraSurface.accentSoft;
-      case 'PRIVATE': return AuraSurface.subtle;
-      default: return AuraSurface.subtle;
-    }
-  }
+  void _closeCreate() => setState(() {
+        _showCreate = false;
+        _createError = null;
+        // MemberPickerField unmounts when the form is hidden and
+        // remounts empty (no initialSelected passed) next time --
+        // clear the parent's mirror too so it can never go stale
+        // relative to what the picker will visibly show.
+        _selectedMembers = const [];
+        _pickerResetToken++;
+      });
 
   Widget _buildCreateForm() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: AuraSpace.s16),
-      padding: const EdgeInsets.all(AuraSpace.s16),
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.accentText.withValues(alpha: 0.3)),
-      ),
+    return WorkspaceSection(
+      title: 'New space',
+      description: 'A room for a group, a team or a piece of work.',
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              const Expanded(child: Text('New space', style: AuraText.subtitle)),
-              GestureDetector(
-                onTap: () => setState(() {
-                  _showCreate = false;
-                  _createError = null;
-                  // MemberPickerField unmounts when the form is hidden and
-                  // remounts empty (no initialSelected passed) next time --
-                  // clear the parent's mirror too so it can never go stale
-                  // relative to what the picker will visibly show.
-                  _selectedMembers = const [];
-                  _pickerResetToken++;
-                }),
-                child: const Icon(Icons.close, size: 18, color: AuraSurface.muted),
-              ),
-            ],
-          ),
-          const SizedBox(height: AuraSpace.s14),
           TextFormField(
             controller: _titleController,
             style: AuraText.body,
@@ -348,222 +316,163 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
           ),
           if (_createError != null) ...[
             const SizedBox(height: AuraSpace.s8),
-            Text(_createError!, style: AuraText.small.copyWith(color: AuraSurface.coRose)),
+            Text(_createError!, style: AuraText.small.copyWith(color: AuraSurface.dangerInk)),
           ],
           const SizedBox(height: AuraSpace.s16),
-          AuraPrimaryButton(
-            label: _creating ? 'Creating…' : 'Create space',
-            onPressed: _creating ? null : _create,
-            icon: Icons.add_rounded,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: _creating ? null : _closeCreate,
+                style: TextButton.styleFrom(foregroundColor: AuraSurface.muted),
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: AuraSpace.s8),
+              WorkspacePrimaryButton(
+                action: WorkspaceAction(
+                  label: _creating ? 'Creating…' : 'Create space',
+                  icon: Icons.add_rounded,
+                  onPressed: _creating ? null : _create,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSpaceTile(Map<String, dynamic> space) {
+  /// One row per space (DD-43): name; description, members and threads;
+  /// who can see it; every other act under the row's menu.
+  Widget _buildSpaceRow(Map<String, dynamic> space) {
     final id = space['id']?.toString() ?? '';
     final title = space['title']?.toString().trim() ?? '';
     final description = space['description']?.toString().trim() ?? '';
     final visibility = space['visibility']?.toString() ?? 'INVITE_ONLY';
     final memberCount = space['memberCount'] as int? ?? 0;
     final threadCount = space['threadCount'] as int? ?? 0;
-    final isActing = _actingOn == id;
+    final isMember = space['viewerIsMember'] == true;
+    void open() => context.push(
+          NavigationAuthority.institutionSpaceRoute(
+            widget.institutionId,
+            // The Space's product address, falling back to its id only
+            // when it has none — an id still resolves and canonicalizes
+            // on arrival, so the link works either way.
+            (space['slug']?.toString().trim().isNotEmpty ?? false) ? space['slug'].toString() : id,
+          ),
+        );
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AuraSpace.s10),
-      padding: const EdgeInsets.all(AuraSpace.s16),
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(title.isNotEmpty ? title : 'Unnamed space', style: AuraText.body.copyWith(fontWeight: FontWeight.w700)),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s8, vertical: AuraSpace.s4),
-                decoration: BoxDecoration(
-                  color: _visibilityBg(visibility),
-                  borderRadius: BorderRadius.circular(AuraRadius.pill),
-                ),
-                child: Text(
-                  _visibilityLabel(visibility),
-                  style: AuraText.micro.copyWith(color: _visibilityColor(visibility), fontWeight: FontWeight.w700),
-                ),
-              ),
-            ],
-          ),
-          if (description.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text(description, style: AuraText.small.copyWith(color: AuraSurface.muted, height: 1.4), maxLines: 2, overflow: TextOverflow.ellipsis),
-          ],
-          const SizedBox(height: AuraSpace.s10),
-          Row(
-            children: [
-              const Icon(Icons.people_outline, size: 12, color: AuraSurface.faint),
-              const SizedBox(width: AuraSpace.s4),
-              Text('$memberCount', style: AuraText.micro.copyWith(color: AuraSurface.faint)),
-              const SizedBox(width: AuraSpace.s12),
-              const Icon(Icons.chat_bubble_outline, size: 12, color: AuraSurface.faint),
-              const SizedBox(width: AuraSpace.s4),
-              Text('$threadCount threads', style: AuraText.micro.copyWith(color: AuraSurface.faint)),
-              const Spacer(),
-              if (isActing)
-                const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-              else if (_showArchived) ...[
-                // Archived is institutional lifecycle state, not deleted —
-                // restore is the only action offered here; opening/joining
-                // an archived space isn't ordinary active operation.
-                GestureDetector(
-                  onTap: () => _restore(id),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.unarchive_outlined, size: 14, color: AuraSurface.coVerdant),
-                      const SizedBox(width: AuraSpace.s4),
-                      Text('Restore', style: AuraText.small.copyWith(color: AuraSurface.coVerdant, fontWeight: FontWeight.w700)),
-                    ],
-                  ),
-                ),
-              ] else ...[
-                GestureDetector(
-                  // The Space's product address, falling back to its id only
-                  // when it has none — an id still resolves and canonicalizes
-                  // on arrival, so the link works either way.
-                  onTap: () => context.push(
-                    NavigationAuthority.institutionSpaceRoute(
-                      widget.institutionId,
-                      (space['slug']?.toString().trim().isNotEmpty ?? false)
-                          ? space['slug'].toString()
-                          : id,
-                    ),
-                  ),
-                  child: Text('Open', style: AuraText.small.copyWith(color: AuraSurface.accentText, fontWeight: FontWeight.w700)),
-                ),
-                // JOIN IS RESOURCE MEMBERSHIP, NOT AUTHORITY. This used to
-                // read `!isAdmin`, which was wrong in both directions: an
-                // admin outside a space lost the affordance, and a member
-                // already inside one was still invited to join it. The server
-                // now reports whether this viewer belongs to the space.
-                if (!(space['viewerIsMember'] == true)) ...[
-                  const SizedBox(width: AuraSpace.s12),
-                  GestureDetector(
-                    onTap: () => _join(id),
-                    child: Text('Join', style: AuraText.small.copyWith(color: AuraSurface.coVerdant, fontWeight: FontWeight.w700)),
-                  ),
-                ],
-                if (_canManageSpaces) ...[
-                  const SizedBox(width: AuraSpace.s12),
-                  GestureDetector(
-                    onTap: () => _archive(id),
-                    child: const Icon(Icons.archive_outlined, size: 16, color: AuraSurface.coRose),
-                  ),
-                ],
-              ],
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBody() {
-    if (_loading) return const AuraLoadingState(message: 'Loading spaces…');
-    if (_error != null) {
-      return AuraErrorState(
-        title: 'Could not load spaces',
-        body: _error!,
-        action: AuraSecondaryButton(label: ProductLabels.of(ProductAction.retry), onPressed: _load, icon: Icons.refresh_rounded),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_actionError != null) ...[
-          Container(
-            margin: const EdgeInsets.only(bottom: AuraSpace.s12),
-            padding: const EdgeInsets.all(AuraSpace.s12),
-            decoration: BoxDecoration(
-              color: AuraSurface.coRose.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(AuraRadius.md),
-              border: Border.all(color: AuraSurface.coRose.withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.error_outline, size: 16, color: AuraSurface.coRose),
-                const SizedBox(width: AuraSpace.s8),
-                Expanded(child: Text(_actionError!, style: AuraText.small.copyWith(color: AuraSurface.coRose))),
-                GestureDetector(onTap: () => setState(() => _actionError = null), child: const Icon(Icons.close, size: 16, color: AuraSurface.coRose)),
-              ],
-            ),
-          ),
-        ],
-        if (_showCreate && _canManageSpaces) _buildCreateForm(),
-        if (_canManageSpaces) ...[
-          Padding(
-            padding: const EdgeInsets.only(bottom: AuraSpace.s12),
-            child: GestureDetector(
-              onTap: () {
-                setState(() => _showArchived = !_showArchived);
-                _load();
-              },
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _showArchived ? Icons.forum_outlined : Icons.archive_outlined,
-                    size: 14,
-                    color: AuraSurface.accentText,
-                  ),
-                  const SizedBox(width: AuraSpace.s6),
-                  Text(
-                    _showArchived ? 'Back to active spaces' : 'View archived spaces',
-                    style: AuraText.small.copyWith(color: AuraSurface.accentText, fontWeight: FontWeight.w700),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-        if (_spaces.isEmpty && !_showCreate)
-          InsEmptyState(
-            icon: _showArchived ? Icons.archive_outlined : Icons.forum_outlined,
-            title: _showArchived ? 'No archived spaces' : 'No spaces yet',
-            description: _showArchived
-                ? 'Spaces you archive show up here, restorable any time.'
-                : 'Create one with New Space.',
-          )
-        else
-          ..._spaces.map(_buildSpaceTile),
+    final actions = <WorkspaceAction>[
+      // Archived is institutional lifecycle state, not deleted — restore is
+      // the only action offered; opening or joining an archived space isn't
+      // ordinary active operation.
+      if (_showArchived)
+        WorkspaceAction(label: 'Restore', icon: Icons.unarchive_outlined, onPressed: () => _restore(id))
+      else ...[
+        WorkspaceAction(label: 'Open', icon: Icons.open_in_new_rounded, onPressed: open),
+        // JOIN IS RESOURCE MEMBERSHIP, NOT AUTHORITY: the server reports
+        // whether this viewer belongs to the space.
+        if (!isMember) WorkspaceAction(label: 'Join', icon: Icons.login_rounded, onPressed: () => _join(id)),
+        if (_canManageSpaces)
+          WorkspaceAction(label: 'Archive', icon: Icons.archive_outlined, destructive: true, onPressed: () => _archive(id)),
       ],
+    ];
+
+    return WorkspaceRow(
+      leading: WorkspaceIcon(_showArchived ? Icons.archive_outlined : Icons.forum_outlined),
+      title: title.isNotEmpty ? title : 'Unnamed space',
+      context: [
+        if (description.isNotEmpty) description,
+        memberCount == 1 ? '1 member' : '$memberCount members',
+        threadCount == 1 ? '1 thread' : '$threadCount threads',
+      ].join(' · '),
+      pill: _showArchived
+          ? const WorkspacePill(label: 'Archived')
+          : WorkspacePill(label: _visibilityLabel(visibility)),
+      trailing: _actingOn == id
+          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+          : WorkspaceRowMenu(actions: actions),
+      onTap: _showArchived ? null : open,
     );
   }
+
+  List<Widget> _content() {
+    if (_error != null) {
+      return [
+        WorkspaceEmpty(
+          icon: Icons.error_outline_rounded,
+          title: 'Could not load spaces',
+          body: _error!,
+          action: WorkspaceAction(label: ProductLabels.of(ProductAction.retry), icon: Icons.refresh_rounded, onPressed: _load),
+        ),
+      ];
+    }
+    return [
+      if (_actionError != null)
+        WorkspaceRow(
+          leading: const WorkspaceIcon(Icons.error_outline_rounded, tone: WorkspaceTone.problem),
+          title: _actionError!,
+          emphasis: WorkspaceTone.problem,
+          trailing: IconButton(
+            tooltip: 'Dismiss',
+            icon: const Icon(Icons.close_rounded, size: 18, color: AuraSurface.muted),
+            onPressed: () => setState(() => _actionError = null),
+          ),
+        ),
+      if (_showCreate && _canManageSpaces) _buildCreateForm(),
+      if (_spaces.isEmpty && !_showCreate)
+        _showArchived
+            ? const WorkspaceEmpty(
+                icon: Icons.archive_outlined,
+                title: 'No archived spaces',
+                body: 'Spaces you archive show up here, restorable any time.',
+              )
+            : WorkspaceEmpty(
+                icon: Icons.forum_outlined,
+                title: 'No spaces yet',
+                body: 'Spaces are rooms for a group, a team or a piece of work.',
+                action: _canManageSpaces
+                    ? WorkspaceAction(label: 'New space', icon: Icons.add_rounded, onPressed: _openCreate)
+                    : null,
+              )
+      else
+        ..._spaces.map(_buildSpaceRow),
+    ];
+  }
+
+  void _openCreate() => setState(() {
+        _showCreate = true;
+        _selectedMembers = const [];
+        _pickerResetToken++;
+      });
 
   @override
   Widget build(BuildContext context) {
-    return InstitutionPage(
+    final tab = _showArchived ? 'archived' : 'active';
+    return WorkspacePage(
+      type: WorkspacePageType.collection,
       title: 'Spaces',
-      subtitle:
-          'Coordinate internal groups, teams, and working rooms.',
-      trailing: _canManageSpaces
-          ? AuraPrimaryButton(
-              label: _showCreate ? 'Hide form' : 'New Space',
-              onPressed: () => setState(() {
-                _showCreate = !_showCreate;
-                _selectedMembers = const [];
-                _pickerResetToken++;
-              }),
-              icon: _showCreate ? Icons.close_rounded : Icons.add_rounded,
-            )
+      purpose: 'Rooms for internal groups, teams and working conversations.',
+      // While the form is open its own Create is the one gold action.
+      primary: _canManageSpaces && !_showCreate
+          ? WorkspaceAction(label: 'New space', icon: Icons.add_rounded, onPressed: _openCreate)
           : null,
-      body: _buildBody(),
+      // Domain 13 — archived spaces are lifecycle state; browsing them is
+      // the same authority as archive and restore.
+      tabs: _canManageSpaces
+          ? [
+              WorkspaceTab(id: 'active', label: 'Active', count: !_loading && !_showArchived ? _spaces.length : null),
+              WorkspaceTab(id: 'archived', label: 'Archived', count: !_loading && _showArchived ? _spaces.length : null),
+            ]
+          : const [],
+      selectedTab: tab,
+      onTab: (id) {
+        if (id == tab) return;
+        setState(() => _showArchived = id == 'archived');
+        _load();
+      },
+      loading: _loading,
+      children: _content(),
     );
   }
 }

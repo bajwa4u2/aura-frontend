@@ -40,7 +40,8 @@ void main() {
       expect(resolveCalls, contains('https://example.com/notice'));
       expect(find.text('Official Notice'), findsOneWidget);
 
-      await tester.ensureVisible(find.text('Save draft'));
+      // DD-43: Save draft lives under More; Publish is the one gold action.
+      await tester.tap(find.text('More'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save draft'));
       await tester.pumpAndSettle();
@@ -78,7 +79,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Official Notice'), findsNothing);
 
-      await tester.ensureVisible(find.text('Save draft'));
+      // DD-43: Save draft lives under More; Publish is the one gold action.
+      await tester.tap(find.text('More'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Save draft'));
       await tester.pumpAndSettle();
