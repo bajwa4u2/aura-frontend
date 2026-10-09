@@ -1468,19 +1468,6 @@ class _InstitutionPostComposerScreenState
           ),
         ),
       ),
-      // Writing assistance, as the institution: the check and the
-      // translation are the institution's work and count against its
-      // allowance (2026-10-08).
-      Padding(
-        padding: const EdgeInsets.only(bottom: AuraSpace.s16),
-        child: CompositionAssist(
-          text: _bodyCtrl.text,
-          surface: CompositionSurface.post,
-          enabled: !_busy,
-          onApply: _applyAssistText,
-          actingForInstitutionId: widget.institutionId,
-        ),
-      ),
       if (_linkPreview != null && _linkPreview!.eligible) ...[
         Padding(
           padding: const EdgeInsets.only(bottom: AuraSpace.s16),
@@ -1539,6 +1526,17 @@ class _InstitutionPostComposerScreenState
         ),
       ),
     ];
+
+    // Writing assistance, as the institution: the check and the translation
+    // are the institution's work and count against its allowance
+    // (2026-10-08). Beside the writing on wide screens, as in every composer.
+    final assist = CompositionAssist(
+      text: _bodyCtrl.text,
+      surface: CompositionSurface.post,
+      enabled: !_busy,
+      onApply: _applyAssistText,
+      actingForInstitutionId: widget.institutionId,
+    );
 
     // Who sees it and where it surfaces: wide choices, so they sit under
     // the writing.
@@ -1617,8 +1615,7 @@ class _InstitutionPostComposerScreenState
         FocusScope.of(context).unfocus();
       },
       child: WorkspacePage(
-        // A composer at the reading column's width: it has no side panel.
-        type: WorkspacePageType.record,
+        type: WorkspacePageType.composer,
         title: widget.isEditing ? 'Edit post' : 'New post',
         purpose: voice,
         back: back,
@@ -1640,15 +1637,36 @@ class _InstitutionPostComposerScreenState
           primary: primary,
         ),
         children: [
-          // One column at reading width: the topic picker and the audience
-          // choices are built wide, so nothing sits beside the writing.
-          ...writing,
-          const SizedBox(height: AuraSpace.s8),
-          audience,
-          WorkspaceSection(
-            title: 'What it is about',
-            boxed: false,
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: placement),
+          LayoutBuilder(
+            builder: (context, box) {
+              // The audience choices and the topic picker are built wide,
+              // so they stay in the main column; only writing support sits
+              // beside it, as in the announcement composer.
+              final main = <Widget>[
+                ...writing,
+                const SizedBox(height: AuraSpace.s8),
+                audience,
+                WorkspaceSection(
+                  title: 'What it is about',
+                  boxed: false,
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: placement),
+                ),
+              ];
+              if (box.maxWidth < 900) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [...writing, assist, const SizedBox(height: AuraSpace.s16), ...main.skip(writing.length)],
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: main)),
+                  const SizedBox(width: AuraSpace.s24),
+                  SizedBox(width: 340, child: assist),
+                ],
+              );
+            },
           ),
         ],
       ),
