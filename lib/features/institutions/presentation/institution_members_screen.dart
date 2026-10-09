@@ -242,6 +242,14 @@ class _InstitutionMembersScreenState
     // Seat holding comes from the server's own rule (owners, admins and
     // official voices); the app never re-derives it.
     final holdsSeat = member['holdsSeat'] == true;
+    // An official voice may come from the delegated capability, from
+    // publishing officially, or from the older "speaks officially" flag; the
+    // seat rule counts all three, so the pill names all three (2026-10-09:
+    // a member held a seat while the roster called him only "Member").
+    final speaksOfficially = isRepresentative ||
+        caps.contains('PUBLISH_OFFICIAL') ||
+        (member['canSpeakOfficially'] == true &&
+            !const {'OWNER', 'ADMIN'}.contains(role.toUpperCase()));
     final isRemoving = _removing == memberId;
     final isUpdating = _updating == memberId;
     final isBusy = isRemoving || isUpdating;
@@ -323,7 +331,7 @@ class _InstitutionMembersScreenState
               // Capabilities that read as institutional STANDING carry a
               // visible badge — responsibility is visible to everyone.
               // Standing in plain words (DD-42 phase 2, 2026-10-09).
-              if (isRepresentative)
+              if (speaksOfficially)
                 _pill('Official voice', AuraSurface.accentText,
                     AuraSurface.accentSoft),
               if (isHost)
