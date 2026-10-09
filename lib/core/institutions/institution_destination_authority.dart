@@ -68,6 +68,25 @@ const Map<String, List<ConsequentialAct>> kInstitutionDestinationAuthority =
   'posts/new': [ConsequentialAct.authorOfficialContent],
   'posts/edit': [ConsequentialAct.authorOfficialContent],
   'announcements/new': [ConsequentialAct.authorOfficialContent],
+  // Editing had no entry and its route no check at all (phase 2, 2026-10-09).
+  'announcements/edit': [ConsequentialAct.authorOfficialContent],
+
+  // VERIFICATION, ASKED OF THE INSTITUTION IN THE ADDRESS (2026-10-09).
+  //
+  // It was decided by the router's AMBIENT gate, which reads the person's
+  // oldest membership. Reading announcements and live rooms stays the
+  // participation baseline (any member); writing is checked at the act.
+  // An owner holds MANAGE_VERIFICATION before verification exists, so this is
+  // never circular; an admin reaches it through member management, as the
+  // server's ADMIN check already allows.
+  'verification': [
+    ConsequentialAct.manageVerification,
+    ConsequentialAct.manageMembers,
+  ],
+
+  // Creating a meeting in the institution's name. The buttons were shown to
+  // every member and the route had no check (phase 2, 2026-10-09).
+  'meetings/new': [ConsequentialAct.hostMeeting, ConsequentialAct.manageMeetings],
 };
 
 /// The acts required to hold [section], or an empty list for the

@@ -690,7 +690,7 @@
    "institutionId"
   ],
   "renders": true,
-  "hasRedirect": false,
+  "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
    "ShellRoute#0"
@@ -704,7 +704,7 @@
    "institutionId"
   ],
   "renders": true,
-  "hasRedirect": false,
+  "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
    "ShellRoute#0"
@@ -2055,7 +2055,7 @@
   "params": [
    "institutionId"
   ],
-  "renders": true,
+  "renders": false,
   "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
@@ -2163,7 +2163,7 @@
    "announcementId"
   ],
   "renders": true,
-  "hasRedirect": false,
+  "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
    "ShellRoute#0"
@@ -2248,7 +2248,7 @@
    "institutionId"
   ],
   "renders": true,
-  "hasRedirect": false,
+  "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
    "ShellRoute#0"

@@ -865,7 +865,7 @@ class _InstitutionAvatarSmall extends StatelessWidget {
         name.isNotEmpty ? name.trim()[0].toUpperCase() : '';
 
     return GestureDetector(
-      onTap: () => context.go('/institution/dashboard'),
+      onTap: () => context.go(institutionWorkspaceHome(context, null)),
       child: Container(
         width: 32,
         height: 32,
@@ -2624,7 +2624,7 @@ class _RailIdentityHeader extends StatelessWidget {
   /// which is exactly what it is for: two affordances that are the same
   /// affordance must not be able to point at different places.
   void _openInstitutionHome(BuildContext context) =>
-      context.go('/institution/dashboard');
+      context.go(institutionWorkspaceHome(context, identity?.id));
 
   @override
   Widget build(BuildContext context) {
@@ -2891,4 +2891,26 @@ class _NavItem {
   final IconData icon;
   final IconData selectedIcon;
   final String path;
+}
+
+/// The front door of the institution being visited (phase 2, 2026-10-09).
+///
+/// The institution's name and mark both went to `/institution/dashboard`,
+/// which resolves to the person's CURRENT institution and is admin-only: a
+/// member who clicked their institution's name was shown "denied". This reads
+/// the institution from the address, then the shell's identity, and opens its
+/// front door, which every member may hold.
+String institutionWorkspaceHome(BuildContext context, String? fallbackId) {
+  String? addressed;
+  try {
+    final path = GoRouterState.of(context).uri.path;
+    if (institutionAddressedIn(path)) {
+      final parts = path.split('/')..removeWhere((p) => p.isEmpty);
+      addressed = parts[1];
+    }
+  } catch (_) {
+    // Outside a route (tests, overlays): the identity below decides.
+  }
+  final id = (addressed ?? fallbackId ?? '').trim();
+  return id.isEmpty ? kInstitutionStandingRoute : institutionEntryDestination(id);
 }

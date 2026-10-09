@@ -64,7 +64,7 @@ class _InstitutionMembersScreenState
   /// on it is this.
   bool get _canManageMembers =>
       _platformAdminBypass ||
-      ref.watch(capabilityProjectionProvider).presentationFor(
+      ref.watch(capabilityProjectionForProvider(widget.institutionId)).presentationFor(
             ConsequentialAct.manageMembers,
           ) ==
           ControlPresentation.available;
@@ -99,7 +99,7 @@ class _InstitutionMembersScreenState
   /// comparing a role string here.
   bool get _canGovernRoles =>
       _platformAdminBypass ||
-      ref.watch(capabilityProjectionProvider).presentationFor(
+      ref.watch(capabilityProjectionForProvider(widget.institutionId)).presentationFor(
             ConsequentialAct.appointAdmin,
           ) ==
           ControlPresentation.available;

@@ -9,7 +9,7 @@
 # tapped a literal '/institution/dashboard' (Overview). Entry now comes from
 # institutionEntryDestination(), because ENTRY, REFUSAL and NO-AFFILIATION
 # were three questions sharing one constant.
-3 lib/app/shell/member_shell.dart
+1 lib/app/shell/member_shell.dart
 3 lib/app/shell/public_shell.dart
 # rail_modules 13 -> 11, 2026-08-31: two rail cards pointed at
 #   /admin/review-queue and /admin/users, both retired. They now name

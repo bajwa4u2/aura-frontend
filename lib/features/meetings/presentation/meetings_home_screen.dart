@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/authority/authority_providers.dart';
+import '../../../core/institutions/institution_destination_authority.dart';
 import 'package:intl/intl.dart';
 
 import '../../../config.dart';
@@ -125,6 +127,13 @@ class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
     final pastAsync = ref.watch(institutionPastMeetingsProvider(institutionId));
     final outcomesAsync = ref.watch(myOpenOutcomesProvider);
     final profilesAsync = ref.watch(myAvailabilityProfilesProvider);
+    // Creating a meeting in the institution's name needs HOST_MEETINGS or
+    // MANAGE_MEETINGS here. The buttons used to show to every member and lead
+    // to a form the server then refused (phase 2, 2026-10-09).
+    final canCreate = institutionDestinationPermits(
+      ref.watch(capabilityProjectionForProvider(institutionId)),
+      'meetings/new',
+    );
 
     return AuraScaffold(
       title: 'Meetings',
@@ -161,10 +170,12 @@ class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
                       children: [
                         _MeetingsActions(
                           wide: wide,
-                          onCreate: () =>
-                              context.push(_createPath(instant: false)),
-                          onInstant: () =>
-                              context.push(_createPath(instant: true)),
+                          onCreate: canCreate
+                              ? () => context.push(_createPath(instant: false))
+                              : null,
+                          onInstant: canCreate
+                              ? () => context.push(_createPath(instant: true))
+                              : null,
                           onJoinByCode: () => _showJoinDialog(context),
                         ),
                         const SizedBox(height: AuraSpace.s20),
@@ -176,8 +187,9 @@ class _MeetingsHomeScreenState extends ConsumerState<MeetingsHomeScreen> {
                           pastAsync: pastAsync,
                           outcomesAsync: outcomesAsync,
                           profilesAsync: profilesAsync,
-                          onCreate: () =>
-                              context.push(_createPath(instant: false)),
+                          onCreate: canCreate
+                              ? () => context.push(_createPath(instant: false))
+                              : null,
                           onRetry: _refresh,
                         ),
                       ],
@@ -256,8 +268,8 @@ class _MeetingsActions extends StatelessWidget {
   });
 
   final bool wide;
-  final VoidCallback onCreate;
-  final VoidCallback onInstant;
+  final VoidCallback? onCreate;
+  final VoidCallback? onInstant;
   final VoidCallback onJoinByCode;
 
   @override
@@ -287,6 +299,10 @@ class _MeetingsActions extends StatelessWidget {
       ),
     );
 
+    // A member who may not create meetings here sees only what they can do.
+    if (onCreate == null) {
+      return Align(alignment: Alignment.centerLeft, child: byCode);
+    }
     if (!wide) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -345,7 +361,7 @@ class _MeetingsBody extends StatelessWidget {
   final AsyncValue<List<Meeting>> pastAsync;
   final AsyncValue<List<MeetingOutcome>> outcomesAsync;
   final AsyncValue<List<AvailabilityProfile>> profilesAsync;
-  final VoidCallback onCreate;
+  final VoidCallback? onCreate;
   final VoidCallback onRetry;
 
   @override
@@ -408,14 +424,16 @@ class _MeetingsBody extends StatelessWidget {
             headline: 'No meetings yet',
             detail: 'When you schedule a meeting, or someone books time with '
                 'you, it appears here with everything that came out of it.',
-            action: MeetingAction(
-              label: 'Create your first meeting',
-              child: FilledButton.icon(
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('New meeting'),
-                onPressed: onCreate,
-              ),
-            ),
+            action: onCreate == null
+                ? null
+                : MeetingAction(
+                    label: 'Create your first meeting',
+                    child: FilledButton.icon(
+                      icon: const Icon(Icons.add_rounded, size: 18),
+                      label: const Text('New meeting'),
+                      onPressed: onCreate,
+                    ),
+                  ),
           ),
           const SizedBox(height: AuraSpace.s16),
           _BookingLinkRow(
@@ -470,14 +488,16 @@ class _MeetingsBody extends StatelessWidget {
           icon: Icons.event_available_rounded,
           headline: 'Nothing scheduled',
           detail: 'Your past meetings and follow-up are below.',
-          action: MeetingAction(
-            label: 'Create a meeting',
-            child: OutlinedButton.icon(
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('New meeting'),
-              onPressed: onCreate,
-            ),
-          ),
+          action: onCreate == null
+              ? null
+              : MeetingAction(
+                  label: 'Create a meeting',
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    label: const Text('New meeting'),
+                    onPressed: onCreate,
+                  ),
+                ),
         ),
     ];
 

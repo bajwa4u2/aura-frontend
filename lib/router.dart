@@ -106,7 +106,6 @@ import 'features/institutions/units/institution_unit_context_screen.dart';
 import 'features/institutions/units/institution_units_screen.dart';
 import 'features/institutions/profile/institution_profile_screen.dart';
 import 'features/institutions/profile/institution_edit_profile_screen.dart';
-import 'features/institutions/verification/institution_request_verification_screen.dart';
 import 'features/institutions/verification/presentation/institution_verification_screen.dart';
 import 'features/institutions/announcements/institution_announcements_screen.dart';
 import 'features/institutions/announcements/institution_announcement_composer.dart';
@@ -1037,7 +1036,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         // granted by that institution, never by arriving at the dashboard.
         // Remembering the destination would only redirect the person back
         // into the same refusal.
-        if (requiresInstitutionAdmin(path) && !isInstitutionAdmin) {
+        // ASK ABOUT THE INSTITUTION IN THE ADDRESS (phase 2, 2026-10-09).
+        //
+        // `institutionAccess` is the AMBIENT standing: the person's OLDEST
+        // membership. For an address that names its institution, these two
+        // gates judged institution B by the person's standing in A. Every
+        // leadership section of an addressed path now carries its own check
+        // (`_enforceCanonicalIdMatch` + the destination table), which asks
+        // about B. The shorthand forms still use the ambient standing, which
+        // is what they mean.
+        final addressed = institutionAddressedIn(path);
+
+        if (!addressed && requiresInstitutionAdmin(path) && !isInstitutionAdmin) {
           return gateRedirect(
             // RC4 terminal denial -- deliberately NOT the entry destination.
             // A person refused admin standing has not thereby earned the
@@ -1048,7 +1058,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         }
 
-        if (requiresInstitutionAdminOrSpeaker(path) &&
+        if (!addressed &&
+            requiresInstitutionAdminOrSpeaker(path) &&
             !isInstitutionSpeakerOrAdmin) {
           return gateRedirect(
             // RC4 terminal denial -- see above.
@@ -1482,6 +1493,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           // order resolves them correctly.
           GoRoute(
             path: '/institution/:institutionId/meetings',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'meetings',
+            ),
             builder: (context, state) => InstitutionRouteScope(
               address: state.pathParameters['institutionId'],
               builder: (institutionId) =>
@@ -1492,6 +1509,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           // institution's ownership from birth.
           GoRoute(
             path: '/institution/:institutionId/meetings/new',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'meetings/new',
+            ),
             builder: (context, state) => InstitutionRouteScope(
               address: state.pathParameters['institutionId'],
               builder: (institutionId) => CreateMeetingScreen(
@@ -2431,15 +2454,15 @@ final routerProvider = Provider<GoRouter>((ref) {
               body: AuraProductState(state: ProductState.loading),
             ),
           ),
+          // RETIRED (DD-42, 2026-10-09): this built the legacy "Create
+          // institutional account" form, which asked for a second password and
+          // ignored the institution in the address. Verification has one home.
           GoRoute(
             path: '/institution/:institutionId/request-verification',
-            redirect: (context, state) => _enforceCanonicalIdMatch(
-              ref,
-              state,
-              state.pathParameters['institutionId'],
-              'request-verification',
+            redirect: (context, state) => carryQuery(
+              '/institution/${state.pathParameters['institutionId']}/verification',
+              state.uri,
             ),
-            builder: (_, __) => const InstitutionRequestVerificationScreen(),
           ),
 
           // Correspondence — consolidated into Messages. There used to be two
@@ -2522,6 +2545,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path:
                 '/institution/:institutionId/announcements/:announcementId/edit',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'announcements/edit',
+            ),
             builder: (context, state) => InstitutionRouteScope(
               address: state.pathParameters['institutionId'],
               builder: (institutionId) => InstitutionAnnouncementComposer(
@@ -2653,6 +2682,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/institution/:institutionId/explore',
+            redirect: (context, state) => _enforceCanonicalIdMatch(
+              ref,
+              state,
+              state.pathParameters['institutionId'],
+              'explore',
+            ),
             builder: (context, state) => InstitutionRouteScope(
               address: state.pathParameters['institutionId'],
               builder: (institutionId) => FeedVideoAutoplay(

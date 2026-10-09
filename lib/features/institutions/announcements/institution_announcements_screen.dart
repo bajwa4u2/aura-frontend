@@ -3,6 +3,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/authority/authority_providers.dart';
+import '../../../core/authority/capability_projection.dart';
 
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/media/canonical_media_thumb.dart';
@@ -59,14 +61,21 @@ class _InstitutionAnnouncementsScreenState
   /// read as a role check and invited the next reader to copy the pattern —
   /// but MANAGE_ANNOUNCEMENTS is delegable, so an OWNER may grant it to someone
   /// who is not an admin, and an admin may hold it without being an owner.
+  ///
+  /// Asked of THIS institution (phase 2, 2026-10-09): it read the ambient
+  /// identity, which is the person's oldest membership.
   bool get _canManageAnnouncements =>
-      ref.read(institutionIdentityProvider)?.canManageAnnouncements ?? false;
+      ref
+          .read(capabilityProjectionForProvider(widget.institutionId))
+          .presentationFor(ConsequentialAct.publishAnnouncement) ==
+      ControlPresentation.available;
 
-  bool get _canCompose {
-    final idn = ref.read(institutionIdentityProvider);
-    return (idn?.canManageAnnouncements ?? false) ||
-        (idn?.canRepresent ?? false);
-  }
+  bool get _canCompose =>
+      _canManageAnnouncements ||
+      ref
+              .read(capabilityProjectionForProvider(widget.institutionId))
+              .presentationFor(ConsequentialAct.authorOfficialContent) ==
+          ControlPresentation.available;
 
   @override
   void initState() {

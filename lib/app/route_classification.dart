@@ -498,6 +498,21 @@ String? institutionSectionOf(String path) {
   return segments[2];
 }
 
+/// Whether [path] names the institution it addresses (`/institution/:id/...`
+/// or `/institution/:id`), as opposed to a shorthand (`/institution/<section>`)
+/// that means "my current institution". Only an addressed path can be
+/// authorised against the institution actually being visited.
+bool institutionAddressedIn(String path) {
+  final segments = path.split('?').first.split('/')
+    ..removeWhere((s) => s.isEmpty);
+  if (segments.length < 2 || segments.first != 'institution') return false;
+  if (segments[1] == 'standing') return false;
+  if (segments.length == 2) {
+    return !kInstitutionSectionPolicy.containsKey(segments[1]);
+  }
+  return true;
+}
+
 /// The policy a path declares. A section that exists but was never declared
 /// fails CLOSED to `admin` — the strictest institutional requirement — so a
 /// new workspace surface cannot ship ungated because nobody remembered it.
