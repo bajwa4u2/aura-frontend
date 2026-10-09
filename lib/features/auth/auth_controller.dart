@@ -191,6 +191,21 @@ class AuthController {
     final backendCode = _extractServerCode(e).toUpperCase();
     final server = _extractServerMessage(e).toLowerCase();
 
+    // Too many attempts from this connection: say so, and for how long. This
+    // used to fall through to "We could not sign you in right now", which a
+    // locked-out person reads as a broken account (founder, 2026-10-08).
+    if (code == 429 || backendCode == 'RATE_LIMITED') {
+      final data = e.response?.data;
+      final details = data is Map && data['error'] is Map ? (data['error'] as Map)['details'] : null;
+      final wait = details is Map ? int.tryParse('${details['retryAfterSeconds']}') : null;
+      final when = wait == null || wait <= 0
+          ? 'in a few minutes'
+          : wait < 90
+              ? 'in about $wait seconds'
+              : 'in about ${(wait / 60).ceil()} minutes';
+      return 'Too many sign-in attempts from this connection. Please try again $when.';
+    }
+
     // Prefer structured backend error codes — robust against message-text drift.
     if (backendCode == 'EMAIL_NOT_VERIFIED') {
       return 'Please verify your email first, then try signing in again.';
