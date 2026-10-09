@@ -49,8 +49,10 @@ class CompositionReviewResult {
   /// the panel never showed a finding (found 8 Oct 2026). Items the server
   /// marks OK are not suggestions and are left out.
   factory CompositionReviewResult.fromJson(Map<String, dynamic> json) {
+    // `data` is the full answer. The server ALSO puts a flat `findings` list
+    // at the top level for installed apps that read only that; prefer data.
     final inner = json['data'];
-    final root = inner is Map && json['findings'] == null
+    final root = inner is Map && inner['findings'] != null
         ? Map<String, dynamic>.from(inner)
         : json;
     final raw = root['findings'];

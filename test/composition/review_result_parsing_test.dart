@@ -51,6 +51,17 @@ void main() {
     expect(rewrite.replacement, 'Our office is closed on Monday.');
   });
 
+  test('prefers data when the legacy flat list is also present', () {
+    final both = Map<String, dynamic>.from(live)
+      ..['sessionId'] = 'sess_1'
+      ..['findings'] = [
+        {'id': 'f2', 'message': 'legacy', 'replacement': 'x', 'canApply': true},
+      ];
+    final r = CompositionReviewResult.fromJson(both);
+    expect(r.suggestions.map((s) => s.id), ['f1', 'f2']);
+    expect(r.suggestions.first.message, startsWith('This reads as a factual claim.'));
+  });
+
   test('still reads the older flat shape', () {
     final r = CompositionReviewResult.fromJson({
       'sessionId': 's',
