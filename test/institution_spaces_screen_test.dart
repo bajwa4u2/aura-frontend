@@ -25,7 +25,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Admin-only "New Space" trailing action opens the create form.
-      await tester.tap(find.text('New Space'));
+      await tester.tap(find.text('New space').first); // the header's; the empty state offers it too
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField).at(0), 'Engineering Circle');
@@ -85,7 +85,7 @@ void main() {
     await tester.pumpWidget(_wrap(dio));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('New Space'));
+    await tester.tap(find.text('New space').first); // the header's; the empty state offers it too
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).at(0), 'Circle');
 

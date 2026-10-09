@@ -102,16 +102,13 @@ G5 3 lib/features/direct_threads/presentation/direct_intent_screen.dart
 # member_home G5 2 -> 0: Public Home reconstruction (C2, 2026-08-16)
 # public_home G5 4 -> 0: Public Home reconstruction (C2, 2026-08-16)
 G5 2 lib/features/institutions/activity/institution_activity_screen.dart
-G5 2 lib/features/institutions/announcements/institution_announcements_screen.dart
 G5 1 lib/features/institutions/domain/institution_domains_screen.dart
 G5 2 lib/features/institutions/explore/institution_explore_screen.dart
-G5 3 lib/features/institutions/live_rooms/institution_live_rooms_screen.dart
 G5 1 lib/features/institutions/posts/institution_post_composer_screen.dart
 G5 4 lib/features/institutions/posts/institution_post_detail_screen.dart
 # admin_workspace_screen G5 4 -> 0: screen deleted; the operator hub replaces it
 G5 2 lib/features/institutions/presentation/institution_detail_screen.dart
 G5 1 lib/features/institutions/presentation/institution_page.dart
-G5 2 lib/features/institutions/presentation/institution_spaces_screen.dart
 G5 4 lib/features/institutions/profile/institution_profile_screen.dart
 G5 1 lib/features/institutions/units/institution_units_screen.dart
 G5 2 lib/features/me/presentation/me_screen.dart

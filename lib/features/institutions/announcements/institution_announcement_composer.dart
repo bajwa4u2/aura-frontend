@@ -26,13 +26,12 @@ import '../../../core/media/attachment.dart';
 import '../../../core/net/dio_provider.dart';
 import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
-import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/institutions_repository.dart';
+import '../workspace/workspace_page.dart';
 import '../domain/communication_type.dart';
-import '../ui/institution_ds.dart';
 import 'integrity/announcement_integrity_review_sheet.dart';
 import '../../composition/domain/composition_models.dart';
 import '../../composition/presentation/composition_assist.dart';
@@ -653,7 +652,8 @@ class _InstitutionAnnouncementComposerState
           ),
           const SizedBox(height: AuraSpace.s8),
           Text(
-            'Attach images or videos to this announcement. PUBLIC audience uses public delivery; MEMBERS or INTERNAL audience routes media through the signed-URL access gate automatically.',
+            // Plain words (DD-42): what the audience means for the media, not how.
+            'Add images or video. For a members-only or internal announcement, they are seen only by that audience.',
             style: AuraText.small.copyWith(color: AuraSurface.muted),
           ),
           // Visual media gets the canonical treatment; non-visual files keep
@@ -780,263 +780,215 @@ class _InstitutionAnnouncementComposerState
   @override
   Widget build(BuildContext context) {
     final isBusy = _saving || _publishing;
+    final listPath = '/institution/${widget.institutionId}/announcements';
 
-    return AuraScaffold(
-      showHeader: false,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          InsSpacing.screenHPad,
-          InsSpacing.screenVPad,
-          InsSpacing.screenHPad,
-          AuraSpace.s32,
+    // The writing itself: what is said, and what is attached to it.
+    final writing = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _AnnouncementCommunicationTypePicker(
+          selected: _communicationType,
+          onChanged: (t) => setState(() => _communicationType = t),
         ),
-        children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: InsSpacing.contentMaxWidth,
+        const SizedBox(height: AuraSpace.s16),
+        Container(
+          padding: const EdgeInsets.all(AuraSpace.s18),
+          decoration: BoxDecoration(
+            color: AuraSurface.card,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AuraSurface.divider),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: _titleController,
+                // Wraps, so a long headline is read whole on a phone.
+                maxLines: null,
+                style: AuraText.body.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Title (optional — derived from body if empty)',
+                  hintText: 'Headline for this statement',
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      GestureDetector(
-                        onTap: () => context.pop(),
-                        child: const Padding(
-                          padding: EdgeInsets.only(top: 4),
-                          child: Icon(
-                            Icons.arrow_back_rounded,
-                            size: 20,
-                            color: AuraSurface.muted,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AuraSpace.s12),
-                      Expanded(
-                        child: InsModeHeader(
-                          title: widget.isEditing
-                              ? 'Edit announcement'
-                              : 'New announcement',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AuraSpace.s12),
-                  _AnnouncementCommunicationTypePicker(
-                    selected: _communicationType,
-                    onChanged: (t) => setState(() => _communicationType = t),
-                  ),
-                  const SizedBox(height: AuraSpace.s14),
-                  Container(
-                    padding: const EdgeInsets.all(AuraSpace.s16),
-                    decoration: BoxDecoration(
-                      color: AuraSurface.card,
-                      borderRadius: BorderRadius.circular(AuraRadius.card),
-                      border: Border.all(color: AuraSurface.divider),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // The kind's guard, where the institution writes in its own voice
-                        // (DD-42 phase 3): official speech, minors, health information.
-                        Consumer(
-                          builder: (context, ref, _) {
-                            final composition = compositionForInstitution(ref, widget.institutionId);
-                            if (composition.guards.isEmpty) return const SizedBox.shrink();
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: AuraSpace.s12),
-                              child: KindGuardNotice(composition: composition),
-                            );
-                          },
-                        ),
-                        TextFormField(
-                          controller: _titleController,
-                          style: AuraText.body.copyWith(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 18,
-                          ),
-                          decoration: const InputDecoration(
-                            labelText:
-                                'Title (optional — derived from body if empty)',
-                            hintText: 'Headline for this statement',
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                          ),
-                        ),
-                        const Divider(color: AuraSurface.divider),
-                        const SizedBox(height: AuraSpace.s8),
-                        TextFormField(
-                          controller: _summaryController,
-                          style: AuraText.body,
-                          maxLines: null,
-                          decoration: const InputDecoration(
-                            labelText: 'Summary',
-                            hintText:
-                                'One or two sentences summarising the announcement',
-                            border: InputBorder.none,
-                            enabledBorder: InputBorder.none,
-                            focusedBorder: InputBorder.none,
-                          ),
-                        ),
-                        const Divider(color: AuraSurface.divider),
-                        const SizedBox(height: AuraSpace.s8),
-                        // Item 15 — Rich Paste, wraps the AXR-1 governed
-                        // @/# autocomplete in announcements.
-                        RichPasteField(
-                          controller: _bodyController,
-                          child: GovernedTagAutocomplete(
-                            controller: _bodyController,
-                            focusNode: _bodyFocus,
-                            onTagSelected: _rememberSelectedTag,
-                            child: TextFormField(
-                              controller: _bodyController,
-                              focusNode: _bodyFocus,
-                              style: AuraText.body,
-                              maxLines: null,
-                              maxLength: ContentLengthPolicy.announcementBody,
-                              decoration: const InputDecoration(
-                                labelText: 'Body (Markdown)',
-                                hintText: 'Full announcement body…',
-                                border: InputBorder.none,
-                                enabledBorder: InputBorder.none,
-                                focusedBorder: InputBorder.none,
-                                alignLabelWithHint: true,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_linkPreview != null && _linkPreview!.eligible) ...[
-                    const SizedBox(height: AuraSpace.s12),
-                    if (_linkPreview!.internal)
-                      InternalReferenceCard(
-                        sourceUrl: _linkPreview!.sourceUrl,
-                        reference: _linkPreview!.internalReference,
-                        dense: true,
-                        onRemove: () => setState(() => _linkPreview = null),
-                      )
-                    else
-                      LinkPreviewCard(
-                        url: _linkPreview!.sourceUrl,
-                        title: _linkPreview!.title,
-                        description: _linkPreview!.description,
-                        siteName: _linkPreview!.siteName,
-                        imageUrl: _linkPreview!.imageUrl,
-                        dense: true,
-                        onRemove: () => setState(() => _linkPreview = null),
-                      ),
-                  ],
-                  const SizedBox(height: AuraSpace.s16),
-                  // Writing assistance, as the institution: counted against
-                  // its allowance (2026-10-08). The integrity review above is
-                  // a different capability and stays separate.
-                  CompositionAssist(
-                    text: _bodyController.text,
-                    surface: CompositionSurface.announcement,
-                    enabled: !isBusy,
-                    onApply: _applyAssistText,
-                    actingForInstitutionId: widget.institutionId,
-                  ),
-                  const SizedBox(height: AuraSpace.s16),
-                  _buildMediaCard(disabled: isBusy),
-                  const SizedBox(height: AuraSpace.s16),
-                  Container(
-                    padding: const EdgeInsets.all(AuraSpace.s16),
-                    decoration: BoxDecoration(
-                      color: AuraSurface.card,
-                      borderRadius: BorderRadius.circular(AuraRadius.card),
-                      border: Border.all(color: AuraSurface.divider),
-                    ),
-                    child: Column(
-                      children: [
-                        _buildDropdownRow(
-                          'Kind',
-                          _kind,
-                          _kinds,
-                          (v) => _kind = v,
-                        ),
-                        const SizedBox(height: AuraSpace.s8),
-                        _buildDropdownRow(
-                          'Audience',
-                          _audience,
-                          _audiences,
-                          (v) => _audience = v,
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_error != null) ...[
-                    const SizedBox(height: AuraSpace.s12),
-                    Container(
-                      padding: const EdgeInsets.all(AuraSpace.s12),
-                      decoration: BoxDecoration(
-                        color: AuraSurface.coRose.withValues(alpha: 0.16),
-                        borderRadius: BorderRadius.circular(AuraRadius.md),
-                        border: Border.all(
-                          color: AuraSurface.coRose.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            size: 16,
-                            color: AuraSurface.coRose,
-                          ),
-                          const SizedBox(width: AuraSpace.s8),
-                          Expanded(
-                            child: Text(
-                              _error!,
-                              style: AuraText.small.copyWith(
-                                color: AuraSurface.coRose,
-                              ),
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () => setState(() => _error = null),
-                            child: const Icon(
-                              Icons.close,
-                              size: 16,
-                              color: AuraSurface.coRose,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: AuraSpace.s20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: AuraSecondaryButton(
-                          label: _saving ? 'Saving…' : 'Save draft',
-                          onPressed: isBusy ? null : _saveDraft,
-                          icon: Icons.save_outlined,
-                        ),
-                      ),
-                      const SizedBox(width: AuraSpace.s12),
-                      Expanded(
-                        child: AuraPrimaryButton(
-                          label: _publishing ? 'Publishing…' : 'Publish',
-                          onPressed: isBusy ? null : _saveAndPublish,
-                          icon: Icons.send_rounded,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+              const Divider(color: AuraSurface.divider),
+              const SizedBox(height: AuraSpace.s8),
+              TextFormField(
+                controller: _summaryController,
+                style: AuraText.body,
+                maxLines: null,
+                decoration: const InputDecoration(
+                  labelText: 'Summary',
+                  hintText: 'One or two sentences summarising the announcement',
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                ),
               ),
+              const Divider(color: AuraSurface.divider),
+              const SizedBox(height: AuraSpace.s8),
+              // Item 15 — Rich Paste, wraps the AXR-1 governed
+              // @/# autocomplete in announcements.
+              RichPasteField(
+                controller: _bodyController,
+                child: GovernedTagAutocomplete(
+                  controller: _bodyController,
+                  focusNode: _bodyFocus,
+                  onTagSelected: _rememberSelectedTag,
+                  child: TextFormField(
+                    controller: _bodyController,
+                    focusNode: _bodyFocus,
+                    style: AuraText.body,
+                    maxLines: null,
+                    minLines: 8,
+                    maxLength: ContentLengthPolicy.announcementBody,
+                    decoration: const InputDecoration(
+                      labelText: 'Body (Markdown)',
+                      hintText: 'Full announcement body…',
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      alignLabelWithHint: true,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (_linkPreview != null && _linkPreview!.eligible) ...[
+          const SizedBox(height: AuraSpace.s12),
+          if (_linkPreview!.internal)
+            InternalReferenceCard(
+              sourceUrl: _linkPreview!.sourceUrl,
+              reference: _linkPreview!.internalReference,
+              dense: true,
+              onRemove: () => setState(() => _linkPreview = null),
+            )
+          else
+            LinkPreviewCard(
+              url: _linkPreview!.sourceUrl,
+              title: _linkPreview!.title,
+              description: _linkPreview!.description,
+              siteName: _linkPreview!.siteName,
+              imageUrl: _linkPreview!.imageUrl,
+              dense: true,
+              onRemove: () => setState(() => _linkPreview = null),
+            ),
+        ],
+        const SizedBox(height: AuraSpace.s16),
+        _buildMediaCard(disabled: isBusy),
+      ],
+    );
+
+    // Beside the writing: the kind's guard, the writing check, and who it is for.
+    final beside = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // The kind's guard, where the institution writes in its own voice
+        // (DD-42 phase 3): official speech, minors, health information.
+        Consumer(
+          builder: (context, ref, _) {
+            final composition = compositionForInstitution(ref, widget.institutionId);
+            if (composition.guards.isEmpty) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AuraSpace.s16),
+              child: KindGuardNotice(composition: composition),
+            );
+          },
+        ),
+        // Writing assistance, as the institution: counted against
+        // its allowance (2026-10-08). The integrity review on Publish is
+        // a different capability and stays separate.
+        CompositionAssist(
+          text: _bodyController.text,
+          surface: CompositionSurface.announcement,
+          enabled: !isBusy,
+          onApply: _applyAssistText,
+          actingForInstitutionId: widget.institutionId,
+        ),
+        const SizedBox(height: AuraSpace.s16),
+        WorkspaceSection(
+          title: 'Who it is for',
+          child: Column(
+            children: [
+              _buildDropdownRow('Kind', _kind, _kinds, (v) => _kind = v),
+              const SizedBox(height: AuraSpace.s8),
+              _buildDropdownRow('Audience', _audience, _audiences, (v) => _audience = v),
+            ],
+          ),
+        ),
+        if (_error != null)
+          WorkspaceRow(
+            leading: const WorkspaceIcon(Icons.error_outline_rounded, tone: WorkspaceTone.problem),
+            title: _error!,
+            emphasis: WorkspaceTone.problem,
+            trailing: IconButton(
+              tooltip: 'Dismiss',
+              icon: const Icon(Icons.close_rounded, size: 18, color: AuraSurface.muted),
+              onPressed: () => setState(() => _error = null),
             ),
           ),
-        ],
+      ],
+    );
+
+    return WorkspacePage(
+      type: WorkspacePageType.composer,
+      title: widget.isEditing ? 'Edit announcement' : 'New announcement',
+      purpose: 'Published in the institution’s name. Publishing first goes through the integrity review.',
+      back: WorkspaceBack(label: 'Announcements', path: listPath),
+      more: [
+        WorkspaceAction(
+          label: _saving && !_publishing ? 'Saving…' : 'Save draft',
+          icon: Icons.save_outlined,
+          onPressed: isBusy ? null : _saveDraft,
+        ),
+      ],
+      bar: WorkspaceBar(
+        status: _audienceReach,
+        cancel: WorkspaceAction(label: 'Cancel', onPressed: isBusy ? null : () => context.pop()),
+        primary: WorkspaceAction(
+          label: _publishing ? 'Publishing…' : 'Publish',
+          icon: Icons.send_rounded,
+          onPressed: isBusy ? null : _saveAndPublish,
+        ),
       ),
+      children: [
+        LayoutBuilder(
+          builder: (context, box) {
+            // Side by side when there is room for both; stacked otherwise.
+            if (box.maxWidth < 900) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [writing, const SizedBox(height: AuraSpace.s24), beside],
+              );
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: writing),
+                const SizedBox(width: AuraSpace.s24),
+                SizedBox(width: 340, child: beside),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
+
+  /// Who receives it, said in the bar beside Publish.
+  String get _audienceReach => switch (_audience.toUpperCase()) {
+        'MEMBERS' => 'For members',
+        'INTERNAL' => 'Internal: admins and editors',
+        _ => 'For the public',
+      };
 }
 
 class _AnnouncementCommunicationTypePicker extends StatelessWidget {

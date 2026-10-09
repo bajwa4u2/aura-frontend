@@ -7,20 +7,17 @@ import '../../../core/authority/authority_providers.dart';
 import '../../../core/authority/capability_projection.dart';
 
 import '../../../core/institutions/institution_access_provider.dart';
-import '../../../core/media/canonical_media_thumb.dart';
 import '../../../core/product/product_language.dart';
-import '../../../core/ui/aura_platform_components.dart';
 import '../../../core/ui/aura_radius.dart';
-import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
-import '../../../features/institutions/presentation/institution_page.dart';
 import '../../feed/domain/feed_media.dart';
 import '../../posts/presentation/widgets/post_card/post_card_utils.dart';
 import '../../share/aura_share_sheet.dart';
 import '../data/institutions_repository.dart';
-import '../ui/institution_ds.dart';
 import '../institution_words.dart';
+import '../workspace/workspace_page.dart';
+import '../workspace/workspace_row_menu.dart';
 
 class InstitutionAnnouncementsScreen extends ConsumerStatefulWidget {
   const InstitutionAnnouncementsScreen({
@@ -36,9 +33,8 @@ class InstitutionAnnouncementsScreen extends ConsumerStatefulWidget {
 }
 
 class _InstitutionAnnouncementsScreenState
-    extends ConsumerState<InstitutionAnnouncementsScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabs;
+    extends ConsumerState<InstitutionAnnouncementsScreen> {
+  String _tab = 'published';
 
   bool _loading = true;
   String? _error;
@@ -81,16 +77,7 @@ class _InstitutionAnnouncementsScreenState
   @override
   void initState() {
     super.initState();
-    // Always 2 tabs (Published + Drafts). The Drafts tab is rendered only for
-    // admins, so the controller length stays stable across role changes.
-    _tabs = TabController(length: 2, vsync: this);
     _load();
-  }
-
-  @override
-  void dispose() {
-    _tabs.dispose();
-    super.dispose();
   }
 
   Future<void> _load() async {
@@ -227,337 +214,131 @@ class _InstitutionAnnouncementsScreenState
     }
   }
 
-  Color _audienceColor(String audience) {
-    switch (audience.toUpperCase()) {
-      case 'PUBLIC':
-        return AuraSurface.coVerdant;
-      case 'MEMBERS':
-        return AuraSurface.accentText;
-      default:
-        return AuraSurface.muted;
-    }
-  }
-
-  Color _audienceBg(String audience) {
-    switch (audience.toUpperCase()) {
-      case 'PUBLIC':
-        return AuraSurface.coVerdant.withValues(alpha: 0.16);
-      case 'MEMBERS':
-        return AuraSurface.accentSoft;
-      default:
-        return AuraSurface.subtle;
-    }
-  }
-
   String _formatDate(String? raw) {
     final dt = DateTime.tryParse(raw ?? '');
     if (dt == null) return '';
     return AuraTemporal.fullShort(dt);
   }
 
-  Widget _buildAnnouncementTile(
-    Map<String, dynamic> ann, {
-    bool isDraft = false,
-  }) {
+  List<Map<String, dynamic>> get _unpublished =>
+      _drafts.where((a) => a['status']?.toString() == 'DRAFT').toList();
+
+  /// One row per announcement (DD-43): title; audience, kind and date; one
+  /// status pill; every act on it under the row's menu.
+  Widget _row(Map<String, dynamic> ann, {bool isDraft = false}) {
     final id = ann['id']?.toString() ?? '';
     final title = ann['title']?.toString().trim() ?? '';
-    final summary = ann['summary']?.toString().trim() ?? '';
     final audience = ann['audience']?.toString() ?? 'PUBLIC';
     final slug = ann['slug']?.toString() ?? '';
     final kind = ann['kind']?.toString() ?? 'GENERAL';
-    final publishedAt = _formatDate(ann['publishedAt']?.toString());
-    final createdAt = _formatDate(ann['createdAt']?.toString());
-    final isActing = _actingOn == id;
-    final mediaList = FeedMedia.listFromJson(ann['media']);
-    final firstMedia = mediaList.isEmpty ? null : mediaList.first;
+    final pinned = ann['pinned'] == true;
+    final date = isDraft
+        ? _formatDate((ann['updatedAt'] ?? ann['createdAt'])?.toString())
+        : _formatDate(ann['publishedAt']?.toString());
+    final mediaCount = FeedMedia.listFromJson(ann['media']).length;
     final canOpenDetail = !isDraft && slug.trim().isNotEmpty;
+    final editPath = '/institution/${widget.institutionId}/announcements/$id/edit';
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AuraSpace.s10),
-      padding: const EdgeInsets.all(AuraSpace.s16),
-      decoration: BoxDecoration(
-        color: AuraSurface.card,
-        borderRadius: BorderRadius.circular(AuraRadius.card),
-        border: Border.all(color: AuraSurface.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (firstMedia != null) ...[
-            CanonicalMediaThumb(
-              media: firstMedia,
-              downloadContext: 'institution-announcement-media',
-            ),
-            const SizedBox(height: AuraSpace.s12),
-          ],
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  title.isNotEmpty ? title : 'Untitled',
-                  style: AuraText.body.copyWith(fontWeight: FontWeight.w700),
-                ),
-              ),
-              const SizedBox(width: AuraSpace.s8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AuraSpace.s8,
-                  vertical: AuraSpace.s4,
-                ),
-                decoration: BoxDecoration(
-                  color: _audienceBg(audience),
-                  borderRadius: BorderRadius.circular(AuraRadius.pill),
-                ),
-                child: Text(
-                  _audienceLabel(audience),
-                  style: AuraText.micro.copyWith(
-                    color: _audienceColor(audience),
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (summary.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text(
-              summary,
-              style: AuraText.small.copyWith(
-                color: AuraSurface.muted,
-                height: 1.45,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-          const SizedBox(height: AuraSpace.s10),
-          Row(
-            children: [
-              Text(
-                announcementKindWords(kind),
-                style: AuraText.micro.copyWith(color: AuraSurface.faint),
-              ),
-              if (!isDraft && publishedAt.isNotEmpty) ...[
-                Text(
-                  ' · ',
-                  style: AuraText.micro.copyWith(color: AuraSurface.faint),
-                ),
-                Text(
-                  publishedAt,
-                  style: AuraText.micro.copyWith(color: AuraSurface.faint),
-                ),
-              ] else if (isDraft && createdAt.isNotEmpty) ...[
-                Text(
-                  ' · ',
-                  style: AuraText.micro.copyWith(color: AuraSurface.faint),
-                ),
-                Text(
-                  'Draft · $createdAt',
-                  style: AuraText.micro.copyWith(color: AuraSurface.coSun),
-                ),
-              ],
-            ],
-          ),
-          if (mediaList.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s6),
-            Text(
-              '${mediaList.length} attachment${mediaList.length == 1 ? '' : 's'}',
-              style: AuraText.micro.copyWith(color: AuraSurface.faint),
-            ),
-          ],
-          if (canOpenDetail) ...[
-            const SizedBox(height: AuraSpace.s12),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: _ActionBtn(
-                label: 'Read more',
-                icon: Icons.article_outlined,
-                color: AuraSurface.accentText,
-                onTap: () => context.push('/announcements/$slug'),
-              ),
-            ),
-          ],
-          if (!isDraft && audience == 'PUBLIC' && slug.isNotEmpty) ...[
-            const SizedBox(height: AuraSpace.s12),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: _ActionBtn(
-                label: 'Share',
-                icon: Icons.ios_share_rounded,
-                color: AuraSurface.accentText,
-                onTap: () => showAuraShareSheet(
-                  context,
-                  shareUrl: canonicalAnnouncementUrl(slug),
-                  headline: 'Share this announcement',
-                  subtitle:
-                      'A public link that shows a preview on LinkedIn, X, Slack and Facebook.',
-                  emailSubject: 'Aura announcement',
-                ),
-              ),
-            ),
-          ],
-          if (_canManageAnnouncements) ...[
-            const SizedBox(height: AuraSpace.s12),
-            if (isActing)
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            else
-              Row(
-                children: [
-                  if (isDraft)
-                    _ActionBtn(
-                      label: 'Publish',
-                      icon: Icons.send_rounded,
-                      color: AuraSurface.coVerdant,
-                      onTap: () => _publish(id),
-                    )
-                  else
-                    _ActionBtn(
-                      label: 'Unpublish',
-                      icon: Icons.unpublished_outlined,
-                      color: AuraSurface.coSun,
-                      onTap: () => _unpublish(id),
-                    ),
-                  const SizedBox(width: AuraSpace.s10),
-                  _ActionBtn(
-                    label: 'Edit',
-                    icon: Icons.edit_outlined,
-                    color: AuraSurface.accentText,
-                    onTap: () => context.push(
-                      '/institution/${widget.institutionId}/announcements/$id/edit',
-                    ),
-                  ),
-                  const SizedBox(width: AuraSpace.s10),
-                  _ActionBtn(
-                    label: 'Delete',
-                    icon: Icons.delete_outline_rounded,
-                    color: AuraSurface.coRose,
-                    onTap: () => _delete(id),
-                  ),
-                ],
-              ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPublishedList() {
-    if (_published.isEmpty) {
-      return const InsEmptyState(
-        icon: Icons.campaign_outlined,
-        title: 'No announcements yet',
-        description: 'Published announcements will appear here.',
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: _published.map((a) => _buildAnnouncementTile(a)).toList(),
-    );
-  }
-
-  Widget _buildDraftsList() {
-    final unpublished = _drafts
-        .where((a) => a['status']?.toString() == 'DRAFT')
-        .toList();
-    if (unpublished.isEmpty) {
-      return const InsEmptyState(
-        icon: Icons.drafts_outlined,
-        title: 'No drafts',
-        description: 'Use the action above to start a new announcement draft.',
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: unpublished
-          .map((a) => _buildAnnouncementTile(a, isDraft: true))
-          .toList(),
-    );
-  }
-
-  Widget _buildErrorBanner() {
-    if (_actionError == null) return const SizedBox.shrink();
-    return Container(
-      margin: const EdgeInsets.only(bottom: AuraSpace.s12),
-      padding: const EdgeInsets.all(AuraSpace.s12),
-      decoration: BoxDecoration(
-        color: AuraSurface.coRose.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(AuraRadius.md),
-        border: Border.all(color: AuraSurface.coRose.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline, size: 16, color: AuraSurface.coRose),
-          const SizedBox(width: AuraSpace.s8),
-          Expanded(
-            child: Text(
-              _actionError!,
-              style: AuraText.small.copyWith(color: AuraSurface.coRose),
-            ),
-          ),
-          GestureDetector(
-            onTap: () => setState(() => _actionError = null),
-            child: const Icon(Icons.close, size: 16, color: AuraSurface.coRose),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBody() {
-    if (_loading) {
-      return const AuraLoadingState(message: 'Loading announcements…');
-    }
-    if (_error != null) {
-      return AuraErrorState(
-        title: 'Could not load announcements',
-        body: _error!,
-        action: AuraSecondaryButton(
-          label: ProductLabels.of(ProductAction.retry),
-          onPressed: _load,
-          icon: Icons.refresh_rounded,
-        ),
-      );
-    }
-
-    if (!_canManageAnnouncements) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [_buildErrorBanner(), _buildPublishedList()],
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildErrorBanner(),
-        TabBar(
-          controller: _tabs,
-          labelStyle: AuraText.small.copyWith(fontWeight: FontWeight.w700),
-          unselectedLabelStyle: AuraText.small,
-          labelColor: AuraSurface.accentText,
-          unselectedLabelColor: AuraSurface.muted,
-          indicatorColor: AuraSurface.accentText,
-          tabs: const [
-            Tab(text: 'Published'),
-            Tab(text: 'Drafts'),
-          ],
-        ),
-        const SizedBox(height: AuraSpace.s16),
-        SizedBox(
-          height: 800,
-          child: TabBarView(
-            controller: _tabs,
-            children: [_buildPublishedList(), _buildDraftsList()],
+    final menu = <WorkspaceAction>[
+      if (canOpenDetail)
+        WorkspaceAction(label: 'Read', icon: Icons.article_outlined, onPressed: () => context.push('/announcements/$slug')),
+      if (!isDraft && audience == 'PUBLIC' && slug.isNotEmpty)
+        WorkspaceAction(
+          label: 'Share',
+          icon: Icons.ios_share_rounded,
+          onPressed: () => showAuraShareSheet(
+            context,
+            shareUrl: canonicalAnnouncementUrl(slug),
+            headline: 'Share this announcement',
+            subtitle: 'A public link that shows a preview on LinkedIn, X, Slack and Facebook.',
+            emailSubject: 'Aura announcement',
           ),
         ),
+      if (_canManageAnnouncements) ...[
+        if (isDraft)
+          WorkspaceAction(label: 'Publish', icon: Icons.send_rounded, onPressed: () => _publish(id))
+        else
+          WorkspaceAction(label: 'Unpublish', icon: Icons.unpublished_outlined, onPressed: () => _unpublish(id)),
+        WorkspaceAction(
+          label: 'Edit',
+          icon: Icons.edit_outlined,
+          onPressed: () => context.push(editPath).then((_) => _load()),
+        ),
+        WorkspaceAction(label: 'Delete', icon: Icons.delete_outline_rounded, destructive: true, onPressed: () => _delete(id)),
       ],
+    ];
+
+    return WorkspaceRow(
+      leading: const WorkspaceIcon(Icons.campaign_outlined),
+      title: title.isNotEmpty ? title : 'Untitled',
+      context: [
+        _audienceLabel(audience),
+        announcementKindWords(kind),
+        if (date.isNotEmpty) isDraft ? 'last edited $date' : date,
+        if (mediaCount > 0) '$mediaCount attachment${mediaCount == 1 ? '' : 's'}',
+      ].join(' · '),
+      pill: isDraft
+          ? const WorkspacePill(label: 'Draft', tone: WorkspaceTone.waiting)
+          : pinned
+              ? const WorkspacePill(label: 'Pinned', tone: WorkspaceTone.waiting)
+              : const WorkspacePill(label: 'Published', tone: WorkspaceTone.done),
+      trailing: _actingOn == id
+          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+          : (menu.isEmpty ? null : WorkspaceRowMenu(actions: menu)),
+      onTap: canOpenDetail
+          ? () => context.push('/announcements/$slug')
+          : (isDraft && _canManageAnnouncements ? () => context.push(editPath).then((_) => _load()) : null),
     );
   }
+
+  List<Widget> _content() {
+    if (_error != null) {
+      return [
+        WorkspaceEmpty(
+          icon: Icons.error_outline_rounded,
+          title: 'Could not load announcements',
+          body: _error!,
+          action: WorkspaceAction(label: ProductLabels.of(ProductAction.retry), icon: Icons.refresh_rounded, onPressed: _load),
+        ),
+      ];
+    }
+    final drafts = _tab == 'drafts';
+    final list = drafts ? _unpublished : _published;
+    return [
+      if (_actionError != null)
+        WorkspaceRow(
+          leading: const WorkspaceIcon(Icons.error_outline_rounded, tone: WorkspaceTone.problem),
+          title: _actionError!,
+          emphasis: WorkspaceTone.problem,
+          trailing: IconButton(
+            tooltip: 'Dismiss',
+            icon: const Icon(Icons.close_rounded, size: 18, color: AuraSurface.muted),
+            onPressed: () => setState(() => _actionError = null),
+          ),
+        ),
+      if (list.isEmpty)
+        drafts
+            ? const WorkspaceEmpty(
+                icon: Icons.drafts_outlined,
+                title: 'No drafts',
+                body: 'Announcements you start and do not publish wait here.',
+              )
+            : WorkspaceEmpty(
+                icon: Icons.campaign_outlined,
+                title: 'No announcements yet',
+                body: 'Published announcements will appear here.',
+                action: _canCompose
+                    ? WorkspaceAction(label: 'New announcement', icon: Icons.add_rounded, onPressed: _compose)
+                    : null,
+              )
+      else
+        for (final a in list) _row(a, isDraft: drafts),
+    ];
+  }
+
+  void _compose() => context
+      .push('/institution/${widget.institutionId}/announcements/new')
+      .then((_) => _load());
 
   @override
   Widget build(BuildContext context) {
@@ -566,56 +347,24 @@ class _InstitutionAnnouncementsScreenState
     // initState / async handlers.
     ref.watch(institutionIdentityProvider);
 
-    return InstitutionPage(
+    return WorkspacePage(
+      type: WorkspacePageType.collection,
       title: 'Announcements',
-      subtitle: 'Publish official institutional notices and public statements.',
-      trailing: _canCompose
-          ? AuraPrimaryButton(
-              label: 'New announcement',
-              onPressed: () => context
-                  .push(
-                    '/institution/${widget.institutionId}/announcements/new',
-                  )
-                  .then((_) => _load()),
-              icon: Icons.add_rounded,
-            )
+      purpose: 'Official notices and public statements, in the institution’s name.',
+      primary: _canCompose
+          ? WorkspaceAction(label: 'New announcement', icon: Icons.add_rounded, onPressed: _compose)
           : null,
-      body: _buildBody(),
-    );
-  }
-}
-
-class _ActionBtn extends StatelessWidget {
-  const _ActionBtn({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: AuraSpace.s4),
-          Text(
-            label,
-            style: AuraText.micro.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
+      // Drafts are a manager's list; everyone else sees what was published.
+      tabs: _canManageAnnouncements
+          ? [
+              WorkspaceTab(id: 'published', label: 'Published', count: _loading ? null : _published.length),
+              WorkspaceTab(id: 'drafts', label: 'Drafts', count: _loading ? null : _unpublished.length),
+            ]
+          : const [],
+      selectedTab: _tab,
+      onTab: (id) => setState(() => _tab = id),
+      loading: _loading,
+      children: _content(),
     );
   }
 }
