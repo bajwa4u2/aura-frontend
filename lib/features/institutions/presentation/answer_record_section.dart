@@ -125,7 +125,9 @@ class AnswerRecordSection extends ConsumerWidget {
                       Text(r.issue, maxLines: 2, overflow: TextOverflow.ellipsis, style: AuraText.body.copyWith(height: 1.4)),
                       const SizedBox(height: 2),
                       Text(
-                        r.statement,
+                        // Older records were resolved before a statement was
+                        // required; say what is true rather than leave a gap.
+                        r.statement.trim().isEmpty ? 'Marked resolved.' : r.statement,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: AuraText.small.copyWith(color: AuraSurface.coVerdant, height: 1.4),
