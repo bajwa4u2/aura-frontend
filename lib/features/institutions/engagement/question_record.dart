@@ -20,6 +20,7 @@ import '../kind/kind_composition.dart';
 import '../workspace/workspace_page.dart';
 import 'engagement_models.dart';
 import 'engagement_providers.dart';
+import '../../../core/product/product_language.dart';
 
 /// ONE QUESTION OR ISSUE: the Record page type (DD-43).
 ///
@@ -199,7 +200,7 @@ class _QuestionRecordState extends ConsumerState<QuestionRecord> {
             title: 'This question could not be opened',
             body: ServerRefusal.of(e).message ?? 'Check the connection and try again.',
             action: WorkspaceAction(
-              label: 'Try again',
+              label: ProductLabels.of(ProductAction.retry),
               icon: Icons.refresh_rounded,
               onPressed: () => ref.invalidate(engagementDetailProvider(_key)),
             ),
