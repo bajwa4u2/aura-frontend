@@ -901,7 +901,11 @@ class _EvidenceKindField extends StatelessWidget {
           onChanged: (v) {
             if (!busy) onChanged(v);
           },
-          child: Column(
+          // The section box paints a colour; a list row paints its ink on the
+          // nearest Material, so it needs its own (Flutter asserts this).
+          child: Material(
+            type: MaterialType.transparency,
+            child: Column(
             children: [
               for (final kind in menu)
                 RadioListTile<AuthorityEvidenceKind>(
@@ -913,6 +917,7 @@ class _EvidenceKindField extends StatelessWidget {
                   dense: true,
                 ),
             ],
+          ),
           ),
         ),
       ],
@@ -1187,7 +1192,9 @@ class _EvidenceListState extends State<_EvidenceList> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Material(
+      type: MaterialType.transparency,
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (final item in widget.staged)
@@ -1250,6 +1257,7 @@ class _EvidenceListState extends State<_EvidenceList> {
           ],
         ),
       ],
+      ),
     );
   }
 }
