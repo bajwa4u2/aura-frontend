@@ -63,7 +63,10 @@ workflows:
         # App Store Connect API key above (automatic managed signing).
         distribution_type: app_store
         bundle_identifier: org.auraplatform.app
-      flutter: stable
+      # Pinned to the version the local suite is run with. `stable` installed a
+      # newer Flutter whose new assert failed build #62 (1.6.0) on 9 Oct 2026.
+      # Upgrade here deliberately, after the full suite passes on the new version.
+      flutter: 3.41.4
       xcode: latest
       cocoapods: default
       groups:
@@ -300,7 +303,10 @@ workflows:
     # tested against that reality because nothing ever got there.
     max_build_duration: 120
     environment:
-      flutter: stable
+      # Pinned to the version the local suite is run with. `stable` installed a
+      # newer Flutter whose new assert failed build #62 (1.6.0) on 9 Oct 2026.
+      # Upgrade here deliberately, after the full suite passes on the new version.
+      flutter: 3.41.4
       xcode: latest
       cocoapods: default
       groups:
@@ -874,7 +880,10 @@ workflows:
     instance_type: linux_x2
     max_build_duration: 120
     environment:
-      flutter: stable
+      # Pinned to the version the local suite is run with. `stable` installed a
+      # newer Flutter whose new assert failed build #62 (1.6.0) on 9 Oct 2026.
+      # Upgrade here deliberately, after the full suite passes on the new version.
+      flutter: 3.41.4
       java: 17
       groups:
         - aura_cert
