@@ -1,504 +1,181 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-
-<title>Aura — The Product</title>
-<meta name="description" content="Aura's real surfaces, in the order the product was built: a person publishes, discourse keeps its context, an institution enters under governed identity, and official speech becomes attributable.">
-
-<!--
-  INDEXABLE SINCE 2026-09-12, and the change is a policy rather than a tweak.
-
-  These pages carried `noindex, nofollow` from the day they were written, with
-  the reasoning "a durable readiness asset, not a search surface" -- correct
-  while they were links handed to particular people. The estate has since
-  adopted a permanent-representation doctrine: /deck and /demo are standing
-  public surfaces for investors, accelerators, partners, diligence, media and
-  prospective customers, and a representation surface that search and answer
-  engines cannot read is a representation surface with no reach.
-
-  They were re-read before this was flipped, against the one condition that
-  matters: no private content, no authenticated surface, no real correspondence,
-  no credential. Every name, quotation and timestamp in the demo is illustrative
-  and says so on the page.
-
-  Training crawlers remain blocked at the edge. This opens the pages to search
-  and user-retrieval agents, which is what they are for.
--->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aura · See a question become an answer on the record</title>
 <link rel="canonical" href="https://auraplatform.org/demo">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Aura">
-<meta property="og:title" content="Aura — The Product">
-<meta property="og:description" content="Aura's real surfaces, in the order the product was built: a person publishes, discourse keeps its context, an institution enters under governed identity, and official speech becomes attributable.">
-<meta property="og:url" content="https://auraplatform.org/demo">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Aura — The Product">
-<meta name="twitter:description" content="Aura's real surfaces, in the order the product was built: a person publishes, discourse keeps its context, an institution enters under governed identity, and official speech becomes attributable.">
-<meta name="referrer" content="strict-origin-when-cross-origin">
-<meta name="theme-color" content="#0E1116">
-<meta name="color-scheme" content="dark">
-<link rel="icon" href="/favicon.png">
-<link rel="stylesheet" href="/shared/aura.css">
-<link rel="stylesheet" href="/shared/aura-surfaces.css">
-<script>
-/* Opt in to the reveal only when we can actually finish it: scripting on and
-   motion allowed. Runs before first paint so nothing flashes. */
-if (window.IntersectionObserver &&
-    !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-  document.documentElement.className += ' js-reveal';
-}
-</script>
+<meta name="description" content="Follow one public question to an answer on the record, for a city, a school district, a faith community and a nonprofit. Real Aura screens; the people and institutions are fictional.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,500;0,8..60,600;1,8..60,600&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#0E1116; --card:#151922; --soft:#12161D; --well:#1A1F29; --line:#232833; --line2:#2C3240;
+    --ink:#E8E4DA; --ink2:#A9AEB9; --muted:#8C919C; --onink:#0E1116; --oninkm:#3A3F49;
+    --yes:#D2AC62; --yessoft:rgba(210,172,98,.16); --yesink:#D2AC62;
+    --money:#5FD99A; --moneysoft:#0E2318; --moneyink:#5FD99A;
+    --serif:'Source Serif 4',Georgia,serif; --sans:'Public Sans',system-ui,sans-serif; --mono:'Public Sans',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:400 17px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .wrap{max-width:1280px;margin:0 auto;padding:0 24px}
+  .eyebrow{font:600 12px/1.2 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0}
+  h1,h2{font-family:var(--serif);font-weight:600;letter-spacing:-.01em;margin:0}
+  h1{font-size:clamp(36px,5.2vw,64px);line-height:1.04}
+  h2{font-size:clamp(24px,2.6vw,34px);line-height:1.12}
+  .paid{color:var(--money);font-style:italic}
+  header.top{position:sticky;top:0;z-index:5;background:rgba(14,17,22,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  header.top .wrap{display:flex;align-items:center;justify-content:space-between;height:64px}
+  .brand{font:600 20px var(--serif);text-decoration:none} .brand small{font:500 13px var(--sans);color:var(--muted);margin-left:8px}
+  header.top a.cta{font:600 15px var(--sans);text-decoration:none;border-bottom:2px solid var(--yes)}
+  .intro{padding:52px 0 18px}
+  .intro p.lede{font-size:clamp(17px,1.8vw,20px);color:var(--ink2);max-width:760px;margin:16px 0 0}
+  .note{display:inline-block;margin-top:14px;font:500 13px var(--sans);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:var(--soft)}
+  .picker{display:flex;flex-wrap:wrap;gap:10px;margin:26px 0 8px}
+  .picker button{font:600 15px var(--sans);border:1.5px solid var(--line2);background:var(--card);color:var(--ink2);border-radius:999px;padding:11px 18px;cursor:pointer}
+  .picker button[aria-pressed="true"]{background:var(--yes);color:#0E1116;border-color:var(--yes)}
+  .picker button:focus-visible,.rail button:focus-visible,.ctrl button:focus-visible{outline:3px solid var(--yes);outline-offset:2px}
+  p.whois{color:var(--ink2);margin:10px 0 0;font-size:16px}
+  .tour{display:grid;grid-template-columns:300px 1fr;gap:32px;padding:24px 0 64px;align-items:start}
+  ol.rail{list-style:none;margin:0;padding:0;position:sticky;top:88px}
+  ol.rail li{margin:0 0 8px}
+  .rail button{width:100%;text-align:left;background:transparent;border:1px solid transparent;border-radius:14px;padding:12px 14px;cursor:pointer;font:inherit;color:var(--ink2);display:grid;gap:2px}
+  .rail .k{font:600 12px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .rail .t{font:600 16px var(--sans);color:var(--ink)}
+  .rail .w{font:500 13px var(--sans)}
+  .rail button[aria-current="step"]{background:var(--card);border-color:var(--line);box-shadow:0 10px 24px -20px rgba(23,32,43,.5)}
+  .w--public{color:var(--ink2)} .w--inst{color:var(--yesink)} .w--record{color:var(--moneyink)}
+  .stage{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:26px}
+  .stage .head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+  .badge{font:600 13px var(--sans);border-radius:999px;padding:6px 12px;white-space:nowrap}
+  .badge--public{background:var(--well);color:var(--ink2)} .badge--inst{background:var(--yessoft);color:var(--yesink)} .badge--record{background:var(--moneysoft);color:var(--moneyink)}
+  .stage p.say{color:var(--ink2);font-size:18px;max-width:720px;margin:12px 0 20px}
+  .frame{background:var(--soft);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .frame img{display:block;width:100%;height:auto}
+  .ctrl{display:flex;justify-content:space-between;align-items:center;margin-top:18px;gap:12px}
+  .ctrl button{border-radius:999px;padding:12px 20px;font:600 15px var(--sans);cursor:pointer;border:1.5px solid var(--line2);background:transparent;color:var(--ink)}
+  .ctrl button.next{background:var(--yes);color:#0E1116;border-color:var(--yes)}
+  .ctrl button:disabled{opacity:.35;cursor:default}
+  .ctrl .count{font:600 13px var(--mono);color:var(--muted)}
+  .done{background:var(--card);border:1px solid var(--yes);color:var(--ink);border-radius:24px;padding:40px;margin-bottom:72px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center}
+  .done h2{color:var(--ink)} .done p{color:var(--ink2);margin:10px 0 0}
+  .done a{display:inline-block;border-radius:999px;padding:14px 22px;font:600 16px var(--sans);text-decoration:none;background:var(--yes);color:#0E1116;white-space:nowrap}
+  footer.foot{border-top:1px solid var(--line);padding:28px 0 40px;font-size:14px;color:var(--muted)}
+  footer.foot .wrap{display:flex;flex-wrap:wrap;gap:10px 22px} footer.foot a{color:var(--ink2)}
+  @media (max-width:960px){
+    .tour{grid-template-columns:1fr}
+    ol.rail{position:static;display:flex;overflow-x:auto;gap:8px;padding-bottom:6px;scroll-snap-type:x mandatory}
+    ol.rail li{flex:0 0 auto;scroll-snap-align:start;margin:0}
+    .rail button{min-width:160px}
+    .stage{padding:16px}
+    .frame{max-width:420px;margin:0 auto}
+    .done{grid-template-columns:1fr}
+  }
+</style>
 </head>
 <body>
-<div class="progress" id="progress" aria-hidden="true"></div>
-<main class="wrap">
+<header class="top"><div class="wrap">
+  <a class="brand" href="/deck">Aura<small>by Aura Platform LLC</small></a>
+  <a class="cta" href="https://auraplatform.org/register">Join Aura free</a>
+</div></header>
 
-  <header class="masthead">
-    <p class="eyebrow">Aura · The product</p>
-    <h1>The same six surfaces, in the order they matter.</h1>
-    <p class="lede">Each panel below is an Aura surface rendered at the density the client
-    renders it, using the client's own palette, spacing, radii and typed states. The rules
-    described beside each one are enforced in the running product, not illustrated for effect.</p>
-    <p class="small">The names, text and timestamps are illustrative. The surfaces, states and
-    rules are the product's own. · <a href="/deck">Product brief</a></p>
-  </header>
+<main>
+<section class="intro"><div class="wrap">
+  <p class="eyebrow">See it work · Example</p>
+  <h1 style="margin-top:12px">One question, from the public to the record.</h1>
+  <p class="lede">Pick an institution like yours. Follow one question from the person who asked it, to the institution’s Desk, to an answer on the record that everyone can see. Click through, or use the arrow keys.</p>
+  <span class="note">Real Aura screens. The people, institutions and questions are fictional.</span>
+  <div class="picker" role="group" aria-label="Kind of institution" id="picker"></div>
+  <p class="whois" id="whois"></p>
+</div></section>
 
-  <!-- ── 1. a person publishes ──────────────────────────────────────────── -->
-  <section class="rv">
-    <p class="sec-label">01 · A person publishes</p>
-    <h2>One identity, stated capacity, no audience score.</h2>
-
-    <div class="pair">
-      <div class="surface">
-        <div class="surface__chrome"><b>Public</b><span class="surface__spacer"></span>Unified feed</div>
-        <div class="surface__body">
-
-          <article class="pub">
-            <div class="author">
-              <div class="avatar">NA</div>
-              <div class="author__b">
-                <div class="author__l1">
-                  <span class="author__name">Nadia Aslam</span>
-                  <span class="author__handle">@nadia</span>
-                  <span class="author__dot">·</span>
-                  <span class="author__time">4h</span>
-                </div>
-                <p class="pub__body">The bus lane consultation closed three weeks ago and the
-                summary still is not published. Asking here because the last two email replies
-                went to different departments and neither referenced the other.</p>
-                <div class="topics">
-                  <span class="topic">Transport</span>
-                  <span class="topic">Local government</span>
-                </div>
-                <div class="engage">
-                  <span class="pill">
-                    <svg viewBox="0 0 24 24"><path d="M12 20s-7-4.5-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.5-7 9-7 9z"/></svg>
-                    React
-                  </span>
-                  <span class="pill">
-                    <svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/></svg>
-                    Reply
-                  </span>
-                  <span class="pill">
-                    <svg viewBox="0 0 24 24"><path d="M6 5h12M6 5v14l6-4 6 4V5"/></svg>
-                    Save
-                  </span>
-                  <span class="pill" data-translate>Translate</span>
-                </div>
-              </div>
-            </div>
-          </article>
-
-          <article class="pub">
-            <div class="author">
-              <div class="avatar">SO</div>
-              <div class="author__b">
-                <div class="author__l1">
-                  <span class="author__name">Sofia Okonjo</span>
-                  <span class="author__handle">@sofia</span>
-                  <span class="idchip" data-t="admin">Institution admin</span>
-                  <span class="author__dot">·</span>
-                  <span class="author__time">6h</span>
-                </div>
-                <p class="pub__body">Speaking for myself here, not for the office: the two-inbox
-                problem is real and we have raised it internally.</p>
-                <div class="engage">
-                  <span class="pill">
-                    <svg viewBox="0 0 24 24"><path d="M12 20s-7-4.5-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.5-7 9-7 9z"/></svg>
-                    React
-                  </span>
-                  <span class="pill">
-                    <svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/></svg>
-                    Reply
-                  </span>
-                </div>
-              </div>
-            </div>
-          </article>
-
-        </div>
-      </div>
-
-      <div class="readout">
-        <div>
-          <h4>Capacity is on the record</h4>
-          <p>Nadia is speaking personally, so no capacity chip appears. The absence is the
-          statement: a chip only shows when someone is speaking as an institution's member,
-          admin, or officially on its behalf.</p>
-        </div>
-        <div>
-          <h4>Holding a role is not speaking for it</h4>
-          <p>Sofia is an institution admin, and her post is still personal. The chip states the
-          role she holds; publishing officially is a separate act with a separate grant.</p>
-        </div>
-        <div>
-          <h4>Nothing counts an audience</h4>
-          <p>There is no follower count, no reach figure, no ranking score on this card or
-          anywhere else in the client. Reactions carry a typed breakdown; they do not confer
-          standing.</p>
-        </div>
-        <div>
-          <h4>Topics route, they do not rank</h4>
-          <p>Transport and Local government place this publication where it concerns people.
-          They are not tags competing for a recommendation model's attention.</p>
-        </div>
-        <div>
-          <h4>Translation happens where the reader is</h4>
-          <p>In place, inside the conversation, with attribution to the original author intact.</p>
-        </div>
-      </div>
+<section class="wrap tour" aria-label="Guided tour">
+  <ol class="rail" id="rail"></ol>
+  <div class="stage" aria-live="polite">
+    <div class="head">
+      <div><p class="eyebrow" id="kstep"></p><h2 id="title" style="margin-top:8px"></h2></div>
+      <span class="badge" id="badge"></span>
     </div>
-  </section>
-
-  <!-- ── 2. discourse keeps its context ─────────────────────────────────── -->
-  <section class="rv">
-    <p class="sec-label">02 · Discourse keeps its context</p>
-    <h2>A reply belongs to what it answers.</h2>
-
-    <div class="pair" data-reverse>
-      <div class="readout">
-        <div>
-          <h4>The context travels with the reply</h4>
-          <p>The parent is carried on the card itself. Reading the reply later does not depend
-          on scrolling back far enough, or on the parent still being surfaced anywhere.</p>
-        </div>
-        <div>
-          <h4>Threads and Spaces are different things</h4>
-          <p>A Thread holds a conversation's context. A Space holds the people who share one.
-          The product keeps the two nouns distinct because collapsing them is how context is
-          lost.</p>
-        </div>
-        <div>
-          <h4>Member is a status, not an identity</h4>
-          <p>Ibrahim is one Person who holds a membership. The chip states the membership; it
-          does not become who he is.</p>
-        </div>
-      </div>
-
-      <div class="surface">
-        <div class="surface__chrome"><b>Public</b><span class="surface__spacer"></span>Thread</div>
-        <div class="surface__body">
-
-          <article class="pub">
-            <div class="author">
-              <div class="avatar">IK</div>
-              <div class="author__b">
-                <div class="author__l1">
-                  <span class="author__name">Ibrahim Khan</span>
-                  <span class="author__handle">@ibrahim</span>
-                  <span class="idchip" data-t="member">Member</span>
-                  <span class="author__dot">·</span>
-                  <span class="author__time">2h</span>
-                </div>
-                <div class="replyctx">
-                  <div class="replyctx__l">Replying to @nadia</div>
-                  <div class="replyctx__t">The bus lane consultation closed three weeks ago and
-                  the summary still is not published…</div>
-                </div>
-                <p class="pub__body">Both replies exist in the correspondence record — different
-                departments, same case. That is the thing worth fixing, not the delay.</p>
-                <div class="engage">
-                  <span class="pill" data-on>
-                    <svg viewBox="0 0 24 24"><path d="M12 20s-7-4.5-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.5-7 9-7 9z"/></svg>
-                    4
-                  </span>
-                  <span class="pill">
-                    <svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/></svg>
-                    Reply
-                  </span>
-                  <span class="pill">
-                    <svg viewBox="0 0 24 24"><path d="M6 5h12M6 5v14l6-4 6 4V5"/></svg>
-                    Save
-                  </span>
-                </div>
-              </div>
-            </div>
-          </article>
-
-        </div>
-      </div>
+    <p class="say" id="say"></p>
+    <div class="frame"><picture><source id="wide" media="(min-width:961px)"><img id="img" alt=""></picture></div>
+    <div class="ctrl">
+      <button id="prev" type="button">Back</button>
+      <span class="count" id="count"></span>
+      <button id="next" class="next" type="button">Next</button>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- ── 3. the institution enters ──────────────────────────────────────── -->
-  <section class="rv">
-    <p class="sec-label">03 · The institution enters</p>
-    <h2>Official speech is visually load-bearing.</h2>
-    <p class="muted">An Announcement is not a post with a badge. It carries a heavier accent
-    edge, an OFFICIAL eyebrow with its statement type, and the authority that permitted it.</p>
-
-    <div class="pair">
-      <div class="surface">
-        <div class="surface__chrome"><b>Public</b><span class="surface__spacer"></span>Institution</div>
-        <div class="surface__body">
-
-          <article class="pub" data-official data-age="fresh">
-            <div class="pub__eyebrow">
-              <span class="official">OFFICIAL</span>
-              <span class="typetoken">• ANNOUNCEMENT</span>
-              <span class="newchip">NEW</span>
-            </div>
-            <div class="author">
-              <div class="avatar" data-inst>RC</div>
-              <div class="author__b">
-                <div class="author__l1">
-                  <span class="author__name">Riverside City</span>
-                  <span class="idchip">Official</span>
-                  <span class="author__dot">·</span>
-                  <span class="author__time">3h</span>
-                </div>
-                <h3 class="pub__title">Bus lane consultation — summary and next steps</h3>
-                <p class="pub__body">The consultation summary is published today, with the two
-                departmental responses reconciled into one case record. Objections raised after
-                the closing date are listed separately and answered in full.</p>
-                <p class="pub__meta">Issued by the Transport Office · approved by a named officer</p>
-                <div class="engage">
-                  <span class="pill">
-                    <svg viewBox="0 0 24 24"><path d="M12 20s-7-4.5-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.5-7 9-7 9z"/></svg>
-                    React
-                  </span>
-                  <span class="pill">
-                    <svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/></svg>
-                    Reply
-                  </span>
-                  <span class="pill" data-translate>Translate</span>
-                </div>
-              </div>
-            </div>
-          </article>
-
-        </div>
-      </div>
-
-      <div class="readout">
-        <div>
-          <h4>The authority is named, not implied</h4>
-          <p>An institution's official statement passes a human approval before it exists
-          publicly. Who approved it is part of the publication, not a log entry somewhere else.</p>
-        </div>
-        <div>
-          <h4>Authority is granted per capability</h4>
-          <p>Publishing officially, approving, and admitting to a session are separate grants.
-          A person can hold one without the others, and any of them can be withdrawn without
-          dismantling the institution's presence.</p>
-        </div>
-        <div>
-          <h4>The heavier edge is a rule, not a style</h4>
-          <p>1.5px against 1px, in the accent colour at 45% — the client draws institutional
-          speech differently on purpose, so it is never mistaken for chat.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ── 4. the same statement, three days later ────────────────────────── -->
-  <section class="rv">
-    <p class="sec-label">04 · Time decay</p>
-    <h2>An old statement stops competing with a new one.</h2>
-    <p class="muted">The same Announcement, unchanged, at three ages. Within 24 hours it reads
-    at full intensity. Between 24 and 72 hours the accent calms. Past 72 hours the edge returns
-    to a plain divider. Nothing is hidden and nothing is deleted — the institution's newest
-    statement simply carries the weight.</p>
-
-    <div class="decay">
-      <article class="pub" data-official data-decay id="decayCard">
-        <div class="pub__eyebrow">
-          <span class="official">OFFICIAL</span>
-          <span class="typetoken">&bull; ANNOUNCEMENT</span>
-          <span class="newchip" id="decayNew">NEW</span>
-        </div>
-        <div class="author">
-          <div class="avatar" data-inst>RC</div>
-          <div class="author__b">
-            <div class="author__l1">
-              <span class="author__name">Riverside City</span>
-              <span class="idchip">Official</span>
-              <span class="author__dot">&middot;</span>
-              <span class="author__time" id="decayTime">3h</span>
-            </div>
-            <h3 class="pub__title">Bus lane consultation &mdash; summary and next steps</h3>
-            <p class="pub__body">The consultation summary is published today, with the two
-            departmental responses reconciled into one case record.</p>
-          </div>
-        </div>
-      </article>
-
-      <div class="decay__panel">
-        <div class="decay__age" id="decayAge">3 hours old</div>
-        <span class="chip decay__bucket" id="decayBucket">FRESH</span>
-        <label for="decayRange" class="small" style="display:block;margin-bottom:6px">
-          Move the statement through time
-        </label>
-        <input type="range" id="decayRange" min="0" max="240" value="3" step="1"
-               aria-label="Age of the announcement in hours">
-        <div class="decay__rows">
-          <div class="decay__row"><span>Accent border alpha</span><b id="decayAlpha">0.45</b></div>
-          <div class="decay__row"><span>Eyebrow opacity</span><b id="decayEyebrow">1.00</b></div>
-          <div class="decay__row"><span>NEW chip</span><b id="decayChip">shown</b></div>
-        </div>
-        <div class="thresholds" id="decayThresholds">
-          <span class="chip" data-bucket="fresh">&le;24h &middot; 0.45</span>
-          <span class="chip" data-bucket="recent">24&ndash;72h &middot; 0.28</span>
-          <span class="chip" data-bucket="stale">&gt;72h &middot; divider</span>
-        </div>
-      </div>
-    </div>
-
-    <p class="small" style="margin-top:20px">Attention decays without animation, without a
-    notification, and without moving anything. The OFFICIAL eyebrow keeps its legibility at
-    every age — only its intensity changes.</p>
-  </section>
-
-  <!-- ── 5. correspondence ──────────────────────────────────────────────── -->
-  <section class="rv">
-    <p class="sec-label">05 · Correspondence</p>
-    <h2>The formal exchange, with an outcome.</h2>
-
-    <div class="pair" data-reverse>
-      <div class="readout">
-        <div>
-          <h4>Correspondence is not messaging</h4>
-          <p>It is the governed formal form: a deliberate exchange that keeps its thread, its
-          participants, and the state it reached. The distinction is architectural, not a
-          difference in tone.</p>
-        </div>
-        <div>
-          <h4>The institution answers as itself</h4>
-          <p>The reply carries the office that sent it and the person who authorised it. A
-          department cannot answer anonymously, and two departments cannot answer the same case
-          without the case knowing.</p>
-        </div>
-        <div>
-          <h4>It reaches a state, and stops</h4>
-          <p>An exchange that resolves says so. The record then continues to exist, attributable,
-          rather than scrolling out of reach.</p>
-        </div>
-      </div>
-
-      <div class="surface">
-        <div class="surface__chrome"><b>Correspondence</b><span class="surface__spacer"></span>Case 4417</div>
-        <div class="surface__body">
-          <div class="corr">
-            <div class="msg" data-side="out">
-              <div class="msg__b">
-                <div class="msg__who">Nadia Aslam</div>
-                Two replies, two departments, neither referencing the other. Which one is the
-                answer of record?
-              </div>
-            </div>
-            <div class="msg">
-              <div class="msg__b">
-                <div class="msg__who">Riverside City · Transport Office</div>
-                Both are on the case. The reconciled answer is the consultation summary
-                published today; the earlier replies are superseded and marked so.
-              </div>
-            </div>
-          </div>
-          <div class="corr__state">
-            <span class="chip" data-t="good">RESOLVED</span>
-            <span>Answered by the Transport Office · authorised by a named officer</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ── 6. live ────────────────────────────────────────────────────────── -->
-  <section class="rv">
-    <p class="sec-label">06 · Meetings &amp; Live</p>
-    <h2>Admission is a decision, not a default.</h2>
-
-    <div class="pair">
-      <div class="surface">
-        <div class="surface__chrome"><b>Live</b><span class="surface__spacer"></span>Self-hosted</div>
-        <div class="surface__body">
-          <div class="stage">
-            <div class="tile" data-speaking>
-              <div class="tile__bar">
-                <span class="tile__n">Riverside City · Transport Office</span>
-                <span class="tile__m">SPEAKING</span>
-              </div>
-            </div>
-            <div class="tile">
-              <div class="tile__bar">
-                <span class="tile__n">Nadia Aslam</span>
-                <span class="tile__m">MUTED</span>
-              </div>
-            </div>
-          </div>
-          <div class="admission">
-            <div class="admission__t">One person is waiting to be admitted.</div>
-            <div class="admission__d">Ibrahim Khan requested to join. Admission is recorded
-            against the session either way.</div>
-            <div class="admission__a">
-              <span class="btn">Admit</span>
-              <span class="btn" data-ghost>Decline</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="readout">
-        <div>
-          <h4>Live is a mode, not a separate product</h4>
-          <p>A live session is a governed state of an existing Thread or Space. What was said
-          before it, and what is decided in it, stay in the same record.</p>
-        </div>
-        <div>
-          <h4>Self-hosted, so governance holds</h4>
-          <p>Sessions run on Aura's own realtime infrastructure rather than a third-party
-          meetings provider. Admission, recording consent and participation stay under the same
-          authority as everything else.</p>
-        </div>
-        <div>
-          <h4>The outcome is recorded either way</h4>
-          <p>Admitted or declined, the decision and who made it belong to the session's record.
-          Refusal is a first-class outcome, not a missing entry.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <footer class="foot">
-    <p><b>Aura</b> — a public-first platform for civic discourse and accountable communication.
-    Aura Platform LLC. Content shown is illustrative; the surfaces, states and rules are taken
-    from the shipped client.</p>
-    <div class="navline">
-      <a href="/deck">Product brief</a>
-      <a href="/white-paper">White paper</a>
-      <a href="/institutions">Institutions</a>
-      <a href="/">auraplatform.org</a>
-      <a href="/privacy">Privacy</a>
-      <a href="/terms">Terms</a>
-      <a href="https://company.auraplatform.org">Aura Platform LLC</a>
-    </div>
-  </footer>
-
+<section class="wrap">
+  <div class="done">
+    <div><h2>Answer your public, on the record.</h2><p>Free for the public, permanently. Institutions from $49 a month for three staff seats; verification is never sold.</p></div>
+    <a href="https://auraplatform.org/institutions/get-started">Set up your institution</a>
+  </div>
+</section>
 </main>
 
-<script src="/shared/aura-motion.js" defer></script>
-<script src="/shared/aura-decay.js" defer></script>
+<footer class="foot"><div class="wrap">
+  <span><strong>Aura</strong> by <a href="https://company.auraplatform.org">Aura Platform LLC</a></span>
+  <span><a href="/deck">Overview</a></span>
+  <span><a href="/privacy">Privacy</a></span>
+  <span><a href="/terms">Terms</a></span>
+</div></footer>
+
+<script src="/demo/stories.js"></script>
+<script>
+(function () {
+  var S = window.AURA_STORIES, order = ['government', 'school', 'faith', 'nonprofit'];
+  var label = { public: 'The public', inst: 'The institution', record: 'On the record' };
+  var kind = order[0], i = 0;
+  var picker = document.getElementById('picker'), rail = document.getElementById('rail');
+  var fromHash = (location.hash || '').slice(1); if (S[fromHash]) kind = fromHash;
+  order.forEach(function (k) {
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = S[k].tab; b.dataset.k = k;
+    b.addEventListener('click', function () { kind = k; i = 0; try { history.replaceState(null, '', '#' + k); } catch (e) {} draw(); });
+    picker.appendChild(b);
+  });
+  function draw() {
+    picker.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.k === kind); });
+    document.getElementById('whois').textContent = S[kind].who;
+    rail.innerHTML = '';
+    S[kind].steps.forEach(function (s, n) {
+      var li = document.createElement('li'), b = document.createElement('button'); b.type = 'button';
+      b.innerHTML = '<span class="k">' + (n + 1) + ' · ' + s.k + '</span><span class="t"></span><span class="w w--' + s.who + '">' + label[s.who] + '</span>';
+      b.querySelector('.t').textContent = s.title;
+      b.addEventListener('click', function () { show(n); });
+      li.appendChild(b); rail.appendChild(li);
+    });
+    show(i);
+  }
+  function show(n) {
+    var steps = S[kind].steps; i = Math.max(0, Math.min(steps.length - 1, n)); var s = steps[i];
+    document.getElementById('kstep').textContent = (i + 1) + ' · ' + s.k;
+    document.getElementById('title').textContent = s.title;
+    document.getElementById('say').textContent = s.say;
+    var b = document.getElementById('badge'); b.className = 'badge badge--' + s.who; b.textContent = label[s.who];
+    var base = '/shots/' + kind + '/' + s.img;
+    document.getElementById('wide').srcset = base + '_desktop.webp';
+    var img = document.getElementById('img'); img.src = base + '_phone.webp'; img.alt = s.title + ' (Aura screen)';
+    document.getElementById('count').textContent = (i + 1) + ' of ' + steps.length;
+    document.getElementById('prev').disabled = i === 0;
+    document.getElementById('next').textContent = i === steps.length - 1 ? 'Next institution' : 'Next';
+    rail.querySelectorAll('button').forEach(function (x, m) { if (m === i) x.setAttribute('aria-current', 'step'); else x.removeAttribute('aria-current'); });
+  }
+  document.getElementById('prev').addEventListener('click', function () { show(i - 1); });
+  document.getElementById('next').addEventListener('click', function () {
+    var steps = S[kind].steps;
+    if (i < steps.length - 1) { show(i + 1); return; }
+    kind = order[(order.indexOf(kind) + 1) % order.length]; i = 0; draw();
+    window.scrollTo({ top: document.getElementById('picker').getBoundingClientRect().top + window.scrollY - 90, behavior: 'smooth' });
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight') show(i + 1);
+    if (e.key === 'ArrowLeft') show(i - 1);
+  });
+  draw();
+})();
+</script>
 </body>
 </html>
