@@ -11,7 +11,11 @@ void main() {
 
   test('taking on a topic switches it on in the same step, unless the person chooses later', () {
     expect(src.contains('bool _startNow = true;'), isTrue);
-    expect(src.contains('if (_startNow && created.id.isNotEmpty)'), isTrue);
+    expect(src.contains('if (_startNow) {'), isTrue);
+    // A missing id is an error the person sees, never a silent skip: the
+    // skip is how every topic taken on stayed off (seen live, 9 Oct 2026).
+    expect(src.contains("if (created.id.isEmpty) throw StateError('no id');"), isTrue);
+    expect(src.contains('if (_startNow && created.id.isNotEmpty)'), isFalse);
     expect(src.contains('status: ParticipationStatus.active.wire,'), isTrue);
   });
 
