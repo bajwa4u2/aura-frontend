@@ -139,7 +139,10 @@ void main() {
 
     test('the external-purchase card is behind the invitation rule', () {
       expect(src, contains('if (_mayInviteExternalPurchase(config))'));
-      expect(src, contains('_MobilePurchaseNotice(institutionId: institutionId)'));
+      expect(src, contains('const _MobilePurchaseNotice()'));
+      // Words only: the store binary carries no link out (founder, 9 Oct).
+      final card = src.substring(src.indexOf('class _MobilePurchaseNotice'));
+      expect(card.substring(0, card.indexOf('/// The calm word')), isNot(contains('launchUrl')));
       expect(src, contains('const _BillingNotInThisAppNotice()'));
     });
 

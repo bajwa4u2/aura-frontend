@@ -301,7 +301,7 @@ class _InstitutionBillingScreenState
                   ],
                 ] else ...[
                   if (_mayInviteExternalPurchase(config))
-                    _MobilePurchaseNotice(institutionId: institutionId)
+                    const _MobilePurchaseNotice()
                   else
                     const _BillingNotInThisAppNotice(),
                 ],
@@ -1108,36 +1108,25 @@ class _BillingNotInThisAppNotice extends StatelessWidget {
   }
 }
 
-/// On the US App Store: where plans are chosen, and a way there. Opens this institution's billing page in the browser, where
-/// Stripe checkout takes the payment (founder, 9 Oct 2026: "we stay with
-/// web through stripe").
+/// On the US App Store: where plans are chosen, in words only (founder,
+/// 9 Oct 2026: "links we even do not need, wording is enough"). Institutions
+/// mostly work in the browser or the Windows app, where plans are on screen.
 class _MobilePurchaseNotice extends StatelessWidget {
-  const _MobilePurchaseNotice({required this.institutionId});
-
-  final String institutionId;
+  const _MobilePurchaseNotice();
 
   @override
   Widget build(BuildContext context) {
-    final url = Uri.parse('https://auraplatform.org/institution/$institutionId/billing');
     return _FullWidthCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Choose or change your plan on the web', style: AuraText.title),
+          const Text('Plans are chosen on the web', style: AuraText.title),
           const SizedBox(height: AuraSpace.s6),
           Text(
-            'Plans, yearly billing and credit top-ups are bought on '
-            'auraplatform.org. Sign in there with this account; the plan '
-            'applies here as soon as it is paid.',
+            'An owner chooses or changes the plan, yearly billing and credit '
+            'top-ups on auraplatform.org, signed in with the same account. '
+            'The plan applies here as soon as it is paid.',
             style: AuraText.body.copyWith(height: 1.4),
-          ),
-          const SizedBox(height: AuraSpace.s14),
-          WorkspacePrimaryButton(
-            action: WorkspaceAction(
-              label: 'Open billing on the web',
-              icon: Icons.open_in_new_rounded,
-              onPressed: () => launchUrl(url, mode: LaunchMode.externalApplication),
-            ),
           ),
         ],
       ),
