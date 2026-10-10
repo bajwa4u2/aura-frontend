@@ -16,8 +16,12 @@ class ParticipationRepository {
   Future<List<InstitutionParticipation>> list(String institutionId) async {
     final res = await _dio.get('/institutions/$institutionId/participation');
     final root = _unwrap(res.data);
-    final raw = (root['data'] ?? root['items'] ?? root) as dynamic;
-    final items = raw is List ? raw : (raw is Map ? [raw] : <dynamic>[]);
+    // The server answers `{ ok, participations: [...] }` (seen live, 9 Oct
+    // 2026). Reading only `data`/`items` turned the whole envelope into one
+    // record: "Unknown topic · Responding · Inactive" in place of the four
+    // real topics. An envelope is never itself a record.
+    final raw = (root['participations'] ?? root['data'] ?? root['items']) as dynamic;
+    final items = raw is List ? raw : <dynamic>[];
     return items
         .whereType<Map>()
         .map((e) => InstitutionParticipation.fromJson(
@@ -44,9 +48,15 @@ class ParticipationRepository {
       '/institutions/$institutionId/participation',
       data: payload,
     );
-    final root = _unwrap(res.data);
-    final record = root['data'] ?? root;
-    return InstitutionParticipation.fromJson(_unwrap(record));
+    return InstitutionParticipation.fromJson(_record(res.data));
+  }
+
+  /// One record from `{ ok, participation: {...} }`. Reading the envelope as
+  /// the record lost the new topic's id, so "start answering now" had no id
+  /// to switch on and every topic taken on stayed inactive (9 Oct 2026).
+  Map<String, dynamic> _record(dynamic body) {
+    final root = _unwrap(body);
+    return _unwrap(root['participation'] ?? root['data'] ?? root);
   }
 
   Future<InstitutionParticipation> updateStatus({
@@ -58,8 +68,6 @@ class ParticipationRepository {
       '/institutions/$institutionId/participation/$participationId',
       data: {'status': status},
     );
-    final root = _unwrap(res.data);
-    final record = root['data'] ?? root;
-    return InstitutionParticipation.fromJson(_unwrap(record));
+    return InstitutionParticipation.fromJson(_record(res.data));
   }
 }

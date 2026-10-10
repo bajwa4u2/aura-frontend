@@ -60,7 +60,7 @@ class ParticipationScreen extends ConsumerWidget {
       // No icon: a compact header would otherwise show a bare "+".
       primary: WorkspaceAction(
         label: 'Take on a topic',
-        onPressed: () => _showCreateSheet(context, ref),
+        onPressed: () => _showCreateSheet(context, ref, list),
       ),
       loading: async.isLoading && !async.hasValue,
       children: [
@@ -85,7 +85,7 @@ class ParticipationScreen extends ConsumerWidget {
             action: WorkspaceAction(
               label: 'Take on a topic',
               icon: Icons.add_rounded,
-              onPressed: () => _showCreateSheet(context, ref),
+              onPressed: () => _showCreateSheet(context, ref, list),
             ),
           )
         else
@@ -98,7 +98,11 @@ class ParticipationScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _showCreateSheet(BuildContext context, WidgetRef ref) async {
+  Future<void> _showCreateSheet(
+    BuildContext context,
+    WidgetRef ref,
+    List<InstitutionParticipation> current,
+  ) async {
     final created = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -111,6 +115,7 @@ class ParticipationScreen extends ConsumerWidget {
       builder: (_) => _CreateParticipationSheet(
         institutionId: institutionId,
         repo: ref.read(participationRepositoryProvider),
+        taken: {for (final p in current) if (p.topic != null) p.topic!},
       ),
     );
     if (created == true) {
@@ -351,10 +356,15 @@ class _CreateParticipationSheet extends StatefulWidget {
   const _CreateParticipationSheet({
     required this.institutionId,
     required this.repo,
+    this.taken = const {},
   });
 
   final String institutionId;
   final ParticipationRepository repo;
+
+  /// Topics the institution already has: shown, not offered again (each
+  /// topic is held once; a second try was refused with a 409 nobody saw).
+  final Set<AuraTopic> taken;
 
   @override
   State<_CreateParticipationSheet> createState() =>
@@ -363,7 +373,11 @@ class _CreateParticipationSheet extends StatefulWidget {
 
 class _CreateParticipationSheetState
     extends State<_CreateParticipationSheet> {
-  AuraTopic? _topic;
+  /// Several topics at once (founder, 9 Oct 2026), all with one mode.
+  final Set<AuraTopic> _topics = {};
+
+  /// The last one tapped, whose description is shown.
+  AuraTopic? _lastTapped;
   ParticipationMode _mode = ParticipationMode.accountable;
   final _notesController = TextEditingController();
   bool _saving = false;
@@ -379,58 +393,71 @@ class _CreateParticipationSheetState
   bool _startNow = true;
 
   Future<void> _save() async {
-    if (_topic == null) {
-      setState(() => _error = 'Select a topic to continue.');
+    if (_topics.isEmpty) {
+      setState(() => _error = 'Choose at least one topic.');
       return;
     }
     setState(() {
       _saving = true;
       _error = null;
     });
-    try {
-      final created = await widget.repo.create(
-        institutionId: widget.institutionId,
-        topic: _topic!.wire,
-        mode: _mode.wire,
-        notes: _notesController.text.trim().isEmpty
-            ? null
-            : _notesController.text.trim(),
-      );
-      // A new topic is created switched off; it used to wait behind a
-      // "Reactivate" button nobody knew to press (2026-10-09). Taking it on
-      // switches it on in the same step unless the person chose later.
-      if (_startNow && created.id.isNotEmpty) {
-        await widget.repo.updateStatus(
+    final notes = _notesController.text.trim().isEmpty ? null : _notesController.text.trim();
+    final failed = <String>[];
+    final done = <AuraTopic>[];
+    for (final topic in _topics.toList()) {
+      try {
+        final created = await widget.repo.create(
           institutionId: widget.institutionId,
-          participationId: created.id,
-          status: ParticipationStatus.active.wire,
+          topic: topic.wire,
+          mode: _mode.wire,
+          notes: notes,
         );
+        // A new topic is created switched off; taking it on switches it on
+        // in the same step unless the person chose later (2026-10-09).
+        if (_startNow) {
+          if (created.id.isEmpty) throw StateError('no id');
+          await widget.repo.updateStatus(
+            institutionId: widget.institutionId,
+            participationId: created.id,
+            status: ParticipationStatus.active.wire,
+          );
+        }
+        done.add(topic);
+      } catch (e) {
+        failed.add('${topic.label}: ${_reason(e)}');
       }
-      if (!mounted) return;
+    }
+    if (!mounted) return;
+    if (failed.isEmpty) {
       Navigator.of(context).pop(true);
-    } on DioException catch (e) {
+      return;
+    }
+    setState(() {
+      _topics.removeAll(done);
+      _saving = false;
+      _error = done.isEmpty
+          ? failed.join('\n')
+          : '${done.length} taken on. Not taken on:\n${failed.join('\n')}';
+    });
+  }
+
+  String _reason(Object e) {
+    if (e is DioException) {
       final data = e.response?.data;
-      String? msg;
       if (data is Map) {
         final err = data['error'];
-        msg = (err is Map ? err['message'] : data['message'])?.toString();
+        final msg = (err is Map ? err['message'] : data['message'])?.toString();
+        if (msg != null && msg.isNotEmpty) return msg;
       }
-      setState(() {
-        _error = msg ?? e.message ?? 'Could not save declaration.';
-        _saving = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _saving = false;
-      });
+      return 'it could not be saved just now';
     }
+    return 'it could not be switched on';
   }
 
   @override
   Widget build(BuildContext context) {
     final pad = MediaQuery.of(context).viewInsets.bottom;
-    final topicHint = _topic != null ? _kTopicHints[_topic] : null;
+    final topicHint = _lastTapped != null && _topics.contains(_lastTapped) ? _kTopicHints[_lastTapped] : null;
 
     return SafeArea(
       child: Padding(
@@ -501,9 +528,11 @@ class _CreateParticipationSheetState
               const _SectionLabel('TOPIC'),
               const SizedBox(height: AuraSpace.s8),
               _TopicPicker(
-                selected: _topic,
-                onChanged: (t) => setState(() {
-                  _topic = t;
+                selected: _topics,
+                taken: widget.taken,
+                onToggle: (t) => setState(() {
+                  if (!_topics.remove(t)) _topics.add(t);
+                  _lastTapped = t;
                   _error = null;
                 }),
               ),
@@ -594,6 +623,13 @@ class _CreateParticipationSheetState
                 ),
               ),
               const SizedBox(height: AuraSpace.s8),
+              // Beside the button, where the person is looking (the banner
+              // at the top was scrolled out of view, so a refusal looked
+              // like nothing happening; seen live, 9 Oct 2026).
+              if (_error != null) ...[
+                Text(_error!, style: AuraText.small.copyWith(color: AuraSurface.coRose, height: 1.5)),
+                const SizedBox(height: AuraSpace.s8),
+              ],
               FilledButton(
                 onPressed: _saving ? null : _save,
                 style: FilledButton.styleFrom(
@@ -611,7 +647,11 @@ class _CreateParticipationSheetState
                           color: Colors.white,
                         ),
                       )
-                    : Text(_startNow ? 'Take it on and start answering' : 'Save, start later'),
+                    : Text(_topics.length > 1
+                        ? (_startNow
+                            ? 'Take on ${_topics.length} topics and start answering'
+                            : 'Save ${_topics.length} topics, start later')
+                        : (_startNow ? 'Take it on and start answering' : 'Save, start later')),
               ),
             ],
           ),
@@ -640,10 +680,11 @@ class _SectionLabel extends StatelessWidget {
 }
 
 class _TopicPicker extends StatelessWidget {
-  const _TopicPicker({required this.selected, required this.onChanged});
+  const _TopicPicker({required this.selected, required this.onToggle, this.taken = const {}});
 
-  final AuraTopic? selected;
-  final void Function(AuraTopic?) onChanged;
+  final Set<AuraTopic> selected;
+  final Set<AuraTopic> taken;
+  final void Function(AuraTopic) onToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -651,9 +692,30 @@ class _TopicPicker extends StatelessWidget {
       spacing: AuraSpace.s8,
       runSpacing: AuraSpace.s8,
       children: AuraTopic.values.map((t) {
-        final isSelected = selected == t;
+        final isSelected = selected.contains(t);
+        if (taken.contains(t)) {
+          // Already one of the institution's topics: shown, not offered.
+          return Tooltip(
+            message: 'Already yours. Switch it on or off on the Topics page.',
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s10, vertical: 6),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AuraRadius.pill),
+                border: Border.all(color: AuraSurface.divider),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.check_rounded, size: 14, color: AuraSurface.faint),
+                  const SizedBox(width: 4),
+                  Text(t.label, style: AuraText.small.copyWith(color: AuraSurface.faint)),
+                ],
+              ),
+            ),
+          );
+        }
         return GestureDetector(
-          onTap: () => onChanged(isSelected ? null : t),
+          onTap: () => onToggle(t),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 100),
             padding: const EdgeInsets.symmetric(
