@@ -107,7 +107,7 @@
     </div>
     <p class="small">Free for the public, permanently. Institutions pay by the staff who speak for them.</p>
   </div>
-  <div class="phone"><img src="/shots/government/04_commitment_phone.webp" alt="A resident's question on Aura with the city's official answer and a commitment with its due date."></div>
+  <div class="phone"><img src="/shots/government/04_commitment_phone.webp?v=20261010b" alt="A resident's question on Aura with the city's official answer and a commitment with its due date."></div>
 </div></section>
 
 <section><div class="wrap">
@@ -125,10 +125,10 @@
   <p class="eyebrow">How it works</p>
   <h2 style="margin-top:12px">One question, from the public to the record.</h2>
   <div class="steps">
-    <div class="step"><span class="n">01 · ASKED</span><img src="/shots/government/01_ask_phone.webp" alt="A resident asks the city a question in public."><h3>Someone asks, in public</h3><p>A resident asks why the consultation summary is three weeks late. Anyone can read it.</p></div>
-    <div class="step"><span class="n">02 · ARRIVES</span><img src="/shots/government/02_desk_phone.webp" alt="The city's Desk with the question waiting."><h3>It reaches the Desk</h3><p>The question arrives on the institution's Desk by topic, oldest first, with everything else waiting.</p></div>
-    <div class="step"><span class="n">03 · ANSWERED</span><img src="/shots/government/03_answer_phone.webp" alt="The answer written beside the question, with what the city said before."><h3>Answered as the institution</h3><p>Written beside the question, with what was said before in view, and a due date when it commits.</p></div>
-    <div class="step"><span class="n">04 · ON THE RECORD</span><img src="/shots/government/06_record_phone.webp" alt="The city's public answer record."><h3>Kept on the record</h3><p>The asker sees who answered. The public sees the commitment and whether it was kept.</p></div>
+    <div class="step"><span class="n">01 · ASKED</span><img src="/shots/government/01_ask_phone.webp?v=20261010b" alt="A resident asks the city a question in public."><h3>Someone asks, in public</h3><p>A resident asks why the consultation summary is three weeks late. Anyone can read it.</p></div>
+    <div class="step"><span class="n">02 · ARRIVES</span><img src="/shots/government/02_desk_phone.webp?v=20261010b" alt="The city's Desk with the question waiting."><h3>It reaches the Desk</h3><p>The question arrives on the institution's Desk by topic, oldest first, with everything else waiting.</p></div>
+    <div class="step"><span class="n">03 · ANSWERED</span><img src="/shots/government/03_answer_phone.webp?v=20261010b" alt="The answer written beside the question, with what the city said before."><h3>Answered as the institution</h3><p>Written beside the question, with what was said before in view, and a due date when it commits.</p></div>
+    <div class="step"><span class="n">04 · ON THE RECORD</span><img src="/shots/government/06_record_phone.webp?v=20261010b" alt="The city's public answer record."><h3>Kept on the record</h3><p>The asker sees who answered. The public sees the commitment and whether it was kept.</p></div>
   </div>
 </div></section>
 
@@ -207,7 +207,7 @@
     var p=document.createElement('div'); p.className='panel'; p.setAttribute('role','tabpanel'); p.id='p-'+k.id; p.setAttribute('aria-labelledby','t-'+k.id); if(i)p.hidden=true;
     p.innerHTML='<dl><div><dt>Your public</dt><dd></dd></div><div><dt>Who</dt><dd></dd></div><div><dt>What they ask about</dt><dd></dd></div><p class="quote"></p></dl><div class="phone"><img alt=""></div>';
     var dd=p.querySelectorAll('dd'); dd[0].textContent=k.pub; dd[1].textContent=k.who; dd[2].textContent=k.asks; p.querySelector('.quote').textContent='“'+k.quote+'”';
-    if(k.shot){var im=p.querySelector('img'); im.src='/shots/'+k.shot+'/02_desk_phone.webp'; im.alt='The Desk of '+k.name.toLowerCase()+' on Aura.';} else {p.querySelector('.phone').remove(); p.style.gridTemplateColumns='1fr';}
+    if(k.shot){var im=p.querySelector('img'); im.src='/shots/'+k.shot+'/02_desk_phone.webp?v=20261010b'; im.alt='The Desk of '+k.name.toLowerCase()+' on Aura.';} else {p.querySelector('.phone').remove(); p.style.gridTemplateColumns='1fr';}
     panels.appendChild(p);
   });
   var all=[].slice.call(tabs.querySelectorAll('[role=tab]'));

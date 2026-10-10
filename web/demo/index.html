@@ -123,7 +123,7 @@
   <span><a href="/terms">Terms</a></span>
 </div></footer>
 
-<script src="/demo/stories.js"></script>
+<script src="/demo/stories.js?v=20261010b"></script>
 <script>
 (function () {
   var S = window.AURA_STORIES, order = ['government', 'school', 'faith', 'nonprofit'];
@@ -156,8 +156,8 @@
     document.getElementById('say').textContent = s.say;
     var b = document.getElementById('badge'); b.className = 'badge badge--' + s.who; b.textContent = label[s.who];
     var base = '/shots/' + kind + '/' + s.img;
-    document.getElementById('wide').srcset = base + '_desktop.webp';
-    var img = document.getElementById('img'); img.src = base + '_phone.webp'; img.alt = s.title + ' (Aura screen)';
+    document.getElementById('wide').srcset = base + '_desktop.webp?v=20261010b';
+    var img = document.getElementById('img'); img.src = base + '_phone.webp?v=20261010b'; img.alt = s.title + ' (Aura screen)';
     document.getElementById('count').textContent = (i + 1) + ' of ' + steps.length;
     document.getElementById('prev').disabled = i === 0;
     document.getElementById('next').textContent = i === steps.length - 1 ? 'Next institution' : 'Next';
