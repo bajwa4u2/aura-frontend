@@ -1194,7 +1194,7 @@
    "token"
   ],
   "renders": true,
-  "hasRedirect": false,
+  "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
    "ShellRoute#0"
@@ -2512,6 +2512,20 @@
   ],
   "renders": true,
   "hasRedirect": false,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
+  "path": "/institution/:institutionId",
+  "segments": 2,
+  "params": [
+   "institutionId"
+  ],
+  "renders": false,
+  "hasRedirect": true,
   "childCount": 0,
   "shellChain": [
    "ShellRoute#0"

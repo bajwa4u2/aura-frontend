@@ -1846,6 +1846,13 @@ final routerProvider = Provider<GoRouter>((ref) {
           // the /i/:slug/meet/... booking namespace is 3+ segments.
           GoRoute(
             path: '/i/:token',
+            // `/i/<address>` is the booking link trimmed to its institution.
+            redirect: (context, state) {
+              final segment = state.pathParameters['token'] ?? '';
+              return isInstitutionAddressSegment(segment)
+                  ? carryQuery('/institutions/$segment', state.uri)
+                  : null;
+            },
             builder: (context, state) => ClaimInvitationScreen(
               token: state.pathParameters['token'] ?? '',
             ),
@@ -2966,6 +2973,19 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/calls/:sessionId',
             builder: (_, state) => CallDetailScreen(
               sessionId: state.pathParameters['sessionId'] ?? '',
+            ),
+          ),
+
+          // THE WORKSPACE ROOT. Declared after every `/institution/<section>`
+          // shorthand so none of them is read as an address.
+          GoRoute(
+            path: '/institution/:institutionId',
+            redirect: (context, state) => carryQuery(
+              institutionRootDestination(
+                ref.read(institutionAuthoritySnapshotProvider),
+                state.pathParameters['institutionId'] ?? '',
+              ),
+              state.uri,
             ),
           ),
         ],
