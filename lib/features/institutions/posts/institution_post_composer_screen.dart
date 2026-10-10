@@ -223,6 +223,14 @@ class _InstitutionPostComposerScreenState
     }
   }
 
+  static AttachmentKind _attachmentKindOf(FeedMedia m) {
+    final type = (m.mediaType ?? '').toUpperCase();
+    final mime = (m.mimeType ?? '').toLowerCase();
+    if (type == 'VIDEO' || mime.startsWith('video/')) return AttachmentKind.video;
+    if (type == 'AUDIO' || mime.startsWith('audio/')) return AttachmentKind.audio;
+    return AttachmentKind.image;
+  }
+
   void _applyInitialPost(InstitutionPost initial) {
     final decoded = InsCommunicationDecoded.parse(initial.title);
     _titleCtrl.text = decoded.hadMarker ? decoded.cleanTitle : initial.title;
@@ -233,6 +241,31 @@ class _InstitutionPostComposerScreenState
     );
     _bodyCtrl.text = hydrated.text;
     _mediaUrl = initial.mediaUrl;
+    // THE POST'S MEDIA IS PART OF WHAT IS BEING EDITED (10 Oct 2026).
+    // Save sends the canonical collection and the server REPLACES the post's
+    // media with it. Since e60fae55 (27 Aug) only the legacy `_mediaUrl` was
+    // loaded here, so the collection started empty and a text-only edit sent
+    // `media: []`, unlinking the post's video. Load it, in the post's order.
+    final existing = [...initial.media]
+      ..sort((a, b) => a.position.compareTo(b.position));
+    _media
+      ..clear()
+      ..addAll([
+        for (final m in existing)
+          if (m.mediaId.trim().isNotEmpty)
+            Attachment(
+              localId: 'existing-${m.mediaId.trim()}',
+              kind: _attachmentKindOf(m),
+              mediaId: m.mediaId.trim(),
+              url: m.url,
+              thumbUrl: m.thumbUrl,
+              mimeType: m.mimeType,
+              width: m.width,
+              height: m.height,
+            ),
+      ]);
+    _mediaComposition = _mediaComposition.copyWith(attachments: [..._media]);
+    if (_media.isNotEmpty) _syncTransitionalMediaFields();
     // Compose Link Intelligence / OG Preview -- Phase 1. Hydrate directly
     // from the already-resolved post fields rather than waiting on a
     // fresh resolve() round trip.

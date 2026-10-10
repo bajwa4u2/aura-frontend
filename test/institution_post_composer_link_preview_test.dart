@@ -124,6 +124,95 @@ void main() {
       await tester.pump();
     },
   );
+
+  // 10 Oct 2026: since e60fae55 (27 Aug) Save sends the canonical `media`
+  // collection and the server REPLACES the post's media with it, but editing
+  // never loaded the post's media into that collection. A text-only edit sent
+  // `media: []` and unlinked the video.
+  testWidgets(
+    'institution edit: a text-only edit keeps the post\'s existing media, in order',
+    (tester) async {
+      _useLargeSurface(tester);
+      final saved = <Map<String, dynamic>>[];
+      final dio = _institutionComposeDio(saved: saved, resolveCalls: []);
+
+      const initial = InstitutionPost(
+        id: 'ip1',
+        institutionId: 'inst-1',
+        authorUserId: 'user-1',
+        title: 'Existing post',
+        body: 'Existing body text',
+        visibility: InstitutionPostVisibility.publicAll,
+        distribution: InstitutionPostDistribution.globalEligible,
+        status: InstitutionPostStatus.published,
+        primaryTopic: 'TECHNOLOGY',
+        media: [
+          FeedMedia(
+            id: 'link-2',
+            mediaId: 'm-photo',
+            position: 1,
+            mediaType: 'IMAGE',
+            mimeType: 'image/jpeg',
+          ),
+          FeedMedia(
+            id: 'link-1',
+            mediaId: 'm-film',
+            position: 0,
+            visibility: 'RESTRICTED',
+            mediaType: 'VIDEO',
+            mimeType: 'video/mp4',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(_wrap(dio, initial: initial));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).at(1), 'Corrected body text');
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Save changes'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save changes'));
+      await tester.pumpAndSettle();
+
+      expect(saved, isNotEmpty);
+      expect(saved.last['body'], 'Corrected body text');
+      expect(saved.last['media'], [
+        {'mediaId': 'm-film', 'position': 0},
+        {'mediaId': 'm-photo', 'position': 1},
+      ]);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      // The strip previews the loaded items through the signed-URL resolver,
+      // which this fake server does not answer; let its 10 s cooldown lapse.
+      await tester.pump(const Duration(seconds: 11));
+    },
+  );
+
+  testWidgets(
+    'institution edit: a post with no media still saves an empty collection',
+    (tester) async {
+      _useLargeSurface(tester);
+      final saved = <Map<String, dynamic>>[];
+      final dio = _institutionComposeDio(saved: saved, resolveCalls: []);
+
+      await tester.pumpWidget(_wrap(dio, initial: _editableInitial()));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Save changes'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save changes'));
+      await tester.pumpAndSettle();
+
+      expect(saved, isNotEmpty);
+      expect(saved.last['media'], isEmpty);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    },
+  );
 }
 
 InstitutionPost _editableInitial() {
