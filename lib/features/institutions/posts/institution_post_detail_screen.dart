@@ -24,7 +24,7 @@ import '../../public/widgets/mention_text.dart';
 import '../../../core/utils/relative_time.dart';
 import '../../posts/data/reactions_repository.dart';
 import '../../updates/providers.dart';
-import '../data/institutions_repository.dart';
+import 'institution_post_owner_actions.dart';
 import '../domain/communication_type.dart';
 import '../ui/institution_ds.dart';
 import '../../../core/institutions/institution_paths.dart';
@@ -80,10 +80,7 @@ class _InstitutionPostDetailScreenState
     // authorized speaker) of THIS institution may edit or delete its
     // posts. Public and cross-institution viewers have no matching
     // identity → no controls. The backend re-checks authority on write.
-    final canGovern =
-        identity != null &&
-        identity.id == institutionId &&
-        identity.canPublishPosts;
+    final canGovern = governsInstitutionPosts(identity, institutionId);
 
     final args = FeedItemDetailArgs(
       type: FeedItemType.institutionPost,
@@ -110,70 +107,13 @@ class _InstitutionPostDetailScreenState
     }
 
     Future<void> onDelete() async {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: AuraSurface.card,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AuraRadius.card),
-          ),
-          title: const Text('Delete this post', style: AuraText.subtitle),
-          content: Text(
-            'This removes the post from every feed and its public link. '
-            'This cannot be undone.',
-            style: AuraText.body.copyWith(color: AuraSurface.muted),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: Text(
-                'Cancel',
-                style: AuraText.small.copyWith(color: AuraSurface.muted),
-              ),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: Text(
-                'Delete',
-                style: AuraText.small.copyWith(
-                  color: AuraSurface.coRose,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
+      final deleted = await confirmAndDeleteInstitutionPost(
+        context,
+        ref,
+        institutionId: institutionId,
+        postId: postId,
       );
-      if (confirmed != true) return;
-      try {
-        await ref
-            .read(institutionsRepositoryProvider)
-            .deleteInstitutionPost(institutionId, postId);
-        // Remove the post from every feed surface so no orphaned card
-        // remains, then drop the detail cache.
-        invalidateUnifiedFeedSurfaces(ref);
-        ref.invalidate(feedItemDetailProvider(args));
-        if (context.mounted) {
-          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-            const SnackBar(
-              content: Text('Post removed'),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-          if (context.canPop()) context.pop();
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-            SnackBar(
-              content: Text(
-                AppErrorMapper.from(e, feature: 'delete this post').message,
-              ),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      }
+      if (deleted) ref.invalidate(feedItemDetailProvider(args));
     }
 
     // DD-43: a Record page. "Back to Posts", Reply as the one gold
@@ -192,7 +132,7 @@ class _InstitutionPostDetailScreenState
           WorkspaceAction(
             label: 'Edit',
             icon: Icons.edit_outlined,
-            onPressed: () => context.push('/institution/$institutionId/posts/$postId/edit'),
+            onPressed: () => context.push(institutionPostEditPath(institutionId, postId)),
           ),
           WorkspaceAction(label: 'Delete', icon: Icons.delete_outline_rounded, destructive: true, onPressed: onDelete),
         ],

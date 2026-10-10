@@ -41,6 +41,7 @@ import '../domain/feed_item.dart';
 import 'feed_interaction_bar.dart';
 import '../../posts/presentation/widgets/post_card.dart'
     show viewerIdentityProvider;
+import '../../institutions/posts/institution_post_owner_actions.dart';
 import '../../posts/presentation/widgets/post_card/post_owner_actions.dart';
 
 /// Single render path for every feed surface.
@@ -833,9 +834,9 @@ ReactionTarget? _replyReactionTargetFor(FeedItem parent, String replyId) {
 
 /// OWNER ACTIONS ON THE CARD THE PERSON ACTUALLY MEETS THEIR POST ON.
 ///
-/// Scoped to the viewer's own user posts. The other three feed types are
-/// somebody else's decision and already have an authority: an institution
-/// post is governed by institution role and enforced on its detail screen, an
+/// Scoped to the viewer's own user posts, and to institution posts the viewer
+/// governs (by the same rule as the post's own page). The rest are somebody
+/// else's decision and already have an authority: an
 /// announcement is administered and withdrawable from its own detail, and an
 /// article is RETRACTED rather than deleted on purpose -- offering "Delete"
 /// here would promise destruction the article flow does not perform.
@@ -857,7 +858,21 @@ extension _UnifiedFeedCardOwnerActions on UnifiedFeedCard {
         viewerId.isNotEmpty &&
         authorId.isNotEmpty &&
         authorId == viewerId;
-    if (!isOwnUserPost) return _reportActions(context, ref, viewerId);
+    if (!isOwnUserPost) {
+      // AN INSTITUTION'S OWN POST IS NOT THEIRS TO REPORT. Those who govern
+      // it were offered only "Report" here (10 Oct 2026); they get the same
+      // Edit and Delete its own page gives them, under the same rule.
+      final institutionId = authorId;
+      if (item.type == FeedItemType.institutionPost &&
+          item.authorType == FeedAuthorType.institution &&
+          governsInstitutionPosts(
+            ref.watch(institutionIdentityProvider),
+            institutionId,
+          )) {
+        return _institutionPostActions(context, ref, institutionId);
+      }
+      return _reportActions(context, ref, viewerId);
+    }
 
     final postId = item.id.trim();
     if (postId.isEmpty) return null;
@@ -880,6 +895,41 @@ extension _UnifiedFeedCardOwnerActions on UnifiedFeedCard {
             confirmAndDeletePost(
               context,
               ref,
+              postId: postId,
+              leaveSurfaceOnSuccess: false,
+            ),
+          );
+        }
+      },
+    );
+  }
+}
+
+extension _UnifiedFeedCardInstitutionActions on UnifiedFeedCard {
+  Widget? _institutionPostActions(
+    BuildContext context,
+    WidgetRef ref,
+    String institutionId,
+  ) {
+    final postId = item.id.trim();
+    if (postId.isEmpty) return null;
+    return PopupMenuButton<String>(
+      tooltip: 'Manage this post',
+      padding: EdgeInsets.zero,
+      icon: const Icon(Icons.more_horiz, size: 20, color: AuraSurface.faint),
+      itemBuilder: (context) => const [
+        PopupMenuItem<String>(value: 'edit', child: Text('Edit post')),
+        PopupMenuItem<String>(value: 'delete', child: Text('Delete post')),
+      ],
+      onSelected: (choice) {
+        if (choice == 'edit') {
+          context.push(institutionPostEditPath(institutionId, postId));
+        } else if (choice == 'delete') {
+          unawaited(
+            confirmAndDeleteInstitutionPost(
+              context,
+              ref,
+              institutionId: institutionId,
               postId: postId,
               leaveSurfaceOnSuccess: false,
             ),

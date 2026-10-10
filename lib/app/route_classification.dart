@@ -245,6 +245,10 @@ bool isMemberShellPath(String path) {
       // chrome, never workspace chrome. Classified explicitly so a refresh on
       // this address reconstructs it instead of falling through unknown.
       path == '/institution/standing' ||
+      // The bare institution address, `/institution/<address>`: the workspace
+      // root. It only redirects (to the Desk for those who hold it, to the
+      // public page for everyone else), and holding is membership.
+      _isInstitutionWorkspaceRoot(path) ||
       // CH-12 E6 — the restricted-attachment surface. MEMBER, not public: it
       // is reached from a quarantine notice addressed to one person, and the
       // server shows nothing at all to a caller without standing. Classifying
@@ -534,4 +538,13 @@ InstitutionRoutePolicy institutionRoutePolicyFor(String path) {
     return InstitutionRoutePolicy.notInstitutional;
   }
   return kInstitutionSectionPolicy[section] ?? InstitutionRoutePolicy.admin;
+}
+
+bool _isInstitutionWorkspaceRoot(String path) {
+  final segments = path.split('?').first.split('/')
+    ..removeWhere((s) => s.isEmpty);
+  return segments.length == 2 &&
+      segments.first == 'institution' &&
+      segments[1] != 'sign-in' &&
+      institutionAddressedIn(path);
 }

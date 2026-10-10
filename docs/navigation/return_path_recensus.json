@@ -2123,6 +2123,17 @@
   "verdict": "COMPLIANT"
  },
  {
+  "route": "/institution/:institutionId",
+  "sample": "/institution/x-institutionid",
+  "renders": false,
+  "protected": false,
+  "deepLinkSemantic": "deepLinkFallback",
+  "deepLinkDestination": "/institution/x-institutionid/explore",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "NOT_A_SURFACE"
+ },
+ {
   "route": "/meetings/:meetingId/live",
   "sample": "/meetings/x-meetingid/live",
   "renders": true,

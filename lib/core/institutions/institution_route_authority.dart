@@ -459,3 +459,40 @@ const String kInstitutionDenialDestination =
 /// said no. The selector/standing surface is the honest answer.
 const String kInstitutionNoAffiliationDestination =
     '$kInstitutionStandingRoute?reason=no-affiliation';
+
+/// WHERE `/institution/:address` LEADS — the workspace root had no route.
+///
+/// Classification has always named the bare address the workspace root
+/// (membership), but nothing declared it, so it rendered "Route not found"
+/// (found 10 Oct 2026 typing `/institution/aura-platform-llc`). A person who
+/// holds the institution arrives at its front door, the Desk; anyone else is
+/// shown the institution's public page rather than a workspace they cannot
+/// enter. While authority is still resolving the Desk is chosen, because its
+/// own gate waits and then decides.
+String institutionRootDestination(
+  InstitutionAuthoritySnapshot snapshot,
+  String segment,
+) {
+  final raw = segment.trim();
+  final address = resolveInstitutionAddress(snapshot, raw);
+  final encoded = Uri.encodeComponent(raw);
+  if (address != null) {
+    return '/institution/${Uri.encodeComponent(address.canonicalSlug)}/desk';
+  }
+  if (!snapshot.resolved) return '/institution/$encoded/desk';
+  return '/institutions/$encoded';
+}
+
+/// Whether a single `/i/<segment>` names an institution rather than carrying
+/// an invitation claim.
+///
+/// Claim tokens are 32 random bytes in base64url: 43 characters, and in
+/// practice never only lower-case letters, digits and hyphens. An institution
+/// address is exactly that shape (`institution-slug.authority.ts`). The
+/// booking link people carry is `/i/<address>/meet/<page>`, so trimming it to
+/// `/i/<address>` must reach the institution, not "This invitation is not
+/// valid".
+bool isInstitutionAddressSegment(String segment) {
+  if (segment.length == 43) return false;
+  return RegExp(r'^[a-z0-9]([a-z0-9-]*[a-z0-9])?$').hasMatch(segment);
+}
