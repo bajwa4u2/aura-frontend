@@ -877,7 +877,11 @@ class AuraVideoMedia extends ConsumerWidget {
                 borderRadius: borderRadius,
               );
             }
-            if (poster != null && poster.isLoading) return _loading();
+            // Only the first answer is waited for. A poster re-asked before
+            // its link expires must not swap a playing film for a spinner.
+            if (poster != null && poster.isLoading && !poster.hasValue) {
+              return _loading();
+            }
             return _surface(url, poster: poster?.valueOrNull);
           },
           loading: _loading,

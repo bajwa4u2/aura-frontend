@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../net/dio_provider.dart';
@@ -289,14 +290,41 @@ final mediaUrlResolverProvider = Provider<MediaUrlResolver>(
   (ref) => MediaUrlResolver(ref.watch(dioProvider)),
 );
 
-/// One-shot future provider for a specific media id. Re-watch this to
-/// refresh after expiry; AuraResolvableAttachmentImage does that
-/// automatically when [MediaUrlResult.isStale] returns true.
+/// A SIGNED LINK HELD PAST ITS EXPIRY.
+///
+/// The resolver checks [MediaUrlResult.isStale] only when it is asked, and
+/// these providers are kept alive and never re-asked: a feed card that
+/// scrolled away and back after ten minutes was rebuilt from the same answer,
+/// its poster and its video both pointing at a link storage now refuses
+/// (founder, 2026-10-10: "it show broken image after one another refresh
+/// scrole"). So each answer re-asks itself once it turns stale. A surface
+/// already playing keeps its controller; only the next build uses the new
+/// link.
+@visibleForTesting
+Duration? mediaLinkRefreshDelay(DateTime? expiresAt, {DateTime? now}) {
+  if (expiresAt == null) return null;
+  // One second past the point isStale() turns true, or the resolver would
+  // hand back the same link.
+  final staleAt = expiresAt.subtract(const Duration(seconds: 29));
+  final delay = staleAt.difference(now ?? DateTime.now());
+  return delay.isNegative ? Duration.zero : delay;
+}
+
+void _refreshWhenStale(Ref ref, MediaUrlResult result) {
+  final delay = mediaLinkRefreshDelay(result.expiresAt);
+  if (delay == null) return;
+  final timer = Timer(delay, ref.invalidateSelf);
+  ref.onDispose(timer.cancel);
+}
+
+/// The current link for a specific media id, re-asked before it expires.
 final mediaUrlProvider = FutureProvider.family<MediaUrlResult, String>((
   ref,
   mediaId,
-) {
-  return ref.watch(mediaUrlResolverProvider).resolve(mediaId);
+) async {
+  final result = await ref.watch(mediaUrlResolverProvider).resolve(mediaId);
+  _refreshWhenStale(ref, result);
+  return result;
 });
 
 /// THE SERVER POSTER OF A VIDEO THE FEED COULD NOT NAME.
@@ -317,6 +345,7 @@ final mediaPosterUrlProvider = FutureProvider.family<String?, String>((
     final result = await ref
         .watch(mediaUrlResolverProvider)
         .resolve(mediaId, variant: 'thumb');
+    _refreshWhenStale(ref, result);
     final url = result.url.trim();
     return result.servedVariant == 'thumb' && url.isNotEmpty ? url : null;
   } catch (_) {
