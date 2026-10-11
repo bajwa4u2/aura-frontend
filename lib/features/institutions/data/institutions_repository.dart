@@ -1066,7 +1066,9 @@ class InstitutionsRepository {
   ) async {
     final res = await _dio.get(
       '/institutions/${institutionId.trim()}/posts',
-      queryParameters: {'status': 'SCHEDULED', 'scope': 'internal', 'limit': 50},
+      // No scope: a scope picks EXACTLY one visibility, and the queue is every
+      // scheduled post the caller may read (production, 2026-10-11).
+      queryParameters: {'status': 'SCHEDULED', 'limit': 50},
     );
     final body = res.data;
     final items = <InstitutionPost>[];

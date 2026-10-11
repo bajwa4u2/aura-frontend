@@ -171,11 +171,27 @@ void main() {
       expect(ScheduleCheck.fromJson(null), isNull);
     });
 
-    test('the Desk reads SCHEDULED and holds it under Drafts', () {
+    test('the Desk reads SCHEDULED as its own tab, not a draft', () {
       final type = DeskItemType.fromWire('SCHEDULED');
       expect(type, DeskItemType.scheduled);
-      expect(DeskTab.drafts.holds(type), isTrue);
+      expect(DeskTab.scheduled.holds(type), isTrue);
+      // Production, 2026-10-11: "Drafts 2" counted two scheduled posts.
+      expect(DeskTab.drafts.holds(type), isFalse);
       expect(DeskTab.questions.holds(type), isFalse);
+    });
+
+    test('the scheduled-posts request asks for every visibility (no scope)', () async {
+      // Production, 2026-10-11: scope=internal made the backend return only
+      // INTERNAL scheduled posts, so the tab said "Nothing scheduled".
+      final seen = <RequestOptions>[];
+      final dio = Dio()
+        ..interceptors.add(InterceptorsWrapper(onRequest: (o, h) {
+          seen.add(o);
+          h.resolve(Response(requestOptions: o, statusCode: 200, data: {'items': []}));
+        }));
+      await InstitutionsRepository(dio).listScheduledInstitutionPosts('inst1');
+      expect(seen.single.queryParameters['status'], 'SCHEDULED');
+      expect(seen.single.queryParameters.containsKey('scope'), isFalse);
     });
   });
 

@@ -173,6 +173,7 @@ class _DeskScreenState extends ConsumerState<DeskScreen> {
       DeskTab.commitments => ('No open commitments', 'When you commit to act on an issue, it stays here with its date until it is resolved.'),
       DeskTab.joinRequests => ('No join requests', 'When someone asks to join, it appears here.'),
       DeskTab.drafts => ('No drafts', 'Announcements you start and do not publish wait here.'),
+      DeskTab.scheduled => ('Nothing scheduled', 'Posts and announcements set to publish later wait here until their time.'),
       DeskTab.meetings => ('No meetings soon', 'Meetings you host or attend appear here on the day, and follow-ups assigned to you until they are done.'),
     };
     return WorkspaceEmpty(icon: Icons.inbox_outlined, title: title, body: body);

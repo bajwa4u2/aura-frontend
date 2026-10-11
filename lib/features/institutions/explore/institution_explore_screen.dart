@@ -743,7 +743,8 @@ class _ScheduledPostsListState extends ConsumerState<_ScheduledPostsList> {
   }
 
   static String _titleOf(InstitutionPost post) {
-    final t = post.title.trim();
+    // The stored title carries the communication-type marker; show the words.
+    final t = InsCommunicationDecoded.parse(post.title).cleanTitle;
     if (t.isNotEmpty) return t;
     final b = post.body.trim().replaceAll(RegExp(r'\s+'), ' ');
     if (b.isEmpty) return 'Untitled post';

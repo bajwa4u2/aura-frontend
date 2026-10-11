@@ -15,6 +15,7 @@ import '../../feed/domain/feed_media.dart';
 import '../../posts/presentation/widgets/post_card/post_card_utils.dart';
 import '../../share/aura_share_sheet.dart';
 import '../data/institutions_repository.dart';
+import '../domain/communication_type.dart';
 import '../institution_words.dart';
 import '../workspace/workspace_page.dart';
 import '../workspace/workspace_row_menu.dart';
@@ -286,7 +287,7 @@ class _InstitutionAnnouncementsScreenState
   /// can be done about it.
   Widget _scheduledRow(Map<String, dynamic> ann) {
     final id = ann['id']?.toString() ?? '';
-    final title = ann['title']?.toString().trim() ?? '';
+    final title = InsCommunicationDecoded.parse(ann['title']?.toString()).cleanTitle;
     final audience = ann['audience']?.toString() ?? 'PUBLIC';
     final schedule = PublicationSchedule.fromJson(ann);
     final editPath = '/institution/${widget.institutionId}/announcements/$id/edit';
@@ -332,7 +333,7 @@ class _InstitutionAnnouncementsScreenState
   /// status pill; every act on it under the row's menu.
   Widget _row(Map<String, dynamic> ann, {bool isDraft = false}) {
     final id = ann['id']?.toString() ?? '';
-    final title = ann['title']?.toString().trim() ?? '';
+    final title = InsCommunicationDecoded.parse(ann['title']?.toString()).cleanTitle;
     final audience = ann['audience']?.toString() ?? 'PUBLIC';
     final slug = ann['slug']?.toString() ?? '';
     final kind = ann['kind']?.toString() ?? 'GENERAL';

@@ -48,6 +48,7 @@ enum DeskTab {
   commitments('commitments', 'Commitments'),
   joinRequests('joinRequests', 'Join requests'),
   drafts('drafts', 'Drafts'),
+  scheduled('scheduled', 'Scheduled'),
   meetings('meetings', 'Meetings');
 
   const DeskTab(this.wire, this.label);
@@ -59,7 +60,8 @@ enum DeskTab {
         DeskTab.questions => t == DeskItemType.question || t == DeskItemType.issue,
         DeskTab.commitments => t == DeskItemType.commitment,
         DeskTab.joinRequests => t == DeskItemType.joinRequest,
-        DeskTab.drafts => t == DeskItemType.draft || t == DeskItemType.scheduled,
+        DeskTab.drafts => t == DeskItemType.draft,
+        DeskTab.scheduled => t == DeskItemType.scheduled,
         DeskTab.meetings => t == DeskItemType.meeting || t == DeskItemType.followUp,
       };
 }
