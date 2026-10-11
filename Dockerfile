@@ -397,6 +397,15 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '    proxy_connect_timeout 5s;' \
 '  }' \
 '' \
+'  # The public home page is the app shell itself, served here as' \
+'  # /index.html through the fallback below, which sets no header. The' \
+'  # exact rule above for /index.html never saw a request for /, so a' \
+'  # returning visitor could be shown an old home page after a deploy.' \
+'  location = / {' \
+'    try_files /index.html =404;' \
+'    add_header Cache-Control "no-cache";' \
+'  }' \
+'' \
 '  # Overview and Demo pages are plain HTML with stable names. Without a' \
 '  # Cache-Control header browsers reused an old copy after a deploy, so' \
 '  # a returning visitor did not see a new film. no-cache keeps etag 304s.' \
