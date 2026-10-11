@@ -8,6 +8,8 @@ enum DeskItemType {
   commitment,
   joinRequest,
   draft,
+  /// A post or announcement waiting for its scheduled time.
+  scheduled,
   meeting,
   followUp,
   unknown;
@@ -18,6 +20,7 @@ enum DeskItemType {
         'COMMITMENT' => DeskItemType.commitment,
         'JOIN_REQUEST' => DeskItemType.joinRequest,
         'DRAFT' => DeskItemType.draft,
+        'SCHEDULED' => DeskItemType.scheduled,
         'MEETING' => DeskItemType.meeting,
         'FOLLOW_UP' => DeskItemType.followUp,
         _ => DeskItemType.unknown,
@@ -56,7 +59,7 @@ enum DeskTab {
         DeskTab.questions => t == DeskItemType.question || t == DeskItemType.issue,
         DeskTab.commitments => t == DeskItemType.commitment,
         DeskTab.joinRequests => t == DeskItemType.joinRequest,
-        DeskTab.drafts => t == DeskItemType.draft,
+        DeskTab.drafts => t == DeskItemType.draft || t == DeskItemType.scheduled,
         DeskTab.meetings => t == DeskItemType.meeting || t == DeskItemType.followUp,
       };
 }

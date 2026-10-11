@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../scheduling/scheduled_publication.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -55,6 +56,13 @@ class _DeskScreenState extends ConsumerState<DeskScreen> {
         context.push('${_path(InstitutionSection.members)}?tab=requests');
       case DeskItemType.draft:
         context.push('${_path(InstitutionSection.announcements)}/${item.id}/edit');
+      case DeskItemType.scheduled:
+        // Where the schedule can be changed, published now or cancelled.
+        context.push(
+          item.meta['kind'] == 'ANNOUNCEMENT'
+              ? _path(InstitutionSection.announcements)
+              : _path(InstitutionSection.explore),
+        );
       case DeskItemType.meeting:
         // Inside the institution's own Meetings, so the workspace stays around it.
         final meeting = '${_path(InstitutionSection.meetings)}/${item.id}';
@@ -225,9 +233,25 @@ class _DeskRow extends StatelessWidget {
           const WorkspacePill(label: 'Review'),
         ),
       DeskItemType.draft => (
-          const WorkspaceIcon(Icons.edit_note_rounded),
-          'Your draft announcement · last edited ${AuraTemporal.fullShort(item.since)}',
-          const WorkspacePill(label: 'Draft'),
+          WorkspaceIcon(
+            Icons.edit_note_rounded,
+            tone: item.meta['scheduleFailed'] == true ? WorkspaceTone.problem : WorkspaceTone.neutral,
+          ),
+          item.meta['scheduleFailed'] == true
+              ? 'Your announcement was not published at its scheduled time'
+                  '${item.meta['scheduleFailureReason'] != null ? ' · ${item.meta['scheduleFailureReason']}' : ''}'
+              : 'Your draft announcement · last edited ${AuraTemporal.fullShort(item.since)}',
+          item.meta['scheduleFailed'] == true
+              ? const WorkspacePill(label: 'Not published', tone: WorkspaceTone.problem)
+              : const WorkspacePill(label: 'Draft'),
+        ),
+      DeskItemType.scheduled => (
+          const WorkspaceIcon(Icons.schedule_rounded),
+          [
+            item.meta['kind'] == 'ANNOUNCEMENT' ? 'Scheduled announcement' : 'Scheduled post',
+            if (due != null) publishesLabel(due),
+          ].join(' · '),
+          const WorkspacePill(label: 'Scheduled', tone: WorkspaceTone.waiting),
         ),
       DeskItemType.meeting => (
           WorkspaceIcon(Icons.videocam_outlined, tone: item.urgency == DeskUrgency.now ? WorkspaceTone.live : WorkspaceTone.neutral),

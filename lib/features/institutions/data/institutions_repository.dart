@@ -6,6 +6,7 @@ import '../domain/explore_feed_item.dart';
 import '../domain/institution.dart';
 import '../domain/institution_activity_event.dart';
 import '../domain/institution_post.dart';
+import '../scheduling/scheduled_publication.dart';
 
 final institutionsRepositoryProvider = Provider<InstitutionsRepository>((ref) {
   final dio = ref.watch(dioProvider);
@@ -530,7 +531,14 @@ class InstitutionsRepository {
     if (res.data is Map) {
       final root = Map<String, dynamic>.from(res.data as Map);
       final item = root['item'];
-      if (item is Map) return Map<String, dynamic>.from(item);
+      if (item is Map) {
+        // A scheduled announcement's edit comes back with what its schedule
+        // now needs; carried on the item so the composer can act on it.
+        return <String, dynamic>{
+          ...Map<String, dynamic>.from(item),
+          if (root['scheduleCheck'] != null) 'scheduleCheck': root['scheduleCheck'],
+        };
+      }
     }
     throw Exception('Unexpected response from update announcement.');
   }
@@ -1013,6 +1021,103 @@ class InstitutionsRepository {
     }
     final res = await _dio.post('/institutions/$id/posts/$pid/publish');
     return _readPost(res.data);
+  }
+
+  // -- Scheduled publication (2026-10-11) ----------------------------------
+
+  /// Publish this draft at [publishAt] (sent as UTC). The backend checks
+  /// everything publishing would, now; a 409 with INTEGRITY_ACTION_REQUIRED
+  /// means the integrity review needs an answer first.
+  Future<InstitutionPost> scheduleInstitutionPost(
+    String institutionId,
+    String postId, {
+    required DateTime publishAt,
+    String? timezone,
+  }) async {
+    final id = institutionId.trim();
+    final pid = postId.trim();
+    if (id.isEmpty || pid.isEmpty) {
+      throw Exception('Institution or post id is missing.');
+    }
+    final res = await _dio.post(
+      '/institutions/$id/posts/$pid/schedule',
+      data: {
+        'publishAt': publishAt.toUtc().toIso8601String(),
+        if (timezone != null && timezone.trim().isNotEmpty) 'timezone': timezone.trim(),
+      },
+    );
+    return _readPost(res.data);
+  }
+
+  /// Cancel a schedule; the post stays a draft.
+  Future<InstitutionPost> unscheduleInstitutionPost(
+    String institutionId,
+    String postId,
+  ) async {
+    final res = await _dio.delete(
+      '/institutions/${institutionId.trim()}/posts/${postId.trim()}/schedule',
+    );
+    return _readPost(res.data);
+  }
+
+  /// The institution's scheduled posts, soonest first.
+  Future<List<InstitutionPost>> listScheduledInstitutionPosts(
+    String institutionId,
+  ) async {
+    final res = await _dio.get(
+      '/institutions/${institutionId.trim()}/posts',
+      queryParameters: {'status': 'SCHEDULED', 'scope': 'internal', 'limit': 50},
+    );
+    final body = res.data;
+    final items = <InstitutionPost>[];
+    if (body is Map && body['items'] is List) {
+      for (final entry in (body['items'] as List).whereType<Map>()) {
+        items.add(InstitutionPost.fromJson(Map<String, dynamic>.from(entry)));
+      }
+    }
+    return items;
+  }
+
+  /// Saves an edit and returns what the backend says about the post's
+  /// schedule, if it has one: still fine, or what needs attention now.
+  Future<({InstitutionPost post, ScheduleCheck? scheduleCheck})>
+      updateInstitutionPostChecked(
+    String institutionId,
+    String postId,
+    Map<String, dynamic> payload,
+  ) async {
+    final id = institutionId.trim();
+    final pid = postId.trim();
+    if (id.isEmpty || pid.isEmpty) {
+      throw Exception('Institution or post id is missing.');
+    }
+    final res = await _dio.patch('/institutions/$id/posts/$pid', data: payload);
+    final check = res.data is Map ? ScheduleCheck.fromJson((res.data as Map)['scheduleCheck']) : null;
+    return (post: _readPost(res.data), scheduleCheck: check);
+  }
+
+  Future<void> scheduleInstitutionAnnouncement(
+    String institutionId,
+    String announcementId, {
+    required DateTime publishAt,
+    String? timezone,
+  }) async {
+    await _dio.post(
+      '/institutions/$institutionId/announcements/$announcementId/schedule',
+      data: {
+        'publishAt': publishAt.toUtc().toIso8601String(),
+        if (timezone != null && timezone.trim().isNotEmpty) 'timezone': timezone.trim(),
+      },
+    );
+  }
+
+  Future<void> unscheduleInstitutionAnnouncement(
+    String institutionId,
+    String announcementId,
+  ) async {
+    await _dio.delete(
+      '/institutions/$institutionId/announcements/$announcementId/schedule',
+    );
   }
 
   Future<Map<String, dynamic>> requestInstitutionPostIntegrityReview(

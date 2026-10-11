@@ -10,6 +10,7 @@ import '../../../../core/ui/aura_text.dart';
 import '../../announcements/integrity/announcement_integrity.dart';
 import '../../data/institutions_repository.dart';
 import '../../domain/institution_post.dart';
+import '../../scheduling/scheduled_publication.dart';
 
 /// Publisher-facing Communication Integrity Review for institution posts.
 ///
@@ -22,6 +23,10 @@ Future<bool?> showInstitutionPostIntegrityReviewSheet({
   required WidgetRef ref,
   required String institutionId,
   required String postId,
+  // Scheduled publication: when set, the sheet's last step schedules the post
+  // for this time instead of publishing it now. The review is the same.
+  DateTime? scheduleAt,
+  String? timezone,
 }) {
   return showModalBottomSheet<bool>(
     context: context,
@@ -31,6 +36,8 @@ Future<bool?> showInstitutionPostIntegrityReviewSheet({
       institutionId: institutionId,
       postId: postId,
       repo: ref.read(institutionsRepositoryProvider),
+      scheduleAt: scheduleAt,
+      timezone: timezone,
     ),
   );
 }
@@ -40,11 +47,17 @@ class _InstitutionPostIntegrityReviewSheet extends StatefulWidget {
     required this.institutionId,
     required this.postId,
     required this.repo,
+    this.scheduleAt,
+    this.timezone,
   });
 
   final String institutionId;
   final String postId;
   final InstitutionsRepository repo;
+  final DateTime? scheduleAt;
+  final String? timezone;
+
+  bool get schedules => scheduleAt != null;
 
   @override
   State<_InstitutionPostIntegrityReviewSheet> createState() =>
@@ -132,6 +145,24 @@ class _InstitutionPostIntegrityReviewSheetState
       _busy = true;
       _error = null;
     });
+    if (widget.schedules) {
+      try {
+        await widget.repo.scheduleInstitutionPost(
+          widget.institutionId,
+          widget.postId,
+          publishAt: widget.scheduleAt!,
+          timezone: widget.timezone,
+        );
+        if (!mounted) return;
+        Navigator.of(context).pop(true);
+      } catch (e) {
+        setState(() {
+          _error = _errorMessage(e, 'Could not schedule.');
+          _busy = false;
+        });
+      }
+      return;
+    }
     try {
       final post = await widget.repo.publishInstitutionPost(
         widget.institutionId,
@@ -182,7 +213,9 @@ class _InstitutionPostIntegrityReviewSheetState
               ),
               const SizedBox(height: AuraSpace.s4),
               Text(
-                'Before this becomes institutional record.',
+                widget.schedules
+                    ? 'Before this becomes institutional record. ${publishesLabel(widget.scheduleAt!)}.'
+                    : 'Before this becomes institutional record.',
                 style: AuraText.small.copyWith(color: AuraSurface.muted),
               ),
               const SizedBox(height: AuraSpace.s16),
@@ -337,7 +370,11 @@ class _InstitutionPostIntegrityReviewSheetState
             AnnouncementIntegrityOutcome.requireAcknowledgement &&
         !_pending!.satisfied) {
       return AuraPrimaryButton(
-        label: _busy ? 'Recording...' : 'Acknowledge and publish',
+        label: _busy
+            ? 'Recording...'
+            : widget.schedules
+                ? 'Acknowledge and schedule'
+                : 'Acknowledge and publish',
         onPressed: (_busy || !_ackAccepted)
             ? null
             : () async {
@@ -356,7 +393,9 @@ class _InstitutionPostIntegrityReviewSheetState
 
     final canPublish = _pending?.clearsPublish == true;
     return AuraPrimaryButton(
-      label: _busy ? 'Publishing...' : 'Publish',
+      label: widget.schedules
+          ? (_busy ? 'Scheduling...' : 'Schedule')
+          : (_busy ? 'Publishing...' : 'Publish'),
       onPressed: (_busy || !canPublish) ? null : _publish,
     );
   }

@@ -20,6 +20,12 @@ import '../live_rooms/institution_live_rooms_screen.dart'
 import '../live_rooms/institution_session_meta.dart';
 import '../live_rooms/live_now_card.dart';
 import '../workspace/workspace_filter.dart';
+import '../workspace/workspace_row_menu.dart';
+import '../data/institutions_repository.dart';
+import '../domain/institution_post.dart';
+import '../posts/integrity/institution_post_integrity_review_sheet.dart';
+import '../scheduling/scheduled_publication.dart';
+import '../../../core/utils/local_timezone.dart';
 import '../workspace/workspace_page.dart';
 
 /// Institution Explore — three distinct surfaces, all served by the unified
@@ -80,6 +86,9 @@ class _InstitutionExploreScreenState
   /// The scope the person chose. Null until they choose: Explore opens on
   /// Public (founder, 2026-10-09, superseding ruling D2 of 2026-08-23).
   _ExploreScopeKey? _chosen;
+
+  /// The Scheduled tab: posts waiting for their time (publishers only).
+  bool _showScheduled = false;
 
   List<_ExploreScopeKey> _scopesFor(InstitutionIdentity? identity) {
     final canPublishOfficially = identity?.canPublishPosts ?? false;
@@ -179,6 +188,8 @@ class _InstitutionExploreScreenState
     final scopes = _scopesFor(identity);
     final active = _activeScope(scopes);
     final canCompose = identity?.canCreatePosts ?? false;
+    final canSchedule = identity?.canPublishPosts ?? false;
+    final showScheduled = _showScheduled && canSchedule;
     final filter = ref.watch(feedFilterProvider);
     final filtersOn = (filter.topic != null ? 1 : 0) + (filter.source != null ? 1 : 0);
 
@@ -195,13 +206,20 @@ class _InstitutionExploreScreenState
           : null,
       tabs: [
         for (final scope in scopes) WorkspaceTab(id: scope.wire, label: scope.label),
+        if (canSchedule) const WorkspaceTab(id: 'scheduled', label: 'Scheduled'),
       ],
-      selectedTab: active.wire,
+      selectedTab: showScheduled ? 'scheduled' : active.wire,
       onTab: (wire) => setState(() {
-        _chosen = scopes.firstWhere((s) => s.wire == wire);
+        _showScheduled = wire == 'scheduled';
+        if (!_showScheduled) _chosen = scopes.firstWhere((s) => s.wire == wire);
       }),
-      tabTrailing: WorkspaceFilterButton(active: filtersOn, onPressed: _openFilter),
+      tabTrailing: showScheduled
+          ? null
+          : WorkspaceFilterButton(active: filtersOn, onPressed: _openFilter),
       children: [
+        if (showScheduled)
+          _ScheduledPostsList(institutionId: widget.institutionId)
+        else
         _UnifiedFeedList(
           key: ValueKey('explore-${active.wire}'),
           institutionId: widget.institutionId,
@@ -571,5 +589,164 @@ class _LiveNowBandState extends ConsumerState<_LiveNowBand> {
       meta: _meta,
     );
     return LiveNowCard(data: data);
+  }
+}
+
+// -- Scheduled posts --------------------------------------------------------
+//
+// Posts waiting for their scheduled time, soonest first, each with the three
+// things that can be done about it: change the time, publish now, or cancel
+// (the post stays a draft). A post whose time passed without it going out is
+// back among the drafts, marked, and its author was told why.
+
+class _ScheduledPostsList extends ConsumerStatefulWidget {
+  const _ScheduledPostsList({required this.institutionId});
+
+  final String institutionId;
+
+  @override
+  ConsumerState<_ScheduledPostsList> createState() => _ScheduledPostsListState();
+}
+
+class _ScheduledPostsListState extends ConsumerState<_ScheduledPostsList> {
+  List<InstitutionPost>? _posts;
+  String? _error;
+  String? _actingOn;
+
+  InstitutionsRepository get _repo => ref.read(institutionsRepositoryProvider);
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final posts = await _repo.listScheduledInstitutionPosts(widget.institutionId);
+      if (!mounted) return;
+      setState(() {
+        _posts = posts;
+        _error = null;
+        _actingOn = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Could not load scheduled posts.';
+        _actingOn = null;
+      });
+    }
+  }
+
+  Future<void> _changeTime(InstitutionPost post) async {
+    final at = await pickPublishTime(context, initial: post.schedule.publishAt);
+    if (at == null || !mounted) return;
+    final done = await showInstitutionPostIntegrityReviewSheet(
+      context: context,
+      ref: ref,
+      institutionId: widget.institutionId,
+      postId: post.id,
+      scheduleAt: at,
+      timezone: cachedLocalTimezone,
+    );
+    if (done == true) await _load();
+  }
+
+  Future<void> _publishNow(InstitutionPost post) async {
+    final done = await showInstitutionPostIntegrityReviewSheet(
+      context: context,
+      ref: ref,
+      institutionId: widget.institutionId,
+      postId: post.id,
+    );
+    if (done == true) await _load();
+  }
+
+  Future<void> _cancel(InstitutionPost post) async {
+    setState(() => _actingOn = post.id);
+    try {
+      await _repo.unscheduleInstitutionPost(widget.institutionId, post.id);
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Could not cancel the schedule.';
+        _actingOn = null;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final posts = _posts;
+    if (_error != null && posts == null) {
+      return WorkspaceEmpty(
+        icon: Icons.error_outline_rounded,
+        title: 'Could not load scheduled posts',
+        body: _error!,
+        action: WorkspaceAction(
+          label: ProductLabels.of(ProductAction.retry),
+          icon: Icons.refresh_rounded,
+          onPressed: _load,
+        ),
+      );
+    }
+    if (posts == null) return const WorkspaceLoading(rows: 2);
+    if (posts.isEmpty) {
+      return const WorkspaceEmpty(
+        icon: Icons.schedule_rounded,
+        title: 'Nothing scheduled',
+        body: 'A post you schedule waits here until its time, then goes out on its own.',
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_error != null)
+          WorkspaceRow(
+            leading: const WorkspaceIcon(Icons.error_outline_rounded, tone: WorkspaceTone.problem),
+            title: _error!,
+            emphasis: WorkspaceTone.problem,
+          ),
+        for (final post in posts)
+          WorkspaceRow(
+            leading: const WorkspaceIcon(Icons.schedule_rounded),
+            title: _titleOf(post),
+            context: [
+              publishesLabel(post.schedule.publishAt!),
+              post.visibility.label,
+            ].join(' \u00b7 '),
+            pill: const WorkspacePill(label: 'Scheduled', tone: WorkspaceTone.waiting),
+            trailing: _actingOn == post.id
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                : WorkspaceRowMenu(actions: [
+                    WorkspaceAction(
+                      label: 'Change time',
+                      icon: Icons.schedule_rounded,
+                      onPressed: () => _changeTime(post),
+                    ),
+                    WorkspaceAction(
+                      label: 'Publish now',
+                      icon: Icons.publish_rounded,
+                      onPressed: () => _publishNow(post),
+                    ),
+                    WorkspaceAction(
+                      label: 'Cancel schedule',
+                      icon: Icons.event_busy_rounded,
+                      onPressed: () => _cancel(post),
+                    ),
+                  ]),
+          ),
+      ],
+    );
+  }
+
+  static String _titleOf(InstitutionPost post) {
+    final t = post.title.trim();
+    if (t.isNotEmpty) return t;
+    final b = post.body.trim().replaceAll(RegExp(r'\s+'), ' ');
+    if (b.isEmpty) return 'Untitled post';
+    return b.length > 80 ? '${b.substring(0, 79)}\u2026' : b;
   }
 }

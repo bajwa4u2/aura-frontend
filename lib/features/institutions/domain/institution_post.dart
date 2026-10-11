@@ -16,6 +16,7 @@ library;
 import '../../feed/domain/feed_media.dart';
 import '../../../core/content_policy/content_length_policy.dart';
 import '../../../core/tagging/tag_entities.dart';
+import '../scheduling/scheduled_publication.dart';
 export '../../feed/domain/feed_media.dart' show FeedMedia;
 
 enum InstitutionPostVisibility { publicAll, memberOnly, internal }
@@ -154,6 +155,7 @@ class InstitutionPost {
     required this.status,
     this.publishedAt,
     this.archivedAt,
+    this.schedule = PublicationSchedule.none,
     this.createdAt,
     this.updatedAt,
     this.author,
@@ -197,6 +199,9 @@ class InstitutionPost {
   final InstitutionPostStatus status;
   final DateTime? publishedAt;
   final DateTime? archivedAt;
+
+  /// Scheduled publication: only an unpublished post carries one.
+  final PublicationSchedule schedule;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -323,6 +328,7 @@ class InstitutionPost {
       status: InstitutionPostStatusX.fromWire(json['status']),
       publishedAt: readDate(json['publishedAt']),
       archivedAt: readDate(json['archivedAt']),
+      schedule: PublicationSchedule.fromJson(json),
       createdAt: readDate(json['createdAt']),
       updatedAt: readDate(json['updatedAt']),
       author: author is Map ? Map<String, dynamic>.from(author) : null,

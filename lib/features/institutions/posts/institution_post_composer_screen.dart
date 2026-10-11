@@ -1,4 +1,6 @@
 import 'dart:async';
+import '../scheduling/scheduled_publication.dart';
+import '../../../core/utils/local_timezone.dart';
 import '../kind/kind_composition.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -159,6 +161,12 @@ class _InstitutionPostComposerScreenState
 
   bool _busy = false;
   bool _loadingExisting = false;
+
+  /// Scheduled publication: the time this post is waiting for, if any, and a
+  /// failed schedule's reason. Loaded with the post; changed from this screen.
+  PublicationSchedule _schedule = PublicationSchedule.none;
+  InstitutionPostStatus? _loadedStatus;
+  bool get _isPublished => _loadedStatus == InstitutionPostStatus.published;
   String? _error;
 
   /// The last failure was the institution-authority refusal, so the banner
@@ -232,6 +240,14 @@ class _InstitutionPostComposerScreenState
   }
 
   void _applyInitialPost(InstitutionPost initial) {
+    _schedule = initial.schedule;
+    _loadedStatus = initial.status;
+    // A schedule that came and went without the post going out says why,
+    // here, where the person can fix it.
+    if (initial.schedule.hasFailed && !initial.schedule.isScheduled) {
+      _error = 'This post was not published at its scheduled time. '
+          '${initial.schedule.failureReason ?? ''}'.trim();
+    }
     final decoded = InsCommunicationDecoded.parse(initial.title);
     _titleCtrl.text = decoded.hadMarker ? decoded.cleanTitle : initial.title;
     _communicationType = decoded.type;
@@ -1133,6 +1149,45 @@ class _InstitutionPostComposerScreenState
       _error = null;
     });
     try {
+      final existing = widget.isEditing ? widget.postId : _serverDraftPostId;
+      if (_schedule.isScheduled && existing != null && existing.trim().isNotEmpty) {
+        // EDITING A SCHEDULED POST: the backend re-checks it with the save. If
+        // the edit needs a fresh integrity answer, it is asked for here and
+        // now, so the post does not fail unattended at its time.
+        final saved = await ref
+            .read(institutionsRepositoryProvider)
+            .updateInstitutionPostChecked(widget.institutionId, existing.trim(), _payload());
+        final check = saved.scheduleCheck;
+        if (check != null && !check.ok) {
+          if (!mounted) return;
+          setState(() => _busy = false);
+          if (check.needsIntegrityReview) {
+            final rescheduled = await showInstitutionPostIntegrityReviewSheet(
+              context: context,
+              ref: ref,
+              institutionId: widget.institutionId,
+              postId: existing.trim(),
+              scheduleAt: _schedule.publishAt,
+              timezone: _schedule.timezone ?? cachedLocalTimezone,
+            );
+            if (rescheduled != true) {
+              if (!mounted) return;
+              setState(() => _error =
+                  'Saved. Until the integrity review is answered, this post will not be published at its time.');
+              return;
+            }
+          } else {
+            setState(() => _error =
+                'Saved, but it cannot be published at its time: ${check.message ?? 'see the details above.'}');
+            return;
+          }
+        }
+        await _clearAllLocalDrafts();
+        _invalidatePostFeeds();
+        if (!mounted) return;
+        context.pop(true);
+        return;
+      }
       await _commitComposition();
       // The backend now owns this draft; clear the local fallback so a stale
       // copy can't resurrect after the server-side draft is moved/published.
@@ -1151,6 +1206,79 @@ class _InstitutionPostComposerScreenState
       setState(() {
         _busy = false;
         _error = _readError(e, 'Could not save draft.');
+      });
+    }
+  }
+
+  /// Schedule this post: pick a time, save the draft, then the integrity
+  /// review ends by scheduling instead of publishing.
+  Future<void> _schedulePublish() async {
+    final err = _localValidationError;
+    if (err != null) {
+      setState(() => _error = err);
+      return;
+    }
+    final at = await pickPublishTime(context, initial: _schedule.publishAt);
+    if (at == null || !mounted) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final InstitutionPost post = await _commitComposition();
+      if (!mounted) return;
+      setState(() => _busy = false);
+      final scheduled = await showInstitutionPostIntegrityReviewSheet(
+        context: context,
+        ref: ref,
+        institutionId: widget.institutionId,
+        postId: post.id,
+        scheduleAt: at,
+        timezone: cachedLocalTimezone,
+      );
+      if (scheduled != true) return;
+      await _clearAllLocalDrafts();
+      _invalidatePostFeeds();
+      if (!mounted) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+          content: Text('Scheduled. ${publishesLabel(at)}.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      context.pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = _readError(e, 'Could not schedule post.');
+      });
+    }
+  }
+
+  /// Take the post off its schedule; it stays a draft.
+  Future<void> _cancelSchedule() async {
+    final id = widget.isEditing ? widget.postId : _serverDraftPostId;
+    if (id == null || id.trim().isEmpty) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final post = await ref
+          .read(institutionsRepositoryProvider)
+          .unscheduleInstitutionPost(widget.institutionId, id.trim());
+      _invalidatePostFeeds();
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _schedule = post.schedule;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = _readError(e, 'Could not cancel the schedule.');
       });
     }
   }
@@ -1653,6 +1781,26 @@ class _InstitutionPostComposerScreenState
         purpose: voice,
         back: back,
         more: [
+          // Scheduled publication, for those who may publish. A published post
+          // has nothing to schedule.
+          if (canPublish && !_isPublished)
+            WorkspaceAction(
+              label: _schedule.isScheduled ? 'Change publish time' : 'Schedule',
+              icon: Icons.schedule_rounded,
+              onPressed: busy ? null : _schedulePublish,
+            ),
+          if (canPublish && _schedule.isScheduled)
+            WorkspaceAction(
+              label: 'Cancel schedule',
+              icon: Icons.event_busy_rounded,
+              onPressed: busy ? null : _cancelSchedule,
+            ),
+          if (canPublish && widget.isEditing && _schedule.isScheduled)
+            WorkspaceAction(
+              label: 'Publish now instead',
+              icon: Icons.publish_rounded,
+              onPressed: busy ? null : _publishNow,
+            ),
           if (!widget.isEditing && _hasAnyDraftContent)
             WorkspaceAction(
               label: 'Discard draft',
@@ -1662,7 +1810,13 @@ class _InstitutionPostComposerScreenState
             ),
         ],
         bar: WorkspaceBar(
-          status: widget.isEditing ? null : _draftLabel(_draftStatus, _draftSavedAt),
+          status: _schedule.isScheduled
+              ? publishesLabel(_schedule.publishAt!)
+              : _schedule.hasFailed
+                  ? 'Not published at its scheduled time'
+                  : widget.isEditing
+                      ? null
+                      : _draftLabel(_draftStatus, _draftSavedAt),
           cancel: WorkspaceAction(label: 'Cancel', onPressed: busy ? null : () => context.pop(false)),
           secondary: !widget.isEditing && canPublish
               ? WorkspaceAction(label: busy ? 'Saving…' : 'Save draft', onPressed: busy ? null : _saveDraft)

@@ -33,6 +33,8 @@ import '../data/institutions_repository.dart';
 import '../workspace/workspace_page.dart';
 import '../domain/communication_type.dart';
 import 'integrity/announcement_integrity_review_sheet.dart';
+import '../scheduling/scheduled_publication.dart';
+import '../../../core/utils/local_timezone.dart';
 import '../../composition/domain/composition_models.dart';
 import '../../composition/presentation/composition_assist.dart';
 
@@ -76,6 +78,11 @@ class _InstitutionAnnouncementComposerState
   String? _error;
   String? _savedId;
 
+  /// Scheduled publication: the time this announcement is waiting for, if
+  /// any, and what the backend said about it on the last save.
+  PublicationSchedule _schedule = PublicationSchedule.none;
+  ScheduleCheck? _lastScheduleCheck;
+
   /// Canonical media attached to this announcement. On edit, prepopulated
   /// from `initialData['media']` so the host can review or remove what's
   /// already attached. New picks are appended via [_pickMedia]. The list
@@ -111,6 +118,11 @@ class _InstitutionAnnouncementComposerState
     _bodyController.addListener(_onBodyChangedForAssist);
     final d = widget.initialData;
     if (d != null) {
+      _schedule = PublicationSchedule.fromJson(d);
+      if (_schedule.hasFailed && !_schedule.isScheduled) {
+        _error = 'This announcement was not published at its scheduled time. '
+            '${_schedule.failureReason ?? ''}'.trim();
+      }
       // Edit mode: peel the [OFFICIAL:TYPE] marker so the user edits the
       // clean title and the chip group reflects the existing type.
       final rawTitle = d['title']?.toString() ?? '';
@@ -525,7 +537,7 @@ class _InstitutionAnnouncementComposerState
         );
         _savedId = result['id']?.toString();
       } else {
-        await _repo.updateInstitutionAnnouncement(
+        final updated = await _repo.updateInstitutionAnnouncement(
           widget.institutionId,
           _savedId!,
           title: encodedTitle,
@@ -538,6 +550,7 @@ class _InstitutionAnnouncementComposerState
           linkPreviewId: linkPreviewId,
           linkSourceUrl: linkSourceUrl,
         );
+        _lastScheduleCheck = ScheduleCheck.fromJson(updated['scheduleCheck']);
       }
       setState(() {
         _saving = false;
@@ -590,10 +603,86 @@ class _InstitutionAnnouncementComposerState
   }
 
   Future<void> _saveDraft() async {
+    _lastScheduleCheck = null;
     final id = await _save();
-    if (id != null && mounted) {
-      _showAudienceToast(published: false);
-      context.pop(false);
+    if (id == null || !mounted) return;
+    // EDITING A SCHEDULED ANNOUNCEMENT: the backend re-checks it with the
+    // save. A fresh integrity answer is asked for now, not at its time.
+    final check = _lastScheduleCheck;
+    if (_schedule.isScheduled && check != null && !check.ok) {
+      if (check.needsIntegrityReview) {
+        final rescheduled = await showAnnouncementIntegrityReviewSheet(
+          context: context,
+          ref: ref,
+          institutionId: widget.institutionId,
+          announcementId: id,
+          scheduleAt: _schedule.publishAt,
+          timezone: _schedule.timezone ?? cachedLocalTimezone,
+        );
+        if (rescheduled != true) {
+          if (!mounted) return;
+          setState(() => _error =
+              'Saved. Until the integrity review is answered, this announcement will not be published at its time.');
+          return;
+        }
+      } else {
+        setState(() => _error =
+            'Saved, but it cannot be published at its time: ${check.message ?? ''}'.trim());
+        return;
+      }
+    }
+    if (!mounted) return;
+    _showAudienceToast(published: false);
+    context.pop(false);
+  }
+
+  /// Schedule: pick a time, save, then the integrity review ends by
+  /// scheduling instead of publishing.
+  Future<void> _saveAndSchedule() async {
+    final at = await pickPublishTime(context, initial: _schedule.publishAt);
+    if (at == null || !mounted) return;
+    final id = await _save();
+    if (id == null || !mounted) return;
+    final scheduled = await showAnnouncementIntegrityReviewSheet(
+      context: context,
+      ref: ref,
+      institutionId: widget.institutionId,
+      announcementId: id,
+      scheduleAt: at,
+      timezone: cachedLocalTimezone,
+    );
+    if (scheduled == true && mounted) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(
+          content: Text('Scheduled. ${publishesLabel(at)}.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      context.pop(true);
+    }
+  }
+
+  /// Take the announcement off its schedule; it stays a draft.
+  Future<void> _cancelSchedule() async {
+    final id = _savedId;
+    if (id == null) return;
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await _repo.unscheduleInstitutionAnnouncement(widget.institutionId, id);
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _schedule = PublicationSchedule.none;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _error = _message(e, 'Could not cancel the schedule.');
+      });
     }
   }
 
@@ -949,9 +1038,22 @@ class _InstitutionAnnouncementComposerState
           icon: Icons.save_outlined,
           onPressed: isBusy ? null : _saveDraft,
         ),
+        WorkspaceAction(
+          label: _schedule.isScheduled ? 'Change publish time' : 'Schedule',
+          icon: Icons.schedule_rounded,
+          onPressed: isBusy ? null : _saveAndSchedule,
+        ),
+        if (_schedule.isScheduled)
+          WorkspaceAction(
+            label: 'Cancel schedule',
+            icon: Icons.event_busy_rounded,
+            onPressed: isBusy ? null : _cancelSchedule,
+          ),
       ],
       bar: WorkspaceBar(
-        status: _audienceReach,
+        status: _schedule.isScheduled
+            ? '${publishesLabel(_schedule.publishAt!)} · $_audienceReach'
+            : _audienceReach,
         cancel: WorkspaceAction(label: 'Cancel', onPressed: isBusy ? null : () => context.pop()),
         primary: WorkspaceAction(
           label: _publishing ? 'Publishing…' : 'Publish',

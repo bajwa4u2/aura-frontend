@@ -18,6 +18,9 @@ import '../data/institutions_repository.dart';
 import '../institution_words.dart';
 import '../workspace/workspace_page.dart';
 import '../workspace/workspace_row_menu.dart';
+import '../scheduling/scheduled_publication.dart';
+import '../../../core/utils/local_timezone.dart';
+import 'integrity/announcement_integrity_review_sheet.dart';
 
 class InstitutionAnnouncementsScreen extends ConsumerStatefulWidget {
   const InstitutionAnnouncementsScreen({
@@ -220,8 +223,112 @@ class _InstitutionAnnouncementsScreenState
     return AuraTemporal.fullShort(dt);
   }
 
-  List<Map<String, dynamic>> get _unpublished =>
-      _drafts.where((a) => a['status']?.toString() == 'DRAFT').toList();
+  /// Drafts with no time set (a draft whose schedule failed is among them).
+  List<Map<String, dynamic>> get _unpublished => _drafts
+      .where((a) =>
+          a['status']?.toString() == 'DRAFT' && !PublicationSchedule.fromJson(a).isScheduled)
+      .toList();
+
+  /// What will go out on its own, soonest first.
+  List<Map<String, dynamic>> get _scheduled {
+    final list = _drafts
+        .where((a) =>
+            a['status']?.toString() == 'DRAFT' && PublicationSchedule.fromJson(a).isScheduled)
+        .toList();
+    list.sort((a, b) => PublicationSchedule.fromJson(a)
+        .publishAt!
+        .compareTo(PublicationSchedule.fromJson(b).publishAt!));
+    return list;
+  }
+
+  /// Change the time: the review runs again and ends by scheduling.
+  Future<void> _reschedule(String id, PublicationSchedule current) async {
+    final at = await pickPublishTime(context, initial: current.publishAt);
+    if (at == null || !mounted) return;
+    final done = await showAnnouncementIntegrityReviewSheet(
+      context: context,
+      ref: ref,
+      institutionId: widget.institutionId,
+      announcementId: id,
+      scheduleAt: at,
+      timezone: cachedLocalTimezone,
+    );
+    if (done == true) await _load();
+  }
+
+  /// Publish now instead of waiting; publishing clears the schedule.
+  Future<void> _publishScheduledNow(String id) async {
+    final done = await showAnnouncementIntegrityReviewSheet(
+      context: context,
+      ref: ref,
+      institutionId: widget.institutionId,
+      announcementId: id,
+    );
+    if (done == true) await _load();
+  }
+
+  Future<void> _cancelSchedule(String id) async {
+    if (_actingOn != null) return;
+    setState(() {
+      _actingOn = id;
+      _actionError = null;
+    });
+    try {
+      await _repo.unscheduleInstitutionAnnouncement(widget.institutionId, id);
+      await _load();
+    } catch (e) {
+      setState(() {
+        _actionError = _message(e, 'Could not cancel the schedule.');
+        _actingOn = null;
+      });
+    }
+  }
+
+  /// A scheduled announcement: when it goes out, and the three things that
+  /// can be done about it.
+  Widget _scheduledRow(Map<String, dynamic> ann) {
+    final id = ann['id']?.toString() ?? '';
+    final title = ann['title']?.toString().trim() ?? '';
+    final audience = ann['audience']?.toString() ?? 'PUBLIC';
+    final schedule = PublicationSchedule.fromJson(ann);
+    final editPath = '/institution/${widget.institutionId}/announcements/$id/edit';
+    final menu = <WorkspaceAction>[
+      if (_canManageAnnouncements) ...[
+        WorkspaceAction(
+          label: 'Change time',
+          icon: Icons.schedule_rounded,
+          onPressed: () => _reschedule(id, schedule),
+        ),
+        WorkspaceAction(
+          label: 'Publish now',
+          icon: Icons.send_rounded,
+          onPressed: () => _publishScheduledNow(id),
+        ),
+        WorkspaceAction(
+          label: 'Cancel schedule',
+          icon: Icons.event_busy_rounded,
+          onPressed: () => _cancelSchedule(id),
+        ),
+        WorkspaceAction(
+          label: 'Edit',
+          icon: Icons.edit_outlined,
+          onPressed: () => context.push(editPath).then((_) => _load()),
+        ),
+      ],
+    ];
+    return WorkspaceRow(
+      leading: const WorkspaceIcon(Icons.schedule_rounded),
+      title: title.isNotEmpty ? title : 'Untitled',
+      context: [
+        publishesLabel(schedule.publishAt!),
+        _audienceLabel(audience),
+      ].join(' · '),
+      pill: const WorkspacePill(label: 'Scheduled', tone: WorkspaceTone.waiting),
+      trailing: _actingOn == id
+          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+          : (menu.isEmpty ? null : WorkspaceRowMenu(actions: menu)),
+    );
+  }
 
   /// One row per announcement (DD-43): title; audience, kind and date; one
   /// status pill; every act on it under the row's menu.
@@ -278,7 +385,9 @@ class _InstitutionAnnouncementsScreenState
         if (mediaCount > 0) '$mediaCount attachment${mediaCount == 1 ? '' : 's'}',
       ].join(' · '),
       pill: isDraft
-          ? const WorkspacePill(label: 'Draft', tone: WorkspaceTone.waiting)
+          ? (PublicationSchedule.fromJson(ann).hasFailed
+              ? const WorkspacePill(label: 'Not published at its time', tone: WorkspaceTone.problem)
+              : const WorkspacePill(label: 'Draft', tone: WorkspaceTone.waiting))
           : pinned
               ? const WorkspacePill(label: 'Pinned', tone: WorkspaceTone.waiting)
               : const WorkspacePill(label: 'Published', tone: WorkspaceTone.done),
@@ -300,6 +409,25 @@ class _InstitutionAnnouncementsScreenState
           body: _error!,
           action: WorkspaceAction(label: ProductLabels.of(ProductAction.retry), icon: Icons.refresh_rounded, onPressed: _load),
         ),
+      ];
+    }
+    if (_tab == 'scheduled') {
+      final scheduled = _scheduled;
+      return [
+        if (_actionError != null)
+          WorkspaceRow(
+            leading: const WorkspaceIcon(Icons.error_outline_rounded, tone: WorkspaceTone.problem),
+            title: _actionError!,
+            emphasis: WorkspaceTone.problem,
+          ),
+        if (scheduled.isEmpty)
+          const WorkspaceEmpty(
+            icon: Icons.schedule_rounded,
+            title: 'Nothing scheduled',
+            body: 'An announcement you schedule waits here until its time, then goes out on its own.',
+          )
+        else
+          for (final a in scheduled) _scheduledRow(a),
       ];
     }
     final drafts = _tab == 'drafts';
@@ -358,6 +486,7 @@ class _InstitutionAnnouncementsScreenState
       tabs: _canManageAnnouncements
           ? [
               WorkspaceTab(id: 'published', label: 'Published', count: _loading ? null : _published.length),
+              WorkspaceTab(id: 'scheduled', label: 'Scheduled', count: _loading ? null : _scheduled.length),
               WorkspaceTab(id: 'drafts', label: 'Drafts', count: _loading ? null : _unpublished.length),
             ]
           : const [],
