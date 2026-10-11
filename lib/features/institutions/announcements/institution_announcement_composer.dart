@@ -599,7 +599,12 @@ class _InstitutionAnnouncementComposerState
 
     if (published == true && mounted) {
       _showAudienceToast(published: true);
-      context.pop(true);
+      // Opened directly, there is nothing to return to: land on the list.
+      if (context.canPop()) {
+        context.pop(true);
+      } else {
+        context.go(institutionWorkspacePath(widget.institutionId, InstitutionSection.announcements));
+      }
     }
   }
 

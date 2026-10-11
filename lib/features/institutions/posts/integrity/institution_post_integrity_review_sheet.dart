@@ -286,7 +286,9 @@ class _InstitutionPostIntegrityReviewSheetState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          pending.outcome.publisherLabel,
+          widget.schedules
+              ? pending.outcome.schedulerLabel
+              : pending.outcome.publisherLabel,
           style: AuraText.small.copyWith(
             fontWeight: FontWeight.w700,
             color: AuraSurface.accentText,

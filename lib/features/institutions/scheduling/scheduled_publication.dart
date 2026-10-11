@@ -28,7 +28,7 @@ Future<DateTime?> pickPublishTime(
   final suggested = initial != null && initial.isAfter(start.add(kScheduleMinLead))
       // The same instant as the viewer's wall clock (the pickers work in it).
       ? DateTime.fromMillisecondsSinceEpoch(initial.millisecondsSinceEpoch)
-      : start.add(const Duration(hours: 1));
+      : nextQuarterHour(start);
   final date = await showDatePicker(
     context: context,
     initialDate: suggested,
@@ -52,6 +52,16 @@ Future<DateTime?> pickPublishTime(
     return null;
   }
   return at;
+}
+
+/// The first quarter hour that is at least [kScheduleMinLead] away
+/// (DD-47): 1:02 suggests 1:15, 1:12 suggests 1:30. A schedule reads as a
+/// time someone chose, not the minute they happened to open the picker.
+DateTime nextQuarterHour(DateTime from) {
+  final earliest = from.add(kScheduleMinLead);
+  final floored = DateTime(earliest.year, earliest.month, earliest.day, earliest.hour,
+      earliest.minute - earliest.minute % 15);
+  return floored.isBefore(earliest) ? floored.add(const Duration(minutes: 15)) : floored;
 }
 
 /// The same rule the backend applies, in its words. Null when the time is fine.

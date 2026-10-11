@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:aura/features/institutions/announcements/integrity/announcement_integrity.dart';
 import 'package:aura/features/institutions/data/institutions_repository.dart';
 import 'package:aura/features/institutions/desk/desk_models.dart';
 import 'package:aura/features/institutions/domain/institution_post.dart';
@@ -91,6 +92,25 @@ void main() {
 
     test('accepts a time inside the window', () {
       expect(scheduleTimeProblem(now.add(const Duration(hours: 2)), now: now), isNull);
+    });
+
+    test('the picker suggests the next quarter hour (DD-47)', () {
+      expect(nextQuarterHour(DateTime(2026, 10, 11, 13, 2)), DateTime(2026, 10, 11, 13, 15));
+      expect(nextQuarterHour(DateTime(2026, 10, 11, 13, 10)), DateTime(2026, 10, 11, 13, 15));
+      // 5 minutes ahead is 13:17, so the next quarter is 13:30.
+      expect(nextQuarterHour(DateTime(2026, 10, 11, 13, 12)), DateTime(2026, 10, 11, 13, 30));
+      // Across the hour and the day.
+      expect(nextQuarterHour(DateTime(2026, 10, 11, 23, 58)), DateTime(2026, 10, 12, 0, 15));
+      // Always inside the window the backend accepts.
+      final now = DateTime(2026, 10, 11, 13, 2);
+      expect(scheduleTimeProblem(nextQuarterHour(now), now: now), isNull);
+    });
+
+    test('when scheduling, the review says "Ready to schedule" (DD-47)', () {
+      expect(AnnouncementIntegrityOutcome.continueOutcome.schedulerLabel, 'Ready to schedule');
+      expect(AnnouncementIntegrityOutcome.continueOutcome.publisherLabel, 'Ready to publish');
+      expect(AnnouncementIntegrityOutcome.requireAcknowledgement.schedulerLabel,
+          'Review before scheduling');
     });
 
     test('the label is the written date with its time', () {
@@ -195,6 +215,7 @@ void main() {
 
     // The sheet says when, and its last step is Schedule.
     expect(find.textContaining(publishesLabel(at)), findsOneWidget);
+    expect(find.text('Ready to schedule'), findsOneWidget);
     expect(find.text('Publish'), findsNothing);
     await tester.tap(find.text('Schedule'));
     await tester.pumpAndSettle();

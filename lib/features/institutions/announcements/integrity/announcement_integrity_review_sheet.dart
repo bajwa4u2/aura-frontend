@@ -281,7 +281,9 @@ class _AnnouncementIntegrityReviewSheetState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          pending.outcome.publisherLabel,
+          widget.schedules
+              ? pending.outcome.schedulerLabel
+              : pending.outcome.publisherLabel,
           style: AuraText.small.copyWith(
             fontWeight: FontWeight.w700,
             color: AuraSurface.accentText,
@@ -357,7 +359,7 @@ class _AnnouncementIntegrityReviewSheetState
         !_pending!.satisfied) {
       return AuraPrimaryButton(
         label: widget.schedules
-            ? 'I\'ve reviewed this — schedule'
+            ? 'Acknowledge and schedule'
             : 'I\'ve reviewed this — publish',
         onPressed: (_busy || !_ackAccepted)
             ? null

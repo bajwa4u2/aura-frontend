@@ -108,21 +108,19 @@ class _InstitutionAnnouncementsScreenState
     }
   }
 
+  /// Publishing from the list goes through the same integrity review as the
+  /// composer (DD-47): the sheet performs the publish once its required action
+  /// is satisfied, so no path from a row reaches PUBLISHED without it.
   Future<void> _publish(String id) async {
     if (_actingOn != null) return;
-    setState(() {
-      _actingOn = id;
-      _actionError = null;
-    });
-    try {
-      await _repo.publishInstitutionAnnouncement(widget.institutionId, id);
-      await _load();
-    } catch (e) {
-      setState(() {
-        _actionError = _message(e, 'Could not publish.');
-        _actingOn = null;
-      });
-    }
+    setState(() => _actionError = null);
+    final published = await showAnnouncementIntegrityReviewSheet(
+      context: context,
+      ref: ref,
+      institutionId: widget.institutionId,
+      announcementId: id,
+    );
+    if (published == true) await _load();
   }
 
   Future<void> _unpublish(String id) async {

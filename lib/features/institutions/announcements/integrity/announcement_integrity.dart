@@ -55,6 +55,18 @@ extension AnnouncementIntegrityOutcomeX on AnnouncementIntegrityOutcome {
         return 'Review status unavailable';
     }
   }
+
+  /// The same, when the last step schedules rather than publishes (DD-47).
+  String get schedulerLabel {
+    switch (this) {
+      case AnnouncementIntegrityOutcome.continueOutcome:
+        return 'Ready to schedule';
+      case AnnouncementIntegrityOutcome.requireAcknowledgement:
+        return 'Review before scheduling';
+      default:
+        return publisherLabel;
+    }
+  }
 }
 
 class AnnouncementIntegrityAssessment {

@@ -1337,7 +1337,12 @@ class _InstitutionPostComposerScreenState
         visibility: _visibility,
         distribution: _distribution,
       );
-      context.pop(true);
+      // Opened directly, there is nothing to return to: land on Posts.
+      if (context.canPop()) {
+        context.pop(true);
+      } else {
+        context.go(institutionWorkspacePath(widget.institutionId, InstitutionSection.explore));
+      }
     } catch (e) {
       if (!mounted) return;
 
