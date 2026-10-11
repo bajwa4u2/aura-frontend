@@ -180,6 +180,32 @@ void main() {
       expect(DeskTab.questions.holds(type), isFalse);
     });
 
+    test('the scheduled list reads the backend envelope it really receives', () async {
+      // Production, 2026-10-11: the backend returned both scheduled posts
+      // (log: rows=2) but wrapped as { ok: true, data: { items } } because
+      // list() has no `ok` of its own. Reading `items` at the top level made
+      // the tab say "Nothing scheduled".
+      final post = {
+        'id': 'p1',
+        'title': '[OFFICIAL:UPDATE] Orchestrate in 45 seconds',
+        'body': 'A film.',
+        'visibility': 'PUBLIC',
+        'distribution': 'GLOBAL_ELIGIBLE',
+        'status': 'DRAFT',
+        'scheduledPublishAt': '2026-10-12T13:00:00.000Z',
+      };
+      final dio = Dio()
+        ..interceptors.add(InterceptorsWrapper(onRequest: (o, h) {
+          h.resolve(Response(requestOptions: o, statusCode: 200, data: {
+            'ok': true,
+            'data': {'items': [post], 'nextCursor': null, 'scope': 'internal', 'viewerRole': 'OWNER'},
+          }));
+        }));
+      final items = await InstitutionsRepository(dio).listScheduledInstitutionPosts('inst1');
+      expect(items.map((p) => p.id), ['p1']);
+      expect(items.single.schedule.isScheduled, isTrue);
+    });
+
     test('the scheduled-posts request asks for every visibility (no scope)', () async {
       // Production, 2026-10-11: scope=internal made the backend return only
       // INTERNAL scheduled posts, so the tab said "Nothing scheduled".

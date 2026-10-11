@@ -872,7 +872,7 @@ class InstitutionsRepository {
     final items = <InstitutionPost>[];
     String? nextCursor;
     if (body is Map) {
-      final root = Map<String, dynamic>.from(body);
+      final root = _listRoot(body);
       final raw = root['items'];
       if (raw is List) {
         for (final entry in raw.whereType<Map>()) {
@@ -935,7 +935,7 @@ class InstitutionsRepository {
     final items = <InstitutionPost>[];
     String? nextCursor;
     if (body is Map) {
-      final root = Map<String, dynamic>.from(body);
+      final root = _listRoot(body);
       final raw = root['items'];
       if (raw is List) {
         for (final entry in raw.whereType<Map>()) {
@@ -1070,10 +1070,10 @@ class InstitutionsRepository {
       // scheduled post the caller may read (production, 2026-10-11).
       queryParameters: {'status': 'SCHEDULED', 'limit': 50},
     );
-    final body = res.data;
+    final root = _listRoot(res.data);
     final items = <InstitutionPost>[];
-    if (body is Map && body['items'] is List) {
-      for (final entry in (body['items'] as List).whereType<Map>()) {
+    if (root['items'] is List) {
+      for (final entry in (root['items'] as List).whereType<Map>()) {
         items.add(InstitutionPost.fromJson(Map<String, dynamic>.from(entry)));
       }
     }
@@ -1235,6 +1235,22 @@ class InstitutionsRepository {
       '/institutions/$id/posts/$pid/accountability',
       data: <String, dynamic>{'tag': tag, 'publicPostId': ppid},
     );
+  }
+
+  /// The object that holds a list response's `items`.
+  ///
+  /// The backend wraps any response that has no `ok` of its own as
+  /// `{ ok: true, data: ... }`. The post list returns `{ items, nextCursor }`
+  /// with no `ok`, so it arrives wrapped; reading `items` at the top level
+  /// found nothing and the Scheduled tab said "Nothing scheduled" while two
+  /// posts were scheduled (production, 2026-10-11). Accepts both shapes.
+  Map<String, dynamic> _listRoot(dynamic body) {
+    if (body is! Map) return const <String, dynamic>{};
+    final root = Map<String, dynamic>.from(body);
+    if (root['items'] is List) return root;
+    final data = root['data'];
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return root;
   }
 
   InstitutionPost _readPost(dynamic body) {
