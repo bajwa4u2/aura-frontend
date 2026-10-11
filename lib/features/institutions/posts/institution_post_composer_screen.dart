@@ -1246,7 +1246,13 @@ class _InstitutionPostComposerScreenState
           behavior: SnackBarBehavior.floating,
         ),
       );
-      context.pop(true);
+      // Opened directly (a link, a reload), there is nothing to return to:
+      // land on the institution's Posts, where the Scheduled tab lists it.
+      if (context.canPop()) {
+        context.pop(true);
+      } else {
+        context.go(institutionWorkspacePath(widget.institutionId, InstitutionSection.explore));
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {

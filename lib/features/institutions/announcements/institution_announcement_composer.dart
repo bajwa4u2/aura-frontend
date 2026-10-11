@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import '../../../core/institutions/institution_paths.dart';
 import '../kind/kind_composition.dart';
 
 import 'package:file_picker/file_picker.dart';
@@ -658,7 +659,13 @@ class _InstitutionAnnouncementComposerState
           behavior: SnackBarBehavior.floating,
         ),
       );
-      context.pop(true);
+      // Opened directly, there is nothing to return to: land on the
+      // announcements, where the Scheduled tab lists it.
+      if (context.canPop()) {
+        context.pop(true);
+      } else {
+        context.go(institutionWorkspacePath(widget.institutionId, InstitutionSection.announcements));
+      }
     }
   }
 
