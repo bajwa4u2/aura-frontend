@@ -397,6 +397,14 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '    proxy_connect_timeout 5s;' \
 '  }' \
 '' \
+'  # Overview and Demo pages are plain HTML with stable names. Without a' \
+'  # Cache-Control header browsers reused an old copy after a deploy, so' \
+'  # a returning visitor did not see a new film. no-cache keeps etag 304s.' \
+'  location ~ ^/(?:deck|demo)(?:/|/index\.html)?$ {' \
+'    try_files $uri/index.html $uri =404;' \
+'    add_header Cache-Control "no-cache";' \
+'  }' \
+'' \
 '  # Flutter SPA fallback. The `$uri/index.html` clause lets a request' \
 '  # for /privacy resolve directly to /privacy/index.html (a per-route' \
 '  # variant produced by tool/web/generate_route_metadata.dart) WITHOUT' \
