@@ -42,6 +42,7 @@ route,sample,renders,protected,deeplink_semantic,deeplink_destination,in_app_sem
 /aura/participation,/aura/participation,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT
 /author/:handle,/author/x-handle,false,false,deepLinkFallback,/home,stackReturn,true,NOT_A_SURFACE
 /u/:handle,/u/x-handle,true,false,deepLinkFallback,/discover,stackReturn,true,COMPLIANT
+/join/:handle,/join/x-handle,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT
 /u/:handle/followers,/u/x-handle/followers,true,false,parentReturn,/u/x-handle,stackReturn,true,COMPLIANT
 /u/:handle/following,/u/x-handle/following,true,false,parentReturn,/u/x-handle,stackReturn,true,COMPLIANT
 /support/:handle,/support/x-handle,true,false,deepLinkFallback,/home,stackReturn,true,COMPLIANT

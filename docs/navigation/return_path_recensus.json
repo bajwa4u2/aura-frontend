@@ -473,6 +473,17 @@
   "verdict": "COMPLIANT"
  },
  {
+  "route": "/join/:handle",
+  "sample": "/join/x-handle",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "deepLinkFallback",
+  "deepLinkDestination": "/home",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
   "route": "/u/:handle/followers",
   "sample": "/u/x-handle/followers",
   "renders": true,
