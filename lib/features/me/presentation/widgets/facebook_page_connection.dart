@@ -66,6 +66,9 @@ class _FacebookPageConnectionState
   bool _needsPage = false;
   String? _pageName;
   String? _instagram;
+
+  /// Why the chosen Page shows no Instagram: NOT_GRANTED or NOT_LINKED.
+  String? _instagramMissing;
   bool _handledReturn = false;
 
   Dio get _dio => ref.read(dioProvider);
@@ -125,6 +128,7 @@ class _FacebookPageConnectionState
         _pageName = (page?['name'] as String?)?.trim();
         final ig = r['instagram'] is Map ? Map<String, dynamic>.from(r['instagram'] as Map) : null;
         _instagram = ig == null ? null : '${ig['username'] ?? ''}'.trim();
+        _instagramMissing = r['instagramMissing'] as String?;
       });
     } catch (_) {
       // Unknown, not "not connected": leave what was shown.
@@ -251,6 +255,21 @@ class _FacebookPageConnectionState
             ),
           ),
         ),
+        if (_expanded && ready && _instagramMissing != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AuraSpace.s4,
+              0,
+              AuraSpace.s4,
+              AuraSpace.s4,
+            ),
+            child: Text(
+              _instagramMissing == 'NOT_GRANTED'
+                  ? 'Instagram was not included when you connected. Choose Add Instagram, then tick your Instagram account on Facebook.'
+                  : 'This Page has no Instagram professional account linked. Link one to the Page in Meta Business Suite, then open this again.',
+              style: AuraText.small.copyWith(color: AuraSurface.muted),
+            ),
+          ),
         if (_expanded)
           Padding(
             padding: const EdgeInsets.fromLTRB(
@@ -267,6 +286,12 @@ class _FacebookPageConnectionState
                   AuraSecondaryButton(
                     label: 'Connect',
                     icon: Icons.link_rounded,
+                    onPressed: _busy ? null : _connect,
+                  ),
+                if (ready && _instagramMissing != null)
+                  AuraSecondaryButton(
+                    label: 'Add Instagram',
+                    icon: Icons.photo_camera_outlined,
                     onPressed: _busy ? null : _connect,
                   ),
                 if (_connected)
