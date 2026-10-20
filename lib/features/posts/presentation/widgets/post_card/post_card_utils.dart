@@ -111,6 +111,14 @@ String linkedInShareUrl(String postUrl) {
   return 'https://www.linkedin.com/sharing/share-offsite/?url=$u';
 }
 
+/// Facebook's own share page: the member sees the post's preview card and
+/// chooses where to share it. Apps may not post to a personal profile, so
+/// this is the only way an Aura link reaches someone's Facebook.
+String facebookShareUrl(String postUrl) {
+  final u = Uri.encodeComponent(postUrl);
+  return 'https://www.facebook.com/sharer/sharer.php?u=$u';
+}
+
 String emailShareUrl(String postUrl, {String subject = 'Aura post'}) {
   final s = Uri.encodeComponent(subject);
   final body = Uri.encodeComponent(postUrl);

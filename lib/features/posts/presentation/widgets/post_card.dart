@@ -70,7 +70,6 @@ Map<String, dynamic> _asMap(dynamic v) {
 
 String _readString(dynamic v) => (v ?? '').toString().trim();
 
-
 String _normalizeVisibilityLabel(String? raw) {
   final v = (raw ?? '').trim().toUpperCase();
   switch (v) {
@@ -514,73 +513,82 @@ class _PostCardState extends ConsumerState<PostCard> {
       showDragHandle: true,
       backgroundColor: AuraSurface.page,
       builder: (ctx) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AuraSpace.s16,
-              AuraSpace.s8,
-              AuraSpace.s16,
-              AuraSpace.s20,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (isOwnPost) ...[
-                  PostCardMenuActionTile(
-                    icon: Icons.edit_outlined,
-                    label: 'Edit work',
-                    onTap: () => Navigator.of(ctx).pop('edit_post'),
-                  ),
-                  PostCardMenuActionTile(
-                    icon: Icons.delete_outline,
-                    label: 'Delete work',
-                    onTap: () => Navigator.of(ctx).pop('delete_post'),
-                  ),
-                ],
-                PostCardMenuActionTile(
-                  icon: Icons.article_outlined,
-                  label: 'Open work',
-                  onTap: () => Navigator.of(ctx).pop('open_post'),
-                ),
-                if ((handle ?? '').trim().isNotEmpty)
-                  PostCardMenuActionTile(
-                    icon: Icons.person_outline,
-                    label: 'Open profile',
-                    onTap: () => Navigator.of(ctx).pop('open_profile'),
-                  ),
-                PostCardMenuActionTile(
-                  icon: Icons.link_outlined,
-                  label: 'Copy link',
-                  onTap: () => Navigator.of(ctx).pop('copy_link'),
-                ),
-                PostCardMenuActionTile(
-                  icon: Icons.work_outline,
-                  label: 'Share to LinkedIn',
-                  onTap: () => Navigator.of(ctx).pop('share_linkedin'),
-                ),
-                PostCardMenuActionTile(
-                  icon: Icons.email_outlined,
-                  label: 'Share to Email',
-                  onTap: () => Navigator.of(ctx).pop('share_email'),
-                ),
-                // Apple Store §1.2 UGC compliance — report + block
-                // affordances on every UGC card. Hidden on the user's
-                // own posts (you can't report or block yourself).
-                if (!isOwnPost) ...[
-                  const Divider(height: AuraSpace.s8),
-                  PostCardMenuActionTile(
-                    icon: Icons.flag_outlined,
-                    label: 'Report this work',
-                    onTap: () => Navigator.of(ctx).pop('report_post'),
-                  ),
-                  if (authorId.isNotEmpty)
+        // Scrolls only when the menu is taller than the screen allows
+        // (small phones, large text), so Report and Block stay reachable.
+        return SingleChildScrollView(
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AuraSpace.s16,
+                AuraSpace.s8,
+                AuraSpace.s16,
+                AuraSpace.s20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isOwnPost) ...[
                     PostCardMenuActionTile(
-                      icon: Icons.block_outlined,
-                      label: 'Block this author',
-                      onTap: () => Navigator.of(ctx).pop('block_user'),
+                      icon: Icons.edit_outlined,
+                      label: 'Edit work',
+                      onTap: () => Navigator.of(ctx).pop('edit_post'),
                     ),
+                    PostCardMenuActionTile(
+                      icon: Icons.delete_outline,
+                      label: 'Delete work',
+                      onTap: () => Navigator.of(ctx).pop('delete_post'),
+                    ),
+                  ],
+                  PostCardMenuActionTile(
+                    icon: Icons.article_outlined,
+                    label: 'Open work',
+                    onTap: () => Navigator.of(ctx).pop('open_post'),
+                  ),
+                  if ((handle ?? '').trim().isNotEmpty)
+                    PostCardMenuActionTile(
+                      icon: Icons.person_outline,
+                      label: 'Open profile',
+                      onTap: () => Navigator.of(ctx).pop('open_profile'),
+                    ),
+                  PostCardMenuActionTile(
+                    icon: Icons.link_outlined,
+                    label: 'Copy link',
+                    onTap: () => Navigator.of(ctx).pop('copy_link'),
+                  ),
+                  PostCardMenuActionTile(
+                    icon: Icons.work_outline,
+                    label: 'Share to LinkedIn',
+                    onTap: () => Navigator.of(ctx).pop('share_linkedin'),
+                  ),
+                  PostCardMenuActionTile(
+                    icon: Icons.people_outline,
+                    label: 'Share to Facebook',
+                    onTap: () => Navigator.of(ctx).pop('share_facebook'),
+                  ),
+                  PostCardMenuActionTile(
+                    icon: Icons.email_outlined,
+                    label: 'Share to Email',
+                    onTap: () => Navigator.of(ctx).pop('share_email'),
+                  ),
+                  // Apple Store §1.2 UGC compliance — report + block
+                  // affordances on every UGC card. Hidden on the user's
+                  // own posts (you can't report or block yourself).
+                  if (!isOwnPost) ...[
+                    const Divider(height: AuraSpace.s8),
+                    PostCardMenuActionTile(
+                      icon: Icons.flag_outlined,
+                      label: 'Report this work',
+                      onTap: () => Navigator.of(ctx).pop('report_post'),
+                    ),
+                    if (authorId.isNotEmpty)
+                      PostCardMenuActionTile(
+                        icon: Icons.block_outlined,
+                        label: 'Block this author',
+                        onTap: () => Navigator.of(ctx).pop('block_user'),
+                      ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         );
@@ -639,6 +647,13 @@ class _PostCardState extends ConsumerState<PostCard> {
           context,
           linkedInShareUrl(postUrl),
           fallbackCopyMessage: 'LinkedIn share link copied',
+        );
+        break;
+      case 'share_facebook':
+        await openExternalUrl(
+          context,
+          facebookShareUrl(postUrl),
+          fallbackCopyMessage: 'Facebook share link copied',
         );
         break;
       case 'share_email':
@@ -1360,6 +1375,17 @@ class _ActionRowState extends ConsumerState<_ActionRow> {
                             ctx,
                             linkedInShareUrl(canonicalPostUrl(postId)),
                             fallbackCopyMessage: 'LinkedIn share link copied',
+                          );
+                        },
+                      ),
+                      AuraSecondaryButton(
+                        label: 'Share to Facebook',
+                        icon: Icons.people_outline,
+                        onPressed: () async {
+                          await openExternalUrl(
+                            ctx,
+                            facebookShareUrl(canonicalPostUrl(postId)),
+                            fallbackCopyMessage: 'Facebook share link copied',
                           );
                         },
                       ),
