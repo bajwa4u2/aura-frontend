@@ -40,6 +40,9 @@ class AuthRepository {
     // of the Terms / EULA at the version named in `kTermsVersion`.
     required bool termsAccepted,
     required String termsAcceptedVersion,
+    /// The channel of the personal Invite to Aura link this person came
+    /// through, if any. The server counts it as a daily total only.
+    String? arrivedVia,
   }) async {
     try {
       final res = await _dio.post(
@@ -58,6 +61,8 @@ class AuthRepository {
           'jurisdiction': jurisdiction.trim().toUpperCase(),
           'termsAccepted': termsAccepted,
           'termsAcceptedVersion': termsAcceptedVersion,
+          if (arrivedVia != null && arrivedVia.trim().isNotEmpty)
+            'arrivedVia': arrivedVia.trim(),
         },
       );
 

@@ -546,6 +546,20 @@
   "parent": ""
  },
  {
+  "path": "/join/:handle",
+  "segments": 2,
+  "params": [
+   "handle"
+  ],
+  "renders": true,
+  "hasRedirect": false,
+  "childCount": 0,
+  "shellChain": [
+   "ShellRoute#0"
+  ],
+  "parent": ""
+ },
+ {
   "path": "/u/:handle/followers",
   "segments": 3,
   "params": [

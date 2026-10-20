@@ -1,3 +1,4 @@
+import '../../invite_to_aura/invite_to_aura.dart';
 import '../../../core/media/aura_media_viewer.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -901,6 +902,16 @@ class _MeScreenState extends ConsumerState<MeScreen>
       title: 'Connections',
       children: [
         MeSettingsItem(
+          label: 'Invite to Aura',
+          icon: Icons.person_add_outlined,
+          subtitle: 'Share a personal link with someone you would like here',
+          onTap: () => showInviteToAuraSheet(
+            context,
+            handle: _handle,
+            displayName: _displayName,
+          ),
+        ),
+        MeSettingsItem(
           label: 'Invitation center',
           icon: Icons.outbound_outlined,
           subtitle: _invitationCenterSubtitle,
@@ -909,7 +920,7 @@ class _MeScreenState extends ConsumerState<MeScreen>
         MeSettingsItem(
           label: 'New invite',
           icon: Icons.add_link_outlined,
-          subtitle: 'Create an invitation into Aura, a space, or thread',
+          subtitle: 'Invite someone into a space or a thread',
           onTap: () => context.push('/invite'),
         ),
         if (hasConnections)

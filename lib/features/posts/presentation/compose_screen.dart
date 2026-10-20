@@ -1,3 +1,4 @@
+import '../../invite_to_aura/invite_to_aura.dart';
 import 'package:aura/core/product/temporal.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -2999,6 +3000,23 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
+
+      // Once ever, after a public post (canon amendment 2026-10-20). It
+      // queues behind the line above and never delays leaving the composer.
+      if (!_isReply &&
+          !_isEditingPost &&
+          _visibility == PostVisibility.public &&
+          messenger != null) {
+        final me = inviterIdentity(ref);
+        unawaited(
+          maybeOfferInviteAfterPost(
+            messenger,
+            ref.read(inviteToAuraClientProvider),
+            handle: me.handle,
+            displayName: me.displayName,
+          ),
+        );
+      }
 
       final router = GoRouter.of(context);
       if (router.canPop()) {

@@ -1,3 +1,6 @@
+import 'dart:async';
+import '../../invite_to_aura/invite_to_aura.dart';
+import '../../../core/identity/person_identity_model.dart';
 import 'package:flutter/material.dart';
 import '../../../core/product/product_state.dart';
 import '../../../core/product/product_state_view.dart';
@@ -174,11 +177,36 @@ class _MemberHomeScreenState extends ConsumerState<MemberHomeScreen> {
     await ref.read(memberHomeFeedPagedProvider.notifier).refresh();
   }
 
+  bool _inviteDialogChecked = false;
+
+  /// The one-time invite dialog (canon amendment 2026-10-20): only on
+  /// opening Home, never while the first-session overlay is up, and the
+  /// server decides eligibility (7 days, has taken part, never had it).
+  Future<void> _maybeShowInviteDialog() async {
+    if (_inviteDialogChecked || _showActivation) return;
+    _inviteDialogChecked = true;
+    await Future<void>.delayed(const Duration(seconds: 2));
+    if (!mounted || _showActivation) return;
+    final route = ModalRoute.of(context);
+    if (route != null && !route.isCurrent) return;
+    final me = inviterIdentity(ref);
+    if (me.handle.isEmpty) return;
+    await maybeShowInviteDialog(
+      context,
+      ref,
+      handle: me.handle,
+      displayName: me.displayName,
+    );
+  }
+
   Future<void> _maybeShowActivationOverlay() async {
     if (_activationChecked) return;
     _activationChecked = true;
     final shouldShow = await ActivationOverlay.shouldShow();
-    if (!shouldShow || !mounted) return;
+    if (!shouldShow || !mounted) {
+      if (mounted) unawaited(_maybeShowInviteDialog());
+      return;
+    }
     // Defer one frame so the home renders behind the overlay first.
     await Future<void>.delayed(const Duration(milliseconds: 350));
     if (!mounted) return;
@@ -522,6 +550,7 @@ class _DiscourseStream extends ConsumerWidget {
                     'What they say appears here.',
                 icon: Icons.forum_outlined,
               ),
+              const _InviteFeedCard(),
               // Spaces is rendered earlier in the feed (above _DiscourseStream)
               // so we no longer also stamp it in the empty-state column. Keeping
               // it here would double-render the same section.
@@ -559,6 +588,9 @@ class _DiscourseStream extends ConsumerWidget {
               if (i < page.items.length - 1)
                 const SizedBox(height: AuraSpace.s12),
             ],
+            // A thin Home: few works and no more to load.
+            if (!page.hasMore && page.items.length < kInviteThinFeedItems)
+              const _InviteFeedCard(),
             const SizedBox(height: AuraSpace.s18),
             // Phase 3 — cursor-driven Load more.
             if (page.hasMore) ...[
@@ -586,6 +618,24 @@ class _DiscourseStream extends ConsumerWidget {
     );
   }
 
+}
+
+/// Under this many works with nothing more to load, Home is thin enough for
+/// the invite card (canon amendment 2026-10-20).
+const kInviteThinFeedItems = 5;
+
+/// The invite card for whoever is signed in; hides itself once had.
+class _InviteFeedCard extends ConsumerWidget {
+  const _InviteFeedCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(isAuthedProvider)) return const SizedBox.shrink();
+    final me = AuraPersonIdentity.fromJson(
+      ref.watch(authMeDataProvider).valueOrNull,
+    );
+    return InviteToAuraFeedCard(handle: me.handle, displayName: me.displayName);
+  }
 }
 
 /// Stronger section title — heading + one-line subtitle. Anchors the

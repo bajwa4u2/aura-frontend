@@ -155,6 +155,9 @@ bool isPublicPath(String path) {
       // being public never implies its editor is.
       (path.startsWith('/posts/') && !_isEditingPath(path)) ||
       path.startsWith('/u/') ||
+      // A member's personal Invite to Aura link: made for people who are not
+      // on Aura yet (canon amendment 2026-10-20).
+      path.startsWith('/join/') ||
       path.startsWith('/author/') ||
       path.startsWith('/support/') ||
       isPublicInviteAcceptPath(path)) {

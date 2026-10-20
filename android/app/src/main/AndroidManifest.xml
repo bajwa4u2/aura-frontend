@@ -159,6 +159,9 @@
                 <!-- Guest-reachable meeting entry. -->
                 <data android:pathPrefix="/meetings/join/" />
 
+                <!-- A member's personal Invite to Aura link (/join/<handle>). -->
+                <data android:pathPrefix="/join/" />
+
                 <!--
                   THE OTHER GUEST-REACHABLE ENTRY, AND THE ONE THAT ARRIVES BY
                   EMAIL.

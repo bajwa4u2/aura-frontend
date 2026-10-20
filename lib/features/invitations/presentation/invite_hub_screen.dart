@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/ui/aura_card.dart';
@@ -9,8 +10,9 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../../../core/navigation/canonical_destinations.dart';
+import '../../invite_to_aura/invite_to_aura.dart';
 
-class InviteHubScreen extends StatelessWidget {
+class InviteHubScreen extends ConsumerWidget {
   const InviteHubScreen({
     super.key,
     this.spaceId,
@@ -41,7 +43,7 @@ class InviteHubScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final options = <_InviteOptionData>[];
 
     if (_hasThreadContext) {
@@ -82,11 +84,12 @@ class InviteHubScreen extends StatelessWidget {
       options.addAll([
         _InviteOptionData(
           title: 'Invite into Aura',
-          subtitle: 'Send an invitation to someone not yet on the platform.',
+          subtitle: 'Share your personal link with someone not yet on the platform.',
           icon: Icons.public_outlined,
-          onTap: () => context.push(
-            _withReturnTo('/invite/create?destinationType=JOIN_AURA'),
-          ),
+          // The legacy JOIN_AURA create lost its link (the server returned
+          // `shareLink`, the client looked for `token`); the personal link
+          // replaces it.
+          onTap: () => showInviteToAuraSheetForMe(context, ref),
         ),
         _InviteOptionData(
           title: 'Import contacts & invite',

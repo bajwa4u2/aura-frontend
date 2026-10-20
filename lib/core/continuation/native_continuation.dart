@@ -132,6 +132,13 @@ ContinuationTarget? resolveCanonicalShare(String path) {
         appPath: '/meetings/join/${rest[0]}',
         family: 'MEETING',
       );
+    case 'join':
+      // A member's personal Invite to Aura link (canon amendment 2026-10-20).
+      if (rest.length != 1) return null;
+      return ContinuationTarget(
+        appPath: '/join/${rest[0]}',
+        family: 'INVITE_TO_AURA',
+      );
     default:
       // USER_POST is the catch-all `/p/:id`, so it is tried LAST and only when
       // there is exactly one segment after `/p`. Any deeper path with an

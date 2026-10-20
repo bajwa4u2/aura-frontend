@@ -134,6 +134,7 @@ import 'features/create/presentation/create_hub_screen.dart';
 import 'features/invitations/presentation/invite_hub_screen.dart';
 import 'features/invitations/presentation/invitations_screen.dart';
 import 'features/invitations/presentation/invite_accept_screen.dart';
+import 'features/invite_to_aura/join_invite_screen.dart';
 import 'features/invitations/presentation/invite_create_screen.dart';
 import 'features/invitations/presentation/contact_import_screen.dart';
 import 'features/realtime/presentation/call_detail_screen.dart';
@@ -1394,6 +1395,15 @@ final routerProvider = Provider<GoRouter>((ref) {
               handle: state.pathParameters['handle'] ?? '',
             ),
           ),
+          // A member's personal Invite to Aura link (canon amendment
+          // 2026-10-20). Public: it is made for people not on Aura yet.
+          GoRoute(
+            path: '/join/:handle',
+            builder: (context, state) => JoinInviteScreen(
+              handle: state.pathParameters['handle'] ?? '',
+              via: state.uri.queryParameters['via'],
+            ),
+          ),
           GoRoute(
             path: '/u/:handle/followers',
             builder: (context, state) =>
@@ -1428,6 +1438,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/register',
             builder: (context, state) => RegisterScreen(
               redirectTo: state.uri.queryParameters['redirect'],
+              arrivedVia: state.uri.queryParameters['via'],
             ),
           ),
           GoRoute(

@@ -228,7 +228,7 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '  # proxy_pass carries a variable, which is what permits a URI part' \
 '  # inside a regex location -- the same construction the media door' \
 '  # below already relies on.' \
-'  location ~ ^/(?:articles|announcements|posts|u)/[^/]+$ {' \
+'  location ~ ^/(?:articles|announcements|posts|u|join)/[^/]+$ {' \
 '    resolver 1.1.1.1 8.8.8.8 valid=300s ipv6=off;' \
 '    resolver_timeout 5s;' \
 '    proxy_pass ${AURA_BACKEND_API_ORIGIN}/v1/shell$request_uri;' \

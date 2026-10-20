@@ -284,6 +284,18 @@ class NavigationAuthority {
     return '/login?redirect=${Uri.encodeQueryComponent(destination)}';
   }
 
+  /// JOIN AURA, returning to where the person was going, and carrying the
+  /// Invite to Aura channel they arrived through (counted as a daily total).
+  static String joinRoute({String? returnTo, String? via}) {
+    final destination = (returnTo ?? '').trim();
+    final channel = (via ?? '').trim();
+    final q = <String>[
+      if (destination.isNotEmpty) 'redirect=${Uri.encodeQueryComponent(destination)}',
+      if (channel.isNotEmpty) 'via=${Uri.encodeQueryComponent(channel)}',
+    ];
+    return q.isEmpty ? '/register' : '/register?${q.join('&')}';
+  }
+
   // ── Canonical object route builders ──────────────────────────────
 
   static String personRoute(String handle) => '/u/$handle';

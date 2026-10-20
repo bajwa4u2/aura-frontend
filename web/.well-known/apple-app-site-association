@@ -61,7 +61,11 @@
           },
           {
             "/": "/meetings/join/*",
-            "comment": "Guest-reachable meeting entry. NOT /join/* - that path is declared by no router."
+            "comment": "Guest-reachable meeting entry."
+          },
+          {
+            "/": "/join/*",
+            "comment": "A member's personal Invite to Aura link (/join/:handle)."
           },
           {
             "/": "/i/*",

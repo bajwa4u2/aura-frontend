@@ -50,6 +50,13 @@
       "matchOrder": 40
     },
     {
+      "type": "INVITE_TO_AURA",
+      "canonicalPattern": "/p/join/:handle",
+      "appPath": "/join/:handle",
+      "matchOrder": 45,
+      "note": "A member's personal Invite to Aura link (canon amendment 2026-10-20). Public to anyone; signed-in visitors continue to the inviter's profile."
+    },
+    {
       "type": "MEETING",
       "canonicalPattern": "/p/m/:code",
       "appPath": "/meetings/join/:code",
@@ -98,7 +105,11 @@
       },
       {
         "prefix": "/meetings/join/",
-        "why": "Guest-reachable meeting entry. NOT /join/ -- that path is declared by no router and fails closed to MEMBER, which put a login wall in front of invited guests."
+        "why": "Guest-reachable meeting entry. A meeting is never at bare /join/: that was once a path no router declared, which failed closed to MEMBER and put a login wall in front of invited guests."
+      },
+      {
+        "prefix": "/join/",
+        "why": "A member's personal Invite to Aura link, /join/:handle (canon amendment 2026-10-20). Declared PUBLIC in the client router."
       },
       {
         "prefix": "/i/",
