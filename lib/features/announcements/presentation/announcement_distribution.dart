@@ -14,7 +14,23 @@ class AnnouncementDistribution extends StatefulWidget {
     required this.initialLinkedin,
     required this.initialTiktok,
     required this.onChanged,
+    this.facebookConnected = false,
+    this.facebookPageName,
+    this.instagramConnected = false,
+    this.instagramUsername,
+    this.initialFacebook = false,
+    this.initialInstagram = false,
   });
+
+  /// A Facebook Page chosen under Connected accounts (2026-10-20).
+  final bool facebookConnected;
+  final String? facebookPageName;
+
+  /// The professional Instagram linked to that Page, if any.
+  final bool instagramConnected;
+  final String? instagramUsername;
+  final bool initialFacebook;
+  final bool initialInstagram;
 
   final bool linkedinConnected;
   final bool tiktokConnected;
@@ -38,6 +54,8 @@ class AnnouncementDistribution extends StatefulWidget {
     required bool aura,
     required bool linkedin,
     required bool tiktok,
+    required bool facebook,
+    required bool instagram,
   }) onChanged;
 
   @override
@@ -48,6 +66,8 @@ class _AnnouncementDistributionState extends State<AnnouncementDistribution> {
   late bool aura;
   late bool linkedin;
   late bool tiktok;
+  late bool facebook;
+  late bool instagram;
 
   @override
   void initState() {
@@ -55,6 +75,8 @@ class _AnnouncementDistributionState extends State<AnnouncementDistribution> {
     aura = widget.initialAura;
     linkedin = widget.initialLinkedin;
     tiktok = widget.initialTiktok;
+    facebook = widget.initialFacebook;
+    instagram = widget.initialInstagram;
   }
 
   @override
@@ -70,6 +92,16 @@ class _AnnouncementDistributionState extends State<AnnouncementDistribution> {
       tiktok = false;
       _emit();
     }
+
+    if (!widget.facebookConnected && facebook) {
+      facebook = false;
+      _emit();
+    }
+
+    if (!widget.instagramConnected && instagram) {
+      instagram = false;
+      _emit();
+    }
   }
 
   void _emit() {
@@ -77,6 +109,8 @@ class _AnnouncementDistributionState extends State<AnnouncementDistribution> {
       aura: aura,
       linkedin: linkedin,
       tiktok: tiktok,
+      facebook: facebook,
+      instagram: instagram,
     );
   }
 
@@ -164,6 +198,34 @@ class _AnnouncementDistributionState extends State<AnnouncementDistribution> {
           onChanged: (widget.tiktokConnected && widget.tiktokEnabled)
               ? (v) {
                   setState(() => tiktok = v);
+                  _emit();
+                }
+              : null,
+        ),
+        _row(
+          title: 'Facebook Page',
+          subtitle: widget.facebookConnected
+              ? (widget.facebookPageName?.trim().isNotEmpty == true
+                  ? widget.facebookPageName!.trim()
+                  : 'Connected')
+              : 'Not connected \u2014 connect a Facebook Page on your profile',
+          value: facebook,
+          onChanged: widget.facebookConnected
+              ? (v) {
+                  setState(() => facebook = v);
+                  _emit();
+                }
+              : null,
+        ),
+        _row(
+          title: 'Instagram',
+          subtitle: widget.instagramConnected
+              ? '${widget.instagramUsername?.trim().isNotEmpty == true ? '@${widget.instagramUsername!.trim()}' : 'Connected'} \u00b7 needs a photo or video'
+              : 'Comes with a Facebook Page that has Instagram linked',
+          value: instagram,
+          onChanged: widget.instagramConnected
+              ? (v) {
+                  setState(() => instagram = v);
                   _emit();
                 }
               : null,

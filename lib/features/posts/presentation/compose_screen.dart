@@ -348,6 +348,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     label: 'Facebook Page',
     state: DestinationState.temporarilyUnavailable,
   );
+  DestinationCapability _instagram = const DestinationCapability(
+    id: 'instagram',
+    label: 'Instagram',
+    state: DestinationState.temporarilyUnavailable,
+  );
 
   bool _tiktokLoading = false;
   final bool _tiktokActionBusy = false;
@@ -357,6 +362,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   bool _linkedinLoading = false;
   bool _publishToLinkedIn = false;
   bool _publishToFacebook = false;
+  bool _publishToInstagram = false;
 
   bool get _isReply =>
       widget.replyToPostId != null || widget.replyToInstitutionPostId != null;
@@ -399,6 +405,15 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   }
 
   bool get _hasTikTokVideo => _primaryTikTokVideoAttachment != null;
+
+  /// Instagram takes a photo or a video; an uploaded one of either will do.
+  bool get _hasInstagramMedia => _attachments.any(
+        (a) =>
+            (a.isVideo || a.isImage) &&
+            a.isUploaded &&
+            !a.uploading &&
+            (a.url ?? '').trim().isNotEmpty,
+      );
 
   /// The canonical composition. Built from live fields rather than stored, so
   /// it cannot drift from them.
@@ -875,6 +890,19 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           contentSupported: _visibility == PostVisibility.public,
           unsupportedDetail: 'Facebook takes public posts only',
         );
+        // Instagram comes with the chosen Page and needs a photo or video.
+        _instagram = _resolveDestination(
+          id: 'instagram',
+          label: 'Instagram',
+          probe: probes[2],
+          connected: facebookAccount.instagram.isNotEmpty,
+          accountLabel: facebookAccount.instagram.isEmpty
+              ? ''
+              : '@${facebookAccount.instagram}',
+          contentSupported:
+              _visibility == PostVisibility.public && _hasInstagramMedia,
+          unsupportedDetail: 'Instagram needs a photo or video in a public post',
+        );
       });
     } catch (_) {
       // WE COULD NOT ASK. That is a state, not an error message -- and
@@ -889,6 +917,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           state: DestinationState.temporarilyUnavailable,
         );
         _facebook = _facebook.copyWith(
+          state: DestinationState.temporarilyUnavailable,
+        );
+        _instagram = _instagram.copyWith(
           state: DestinationState.temporarilyUnavailable,
         );
       });
@@ -1101,6 +1132,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
     if (!_facebook.isPublishable && _publishToFacebook) {
       _publishToFacebook = false;
+    }
+    if (!_instagram.isPublishable && _publishToInstagram) {
+      _publishToInstagram = false;
     }
   }
 
@@ -2754,17 +2788,28 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   }
 
   /// The Facebook connection as the composer needs it: is a Page chosen.
-  ({bool connected, bool needsPage, String pageName}) _asFacebookAccount(
+  ({bool connected, bool needsPage, String pageName, String instagram})
+      _asFacebookAccount(
     dynamic raw,
   ) {
     var m = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
     if (m['data'] is Map) m = Map<String, dynamic>.from(m['data'] as Map);
     final page =
         m['page'] is Map ? Map<String, dynamic>.from(m['page'] as Map) : null;
+    final ig =
+        m['instagram'] is Map ? Map<String, dynamic>.from(m['instagram'] as Map) : null;
     return (
       connected: m['connected'] == true,
       needsPage: m['needsPage'] == true,
       pageName: _str(page?['name']),
+      instagram: ig == null ? '' : (_str(ig['username']).isEmpty ? 'instagram' : _str(ig['username'])),
+    );
+  }
+
+  Future<void> _publishToInstagramNow(String postId) async {
+    await ref.read(dioProvider).post(
+      '/integrations/instagram/publish/post',
+      data: {'postId': postId, 'caption': _textController.text.trim()},
     );
   }
 
@@ -2958,7 +3003,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       publishedPostId = await _publishNow();
 
       if (!_isReply &&
-          (_publishToTikTok || _publishToLinkedIn || _publishToFacebook) &&
+          (_publishToTikTok ||
+              _publishToLinkedIn ||
+              _publishToFacebook ||
+              _publishToInstagram) &&
           (publishedPostId ?? '').trim().isNotEmpty) {
         final queuedTargets = <String>[];
         final failedTargets = <String>[];
@@ -2997,6 +3045,15 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             queuedTargets.add('Facebook');
           } catch (e) {
             failedTargets.add('Facebook (${AppErrorMapper.from(e).message})');
+          }
+        }
+
+        if (_publishToInstagram) {
+          try {
+            await _publishToInstagramNow(publishedPostId!);
+            queuedTargets.add('Instagram');
+          } catch (e) {
+            failedTargets.add('Instagram (${AppErrorMapper.from(e).message})');
           }
         }
 
@@ -3776,7 +3833,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   Widget _buildExternalPublishingBlock() {
     if (_isReply) return const SizedBox.shrink();
-    if (!_tiktok.isVisible && !_linkedin.isVisible && !_facebook.isVisible) {
+    if (!_tiktok.isVisible &&
+        !_linkedin.isVisible &&
+        !_facebook.isVisible &&
+        !_instagram.isVisible) {
       return const SizedBox.shrink();
     }
 
@@ -3827,7 +3887,21 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 selected: _publishToFacebook,
                 onChanged: (v) => setState(() => _publishToFacebook = v),
               ),
-              if (_publishToTikTok || _publishToLinkedIn || _publishToFacebook) ...[
+              if (_instagram.isVisible) ...[
+                const SizedBox(height: AuraSpace.s12),
+                Container(height: 1, color: AuraSurface.divider),
+                const SizedBox(height: AuraSpace.s12),
+              ],
+              _buildDestinationRow(
+                cap: _instagram,
+                icon: Icons.photo_camera_outlined,
+                selected: _publishToInstagram,
+                onChanged: (v) => setState(() => _publishToInstagram = v),
+              ),
+              if (_publishToTikTok ||
+                  _publishToLinkedIn ||
+                  _publishToFacebook ||
+                  _publishToInstagram) ...[
                 const SizedBox(height: AuraSpace.s10),
                 Text(
                   _externalPublishingNote(),
@@ -3843,13 +3917,17 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   /// Aura always publishes first; then each chosen destination, by name.
   String _externalPublishingNote() {
-    if (_publishToTikTok && !_publishToLinkedIn && !_publishToFacebook) {
+    if (_publishToTikTok &&
+        !_publishToLinkedIn &&
+        !_publishToFacebook &&
+        !_publishToInstagram) {
       return 'Aura will publish the post first, then queue the first uploaded video to TikTok.';
     }
     final names = <String>[
       if (_publishToTikTok) 'TikTok',
       if (_publishToLinkedIn) 'LinkedIn',
       if (_publishToFacebook) 'your Facebook Page',
+      if (_publishToInstagram) 'Instagram',
     ];
     final list = names.length == 1
         ? names.first

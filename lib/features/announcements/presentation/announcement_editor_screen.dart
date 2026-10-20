@@ -93,6 +93,12 @@ class _AnnouncementEditorScreenState
   bool _publishToAura = true;
   bool _publishToLinkedIn = false;
   bool _publishToTikTok = false;
+  bool _publishToFacebook = false;
+  bool _publishToInstagram = false;
+  bool _facebookConnected = false;
+  String _facebookPageName = '';
+  bool _instagramConnected = false;
+  String _instagramUsername = '';
 
   bool _submitting = false;
   String? _submitError;
@@ -952,6 +958,30 @@ class _AnnouncementEditorScreenState
         }
       }
 
+      if (_publishToFacebook) {
+        try {
+          await ref.read(dioProvider).post(
+            '/integrations/facebook/publish/announcement',
+            data: {'announcementId': published.id},
+          );
+          completed.add('Facebook');
+        } catch (e) {
+          failed.add('Facebook (${AppErrorMapper.from(e).message})');
+        }
+      }
+
+      if (_publishToInstagram) {
+        try {
+          await ref.read(dioProvider).post(
+            '/integrations/instagram/publish/announcement',
+            data: {'announcementId': published.id},
+          );
+          completed.add('Instagram');
+        } catch (e) {
+          failed.add('Instagram (${AppErrorMapper.from(e).message})');
+        }
+      }
+
       if (_publishToTikTok) {
         try {
           await _publishAnnouncementToTikTok(
@@ -1015,6 +1045,7 @@ class _AnnouncementEditorScreenState
     await Future.wait<void>([
       _loadTikTokConnection(),
       _loadLinkedInConnection(),
+      _loadMetaConnection(),
     ]);
   }
 
@@ -1070,6 +1101,26 @@ class _AnnouncementEditorScreenState
       if (mounted) {
         setState(() => _tiktokLoading = false);
       }
+    }
+  }
+
+  /// The chosen Facebook Page and its linked Instagram, in one read.
+  Future<void> _loadMetaConnection() async {
+    try {
+      final res = await ref.read(dioProvider).get('/integrations/facebook/account');
+      var m = res.data is Map ? Map<String, dynamic>.from(res.data as Map) : <String, dynamic>{};
+      if (m['data'] is Map) m = Map<String, dynamic>.from(m['data'] as Map);
+      final page = m['page'] is Map ? Map<String, dynamic>.from(m['page'] as Map) : null;
+      final ig = m['instagram'] is Map ? Map<String, dynamic>.from(m['instagram'] as Map) : null;
+      if (!mounted) return;
+      setState(() {
+        _facebookConnected = m['connected'] == true && page != null;
+        _facebookPageName = (page?['name'] ?? '').toString();
+        _instagramConnected = ig != null;
+        _instagramUsername = (ig?['username'] ?? '').toString();
+      });
+    } catch (_) {
+      // Unknown is not "not connected"; the switches simply stay off.
     }
   }
 
@@ -1763,15 +1814,25 @@ class _AnnouncementEditorScreenState
                       initialAura: _publishToAura,
                       initialLinkedin: _publishToLinkedIn,
                       initialTiktok: _publishToTikTok,
+                      facebookConnected: _facebookConnected,
+                      facebookPageName: _facebookPageName,
+                      instagramConnected: _instagramConnected,
+                      instagramUsername: _instagramUsername,
+                      initialFacebook: _publishToFacebook,
+                      initialInstagram: _publishToInstagram,
                       onChanged: ({
                         required bool aura,
                         required bool linkedin,
                         required bool tiktok,
+                        required bool facebook,
+                        required bool instagram,
                       }) {
                         setState(() {
                           _publishToAura = aura;
                           _publishToLinkedIn = linkedin;
                           _publishToTikTok = tiktok;
+                          _publishToFacebook = facebook;
+                          _publishToInstagram = instagram;
                         });
                       },
                     ),

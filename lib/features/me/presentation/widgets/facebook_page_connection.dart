@@ -65,6 +65,7 @@ class _FacebookPageConnectionState
   bool _connected = false;
   bool _needsPage = false;
   String? _pageName;
+  String? _instagram;
   bool _handledReturn = false;
 
   Dio get _dio => ref.read(dioProvider);
@@ -122,6 +123,8 @@ class _FacebookPageConnectionState
         _connected = r['connected'] == true;
         _needsPage = r['needsPage'] == true;
         _pageName = (page?['name'] as String?)?.trim();
+        final ig = r['instagram'] is Map ? Map<String, dynamic>.from(r['instagram'] as Map) : null;
+        _instagram = ig == null ? null : '${ig['username'] ?? ''}'.trim();
       });
     } catch (_) {
       // Unknown, not "not connected": leave what was shown.
@@ -200,7 +203,11 @@ class _FacebookPageConnectionState
             ? 'Not connected'
             : _needsPage
                 ? 'Choose a Page to share to'
-                : (_pageName?.isNotEmpty == true ? _pageName! : 'Connected');
+                : [
+                    _pageName?.isNotEmpty == true ? _pageName! : 'Connected',
+                    if (_instagram != null)
+                      _instagram!.isEmpty ? 'Instagram linked' : 'Instagram @$_instagram',
+                  ].join(' · ');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -310,7 +317,7 @@ Future<FacebookPageOption?> showFacebookPagePicker(
             const Text('Share to which Facebook Page?', style: AuraText.subtitle),
             const SizedBox(height: AuraSpace.s4),
             const Text(
-              'Posts you choose to share will appear on this Page, with a link back to Aura.',
+              'Posts you choose to share will appear on this Page, with a link back to Aura. If the Page has Instagram linked, you can share there too.',
               style: AuraText.small,
             ),
             const SizedBox(height: AuraSpace.s12),
