@@ -1,5 +1,9 @@
 # Current State — aura_final
 
+## Share to Facebook — live on the web 2026-10-20
+
+Web `c3cde6c2` (deployed by hand through Railway on founder approval; pushing `main` alone does not deploy). "Share to Facebook" sits after "Share to LinkedIn" in the post ⋯ menu, the share sheet and the post share panel; it opens facebook.com/sharer with the canonical `/p/<id>` link. Post menu and share sheet now scroll on short screens (at 360×640 Report and Block had been unreachable). Server `FACEBOOK_APP_ID=1125593793159790` set and redeployed on its unchanged commit `11c5dfd6`, so share pages carry fb:app_id. Full suite 3505 passed. Verified live, signed in as the founder: the four share choices show; Facebook's card reads the post title. Native apps carry it with their next release. Design record DD-48.
+
 ## Release 1.5.0 / 1.5.1 — 2026-09-25
 
 Web 1.5.0 (42) live (`4ef86f59`). Play 1.5.0 (40) submitted (`3adbc7fb`). iOS 1.5.0 (42) in App

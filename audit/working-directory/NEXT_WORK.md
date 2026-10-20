@@ -1,5 +1,12 @@
 # Next Work - aura_final
 
+## After Share to Facebook (2026-10-20)
+
+1. "Invite to Aura" under Me → Connections, within the frozen invitation canon (founder chose option 1, 20 Oct): a personal link, no per-member credit or rewards, arrivals counted per channel only. Design to the founder for approval before building.
+2. Native releases (iOS, Play, Windows) carry Share to Facebook with the next version.
+3. Parked by the founder ("leave it for now"): the raw `/p/<id>` line on the Share screen; options were remove it, a readable line, or readable links everywhere.
+4. Facebook Pages and Instagram publishing: plan in `aura-backend/docs/2026-10-20-facebook-instagram-sharing-and-invites-plan.md` (Phase 0 shared-base fixes first).
+
 ## After release 1.5.0 / 1.5.1 (2026-09-25)
 
 1. Microsoft Submission 17 (1.5.1.0): founder pastes listing text, submits.

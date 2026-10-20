@@ -1,5 +1,11 @@
 # Decisions — aura_final
 
+## Sharing and invites — founder, 2026-10-20
+
+- Share to Facebook through Facebook's own share page (no app may post to a personal profile); approved built and released (DD-48).
+- Invites: the frozen invitation canon stands (option 1). No referral mechanics or per-member credit; one quiet "Invite to Aura" under Me → Connections; channel totals only.
+- The raw post id in the Share screen's link line: left as it is for now.
+
 ## Monetization build calls — decided by Claude under founder delegation, 2026-10-07
 
 Founder (2026-10-07): "own it, wear the founder hat and take product decision by keeping institutions prospects in mind as what we promising." Calls made so far, each judged by what an institution is promised:

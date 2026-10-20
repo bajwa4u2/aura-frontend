@@ -1,5 +1,9 @@
 # Handoff - aura_final
 
+## 2026-10-20 — SHARE TO FACEBOOK LIVE ON THE WEB
+
+Branch `share-to-facebook` = `main` = `c3cde6c2`. The web service does not deploy on push: start it with Railway `serviceInstanceDeployV2(commitSha)` after the founder's explicit yes. Meta app "Aura" (App ID 1125593793159790) exists under the founder's developer account, development mode, no business portfolio; App Secret not yet stored (founder's step). Next: NEXT_WORK item 1.
+
 ## 2026-09-25 — RELEASE 1.5.0 SHIPPED ACROSS PLATFORMS; 1.5.1 WINDOWS DRAFTED
 
 Read `RELEASE_1.5.0_1.5.1_RECORD.md` first. Deploys to production need a single explicit
