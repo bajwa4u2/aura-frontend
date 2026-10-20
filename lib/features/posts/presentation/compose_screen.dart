@@ -343,6 +343,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     label: 'LinkedIn',
     state: DestinationState.temporarilyUnavailable,
   );
+  DestinationCapability _facebook = const DestinationCapability(
+    id: 'facebook',
+    label: 'Facebook Page',
+    state: DestinationState.temporarilyUnavailable,
+  );
 
   bool _tiktokLoading = false;
   final bool _tiktokActionBusy = false;
@@ -351,6 +356,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   bool _linkedinLoading = false;
   bool _publishToLinkedIn = false;
+  bool _publishToFacebook = false;
 
   bool get _isReply =>
       widget.replyToPostId != null || widget.replyToInstitutionPostId != null;
@@ -829,7 +835,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       final probes = await Future.wait<_ProviderProbe>([
         _probeProvider(dio, '/integrations/tiktok/account'),
         _probeProvider(dio, '/integrations/linkedin/account'),
+        _probeProvider(dio, '/integrations/facebook/account'),
       ]);
+      final facebookAccount = _asFacebookAccount(probes[2].data);
 
       final tiktokAccount = _unwrapTikTokAccount(probes[0].data);
       final linkedinAccount = _unwrapLinkedInAccount(probes[1].data);
@@ -855,6 +863,18 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           connected: _readLinkedInConnected(linkedinAccount),
           accountLabel: _readLinkedInAccountLabel(linkedinAccount),
         );
+        // Connected means a Page has been chosen: a Facebook account with no
+        // Page has nowhere to post.
+        _facebook = _resolveDestination(
+          id: 'facebook',
+          label: 'Facebook Page',
+          probe: probes[2],
+          connected: facebookAccount.connected && !facebookAccount.needsPage,
+          accountLabel: facebookAccount.pageName,
+          // Facebook takes only what is public on Aura; the server refuses the rest.
+          contentSupported: _visibility == PostVisibility.public,
+          unsupportedDetail: 'Facebook takes public posts only',
+        );
       });
     } catch (_) {
       // WE COULD NOT ASK. That is a state, not an error message -- and
@@ -866,6 +886,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           state: DestinationState.temporarilyUnavailable,
         );
         _linkedin = _linkedin.copyWith(
+          state: DestinationState.temporarilyUnavailable,
+        );
+        _facebook = _facebook.copyWith(
           state: DestinationState.temporarilyUnavailable,
         );
       });
@@ -1075,6 +1098,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     }
     if (!_linkedin.isPublishable && _publishToLinkedIn) {
       _publishToLinkedIn = false;
+    }
+    if (!_facebook.isPublishable && _publishToFacebook) {
+      _publishToFacebook = false;
     }
   }
 
@@ -2727,6 +2753,28 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     return '${collapsed.substring(0, 147).trim()}...';
   }
 
+  /// The Facebook connection as the composer needs it: is a Page chosen.
+  ({bool connected, bool needsPage, String pageName}) _asFacebookAccount(
+    dynamic raw,
+  ) {
+    var m = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+    if (m['data'] is Map) m = Map<String, dynamic>.from(m['data'] as Map);
+    final page =
+        m['page'] is Map ? Map<String, dynamic>.from(m['page'] as Map) : null;
+    return (
+      connected: m['connected'] == true,
+      needsPage: m['needsPage'] == true,
+      pageName: _str(page?['name']),
+    );
+  }
+
+  Future<void> _publishToFacebookNow(String postId) async {
+    await ref.read(dioProvider).post(
+      '/integrations/facebook/publish/post',
+      data: {'postId': postId, 'message': _textController.text.trim()},
+    );
+  }
+
   Future<void> _publishToLinkedInNow(String postId) async {
     final dio = ref.read(dioProvider);
 
@@ -2910,7 +2958,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       publishedPostId = await _publishNow();
 
       if (!_isReply &&
-          (_publishToTikTok || _publishToLinkedIn) &&
+          (_publishToTikTok || _publishToLinkedIn || _publishToFacebook) &&
           (publishedPostId ?? '').trim().isNotEmpty) {
         final queuedTargets = <String>[];
         final failedTargets = <String>[];
@@ -2940,6 +2988,15 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             queuedTargets.add('LinkedIn');
           } catch (e) {
             failedTargets.add('LinkedIn (${AppErrorMapper.from(e).message})');
+          }
+        }
+
+        if (_publishToFacebook) {
+          try {
+            await _publishToFacebookNow(publishedPostId!);
+            queuedTargets.add('Facebook');
+          } catch (e) {
+            failedTargets.add('Facebook (${AppErrorMapper.from(e).message})');
           }
         }
 
@@ -3719,7 +3776,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
   Widget _buildExternalPublishingBlock() {
     if (_isReply) return const SizedBox.shrink();
-    if (!_tiktok.isVisible && !_linkedin.isVisible) {
+    if (!_tiktok.isVisible && !_linkedin.isVisible && !_facebook.isVisible) {
       return const SizedBox.shrink();
     }
 
@@ -3758,14 +3815,22 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 selected: _publishToLinkedIn,
                 onChanged: (v) => setState(() => _publishToLinkedIn = v),
               ),
-              if (_publishToTikTok || _publishToLinkedIn) ...[
+              if (_facebook.isVisible &&
+                  (_tiktok.isVisible || _linkedin.isVisible)) ...[
+                const SizedBox(height: AuraSpace.s12),
+                Container(height: 1, color: AuraSurface.divider),
+                const SizedBox(height: AuraSpace.s12),
+              ],
+              _buildDestinationRow(
+                cap: _facebook,
+                icon: Icons.people_outline,
+                selected: _publishToFacebook,
+                onChanged: (v) => setState(() => _publishToFacebook = v),
+              ),
+              if (_publishToTikTok || _publishToLinkedIn || _publishToFacebook) ...[
                 const SizedBox(height: AuraSpace.s10),
                 Text(
-                  _publishToTikTok && _publishToLinkedIn
-                      ? 'Aura publishes first, then sends the post to TikTok and LinkedIn.'
-                      : _publishToTikTok
-                      ? 'Aura will publish the post first, then queue the first uploaded video to TikTok.'
-                      : 'Aura will publish the post first, then send the text to LinkedIn.',
+                  _externalPublishingNote(),
                   style: AuraText.small.copyWith(color: AuraSurface.muted),
                 ),
               ],
@@ -3774,6 +3839,22 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         ),
       ],
     );
+  }
+
+  /// Aura always publishes first; then each chosen destination, by name.
+  String _externalPublishingNote() {
+    if (_publishToTikTok && !_publishToLinkedIn && !_publishToFacebook) {
+      return 'Aura will publish the post first, then queue the first uploaded video to TikTok.';
+    }
+    final names = <String>[
+      if (_publishToTikTok) 'TikTok',
+      if (_publishToLinkedIn) 'LinkedIn',
+      if (_publishToFacebook) 'your Facebook Page',
+    ];
+    final list = names.length == 1
+        ? names.first
+        : '${names.sublist(0, names.length - 1).join(', ')} and ${names.last}';
+    return 'Aura publishes first, then sends the post to $list.';
   }
 
   Widget _buildBottomBar(BuildContext context) {

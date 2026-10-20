@@ -1,3 +1,4 @@
+import 'facebook_page_connection.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/ui/aura_platform_components.dart';
@@ -74,6 +75,12 @@ class _MeConnectedAccountsPanelState
             color: AuraSurface.divider,
           ),
           _tiktokTile(),
+          Container(
+            height: 1,
+            margin: const EdgeInsets.symmetric(vertical: AuraSpace.s4),
+            color: AuraSurface.divider,
+          ),
+          const FacebookPageConnection(),
         ],
       ),
     );
