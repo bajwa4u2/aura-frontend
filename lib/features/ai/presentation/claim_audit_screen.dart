@@ -8,6 +8,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_text.dart';
 import '../providers.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class ClaimAuditScreen extends ConsumerStatefulWidget {
   const ClaimAuditScreen({super.key});
@@ -453,9 +454,7 @@ class _CopySuggestionBox extends StatelessWidget {
                 : () async {
                     await Clipboard.setData(ClipboardData(text: cleaned));
                     if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Suggestion copied')),
-                    );
+                    AuraNotice.copied(context, 'Suggestion copied.');
                   },
           ),
         ),

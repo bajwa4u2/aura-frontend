@@ -22,6 +22,7 @@ import '../../../core/ui/publication/aura_publication_markdown.dart';
 import '../../../core/ui/publication/aura_publication_title.dart';
 import '../data/articles_repository.dart';
 import '../../../core/navigation/navigation_authority.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// ARTICLE AUTHORING — purpose-built long-form writing (founder addendum
 /// 2026-08-16). NOT the Post composer enlarged, NOT a CMS: title + a
@@ -124,8 +125,7 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Could not open the draft — try again.')));
+        AuraNotice.problem(context, 'The draft did not open. Try again.');
         context.pop();
         return;
       }
@@ -293,10 +293,7 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
         // A governed refusal says what is wrong and is not retryable. Showing
         // "try again" for a file type Aura will never accept invites the person
         // to repeat something that cannot succeed.
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e is _CoverRefused
-                ? e.message
-                : 'Cover upload failed — try again.')));
+        AuraNotice.problem(context, e is _CoverRefused ? e.message : 'The cover was not uploaded. Try again.');
       }
     } finally {
       if (mounted) setState(() => _coverBusy = false);
@@ -318,8 +315,7 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Could not remove the cover — try again.')));
+        AuraNotice.problem(context, 'The cover was not removed. Try again.');
       }
     } finally {
       if (mounted) setState(() => _coverBusy = false);
@@ -363,22 +359,13 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
       // image exists and given one tap to see it rendered, instead of being
       // left looking at a line of raw markdown.
       if (mounted && MediaQuery.of(context).size.width < 1000 && !_preview) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: const Text('Image added'),
-          action: SnackBarAction(
-            label: 'Preview',
-            onPressed: () {
+        AuraNotice.done(context, 'Image added.', action: AuraNoticeAction(label: 'Preview', onPressed: () {
               if (mounted) setState(() => _preview = true);
-            },
-          ),
-        ));
+            }));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e is _CoverRefused
-                ? e.message
-                : 'Image upload failed — try again.')));
+        AuraNotice.problem(context, e is _CoverRefused ? e.message : 'The image was not uploaded. Try again.');
       }
     }
   }
@@ -397,15 +384,12 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
         _wasPublished = article.isPublished;
       });
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Restored. It is publicly visible again.')),
-      );
+      AuraNotice.done(context, 'Restored. It is publicly visible again.');
     } catch (e) {
       if (!mounted) return;
       final err = AppErrorMapper.from(e, feature: 'restore this article');
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(err.message)));
+      AuraNotice.problem(context, err.message);
     } finally {
       if (mounted) setState(() => _restoring = false);
     }
@@ -431,13 +415,18 @@ class _ArticleEditorScreenState extends ConsumerState<ArticleEditorScreen> {
             NavigationAuthority.articleRoute(article.slug!));
       }
     } catch (e) {
+      // The server's refusal names "substantial" when the body is too short;
+      // that is read to choose the words, never shown.
+      final tooShort = e.toString().contains('substantial');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(e.toString().contains('substantial')
-                ? 'An article is substantial authored thought — write a '
-                    'little more before publishing.'
-                : 'Could not publish — a title and a substantial body are '
-                    'required.')));
+        AuraNotice.problem(
+          context,
+          tooShort
+              ? 'An article is substantial authored thought. Write a little '
+                  'more, then publish.'
+              : 'The article was not published. Add a title and a full body, '
+                  'then try again.',
+        );
       }
     } finally {
       if (mounted) setState(() => _publishing = false);

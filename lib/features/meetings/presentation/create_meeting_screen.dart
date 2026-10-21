@@ -17,6 +17,7 @@ import '../domain/availability_profile.dart';
 import '../domain/meeting_identity.dart';
 import '../../../core/identity/person_identity_model.dart';
 import 'widgets/meeting_surfaces.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 final _institutionDetailProvider = FutureProvider.family<Institution, String>((
   ref,
@@ -293,7 +294,7 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
 
     if (!_isInstitutionMode &&
         (_includeAllMembers || _selectedMemberIds.isNotEmpty)) {
-      _snack('Institution participants require an institution meeting.');
+      _snack('Institution participants need an institution meeting.');
       return;
     }
 
@@ -344,7 +345,7 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
       }
       context.pushReplacement(_detailPath(meeting.id));
     } catch (_) {
-      if (mounted) _snack('Unable to create meeting. Try again.');
+      if (mounted) _snack('The meeting was not created. Try again.');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -363,10 +364,8 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
         viewerBelongsToOwningInstitution: widget.institutionId != null,
       );
 
-  void _snack(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _snack(String message, [AuraNoticeKind kind = AuraNoticeKind.problem]) {
+    AuraNotice.show(context, message, kind: kind);
   }
 
   Future<void> _copyCurrentInviteeLine() async {
@@ -381,7 +380,7 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
             '${_inviteNameCtrl.text.trim()} <${_inviteEmailCtrl.text.trim()}>',
       ),
     );
-    _snack('Invitee copied');
+    AuraNotice.copied(context, 'Invitee copied.');
   }
 
   @override

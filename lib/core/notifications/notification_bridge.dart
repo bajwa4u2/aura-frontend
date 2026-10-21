@@ -22,8 +22,9 @@ import 'notification_presentation.dart';
 import 'sw_message_bridge.dart';
 import '../navigation/canonical_destinations.dart';
 import '../diagnostics/call_teardown_diag.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
-final auraScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+export '../ui/aura_notice.dart' show auraScaffoldMessengerKey;
 
 class NotificationBridge extends ConsumerStatefulWidget {
   const NotificationBridge({super.key, required this.child});
@@ -471,13 +472,7 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge>
     final messenger = auraScaffoldMessengerKey.currentState;
     if (messenger != null) {
       messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          content: Text(body.isEmpty ? title : '$title — $body'),
-          duration: const Duration(seconds: 4),
-        ),
-      );
+      AuraNotice.info(null, body.isEmpty ? title : '$title — $body');
     }
   }
 
@@ -625,13 +620,7 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge>
 
     if (messenger != null) {
       messenger.hideCurrentSnackBar();
-      messenger.showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          content: Text(body.isEmpty ? title : '$title — $body'),
-          duration: const Duration(seconds: 4),
-        ),
-      );
+      AuraNotice.info(null, body.isEmpty ? title : '$title — $body');
     }
   }
 

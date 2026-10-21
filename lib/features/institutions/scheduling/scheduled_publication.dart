@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/product/temporal.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// SCHEDULED PUBLICATION (2026-10-11).
 ///
@@ -46,9 +47,7 @@ Future<DateTime?> pickPublishTime(
   final at = DateTime(date.year, date.month, date.day, time.hour, time.minute);
   final problem = scheduleTimeProblem(at, now: now());
   if (problem != null) {
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(content: Text(problem), behavior: SnackBarBehavior.floating),
-    );
+    AuraNotice.problem(context, problem);
     return null;
   }
   return at;

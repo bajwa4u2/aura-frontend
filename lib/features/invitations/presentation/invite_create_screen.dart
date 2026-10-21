@@ -14,6 +14,7 @@ import '../../../core/ui/aura_text_block.dart';
 import '../data/invitations_client.dart';
 import '../../../core/identity/person_identity_model.dart';
 import '../../../core/navigation/canonical_destinations.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class InviteCreateScreen extends ConsumerStatefulWidget {
   const InviteCreateScreen({
@@ -276,15 +277,9 @@ class _InviteCreateScreenState extends ConsumerState<InviteCreateScreen> {
               _ => 'Invitation created.',
             };
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            link.isNotEmpty && !_collapsedMemberFlow
+      AuraNotice.done(context, link.isNotEmpty && !_collapsedMemberFlow
                 ? '$destinationMessage Link created.'
-                : destinationMessage,
-          ),
-        ),
-      );
+                : destinationMessage);
 
       _leaveInviteFlow();
     } on DioException catch (e) {

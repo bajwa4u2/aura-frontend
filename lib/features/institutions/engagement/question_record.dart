@@ -22,6 +22,7 @@ import '../kind/kind_composition.dart';
 import '../workspace/workspace_page.dart';
 import 'engagement_models.dart';
 import 'engagement_providers.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// ONE QUESTION OR ISSUE: the Record page type (DD-43).
 ///
@@ -95,9 +96,9 @@ class _QuestionRecordState extends ConsumerState<QuestionRecord> {
     widget.onChanged?.call();
   }
 
-  void _say(String message) {
+  void _say(String message, [AuraNoticeKind kind = AuraNoticeKind.done]) {
     if (!mounted) return;
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(message)));
+    AuraNotice.show(context, message, kind: kind);
   }
 
   static String _isoDay(DateTime d) =>
@@ -121,7 +122,7 @@ class _QuestionRecordState extends ConsumerState<QuestionRecord> {
       _refresh(record);
       _say('Acknowledged. They can see you have seen it.');
     } catch (e) {
-      _say(ServerRefusal.of(e).message ?? 'Could not acknowledge it just now.');
+      _say(ServerRefusal.of(e).message ?? 'It was not acknowledged. Try again.', AuraNoticeKind.problem);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -141,7 +142,7 @@ class _QuestionRecordState extends ConsumerState<QuestionRecord> {
           ? 'Due date set. The public can see it.'
           : 'Due date moved. The public can see it moved.');
     } catch (e) {
-      _say(ServerRefusal.of(e).message ?? 'The date could not be changed just now.');
+      _say(ServerRefusal.of(e).message ?? 'The date was not changed. Try again.', AuraNoticeKind.problem);
     } finally {
       if (mounted) setState(() => _busy = false);
     }

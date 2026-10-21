@@ -37,6 +37,7 @@ import '../features/realtime/presentation/widgets/orphaned_session_banner.dart';
 import '../features/updates/incoming_call_bridge.dart';
 import '../router.dart';
 import '../core/navigation/navigation_authority.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class AuraApp extends ConsumerStatefulWidget {
   const AuraApp({super.key});
@@ -853,24 +854,28 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
                 // ONE LOOK, EVERYWHERE (founder, 2026-09-30: "night chamber
                 // only"). Shared widgets read this scope, so a feed card
                 // signed in is the same card the public front door shows.
-                return AuraChamberScope(
-                  child: AuraWindow(
-                    width: MediaQuery.sizeOf(context).width,
-                    height: MediaQuery.sizeOf(context).height,
-                    // The SHELL decides whether persistent navigation exists at
-                    // all (public surfaces have none); this is the posture it
-                    // takes when it does.
-                    navPosture: resolveNavPosture(
-                      windowWidth: MediaQuery.sizeOf(context).width,
-                      expandedPreferred: expanded,
-                      hasPersistentNav: true,
-                    ),
-                    child: _ScriptWarmup(
-                      child: ThreadCallLifecycleHost(
-                        child: OrphanedSessionBanner(
-                          child: UpdateGate(
-                            child: BootGate(
-                              child: child ?? const SizedBox.shrink(),
+                // Banner and corner notices (iOS, desktop, wide browser) are
+                // drawn here, above every route; see AuraNotice.
+                return AuraNoticeHost(
+                  child: AuraChamberScope(
+                    child: AuraWindow(
+                      width: MediaQuery.sizeOf(context).width,
+                      height: MediaQuery.sizeOf(context).height,
+                      // The SHELL decides whether persistent navigation exists at
+                      // all (public surfaces have none); this is the posture it
+                      // takes when it does.
+                      navPosture: resolveNavPosture(
+                        windowWidth: MediaQuery.sizeOf(context).width,
+                        expandedPreferred: expanded,
+                        hasPersistentNav: true,
+                      ),
+                      child: _ScriptWarmup(
+                        child: ThreadCallLifecycleHost(
+                          child: OrphanedSessionBanner(
+                            child: UpdateGate(
+                              child: BootGate(
+                                child: child ?? const SizedBox.shrink(),
+                              ),
                             ),
                           ),
                         ),
@@ -1000,10 +1005,14 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
         foregroundColor: AuraSurface.ink,
       ),
 
+      // The one notice theme (AuraNotice). Exactly one exists in the app.
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: AuraSurface.elevated,
         contentTextStyle: AuraText.body.copyWith(color: AuraSurface.ink),
+        actionTextColor: AuraSurface.accent,
+        closeIconColor: AuraSurface.muted,
+        dismissDirection: DismissDirection.horizontal,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AuraRadius.r12),
           side: const BorderSide(color: AuraSurface.divider),

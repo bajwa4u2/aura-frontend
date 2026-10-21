@@ -7,6 +7,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/conversation_unread_authority.dart';
 import '../data/conversations_repository.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// ONE PLACE THAT KNOWS WHAT AN INBOX ACTION MEANS.
 ///
@@ -50,9 +51,7 @@ class ConversationActions {
       _refresh();
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(failure)),
-        );
+        AuraNotice.problem(context, failure);
       }
     }
   }

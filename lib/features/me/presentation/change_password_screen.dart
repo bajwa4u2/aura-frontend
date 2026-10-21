@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../auth/auth_repository.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -46,9 +47,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       );
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password changed successfully.')),
-      );
+      AuraNotice.done(context, 'Password changed.');
       context.pop();
     } on AuthException catch (e) {
       setState(() => _error = e.message);

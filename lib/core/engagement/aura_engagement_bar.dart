@@ -8,6 +8,7 @@ import '../ui/aura_surface.dart';
 import '../ui/aura_text.dart';
 import 'engagement_model.dart';
 import 'engagement_repository.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// Canonical engagement controls for any eligible publication.
 ///
@@ -61,8 +62,7 @@ class _AuraEngagementBarState extends ConsumerState<AuraEngagementBar> {
     } catch (e) {
       if (!mounted) return;
       final err = AppErrorMapper.from(e, feature: 'do that');
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(err.message)));
+      AuraNotice.problem(context, err.message);
     } finally {
       if (mounted) setState(() => _busy = false);
     }

@@ -3,6 +3,7 @@ import 'package:aura/models/note.dart';
 import 'package:aura/state/app_state.dart';
 
 import '../core/ui/aura_platform_components.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class NoteCard extends StatelessWidget {
   final Note note;
@@ -25,11 +26,8 @@ class NoteCard extends StatelessWidget {
     return AuraAvatar(name: name, imageUrl: url, size: 36);
   }
 
-  void _toast(BuildContext context, String msg) {
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), duration: const Duration(milliseconds: 900)),
-    );
+  void _toast(BuildContext context, String msg, [AuraNoticeKind kind = AuraNoticeKind.done]) {
+    AuraNotice.show(context, msg, kind: kind);
   }
 
   @override
@@ -117,7 +115,7 @@ class NoteCard extends StatelessWidget {
                 TextButton.icon(
                   onPressed: () {
                     if (!app.isMember) {
-                      _toast(context, 'Login required');
+                      _toast(context, 'Sign in to do that.', AuraNoticeKind.info);
                       return;
                     }
                     app.toggleLike(note.id);
@@ -129,11 +127,11 @@ class NoteCard extends StatelessWidget {
                 TextButton.icon(
                   onPressed: () {
                     if (!app.isMember) {
-                      _toast(context, 'Login required');
+                      _toast(context, 'Sign in to do that.', AuraNoticeKind.info);
                       return;
                     }
                     app.toggleBookmark(note.id);
-                    _toast(context, app.isBookmarked(note.id) ? 'Bookmarked' : 'Removed');
+                    _toast(context, app.isBookmarked(note.id) ? 'Saved.' : 'Removed from saved.');
                   },
                   icon: Icon(
                     isBookmarked ? Icons.bookmark : Icons.bookmark_border,

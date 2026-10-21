@@ -16,6 +16,7 @@ import '../../../core/identity/person_identity_model.dart';
 import '../../../core/ui/aura_bounded_editor.dart';
 import 'meetings_home_screen.dart';
 import '../../../core/product/product_language.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 Future<void> _refreshInstitutionProfiles(WidgetRef ref, String institutionId) {
   return ref.refresh(institutionProfilesProvider(institutionId).future);
@@ -168,9 +169,7 @@ class _ProfileCard extends ConsumerWidget {
                     Clipboard.setData(
                       ClipboardData(text: 'https://$publicUrl'),
                     );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Link copied')),
-                    );
+                    AuraNotice.copied(context, 'Link copied.');
                   } else if (v == 'toggle') {
                     try {
                       await ref
@@ -183,9 +182,7 @@ class _ProfileCard extends ConsumerWidget {
                       await _refreshInstitutionProfiles(ref, institutionId);
                     } catch (e) {
                       if (!context.mounted) return;
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(const SnackBar(content: Text('Something went wrong. Try again.')));
+                      AuraNotice.problem(context, 'The booking page was not updated. Try again.');
                     }
                   } else if (v == 'bookings') {
                     await _afterPopupClosed(
@@ -297,9 +294,7 @@ class _ProfileCard extends ConsumerWidget {
                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: 'https://$publicUrl'));
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('Link copied')));
+                  AuraNotice.copied(context, 'Link copied.');
                 },
               ),
             ],
@@ -352,9 +347,7 @@ class _ProfileCard extends ConsumerWidget {
       await _refreshInstitutionProfiles(ref, institutionId);
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Something went wrong. Try again.')));
+      AuraNotice.problem(context, 'The booking page was not deleted. Try again.');
     }
   }
 
@@ -447,9 +440,7 @@ class _WindowManagerState extends ConsumerState<_WindowManager> {
                     await _refreshInstitutionProfiles(ref, institutionId);
                   } catch (e) {
                     if (!context.mounted) return;
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(const SnackBar(content: Text('Something went wrong. Try again.')));
+                    AuraNotice.problem(context, 'That time was not removed. Try again.');
                   }
                 },
               ),
@@ -494,9 +485,7 @@ class _WindowManagerState extends ConsumerState<_WindowManager> {
       await _refreshInstitutionProfiles(ref, widget.institutionId);
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Something went wrong. Try again.')));
+      AuraNotice.problem(context, 'That time was not saved. Try again.');
     }
   }
 
@@ -820,9 +809,7 @@ class _CreateProfileDialogState extends ConsumerState<_CreateProfileDialog> {
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Something went wrong. Try again.')));
+      AuraNotice.problem(context, 'Your changes were not saved. Try again.');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -1093,8 +1080,7 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Error: $e')));
+      AuraNotice.problem(context, 'Your changes were not saved. Try again.');
     } finally {
       if (mounted) setState(() => _saving = false);
     }

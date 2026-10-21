@@ -15,6 +15,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../search/search_repository.dart';
 import '../data/conversations_repository.dart';
 import '../../../core/identity/person_identity_model.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// NEW CONVERSATION — the one canonical creation flow (canon §10/§13):
 /// choose a PERSON → the conversation opens → talk immediately. People
@@ -95,8 +96,7 @@ class _NewConversationPickerState extends ConsumerState<NewConversationPicker> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Could not start this conversation.')));
+        AuraNotice.problem(context, 'The conversation did not start. Try again.');
       }
     } finally {
       if (mounted) setState(() => _opening = false);

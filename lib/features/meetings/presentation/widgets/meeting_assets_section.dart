@@ -13,6 +13,7 @@ import '../../../../core/ui/aura_surface.dart';
 import '../../application/meetings_provider.dart';
 import '../../domain/meeting_asset.dart';
 import 'meeting_section.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// One asset surface for the whole lifecycle. The same widget renders
 /// "Materials" (preparation briefing pack), "Shared in meeting" files, and
@@ -58,7 +59,7 @@ class _MeetingAssetsSectionState extends ConsumerState<MeetingAssetsSection> {
   bool _busy = false;
 
   Future<void> _open(MeetingAsset asset) async {
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = AuraNotice.of(context);
     try {
       final url = asset.kind == MeetingAssetKind.link
           ? asset.url
@@ -72,9 +73,7 @@ class _MeetingAssetsSectionState extends ConsumerState<MeetingAssetsSection> {
       );
       if (!ok) throw Exception('launch failed');
     } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Could not open this item.')),
-      );
+      messenger.problem('This item did not open. Try again.');
     }
   }
 
@@ -125,7 +124,7 @@ class _MeetingAssetsSectionState extends ConsumerState<MeetingAssetsSection> {
     titleCtrl.dispose();
     if (submitted != true || url.isEmpty || !mounted) return;
     setState(() => _busy = true);
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = AuraNotice.of(context);
     try {
       await ref.read(meetingsRepositoryProvider).addAssetLink(
             widget.meetingId,
@@ -135,9 +134,7 @@ class _MeetingAssetsSectionState extends ConsumerState<MeetingAssetsSection> {
           );
       ref.invalidate(meetingAssetsProvider(widget.meetingId));
     } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Could not add the link.')),
-      );
+      messenger.problem('The link was not added. Try again.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -148,7 +145,7 @@ class _MeetingAssetsSectionState extends ConsumerState<MeetingAssetsSection> {
     final file = picked?.files.firstOrNull;
     if (file == null || file.bytes == null || !mounted) return;
     setState(() => _busy = true);
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = AuraNotice.of(context);
     try {
       await ref.read(meetingsRepositoryProvider).uploadAsset(
             widget.meetingId,
@@ -158,13 +155,9 @@ class _MeetingAssetsSectionState extends ConsumerState<MeetingAssetsSection> {
             stage: widget.addStage,
           );
       ref.invalidate(meetingAssetsProvider(widget.meetingId));
-      messenger.showSnackBar(
-        SnackBar(content: Text('${file.name} attached to the meeting')),
-      );
+      messenger.done('${file.name} is attached to the meeting.');
     } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Upload failed. Try again.')),
-      );
+      messenger.problem('The file was not uploaded. Try again.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }

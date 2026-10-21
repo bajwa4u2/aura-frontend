@@ -22,6 +22,7 @@ import '../domain/meeting_room.dart';
 import 'institution_availability_screen.dart';
 import '../../../core/product/product_language.dart';
 import '../../../core/institutions/institution_route_authority.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// MEETINGS (DD-43): one Collection page. Tabs Upcoming · Follow-up · Past ·
 /// Booking pages; one gold "New meeting"; "Start now" and "Join by code"
@@ -629,9 +630,7 @@ class _OwnBookingPage extends ConsumerWidget {
                 style: TextButton.styleFrom(foregroundColor: AuraSurface.accentText),
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: publicUrl));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Booking link copied')),
-                  );
+                  AuraNotice.copied(context, 'Booking link copied.');
                 },
                 child: const Text('Copy'),
               ),

@@ -35,6 +35,7 @@ import '../widgets/follow_button.dart';
 import '../widgets/monetization_label.dart';
 import '../widgets/reply_unit.dart';
 import '../widgets/thread_header.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// Generalized thread screen — works for both `FeedItemType.userPost`
 /// and `FeedItemType.institutionPost`. Reuses the existing
@@ -366,12 +367,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                   final url = base.isNotEmpty ? '$base$path' : path;
                   await Clipboard.setData(ClipboardData(text: url));
                   if (!context.mounted) return;
-                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-                    const SnackBar(
-                      content: Text('Link copied to clipboard.'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                  AuraNotice.copied(context, 'Link copied.');
                 },
               ),
               Expanded(
@@ -661,7 +657,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
               // so it would otherwise render under an error/empty state too.
               // Gate on `canCompose` so a missing/inaccessible thread shows
               // the unavailable block alone — no orphan reply bar.
-              if (canCompose) _StickyReplyBar(onTap: _composeReply),
+              if (canCompose) AuraNoticeLift(child: _StickyReplyBar(onTap: _composeReply)),
             ],
           ),
         ),

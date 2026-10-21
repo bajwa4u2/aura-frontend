@@ -23,7 +23,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/attachments/aura_media_upload.dart';
 import '../../../core/media/aura_attachment_card.dart';
 import '../../../core/media/aura_stored_media.dart';
-import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/media/aura_voice_player.dart';
 import '../../../core/notifications/android_telecom.dart';
 import '../../../core/notifications/ios_call_kit.dart';
@@ -71,6 +70,7 @@ import '../../../core/tagging/governed_tag_field.dart';
 import '../../../core/tagging/mention_scope.dart';
 import '../../../core/tagging/tag_entities.dart';
 import '../../../core/ui/aura_bounded_editor.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// Durable ringing/active-call truth for a conversation (founder charter
 /// 2026-08-17). A call must never be reachable ONLY through an ephemeral
@@ -537,9 +537,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     if (!mounted) return;
 
     if (options.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('There is nowhere to forward this yet.')),
-      );
+      AuraNotice.info(context, 'There is nowhere to forward this yet.');
       return;
     }
 
@@ -628,11 +626,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           }
         } catch (_) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Translation is not available right now.'),
-              ),
-            );
+            AuraNotice.problem(context, 'Translation is not available right now.');
           }
         }
         return;
@@ -679,9 +673,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
   void _refuse(AttachmentRejection rejection) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(AttachmentLifecycle.rejectionMessage(rejection))),
-    );
+    AuraNotice.problem(context, AttachmentLifecycle.rejectionMessage(rejection));
   }
 
   /// `Attachment` is mutable by design and the lifecycle reads it live, so
@@ -730,11 +722,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         // that used to drop it silently.
         attachment.error = 'upload-failed';
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Attachment failed — remove it and try again.'),
-        ),
-      );
+      AuraNotice.problem(context, 'The attachment was not uploaded. Remove it and try again.');
     }
   }
 
@@ -759,9 +747,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     // five chosen photographs is the exact class of silence this removes.
     final message = acquisitionLimitMessage(acquired.droppedForLimit);
     if (message != null && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      AuraNotice.info(context, message);
     }
   }
 
@@ -891,9 +877,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       ref.invalidate(conversationsListProvider);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not send — try again.')),
-        );
+        AuraNotice.problem(context, 'Your message was not sent. Try again.');
       }
     }
   }
@@ -1049,24 +1033,14 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         // failures all surfaced as one sentence that suggested trying again,
         // which never helped because nothing transient was wrong.
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'The voice note could not be sent. ${AppErrorMapper.from(e).message}',
-              ),
-            ),
-          );
+          AuraNotice.problem(context, 'Your voice note was not sent. Try again.');
         }
       }
       return;
     }
     if (!await _recorder.hasPermission()) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Microphone permission is needed for voice notes.'),
-          ),
-        );
+        AuraNotice.problem(context, 'Voice notes need the microphone. Allow it in your device settings.');
       }
       return;
     }
@@ -1082,13 +1056,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Recording could not start. ${AppErrorMapper.from(e).message}',
-            ),
-          ),
-        );
+        AuraNotice.problem(context, 'Recording did not start. Try again.');
       }
     }
   }
@@ -1135,9 +1103,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       ref.invalidate(conversationsListProvider);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not send — try again.')),
-        );
+        AuraNotice.problem(context, 'Your message was not sent. Try again.');
       }
     } finally {
       if (mounted) {
@@ -1231,11 +1197,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not start the call — try again.'),
-          ),
-        );
+        AuraNotice.problem(context, 'The call did not start. Try again.');
       }
     } finally {
       if (mounted) setState(() => _startingCall = false);
@@ -1730,7 +1692,8 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   onCancel: () => unawaited(_cancelVoiceNote()),
                   onSend: () => unawaited(_toggleVoiceNote()),
                 ),
-              SafeArea(
+              // Notices sit above this bar (AuraNoticeLift).
+              AuraNoticeLift(child: SafeArea(
                 top: false,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(
@@ -1843,7 +1806,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                     ],
                   ),
                 ),
-              ),
+              )),
             ],
           ),
         ),
@@ -2042,14 +2005,8 @@ class _ConversationLiveRibbon extends ConsumerWidget {
               } catch (error) {
                 debugPrint('[call] decline failed session=$sessionId err=$error');
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Could not decline this call. If you started it, '
-                        'end it from the call instead.',
-                      ),
-                    ),
-                  );
+                  AuraNotice.problem(context, 'Could not decline this call. If you started it, '
+                        'end it from the call instead.');
                 }
               }
               ref.invalidate(conversationActiveLiveProvider(conversationId));

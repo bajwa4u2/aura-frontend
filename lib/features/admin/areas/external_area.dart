@@ -52,6 +52,7 @@ import '../data/operator_external.dart';
 import '../domain/operator_authority_provider.dart';
 import '../domain/operator_capability.dart';
 import '../ui/operator_kit.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 part 'external_area_actions.dart';
 

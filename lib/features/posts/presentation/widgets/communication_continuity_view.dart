@@ -13,6 +13,7 @@ import '../../../../core/ui/aura_text.dart';
 import '../../data/continuity_providers.dart';
 import '../../domain/communication_continuity.dart';
 import '../../../../core/product/temporal.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// Communication Governance v1.0, Roadmap Milestone 8.
 ///
@@ -373,7 +374,7 @@ class _AccountabilityLifecycleRowState extends ConsumerState<_AccountabilityLife
     } catch (e) {
       if (!mounted) return;
       final message = AppErrorMapper.from(e, feature: failureFeature).message;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      AuraNotice.problem(context, message);
     } finally {
       if (mounted) setState(() => _busy = false);
     }

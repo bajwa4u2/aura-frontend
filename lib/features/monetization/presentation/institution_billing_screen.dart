@@ -22,6 +22,7 @@ import '../data/monetization_repository.dart';
 import '../data/store_country.dart';
 import '../domain/monetization_models.dart';
 import '../providers/monetization_providers.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// Institution plan and billing (monetization WP7, 2026-10-07).
 ///
@@ -336,7 +337,7 @@ class _InstitutionBillingScreenState
     required WidgetRef ref,
     required String productCode,
   }) async {
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = AuraNotice.of(context);
     try {
       final repo = ref.read(monetizationRepositoryProvider);
       final session = await repo.startInstitutionPlanCheckout(
@@ -345,7 +346,7 @@ class _InstitutionBillingScreenState
       );
       await _openUrl(messenger, session.url);
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(_friendly(e))));
+      messenger.problem(_friendly(e));
     }
   }
 
@@ -354,7 +355,7 @@ class _InstitutionBillingScreenState
     required WidgetRef ref,
     required String productCode,
   }) async {
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = AuraNotice.of(context);
     try {
       final repo = ref.read(monetizationRepositoryProvider);
       final session = await repo.startInstitutionCreditsCheckout(
@@ -363,7 +364,7 @@ class _InstitutionBillingScreenState
       );
       await _openUrl(messenger, session.url);
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(_friendly(e))));
+      messenger.problem(_friendly(e));
     }
   }
 
@@ -371,25 +372,21 @@ class _InstitutionBillingScreenState
     required BuildContext context,
     required WidgetRef ref,
   }) async {
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = AuraNotice.of(context);
     try {
       final url = await ref
           .read(monetizationRepositoryProvider)
           .openBillingPortal(institutionId);
       await _openUrl(messenger, url);
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(_friendly(e))));
+      messenger.problem(_friendly(e));
     }
   }
 
-  Future<void> _openUrl(ScaffoldMessengerState messenger, String? url) async {
+  Future<void> _openUrl(AuraNoticeHandle messenger, String? url) async {
     final uri = url == null || url.isEmpty ? null : Uri.tryParse(url);
     if (uri == null) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('The payment page could not be opened. Try again.'),
-        ),
-      );
+      messenger.problem('The payment page could not be opened. Try again.');
       return;
     }
     await launchUrl(uri, mode: LaunchMode.externalApplication);

@@ -12,6 +12,7 @@ import '../application/meetings_provider.dart';
 import '../domain/meeting.dart';
 import 'meeting_lifecycle_presenter.dart';
 import '../../../core/auth/session_bootstrap.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class GuestWaitingRoomScreen extends ConsumerStatefulWidget {
   final String meetingId;
@@ -121,9 +122,7 @@ class _GuestWaitingRoomScreenState
 
   void _copyLink(Meeting meeting) {
     Clipboard.setData(ClipboardData(text: meeting.joinUrl));
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Meeting link copied')));
+    AuraNotice.copied(context, 'Meeting link copied.');
   }
 
   Future<void> _joinRoom(Meeting meeting) async {

@@ -38,6 +38,7 @@ import '../scheduling/scheduled_publication.dart';
 import '../../../core/utils/local_timezone.dart';
 import '../../composition/domain/composition_models.dart';
 import '../../composition/presentation/composition_assist.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class InstitutionAnnouncementComposer extends ConsumerStatefulWidget {
   const InstitutionAnnouncementComposer({
@@ -333,9 +334,7 @@ class _InstitutionAnnouncementComposerState
     }
 
     if (refusals.isNotEmpty && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(refusals.join(String.fromCharCode(10)))),
-      );
+      AuraNotice.problem(context, refusals.join(String.fromCharCode(10)));
     }
 
     if (picked.isEmpty) return;
@@ -658,12 +657,7 @@ class _InstitutionAnnouncementComposerState
       timezone: cachedLocalTimezone,
     );
     if (scheduled == true && mounted) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(
-          content: Text('Scheduled. ${publishesLabel(at)}.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AuraNotice.done(context, 'Scheduled. ${publishesLabel(at)}.');
       // Opened directly, there is nothing to return to: land on the
       // announcements, where the Scheduled tab lists it.
       if (context.canPop()) {
@@ -704,8 +698,7 @@ class _InstitutionAnnouncementComposerState
   /// this snackbar communicates the *intent* of the action.
   void _showAudienceToast({required bool published}) {
     if (!mounted) return;
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    if (messenger == null) return;
+    final messenger = AuraNotice.of(context);
     String reach;
     switch (_audience.toUpperCase()) {
       case 'PUBLIC':
@@ -721,13 +714,7 @@ class _InstitutionAnnouncementComposerState
         reach = 'Public audience';
     }
     final headline = published ? 'Announcement published' : 'Draft saved';
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text('$headline · $reach'),
-        duration: const Duration(seconds: 4),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    messenger.done('$headline · $reach');
   }
 
   Widget _buildMediaCard({required bool disabled}) {

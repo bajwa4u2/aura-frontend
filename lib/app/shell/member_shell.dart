@@ -42,6 +42,7 @@ import '../../core/identity/person_identity_model.dart';
 import '../../core/institutions/institution_route_authority.dart';
 import '../../core/diagnostics/call_teardown_diag.dart';
 import '../../features/institutions/kind/kind_composition.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // INSTITUTION COLOR PALETTE — teal authority, calm workspace
@@ -549,18 +550,14 @@ class _PublicPreviewToolbar extends StatelessWidget {
     if (link.isEmpty) return;
     await Clipboard.setData(ClipboardData(text: link));
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Public URL copied')),
-    );
+    AuraNotice.copied(context, 'Public link copied.');
   }
 
   Future<void> _openExternal(BuildContext context, String link) async {
     // Web builds: copy + announce; native builds keep the same fallback.
     await Clipboard.setData(ClipboardData(text: link));
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Open in new tab: $link')),
-    );
+    AuraNotice.info(context, 'Link copied. Open it in a new tab: $link');
   }
 
   @override

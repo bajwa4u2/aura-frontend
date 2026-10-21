@@ -22,6 +22,7 @@ import '../../../../../core/net/dio_provider.dart';
 import '../../../../../core/ui/aura_platform_components.dart';
 import '../../../../feed/data/unified_feed_providers.dart';
 import '../../post_detail_screen.dart' show postProvider, repliesProvider;
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// Confirm, delete, and put every surface that cached the post back in step.
 ///
@@ -79,9 +80,7 @@ Future<void> confirmAndDeletePost(
 
     if (!context.mounted) return;
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Work deleted')));
+    AuraNotice.done(context, 'Work deleted.');
 
     if (!leaveSurfaceOnSuccess) return;
 
@@ -92,9 +91,7 @@ Future<void> confirmAndDeletePost(
     }
   } catch (_) {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Could not delete post')));
+    AuraNotice.problem(context, 'The work was not deleted. Try again.');
   }
 }
 

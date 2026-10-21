@@ -34,6 +34,7 @@ import '../../posts/presentation/widgets/post_card.dart';
 import '../domain/profile.dart';
 import '../providers.dart';
 import '../../../core/identity/person_identity_model.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class AuthorProfileScreen extends ConsumerStatefulWidget {
   const AuthorProfileScreen({super.key, required this.handle});
@@ -150,11 +151,9 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
     });
   }
 
-  void _showMessage(String message) {
+  void _showMessage(String message, [AuraNoticeKind kind = AuraNoticeKind.problem]) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AuraNotice.show(context, message, kind: kind);
   }
 
   /// Single-source-of-truth Message CTA. Routes through
@@ -163,7 +162,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
   Future<void> _openPrivateConversation(Profile profile) async {
     final targetId = _cleanValue(profile.id);
     if (targetId.isEmpty) {
-      _showMessage('Profile is not available for messaging.');
+      _showMessage('This person cannot be messaged.');
       return;
     }
     try {
@@ -178,10 +177,10 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
       final msg = (e.response?.data is Map &&
               (e.response!.data as Map)['message'] != null)
           ? (e.response!.data as Map)['message'].toString()
-          : 'Could not open message thread.';
+          : 'The conversation did not open. Try again.';
       _showMessage(msg);
     } catch (_) {
-      _showMessage('Could not open message thread.');
+      _showMessage('The conversation did not open. Try again.');
     }
   }
 
@@ -915,10 +914,10 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
                                 try {
                                   if (isCancel) {
                                     await repo.unfollow(widget.handle);
-                                    _showMessage('Request canceled');
+                                    _showMessage('Follow request cancelled.', AuraNoticeKind.done);
                                   } else {
                                     await repo.follow(widget.handle);
-                                    _showMessage('Follow request sent');
+                                    _showMessage('Follow request sent.', AuraNoticeKind.done);
                                   }
                                   // After a follow / unfollow / cancel, invalidate
                                   // every feed surface so the home feed reflects
@@ -932,7 +931,7 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
                                     setState(
                                         () => _optimisticFollowState = null);
                                   }
-                                  _showMessage('Could not update follow state');
+                                  _showMessage('Your follow was not updated. Try again.');
                                 } finally {
                                   if (mounted) {
                                     setState(() {
@@ -1054,10 +1053,10 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
     try {
       await blockUser(ref, userId);
       if (!mounted) return;
-      _showMessage('User blocked. A moderator will review within 24 hours.');
+      _showMessage('Blocked. A moderator reviews it within 24 hours.', AuraNoticeKind.done);
     } catch (_) {
       if (!mounted) return;
-      _showMessage('Could not block user. Try again later.');
+      _showMessage('This person was not blocked. Try again.');
     }
   }
 

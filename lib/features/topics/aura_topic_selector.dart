@@ -6,6 +6,7 @@ import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
 import 'topic.dart';
 import 'topic_repository.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 enum _FetchStatus { idle, loading, loaded, error }
 
@@ -120,16 +121,9 @@ class _AuraTopicSelectorState extends State<AuraTopicSelector> {
 
           widget.onSecondariesChanged(kept);
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                droppedCount == 1
+          AuraNotice.info(context, droppedCount == 1
                     ? 'Removed 1 secondary topic that no longer relates to the new primary topic.'
-                    : 'Removed $droppedCount secondary topics that no longer relate to the new primary topic.',
-              ),
-              duration: const Duration(seconds: 4),
-            ),
-          );
+                    : 'Removed $droppedCount secondary topics that no longer relate to the new primary topic.');
         })
         .catchError((_) {
           if (!mounted || widget.primary != primary) return;
@@ -173,11 +167,7 @@ class _AuraTopicSelectorState extends State<AuraTopicSelector> {
       widget.onSecondariesChanged(merged);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not get topic suggestions. Try again.'),
-          ),
-        );
+        AuraNotice.problem(context, 'Topic suggestions did not load. Try again.');
       }
     } finally {
       if (mounted) setState(() => _suggestBusy = false);

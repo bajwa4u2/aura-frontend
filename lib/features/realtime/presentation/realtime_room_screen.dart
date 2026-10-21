@@ -49,6 +49,7 @@ import 'widgets/realtime_participant_list.dart';
 import '../../../core/identity/person_identity_model.dart';
 import '../../../core/navigation/canonical_destinations.dart';
 import '../../../core/diagnostics/call_teardown_diag.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class _CallRouteRedirectingFallback extends StatelessWidget {
   const _CallRouteRedirectingFallback();
@@ -887,9 +888,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           .hydrateSession(sessionId);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not go live — try again.')),
-        );
+        AuraNotice.problem(context, 'You did not go live. Try again.');
       }
     }
   }
@@ -910,9 +909,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           .hydrateSession(sessionId);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not end the live — try again.')),
-        );
+        AuraNotice.problem(context, 'The live did not end. Try again.');
       }
     }
   }
@@ -940,9 +937,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       // needs the only message there is.
       debugPrint('[rtc] screen share toggle failed err=$error');
       if (mounted && !screenShareSupported()) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(screenShareUnavailableReason())));
+        AuraNotice.problem(context, screenShareUnavailableReason());
       }
     } finally {
       if (mounted) setState(() => _togglingScreenShare = false);
@@ -1466,7 +1461,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                                   // it only takes the controls away. Founder-
                                   // observed on a Pixel 2026-09-25: "in audio
                                   // controls are disappearing with bar".
-                                  child: AnimatedOpacity(
+                                  child: AuraNoticeLift(child: AnimatedOpacity(
                                     opacity: dockShown ? 1 : 0,
                                     duration: const Duration(milliseconds: 180),
                                     child: IgnorePointer(
@@ -1599,7 +1594,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                                                     ),
                                             ),
                                     ),
-                                  ),
+                                  )),
                                 ),
                               ),
                           ],
@@ -2155,15 +2150,8 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     final meta = _insSessionMeta;
     if (meta == null) return;
     if (!mounted) return;
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    if (messenger == null) return;
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text('You joined a live ${meta.type.label}'),
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    final messenger = AuraNotice.of(context);
+    messenger.info('You joined a live ${meta.type.label}.');
   }
 
   /// Phase 4 — in-session presence line. Uses the count of joined

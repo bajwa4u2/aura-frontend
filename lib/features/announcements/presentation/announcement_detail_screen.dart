@@ -34,6 +34,7 @@ import '../../share/aura_share_sheet.dart';
 import '../../updates/providers.dart';
 import '../domain/announcement.dart';
 import '../providers.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 const Map<String, String> _announcementTranslationLanguageLabels = {
   'en': 'English',
@@ -252,9 +253,7 @@ class _AnnouncementDetailScreenState
       if (!context.mounted) return;
       final message = AppErrorMapper.from(e, feature: 'translate this').message;
       setState(() => _translationError = message);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      AuraNotice.problem(context, message);
     } finally {
       if (mounted) {
         setState(() => _translationBusy = false);
@@ -351,16 +350,10 @@ class _AnnouncementDetailScreenState
       }
       if (!mounted) return;
       ref.invalidate(announcementBySlugProvider(a.slug));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(pinned ? 'Pinned to the top.' : 'No longer pinned.'),
-        ),
-      );
+      AuraNotice.done(context, pinned ? 'Pinned to the top.' : 'No longer pinned.');
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('That did not go through. Try again.')),
-      );
+      AuraNotice.problem(context, 'That did not go through. Try again.');
     }
   }
 
@@ -403,18 +396,10 @@ class _AnnouncementDetailScreenState
       await ref.read(announcementsRepoProvider).unpublish(a.id);
       if (!mounted) return;
       ref.invalidate(announcementBySlugProvider(widget.slug));
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Unpublished.')));
+      AuraNotice.done(context, 'Unpublished.');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppErrorMapper.from(e, feature: 'unpublish this').message,
-          ),
-        ),
-      );
+      AuraNotice.problem(context, AppErrorMapper.from(e, feature: 'unpublish this').message);
     }
   }
 
@@ -434,9 +419,7 @@ class _AnnouncementDetailScreenState
     try {
       await ref.read(announcementsRepoProvider).remove(a.id);
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Draft deleted.')));
+      AuraNotice.done(context, 'Draft deleted.');
       // The address no longer resolves to anything worth standing on.
       if (context.canPop()) {
         context.pop();
@@ -445,11 +428,7 @@ class _AnnouncementDetailScreenState
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppErrorMapper.from(e, feature: 'remove this').message),
-        ),
-      );
+      AuraNotice.problem(context, AppErrorMapper.from(e, feature: 'remove this').message);
     }
   }
 

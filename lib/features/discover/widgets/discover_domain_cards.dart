@@ -16,6 +16,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../conversation/presentation/conversation_identity.dart';
 import '../../public/data/thread_space_follow_repository.dart';
 import '../data/discover_repository.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// FOUR DOMAINS THAT MEAN DIFFERENT THINGS, PRESENTED DIFFERENTLY.
 ///
@@ -95,9 +96,7 @@ class _SpaceEnvironmentTileState extends ConsumerState<SpaceEnvironmentTile> {
       setState(() => _following = ok ? next : !next);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('That did not go through — try again.')),
-        );
+        AuraNotice.problem(context, 'That did not go through. Try again.');
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -256,9 +255,7 @@ class _InstitutionPresenceCardState
       );
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('That did not go through — try again.')),
-        );
+        AuraNotice.problem(context, 'That did not go through. Try again.');
       }
     } finally {
       if (mounted) setState(() => _busy = false);

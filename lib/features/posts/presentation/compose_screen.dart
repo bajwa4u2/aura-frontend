@@ -59,6 +59,7 @@ import '../../composition/domain/composition_models.dart';
 import '../../composition/presentation/composition_assist.dart';
 import 'compose/compose_models.dart';
 import 'compose/compose_widgets.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class ComposeScreen extends ConsumerStatefulWidget {
   final String? replyToPostId;
@@ -1431,9 +1432,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     } catch (e) {
       if (!mounted) return;
       final message = AppErrorMapper.from(e, feature: 'edit this').message;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not load post for editing: $message')),
-      );
+      AuraNotice.problem(context, message);
     }
   }
 
@@ -1480,9 +1479,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       limit: kMaxMemberPostMedia,
     );
     if (message != null && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      AuraNotice.info(context, message);
     }
   }
 
@@ -1492,13 +1489,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     if (!_canAddMoreAttachments || _posting) return;
     if (!_supportsCameraCapture) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Camera capture is not available here. Choose a file instead.',
-          ),
-        ),
-      );
+      AuraNotice.problem(context, 'Camera capture is not available here. Choose a file instead.');
       await _pickImageFromGallery();
       return;
     }
@@ -1522,13 +1513,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     if (!_canAddMoreAttachments || _posting) return;
     if (!_supportsCameraCapture) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Video recording is not available here. Choose a file instead.',
-          ),
-        ),
-      );
+      AuraNotice.problem(context, 'Video recording is not available here. Choose a file instead.');
       await _pickVideoFromGallery();
       return;
     }
@@ -1561,22 +1546,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       final attachment = resolution.attachment;
       if (attachment == null) {
         if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(resolution.rejectionMessage!)));
+        AuraNotice.problem(context, resolution.rejectionMessage!);
         continue;
       }
       if (expect != null && attachment.kind != expect) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              expect == AttachmentKind.video
+        AuraNotice.problem(context, expect == AttachmentKind.video
                   ? 'That is not a video file.'
-                  : 'That is not an image file.',
-            ),
-          ),
-        );
+                  : 'That is not an image file.');
         continue;
       }
       await _admitAttachment(attachment);
@@ -1591,11 +1568,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   Future<void> _admitAttachment(Attachment attachment) async {
     if (_attachments.length >= _maxAttachments) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Maximum $_maxAttachments attachments per post.'),
-        ),
-      );
+      AuraNotice.problem(context, 'A post can have up to $_maxAttachments attachments.');
       return;
     }
 
@@ -1635,9 +1608,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       setState(() {
         attachment.error = message;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not upload attachment: $message')),
-      );
+      AuraNotice.problem(context, 'The attachment was not uploaded. Try again.');
     } finally {
       if (mounted) {
         setState(() {
@@ -1893,9 +1864,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     if (!_hasText) {
       if (!silent && mounted) {
         setState(() => _showTextError = true);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Text is required.')));
+        AuraNotice.problem(context, 'Write something first.');
       }
       return;
     }
@@ -1933,9 +1902,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       if (!mounted) return;
       if (!silent) {
         final message = AppErrorMapper.from(e, feature: 'save this').message;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not hold this work: $message')),
-        );
+        AuraNotice.problem(context, 'Your draft was not saved. $message');
       }
       rethrow;
     } finally {
@@ -2016,9 +1983,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         e,
         feature: 'record this acknowledgment',
       ).message;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      AuraNotice.problem(context, message);
       return false;
     } finally {
       if (mounted) setState(() => _governanceChecking = false);
@@ -2926,16 +2891,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     if (!_hasText) {
       setState(() => _showTextError = true);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Text is required.')));
+      AuraNotice.problem(context, 'Write something first.');
       return;
     }
 
     if (_textTooLong) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Too long. Please shorten your post.')),
-      );
+      AuraNotice.problem(context, 'Your post is too long. Shorten it and try again.');
       return;
     }
 
@@ -2945,28 +2906,17 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     // network round-trip.
     final filterHit = scanForObjectionableContent(_textController.text);
     if (filterHit != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(kObjectionableContentMessage)),
-      );
+      AuraNotice.problem(context, kObjectionableContentMessage);
       return;
     }
 
     if (!_isReply && _primaryTopic == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Select a topic before publishing.'),
-          duration: Duration(seconds: 3),
-        ),
-      );
+      AuraNotice.problem(context, 'Choose a topic first.');
       return;
     }
 
     if (_hasUploadingAttachments) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please wait for attachments to finish uploading.'),
-        ),
-      );
+      AuraNotice.info(context, 'Wait for the attachments to finish uploading.');
       return;
     }
 
@@ -2974,18 +2924,12 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       // ONE AUTHORITY AT THE ACTION TOO. A disabled-looking destination must
       // not be able to reach the legacy publishing path behind the UI.
       if (!_tiktok.isPublishable) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${_tiktok.label}: ${_tiktok.statusLine}')),
-        );
+        AuraNotice.problem(context, '${_tiktok.label}: ${_tiktok.statusLine}');
         return;
       }
 
       if (!_hasTikTokVideo) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('TikTok publishing requires one uploaded video.'),
-          ),
-        );
+        AuraNotice.problem(context, 'TikTok takes one uploaded video.');
         return;
       }
     }
@@ -3016,11 +2960,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         !pendingGovernance.clearsPublish &&
         !_governanceAckAccepted) {
       setState(() => _governanceExpanded = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Review the Governance panel before publishing.'),
-        ),
-      );
+      AuraNotice.problem(context, 'Review the Governance panel before publishing.');
       return;
     }
     if (!_isReply &&
@@ -3040,6 +2980,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     String? publishedPostId;
     String? externalMessage;
+    var shareFailed = false;
 
     try {
       if (!_isReply && !_isEditingPost) {
@@ -3066,7 +3007,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             await _publishToTikTokNow(publishedPostId!);
             queuedTargets.add('TikTok');
           } catch (e) {
-            failedTargets.add('TikTok (${AppErrorMapper.from(e).message})');
+            debugPrint('[compose] TikTok share failed: $e');
+            failedTargets.add('TikTok');
           } finally {
             if (mounted) {
               setState(() {
@@ -3081,7 +3023,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             await _publishToLinkedInNow(publishedPostId!);
             queuedTargets.add('LinkedIn');
           } catch (e) {
-            failedTargets.add('LinkedIn (${AppErrorMapper.from(e).message})');
+            debugPrint('[compose] LinkedIn share failed: $e');
+            failedTargets.add('LinkedIn');
           }
         }
 
@@ -3090,7 +3033,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             await _publishToFacebookNow(publishedPostId!);
             queuedTargets.add('Facebook');
           } catch (e) {
-            failedTargets.add('Facebook (${AppErrorMapper.from(e).message})');
+            debugPrint('[compose] Facebook share failed: $e');
+            failedTargets.add('Facebook');
           }
         }
 
@@ -3099,32 +3043,38 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             await _publishToInstagramNow(publishedPostId!);
             queuedTargets.add('Instagram');
           } catch (e) {
-            failedTargets.add('Instagram (${AppErrorMapper.from(e).message})');
+            debugPrint('[compose] Instagram share failed: $e');
+            failedTargets.add('Instagram');
           }
         }
 
+        shareFailed = failedTargets.isNotEmpty;
         if (queuedTargets.isNotEmpty && failedTargets.isEmpty) {
           externalMessage =
               'Published to Aura and shared to ${queuedTargets.join(' and ')}.';
         } else if (queuedTargets.isNotEmpty && failedTargets.isNotEmpty) {
           externalMessage =
-              'Published to Aura. Shared to ${queuedTargets.join(' and ')}. ${failedTargets.join(', ')} could not be queued.';
+              'Published to Aura and shared to ${queuedTargets.join(' and ')}. It was not shared to ${failedTargets.join(', ')}. Try again from the post.';
         } else if (failedTargets.isNotEmpty) {
           externalMessage =
-              'Published to Aura. ${failedTargets.join(', ')} could not be queued.';
+              'Published to Aura. It was not shared to ${failedTargets.join(', ')}. Try again from the post.';
         } else {
           externalMessage = 'Published to Aura.';
         }
       } else {
-        externalMessage = _isReply ? 'Reply published.' : 'Published to Aura.';
+        externalMessage = _isReply
+            ? 'Your reply is live in the discussion.'
+            : 'Your discussion is live.';
       }
 
       if (!mounted) return;
 
       if (externalMessage.trim().isNotEmpty) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(externalMessage)));
+        if (!shareFailed) {
+          AuraNotice.done(context, externalMessage);
+        } else {
+          AuraNotice.problem(context, externalMessage);
+        }
       }
 
       if (!_isReply) {
@@ -3144,33 +3094,20 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
       if (!mounted) return;
 
-      // Public-UX Phase 5 — micro-feedback on publish so the host feels
-      // the action landed. Distinct copy for replies vs. statements.
-      // We render via ScaffoldMessenger.maybeOf so it survives even if
-      // we've already popped this scaffold off the stack.
-      final messenger = ScaffoldMessenger.maybeOf(context);
-      messenger?.showSnackBar(
-        SnackBar(
-          content: Text(
-            _isReply
-                ? 'Your reply is live in the discussion.'
-                : 'Your discussion is live.',
-          ),
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      // The publish line above is the one confirmation; a second one here
+      // replaced it at once (one notice at a time). The navigator outlives
+      // this screen, so the invite offer below can still open its sheet.
+      final navigatorKey = GoRouter.of(context).routerDelegate.navigatorKey;
 
       // Once ever, after a public post (canon amendment 2026-10-20). It
       // queues behind the line above and never delays leaving the composer.
       if (!_isReply &&
           !_isEditingPost &&
-          _visibility == PostVisibility.public &&
-          messenger != null) {
+          _visibility == PostVisibility.public) {
         final me = inviterIdentity(ref);
         unawaited(
           maybeOfferInviteAfterPost(
-            messenger,
+            navigatorKey,
             ref.read(inviteToAuraClientProvider),
             handle: me.handle,
             displayName: me.displayName,
@@ -3235,20 +3172,16 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         // 2026-09-29): an identity verification. Say it, and offer the way.
         final body = e.response?.data;
         final serverSays = body is Map ? body['message'] : null;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              serverSays is String && serverSays.trim().isNotEmpty
-                  ? serverSays
-                  : 'Raising an issue needs your identity verified. '
-                      'You can still ask a question or share an update.',
-            ),
-            duration: const Duration(seconds: 6),
-            action: SnackBarAction(
-              label: 'Verify',
-              onPressed: () =>
-                  context.push(NavigationAuthority.identityVerificationRoute),
-            ),
+        AuraNotice.problem(
+          context,
+          serverSays is String && serverSays.trim().isNotEmpty
+              ? serverSays
+              : 'Raising an issue needs your identity verified. '
+                  'You can still ask a question or share an update.',
+          action: AuraNoticeAction(
+            label: 'Verify',
+            onPressed: () =>
+                context.push(NavigationAuthority.identityVerificationRoute),
           ),
         );
         return;
@@ -3261,12 +3194,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
       final message =
           publishedPostId != null && publishedPostId.trim().isNotEmpty
-          ? 'Published to Aura, but the screen could not finish cleanly: $detail'
+          ? 'Published to Aura. Reopen the post to check it.'
           : detail;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      AuraNotice.problem(context, message);
     } finally {
       if (mounted) {
         setState(() {
@@ -3867,15 +3798,9 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   /// being protected, and sending someone through an external authorisation
   /// mid-draft is how drafts get lost.
   void _openDestinationSettings(DestinationCapability cap) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          cap.state == DestinationState.reconnectRequired
+    AuraNotice.problem(context, cap.state == DestinationState.reconnectRequired
               ? '${cap.label} needs signing in again — open Me › Connected accounts.'
-              : 'Connect ${cap.label} from Me › Connected accounts.',
-        ),
-      ),
-    );
+              : 'Connect ${cap.label} from Me › Connected accounts.');
   }
 
   Widget _buildExternalPublishingBlock() {
@@ -4186,7 +4111,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             ),
           ),
           // Nothing to publish or save until the post says what it is.
-          if (!_choosingIntent) _buildBottomBar(context),
+          if (!_choosingIntent) AuraNoticeLift(child: _buildBottomBar(context)),
         ],
       ),
     );

@@ -17,6 +17,7 @@ import 'trace/aura_trace_mark.dart';
 import 'trace/aura_trace_surface.dart';
 import 'media_save_button.dart';
 import 'media_url_resolver.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// Canonical evidence-grade media viewer.
 ///
@@ -119,12 +120,10 @@ Future<void> openMediaExternally(
   BuildContext context,
   String rawUrl,
 ) async {
-  final messenger = ScaffoldMessenger.maybeOf(context);
+  final messenger = AuraNotice.of(context);
   final trimmed = rawUrl.trim();
   if (trimmed.isEmpty) {
-    messenger?.showSnackBar(
-      const SnackBar(content: Text('The original media is not available.')),
-    );
+    messenger.problem('The original is not available.');
     return;
   }
 
@@ -158,9 +157,7 @@ Future<void> _copyLink(
 ) async {
   await Clipboard.setData(ClipboardData(text: url));
   if (!context.mounted) return;
-  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-    SnackBar(content: Text('$reason Link copied to the clipboard.')),
-  );
+  AuraNotice.info(context, '$reason Link copied to the clipboard.');
 }
 
 /// Affine transform that scales by [scale] while pinning [focal] (a
@@ -400,10 +397,10 @@ class _AuraMediaViewerState extends ConsumerState<AuraMediaViewer> {
     return 'Save';
   }
 
+  // Every caller reports media that cannot be shown.
   void _toast(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.maybeOf(context)
-        ?.showSnackBar(SnackBar(content: Text(message)));
+    AuraNotice.problem(context, message);
   }
 
   // ── Keyboard ──────────────────────────────────────────────────────

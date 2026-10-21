@@ -8,6 +8,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/admin_providers.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// C2 — Person Verification administration (§19 admin/governance
 /// experience).
@@ -141,9 +142,7 @@ class _AdminPersonVerificationSheetState
 
   void _showError(Object e) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Verification update failed: $e')),
-    );
+    AuraNotice.problem(context, 'The verification was not updated. Try again.');
   }
 
   @override

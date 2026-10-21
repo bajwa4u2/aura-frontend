@@ -83,14 +83,6 @@ class AuraAppTheme {
           ),
         ),
       ),
-      snackBarTheme: SnackBarThemeData(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AuraSurface.ink,
-        contentTextStyle: AuraText.body.copyWith(color: Colors.white),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AuraRadius.r14),
-        ),
-      ),
     );
   }
 }

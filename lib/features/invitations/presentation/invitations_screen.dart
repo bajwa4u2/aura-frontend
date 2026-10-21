@@ -18,6 +18,7 @@ import '../data/invite_presentation.dart';
 import '../../correspondence/data/correspondence_live_service.dart';
 import '../../conversation/data/conversations_repository.dart';
 import '../../../core/ui/aura_surface.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 final _inviteInboxProvider = FutureProvider<List<Map<String, dynamic>>>((
   ref,
@@ -336,9 +337,7 @@ class _IncomingInviteCard extends ConsumerWidget {
                     }
                   } catch (e) {
                     if (context.mounted) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text('$e')));
+                      AuraNotice.problem(context, 'The invitation was not accepted. Try again.');
                     }
                   }
                 },
@@ -350,9 +349,7 @@ class _IncomingInviteCard extends ConsumerWidget {
                     await respond('DECLINE');
                   } catch (e) {
                     if (context.mounted) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text('$e')));
+                      AuraNotice.problem(context, 'The invitation was not declined. Try again.');
                     }
                   }
                 },
@@ -442,9 +439,7 @@ class _SentInviteCard extends ConsumerWidget {
                         '${Uri.base.origin}/invite/accept?token=${Uri.encodeComponent(token)}';
                     await Clipboard.setData(ClipboardData(text: link));
                     if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Invite link copied.')),
-                    );
+                    AuraNotice.copied(context, 'Invite link copied.');
                   },
                 ),
               AuraGhostButton(
@@ -461,9 +456,7 @@ class _SentInviteCard extends ConsumerWidget {
                           ref.invalidate(_inviteApprovalsProvider);
                         } catch (e) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(
-                              context,
-                            ).showSnackBar(SnackBar(content: Text('$e')));
+                            AuraNotice.problem(context, 'The invitation was not withdrawn. Try again.');
                           }
                         }
                       },

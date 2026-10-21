@@ -19,6 +19,7 @@ import '../../../core/ui/aura_text.dart';
 import '../domain/institution.dart';
 import '../institution_words.dart';
 import '../workspace/workspace_page.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class InstitutionUnitsScreen extends ConsumerStatefulWidget {
   const InstitutionUnitsScreen({super.key, required this.institutionId});
@@ -89,13 +90,12 @@ class _InstitutionUnitsScreenState
         return data['message'].toString().trim();
       }
     }
-    return e.toString();
+    return 'That did not go through. Try again.';
   }
 
-  void _snack(String msg) {
+  void _snack(String msg, [AuraNoticeKind kind = AuraNoticeKind.problem]) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(msg)));
+    AuraNotice.show(context, msg, kind: kind);
   }
 
   Future<void> _archiveUnit(String unitId, bool currentlyArchived) async {
@@ -103,7 +103,7 @@ class _InstitutionUnitsScreenState
       await _dio.post(
         '/institutions/${widget.institutionId}/units/$unitId/archive',
       );
-      _snack(currentlyArchived ? 'Unit restored.' : 'Unit archived.');
+      _snack(currentlyArchived ? 'Unit restored.' : 'Unit archived.', AuraNoticeKind.done);
       await _load(silent: true);
     } catch (e) {
       _snack(_errMsg(e));
@@ -393,10 +393,9 @@ class _UpsertUnitSheetState extends ConsumerState<_UpsertUnitSheet> {
     super.dispose();
   }
 
-  void _snack(String msg) {
+  void _snack(String msg, [AuraNoticeKind kind = AuraNoticeKind.problem]) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(msg)));
+    AuraNotice.show(context, msg, kind: kind);
   }
 
   String _errMsg(Object e) {
@@ -406,7 +405,7 @@ class _UpsertUnitSheetState extends ConsumerState<_UpsertUnitSheet> {
         return data['message'].toString().trim();
       }
     }
-    return e.toString();
+    return 'That did not go through. Try again.';
   }
 
   Future<void> _save() async {

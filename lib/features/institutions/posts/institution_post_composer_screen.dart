@@ -55,6 +55,7 @@ import '../../composition/presentation/composition_assist.dart';
 import '../../../core/product/temporal.dart';
 import '../../../core/institutions/institution_paths.dart';
 import '../workspace/workspace_page.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// Composer for [InstitutionPost]s in create mode.
 ///
@@ -914,9 +915,7 @@ class _InstitutionPostComposerScreenState
     }
     final message = acquisitionLimitMessage(acquired.droppedForLimit);
     if (message != null && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      AuraNotice.info(context, message);
     }
   }
 
@@ -1097,14 +1096,8 @@ class _InstitutionPostComposerScreenState
       await _clearAllLocalDrafts();
       _invalidatePostFeeds();
       if (!mounted) return;
-      final messenger = ScaffoldMessenger.maybeOf(context);
-      messenger?.showSnackBar(
-        const SnackBar(
-          content: Text('Submitted for review'),
-          duration: Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      final messenger = AuraNotice.of(context);
+      messenger.done('Submitted for review.');
       context.pop(true);
     } catch (e) {
       if (!mounted) return;
@@ -1240,12 +1233,7 @@ class _InstitutionPostComposerScreenState
       await _clearAllLocalDrafts();
       _invalidatePostFeeds();
       if (!mounted) return;
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(
-          content: Text('Scheduled. ${publishesLabel(at)}.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AuraNotice.done(context, 'Scheduled. ${publishesLabel(at)}.');
       // Opened directly (a link, a reload), there is nothing to return to:
       // land on the institution's Posts, where the Scheduled tab lists it.
       if (context.canPop()) {
@@ -1384,8 +1372,7 @@ class _InstitutionPostComposerScreenState
     required InstitutionPostDistribution distribution,
   }) {
     if (!mounted) return;
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    if (messenger == null) return;
+    final messenger = AuraNotice.of(context);
 
     String reach;
     switch (visibility) {
@@ -1408,13 +1395,7 @@ class _InstitutionPostComposerScreenState
         ? 'Announcement published'
         : 'Statement published';
 
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text('$headline · $reach'),
-        duration: const Duration(seconds: 4),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    messenger.done('$headline · $reach');
   }
 
   void _invalidatePostFeeds() {

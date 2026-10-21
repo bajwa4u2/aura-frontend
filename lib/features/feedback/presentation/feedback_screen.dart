@@ -11,6 +11,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/product_feedback_repository.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// TELLING US SOMETHING.
 ///
@@ -63,8 +64,7 @@ class _FeedbackScreenState extends ConsumerState<FeedbackScreen> {
     } catch (e) {
       if (!mounted) return;
       final err = AppErrorMapper.from(e, feature: 'send that feedback');
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(err.message)));
+      AuraNotice.problem(context, err.message);
     } finally {
       if (mounted) setState(() => _sending = false);
     }

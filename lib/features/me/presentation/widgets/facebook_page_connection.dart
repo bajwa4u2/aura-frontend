@@ -11,6 +11,7 @@ import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
 import 'connect_return_watcher.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 Map<String, dynamic> _unwrap(dynamic data) {
   var m = data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
@@ -107,7 +108,7 @@ class _FacebookPageConnectionState
     } else if (_connected) {
       _say('Facebook Page connected.');
     } else {
-      _say('Facebook is not connected. You can try again.');
+      _say('Facebook is not connected. You can try again.', AuraNoticeKind.problem);
     }
   }
 
@@ -133,19 +134,21 @@ class _FacebookPageConnectionState
         try {
           message = GoRouterState.of(context).uri.queryParameters['message'];
         } catch (_) {}
-        _say(message?.trim().isNotEmpty == true
-            ? message!
-            : 'Facebook did not connect.');
+        _say(
+          message?.trim().isNotEmpty == true
+              ? message!
+              : 'Facebook did not connect. Try again.',
+          AuraNoticeKind.problem,
+        );
       } else if (back == 'connected') {
         _say('Facebook Page connected.');
       }
     });
   }
 
-  void _say(String text) {
+  void _say(String text, [AuraNoticeKind kind = AuraNoticeKind.done]) {
     if (!mounted) return;
-    ScaffoldMessenger.maybeOf(context)
-        ?.showSnackBar(SnackBar(content: Text(text)));
+    AuraNotice.show(context, text, kind: kind);
   }
 
   Future<void> _load() async {
@@ -186,9 +189,9 @@ class _FacebookPageConnectionState
       final opened = await launchUrl(uri, mode: connectLaunchMode());
       if (!opened) throw Exception('Could not open Facebook');
       _connectReturn.arm(_afterConnectReturn);
-      _say('Facebook opened. Approve there, then choose your Page.');
+      _say('Facebook is open. Approve there, then choose your Page.', AuraNoticeKind.info);
     } catch (_) {
-      _say('Facebook could not be opened right now. Please try again.');
+      _say('Facebook did not open. Try again.', AuraNoticeKind.problem);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -203,7 +206,7 @@ class _FacebookPageConnectionState
           .map((m) => FacebookPageOption.fromJson(Map<String, dynamic>.from(m)))
           .toList();
     } catch (_) {
-      _say('Your Facebook Pages could not be loaded. Please try again.');
+      _say('Your Facebook Pages did not load. Try again.', AuraNoticeKind.problem);
       return;
     }
     if (!mounted) return;
@@ -218,7 +221,7 @@ class _FacebookPageConnectionState
       _say('Posts you share will go to ${chosen.name}.');
       await _load();
     } catch (_) {
-      _say('That Page could not be chosen. Please try again.');
+      _say('That Page was not chosen. Try again.', AuraNoticeKind.problem);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -231,7 +234,7 @@ class _FacebookPageConnectionState
       _say('Facebook disconnected.');
       await _load();
     } catch (_) {
-      _say('Facebook could not be disconnected. Please try again.');
+      _say('Facebook was not disconnected. Try again.', AuraNoticeKind.problem);
     } finally {
       if (mounted) setState(() => _busy = false);
     }

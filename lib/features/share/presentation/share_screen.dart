@@ -47,6 +47,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class ShareScreen extends ConsumerStatefulWidget {
   const ShareScreen({super.key});
@@ -150,7 +151,7 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
         if (a == null) {
           // Refused at the door, and said so. Silence here is how an
           // unsupported file becomes a mysterious failure later.
-          _say(r.rejectionMessage ?? 'That file could not be added.');
+          _say(r.rejectionMessage ?? 'That file was not added. Try another.');
           continue;
         }
         accepted.add(a);
@@ -158,7 +159,7 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
 
       final limitNote = acquisitionLimitMessage(acquired.droppedForLimit,
           limit: kMaxMemberPostMedia);
-      if (limitNote != null) _say(limitNote);
+      if (limitNote != null) _say(limitNote, AuraNoticeKind.info);
       if (accepted.isEmpty) return;
 
       setState(() {
@@ -244,7 +245,7 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
       await _publishToFeed(text: text, mediaIds: mediaIds);
 
       if (!mounted) return;
-      _say('Published.');
+      _say('Published.', AuraNoticeKind.done);
       context.pop(true);
     } catch (e) {
       if (!mounted) return;
@@ -279,10 +280,9 @@ class _ShareScreenState extends ConsumerState<ShareScreen> {
     _published = true;
   }
 
-  void _say(String message) {
+  void _say(String message, [AuraNoticeKind kind = AuraNoticeKind.problem]) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    AuraNotice.show(context, message, kind: kind);
   }
 
   // ── SURFACE ──────────────────────────────────────────────────────────

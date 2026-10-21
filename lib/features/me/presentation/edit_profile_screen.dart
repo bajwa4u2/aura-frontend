@@ -21,6 +21,7 @@ import '../../../core/media/media_capacity.dart';
 import '../../../core/media/governed_image_variant.dart';
 import '../../../shared/media/profile_media_pipeline.dart';
 import 'edit_profile/edit_profile_widgets.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 enum _EditSection {
   identity,
@@ -515,9 +516,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         _saving = false;
       });
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Profile updated')));
+      AuraNotice.done(context, 'Profile updated.');
     } on DioException catch (e) {
       if (!mounted) return;
       setState(() {

@@ -29,6 +29,7 @@ import '../domain/operator_routes.dart';
 import '../ui/operator_action.dart';
 import '../ui/operator_kit.dart';
 import 'record_area.dart' show readableReason;
+import 'package:aura/core/ui/aura_notice.dart';
 
 final personVerificationProvider = FutureProvider.autoDispose
     .family<AdminPersonVerification, String>((ref, userId) async {
@@ -324,11 +325,7 @@ class _IdentityBlock extends ConsumerWidget {
         .toList(growable: false);
 
     if (available.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('This person already holds every class.'),
-        ),
-      );
+      AuraNotice.info(context, 'This person already holds every class.');
       return;
     }
 
@@ -456,13 +453,7 @@ class _IdentityBlock extends ConsumerWidget {
 
     if (!context.mounted) return null;
     if (institutions.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'No institution could be read, so an affiliation cannot be named.',
-          ),
-        ),
-      );
+      AuraNotice.problem(context, 'No institution could be read, so no affiliation can be named. Try again.');
       return null;
     }
 

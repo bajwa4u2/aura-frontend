@@ -109,6 +109,9 @@ dependencies:
   video_player_win: ^3.3.0
   qr_flutter: ^4.1.0
   share_plus: ^12.0.2
+  # Android 13+ confirms every copy itself; Aura reads the API level once
+  # so a copy is never confirmed twice (AuraNotice.copied).
+  device_info_plus: ^12.4.0
 
 dev_dependencies:
   flutter_test:

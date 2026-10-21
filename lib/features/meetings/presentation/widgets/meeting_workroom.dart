@@ -7,6 +7,7 @@ import '../../application/meetings_provider.dart';
 import '../../domain/meeting.dart';
 import '../../domain/meeting_conversation_message.dart';
 import 'meeting_section.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// The meeting's knowledge surface — conversation, summary narrative, and the
 /// SINGLE outcome representation (MeetingOutcome rows) — embedded in the
@@ -209,7 +210,7 @@ class _MeetingWorkroomState extends ConsumerState<MeetingWorkroom> {
 
   Future<void> _save() async {
     setState(() => _saving = true);
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = AuraNotice.of(context);
     final repo = ref.read(meetingsRepositoryProvider);
     try {
       await repo.saveMeetingSummary(
@@ -250,13 +251,9 @@ class _MeetingWorkroomState extends ConsumerState<MeetingWorkroom> {
       ref.invalidate(meetingSummaryProvider(_meetingId));
       ref.invalidate(meetingOutcomesProvider(_meetingId));
       ref.invalidate(meetingProvider(_meetingId));
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Summary and outcomes saved')),
-      );
+      messenger.done('Summary and outcomes saved.');
     } catch (e) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Unable to save. Try again.')),
-      );
+      messenger.problem('The summary was not saved. Try again.');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -265,7 +262,7 @@ class _MeetingWorkroomState extends ConsumerState<MeetingWorkroom> {
   Future<void> _share() async {
     if (_sharing) return;
     setState(() => _sharing = true);
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = AuraNotice.of(context);
     final repo = ref.read(meetingsRepositoryProvider);
     try {
       var result = await repo.shareSummary(_meetingId);
@@ -292,19 +289,9 @@ class _MeetingWorkroomState extends ConsumerState<MeetingWorkroom> {
         if (resend != true) return;
         result = await repo.shareSummary(_meetingId, force: true);
       }
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            result.recipients > 0
-                ? 'Summary shared with ${result.recipients} participant${result.recipients == 1 ? '' : 's'}'
-                : 'Summary shared',
-          ),
-        ),
-      );
+      messenger.done(result.recipients > 0 ? 'Summary shared with ${result.recipients} participant${result.recipients == 1 ? '' : 's'}.' : 'Summary shared.');
     } catch (e) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Save the summary first, then share it.')),
-      );
+      messenger.info('Save the summary first, then share it.');
     } finally {
       if (mounted) setState(() => _sharing = false);
     }
@@ -332,14 +319,10 @@ class _MeetingWorkroomState extends ConsumerState<MeetingWorkroom> {
           }
         });
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Promoted to ${type.label}')),
-      );
+      AuraNotice.done(context, 'Promoted to ${type.label}.');
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not promote message')),
-        );
+        AuraNotice.problem(context, 'The message was not promoted. Try again.');
       }
     }
   }
