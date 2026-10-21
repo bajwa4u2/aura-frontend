@@ -110,10 +110,11 @@ class _AuraPublicationDiscussionState
                   textInputAction: TextInputAction.newline,
                   // A hint disappears the moment typing starts, so on its own it
                   // is not a label — a screen-reader user returning to a
-                  // part-written reply had nothing naming the field.
+                  // part-written reply had nothing naming the field. The label
+                  // alone does both jobs; with a hint of the same words the
+                  // empty field said them twice (Galaxy S24+, 21 Oct 2026).
                   decoration: const InputDecoration(
                     labelText: 'Add to the discussion',
-                    hintText: 'Add to the discussion',
                     filled: true,
                     fillColor: AuraSurface.elevated,
                     border: OutlineInputBorder(

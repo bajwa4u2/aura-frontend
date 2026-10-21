@@ -19,6 +19,7 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderEditable;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -63,7 +64,6 @@ class GovernedTagAutocomplete extends ConsumerStatefulWidget {
 
 class _GovernedTagAutocompleteState
     extends ConsumerState<GovernedTagAutocomplete> {
-  final LayerLink _link = LayerLink();
   OverlayEntry? _overlay;
   Timer? _debounce;
   int _requestSeq = 0;
@@ -252,29 +252,99 @@ class _GovernedTagAutocompleteState
       _overlay!.markNeedsBuild();
       return;
     }
+    // The ROOT overlay: a composer inside a shell page must not have its
+    // suggestions clipped at the page's edge (above the bottom navigation).
     _overlay = OverlayEntry(
-      builder: (context) => Positioned(
-        width: 320,
-        child: CompositedTransformFollower(
-          link: _link,
-          showWhenUnlinked: false,
-          targetAnchor: Alignment.bottomLeft,
-          followerAnchor: Alignment.topLeft,
-          offset: const Offset(0, 4),
+      builder: (overlayContext) {
+        final placement = _placement(overlayContext);
+        return Positioned(
+          left: placement.left,
+          width: placement.width,
+          top: placement.above ? null : placement.anchorY,
+          bottom: placement.above
+              ? placement.overlayHeight - placement.anchorY
+              : null,
           child: _SuggestionPanel(
             suggestions: _suggestions,
             highlight: _highlight,
-            maxHeight: widget.maxOverlayHeight,
+            maxHeight: placement.maxHeight,
             onSelect: _select,
             onHover: (i) {
               setState(() => _highlight = i);
               _overlay?.markNeedsBuild();
             },
           ),
-        ),
-      ),
+        );
+      },
     );
-    Overlay.of(context).insert(_overlay!);
+    Overlay.of(context, rootOverlay: true).insert(_overlay!);
+  }
+
+  /// Where the suggestions go: at the caret's line, below it when there is
+  /// room before the keyboard / window bottom, otherwise above it. A tall
+  /// composer used to anchor the list under the field's bottom-left, which
+  /// on a phone put it under the keyboard or off the screen (21 Oct 2026).
+  /// The same rule serves a soft keyboard (its inset shrinks the room) and a
+  /// desktop window (the window bottom is the limit).
+  _TagOverlayPlacement _placement(BuildContext overlayContext) {
+    final media = MediaQuery.of(overlayContext);
+    final overlayBox = overlayContext.findRenderObject() as RenderBox?;
+    final targetBox = context.findRenderObject() as RenderBox?;
+    final overlaySize = overlayBox?.size ?? media.size;
+    const gap = 4.0;
+    const edge = 8.0;
+    final width = (overlaySize.width - 2 * edge).clamp(0.0, 320.0);
+
+    if (overlayBox == null || targetBox == null || !targetBox.attached) {
+      return _TagOverlayPlacement(
+        left: edge,
+        width: width,
+        anchorY: edge,
+        above: false,
+        maxHeight: widget.maxOverlayHeight,
+        overlayHeight: overlaySize.height,
+      );
+    }
+
+    // Caret rect from the field's editable, falling back to the field box.
+    Rect caret;
+    final editable = _findEditable(targetBox);
+    final offset = widget.controller.selection.baseOffset;
+    if (editable != null && offset >= 0) {
+      final local = editable.getLocalRectForCaret(TextPosition(offset: offset));
+      final topLeft = editable.localToGlobal(local.topLeft, ancestor: overlayBox);
+      caret = topLeft & local.size;
+    } else {
+      final topLeft = targetBox.localToGlobal(Offset.zero, ancestor: overlayBox);
+      caret = Rect.fromLTWH(topLeft.dx, topLeft.dy, 0, targetBox.size.height);
+    }
+
+    final visibleTop = media.padding.top + edge;
+    final visibleBottom =
+        overlaySize.height - media.viewInsets.bottom - media.padding.bottom - edge;
+    final spaceBelow = visibleBottom - caret.bottom - gap;
+    final spaceAbove = caret.top - gap - visibleTop;
+    final wanted = widget.maxOverlayHeight;
+    final above = spaceBelow < wanted.clamp(0.0, 160.0) && spaceAbove > spaceBelow;
+    final room = above ? spaceAbove : spaceBelow;
+
+    return _TagOverlayPlacement(
+      left: caret.left.clamp(edge, (overlaySize.width - width - edge).clamp(edge, double.infinity)),
+      width: width,
+      anchorY: above ? caret.top - gap : caret.bottom + gap,
+      above: above,
+      maxHeight: room.clamp(48.0, wanted),
+      overlayHeight: overlaySize.height,
+    );
+  }
+
+  RenderEditable? _findEditable(RenderObject root) {
+    if (root is RenderEditable) return root;
+    RenderEditable? found;
+    root.visitChildren((child) {
+      found ??= _findEditable(child);
+    });
+    return found;
   }
 
   void _removeOverlay() {
@@ -289,9 +359,30 @@ class _GovernedTagAutocompleteState
       // The wrapped field keeps its own FocusNode; this ancestor Focus
       // only intercepts navigation keys while the overlay is open.
       skipTraversal: true,
-      child: CompositedTransformTarget(link: _link, child: widget.child),
+      child: widget.child,
     );
   }
+}
+
+class _TagOverlayPlacement {
+  const _TagOverlayPlacement({
+    required this.left,
+    required this.width,
+    required this.anchorY,
+    required this.above,
+    required this.maxHeight,
+    required this.overlayHeight,
+  });
+
+  final double left;
+  final double width;
+
+  /// The caret edge the panel hangs from: its top when below, its bottom
+  /// when above.
+  final double anchorY;
+  final bool above;
+  final double maxHeight;
+  final double overlayHeight;
 }
 
 class _SuggestionPanel extends StatelessWidget {

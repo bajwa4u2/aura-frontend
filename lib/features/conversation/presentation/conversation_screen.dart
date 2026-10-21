@@ -1485,7 +1485,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                       itemBuilder: (_) => [
                         const PopupMenuItem(
                           value: 'rename',
-                          child: Text('Name'),
+                          child: Text('Name this conversation'),
                         ),
                         PopupMenuItem(
                           value: 'mute',
