@@ -96,7 +96,12 @@ void main() {
       ),
     );
 
+    // A bare sigil opens nothing (founder, 21 Oct 2026: one letter first).
     await tester.enterText(find.byType(TextField), 'Hi @');
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text('Amina Bajwa'), findsNothing);
+
+    await tester.enterText(find.byType(TextField), 'Hi @i');
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('Amina Bajwa'), findsOneWidget);

@@ -929,6 +929,7 @@ class _InstitutionAnnouncementComposerState
                   controller: _bodyController,
                   focusNode: _bodyFocus,
                   onTagSelected: _rememberSelectedTag,
+                  attached: _selectedTagReferences,
                   child: TextFormField(
                     controller: _bodyController,
                     focusNode: _bodyFocus,

@@ -1603,6 +1603,7 @@ class _InstitutionPostComposerScreenState
             controller: _bodyCtrl,
             focusNode: _bodyFocus,
             onTagSelected: _rememberSelectedTag,
+            attached: _selectedTagReferences,
             child: TextField(
               controller: _bodyCtrl,
               focusNode: _bodyFocus,

@@ -74,6 +74,11 @@ Rect _panelRect(WidgetTester tester) =>
     ).first);
 
 void main() {
+  // The caret placement is the desktop popover's (Windows, macOS, Linux,
+  // desktop-width web). Phones show a strip on the keyboard instead; see
+  // tag_suggestions_per_platform_test.dart.
+  final desktop = TargetPlatformVariant.only(TargetPlatform.windows);
+
   for (final size in const [Size(390, 844), Size(1280, 800)]) {
     testWidgets('caret low on screen with a keyboard: list opens above it, '
         'fully visible (${size.width.toInt()}px)', (tester) async {
@@ -102,7 +107,7 @@ void main() {
       expect(panel.bottom, lessThanOrEqualTo(size.height - keyboard));
       expect(panel.left, greaterThanOrEqualTo(0));
       expect(panel.right, lessThanOrEqualTo(size.width));
-    });
+    }, variant: desktop);
   }
 
   testWidgets('room below the caret: list opens below it', (tester) async {
@@ -128,5 +133,5 @@ void main() {
     // Below the first line, i.e. inside the field's height, not under it.
     expect(panel.top, lessThan(field.top + 80));
     expect(panel.bottom, lessThanOrEqualTo(844));
-  });
+  }, variant: desktop);
 }

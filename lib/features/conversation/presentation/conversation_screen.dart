@@ -223,8 +223,6 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   String? _pendingPreviewUrl;
   bool _previewDismissed = false;
 
-  /// @mention suggestions for the token at the caret.
-  List<ConversationParty> _mentionMatches = const [];
 
   @override
   void initState() {
@@ -271,30 +269,12 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   // ── Composer intelligence ─────────────────────────────────────────
 
   void _onComposerChanged(String text, Conversation c) {
-    final sel = _composer.selection;
-    final caret = sel.isValid
-        ? sel.baseOffset.clamp(0, text.length)
-        : text.length;
-    final upto = text.substring(0, caret);
-    final token = RegExp(r'@([^\s@]*)$').firstMatch(upto);
-    List<ConversationParty> matches = const [];
-    if (token != null) {
-      final q = token.group(1)!.toLowerCase();
-      matches = c.parties
-          .where(
-            (p) =>
-                p.isPerson &&
-                p.isActive &&
-                (p.displayName ?? '').isNotEmpty &&
-                p.displayName!.toLowerCase().contains(q),
-          )
-          .take(4)
-          .toList();
-    }
+    // @mentions are suggested by GovernedTagAutocomplete (bounded to this
+    // conversation's parties). A second chip row here inserted plain "@Name"
+    // with no tag record, so a picked person lost their photo (21 Oct 2026).
     setState(() {
       // The authority measures the body; the controller only holds it.
       _composition = _composition.copyWith(body: text);
-      _mentionMatches = matches;
     });
 
     _linkDebounce?.cancel();
@@ -331,26 +311,6 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     } catch (_) {
       // A preview is enrichment — never blocks composing or sending.
     }
-  }
-
-  void _insertMention(ConversationParty p) {
-    final name = p.displayName ?? '';
-    if (name.isEmpty) return;
-    final text = _composer.text;
-    final sel = _composer.selection;
-    final caret = sel.isValid
-        ? sel.baseOffset.clamp(0, text.length)
-        : text.length;
-    final upto = text.substring(0, caret);
-    final token = RegExp(r'@([^\s@]*)$').firstMatch(upto);
-    if (token == null) return;
-    final next =
-        '${upto.substring(0, token.start)}@$name ${text.substring(caret)}';
-    _composer.text = next;
-    _composer.selection = TextSelection.collapsed(
-      offset: token.start + name.length + 2,
-    );
-    setState(() => _mentionMatches = const []);
   }
 
   /// Ctrl/Cmd+V with an image on the clipboard becomes an attachment
@@ -1097,7 +1057,6 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         _pendingPreview = null;
         _pendingPreviewUrl = null;
         _previewDismissed = false;
-        _mentionMatches = const [];
       });
       ref.invalidate(conversationMessagesProvider(widget.conversationId));
       ref.invalidate(conversationsListProvider);
@@ -1568,30 +1527,6 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   onReorder: _reorderAttachment,
                   onRetry: _retryAttachment,
                 ),
-              if (_mentionMatches.isNotEmpty)
-                Container(
-                  width: double.infinity,
-                  color: AuraSurface.card,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AuraSpace.s12,
-                    vertical: AuraSpace.s6,
-                  ),
-                  child: Wrap(
-                    spacing: AuraSpace.s6,
-                    children: [
-                      for (final p in _mentionMatches)
-                        ActionChip(
-                          avatar: AuraAvatar(
-                            name: p.displayName ?? '',
-                            imageUrl: p.avatarUrl,
-                            size: 20,
-                          ),
-                          label: Text(p.displayName ?? ''),
-                          onPressed: () => _insertMention(p),
-                        ),
-                    ],
-                  ),
-                ),
               if (_replyTo != null)
                 Container(
                   color: AuraSurface.card,
@@ -1735,6 +1670,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                             controller: _composer,
                             focusNode: _composerFocus,
                             onTagSelected: _rememberSelectedTag,
+                            attached: _selectedTagReferences,
                             mentionScope: MentionScope.bounded(
                               _eligibleTagSuggestions(c),
                             ),
