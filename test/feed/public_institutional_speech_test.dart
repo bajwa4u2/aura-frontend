@@ -44,14 +44,49 @@ void main() {
     });
   });
 
-  group('signed in, nothing changes', () {
-    test('a member keeps the workspace address', () {
+  group('signed in, an institution post opens in the reader\'s own frame', () {
+    // 21 Oct 2026: a member with no membership tapped an institution post on
+    // Home and landed in that institution's workspace chrome.
+    test('a member gets the public address too', () {
       expect(
         FeedRouting.publicInstitutionPostRoute(
           '/institution/aura-platform/posts/abc123',
           signedIn: true,
         ),
+        '/institutions/aura-platform/posts/abc123',
+      );
+    });
+
+    test('from Home, adaptTargetRoute gives the public address', () {
+      expect(
+        FeedRouting.adaptTargetRoute(
+          '/institution/aura-platform/posts/abc123',
+          currentPath: '/',
+          signedIn: true,
+        ),
+        '/institutions/aura-platform/posts/abc123',
+      );
+    });
+
+    test('inside that institution\'s workspace, its post stays there', () {
+      expect(
+        FeedRouting.adaptTargetRoute(
+          '/institution/aura-platform/posts/abc123',
+          currentPath: '/institution/aura-platform/posts',
+          signedIn: true,
+        ),
         '/institution/aura-platform/posts/abc123',
+      );
+    });
+
+    test('inside another institution\'s workspace, it opens publicly', () {
+      expect(
+        FeedRouting.adaptTargetRoute(
+          '/institution/aura-platform/posts/abc123',
+          currentPath: '/institution/other-place/desk',
+          signedIn: true,
+        ),
+        '/institutions/aura-platform/posts/abc123',
       );
     });
 
@@ -90,6 +125,19 @@ void main() {
         FeedRouting.publicInstitutionPostRoute('/posts/abc', signedIn: false),
         '/posts/abc',
       );
+    });
+  });
+
+  group('the post page offers the workspace only inside the workspace', () {
+    // 21 Oct 2026: at the public address the page still showed "Back to
+    // Posts" (into the institution's workspace) under the reader's own Back.
+    final screen = File(
+      'lib/features/institutions/posts/institution_post_detail_screen.dart',
+    ).readAsStringSync();
+
+    test('"Back to Posts" is gated on the workspace address', () {
+      expect(screen, contains("uri.path.startsWith('/institution/')"));
+      expect(screen, contains(': null,'));
     });
   });
 
