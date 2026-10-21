@@ -204,7 +204,7 @@ Future<void> _attachDocument(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-/// The send control has no tooltip to find it by; its icon is its identity.
+/// The send control, found by its icon (it is also named "Send message").
 Finder get _send =>
     find.widgetWithIcon(IconButton, Icons.arrow_upward_rounded);
 

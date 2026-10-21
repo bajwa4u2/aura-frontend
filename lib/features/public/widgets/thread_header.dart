@@ -172,13 +172,25 @@ class ThreadHeader extends StatelessWidget {
             // the body selectable while the mention tap recognizers
             // continue to fire, so links and copy/quote coexist.
             SelectionArea(
-              child: MentionText(
-                item.body,
-                style: AuraText.body.copyWith(
-                  color: AuraSurface.ink,
-                  height: 1.55,
-                ),
-              ),
+              // Tags the server recorded draw from their records (the
+              // person's name, opening them), as feed cards and messages do;
+              // MentionText's @handle matching stays for older text.
+              child: item.tagReferences.any((r) => r.isMention)
+                  ? ResolvedTagText(
+                      item.body,
+                      tagReferences: item.tagReferences,
+                      style: AuraText.body.copyWith(
+                        color: AuraSurface.ink,
+                        height: 1.55,
+                      ),
+                    )
+                  : MentionText(
+                      item.body,
+                      style: AuraText.body.copyWith(
+                        color: AuraSurface.ink,
+                        height: 1.55,
+                      ),
+                    ),
             ),
           ],
           if ((spaceName ?? '').trim().isNotEmpty) ...[

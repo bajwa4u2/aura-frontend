@@ -257,13 +257,25 @@ class ReplyUnit extends ConsumerWidget {
             // long-press text selection without disturbing those
             // mention tap recognizers.
             SelectionArea(
-              child: MentionText(
-                reply.body,
-                style: AuraText.body.copyWith(
-                  color: AuraSurface.ink,
-                  height: 1.5,
-                ),
-              ),
+              // Tags the server recorded draw from their records (the
+              // person's name, opening them), as feed cards and messages do;
+              // MentionText's @handle matching stays for older text.
+              child: reply.tagReferences.any((r) => r.isMention)
+                  ? ResolvedTagText(
+                      reply.body,
+                      tagReferences: reply.tagReferences,
+                      style: AuraText.body.copyWith(
+                        color: AuraSurface.ink,
+                        height: 1.5,
+                      ),
+                    )
+                  : MentionText(
+                      reply.body,
+                      style: AuraText.body.copyWith(
+                        color: AuraSurface.ink,
+                        height: 1.5,
+                      ),
+                    ),
             ),
           ],
         ],

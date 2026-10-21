@@ -523,7 +523,18 @@ class _GovernedTagAutocompleteState
     var top = height - bottomInset - kTagStripHeight;
     final geometry = overlayBox == null ? null : _caretGeometry(overlayBox);
     if (geometry != null && geometry.caret.bottom + 2 > top) {
-      top = geometry.caret.top - 4 - kTagStripHeight;
+      // Above the line being typed, clear of the field's own border when
+      // the line is the field's first: the strip's edge sat a few pixels
+      // over a message composer's border (S24+, 21 Oct 2026).
+      const gap = 6.0;
+      var anchor = geometry.caret.top;
+      final fieldBox = context.findRenderObject() as RenderBox?;
+      if (fieldBox != null && fieldBox.attached && overlayBox != null) {
+        final fieldTop =
+            fieldBox.localToGlobal(Offset.zero, ancestor: overlayBox).dy;
+        if (anchor - fieldTop < 48) anchor = fieldTop;
+      }
+      top = anchor - gap - kTagStripHeight;
     }
     return (top: top.clamp(media.padding.top, height - kTagStripHeight));
   }

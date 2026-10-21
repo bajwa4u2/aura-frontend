@@ -149,7 +149,7 @@ class _ResolvedTagTextState extends State<ResolvedTagText> {
 
     final base = widget.style ?? AuraText.body;
     final spans = <InlineSpan>[];
-    final ranges = _ranges(widget.text, refs);
+    final ranges = resolvedTagRanges(widget.text, refs);
     var cursor = 0;
 
     for (final recognizer in _recognizers) {
@@ -169,7 +169,7 @@ class _ResolvedTagTextState extends State<ResolvedTagText> {
         _recognizers.addAll(plain.recognizers);
       }
       final recognizer = TapGestureRecognizer()
-        ..onTap = () => _openReference(context, item.reference);
+        ..onTap = () => openTagReference(context, item.reference);
       _recognizers.add(recognizer);
       spans.add(
         TextSpan(
@@ -179,6 +179,8 @@ class _ResolvedTagTextState extends State<ResolvedTagText> {
             fontWeight: FontWeight.w800,
           ),
           recognizer: recognizer,
+          // A click target on desktop and the web, as it is a tap on a phone.
+          mouseCursor: SystemMouseCursors.click,
         ),
       );
       cursor = item.end;
@@ -210,54 +212,57 @@ class _ResolvedTagTextState extends State<ResolvedTagText> {
       textAlign: TextAlign.start,
     ));
   }
+}
 
-  List<_ResolvedRange> _ranges(String text, List<TagReference> refs) {
-    final ranges = <_ResolvedRange>[];
-    var searchFrom = 0;
-    for (final ref in refs) {
-      final source = ref.durableSourceText;
-      if (source.isEmpty) continue;
-      var start = ref.startOffset;
-      var end = ref.endOffset;
-      final hasValidRange =
-          start != null &&
-          end != null &&
-          start >= 0 &&
-          end <= text.length &&
-          start < end &&
-          text.substring(start, end) == source;
-      if (!hasValidRange) {
-        start = text.indexOf(source, searchFrom);
-        end = start < 0 ? -1 : start + source.length;
-      }
-      if (start < 0 || end > text.length) {
-        continue;
-      }
-      ranges.add(_ResolvedRange(start, end, ref));
-      searchFrom = end;
+/// Where each resolved tag sits in [text]: its recorded offsets when they
+/// still match, else the next occurrence of its source text.
+List<ResolvedTagRange> resolvedTagRanges(String text, List<TagReference> refs) {
+  final ranges = <ResolvedTagRange>[];
+  var searchFrom = 0;
+  for (final ref in refs) {
+    final source = ref.durableSourceText;
+    if (source.isEmpty) continue;
+    var start = ref.startOffset;
+    var end = ref.endOffset;
+    final hasValidRange =
+        start != null &&
+        end != null &&
+        start >= 0 &&
+        end <= text.length &&
+        start < end &&
+        text.substring(start, end) == source;
+    if (!hasValidRange) {
+      start = text.indexOf(source, searchFrom);
+      end = start < 0 ? -1 : start + source.length;
     }
-    ranges.sort((a, b) => a.start.compareTo(b.start));
-    return ranges;
+    if (start < 0 || end > text.length) {
+      continue;
+    }
+    ranges.add(ResolvedTagRange(start, end, ref));
+    searchFrom = end;
   }
+  ranges.sort((a, b) => a.start.compareTo(b.start));
+  return ranges;
+}
 
-  void _openReference(BuildContext context, TagReference reference) {
-    final route = (reference.identity?.route ?? '').trim();
-    if (route.isNotEmpty) {
-      GoRouter.of(context).push(route);
-      return;
-    }
-    final slug = (reference.identity?.handleOrSlug ?? '').trim();
-    if (slug.isEmpty) return;
-    if (reference.kind == TagKind.institution) {
-      GoRouter.of(context).push('/institutions/$slug');
-    } else {
-      GoRouter.of(context).push('/u/$slug');
-    }
+/// Opens a tag's person or institution.
+void openTagReference(BuildContext context, TagReference reference) {
+  final route = (reference.identity?.route ?? '').trim();
+  if (route.isNotEmpty) {
+    GoRouter.of(context).push(route);
+    return;
+  }
+  final slug = (reference.identity?.handleOrSlug ?? '').trim();
+  if (slug.isEmpty) return;
+  if (reference.kind == TagKind.institution) {
+    GoRouter.of(context).push('/institutions/$slug');
+  } else {
+    GoRouter.of(context).push('/u/$slug');
   }
 }
 
-class _ResolvedRange {
-  const _ResolvedRange(this.start, this.end, this.reference);
+class ResolvedTagRange {
+  const ResolvedTagRange(this.start, this.end, this.reference);
 
   final int start;
   final int end;

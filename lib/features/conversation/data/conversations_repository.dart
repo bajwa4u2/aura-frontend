@@ -1,3 +1,4 @@
+import '../../../core/tagging/tag_entities.dart';
 import '../../../core/media/trace/aura_trace.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -241,6 +242,7 @@ class ConversationMessage {
     this.replyTo,
     this.linkPreview,
     this.internalRef,
+    this.tagReferences = const [],
   });
 
   final String id;
@@ -304,6 +306,11 @@ class ConversationMessage {
 
   bool get isSystem => systemKind != null;
 
+  /// The people, institutions and topics tagged in [body], resolved by the
+  /// server at read time (identity, handle, route). The bubble draws a tag
+  /// from these, not by guessing at names in the text.
+  final List<TagReference> tagReferences;
+
   factory ConversationMessage.fromJson(Map<String, dynamic> json) {
     final rawReactions = json['reactions'];
     final reactions = <String, int>{};
@@ -356,6 +363,10 @@ class ConversationMessage {
                     : null,
                 trace: AuraTrace.fromJson(m['trace']),
               ))
+          .toList(),
+      tagReferences: (json['tagReferences'] as List<dynamic>? ?? const [])
+          .whereType<Map>()
+          .map((m) => TagReference.fromJson(Map<String, dynamic>.from(m)))
           .toList(),
       replyTo: json['replyTo'] is Map<String, dynamic>
           ? ReplyRef.fromJson(json['replyTo'] as Map<String, dynamic>)

@@ -69,6 +69,8 @@ import '../../../core/media/media_origin_disclosure.dart';
 import '../../../core/tagging/governed_tag_field.dart';
 import '../../../core/tagging/mention_scope.dart';
 import '../../../core/tagging/tag_entities.dart';
+import '../../public/widgets/mention_text.dart'
+    show openTagReference, resolvedTagRanges;
 import '../../../core/ui/aura_bounded_editor.dart';
 import 'package:aura/core/ui/aura_notice.dart';
 
@@ -229,6 +231,17 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     super.initState();
     _listenForIncoming();
     _adoptSharedContent();
+    // The body follows the controller, not the field's onChanged: a tag
+    // picked from the suggestions, a tag removed with x, or any other edit
+    // made in code never fires onChanged. On 21 Oct 2026 a picked
+    // "@bajwawrites" was sent as the typed "@ba" and refused by the server.
+    _composer.addListener(_onComposerText);
+  }
+
+  void _onComposerText() {
+    final text = _composer.text;
+    if (text == _composition.body) return;
+    _onComposerChanged(text);
   }
 
   /// Pick up content the person shared from another application and chose to
@@ -258,6 +271,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   void dispose() {
     _incomingSub?.cancel();
     _linkDebounce?.cancel();
+    _composer.removeListener(_onComposerText);
     _composer.dispose();
     _composerFocus.dispose();
     _recordingTicker?.cancel();
@@ -268,7 +282,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
   // ── Composer intelligence ─────────────────────────────────────────
 
-  void _onComposerChanged(String text, Conversation c) {
+  void _onComposerChanged(String text) {
     // @mentions are suggested by GovernedTagAutocomplete (bounded to this
     // conversation's parties). A second chip row here inserted plain "@Name"
     // with no tag record, so a picked person lost their photo (21 Oct 2026).
@@ -1690,7 +1704,6 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                                     maxLines: 5,
                                     textInputAction: TextInputAction.send,
                                     onSubmitted: (_) => _send(),
-                                    onChanged: (t) => _onComposerChanged(t, c),
                                     contentInsertionConfiguration:
                                         ContentInsertionConfiguration(
                                           onContentInserted: (content) async {
@@ -1734,6 +1747,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                       ),
                       const SizedBox(width: AuraSpace.s8),
                       IconButton.filled(
+                        // Its name, for screen readers and as a hover hint;
+                        // it had none (21 Oct 2026).
+                        tooltip: 'Send message',
                         // The control reflects readiness now, instead of
                         // offering a send it would silently refuse.
                         onPressed: _composition.canSubmit ? _send : null,
@@ -2202,9 +2218,11 @@ class _MessageBubble extends ConsumerWidget {
                   // is what somebody with a mouse and a keyboard wants.
                   _messageActionsNeedAButton
                       ? SelectableText.rich(_conversationRichBody(
-                          context, message.body, conversation))
+                          context, message.body, conversation,
+                          tagReferences: message.tagReferences))
                       : Text.rich(_conversationRichBody(
-                          context, message.body, conversation)),
+                          context, message.body, conversation,
+                          tagReferences: message.tagReferences)),
               ],
               if (message.linkPreview != null) ...[
                 const SizedBox(height: AuraSpace.s6),
@@ -2642,12 +2660,58 @@ String _trimUrlToken(String u) {
 
 /// Body text with live links (internal Aura links stay inside the product,
 /// external links open outside) and @mention highlighting.
+///
+/// A tag the message RECORDS (its resolved [tagReferences]) is drawn from
+/// that record, as posts draw theirs: "@<name>", accent, w800, opening the
+/// person or institution; a click target on desktop and the web. A picked
+/// "@bajwawrites" otherwise matched no party name and drew as plain text
+/// (21 Oct 2026). Matching "@<party name>" stays only for messages sent
+/// before tags were recorded.
 TextSpan _conversationRichBody(
   BuildContext context,
   String body,
-  Conversation conversation,
-) {
+  Conversation conversation, {
+  List<TagReference> tagReferences = const [],
+}) {
   final base = AuraText.body.copyWith(color: AuraSurface.ink);
+  final tagged = base.copyWith(
+    fontWeight: FontWeight.w800,
+    color: AuraSurface.accentText,
+  );
+  final recorded = resolvedTagRanges(
+    body,
+    tagReferences.where((r) => r.isMention).toList(),
+  );
+  if (recorded.isNotEmpty) {
+    final spans = <InlineSpan>[];
+    var cursor = 0;
+    for (final r in recorded) {
+      if (r.start < cursor) continue;
+      if (r.start > cursor) {
+        spans.add(_conversationRichBody(
+          context,
+          body.substring(cursor, r.start),
+          conversation,
+        ));
+      }
+      spans.add(TextSpan(
+        text: r.reference.displayToken,
+        style: tagged,
+        mouseCursor: SystemMouseCursors.click,
+        recognizer: TapGestureRecognizer()
+          ..onTap = () => openTagReference(context, r.reference),
+      ));
+      cursor = r.end;
+    }
+    if (cursor < body.length) {
+      spans.add(_conversationRichBody(
+        context,
+        body.substring(cursor),
+        conversation,
+      ));
+    }
+    return TextSpan(style: base, children: spans);
+  }
   final spans = <InlineSpan>[];
   final mentionNames =
       conversation.parties

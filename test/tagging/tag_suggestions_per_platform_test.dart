@@ -320,7 +320,9 @@ void main() {
       final strip = tester.getRect(find.byKey(_strip));
       final field = tester.getRect(find.byType(TextField));
       expect(field.bottom, lessThanOrEqualTo(2340 - 1005 + 0.5));
-      expect(strip.bottom, lessThanOrEqualTo(field.top + 20));
+      // Clear of the field's border, with a small gap (S24+: it overlapped).
+      expect(strip.bottom, lessThanOrEqualTo(field.top - 4));
+      expect(strip.bottom, greaterThanOrEqualTo(field.top - 8));
       expect(strip.top, greaterThan(0));
       expect(strip.bottom, lessThanOrEqualTo(2340 - 1005));
       debugDefaultTargetPlatformOverride = null;
