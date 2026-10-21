@@ -310,11 +310,18 @@ class _FeedInteractionBarState extends ConsumerState<FeedInteractionBar> {
       spacing: AuraSpace.s8,
       runSpacing: AuraSpace.s8,
       children: [
-        AuraActionPill(
-          icon: liked ? Icons.favorite : Icons.favorite_border,
-          label: likeLabel,
-          onTap: toggleLike,
-          active: liked,
+        // A long hold on a phone (and hover on desktop or web) says what the
+        // button does instead of acting. Without a long-press handler a held
+        // finger counted as a tap and liked the post (S24+, 21 Oct 2026).
+        // Posts take a single Like; the reaction set belongs to articles.
+        Tooltip(
+          message: liked ? 'Remove your like' : 'Like this post',
+          child: AuraActionPill(
+            icon: liked ? Icons.favorite : Icons.favorite_border,
+            label: likeLabel,
+            onTap: toggleLike,
+            active: liked,
+          ),
         ),
         AuraActionPill(
           icon: Icons.reply_outlined,
