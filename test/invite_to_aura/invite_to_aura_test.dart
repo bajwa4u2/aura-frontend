@@ -2,9 +2,12 @@
 // shared through the platforms' own share pages, offered at a few moments,
 // each once ever. These keep the link exact, the channels countable, the
 // public page public, and a failed read from ever showing a prompt.
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:share_plus/share_plus.dart';
 
 import 'package:aura/app/route_classification.dart';
 import 'package:aura/features/invite_to_aura/invite_to_aura.dart';
@@ -25,6 +28,43 @@ class _FakeClient implements InviteToAuraClient {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+/// The device share sheet, as the invite sheet calls it.
+class _FakeShare implements SharePlus {
+  final shared = <ShareParams>[];
+  bool fail = false;
+
+  @override
+  Future<ShareResult> share(ShareParams params) async {
+    if (fail) throw Exception('no share sheet');
+    shared.add(params);
+    return const ShareResult('done', ShareResultStatus.success);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+Future<void> _openSheet(WidgetTester tester) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      home: Builder(
+        builder: (context) => Scaffold(
+          body: TextButton(
+            onPressed: () => showInviteToAuraSheet(
+              context,
+              handle: 'bajwawrites',
+              displayName: 'M S Bajwa',
+            ),
+            child: const Text('open'),
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.tap(find.text('open'));
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -98,6 +138,7 @@ void main() {
     expect(find.text('https://auraplatform.org/join/bajwawrites'), findsOneWidget);
     for (final label in [
       'Copy link',
+      'Share…',
       'Share to Facebook',
       'Share on WhatsApp',
       'Share to LinkedIn',
@@ -238,5 +279,88 @@ void main() {
     await tester.tap(find.text('Maybe later'));
     await tester.pumpAndSettle();
     expect(find.text('Bring someone to Aura?'), findsNothing);
+  });
+
+  group('Share… opens the device share sheet', () {
+    late _FakeShare fake;
+    setUp(() {
+      fake = _FakeShare();
+      inviteSharePlus = fake;
+    });
+
+    for (final platform in [
+      TargetPlatform.iOS,
+      TargetPlatform.android,
+      TargetPlatform.windows,
+    ]) {
+      testWidgets('on ${platform.name}, with the words the other channels use, '
+          'marked via=share, anchored to the button', (tester) async {
+        debugDefaultTargetPlatformOverride = platform;
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        await _openSheet(tester);
+        final button = find.text('Share…');
+        await tester.ensureVisible(button);
+        await tester.pumpAndSettle();
+        await tester.tap(button);
+        await tester.pumpAndSettle();
+
+        expect(fake.shared, hasLength(1));
+        final p = fake.shared.single;
+        expect(
+          p.text,
+          'I would like you to join me on Aura. '
+          'https://auraplatform.org/join/bajwawrites?via=share',
+        );
+        expect(normalizedInviteChannel('share'), 'share');
+        expect(p.subject, 'M S Bajwa invited you to Aura');
+        // iPad presents the sheet as a popover from this rectangle.
+        expect(p.sharePositionOrigin, isNotNull);
+        expect(p.sharePositionOrigin!.isEmpty, isFalse);
+        expect(find.text('Invite to Aura'), findsNothing,
+            reason: 'the sheet closes once shared, as the other channels do');
+        debugDefaultTargetPlatformOverride = null;
+      });
+    }
+
+    testWidgets('a share sheet that fails copies the link instead', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      String? copied;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied = (call.arguments as Map)['text'] as String?;
+          }
+          return null;
+        },
+      );
+      addTearDown(() => tester.binding.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null));
+      fake.fail = true;
+
+      await _openSheet(tester);
+      final button = find.text('Share…');
+      await tester.ensureVisible(button);
+      await tester.pumpAndSettle();
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+
+      expect(copied, 'https://auraplatform.org/join/bajwawrites?via=share');
+      debugDefaultTargetPlatformOverride = null;
+    });
+
+    testWidgets('macOS and Linux have no Share… (Copy link stays)', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+      await _openSheet(tester);
+      expect(find.text('Share…'), findsNothing);
+      expect(find.text('Copy link'), findsOneWidget);
+      debugDefaultTargetPlatformOverride = null;
+    });
   });
 }

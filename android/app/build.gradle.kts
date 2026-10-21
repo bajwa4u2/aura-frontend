@@ -83,7 +83,8 @@ dependencies {
     // notification — landed in androidx.core 1.9.0. Relying on whatever
     // version the Flutter embedding happened to pull in transitively would
     // make incoming-call presentation depend on an unrelated upgrade.
-    implementation("androidx.core:core-ktx:1.13.1")
+    // 1.17.0 for WindowCompat.enableEdgeToEdge (MainActivity, 2026-10-21).
+    implementation("androidx.core:core-ktx:1.17.0")
 
     // TRACK C — NATIVE CALL LIFECYCLE.
     //

@@ -227,14 +227,24 @@ class _AuraTopicSelectorState extends State<AuraTopicSelector> {
         // ── Secondary (optional, suggested) ─────────────────────────────
         Row(
           children: [
-            Text('Secondary topics', style: AuraText.small.copyWith(
-              fontWeight: FontWeight.w700,
-            )),
+            Flexible(
+              child: Text('Secondary topics',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraText.small.copyWith(
+                    fontWeight: FontWeight.w700,
+                  )),
+            ),
             const SizedBox(width: AuraSpace.s6),
-            Text('· optional', style: AuraText.micro.copyWith(
-              color: AuraSurface.faint,
-              fontWeight: FontWeight.w700,
-            )),
+            Flexible(
+              child: Text('· optional',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AuraText.micro.copyWith(
+                    color: AuraSurface.faint,
+                    fontWeight: FontWeight.w700,
+                  )),
+            ),
             const Spacer(),
             TextButton.icon(
               onPressed:

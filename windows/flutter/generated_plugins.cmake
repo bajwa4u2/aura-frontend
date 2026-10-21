@@ -10,6 +10,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   pasteboard
   permission_handler_windows
   record_windows
+  share_plus
   syncfusion_pdfviewer_windows
   url_launcher_windows
   video_player_win

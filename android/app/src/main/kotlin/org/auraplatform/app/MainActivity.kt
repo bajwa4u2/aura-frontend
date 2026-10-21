@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import androidx.core.view.WindowCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -37,6 +38,12 @@ class MainActivity : FlutterActivity() {
     private var shareChannel: MethodChannel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Edge to edge on every Android version, not only 15+. Targeting SDK
+        // 35+ makes Android 15 draw behind the system bars whatever the app
+        // asks; older versions did not, so the same screens laid out two ways
+        // (Play vitals, 1.6.0: "Edge-to-edge may not display for all users").
+        // Before super.onCreate so the first frame already has the insets.
+        WindowCompat.enableEdgeToEdge(window)
         super.onCreate(savedInstanceState)
         captureCallIntent(intent)
         captureShareIntent(intent)
