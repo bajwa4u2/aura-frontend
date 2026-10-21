@@ -1,6 +1,11 @@
 """Upload an Android App Bundle to Google Play's INTERNAL track, with notes.
 
     python scripts/play_upload_internal.py <aab> <notes.txt> [--commit]
+        [--package com.example] [--version-name 1.2.0]
+
+The release is named "<versionCode> (<version name>)". The version name is read
+from pubspec.yaml beside this script unless --version-name is given (45 (1.6.0)
+was once labelled "45 (1.5.2)" by a hard-coded name).
 
 Without --commit the edit is validated and then DELETED: nothing changes on Play.
 With --commit the bundle lands in the library and on the internal track.
@@ -10,14 +15,15 @@ release to production, by design); promote from internal there.
 Auth is the same keyless impersonation as play_release_api.sh.
 """
 import json
+import os
+import re
 import subprocess
 import sys
 import urllib.request
 
 SA = 'aura-release-publisher@aura-22b3a.iam.gserviceaccount.com'
 PKG = 'org.auraplatform.app'
-API = 'https://androidpublisher.googleapis.com/androidpublisher/v3/applications/' + PKG
-UPLOAD = 'https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/' + PKG
+PUBSPEC = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pubspec.yaml')
 
 
 def token():
@@ -46,8 +52,26 @@ def call(tok, method, url, body=None, data=None, ctype='application/json'):
         return e.code, e.read().decode()[:800]
 
 
+def _arg(name, default):
+    return sys.argv[sys.argv.index(name) + 1] if name in sys.argv else default
+
+
+def pubspec_version_name():
+    """The name part of pubspec.yaml's `version: 1.6.0+45`."""
+    m = re.search(r'^version:\s*([^+\s]+)', open(PUBSPEC, encoding='utf-8').read(), re.M)
+    if not m:
+        raise SystemExit('no version: line in ' + PUBSPEC)
+    return m.group(1)
+
+
 def main():
+    global API, UPLOAD
     aab, notes_path = sys.argv[1], sys.argv[2]
+    pkg = _arg('--package', PKG)
+    version_name = _arg('--version-name', None) or pubspec_version_name()
+    API = 'https://androidpublisher.googleapis.com/androidpublisher/v3/applications/' + pkg
+    UPLOAD = 'https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/' + pkg
+    print('package', pkg, 'version name', version_name)
     commit = '--commit' in sys.argv
     notes = open(notes_path, encoding='utf-8').read().strip()
     assert len(notes) <= 500, len(notes)
@@ -64,7 +88,7 @@ def main():
         vc = str(b['versionCode'])
         st, t = call(tok, 'PUT', API + '/edits/%s/tracks/internal' % eid, {
             'track': 'internal',
-            'releases': [{'name': '%s (1.5.2)' % vc, 'versionCodes': [vc], 'status': 'completed',
+            'releases': [{'name': '%s (%s)' % (vc, version_name), 'versionCodes': [vc], 'status': 'completed',
                           'releaseNotes': [{'language': 'en-US', 'text': notes}]}]})
         print('track internal', st, t if st != 200 else 'ok')
         st, v = call(tok, 'POST', API + '/edits/%s:validate' % eid)
