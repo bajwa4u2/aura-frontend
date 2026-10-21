@@ -89,6 +89,7 @@ class _PrivacyBody extends StatelessWidget {
             'Aura may check whether an imported email already belongs to an Aura user so the sender can choose the right invitation path.',
             'Invite tokens should be protected and governed by expiry, revocation, and usage limits.',
             'Email-bound invitations may require the accepting account email to match the invited email where the invite type requires it.',
+            'Your personal Invite to Aura link shows the people you send it to your name and profile photo. Aura counts how many people arrive through invite links only as daily totals for each way of sharing. It does not record who arrived through whose link.',
           ],
         ),
         _PrivacySection(
@@ -106,6 +107,21 @@ class _PrivacyBody extends StatelessWidget {
         ),
         _PrivacySection(
           number: '06',
+          title: 'Connected accounts and sharing elsewhere',
+          body:
+              'You can connect a Facebook Page, the Instagram account linked to it, LinkedIn, or TikTok, so that a post or announcement you choose can also appear there. Connecting is always your choice, and nothing is shared unless you ask for it.',
+          bullets: [
+            'What Aura receives when you connect: permission from that platform to publish on your behalf, kept encrypted. Aura also keeps the account or Page it publishes to, the name shown on that account, and which permissions you granted. For Facebook this includes your Facebook account number and the Pages you manage, so you can choose one. LinkedIn gives Aura your name and email address, and Aura keeps one of them as the name of the connection.',
+            'What Aura sends: only the post or announcement you choose to share, with its text, pictures or video and, where the platform allows it, a link back to it on Aura. Nothing is sent until you choose to share it.',
+            'What Aura never does: it does not read your feed, messages, friends, followers or comments on those platforms, and it never publishes there unless you ask.',
+            'Disconnecting: in Me, under Connected accounts, you can disconnect at any time. Aura withdraws its access on that platform as well and deletes what it kept.',
+            'Deleting your Aura account disconnects every connected account in the same way, at once.',
+            'Removing Aura from your Facebook settings, or asking Facebook to delete your data, makes Aura delete your Facebook Page and Instagram connections. When you ask Facebook to delete your data, Facebook gives you a confirmation code from Aura, and you can check the request at https://api.auraplatform.org/v1/integrations/facebook/data-deletion/status with that code.',
+            'Pictures made for sharing a link are drawn only from content that is already public on Aura. Content that is not public has no picture.',
+          ],
+        ),
+        _PrivacySection(
+          number: '07',
           title: 'AI-assisted systems',
           body:
               'Aura may use AI-assisted systems for operational support, moderation assistance, workflow clarity, safety review, and reliability improvements. AI should support human and institutional accountability rather than replace it.',
@@ -116,7 +132,7 @@ class _PrivacyBody extends StatelessWidget {
           ],
         ),
         _PrivacySection(
-          number: '07',
+          number: '08',
           title: 'Retention and deletion',
           body:
               'Aura retains information for as long as needed to provide the platform, preserve security, comply with obligations, resolve disputes, maintain moderation continuity, and support institutional record integrity.',
@@ -127,7 +143,7 @@ class _PrivacyBody extends StatelessWidget {
           ],
         ),
         _PrivacySection(
-          number: '08',
+          number: '09',
           title: 'Your choices and controls',
           body:
               'Aura should provide meaningful control without pretending that every operational or legal record can disappear instantly.',
@@ -139,7 +155,7 @@ class _PrivacyBody extends StatelessWidget {
           ],
         ),
         _PrivacySection(
-          number: '09',
+          number: '10',
           title: 'Security',
           body:
               'Aura uses reasonable technical and organizational safeguards to protect the platform. No system can guarantee absolute security, but Aura should minimize unnecessary exposure and enforce security controls consistently.',
@@ -150,7 +166,7 @@ class _PrivacyBody extends StatelessWidget {
           ],
         ),
         _PrivacySection(
-          number: '10',
+          number: '11',
           title: 'Children, regions, and policy updates',
           body:
               'Aura is not intended to ignore legal obligations across user regions. The platform may adapt notices, rights, and workflows as the product matures and legal requirements evolve.',
@@ -161,7 +177,7 @@ class _PrivacyBody extends StatelessWidget {
           ],
         ),
         _PrivacySection(
-          number: '11',
+          number: '12',
           title: 'Questions and contact',
           body:
               'For questions about this Privacy Policy, to request data assistance, or to report a privacy concern, use the Support surface inside Aura.',
@@ -213,7 +229,7 @@ class _PrivacyHero extends StatelessWidget {
           ),
           const SizedBox(height: AuraSpace.sm),
           Text(
-            'Last updated: Thursday, October 8, 2026 · 2:30 PM ET',
+            'Last updated: Wednesday, October 21, 2026 · 1:38 PM ET',
             style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
           ),
           const SizedBox(height: AuraSpace.lg),

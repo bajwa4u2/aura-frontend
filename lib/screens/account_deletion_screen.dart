@@ -218,6 +218,13 @@ class _AccountDeletionScreenState extends ConsumerState<AccountDeletionScreen> {
                 'prevention, or platform safety obligations require it.',
                 style: TextStyle(fontSize: 16, height: 1.5),
               ),
+              const SizedBox(height: 12),
+              const Text(
+                'Any Facebook Page, Instagram, LinkedIn or TikTok account '
+                'you connected is disconnected at once: Aura withdraws its '
+                'access there and deletes what it kept.',
+                style: TextStyle(fontSize: 16, height: 1.5),
+              ),
               const SizedBox(height: 24),
               const _Divider(),
               const SizedBox(height: 16),
