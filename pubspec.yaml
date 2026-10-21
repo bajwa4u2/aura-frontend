@@ -62,7 +62,7 @@ dependencies:
   # image_picker_android defaults `useAndroidPhotoPicker` to FALSE, which
   # sends every picker call to the legacy file browser.
   image_picker_android: ^0.8.13
-  file_picker: ^8.0.0
+  file_picker: ^10.3.10
   record: ^6.2.0
   # Platform-secure credential storage, first-party per platform.
   # `flutter_secure_storage` was tried and rejected: its Windows plugin
@@ -90,7 +90,7 @@ dependencies:
   flutter_markdown: ^0.7.3
 
   # PDF viewer
-  syncfusion_flutter_pdfviewer: ^29.2.11
+  syncfusion_flutter_pdfviewer: ^33.2.13
 
   # App icon generator
   flutter_launcher_icons: ^0.14.4
