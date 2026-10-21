@@ -94,17 +94,43 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
                 ],
               )
             else
-              Row(
-                children: [
-                  const Expanded(
-                      child: Text('Messages', style: AuraText.display)),
-                  AuraPrimaryButton(
+              // On a phone the labelled button took its width first and the
+              // display title broke inside the word, "Message" / "s" (Galaxy
+              // S24+, 21 Oct 2026). Where both do not fit on one line, at the
+              // reader's text size, the button goes on the line below.
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final scale = MediaQuery.textScalerOf(context).scale(1);
+                  final newConversation = AuraPrimaryButton(
                     label: 'New conversation',
                     icon: Icons.add_comment_outlined,
                     onPressed: () =>
                         context.push(NavigationAuthority.newConversationRoute),
-                  ),
-                ],
+                  );
+                  // One word never breaks: at a very large text size it shrinks
+                  // to the width instead.
+                  const title = FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Text('Messages', style: AuraText.display, maxLines: 1),
+                  );
+                  if (constraints.maxWidth >= 520 * scale) {
+                    return Row(
+                      children: [
+                        const Expanded(child: title),
+                        newConversation,
+                      ],
+                    );
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      title,
+                      const SizedBox(height: AuraSpace.s12),
+                      newConversation,
+                    ],
+                  );
+                },
               ),
             const SizedBox(height: AuraSpace.s12),
             Row(
