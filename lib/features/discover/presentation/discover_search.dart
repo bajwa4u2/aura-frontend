@@ -72,10 +72,25 @@ class _DiscoverSearchFieldState extends ConsumerState<DiscoverSearchField> {
     _controller = TextEditingController(text: ref.read(discoverQueryProvider));
   }
 
+  final FocusNode _focus = FocusNode(debugLabel: 'discover-search');
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Opening a result covers Discover; coming back used to hand focus back
+    // to this field and raise the keyboard unasked (Galaxy S24+, 21 Oct 2026).
+    // Letting go of focus while another page is on top means the return
+    // lands on the results, as it does on iOS, Windows and the web.
+    if (ModalRoute.of(context)?.isCurrent == false && _focus.hasFocus) {
+      _focus.unfocus(disposition: UnfocusDisposition.scope);
+    }
+  }
+
   @override
   void dispose() {
     _debounce?.cancel();
     _controller.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
@@ -115,6 +130,7 @@ class _DiscoverSearchFieldState extends ConsumerState<DiscoverSearchField> {
           Expanded(
             child: TextField(
               controller: _controller,
+              focusNode: _focus,
               autofocus: widget.autofocus,
               textInputAction: TextInputAction.search,
               onChanged: (v) {
@@ -126,12 +142,24 @@ class _DiscoverSearchFieldState extends ConsumerState<DiscoverSearchField> {
                 ref.read(discoverQueryProvider.notifier).state = v;
               },
               style: AuraText.body.copyWith(color: AuraSurface.ink),
+              // The container above is the box. `border: none` alone left the
+              // theme's filled, outlined field drawn inside it — a box in a
+              // box — and the four-domain hint was cut off on a phone
+              // (Galaxy S24+, 21 Oct 2026). Every border and the fill are off
+              // here, and the hint is the one that fits the width.
               decoration: InputDecoration(
                 isDense: true,
+                filled: false,
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
                 contentPadding:
                     const EdgeInsets.symmetric(vertical: AuraSpace.s14),
-                hintText: 'Search people, spaces, institutions, articles',
+                hintText: MediaQuery.sizeOf(context).width < 600
+                    ? 'Search people, spaces and more'
+                    : 'Search people, spaces, institutions, articles',
+                hintMaxLines: 1,
                 hintStyle: AuraText.body.copyWith(color: AuraSurface.muted),
               ),
             ),
