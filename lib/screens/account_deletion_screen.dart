@@ -89,8 +89,8 @@ class _AccountDeletionScreenState extends ConsumerState<AccountDeletionScreen> {
         builder: (ctx) => AlertDialog(
           title: const Text('Account deleted'),
           content: const Text(
-            'Your account has been deactivated and your personal data has '
-            'been scrubbed. You will be signed out now.',
+            'Your account has been deleted. Your remaining personal '
+            'details are removed within 30 days. You will be signed out now.',
           ),
           actions: [
             TextButton(
@@ -211,11 +211,10 @@ class _AccountDeletionScreenState extends ConsumerState<AccountDeletionScreen> {
               ),
               const SizedBox(height: 12),
               const Text(
-                'Deletion is permanent. Your profile, posts, replies, '
-                'media, and direct correspondence will be removed from '
-                'Aura. Some operational records (audit logs, billing '
-                'history) are retained where legal compliance, fraud '
-                'prevention, or platform safety obligations require it.',
+                'Your account ends at once. You are signed out on every '
+                'device and cannot sign in again. Your name, email address, '
+                'profile photo, cover, bio, links and location are removed '
+                'immediately, and your profile shows as "Deleted user".',
                 style: TextStyle(fontSize: 16, height: 1.5),
               ),
               const SizedBox(height: 12),
@@ -223,6 +222,24 @@ class _AccountDeletionScreenState extends ConsumerState<AccountDeletionScreen> {
                 'Any Facebook Page, Instagram, LinkedIn or TikTok account '
                 'you connected is disconnected at once: Aura withdraws its '
                 'access there and deletes what it kept.',
+                style: TextStyle(fontSize: 16, height: 1.5),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Within 30 days, the rest of your personal account details, '
+                'including your date of birth and phone number, are '
+                'permanently removed. A deleted account cannot be restored.',
+                style: TextStyle(fontSize: 16, height: 1.5),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'What stays: posts, replies and announcements you published '
+                'remain part of the public record, shown under "Deleted '
+                'user" instead of your name. Messages you sent stay with '
+                'the people who received them. Records an institution '
+                'keeps, billing and security records, and anything under a '
+                'legal hold are kept as those obligations require. If you '
+                'want a post gone, delete it before you delete your account.',
                 style: TextStyle(fontSize: 16, height: 1.5),
               ),
               const SizedBox(height: 24),

@@ -39,24 +39,43 @@ account deletion revoke at the platform.
 
 ## Google Play — Data safety
 
-**Read the live form first.** The 6 Sep record found it declaring one data
-type, and the rebuild attempted that day was lost before saving. Unless it has
-been completed since, the form under-declares Aura as it already is, and 1.7.0
-adds to that. Use `Import from CSV` as that record recommends.
+**Live form, read in Play Console on 21 Oct 2026** (the 6 Sep record's
+"one data type declared" is stale): Personal info (Name, Email address, User
+IDs, Other info), Messages, Photos and videos, Audio, Files and docs, App
+activity (Other user-generated content), Device or other IDs; **no data
+shared**.
 
-Collected (all: required for App Functionality, encrypted in transit, can be
-deleted on request):
+1.7.0 needs **no new data type**. The existing declarations already cover
+what connecting adds, provided their descriptions are read that way:
 
-- Personal info: **Name**, **Email address** (now also from LinkedIn), **User IDs** (now including Facebook, Instagram, LinkedIn and TikTok account ids).
-- Pre-existing types still missing per the 6 Sep record: Other in-app messages, Photos, Videos, Voice or sound recordings, Files and docs, Device or other IDs.
+- **Email address**: now also received from LinkedIn on connect.
+- **User IDs**: now including Facebook, Instagram, LinkedIn and TikTok account ids.
+- Both: collected, required for App Functionality, encrypted in transit, deletable.
 
-Shared: **none needs declaring for connected accounts.** Google exempts
-transfers the user initiates and reasonably expects (sharing a post to their
-own Facebook Page or LinkedIn). Keep "Shared" as declared today.
+Shared: **keep "no data shared".** Google exempts transfers the user
+initiates and reasonably expects (sharing a post to their own Facebook Page
+or LinkedIn), which is the only way Aura sends anything to those platforms.
 
-Data deletion: the account-deletion URL (`/account-deletion`) now states that
-connected accounts are disconnected at once; account deletion revokes and
-removes them (`aura-backend` branch `fix/deletion-ends-social-connections`).
+Data deletion: the account-deletion URL (`/account-deletion`) now states the
+real lifecycle: the account ends at once (signed out, no sign-in, name, email,
+photo, cover, bio, links and location removed, connected accounts revoked and
+removed — `aura-backend` branch `fix/deletion-ends-social-connections`); the
+remaining personal details (date of birth, phone number, device registrations)
+go within 30 days (`ORDINARY_RETENTION_POLICY.recoveryWindowDays`, hourly
+disposition); published posts, replies and announcements stay as public record
+under "Deleted user"; messages stay with recipients; institution, billing,
+audit and legal-hold records are kept. If the Data safety "data deletion"
+answers say all data is deleted, they overstate it: published content is
+retained as public record.
+
+**Open, for the founder:** the backend has a 30-day recovery mechanism
+(`AccountRetentionService.recoverAccount`) but nothing reaches it — no
+endpoint calls it, admin restore refuses self-deleted accounts, and the email
+is scrubbed at deletion so the person cannot sign in. The pages therefore say a
+deleted account cannot be restored. Apple 5.1.1(v) expects deletion of the
+account "along with associated data"; keeping published posts as public
+record under "Deleted user" is a retention choice the review notes should
+state plainly.
 
 ## Microsoft Store
 

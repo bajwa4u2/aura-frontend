@@ -137,8 +137,11 @@ class _PrivacyBody extends StatelessWidget {
           body:
               'Aura retains information for as long as needed to provide the platform, preserve security, comply with obligations, resolve disputes, maintain moderation continuity, and support institutional record integrity.',
           bullets: [
+            'When you delete your account, it ends at once: you are signed out everywhere and cannot sign in again, your name, email address, profile photo, cover, bio, links and location are removed immediately, and your profile shows as "Deleted user". Connected accounts are disconnected at the same time.',
+            'Within 30 days of deletion, the rest of your personal account details, including your date of birth and phone number, are permanently removed. A deleted account cannot be restored.',
+            'Posts, replies and announcements you published remain part of the public record under "Deleted user". Messages you sent stay with the people who received them. You can delete a post yourself at any time before deleting your account.',
             'Some records may be deleted or anonymized when no longer needed.',
-            'Some records may be retained where required for security, audit, legal, moderation, billing, or institutional continuity reasons.',
+            'Some records are kept where required for security, audit, legal, moderation, billing, or institutional continuity reasons, and nothing under a legal hold is removed while the hold stands.',
             'Deleted content may persist temporarily in backups, logs, or systems where immediate removal is technically or legally impractical.',
           ],
         ),

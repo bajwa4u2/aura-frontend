@@ -43,4 +43,26 @@ void main() {
       findsOneWidget,
     );
   });
+
+  // The page states the retention lifecycle the backend runs: the account
+  // ends at once, the rest of the personal details go within 30 days
+  // (ORDINARY_RETENTION_POLICY.recoveryWindowDays), published content stays
+  // as public record. It must never promise "permanent" removal of posts or
+  // a restore path the backend does not offer.
+  testWidgets('account deletion states the real retention lifecycle', (tester) async {
+    await pump(tester, const AccountDeletionScreen());
+
+    expect(find.textContaining('Within 30 days'), findsOneWidget);
+    expect(find.textContaining('remain part of the public record'), findsOneWidget);
+    expect(find.textContaining('A deleted account cannot be restored'), findsOneWidget);
+    expect(find.textContaining('Deletion is permanent'), findsNothing);
+  });
+
+  testWidgets('privacy retention section says the same as the deletion page', (tester) async {
+    await pump(tester, const PrivacyPolicyScreen());
+
+    expect(find.textContaining('Within 30 days of deletion'), findsOneWidget);
+    expect(find.textContaining('remain part of the public record under "Deleted user"'), findsOneWidget);
+    expect(find.textContaining('A deleted account cannot be restored'), findsOneWidget);
+  });
 }
