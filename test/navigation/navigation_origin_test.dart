@@ -36,6 +36,30 @@ void main() {
           PrimaryDestination.messages);
     });
 
+    test('replying keeps the origin lit; Create itself lights Create', () {
+      // Founder, 21 Oct 2026: "keep home lit while replying".
+      NavigationOrigin.selectedFor('/home');
+      NavigationOrigin.selectedFor('/posts/p1');
+      expect(NavigationOrigin.selectedFor('/compose?replyTo=p1'),
+          PrimaryDestination.home);
+      expect(
+          NavigationOrigin.selectedFor(
+              '/compose?replyToInstitutionPostId=ip1&parentInstitutionId=i1&surface=dm'),
+          PrimaryDestination.home);
+      expect(NavigationOrigin.selectedFor('/compose?continuesPostId=p1&intent=raise'),
+          PrimaryDestination.home);
+      NavigationOrigin.selectedFor('/discover');
+      expect(NavigationOrigin.selectedFor('/compose?replyTo=p2'),
+          PrimaryDestination.discover);
+      expect(NavigationOrigin.selectedFor('/compose'), PrimaryDestination.create);
+      expect(NavigationOrigin.selectedFor('/create'), PrimaryDestination.create);
+    });
+
+    test('a reply opened cold (no origin) lights Home', () {
+      expect(NavigationOrigin.selectedFor('/compose?replyTo=p1'),
+          PrimaryDestination.home);
+    });
+
     test('Create is an action, never an origin', () {
       NavigationOrigin.selectedFor('/home');
       expect(NavigationOrigin.selectedFor('/compose'),

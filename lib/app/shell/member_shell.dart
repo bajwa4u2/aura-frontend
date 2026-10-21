@@ -150,7 +150,9 @@ class MemberShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final uri = GoRouterState.of(context).uri;
     final path = uri.path;
-    final selectedIndex = _indexForPath(path);
+    // The full location: a composer started from content carries it in the
+    // query (replyTo=…), and keeps its origin lit.
+    final selectedIndex = _indexForPath(uri.toString());
     // When the soft keyboard is up (e.g., typing in the composer) the bottom
     // nav both wastes the reclaimed space and risks an accidental tap that
     // navigates away mid-compose. Hide it while editing; it returns the

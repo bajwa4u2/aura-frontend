@@ -27,12 +27,40 @@ class NavigationOrigin {
   /// The destination to highlight for [path], recording it as the origin when
   /// [path] is itself a primary destination.
   static PrimaryDestination? selectedFor(String path) {
+    // Writing that starts from content (a reply, a continuation, an edit)
+    // keeps the tab it was started from lit, as a detail page does (founder,
+    // 21 Oct 2026: "keep home lit while replying"). Create lights only when
+    // the composer was opened as Create itself.
+    if (_isWritingFromContent(path)) {
+      // Cold, a reply belongs where its content lives: Home.
+      return _last ?? PrimaryDestination.home;
+    }
     final primary = NavigationAuthority.primaryOf(path);
     if (primary != null) {
       if (primary != PrimaryDestination.create) _last = primary;
       return primary;
     }
     return _last ?? NavigationAuthority.contentHomeOf(path);
+  }
+
+  static const _fromContentKeys = {
+    'replyTo',
+    'replyToInstitutionPostId',
+    'continuesPostId',
+    'continuesInstitutionPostId',
+    'editPostId',
+    'quote',
+    'quotePostId',
+  };
+
+  static bool _isWritingFromContent(String location) {
+    final uri = Uri.tryParse(location.trim());
+    if (uri == null) return false;
+    final p = uri.path.endsWith('/') && uri.path.length > 1
+        ? uri.path.substring(0, uri.path.length - 1)
+        : uri.path;
+    if (p != '/compose' && p != '/create') return false;
+    return uri.queryParameters.keys.any(_fromContentKeys.contains);
   }
 
   /// The remembered origin, for tests and diagnostics.
