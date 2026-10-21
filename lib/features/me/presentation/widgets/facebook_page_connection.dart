@@ -10,6 +10,7 @@ import '../../../../core/ui/aura_radius.dart';
 import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
+import 'connect_return_watcher.dart';
 
 Map<String, dynamic> _unwrap(dynamic data) {
   var m = data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
@@ -71,12 +72,36 @@ class _FacebookPageConnectionState
   String? _instagramMissing;
   bool _handledReturn = false;
 
+  /// The installed app's return from Facebook's consent page: the member
+  /// approves in the system browser, so the app re-reads the connection when
+  /// it comes back to the front and, if a Page is still to be chosen, opens
+  /// the chooser — once per Connect.
+  final ConnectReturnWatcher _connectReturn = ConnectReturnWatcher();
+
   Dio get _dio => ref.read(dioProvider);
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _connectReturn.dispose();
+    super.dispose();
+  }
+
+  Future<void> _afterConnectReturn() async {
+    await _load();
+    if (!mounted) return;
+    if (_needsPage) {
+      await _choosePage();
+    } else if (_connected) {
+      _say('Facebook Page connected.');
+    } else {
+      _say('Facebook is not connected. You can try again.');
+    }
   }
 
   @override
@@ -141,12 +166,16 @@ class _FacebookPageConnectionState
     setState(() => _busy = true);
     try {
       final r = _unwrap(
-        (await _dio.get('/integrations/facebook/connect/start')).data,
+        (await _dio.get(
+          connectStartPath('/integrations/facebook/connect/start'),
+        ))
+            .data,
       );
       final uri = Uri.tryParse('${r['authorizationUrl'] ?? ''}');
       if (uri == null || !uri.hasScheme) throw Exception('No address returned');
       final opened = await launchUrl(uri, mode: LaunchMode.platformDefault);
       if (!opened) throw Exception('Could not open Facebook');
+      _connectReturn.arm(_afterConnectReturn);
       _say('Facebook opened. Approve there, then choose your Page.');
     } catch (_) {
       _say('Facebook could not be opened right now. Please try again.');

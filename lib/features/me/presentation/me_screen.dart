@@ -30,6 +30,7 @@ import '../../../core/ui/compact_profile_hero.dart';
 import '../../../core/ui/profile_header.dart' show PresenceHeaderAction;
 import 'me/me_participation_continuity.dart';
 import 'me/me_widgets.dart';
+import 'widgets/connect_return_watcher.dart';
 import 'widgets/me_connected_accounts_panel.dart';
 import '../../../core/identity/person_identity_model.dart';
 
@@ -63,6 +64,10 @@ class _MeScreenState extends ConsumerState<MeScreen>
   bool _linkedinActionBusy = false;
   bool _handledLinkedInRedirect = false;
 
+  /// Re-reads a connection when the member comes back from a platform's
+  /// consent page in the system browser (installed app only).
+  final ConnectReturnWatcher _connectReturn = ConnectReturnWatcher();
+
   /// Top-level workspace tabs for the redesigned /me dashboard. Each entry is
   /// (label, icon); order defines the tab index consumed by [_tabContent].
   static const List<(String, IconData)> _tabs = [
@@ -88,6 +93,7 @@ class _MeScreenState extends ConsumerState<MeScreen>
 
   @override
   void dispose() {
+    _connectReturn.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -253,7 +259,7 @@ class _MeScreenState extends ConsumerState<MeScreen>
     try {
       final dio = ref.read(dioProvider);
       final res = await _getFirstSuccessful(dio, [
-        '/integrations/linkedin/connect/start',
+        connectStartPath('/integrations/linkedin/connect/start'),
       ]);
 
       final root = _asMap(res.data);
@@ -286,6 +292,13 @@ class _MeScreenState extends ConsumerState<MeScreen>
 
       final launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
       if (!launched) throw Exception('Could not open LinkedIn authorization.');
+      _connectReturn.arm(
+        () => _afterConnectReturn(
+          'LinkedIn',
+          _reloadLinkedInOnly,
+          () => _isLinkedInConnected,
+        ),
+      );
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -359,6 +372,26 @@ class _MeScreenState extends ConsumerState<MeScreen>
     }
   }
 
+  /// The member is back from a platform's consent page (installed app only):
+  /// re-read that connection and say how it ended.
+  Future<void> _afterConnectReturn(
+    String label,
+    Future<void> Function() reload,
+    bool Function() isConnected,
+  ) async {
+    await reload();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isConnected()
+              ? '$label connected.'
+              : '$label is not connected. You can try again.',
+        ),
+      ),
+    );
+  }
+
   Future<void> _reloadTikTokOnly() async {
     if (mounted) setState(() => _tiktokLoading = true);
 
@@ -382,7 +415,9 @@ class _MeScreenState extends ConsumerState<MeScreen>
 
     try {
       final dio = ref.read(dioProvider);
-      final res = await dio.get('/integrations/tiktok/connect/start');
+      final res = await dio.get(
+        connectStartPath('/integrations/tiktok/connect/start'),
+      );
 
       final root = _asMap(res.data);
       final nestedData = _asMap(root['data']);
@@ -414,6 +449,13 @@ class _MeScreenState extends ConsumerState<MeScreen>
 
       final launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
       if (!launched) throw Exception('Could not open TikTok authorization.');
+      _connectReturn.arm(
+        () => _afterConnectReturn(
+          'TikTok',
+          _reloadTikTokOnly,
+          () => _isTikTokConnected,
+        ),
+      );
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
