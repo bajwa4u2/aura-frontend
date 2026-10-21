@@ -290,7 +290,7 @@ class _MeScreenState extends ConsumerState<MeScreen>
         throw Exception('LinkedIn authorization URL is invalid.');
       }
 
-      final launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
+      final launched = await launchUrl(uri, mode: connectLaunchMode());
       if (!launched) throw Exception('Could not open LinkedIn authorization.');
       _connectReturn.arm(
         () => _afterConnectReturn(
@@ -447,7 +447,7 @@ class _MeScreenState extends ConsumerState<MeScreen>
         throw Exception('TikTok authorization URL is invalid.');
       }
 
-      final launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
+      final launched = await launchUrl(uri, mode: connectLaunchMode());
       if (!launched) throw Exception('Could not open TikTok authorization.');
       _connectReturn.arm(
         () => _afterConnectReturn(

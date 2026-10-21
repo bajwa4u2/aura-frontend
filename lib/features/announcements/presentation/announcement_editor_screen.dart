@@ -96,6 +96,10 @@ class _AnnouncementEditorScreenState
   bool _publishToFacebook = false;
   bool _publishToInstagram = false;
   bool _facebookConnected = false;
+
+  /// Whether Facebook Page and Instagram are open to this member yet; an
+  /// older server does not say, and then they are offered as before.
+  bool _metaOffered = true;
   String _facebookPageName = '';
   bool _instagramConnected = false;
   String _instagramUsername = '';
@@ -1114,6 +1118,7 @@ class _AnnouncementEditorScreenState
       final ig = m['instagram'] is Map ? Map<String, dynamic>.from(m['instagram'] as Map) : null;
       if (!mounted) return;
       setState(() {
+        _metaOffered = m['available'] != false;
         _facebookConnected = m['connected'] == true && page != null;
         _facebookPageName = (page?['name'] ?? '').toString();
         _instagramConnected = ig != null;
@@ -1814,6 +1819,7 @@ class _AnnouncementEditorScreenState
                       initialAura: _publishToAura,
                       initialLinkedin: _publishToLinkedIn,
                       initialTiktok: _publishToTikTok,
+                      metaOffered: _metaOffered,
                       facebookConnected: _facebookConnected,
                       facebookPageName: _facebookPageName,
                       instagramConnected: _instagramConnected,

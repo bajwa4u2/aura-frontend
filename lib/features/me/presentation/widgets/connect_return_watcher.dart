@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// The connect/start address for a platform, saying where the member is.
 ///
@@ -10,6 +11,15 @@ import 'package:flutter/widgets.dart';
 /// today's address exactly.
 String connectStartPath(String path, {bool? isWeb}) =>
     (isWeb ?? kIsWeb) ? path : '$path?client=app';
+
+/// How a platform's consent page is opened.
+///
+/// On the installed app it must be the member's own browser. iOS's default
+/// for an https address is an in-app Safari sheet: the app never leaves the
+/// front, so [ConnectReturnWatcher] never sees a return, and Aura's "return to
+/// the app" page would show inside the sheet. The web keeps its default.
+LaunchMode connectLaunchMode({bool? isWeb}) =>
+    (isWeb ?? kIsWeb) ? LaunchMode.platformDefault : LaunchMode.externalApplication;
 
 /// THE MEMBER COMING BACK FROM A PLATFORM'S CONSENT PAGE (2026-10-21).
 ///

@@ -14,6 +14,7 @@ class AnnouncementDistribution extends StatefulWidget {
     required this.initialLinkedin,
     required this.initialTiktok,
     required this.onChanged,
+    this.metaOffered = true,
     this.facebookConnected = false,
     this.facebookPageName,
     this.instagramConnected = false,
@@ -21,6 +22,11 @@ class AnnouncementDistribution extends StatefulWidget {
     this.initialFacebook = false,
     this.initialInstagram = false,
   });
+
+  /// Whether Facebook Page and Instagram are open to this member at all
+  /// (2026-10-21: not before Meta completes its review of Aura). When not,
+  /// neither row is drawn.
+  final bool metaOffered;
 
   /// A Facebook Page chosen under Connected accounts (2026-10-20).
   final bool facebookConnected;
@@ -202,6 +208,7 @@ class _AnnouncementDistributionState extends State<AnnouncementDistribution> {
                 }
               : null,
         ),
+        if (widget.metaOffered) ...[
         _row(
           title: 'Facebook Page',
           subtitle: widget.facebookConnected
@@ -230,6 +237,7 @@ class _AnnouncementDistributionState extends State<AnnouncementDistribution> {
                 }
               : null,
         ),
+        ],
       ],
     );
   }

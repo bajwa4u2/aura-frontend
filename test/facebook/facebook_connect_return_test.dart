@@ -12,12 +12,14 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:url_launcher/url_launcher.dart' show LaunchMode;
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:url_launcher_platform_interface/link.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 class _FakeLauncher extends UrlLauncherPlatform with MockPlatformInterfaceMixin {
   final List<String> launched = <String>[];
+  final List<PreferredLaunchMode> modes = <PreferredLaunchMode>[];
 
   @override
   LinkDelegate? get linkDelegate => null;
@@ -43,6 +45,7 @@ class _FakeLauncher extends UrlLauncherPlatform with MockPlatformInterfaceMixin 
   @override
   Future<bool> launchUrl(String url, LaunchOptions options) async {
     launched.add(url);
+    modes.add(options.mode);
     return true;
   }
 }
@@ -118,6 +121,13 @@ void main() {
     );
   });
 
+  test("the app opens consent in the member's browser; the web keeps its default", () {
+    // iOS's default for https is an in-app Safari sheet: the app never leaves
+    // the front, so no return is ever seen.
+    expect(connectLaunchMode(isWeb: false), LaunchMode.externalApplication);
+    expect(connectLaunchMode(isWeb: true), LaunchMode.platformDefault);
+  });
+
   test('a resume without having left is not a return; a return fires once', () {
     var returns = 0;
     final w = ConnectReturnWatcher(isWeb: false);
@@ -166,6 +176,7 @@ void main() {
       contains('GET /integrations/facebook/connect/start?client=app'),
     );
     expect(launcher.launched.single, startsWith('https://www.facebook.com/'));
+    expect(launcher.modes.single, PreferredLaunchMode.externalApplication);
 
     // The member approves on Facebook; Aura now holds the connection.
     fb.connected = true;
