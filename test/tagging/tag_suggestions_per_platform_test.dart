@@ -88,9 +88,12 @@ Future<void> _type(WidgetTester tester, String text) async {
   await tester.pump();
 }
 
-void _size(WidgetTester tester, Size size) {
+/// The window's size and, like a real phone, the keyboard as the window's
+/// own inset (not a MediaQuery a Scaffold may already have consumed).
+void _size(WidgetTester tester, Size size, {double keyboard = 0}) {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
+  tester.view.viewInsets = FakeViewPadding(bottom: keyboard);
   addTearDown(tester.view.reset);
 }
 
@@ -199,7 +202,7 @@ void main() {
       testWidgets('sits directly on the keyboard (${platform.name})', (tester) async {
         debugDefaultTargetPlatformOverride = platform;
         addTearDown(() => debugDefaultTargetPlatformOverride = null);
-        _size(tester, const Size(390, 844));
+        _size(tester, const Size(390, 844), keyboard: 300);
         final controller = TextEditingController();
         final focus = FocusNode();
         await tester.pumpWidget(
@@ -226,7 +229,7 @@ void main() {
         (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
       addTearDown(() => debugDefaultTargetPlatformOverride = null);
-      _size(tester, const Size(390, 844));
+      _size(tester, const Size(390, 844), keyboard: 300);
       final controller = TextEditingController();
       final focus = FocusNode();
       await tester.pumpWidget(_harness(
@@ -242,6 +245,128 @@ void main() {
       expect(strip.bottom, lessThanOrEqualTo(field.top + 30));
       debugDefaultTargetPlatformOverride = null;
     });
+  });
+
+  group('inside the shell, as on the S24+ (keyboard 1005 px)', () {
+    // 21 Oct 2026: in Messages the strip was built at the screen bottom,
+    // under the keyboard. A Scaffold that resizes for the keyboard had
+    // consumed viewInsets below it, so the field read 0. This reproduces
+    // that nesting with the keyboard as the window's own inset.
+    Widget shell({
+      required TextEditingController controller,
+      required FocusNode focusNode,
+      required bool composerAtBottom,
+    }) {
+      final field = GovernedTagAutocomplete(
+        controller: controller,
+        focusNode: focusNode,
+        child: TextField(controller: controller, focusNode: focusNode),
+      );
+      return ProviderScope(
+        overrides: [
+          searchRepositoryProvider.overrideWithValue(_FakeSearchRepository()),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            // The shell.
+            bottomNavigationBar: const SizedBox(height: 64),
+            body: Scaffold(
+              // The page, resizing for the keyboard.
+              resizeToAvoidBottomInset: true,
+              body: Column(
+                children: [
+                  if (!composerAtBottom)
+                    Padding(padding: const EdgeInsets.all(16), child: field),
+                  const Expanded(child: SizedBox()),
+                  if (composerAtBottom)
+                    Padding(padding: const EdgeInsets.all(8), child: field),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('the strip sits exactly on the keyboard', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      _size(tester, const Size(1080, 2340), keyboard: 1005);
+      final controller = TextEditingController();
+      final focus = FocusNode();
+      await tester.pumpWidget(
+        shell(controller: controller, focusNode: focus, composerAtBottom: false),
+      );
+      await _type(tester, 'Testing mentions @ne');
+
+      final strip = tester.getRect(find.byKey(_strip));
+      expect(strip.bottom, moreOrLessEquals(2340 - 1005, epsilon: 0.5));
+      expect(strip.width, 1080);
+      debugDefaultTargetPlatformOverride = null;
+    });
+
+    testWidgets('a composer on the keyboard keeps its line: the strip sits '
+        'just above it, fully visible', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      _size(tester, const Size(1080, 2340), keyboard: 1005);
+      final controller = TextEditingController();
+      final focus = FocusNode();
+      await tester.pumpWidget(
+        shell(controller: controller, focusNode: focus, composerAtBottom: true),
+      );
+      await _type(tester, 'Testing mentions @ne');
+
+      final strip = tester.getRect(find.byKey(_strip));
+      final field = tester.getRect(find.byType(TextField));
+      expect(field.bottom, lessThanOrEqualTo(2340 - 1005 + 0.5));
+      expect(strip.bottom, lessThanOrEqualTo(field.top + 20));
+      expect(strip.top, greaterThan(0));
+      expect(strip.bottom, lessThanOrEqualTo(2340 - 1005));
+      debugDefaultTargetPlatformOverride = null;
+    });
+  });
+
+  testWidgets('desktop: the popover hangs from the line inside the shell too',
+      (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    _size(tester, const Size(1280, 800));
+    final controller = TextEditingController();
+    final focus = FocusNode();
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        searchRepositoryProvider.overrideWithValue(_FakeSearchRepository()),
+      ],
+      child: MaterialApp(
+        home: Scaffold(
+          body: Row(
+            children: [
+              const SizedBox(width: 240), // the rail
+              Expanded(
+                child: Scaffold(
+                  body: Padding(
+                    padding: const EdgeInsets.fromLTRB(40, 300, 40, 0),
+                    child: GovernedTagAutocomplete(
+                      controller: controller,
+                      focusNode: focus,
+                      child: TextField(controller: controller, focusNode: focus),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ));
+    await _type(tester, 'Hello @ne');
+    final panel = tester.getRect(find.byKey(_popover));
+    final field = tester.getRect(find.byType(TextField));
+    expect(panel.left, greaterThan(field.left + 20));
+    expect(panel.top, greaterThan(field.top));
+    expect(panel.top, lessThan(field.bottom + 8));
+    debugDefaultTargetPlatformOverride = null;
   });
 
   testWidgets('nothing opens on the sigil alone', (tester) async {

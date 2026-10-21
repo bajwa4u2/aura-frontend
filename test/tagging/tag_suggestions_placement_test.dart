@@ -86,6 +86,7 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       final keyboard = size.width < 600 ? 300.0 : 0.0;
+      tester.view.viewInsets = FakeViewPadding(bottom: keyboard);
       final controller = TextEditingController();
       final focusNode = FocusNode();
 

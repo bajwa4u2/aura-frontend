@@ -380,7 +380,7 @@ class _GovernedTagAutocompleteState
     return tagSuggestionPresentationFor(
       platform: defaultTargetPlatform,
       isWeb: kIsWeb,
-      width: MediaQuery.sizeOf(context).width,
+      width: _windowMedia().size.width,
     );
   }
 
@@ -469,7 +469,7 @@ class _GovernedTagAutocompleteState
   /// Desktop: hang from the line being typed, left edge at the `#` / `@`;
   /// above it only when the window has no room below.
   _TagOverlayPlacement _popoverPlacement(BuildContext overlayContext) {
-    final media = MediaQuery.of(context);
+    final media = _windowMedia();
     final overlayBox = _overlayBox(overlayContext);
     final overlaySize = overlayBox?.size ?? media.size;
     const gap = 4.0;
@@ -514,7 +514,7 @@ class _GovernedTagAutocompleteState
   /// Phones: directly on top of the keyboard (or the bottom safe area), and
   /// directly above the line being typed if the keyboard edge would cover it.
   ({double top}) _stripPlacement(BuildContext overlayContext) {
-    final media = MediaQuery.of(context);
+    final media = _windowMedia();
     final overlayBox = _overlayBox(overlayContext);
     final height = overlayBox?.size.height ?? media.size.height;
     final bottomInset = media.viewInsets.bottom > 0
@@ -538,6 +538,16 @@ class _GovernedTagAutocompleteState
     if (box is RenderBox && box.hasSize) return box;
     final own = overlayContext.findRenderObject();
     return own is RenderBox && own.hasSize ? own : null;
+  }
+
+  /// The window's own keyboard and safe-area insets. A Scaffold that
+  /// resizes for the keyboard consumes viewInsets for everything below it,
+  /// so the field's MediaQuery reads 0 and the strip landed at the screen
+  /// bottom, under the keyboard (S24+, 21 Oct 2026). The overlay is placed
+  /// in window coordinates, so it reads the window.
+  MediaQueryData _windowMedia() {
+    final view = View.maybeOf(context);
+    return view == null ? MediaQuery.of(context) : MediaQueryData.fromView(view);
   }
 
   RenderEditable? _findEditable(RenderObject root) {
