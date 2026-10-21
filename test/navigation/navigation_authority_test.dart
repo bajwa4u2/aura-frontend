@@ -88,7 +88,7 @@ void main() {
       expect(NavigationAuthority.primaryOf('/meetings/m1/room'), isNull);
     });
 
-    test('detail routes select nothing (truthful no-selection)', () {
+    test('detail routes are not primaries (they show their origin tab)', () {
       for (final p in ['/u/amina', '/thread/t1', '/posts/p1', '/admin']) {
         expect(NavigationAuthority.primaryOf(p), isNull, reason: p);
       }

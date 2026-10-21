@@ -29,6 +29,7 @@ import '../../core/ui/surface/surface_composition.dart';
 import 'global_platform_shell.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/navigation/navigation_authority.dart';
+import '../../core/navigation/navigation_origin.dart';
 import '../../core/trust/trust_marks.dart';
 import '../../core/review/rate_aura.dart';
 import '../../core/ui/aura_text.dart';
@@ -128,22 +129,21 @@ class MemberShell extends StatelessWidget {
       .toList(growable: false);
 
 
-  /// Returns the index of the nav item that should be highlighted, or
-  /// -1 when the current path is not a primary nav destination.
+  /// Returns the index of the nav item that should be highlighted, or -1
+  /// when nothing should be.
   ///
-  /// The previous default of returning 0 (Works) meant that a user
-  /// viewing /posts/<id>, /author/<handle>, /search, /notifications,
-  /// /me, /me/edit, /security, /saved, /updates, /activity, /thread/...
-  /// — any non-primary detail route — saw "Works" highlighted in both
-  /// the side and bottom nav. That misled the user about where they
-  /// were inside the product. Returning -1 produces a clean "no item
-  /// selected" state on detail routes, which is the truthful signal.
+  /// A primary route highlights itself. A detail route highlights the
+  /// destination it was opened FROM (founder decision 2026-10-21, the
+  /// platform convention on iOS, Android, desktop and web), or, with no
+  /// origin, the destination its content belongs to — see [NavigationOrigin].
+  /// This replaced a fixed -1 on detail routes ("truthful no-selection",
+  /// 2026-08-16), which itself replaced a fixed 0 that lit Works everywhere.
   int _indexForPath(String path) {
     // C3 — selected state is DESTINATION IDENTITY, resolved by the
     // canonical Navigation Authority (never local substring matching).
-    final primary = NavigationAuthority.primaryOf(path);
-    if (primary == null) return -1;
-    return _items.indexWhere((i) => i.path == primary.route);
+    final selected = NavigationOrigin.selectedFor(path);
+    if (selected == null) return -1;
+    return _items.indexWhere((i) => i.path == selected.route);
   }
 
   @override
@@ -244,7 +244,7 @@ class MemberShell extends StatelessWidget {
                           currentPath: path,
                           posture: win.navPosture,
                         ),
-                      Expanded(child: child),
+                      Expanded(child: ScrollToTopOnReselect(child: child)),
                     ],
                   ),
                 ),
@@ -437,7 +437,7 @@ class InstitutionShell extends ConsumerWidget {
                 ? Column(
                     children: [
                       _PublicPreviewToolbar(identity: identity),
-                      Expanded(child: child),
+                      Expanded(child: ScrollToTopOnReselect(child: child)),
                     ],
                   )
                 : (strip == null ? child : Column(children: [strip, Expanded(child: child)])),
@@ -1026,7 +1026,11 @@ class _MemberSideNav extends ConsumerWidget {
                     _memberBadgeFor(items[i], attention, conversationUnread),
                 onTap: () {
                   final target = items[i].path;
-                  if (target != currentPath) context.go(target);
+                  if (target != currentPath) {
+                    context.go(target);
+                  } else {
+                    PrimaryReselect.signal();
+                  }
                 },
               ),
               if (i != items.length - 1) const SizedBox(height: AuraSpace.s4),
@@ -1895,6 +1899,8 @@ class _MemberBottomNav extends ConsumerWidget {
                     onTap: () {
                       if (items[i].path != currentPath) {
                         context.go(items[i].path);
+                      } else {
+                        PrimaryReselect.signal();
                       }
                     },
                   ),
