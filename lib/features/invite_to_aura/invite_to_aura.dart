@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../core/auth/session_providers.dart';
 import '../../core/identity/person_identity_model.dart';
@@ -42,6 +44,22 @@ String? normalizedInviteChannel(String? raw) {
   final v = (raw ?? '').trim().toLowerCase();
   return kInviteChannels.contains(v) ? v : null;
 }
+
+/// Whether the invite sheet offers the device's own share sheet ("Share…").
+///
+/// iOS, Android and Windows have one (UIActivityViewController, ACTION_SEND,
+/// Windows' DataTransferManager). On the web share_plus falls back to a
+/// mailto: link wherever navigator.share is missing, which "Share by email"
+/// already is, so the web keeps Copy link instead.
+bool get inviteHasOsShareSheet =>
+    !kIsWeb &&
+    (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.windows);
+
+/// The share sheet behind "Share…"; replaced in tests.
+@visibleForTesting
+SharePlus inviteSharePlus = SharePlus.instance;
 
 /// WhatsApp's own share page with the message prefilled; the member picks who.
 String whatsappShareUrl(String text) =>
@@ -217,6 +235,44 @@ Future<void> showInviteToAuraSheet(
                     if (sheetCtx.mounted) Navigator.of(sheetCtx).pop();
                   },
                 ),
+                if (inviteHasOsShareSheet) ...[
+                  const SizedBox(height: AuraSpace.s8),
+                  // The device's own sheet: messages, mail, any app the member
+                  // has. Same words as WhatsApp and email, marked via=share.
+                  Builder(
+                    builder: (buttonCtx) => AuraSecondaryButton(
+                      label: 'Share…',
+                      icon: defaultTargetPlatform == TargetPlatform.iOS
+                          ? Icons.ios_share
+                          : Icons.share_outlined,
+                      onPressed: () async {
+                        // An iPad shows the sheet as a popover, anchored here;
+                        // without an origin it fails to appear at all.
+                        final box = buttonCtx.findRenderObject() as RenderBox?;
+                        final origin = box != null && box.hasSize
+                            ? box.localToGlobal(Offset.zero) & box.size
+                            : null;
+                        try {
+                          await inviteSharePlus.share(
+                            ShareParams(
+                              text: message('share'),
+                              subject: '$name invited you to Aura',
+                              sharePositionOrigin: origin,
+                            ),
+                          );
+                        } catch (_) {
+                          if (!sheetCtx.mounted) return;
+                          await copyToClipboard(
+                            sheetCtx,
+                            inviteToAuraUrl(handle, via: 'share'),
+                            message: 'Sharing is unavailable; invite link copied',
+                          );
+                        }
+                        if (sheetCtx.mounted) Navigator.of(sheetCtx).pop();
+                      },
+                    ),
+                  ),
+                ],
                 const SizedBox(height: AuraSpace.s8),
                 AuraSecondaryButton(
                   label: 'Share to Facebook',
