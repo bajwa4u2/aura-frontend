@@ -10,6 +10,7 @@ import '../../../../core/ui/aura_radius.dart';
 import '../../../../core/ui/aura_space.dart';
 import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
+import 'connect_return_watcher.dart';
 
 Map<String, dynamic> _unwrap(dynamic data) {
   var m = data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
@@ -71,12 +72,43 @@ class _FacebookPageConnectionState
   String? _instagramMissing;
   bool _handledReturn = false;
 
+  /// Whether this member may connect a Facebook Page yet (2026-10-21). Until
+  /// Meta completes its review of Aura, Facebook refuses everyone without a
+  /// role on Aura's Meta app, so the server says who may. An older server
+  /// does not say; then the row behaves as it always has.
+  bool _available = true;
+  String? _unavailableReason;
+
+  /// The installed app's return from Facebook's consent page: the member
+  /// approves in the system browser, so the app re-reads the connection when
+  /// it comes back to the front and, if a Page is still to be chosen, opens
+  /// the chooser — once per Connect.
+  final ConnectReturnWatcher _connectReturn = ConnectReturnWatcher();
+
   Dio get _dio => ref.read(dioProvider);
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _connectReturn.dispose();
+    super.dispose();
+  }
+
+  Future<void> _afterConnectReturn() async {
+    await _load();
+    if (!mounted) return;
+    if (_needsPage) {
+      await _choosePage();
+    } else if (_connected) {
+      _say('Facebook Page connected.');
+    } else {
+      _say('Facebook is not connected. You can try again.');
+    }
   }
 
   @override
@@ -129,6 +161,9 @@ class _FacebookPageConnectionState
         final ig = r['instagram'] is Map ? Map<String, dynamic>.from(r['instagram'] as Map) : null;
         _instagram = ig == null ? null : '${ig['username'] ?? ''}'.trim();
         _instagramMissing = r['instagramMissing'] as String?;
+        _available = r['available'] != false;
+        final reason = '${r['unavailableReason'] ?? ''}'.trim();
+        _unavailableReason = reason.isEmpty ? null : reason;
       });
     } catch (_) {
       // Unknown, not "not connected": leave what was shown.
@@ -141,12 +176,16 @@ class _FacebookPageConnectionState
     setState(() => _busy = true);
     try {
       final r = _unwrap(
-        (await _dio.get('/integrations/facebook/connect/start')).data,
+        (await _dio.get(
+          connectStartPath('/integrations/facebook/connect/start'),
+        ))
+            .data,
       );
       final uri = Uri.tryParse('${r['authorizationUrl'] ?? ''}');
       if (uri == null || !uri.hasScheme) throw Exception('No address returned');
-      final opened = await launchUrl(uri, mode: LaunchMode.platformDefault);
+      final opened = await launchUrl(uri, mode: connectLaunchMode());
       if (!opened) throw Exception('Could not open Facebook');
+      _connectReturn.arm(_afterConnectReturn);
       _say('Facebook opened. Approve there, then choose your Page.');
     } catch (_) {
       _say('Facebook could not be opened right now. Please try again.');
@@ -201,8 +240,12 @@ class _FacebookPageConnectionState
   @override
   Widget build(BuildContext context) {
     final ready = _connected && !_needsPage;
+    final closed = !_loading && !_connected && !_available;
     final status = _loading
         ? 'Checking connection…'
+        : closed
+            ? (_unavailableReason ??
+                'Sharing to a Facebook Page opens once Meta completes its review of Aura.')
         : !_connected
             ? 'Not connected'
             : _needsPage
@@ -240,7 +283,7 @@ class _FacebookPageConnectionState
                       Text(
                         status,
                         style: AuraText.small.copyWith(color: AuraSurface.muted),
-                        maxLines: 1,
+                        maxLines: closed ? 3 : 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -270,7 +313,7 @@ class _FacebookPageConnectionState
               style: AuraText.small.copyWith(color: AuraSurface.muted),
             ),
           ),
-        if (_expanded)
+        if (_expanded && !closed)
           Padding(
             padding: const EdgeInsets.fromLTRB(
               AuraSpace.s4,

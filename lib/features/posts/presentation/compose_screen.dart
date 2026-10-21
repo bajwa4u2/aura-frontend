@@ -903,6 +903,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               _visibility == PostVisibility.public && _hasInstagramMedia,
           unsupportedDetail: 'Instagram needs a photo or video in a public post',
         );
+        // Not yet open to this member (Meta's review of Aura): neither place
+        // is offered, rather than a Connect that Facebook would refuse.
+        if (probes[2].data != null && !facebookAccount.available) {
+          _facebook = _facebook.copyWith(state: DestinationState.notOffered);
+          _instagram = _instagram.copyWith(state: DestinationState.notOffered);
+          _publishToFacebook = false;
+          _publishToInstagram = false;
+        }
       });
     } catch (_) {
       // WE COULD NOT ASK. That is a state, not an error message -- and
@@ -2788,7 +2796,13 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   }
 
   /// The Facebook connection as the composer needs it: is a Page chosen.
-  ({bool connected, bool needsPage, String pageName, String instagram})
+  ({
+    bool available,
+    bool connected,
+    bool needsPage,
+    String pageName,
+    String instagram,
+  })
       _asFacebookAccount(
     dynamic raw,
   ) {
@@ -2799,6 +2813,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     final ig =
         m['instagram'] is Map ? Map<String, dynamic>.from(m['instagram'] as Map) : null;
     return (
+      // Absent on an older server: offered as before.
+      available: m['available'] != false,
       connected: m['connected'] == true,
       needsPage: m['needsPage'] == true,
       pageName: _str(page?['name']),
