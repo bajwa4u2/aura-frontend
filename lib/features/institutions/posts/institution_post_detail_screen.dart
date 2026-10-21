@@ -118,14 +118,26 @@ class _InstitutionPostDetailScreenState
 
     // DD-43: a Record page. "Back to Posts", Reply as the one gold
     // action, Edit and Delete under More for those who govern the post.
+    // "Back to Posts" leads into the workspace, so it belongs only to the
+    // workspace address; at the public address the reader's own frame
+    // already offers Back (21 Oct 2026: both showed, one pointing into a
+    // workspace the reader does not belong to).
+    bool inWorkspace;
+    try {
+      inWorkspace = GoRouterState.of(context).uri.path.startsWith('/institution/');
+    } catch (_) {
+      inWorkspace = true;
+    }
     return WorkspacePage(
       type: WorkspacePageType.record,
       title: 'Post',
       purpose: 'The post and the replies to it.',
-      back: WorkspaceBack(
-        label: 'Posts',
-        path: institutionWorkspacePath(institutionId, InstitutionSection.explore),
-      ),
+      back: inWorkspace
+          ? WorkspaceBack(
+              label: 'Posts',
+              path: institutionWorkspacePath(institutionId, InstitutionSection.explore),
+            )
+          : null,
       primary: WorkspaceAction(label: 'Reply', icon: Icons.reply_rounded, onPressed: onReply),
       more: [
         if (canGovern) ...[

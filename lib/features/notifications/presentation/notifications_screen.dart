@@ -157,7 +157,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     if (n.institutionPostId != null && n.institutionPostId!.isNotEmpty) {
       final inst = n.institutionPost?['institutionId']?.toString() ?? '';
       if (inst.isNotEmpty) {
-        return '/institution/$inst/posts/${n.institutionPostId}';
+        return '/institutions/$inst/posts/${n.institutionPostId}';
       }
     }
     if (n.postId != null && n.postId!.isNotEmpty) {

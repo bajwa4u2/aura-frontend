@@ -1015,7 +1015,8 @@ class FeedItem {
     final ip = (replyToInstitutionPostId ?? '').trim();
     final inst = (parentInstitutionId ?? '').trim();
     if (ip.isNotEmpty && inst.isNotEmpty) {
-      return '/institution/$inst/posts/$ip';
+      // The public address: a reply's parent opens in the reader's own frame.
+      return '/institutions/$inst/posts/$ip';
     }
     return null;
   }
@@ -1421,8 +1422,17 @@ class FeedRouting {
     String? currentPath,
     bool signedIn = true,
   }) {
+    // Working inside that same institution's workspace, its post stays in the
+    // workspace. Anywhere else it opens at its public address.
+    if (_inWorkspaceOf(canonical, currentPath)) return canonical;
     return _adapt(publicInstitutionPostRoute(canonical, signedIn: signedIn),
         currentPath);
+  }
+
+  static bool _inWorkspaceOf(String canonical, String? currentPath) {
+    final post = RegExp(r'^/institution/([^/]+)/posts/').firstMatch(canonical.trim());
+    final here = RegExp(r'^/institution/([^/]+)').firstMatch((currentPath ?? '').trim());
+    return post != null && here != null && post.group(1) == here.group(1);
   }
 
   /// C-11 — PUBLIC INSTITUTIONAL SPEECH MUST NOT NEED AN ACCOUNT.
@@ -1440,13 +1450,16 @@ class FeedRouting {
   /// had no route registered, so the address the product hands out resolved to
   /// nothing.
   ///
-  /// Rewritten only when signed out. A signed-in member keeps the workspace
-  /// address and its surrounding chrome; the screen behind both is the same.
+  /// Rewritten for everyone, signed in or not (21 Oct 2026). Keeping the
+  /// workspace address for signed-in members put a person with no membership
+  /// inside the institution's workspace chrome (Desk, Community, "Back to
+  /// Posts"); the workspace frame belongs to those who operate it. The screen
+  /// behind both addresses is the same, so operators keep their post actions.
+  /// `signedIn` is kept for callers; it no longer changes the answer.
   static String publicInstitutionPostRoute(
     String canonical, {
     required bool signedIn,
   }) {
-    if (signedIn) return canonical;
     final m = RegExp(r'^/institution/([^/]+)/posts/([^/?#]+)$')
         .firstMatch(canonical.trim());
     if (m == null) return canonical;
@@ -1472,6 +1485,11 @@ class FeedRouting {
     if (institutionId.isEmpty) return canonical;
     if (canonical.startsWith('/institution/')) return canonical;
     if (!canonical.startsWith('/')) return canonical;
+    // Another institution's post has no address inside this workspace; it
+    // opens at its public address.
+    if (RegExp(r'^/institutions/[^/]+/posts/').hasMatch(canonical)) {
+      return canonical;
+    }
     return '/institution/$institutionId$canonical';
   }
 }
