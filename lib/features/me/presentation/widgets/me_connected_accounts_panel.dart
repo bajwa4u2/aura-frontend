@@ -107,7 +107,7 @@ class _MeConnectedAccountsPanelState
               ? 'Checking connection…'
               : connected
                   ? accountLabel
-                  : 'Not connected',
+                  : '',
           connected: connected,
           busy: isBusy,
           expanded: _linkedinExpanded,
@@ -147,7 +147,7 @@ class _MeConnectedAccountsPanelState
               ? 'Checking connection…'
               : connected
                   ? accountLabel
-                  : 'Not connected',
+                  : '',
           connected: connected,
           busy: isBusy,
           expanded: _tiktokExpanded,
@@ -201,13 +201,20 @@ class _MeConnectedAccountsPanelState
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
-                    AuraTextBlock(
-                      statusText,
-                      style: AuraText.small.copyWith(color: AuraSurface.muted),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    // The chip beside the row already says "Not connected";
+                    // repeating it underneath said it twice (S24+, 21 Oct
+                    // 2026), so a row with nothing more to say shows only
+                    // its name.
+                    if (statusText.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      AuraTextBlock(
+                        statusText,
+                        style:
+                            AuraText.small.copyWith(color: AuraSurface.muted),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ],
                 ),
               ),
