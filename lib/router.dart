@@ -59,6 +59,7 @@ import 'features/auth/presentation/verify_email_screen.dart';
 import 'features/auth/presentation/identity_baseline_screen.dart';
 import 'features/auth/presentation/verify_pending_screen.dart';
 import 'features/auth/presentation/forgot_password_screen.dart';
+import 'features/auth/presentation/restore_account_screen.dart';
 import 'features/auth/presentation/reset_password_screen.dart';
 
 // Public / Member
@@ -1444,6 +1445,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/forgot-password',
             builder: (_, __) => const ForgotPasswordScreen(),
+          ),
+          GoRoute(
+            path: '/restore-account',
+            builder: (context, state) => RestoreAccountScreen(
+              email: state.uri.queryParameters['email'],
+            ),
           ),
           GoRoute(
             path: '/reset-password',

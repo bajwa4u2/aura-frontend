@@ -52,6 +52,9 @@ bool isPlainAuthPage(String path) =>
 
 bool isAuthActionPath(String path) {
   return path == '/forgot-password' ||
+      // Restoring a deleted account (2026-10-21): the person is signed out
+      // until it completes.
+      path == '/restore-account' ||
       path == '/reset-password' ||
       path == '/verify-email' ||
       path == '/verify-pending' ||

@@ -329,6 +329,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             onForgotPassword: () =>
                 context.push(_withRedirect('/forgot-password')),
             onCreateAccount: () => context.push(_withRedirect('/register')),
+            onRestoreAccount: () {
+              final email = _emailCtrl.text.trim();
+              context.push(
+                email.isEmpty
+                    ? '/restore-account'
+                    : '/restore-account?email=${Uri.encodeComponent(email)}',
+              );
+            },
             onResendVerification: _needsVerification
                 ? () => context.push(
                     '/verify-pending?email=${Uri.encodeComponent(_emailCtrl.text.trim())}'
@@ -567,6 +575,7 @@ class _LoginFormCard extends StatelessWidget {
     required this.onForgotPassword,
     required this.onCreateAccount,
     required this.onResendVerification,
+    required this.onRestoreAccount,
   });
 
   final String? successNotice;
@@ -586,6 +595,7 @@ class _LoginFormCard extends StatelessWidget {
   final VoidCallback onForgotPassword;
   final VoidCallback onCreateAccount;
   final VoidCallback? onResendVerification;
+  final VoidCallback onRestoreAccount;
 
   @override
   Widget build(BuildContext context) {
@@ -731,6 +741,14 @@ class _LoginFormCard extends StatelessWidget {
                     icon: Icons.person_add_alt_1_rounded,
                   ),
                 ],
+              ),
+              const SizedBox(height: AuraSpace.s8),
+              // For 30 days after deleting an account, it can come back
+              // (founder decision 2026-10-21).
+              AuraGhostButton(
+                label: 'Restore a deleted account',
+                onPressed: busy ? null : onRestoreAccount,
+                icon: Icons.restore_rounded,
               ),
             ],
           ),

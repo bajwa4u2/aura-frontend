@@ -202,7 +202,8 @@ String? _prefixParent(String path, RouteExists exists) {
 /// leaves their exits to `destination_continuity.dart`.
 final RegExp _gateDomain = RegExp(
   r'^/(_boot|login|register|auth|logout|verify-email|verify-pending|'
-  r'complete-identity|reset-password|forgot-password|enter-institution)(/|$)'
+  r'complete-identity|reset-password|forgot-password|restore-account|'
+  r'enter-institution)(/|$)'
   r'|^/institution/sign-in$',
 );
 

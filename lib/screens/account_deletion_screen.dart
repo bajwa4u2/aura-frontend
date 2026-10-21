@@ -89,8 +89,9 @@ class _AccountDeletionScreenState extends ConsumerState<AccountDeletionScreen> {
         builder: (ctx) => AlertDialog(
           title: const Text('Account deleted'),
           content: const Text(
-            'Your account has been deleted. Your remaining personal '
-            'details are removed within 30 days. You will be signed out now.',
+            'Your account has been deleted. You can restore it from the '
+            'sign-in screen within 30 days; after that, your personal '
+            'details are permanently removed. You will be signed out now.',
           ),
           actions: [
             TextButton(
@@ -212,23 +213,29 @@ class _AccountDeletionScreenState extends ConsumerState<AccountDeletionScreen> {
               const SizedBox(height: 12),
               const Text(
                 'Your account ends at once. You are signed out on every '
-                'device and cannot sign in again. Your name, email address, '
+                'device and cannot sign in. Your name, email address, '
                 'profile photo, cover, bio, links and location are removed '
-                'immediately, and your profile shows as "Deleted user".',
+                'from view immediately, and your profile shows as "Deleted '
+                'user".',
                 style: TextStyle(fontSize: 16, height: 1.5),
               ),
               const SizedBox(height: 12),
               const Text(
                 'Any Facebook Page, Instagram, LinkedIn or TikTok account '
                 'you connected is disconnected at once: Aura withdraws its '
-                'access there and deletes what it kept.',
+                'access there and deletes what it kept. Restoring your '
+                'account does not reconnect them.',
                 style: TextStyle(fontSize: 16, height: 1.5),
               ),
               const SizedBox(height: 12),
               const Text(
-                'Within 30 days, the rest of your personal account details, '
+                'For 30 days, Aura keeps those details sealed so you can '
+                'change your mind: choose "Restore a deleted account" on the '
+                'sign-in screen and enter the code we email you. After 30 '
+                'days, they and the rest of your personal account details, '
                 'including your date of birth and phone number, are '
-                'permanently removed. A deleted account cannot be restored.',
+                'permanently removed, and the account can no longer be '
+                'restored.',
                 style: TextStyle(fontSize: 16, height: 1.5),
               ),
               const SizedBox(height: 12),
@@ -282,7 +289,8 @@ class _AccountDeletionScreenState extends ConsumerState<AccountDeletionScreen> {
                     ? null
                     : (v) => setState(() => _stagedConfirm = v ?? false),
                 title: const Text(
-                  'I understand this is permanent and cannot be undone.',
+                  'I understand my account ends now and can be restored '
+                  'only within 30 days.',
                 ),
                 controlAffinity: ListTileControlAffinity.leading,
                 contentPadding: EdgeInsets.zero,

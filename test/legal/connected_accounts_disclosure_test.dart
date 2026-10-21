@@ -45,24 +45,30 @@ void main() {
   });
 
   // The page states the retention lifecycle the backend runs: the account
-  // ends at once, the rest of the personal details go within 30 days
-  // (ORDINARY_RETENTION_POLICY.recoveryWindowDays), published content stays
-  // as public record. It must never promise "permanent" removal of posts or
-  // a restore path the backend does not offer.
+  // ends at once, its details are kept sealed for 30 days
+  // (ORDINARY_RETENTION_POLICY.recoveryWindowDays) so it can be restored from
+  // the sign-in screen (2026-10-21), then permanently removed; published
+  // content stays as public record. It must never promise "permanent" removal
+  // of posts, nor a restore after the window.
   testWidgets('account deletion states the real retention lifecycle', (tester) async {
     await pump(tester, const AccountDeletionScreen());
 
-    expect(find.textContaining('Within 30 days'), findsOneWidget);
+    expect(find.textContaining('For 30 days, Aura keeps those details sealed'), findsOneWidget);
+    expect(find.textContaining('"Restore a deleted account" on the sign-in screen'), findsOneWidget);
+    expect(find.textContaining('the account can no longer be restored'), findsOneWidget);
+    expect(find.textContaining('Restoring your account does not reconnect them'), findsOneWidget);
     expect(find.textContaining('remain part of the public record'), findsOneWidget);
-    expect(find.textContaining('A deleted account cannot be restored'), findsOneWidget);
+    expect(find.textContaining('A deleted account cannot be restored'), findsNothing);
     expect(find.textContaining('Deletion is permanent'), findsNothing);
   });
 
   testWidgets('privacy retention section says the same as the deletion page', (tester) async {
     await pump(tester, const PrivacyPolicyScreen());
 
-    expect(find.textContaining('Within 30 days of deletion'), findsOneWidget);
+    expect(find.textContaining('For 30 days after deletion, Aura keeps those details sealed'), findsOneWidget);
+    expect(find.textContaining('the account can no longer be restored'), findsOneWidget);
+    expect(find.textContaining('Restoring a deleted account does not reconnect them'), findsOneWidget);
     expect(find.textContaining('remain part of the public record under "Deleted user"'), findsOneWidget);
-    expect(find.textContaining('A deleted account cannot be restored'), findsOneWidget);
+    expect(find.textContaining('A deleted account cannot be restored'), findsNothing);
   });
 }

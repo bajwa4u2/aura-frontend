@@ -115,7 +115,7 @@ class _PrivacyBody extends StatelessWidget {
             'What Aura sends: only the post or announcement you choose to share, with its text, pictures or video and, where the platform allows it, a link back to it on Aura. Nothing is sent until you choose to share it.',
             'What Aura never does: it does not read your feed, messages, friends, followers or comments on those platforms, and it never publishes there unless you ask.',
             'Disconnecting: in Me, under Connected accounts, you can disconnect at any time. Aura withdraws its access on that platform as well and deletes what it kept.',
-            'Deleting your Aura account disconnects every connected account in the same way, at once.',
+            'Deleting your Aura account disconnects every connected account in the same way, at once. Restoring a deleted account does not reconnect them.',
             'Removing Aura from your Facebook settings, or asking Facebook to delete your data, makes Aura delete your Facebook Page and Instagram connections. When you ask Facebook to delete your data, Facebook gives you a confirmation code from Aura, and you can check the request at https://api.auraplatform.org/v1/integrations/facebook/data-deletion/status with that code.',
             'Pictures made for sharing a link are drawn only from content that is already public on Aura. Content that is not public has no picture.',
           ],
@@ -137,8 +137,8 @@ class _PrivacyBody extends StatelessWidget {
           body:
               'Aura retains information for as long as needed to provide the platform, preserve security, comply with obligations, resolve disputes, maintain moderation continuity, and support institutional record integrity.',
           bullets: [
-            'When you delete your account, it ends at once: you are signed out everywhere and cannot sign in again, your name, email address, profile photo, cover, bio, links and location are removed immediately, and your profile shows as "Deleted user". Connected accounts are disconnected at the same time.',
-            'Within 30 days of deletion, the rest of your personal account details, including your date of birth and phone number, are permanently removed. A deleted account cannot be restored.',
+            'When you delete your account, it ends at once: you are signed out everywhere and cannot sign in again, your name, email address, profile photo, cover, bio, links and location are removed from view immediately, and your profile shows as "Deleted user". Connected accounts are disconnected at the same time.',
+            'For 30 days after deletion, Aura keeps those details sealed so you can restore the account from the sign-in screen with a code sent to its email address. After 30 days, they and the rest of your personal account details, including your date of birth and phone number, are permanently removed, and the account can no longer be restored.',
             'Posts, replies and announcements you published remain part of the public record under "Deleted user". Messages you sent stay with the people who received them. You can delete a post yourself at any time before deleting your account.',
             'Some records may be deleted or anonymized when no longer needed.',
             'Some records are kept where required for security, audit, legal, moderation, billing, or institutional continuity reasons, and nothing under a legal hold is removed while the hold stands.',
@@ -232,7 +232,7 @@ class _PrivacyHero extends StatelessWidget {
           ),
           const SizedBox(height: AuraSpace.sm),
           Text(
-            'Last updated: Wednesday, October 21, 2026 · 1:38 PM ET',
+            'Last updated: Wednesday, October 21, 2026 · 3:40 PM ET',
             style: AuraText.small.copyWith(color: chamberTone(context, AuraSurface.muted)),
           ),
           const SizedBox(height: AuraSpace.lg),
