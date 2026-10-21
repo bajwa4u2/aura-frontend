@@ -271,6 +271,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   /// summary; nothing about the sections themselves changes on expand.
   bool _enrichmentExpanded = false;
 
+  /// The topic selector, so "Choose a topic" can bring it into view: it
+  /// lives inside the Enrichment panel, which is collapsed by default.
+  final GlobalKey _topicSelectorKey = GlobalKey();
+
   /// Communication Governance v1.0, Roadmap Milestone 7 — Ambient
   /// Governance. Tracks the current draft's own post id (populated from
   /// the autosave response) so a Communication Integrity review can be
@@ -446,6 +450,27 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     if (reason != null) return reason;
     if (!_isReply && _primaryTopic == null) return 'Choose a topic first.';
     return null;
+  }
+
+  /// True when the only thing between this post and Publish is its topic.
+  bool get _blockedOnlyByTopic =>
+      _composition.blockedReason == null &&
+      !_isReply &&
+      _primaryTopic == null;
+
+  /// Opens the Enrichment panel and brings the topic selector into view.
+  void _goToTopicChoice() {
+    setState(() => _enrichmentExpanded = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _topicSelectorKey.currentContext;
+      if (ctx == null || !ctx.mounted) return;
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+        alignment: 0.1,
+      );
+    });
   }
 
   Map<String, dynamic> _asMap(dynamic v) {
@@ -2221,11 +2246,15 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                 const SizedBox(width: AuraSpace.s10),
                 Icon(statusIcon, size: 14, color: statusColor),
                 const SizedBox(width: 4),
-                Text(
-                  statusLine,
-                  style: AuraText.small.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: statusColor,
+                Flexible(
+                  child: Text(
+                    statusLine,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AuraText.small.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: statusColor,
+                    ),
                   ),
                 ),
               ],
@@ -2349,6 +2378,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           const Divider(color: AuraSurface.divider),
           const SizedBox(height: AuraSpace.s16),
           AuraTopicSelector(
+            key: _topicSelectorKey,
             primary: _primaryTopic,
             secondaries: _secondaryTopics,
             contentText: _textController.text,
@@ -3965,6 +3995,34 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
     // A disabled control that will not say why is a dead end. The reason comes
     // from the authority where it owns the answer, and from this surface where
     // the requirement is the destination's.
+    //
+    // Said in words beside the button, not only in a tooltip: a phone has no
+    // hover, so a tooltip-only reason left Publish greyed and silent
+    // (2026-10-21). When the topic is all that is missing, the line is also
+    // the way to it — the selector sits in the collapsed Enrichment panel.
+    final blockedReason =
+        (_posting || _canPublish) ? null : _publishBlockedReason;
+    final Widget? blockedLine = blockedReason == null
+        ? null
+        : Wrap(
+            alignment: WrapAlignment.end,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: AuraSpace.s8,
+            children: [
+              Text(
+                blockedReason,
+                key: const ValueKey('compose-publish-blocked-reason'),
+                style: AuraText.small.copyWith(color: AuraSurface.muted),
+              ),
+              if (_blockedOnlyByTopic)
+                TextButton(
+                  key: const ValueKey('compose-choose-topic'),
+                  onPressed: _goToTopicChoice,
+                  child: const Text('Choose topic'),
+                ),
+            ],
+          );
+
     final publishBtn = Tooltip(
       message: _publishBlockedReason ?? '',
       child: AuraPrimaryButton(
@@ -4018,12 +4076,16 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
                   ],
                 ),
                 const SizedBox(height: AuraSpace.s8),
+                if (blockedLine != null) ...[
+                  blockedLine,
+                  const SizedBox(height: AuraSpace.s4),
+                ],
                 publishBtn,
               ],
             );
           }
 
-          return Row(
+          final row = Row(
             children: [
               Expanded(
                 child: Text(
@@ -4037,6 +4099,16 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               saveDraftBtn,
               const SizedBox(width: AuraSpace.s12),
               publishBtn,
+            ],
+          );
+          if (blockedLine == null) return row;
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              blockedLine,
+              const SizedBox(height: AuraSpace.s4),
+              row,
             ],
           );
         },
