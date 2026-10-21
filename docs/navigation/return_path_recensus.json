@@ -550,6 +550,17 @@
   "verdict": "PROTECTED_BOUNDARY"
  },
  {
+  "route": "/restore-account",
+  "sample": "/restore-account",
+  "renders": true,
+  "protected": true,
+  "deepLinkSemantic": "deepLinkFallback",
+  "deepLinkDestination": "/home",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "PROTECTED_BOUNDARY"
+ },
+ {
   "route": "/reset-password",
   "sample": "/reset-password",
   "renders": true,
