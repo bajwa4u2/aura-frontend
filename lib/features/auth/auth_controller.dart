@@ -191,6 +191,18 @@ class AuthController {
     final backendCode = _extractServerCode(e).toUpperCase();
     final server = _extractServerMessage(e).toLowerCase();
 
+    // No answer at all: the device could not reach Aura. Saying "We could not
+    // sign you in right now" here reads as a broken account; on 21 Oct 2026 a
+    // phone with no internet showed exactly that.
+    if (e.response == null &&
+        (e.type == DioExceptionType.connectionError ||
+            e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.sendTimeout ||
+            e.type == DioExceptionType.receiveTimeout ||
+            e.type == DioExceptionType.unknown)) {
+      return 'Aura could not be reached. Check that this device is connected to the internet, then try again.';
+    }
+
     // Too many attempts from this connection: say so, and for how long. This
     // used to fall through to "We could not sign you in right now", which a
     // locked-out person reads as a broken account (founder, 2026-10-08).
