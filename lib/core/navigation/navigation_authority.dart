@@ -107,9 +107,10 @@ class NavigationAuthority {
     PrimaryDestination.discover,
   ];
 
-  /// Resolves which primary destination a path belongs to, for truthful
-  /// selected-state presentation. Returns null on detail routes that are
-  /// not conceptually inside a primary (truthful "nothing selected").
+  /// Resolves which primary destination a path IS, when it is one. Returns
+  /// null on detail routes. Selected-state presentation does not stop at that
+  /// null: since 2026-10-21 a detail route highlights its ORIGIN
+  /// (`NavigationOrigin.selectedFor`), falling back to [contentHomeOf].
   ///
   /// Legacy fragmented discovery entry points (search, the institutions
   /// directory, spaces discovery) are FACETS of Discover — they highlight
@@ -141,7 +142,46 @@ class NavigationAuthority {
     // `/me` and `/meetings/…` are DEPTH, not primaries (founder-observed
     // correction 2026-08-16): personal depth is reached through the
     // identity/avatar chrome; meetings are an institutional domain with
-    // contextual personal relationships. Truthful no-selection.
+    // contextual personal relationships. They are not primaries; which tab
+    // they highlight is their origin's (NavigationOrigin), not theirs.
+    return null;
+  }
+
+  /// The primary destination a detail route's CONTENT belongs to — the answer
+  /// when nothing was opened before it (a cold start from a notification, a
+  /// shared link or a universal link). Founder decision 2026-10-21.
+  ///
+  /// Public content (posts, announcements, articles, threads, replies) lives
+  /// on Home; conversations live in Messages; people, institutions and spaces
+  /// are found in Discover. Personal depth (`/me`, settings, security) and
+  /// meetings belong to no primary — Me is reached from the avatar chrome and
+  /// meetings are an institutional domain — so they have no fallback.
+  static PrimaryDestination? contentHomeOf(String path) {
+    final p = _normalize(path);
+    bool under(String prefix) => p == prefix || p.startsWith('$prefix/');
+    if (under('/posts') ||
+        under('/p') ||
+        under('/announcements') ||
+        under('/articles') ||
+        under('/thread') ||
+        under('/updates') ||
+        under('/media')) {
+      return PrimaryDestination.home;
+    }
+    if (under('/direct') ||
+        under('/direct-intent') ||
+        under('/conversations') ||
+        under('/messages')) {
+      return PrimaryDestination.messages;
+    }
+    if (under('/u') ||
+        under('/author') ||
+        under('/institutions') ||
+        under('/spaces') ||
+        under('/search') ||
+        under('/discover')) {
+      return PrimaryDestination.discover;
+    }
     return null;
   }
 

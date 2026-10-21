@@ -1,5 +1,11 @@
 # Decisions — aura_final
 
+## A detail page highlights the tab it was opened from — founder, 2026-10-21 (supersedes the 2026-08-16 "truthful no-selection" rule)
+
+- Asked what best practice is, the founder chose: "yes highlight the origin tab, everywhere". On iOS a tab bar always shows the tab whose stack you are in; Material bottom navigation always has one active destination; a desktop rail keeps its section marked through its depth.
+- Every detail route (posts, announcements, articles, threads, conversations, profiles, institutions, spaces, meetings, settings) highlights the last primary destination the person was on. Create is an action, never an origin. With no origin (cold start from a notification or a shared link) the content's own home answers: public content → Home, conversations → Messages, people/institutions/spaces → Discover; personal depth and meetings have none. Tapping the highlighted tab returns to its root; tapping it at the root scrolls to the top. Code: `lib/core/navigation/navigation_origin.dart`, `NavigationAuthority.contentHomeOf`, `MemberShell`.
+- Superseded wording, preserved (MemberShell, 2026-08-16): "Returning -1 produces a clean 'no item selected' state on detail routes, which is the truthful signal." and (NavigationAuthority.primaryOf) "Returns null on detail routes that are not conceptually inside a primary (truthful 'nothing selected')." `primaryOf` itself still answers only for primary routes; the selected state no longer stops there.
+
 ## Sharing and invites — founder, 2026-10-20
 
 - Share to Facebook through Facebook's own share page (no app may post to a personal profile); approved built and released (DD-48).
