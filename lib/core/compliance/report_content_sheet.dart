@@ -6,6 +6,7 @@ import '../ui/aura_space.dart';
 import '../ui/aura_surface.dart';
 import '../ui/aura_text.dart';
 import 'report_repository.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// Apple Store §1.2 UGC compliance — generic report sheet for
 /// user-generated content surfaces.
@@ -102,13 +103,7 @@ class _ReportContentSheetState extends ConsumerState<ReportContentSheet> {
           );
       if (!mounted) return;
       Navigator.of(context).pop(true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Report submitted. A moderator will review within 24 hours.',
-          ),
-        ),
-      );
+      AuraNotice.done(context, 'Report sent. A moderator reviews reports within 24 hours.');
     } catch (e) {
       if (!mounted) return;
       setState(() {

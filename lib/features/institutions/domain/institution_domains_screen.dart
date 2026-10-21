@@ -17,6 +17,7 @@ import 'institution_domains_providers.dart';
 import 'institution_domains_repository.dart';
 import '../institution_words.dart';
 import '../../../core/product/temporal.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class InstitutionDomainsScreen extends ConsumerStatefulWidget {
   const InstitutionDomainsScreen({super.key, this.institutionId});
@@ -60,11 +61,9 @@ class _InstitutionDomainsScreenState
               ?.canManageDomains ??
           false);
 
-  void _showSnack(String message) {
+  void _showSnack(String message, [AuraNoticeKind kind = AuraNoticeKind.problem]) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AuraNotice.show(context, message, kind: kind);
   }
 
   String _dioMessage(Object error, String fallback) {
@@ -168,10 +167,10 @@ class _InstitutionDomainsScreenState
       await repo.addDomain(institutionId, domain);
 
       domainController.clear();
-      _showSnack('Domain added.');
+      _showSnack('Domain added.', AuraNoticeKind.done);
       await loadDomains(silent: true);
     } catch (e) {
-      _showSnack(_dioMessage(e, 'Could not add domain.'));
+      _showSnack(_dioMessage(e, 'The domain was not added. Try again.'));
     } finally {
       if (mounted) {
         setState(() => _submitting = false);
@@ -187,10 +186,10 @@ class _InstitutionDomainsScreenState
 
     try {
       await repo.removeDomain(institutionId, domainId);
-      _showSnack('Domain removed.');
+      _showSnack('Domain removed.', AuraNoticeKind.done);
       await loadDomains(silent: true);
     } catch (e) {
-      _showSnack(_dioMessage(e, 'Could not remove domain.'));
+      _showSnack(_dioMessage(e, 'The domain was not removed. Try again.'));
     }
   }
 
@@ -267,7 +266,7 @@ class _InstitutionDomainsScreenState
 
       await loadDomains(silent: true);
     } catch (e) {
-      _showSnack(_dioMessage(e, 'Could not issue DNS challenge.'));
+      _showSnack(_dioMessage(e, 'The DNS record to add was not created. Try again.'));
     }
   }
 
@@ -281,7 +280,10 @@ class _InstitutionDomainsScreenState
       final verified = await repo.verifyDomain(institutionId, domainId);
 
       _showSnack(
-        verified ? 'Domain verified successfully.' : 'DNS record not found.',
+        verified
+            ? 'Domain verified.'
+            : 'The DNS record was not found yet. Check it and try again.',
+        verified ? AuraNoticeKind.done : AuraNoticeKind.problem,
       );
 
       await loadDomains(silent: true);
@@ -290,13 +292,13 @@ class _InstitutionDomainsScreenState
         verifyTimer?.cancel();
       }
     } catch (e) {
-      _showSnack(_dioMessage(e, 'Could not verify domain.'));
+      _showSnack(_dioMessage(e, 'The domain was not verified. Try again.'));
     }
   }
 
   void startAutoVerify(String domainId) {
     verifyTimer?.cancel();
-    _showSnack('Auto verify started. Checking every 30 seconds.');
+    _showSnack('Checking the domain every 30 seconds.', AuraNoticeKind.info);
 
     verifyTimer = Timer.periodic(
       const Duration(seconds: 30),
@@ -316,7 +318,7 @@ class _InstitutionDomainsScreenState
                 ? null
                 : () {
                     Clipboard.setData(ClipboardData(text: value));
-                    _showSnack('$label copied.');
+                    if (mounted) AuraNotice.copied(context, '$label copied.');
                   },
           ),
         ],
@@ -350,7 +352,7 @@ class _InstitutionDomainsScreenState
 
     if (!opened) {
       await Clipboard.setData(ClipboardData(text: url));
-      _showSnack('Link copied. Open it in your browser.');
+      _showSnack('Link copied. Open it in your browser.', AuraNoticeKind.info);
     }
   }
 

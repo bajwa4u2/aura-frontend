@@ -12,6 +12,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 // C2 closeout — transport lives behind the canonical Follow repository;
 // this screen renders the consent lifecycle and never owns HTTP.
@@ -31,11 +32,9 @@ class FollowRequestsScreen extends ConsumerStatefulWidget {
 class _FollowRequestsScreenState extends ConsumerState<FollowRequestsScreen> {
   final Set<String> _busyIds = <String>{};
 
-  void _showMessage(String message) {
+  void _showMessage(String message, [AuraNoticeKind kind = AuraNoticeKind.problem]) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    AuraNotice.show(context, message, kind: kind);
   }
 
   Future<void> _accept(PersonFollowRequest item) async {
@@ -45,9 +44,9 @@ class _FollowRequestsScreenState extends ConsumerState<FollowRequestsScreen> {
     try {
       await ref.read(followsRepositoryProvider).acceptFollowRequest(item.id);
       ref.invalidate(followRequestsProvider);
-      _showMessage('Follow request accepted');
+      _showMessage('Follow request accepted.', AuraNoticeKind.done);
     } catch (_) {
-      _showMessage('Could not accept follow request');
+      _showMessage('The follow request was not accepted. Try again.');
     } finally {
       if (mounted) {
         setState(() => _busyIds.remove(item.id));
@@ -62,9 +61,9 @@ class _FollowRequestsScreenState extends ConsumerState<FollowRequestsScreen> {
     try {
       await ref.read(followsRepositoryProvider).declineFollowRequest(item.id);
       ref.invalidate(followRequestsProvider);
-      _showMessage('Follow request declined');
+      _showMessage('Follow request declined.', AuraNoticeKind.done);
     } catch (_) {
-      _showMessage('Could not decline follow request');
+      _showMessage('The follow request was not declined. Try again.');
     } finally {
       if (mounted) {
         setState(() => _busyIds.remove(item.id));

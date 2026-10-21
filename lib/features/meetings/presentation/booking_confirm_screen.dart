@@ -17,6 +17,7 @@ import '../application/meetings_provider.dart';
 import '../domain/availability_profile.dart';
 import '../domain/meeting_identity.dart';
 import '../domain/meeting_institution_routing.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class BookingConfirmScreen extends ConsumerStatefulWidget {
   final AvailabilityProfile profile;
@@ -98,9 +99,7 @@ class _BookingConfirmScreenState extends ConsumerState<BookingConfirmScreen> {
     } catch (e) {
       if (!mounted) return;
       final message = AppErrorMapper.from(e).message;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      AuraNotice.problem(context, message);
     } finally {
       if (mounted) setState(() => _booking = false);
     }
@@ -431,11 +430,7 @@ class _ConfirmationView extends ConsumerWidget {
                             Clipboard.setData(
                               ClipboardData(text: confirmation.joinUrl),
                             );
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Meeting link copied'),
-                              ),
-                            );
+                            AuraNotice.copied(context, 'Meeting link copied.');
                           },
                         ),
                       ],

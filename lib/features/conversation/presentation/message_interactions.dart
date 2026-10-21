@@ -6,6 +6,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/conversations_repository.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// WHAT YOU CAN DO TO A MESSAGE, AND WHO MAY DO IT.
 ///
@@ -66,8 +67,7 @@ class MessageActions {
       await action();
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(failure)));
+        AuraNotice.problem(context, failure);
       }
     }
   }
@@ -169,13 +169,10 @@ class MessageActions {
               ? 'Forwarded with ${result.attachments} attachment'
                   '${result.attachments == 1 ? '' : 's'}.'
               : 'Forwarded.';
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(text)));
+      AuraNotice.done(context, text);
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('That could not be forwarded.')),
-        );
+        AuraNotice.problem(context, 'That message was not forwarded. Try again.');
       }
     }
   }

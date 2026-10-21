@@ -18,13 +18,13 @@ library;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../ui/aura_surface.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 Future<void> openAuraAttachment(
   BuildContext context, {
   required String url,
 }) async {
-  final messenger = ScaffoldMessenger.maybeOf(context);
+  final messenger = AuraNotice.of(context);
   final uri = Uri.tryParse(url);
 
   if (uri == null || url.trim().isEmpty) {
@@ -43,11 +43,4 @@ Future<void> openAuraAttachment(
   }
 }
 
-void _tell(ScaffoldMessengerState? messenger, String message) {
-  messenger?.showSnackBar(
-    SnackBar(
-      content: Text(message),
-      backgroundColor: AuraSurface.ink,
-    ),
-  );
-}
+void _tell(AuraNoticeHandle notice, String message) => notice.problem(message);

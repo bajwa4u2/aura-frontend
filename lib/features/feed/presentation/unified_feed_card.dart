@@ -43,6 +43,7 @@ import '../../posts/presentation/widgets/post_card.dart'
     show viewerIdentityProvider;
 import '../../institutions/posts/institution_post_owner_actions.dart';
 import '../../posts/presentation/widgets/post_card/post_owner_actions.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// Single render path for every feed surface.
 ///
@@ -1778,9 +1779,7 @@ class _ReplyPreviewLikeState extends ConsumerState<_ReplyPreviewLike> {
           _optimisticCount = null;
         });
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not update like')),
-        );
+        AuraNotice.problem(context, 'Your like was not saved. Try again.');
       } finally {
         if (mounted) setState(() => _busy = false);
       }

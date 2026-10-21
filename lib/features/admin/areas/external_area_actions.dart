@@ -319,9 +319,7 @@ Future<void> _run(
     ref.invalidate(operatorExternalConsumersProvider);
   } catch (e) {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(_message(e))),
-    );
+    AuraNotice.problem(context, _message(e));
   }
 }
 
@@ -468,9 +466,7 @@ class _Secret extends StatelessWidget {
                 onPressed: () async {
                   await Clipboard.setData(ClipboardData(text: value));
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Copied')),
-                    );
+                    AuraNotice.copied(context, 'Copied.');
                   }
                 },
               ),

@@ -11,6 +11,7 @@ import '../../core/ui/aura_radius.dart';
 import '../../core/ui/aura_space.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// Shape of the visible crop frame.
 ///
@@ -443,9 +444,7 @@ class _ProfileMediaEditorState extends State<ProfileMediaEditor> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Could not save image: $e')));
+      AuraNotice.problem(context, 'The image was not saved. Try again.');
     }
   }
 

@@ -10,6 +10,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../domain/communications_models.dart';
 import '../providers.dart';
 import 'widgets/communication_center_shell.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class CommunicationsCenterScreen extends ConsumerStatefulWidget {
   const CommunicationsCenterScreen({super.key});
@@ -73,11 +74,7 @@ class _CommunicationsCenterScreenState
       setState(() => _preferences = saved);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not update communication settings. Please try again.'),
-        ),
-      );
+      AuraNotice.problem(context, 'Your communication settings were not saved. Try again.');
     } finally {
       if (mounted) {
         setState(() {

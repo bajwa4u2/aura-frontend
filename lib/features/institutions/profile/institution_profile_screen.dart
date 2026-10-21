@@ -18,6 +18,7 @@ import '../../monetization/domain/monetization_models.dart';
 import '../../monetization/providers/monetization_providers.dart';
 import '../ui/institution_ds.dart';
 import '../workspace/workspace_page.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// Phase 6.6c — Institution Profile / Workspace Identity hub.
 ///
@@ -495,9 +496,7 @@ Future<void> _copyLink(BuildContext context, String publicLink) async {
   if (publicLink.isEmpty) return;
   await Clipboard.setData(ClipboardData(text: publicLink));
   if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('Public link copied')),
-  );
+  AuraNotice.copied(context, 'Public link copied.');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -689,9 +688,7 @@ class _SocialRow extends StatelessWidget {
   Future<void> _copy(BuildContext context) async {
     await Clipboard.setData(ClipboardData(text: entry.url));
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${entry.label} link copied')),
-    );
+    AuraNotice.copied(context, '${entry.label} link copied.');
   }
 
   @override

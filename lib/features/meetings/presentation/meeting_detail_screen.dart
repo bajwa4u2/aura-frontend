@@ -27,6 +27,7 @@ import 'widgets/meeting_continuity_section.dart';
 import 'widgets/meeting_section.dart';
 import 'widgets/meeting_workroom.dart';
 import '../../../core/ui/aura_bounded_editor.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// THE MEETING RECORD — one page that IS the meeting, before, during, and
 /// after. Sections compose by lifecycle state:
@@ -270,7 +271,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
 
   Future<void> _startMeeting() async {
     setState(() => _actioning = true);
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = AuraNotice.of(context);
     try {
       final updated = await ref
           .read(meetingsRepositoryProvider)
@@ -282,9 +283,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
       // record is the doorway, the live room is the destination.
       _enterRoom(sessionId: updated.sessionId);
     } catch (e) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Unable to start meeting. Try again.')),
-      );
+      messenger.problem('The meeting did not start. Try again.');
     } finally {
       if (mounted) setState(() => _actioning = false);
     }
@@ -293,7 +292,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
   Future<void> _editMeeting() async {
     final titleCtrl = TextEditingController(text: meeting.title);
     final descCtrl = TextEditingController(text: meeting.description ?? '');
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = AuraNotice.of(context);
     final navigator = Navigator.of(context);
     DateTime? scheduledAt = meeting.scheduledAt;
     var durationMinutes = meeting.durationMinutes;
@@ -426,11 +425,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
                       ? null
                       : () async {
                           if (scheduledAt == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Please pick a date and time'),
-                              ),
-                            );
+                            AuraNotice.problem(context, 'Pick a date and time first.');
                             return;
                           }
                           setDialogState(() => saving = true);
@@ -455,17 +450,10 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
                             _invalidateLists();
                             if (!mounted) return;
                             navigator.pop();
-                            messenger.showSnackBar(
-                              const SnackBar(content: Text('Meeting updated')),
-                            );
+                            messenger.done('Meeting updated.');
                           } catch (e) {
                             if (!mounted) return;
-                            messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    'Unable to update meeting. Try again.'),
-                              ),
-                            );
+                            messenger.problem('The meeting was not updated. Try again.');
                           } finally {
                             if (dialogContext.mounted) {
                               setDialogState(() => saving = false);
@@ -535,7 +523,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
 
     setState(() => _actioning = true);
     final router = GoRouter.of(context);
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = AuraNotice.of(context);
     try {
       await ref.read(meetingsRepositoryProvider).cancelMeeting(meeting.id);
       ref.invalidate(meetingProvider(meeting.id));
@@ -546,9 +534,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
           : '/institution/$_resolvedInstitutionId/meetings';
       router.go(listPath);
     } catch (e) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Unable to cancel meeting. Try again.')),
-      );
+      messenger.problem('The meeting was not cancelled. Try again.');
     } finally {
       if (mounted) setState(() => _actioning = false);
     }
@@ -556,9 +542,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
 
   void _copyLink() {
     Clipboard.setData(ClipboardData(text: meeting.joinUrl));
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Meeting link copied')));
+    AuraNotice.copied(context, 'Meeting link copied.');
   }
 
   // INVITING IS NOT SHARING THE ADDRESS.
@@ -650,14 +634,10 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
           .inviteToMeeting(meeting.id, email: email, name: name);
       _invalidateLists();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Invitation sent to $email')),
-      );
+      AuraNotice.done(context, 'Invitation sent to $email.');
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to send the invitation. Try again.')),
-      );
+      AuraNotice.problem(context, 'The invitation was not sent. Try again.');
     } finally {
       if (mounted) setState(() => _actioning = false);
     }
@@ -673,9 +653,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
     } catch (_) {
       await Clipboard.setData(ClipboardData(text: url.toString()));
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Calendar link copied')),
-      );
+      AuraNotice.copied(context, 'Calendar link copied.');
     }
   }
 
@@ -1333,7 +1311,7 @@ class _PreparationNotesSectionState
 
   Future<void> _save() async {
     setState(() => _saving = true);
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = AuraNotice.of(context);
     try {
       await ref.read(meetingsRepositoryProvider).updateMeeting(
         widget.meeting.id,
@@ -1341,14 +1319,10 @@ class _PreparationNotesSectionState
       );
       ref.invalidate(meetingProvider(widget.meeting.id));
       if (!mounted) return;
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Agenda saved')),
-      );
+      messenger.done('Agenda saved.');
     } catch (e) {
       if (!mounted) return;
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Unable to save the agenda. Try again.')),
-      );
+      messenger.problem('The agenda was not saved. Try again.');
     } finally {
       if (mounted) setState(() => _saving = false);
     }

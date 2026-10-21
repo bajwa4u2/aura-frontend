@@ -5,6 +5,7 @@ import '../ui/aura_surface.dart';
 import 'blocks_repository.dart';
 import 'report_content_sheet.dart';
 import 'report_repository.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// REPORT AND BLOCK, WHEREVER SOMEONE ELSE'S CONTENT IS MET.
 ///
@@ -95,14 +96,10 @@ Future<void> showReportBlockMenu(
       try {
         await blockUser(ref, blockId);
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Blocked.')),
-        );
+        AuraNotice.done(context, 'Blocked.');
       } catch (_) {
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not block. Try again later.')),
-        );
+        AuraNotice.problem(context, 'This person was not blocked. Try again.');
       }
       return;
   }

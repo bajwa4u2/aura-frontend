@@ -12,6 +12,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../profile/providers.dart';
 import '../data/people_discovery.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// A suggested person, with the one control that matters on them.
 ///
@@ -75,9 +76,7 @@ class _PersonSuggestionCardState extends ConsumerState<PersonSuggestionCard> {
       invalidateFollowSurfaces(ref);
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not send that request — try again.')),
-        );
+        AuraNotice.problem(context, 'Your request was not sent. Try again.');
       }
     } finally {
       if (mounted) setState(() => _busy = false);

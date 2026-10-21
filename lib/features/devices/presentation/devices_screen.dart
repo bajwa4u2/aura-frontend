@@ -12,6 +12,7 @@ import '../../../core/ui/aura_text.dart';
 import '../device_model.dart';
 import '../physical_device.dart';
 import '../device_providers.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// Advanced Device Preference / Transfer — item 12.
 ///
@@ -52,9 +53,7 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
       ref.invalidate(_myDevicesProvider);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not update that device. $e')),
-      );
+      AuraNotice.problem(context, 'That device was not updated. Try again.');
     } finally {
       if (mounted) setState(() => _busyDeviceId = null);
     }
@@ -97,9 +96,7 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
       ref.invalidate(_myDevicesProvider);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not remove that device. $e')),
-      );
+      AuraNotice.problem(context, 'That device was not removed. Try again.');
     } finally {
       if (mounted) setState(() => _busyDeviceId = null);
     }

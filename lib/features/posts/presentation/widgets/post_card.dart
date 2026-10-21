@@ -35,6 +35,7 @@ import 'post_card/post_card_parts.dart';
 import 'post_card/post_card_utils.dart';
 import '../../../../core/identity/person_identity_model.dart';
 import '../../../../core/media/attachment_url.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// C-19 — A DEFAULT THAT POINTED AT A HOST THAT NO LONGER SERVES US.
 ///
@@ -483,20 +484,10 @@ class _PostCardState extends ConsumerState<PostCard> {
     try {
       await blockUser(ref, authorId, contextPostId: contextPostId);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Author blocked. A moderator will review within 24 hours.',
-          ),
-        ),
-      );
+      AuraNotice.done(context, 'Author blocked. A moderator will review within 24 hours.');
     } catch (_) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not complete the block. Please try again.'),
-        ),
-      );
+      AuraNotice.problem(context, 'The block did not go through. Try again.');
     }
   }
 
@@ -1115,9 +1106,7 @@ class _ActionRowState extends ConsumerState<_ActionRow> {
 
   void _showError(BuildContext context, String message) {
     if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    AuraNotice.problem(context, message);
   }
 
   @override
@@ -1181,10 +1170,10 @@ class _ActionRowState extends ConsumerState<_ActionRow> {
         if (e is DioException && e.response?.statusCode == 403) {
           _showError(
             context,
-            'Only institution speakers can react as institution.',
+            'Only people who speak for the institution can react as it.',
           );
         } else {
-          _showError(context, 'Could not update like');
+          _showError(context, 'Your like was not saved. Try again.');
         }
       } finally {
         if (mounted) setState(() => _likeBusy = false);
@@ -1248,7 +1237,7 @@ class _ActionRowState extends ConsumerState<_ActionRow> {
         if (!mounted) return;
         setState(() => _optimisticSaved = null);
         if (!context.mounted) return;
-        _showError(context, 'Could not update save');
+        _showError(context, 'It was not saved. Try again.');
       } finally {
         if (mounted) setState(() => _saveBusy = false);
       }
@@ -1319,12 +1308,10 @@ class _ActionRowState extends ConsumerState<_ActionRow> {
         invalidateUnifiedFeedSurfaces(ref);
 
         if (!context.mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Work reposted')));
+        AuraNotice.done(context, 'Work reposted.');
       } catch (e) {
         final message = AppErrorMapper.from(e, feature: 'repost this').message;
-        _showError(context, 'Could not repost: $message');
+        _showError(context, message);
       } finally {
         controller.dispose();
         if (mounted) setState(() => _repostBusy = false);

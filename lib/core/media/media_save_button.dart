@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'media_save_service.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// Runs a media save and surfaces the outcome to the user as a snackbar.
 ///
@@ -12,15 +13,8 @@ Future<MediaSaveResult> runMediaSave(
   required String url,
   String? filename,
 }) async {
-  final messenger = ScaffoldMessenger.maybeOf(context);
-  messenger
-    ?..clearSnackBars()
-    ..showSnackBar(
-      const SnackBar(
-        content: Text('Preparing download…'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+  final messenger = AuraNotice.of(context);
+  messenger.info('Preparing your download.');
 
   final result = await const MediaSaveService().save(
     url: url,
@@ -29,14 +23,19 @@ Future<MediaSaveResult> runMediaSave(
 
   if (!context.mounted) return result;
 
-  messenger
-    ?..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: Text(result.message),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  // Dismissing the save dialog is the person's own choice, not news.
+  if (result.status == MediaSaveStatus.cancelled) {
+    AuraNotice.dismissAll();
+    return result;
+  }
+  messenger.show(
+    result.message,
+    kind: switch (result.status) {
+      MediaSaveStatus.saved => AuraNoticeKind.done,
+      MediaSaveStatus.failed => AuraNoticeKind.problem,
+      _ => AuraNoticeKind.info,
+    },
+  );
   return result;
 }
 

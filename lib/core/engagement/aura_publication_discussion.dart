@@ -9,6 +9,7 @@ import '../ui/aura_platform_components.dart';
 import 'engagement_model.dart';
 import 'publication_discussion_repository.dart';
 import '../ui/aura_bounded_editor.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// Discussion for any eligible publication class.
 ///
@@ -63,9 +64,7 @@ class _AuraPublicationDiscussionState
       // objectionable-content gate. Those refusals are the product working, so
       // they are surfaced as written rather than flattened into "try again".
       final err = AppErrorMapper.from(e, feature: 'post that reply');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(err.message)));
+      AuraNotice.problem(context, err.message);
     } finally {
       if (mounted) setState(() => _sending = false);
     }

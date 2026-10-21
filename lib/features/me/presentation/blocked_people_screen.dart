@@ -38,6 +38,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import 'widgets/me_section.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// The people this account has blocked.
 ///
@@ -101,18 +102,10 @@ class _BlockedPeopleScreenState extends ConsumerState<BlockedPeopleScreen> {
       ref.invalidate(blockedUserIdsProvider);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unblocked ${person.displayName}')),
-      );
+      AuraNotice.done(context, '${person.displayName} is unblocked.');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppErrorMapper.from(e, feature: 'unblock this person').message,
-          ),
-        ),
-      );
+      AuraNotice.problem(context, AppErrorMapper.from(e, feature: 'unblock this person').message);
     } finally {
       if (mounted) setState(() => _working.remove(person.id));
     }

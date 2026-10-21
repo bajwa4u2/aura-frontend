@@ -18,6 +18,7 @@ import '../domain/monetization_kind.dart';
 import 'institution_action_sheet.dart';
 import 'mention_text.dart';
 import 'monetization_label.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// One reply in the discourse thread.
 ///
@@ -380,18 +381,10 @@ class ReplyUnit extends ConsumerWidget {
         try {
           await blockUser(ref, authorId);
           if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Author blocked. A moderator will review within 24 hours.',
-              ),
-            ),
-          );
+          AuraNotice.done(context, 'Author blocked. A moderator will review within 24 hours.');
         } catch (_) {
           if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Could not block. Try again later.')),
-          );
+          AuraNotice.problem(context, 'This person was not blocked. Try again.');
         }
         break;
     }

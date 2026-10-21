@@ -2,34 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'app_error.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class AppErrorUi {
   const AppErrorUi._();
 
-  static void showSnackBar(
-    BuildContext context,
-    AppError error, {
-    SnackBarBehavior behavior = SnackBarBehavior.floating,
-  }) {
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-
-    messenger.showSnackBar(
-      SnackBar(
-        behavior: behavior,
-        content: Text(error.message),
-        action: error.action == null
-            ? null
-            : SnackBarAction(
-                label: error.action!.label,
-                onPressed: () {
-                  final route = error.action!.route;
-                  if (route != null && route.isNotEmpty) {
-                    context.go(route);
-                  }
-                },
-              ),
-      ),
+  static void showNotice(BuildContext context, AppError error) {
+    AuraNotice.problem(
+      context,
+      error.message,
+      action: error.action == null
+          ? null
+          : AuraNoticeAction(
+              label: error.action!.label,
+              onPressed: () {
+                final route = error.action!.route;
+                if (route != null && route.isNotEmpty) {
+                  context.go(route);
+                }
+              },
+            ),
     );
   }
 }

@@ -13,6 +13,7 @@ import 'participation_models.dart';
 import 'participation_providers.dart';
 import 'participation_repository.dart';
 import '../../../core/product/product_language.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 // Brief description of what types of posts fall under each topic.
 // Used in the create sheet to help admins choose wisely.
@@ -139,9 +140,7 @@ class ParticipationScreen extends ConsumerWidget {
       ref.invalidate(participationListProvider(institutionId));
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not update status: $e')),
-      );
+      AuraNotice.problem(context, 'The status was not updated. Try again.');
     }
   }
 }

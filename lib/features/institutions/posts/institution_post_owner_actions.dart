@@ -9,6 +9,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../feed/data/unified_feed_providers.dart';
 import '../data/institutions_repository.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// Whether [identity] may edit and delete posts of [institutionId]: an
 /// operator of THAT institution who may speak for it. The backend re-checks
@@ -80,25 +81,13 @@ Future<bool> confirmAndDeleteInstitutionPost(
     // Remove the post from every feed surface so no orphaned card remains.
     invalidateUnifiedFeedSurfaces(ref);
     if (context.mounted) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(
-          content: Text('Post removed'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AuraNotice.done(context, 'Post removed.');
       if (leaveSurfaceOnSuccess && context.canPop()) context.pop();
     }
     return true;
   } catch (e) {
     if (context.mounted) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        SnackBar(
-          content: Text(
-            AppErrorMapper.from(e, feature: 'delete this post').message,
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AuraNotice.problem(context, AppErrorMapper.from(e, feature: 'delete this post').message);
     }
     return false;
   }

@@ -17,6 +17,7 @@ import '../../../core/ui/aura_text_block.dart';
 import '../../../core/auth/trusted_device_store.dart';
 import '../../auth/auth_repository.dart';
 import 'notification_permission_tile.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 // ── Providers ────────────────────────────────────────────────────────────────
 
@@ -57,9 +58,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
       ref.invalidate(_sessionsProvider);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
+      AuraNotice.problem(context, 'That session was not signed out. Try again.');
     }
   }
 
@@ -70,9 +69,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
       ref.invalidate(_sessionsProvider);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
+      AuraNotice.problem(context, 'Your other sessions were not signed out. Try again.');
     } finally {
       if (mounted) setState(() => _revokingAll = false);
     }
@@ -85,9 +82,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
       ref.invalidate(_trustedDevicesProvider);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
+      AuraNotice.problem(context, 'That device was not removed. Try again.');
     }
   }
 
@@ -127,9 +122,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
       ref.invalidate(_trustedDevicesProvider);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
-      );
+      AuraNotice.problem(context, 'That device was not renamed. Try again.');
     }
   }
 

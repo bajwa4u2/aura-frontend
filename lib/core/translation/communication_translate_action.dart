@@ -14,6 +14,7 @@ import '../ui/aura_text.dart';
 import '../ui/aura_text_block.dart';
 import 'communication_translation.dart';
 import 'communication_translation_repository.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// Canonical "Translate" action for any publishable communication surface.
 ///
@@ -230,16 +231,15 @@ class _CommunicationTranslateActionState
       setState(() => _error = appError.message);
 
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(appError.message),
-          action: appError.isAuthRequired
-              ? SnackBarAction(
-                  label: 'Sign in',
-                  onPressed: () => context.go('/login'),
-                )
-              : null,
-        ),
+      AuraNotice.problem(
+        context,
+        appError.message,
+        action: appError.isAuthRequired
+            ? AuraNoticeAction(
+                label: 'Sign in',
+                onPressed: () => context.go('/login'),
+              )
+            : null,
       );
     } finally {
       if (mounted) setState(() => _busy = false);

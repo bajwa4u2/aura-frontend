@@ -12,6 +12,7 @@ import '../domain/meeting.dart';
 import '../domain/meeting_entry_resolution.dart';
 import 'widgets/meeting_device_check.dart';
 import 'widgets/meeting_preparation_panel.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 // Pre-join — RESOLVER-DRIVEN (Participation Architecture).
 //
@@ -92,9 +93,7 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
       // changed since ours. Re-resolve so the screen shows the current truth.
       ref.invalidate(meetingEntryResolutionProvider(_entryKey));
       final message = AppErrorMapper.from(e).message;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Could not join: $message')));
+      AuraNotice.problem(context, 'You did not join the meeting. $message');
     } finally {
       if (mounted) setState(() => _joining = false);
     }
@@ -114,9 +113,7 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
     } catch (e) {
       if (!mounted) return;
       final message = AppErrorMapper.from(e).message;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Could not send code: $message')));
+      AuraNotice.problem(context, 'The code was not sent. $message');
     } finally {
       if (mounted) setState(() => _otpSending = false);
     }
@@ -141,9 +138,7 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
     } catch (e) {
       if (!mounted) return;
       final message = AppErrorMapper.from(e).message;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      AuraNotice.problem(context, message);
     } finally {
       if (mounted) setState(() => _joining = false);
     }
@@ -197,11 +192,7 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
       if (!mounted) return;
       context.push(target);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Meeting is not yet live. Check back later.'),
-        ),
-      );
+      AuraNotice.info(context, 'This meeting is not live yet. Check back later.');
     }
   }
 

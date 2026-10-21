@@ -17,6 +17,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../../core/ui/aura_text_block.dart';
 import '../data/invitations_client.dart';
 import '../../../core/navigation/canonical_destinations.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PROVIDER
@@ -211,12 +212,10 @@ class _InvitePreviewCardState extends ConsumerState<_InvitePreviewCard> {
     } on DioException catch (e) {
       if (!mounted) return;
       final msg = _extractErrorMessage(e.response?.data);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(msg.isNotEmpty ? msg : 'Something went wrong.')),
-      );
+      AuraNotice.problem(context, msg.isNotEmpty ? msg : 'The invitation was not accepted. Try again.');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      AuraNotice.problem(context, 'The invitation was not accepted. Try again.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }

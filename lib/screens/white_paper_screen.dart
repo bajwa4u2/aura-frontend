@@ -13,6 +13,7 @@ import '../core/ui/aura_space.dart';
 import '../core/ui/aura_surface.dart';
 import '../core/ui/aura_text.dart';
 import '../core/ui/publication/publication.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// Aura's flagship public publication surface.
 ///
@@ -89,12 +90,7 @@ class _WhitePaperScreenState extends State<WhitePaperScreen> {
     final uri = Uri.parse(_pdfUrl);
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not open the PDF.'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      AuraNotice.problem(context, 'The PDF did not open. Try again.');
     }
   }
 

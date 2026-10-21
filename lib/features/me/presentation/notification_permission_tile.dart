@@ -10,6 +10,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../devices/device_providers.dart';
 import '../../devices/web_push_service.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -143,9 +144,7 @@ class _BrowserNotificationsSectionState
           _state = _SubState.active;
           _busy = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Browser notifications enabled')),
-        );
+        AuraNotice.done(context, 'Browser notifications are on.');
         return;
       }
 

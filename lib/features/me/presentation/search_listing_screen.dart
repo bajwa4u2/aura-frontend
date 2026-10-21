@@ -30,6 +30,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../data/search_listing_repository.dart';
 import 'widgets/me_section.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class SearchListingScreen extends ConsumerStatefulWidget {
   const SearchListingScreen({super.key});
@@ -48,24 +49,12 @@ class _SearchListingScreenState extends ConsumerState<SearchListingScreen> {
       await ref.read(searchListingRepositoryProvider).set(listed: listed);
       ref.invalidate(searchListingProvider);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            listed
+      AuraNotice.done(context, listed
                 ? 'Your profile will be included in Aura\'s sitemap.'
-                : 'Your profile is no longer included in Aura\'s sitemap.',
-          ),
-        ),
-      );
+                : 'Your profile is no longer included in Aura\'s sitemap.');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppErrorMapper.from(e, feature: 'change this setting').message,
-          ),
-        ),
-      );
+      AuraNotice.problem(context, AppErrorMapper.from(e, feature: 'change this setting').message);
     } finally {
       if (mounted) setState(() => _saving = false);
     }

@@ -9,6 +9,7 @@ import '../../../../core/ui/aura_text.dart';
 import '../../domain/communications_models.dart';
 import '../../providers.dart';
 import 'communication_empty_error_states.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class AdminNewsletterLab extends ConsumerStatefulWidget {
   const AdminNewsletterLab({super.key});
@@ -73,9 +74,7 @@ class _AdminNewsletterLabState extends ConsumerState<AdminNewsletterLab> {
     if (_busy) return;
     final to = _toCtrl.text.trim();
     if (to.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a recipient email first.')),
-      );
+      AuraNotice.problem(context, 'Enter a recipient email first.');
       return;
     }
     setState(() {
@@ -95,15 +94,9 @@ class _AdminNewsletterLabState extends ConsumerState<AdminNewsletterLab> {
           );
       if (!mounted) return;
       setState(() => _testResult = result);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            result.skipped
+      AuraNotice.done(context, result.skipped
                 ? 'Newsletter test was suppressed.'
-                : 'Newsletter test queued.',
-          ),
-        ),
-      );
+                : 'Newsletter test queued.');
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString());

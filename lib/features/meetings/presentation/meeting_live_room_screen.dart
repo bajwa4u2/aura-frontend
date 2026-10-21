@@ -40,6 +40,7 @@ import '../application/meeting_session_adapter.dart';
 import 'meeting_semantics.dart';
 import 'widgets/meeting_room_controls.dart';
 import '../../../core/auth/session_bootstrap.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 // E1 — MeetingTransportBridge: sole interface between meeting UI and WebRTC layer.
 // All mic/camera/screen operations from meeting widgets MUST go through this bridge.
@@ -994,9 +995,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       _intentToLeave = false;
       if (!mounted) return;
       setState(() => _endingMeeting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to end meeting. Try again or leave the room.')),
-      );
+      AuraNotice.problem(context, 'The meeting did not end. Try again, or leave the room.');
     }
   }
 
@@ -1015,9 +1014,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       // trying again could work. On a platform with no capture prerequisites
       // at all it is worse than silence.
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(screenShareUnavailableReason())),
-        );
+        AuraNotice.problem(context, screenShareUnavailableReason());
       }
     } finally {
       if (mounted) setState(() => _togglingScreenShare = false);
@@ -1623,7 +1620,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               duration: const Duration(milliseconds: 250),
               child: IgnorePointer(
                 ignoring: !_controlsVisible,
-                child: MeetingControlBar(
+                child: AuraNoticeLift(child: MeetingControlBar(
               state: state,
               isHost: _isHost,
               showParticipants: _showParticipants,
@@ -1679,7 +1676,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               handRaised: _handRaised,
               onToggleHand: _toggleHand,
               onReact: () => _showReactionPicker(context),
-            ),
+            )),
               ),
             ),
           ),
@@ -3007,7 +3004,7 @@ class _DrawerAssetGroup extends ConsumerWidget {
 
   Future<void> _open(
       BuildContext context, WidgetRef ref, MeetingAsset asset) async {
-    final messenger = ScaffoldMessenger.of(context);
+    final messenger = AuraNotice.of(context);
     try {
       final url = asset.kind == MeetingAssetKind.link
           ? asset.url
@@ -3017,9 +3014,7 @@ class _DrawerAssetGroup extends ConsumerWidget {
       if (url == null || url.isEmpty) throw Exception('no url');
       await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Could not open this item.')),
-      );
+      messenger.problem('This item did not open. Try again.');
     }
   }
 

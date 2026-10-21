@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// Marketing/public host that owns the crawler-friendly share URLs
 /// (`auraplatform.org/p/...`). Nginx on that host proxies `/p/*` to the
@@ -132,20 +133,32 @@ Future<void> copyToClipboard(
 }) async {
   await Clipboard.setData(ClipboardData(text: value));
   if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  AuraNotice.copied(context, message);
+}
+
+/// The link could not be opened, so it was copied instead. This says WHY it
+/// was copied, so it is shown even where the system confirms the copy.
+Future<void> _copyInstead(
+  BuildContext context,
+  String value,
+  String message,
+) async {
+  await Clipboard.setData(ClipboardData(text: value));
+  if (!context.mounted) return;
+  AuraNotice.info(context, message);
 }
 
 Future<void> openExternalUrl(
   BuildContext context,
   String rawUrl, {
-  String fallbackCopyMessage = 'Link copied',
+  String fallbackCopyMessage = 'The link did not open, so it was copied.',
 }) async {
   final trimmed = rawUrl.trim();
   if (trimmed.isEmpty) return;
 
   Uri? uri = Uri.tryParse(trimmed);
   if (uri == null) {
-    await copyToClipboard(context, trimmed, message: fallbackCopyMessage);
+    await _copyInstead(context, trimmed, fallbackCopyMessage);
     return;
   }
 
@@ -154,7 +167,7 @@ Future<void> openExternalUrl(
   }
 
   if (uri == null) {
-    await copyToClipboard(context, trimmed, message: fallbackCopyMessage);
+    await _copyInstead(context, trimmed, fallbackCopyMessage);
     return;
   }
 
@@ -163,10 +176,10 @@ Future<void> openExternalUrl(
 
     if (!launched) {
       if (!context.mounted) return;
-      await copyToClipboard(context, trimmed, message: fallbackCopyMessage);
+      await _copyInstead(context, trimmed, fallbackCopyMessage);
     }
   } catch (_) {
     if (!context.mounted) return;
-    await copyToClipboard(context, trimmed, message: fallbackCopyMessage);
+    await _copyInstead(context, trimmed, fallbackCopyMessage);
   }
 }

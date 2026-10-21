@@ -33,6 +33,7 @@ import 'me/me_widgets.dart';
 import 'widgets/connect_return_watcher.dart';
 import 'widgets/me_connected_accounts_panel.dart';
 import '../../../core/identity/person_identity_model.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class MeScreen extends ConsumerStatefulWidget {
   const MeScreen({super.key});
@@ -228,11 +229,16 @@ class _MeScreenState extends ConsumerState<MeScreen>
     final cleanPath = Uri.base.path.isEmpty ? '/me' : Uri.base.path;
     context.go(cleanPath);
 
-    final snack = state.toLowerCase() == 'connected'
-        ? 'LinkedIn connected.'
-        : (message.isNotEmpty ? message : 'LinkedIn flow finished.');
-
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(snack)));
+    if (state.toLowerCase() == 'connected') {
+      AuraNotice.done(context, 'LinkedIn connected.');
+    } else {
+      AuraNotice.problem(
+        context,
+        message.isNotEmpty
+            ? message
+            : 'LinkedIn is not connected. You can try again.',
+      );
+    }
   }
 
   Future<void> _reloadLinkedInOnly() async {
@@ -301,18 +307,10 @@ class _MeScreenState extends ConsumerState<MeScreen>
       );
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'LinkedIn authorization opened. Return here after approval.',
-          ),
-        ),
-      );
+      AuraNotice.info(context, 'LinkedIn is open. Approve there, then come back to Aura.');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not start LinkedIn connection: $e')),
-      );
+      AuraNotice.problem(context, 'LinkedIn did not open. Try again.');
     } finally {
       if (mounted) setState(() => _linkedinActionBusy = false);
     }
@@ -351,22 +349,13 @@ class _MeScreenState extends ConsumerState<MeScreen>
       await _postFirstSuccessful(dio, ['/integrations/linkedin/disconnect']);
       if (!mounted) return;
       setState(() => _linkedinAccount = null);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('LinkedIn disconnected.')));
+      AuraNotice.done(context, 'LinkedIn disconnected.');
     } on DioException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _readApiError(e, fallback: 'Could not disconnect LinkedIn.'),
-          ),
-        ),
-      );
+      AuraNotice.problem(context, _readApiError(e, fallback: 'LinkedIn was not disconnected. Try again.'));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not disconnect LinkedIn: $e')),
-      );
+      AuraNotice.problem(context, 'LinkedIn was not disconnected. Try again.');
     } finally {
       if (mounted) setState(() => _linkedinActionBusy = false);
     }
@@ -381,15 +370,11 @@ class _MeScreenState extends ConsumerState<MeScreen>
   ) async {
     await reload();
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isConnected()
-              ? '$label connected.'
-              : '$label is not connected. You can try again.',
-        ),
-      ),
-    );
+    if (isConnected()) {
+      AuraNotice.done(context, '$label connected.');
+    } else {
+      AuraNotice.problem(context, '$label is not connected. You can try again.');
+    }
   }
 
   Future<void> _reloadTikTokOnly() async {
@@ -458,18 +443,10 @@ class _MeScreenState extends ConsumerState<MeScreen>
       );
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'TikTok authorization opened. Return here after approval.',
-          ),
-        ),
-      );
+      AuraNotice.info(context, 'TikTok is open. Approve there, then come back to Aura.');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not start TikTok connection: $e')),
-      );
+      AuraNotice.problem(context, 'TikTok did not open. Try again.');
     } finally {
       if (mounted) setState(() => _tiktokActionBusy = false);
     }
@@ -486,23 +463,13 @@ class _MeScreenState extends ConsumerState<MeScreen>
       await dio.post('/integrations/tiktok/refresh');
       await _reloadTikTokOnly();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('TikTok connection refreshed.')),
-      );
+      AuraNotice.done(context, 'TikTok connection refreshed.');
     } on DioException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _readApiError(e, fallback: 'Could not refresh TikTok connection.'),
-          ),
-        ),
-      );
+      AuraNotice.problem(context, _readApiError(e, fallback: 'The TikTok connection was not refreshed. Try again.'));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not refresh TikTok connection: $e')),
-      );
+      AuraNotice.problem(context, 'The TikTok connection was not refreshed. Try again.');
     } finally {
       if (mounted) setState(() => _tiktokActionBusy = false);
     }
@@ -541,22 +508,13 @@ class _MeScreenState extends ConsumerState<MeScreen>
       await dio.post('/integrations/tiktok/disconnect');
       if (!mounted) return;
       setState(() => _tiktokAccount = null);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('TikTok disconnected.')));
+      AuraNotice.done(context, 'TikTok disconnected.');
     } on DioException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _readApiError(e, fallback: 'Could not disconnect TikTok.'),
-          ),
-        ),
-      );
+      AuraNotice.problem(context, _readApiError(e, fallback: 'TikTok was not disconnected. Try again.'));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not disconnect TikTok: $e')),
-      );
+      AuraNotice.problem(context, 'TikTok was not disconnected. Try again.');
     } finally {
       if (mounted) setState(() => _tiktokActionBusy = false);
     }
@@ -1824,8 +1782,8 @@ class _MeScreenState extends ConsumerState<MeScreen>
       }
     }
 
-    final msg = e.message?.trim() ?? '';
-    return msg.isNotEmpty ? msg : fallback;
+    // Dio's own message is for developers; the person gets the fallback.
+    return fallback;
   }
 
   Map<String, dynamic> _unwrapUser(dynamic raw) {

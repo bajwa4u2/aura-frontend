@@ -8,6 +8,7 @@ import '../../search/search_repository.dart';
 import '../../../core/net/dio_provider.dart';
 import '../data/conversations_repository.dart';
 import '../../../core/identity/person_identity_model.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// ADD PEOPLE — the conversation's contextual entry into the canonical
 /// Invitation System. Pick people (or type an email for someone not on
@@ -62,15 +63,11 @@ class _AddPeopleSheetState extends ConsumerState<_AddPeopleSheet> {
       );
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invitation sent.')),
-        );
+        AuraNotice.done(context, 'Invitation sent.');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not invite — try again.')),
-        );
+        AuraNotice.problem(context, 'The invitation was not sent. Try again.');
       }
     } finally {
       if (mounted) setState(() => _busy = false);

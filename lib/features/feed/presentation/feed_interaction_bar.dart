@@ -12,6 +12,7 @@ import '../../../core/ui/aura_space.dart';
 import '../../posts/data/reactions_repository.dart';
 import '../data/unified_feed_providers.dart';
 import '../domain/feed_item.dart' show FeedInteraction;
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// Like / Reply / Repost row used by every feed surface.
 ///
@@ -136,17 +137,9 @@ class _FeedInteractionBarState extends ConsumerState<FeedInteractionBar> {
         });
         if (!context.mounted) return;
         if (e is DioException && e.response?.statusCode == 403) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Only institution speakers can react as institution.',
-              ),
-            ),
-          );
+          AuraNotice.problem(context, 'Only people who speak for the institution can react as it.');
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Could not update like')),
-          );
+          AuraNotice.problem(context, 'Your like was not saved. Try again.');
         }
       } finally {
         if (mounted) setState(() => _likeBusy = false);
@@ -291,15 +284,11 @@ class _FeedInteractionBarState extends ConsumerState<FeedInteractionBar> {
         }
         invalidateUnifiedFeedSurfaces(ref);
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reposted')),
-        );
+        AuraNotice.done(context, 'Reposted.');
       } catch (e) {
         if (!context.mounted) return;
         final message = AppErrorMapper.from(e, feature: 'repost this').message;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not repost: $message')),
-        );
+        AuraNotice.problem(context, message);
       } finally {
         controller.dispose();
         if (mounted) setState(() => _repostBusy = false);

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../errors/app_error_mapper.dart';
 import 'eligibility_refusal.dart';
 import 'jurisdiction_confirm_sheet.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// THE ONE PLACE A REFUSED PUBLICATION IS EXPLAINED.
 ///
@@ -59,15 +60,6 @@ Future<bool> handleEligibilityRefusal(
   return false;
 }
 
-void _tell(BuildContext context, String message) {
-  final messenger = ScaffoldMessenger.maybeOf(context);
-  if (messenger == null) return;
-  messenger
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 6),
-      ),
-    );
-}
+// A refusal is a problem notice: it stays long enough to read.
+void _tell(BuildContext context, String message) =>
+    AuraNotice.problem(context, message);

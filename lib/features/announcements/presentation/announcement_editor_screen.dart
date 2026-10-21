@@ -34,6 +34,7 @@ import 'announcement_distribution.dart';
 import '../../../core/eligibility/eligibility_affordance.dart';
 import '../../../core/eligibility/eligibility_refusal.dart';
 import '../../../core/errors/app_error_mapper.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 enum AnnouncementEditorScope {
   platform,
@@ -200,9 +201,7 @@ class _AnnouncementEditorScreenState
       if (!mounted) return;
       if (existing == null) {
         setState(() => _loadingExisting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('That announcement could not be opened.')),
-        );
+        AuraNotice.problem(context, 'That announcement could not be opened.');
         return;
       }
       setState(() {
@@ -216,9 +215,7 @@ class _AnnouncementEditorScreenState
     } catch (_) {
       if (!mounted) return;
       setState(() => _loadingExisting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('That announcement could not be opened.')),
-      );
+      AuraNotice.problem(context, 'That announcement could not be opened.');
     }
   }
 
@@ -350,9 +347,7 @@ class _AnnouncementEditorScreenState
     }
 
     if (refusals.isNotEmpty && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(refusals.join(String.fromCharCode(10)))),
-      );
+      AuraNotice.problem(context, refusals.join(String.fromCharCode(10)));
     }
 
     if (picked.isEmpty) return;
@@ -958,7 +953,8 @@ class _AnnouncementEditorScreenState
           );
           completed.add('LinkedIn');
         } catch (e) {
-          failed.add('LinkedIn ($e)');
+          debugPrint('[announcement] LinkedIn share failed: $e');
+          failed.add('LinkedIn');
         }
       }
 
@@ -970,7 +966,8 @@ class _AnnouncementEditorScreenState
           );
           completed.add('Facebook');
         } catch (e) {
-          failed.add('Facebook (${AppErrorMapper.from(e).message})');
+          debugPrint('[announcement] Facebook share failed: $e');
+          failed.add('Facebook');
         }
       }
 
@@ -982,7 +979,8 @@ class _AnnouncementEditorScreenState
           );
           completed.add('Instagram');
         } catch (e) {
-          failed.add('Instagram (${AppErrorMapper.from(e).message})');
+          debugPrint('[announcement] Instagram share failed: $e');
+          failed.add('Instagram');
         }
       }
 
@@ -994,7 +992,8 @@ class _AnnouncementEditorScreenState
           );
           completed.add('TikTok');
         } catch (e) {
-          failed.add('TikTok ($e)');
+          debugPrint('[announcement] TikTok share failed: $e');
+          failed.add('TikTok');
         }
       }
 
@@ -1002,11 +1001,13 @@ class _AnnouncementEditorScreenState
 
       final message = failed.isEmpty
           ? 'Announcement published to ${completed.join(', ')}.'
-          : 'Announcement published to ${completed.join(', ')}. ${failed.join(', ')} could not be queued.';
+          : 'Announcement published to ${completed.join(', ')}. It was not shared to ${failed.join(', ')}. Try again from the announcement.';
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      if (failed.isEmpty) {
+        AuraNotice.done(context, message);
+      } else {
+        AuraNotice.problem(context, message);
+      }
       _leaveEditorAfterSuccess(published.slug);
     } on DioException catch (e) {
       if (!mounted) return;

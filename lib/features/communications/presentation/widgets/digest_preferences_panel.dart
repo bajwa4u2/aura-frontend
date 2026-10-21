@@ -8,6 +8,7 @@ import '../../../../core/ui/aura_surface.dart';
 import '../../../../core/ui/aura_text.dart';
 import '../../domain/communications_models.dart';
 import '../../providers.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class DigestPreferencesPanel extends ConsumerStatefulWidget {
   const DigestPreferencesPanel({
@@ -66,11 +67,7 @@ class _DigestPreferencesPanelState
           .read(communicationsRepositoryProvider)
           .createDigest(frequency: _frequency);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${_frequency.label} digest created or refreshed.'),
-        ),
-      );
+      AuraNotice.done(context, '${_frequency.label} digest is ready.');
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString());

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
@@ -14,6 +15,7 @@ import '../../core/ui/aura_space.dart';
 import '../../core/ui/aura_surface.dart';
 import '../../core/ui/aura_text.dart';
 import '../posts/presentation/widgets/post_card/post_card_utils.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// INVITE TO AURA — a member's personal link, `auraplatform.org/join/<handle>`.
 ///
@@ -231,7 +233,7 @@ Future<void> showInviteToAuraSheet(
                     await copyToClipboard(
                       sheetCtx,
                       inviteToAuraUrl(handle, via: 'link'),
-                      message: 'Invite link copied',
+                      message: 'Invite link copied.',
                     );
                     if (sheetCtx.mounted) Navigator.of(sheetCtx).pop();
                   },
@@ -263,10 +265,13 @@ Future<void> showInviteToAuraSheet(
                           );
                         } catch (_) {
                           if (!sheetCtx.mounted) return;
-                          await copyToClipboard(
+                          await Clipboard.setData(ClipboardData(
+                            text: inviteToAuraUrl(handle, via: 'share'),
+                          ));
+                          if (!sheetCtx.mounted) return;
+                          AuraNotice.info(
                             sheetCtx,
-                            inviteToAuraUrl(handle, via: 'share'),
-                            message: 'Sharing is unavailable; invite link copied',
+                            'Sharing did not open, so your invite link was copied.',
                           );
                         }
                         if (sheetCtx.mounted) Navigator.of(sheetCtx).pop();
@@ -506,36 +511,37 @@ class _InviteToAuraFeedCardState extends ConsumerState<InviteToAuraFeedCard> {
 
 /// The one quiet line after a public post. Shown once ever.
 ///
-/// Takes the app-level [messenger] rather than a screen context: the composer
+/// Takes the root [navigatorKey] rather than a screen context: the composer
 /// closes as it publishes, so the line and its sheet must outlive it.
 Future<void> maybeOfferInviteAfterPost(
-  ScaffoldMessengerState messenger,
+  GlobalKey<NavigatorState> navigatorKey,
   InviteToAuraClient client, {
   required String handle,
   required String displayName,
 }) async {
   if (handle.trim().isEmpty) return;
   final state = await client.prompts();
-  if (!state.offers(InvitePromptSurface.afterPost) || !messenger.mounted) return;
-  await client.record(InvitePromptSurface.afterPost, 'SHOWN');
-  if (!messenger.mounted) return;
-  messenger.showSnackBar(
-    SnackBar(
-      duration: const Duration(seconds: 8),
-      behavior: SnackBarBehavior.floating,
-      content: const Text('Know someone who should read this? Invite them to Aura.'),
-      action: SnackBarAction(
-        label: 'Invite',
-        onPressed: () {
-          if (messenger.mounted) {
-            showInviteToAuraSheet(
-              messenger.context,
-              handle: handle,
-              displayName: displayName,
-            );
-          }
-        },
-      ),
+  if (!state.offers(InvitePromptSurface.afterPost)) return;
+  // One notice at a time: let the publish confirmation finish first.
+  await Future<void>.delayed(AuraNotice.shortDuration);
+  final ctx = navigatorKey.currentContext;
+  if (ctx == null || !ctx.mounted) return;
+  AuraNotice.info(
+    ctx,
+    'Know someone who should read this? Invite them to Aura.',
+    action: AuraNoticeAction(
+      label: 'Invite',
+      onPressed: () {
+        final sheetContext = navigatorKey.currentContext;
+        if (sheetContext != null && sheetContext.mounted) {
+          showInviteToAuraSheet(
+            sheetContext,
+            handle: handle,
+            displayName: displayName,
+          );
+        }
+      },
     ),
   );
+  await client.record(InvitePromptSurface.afterPost, 'SHOWN');
 }

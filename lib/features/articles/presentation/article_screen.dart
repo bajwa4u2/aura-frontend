@@ -29,6 +29,7 @@ import '../../conversation/presentation/conversation_identity.dart';
 import '../data/articles_repository.dart';
 import '../../../core/navigation/navigation_authority.dart';
 import '../../../core/identity/person_identity_model.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 /// PUBLISHED ARTICLE — the durable long-form reading experience: author
 /// attribution, published time, canonical link identity (/articles/:slug),
@@ -285,14 +286,11 @@ class ArticleScreen extends ConsumerWidget {
       // the author on "Article unavailable" with no way back to their own
       // work. The editor still resolves it and carries the Restore action.
       context.go(NavigationAuthority.articleEditorRoute(article.id));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Retracted. You can restore it here.')),
-      );
+      AuraNotice.done(context, 'Retracted. You can restore it here.');
     } catch (e) {
       if (!context.mounted) return;
       final err = AppErrorMapper.from(e, feature: 'retract this article');
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(err.message)));
+      AuraNotice.problem(context, err.message);
     }
   }
 
@@ -340,14 +338,11 @@ class ArticleScreen extends ConsumerWidget {
           .read(publicationDiscussionRepositoryProvider)
           .reshare(PublicationTarget.article, articleId, commentary);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Reshared to your feed.')),
-      );
+      AuraNotice.done(context, 'Reshared to your feed.');
     } catch (e) {
       if (!context.mounted) return;
       final err = AppErrorMapper.from(e, feature: 'reshare this');
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(err.message)));
+      AuraNotice.problem(context, err.message);
     }
   }
 }

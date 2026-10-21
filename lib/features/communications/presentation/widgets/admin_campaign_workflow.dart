@@ -9,6 +9,7 @@ import '../../../../core/ui/aura_text.dart';
 import '../../domain/communications_models.dart';
 import '../../providers.dart';
 import 'communication_empty_error_states.dart';
+import 'package:aura/core/ui/aura_notice.dart';
 
 class AdminCampaignWorkflow extends ConsumerStatefulWidget {
   const AdminCampaignWorkflow({super.key});
@@ -87,9 +88,7 @@ class _AdminCampaignWorkflowState
   Future<void> _previewCampaign() async {
     final draftId = _draftIdCtrl.text.trim();
     if (draftId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Create or enter a draft id first.')),
-      );
+      AuraNotice.problem(context, 'Create a draft first, or enter an existing draft.');
       return;
     }
     if (_busy) return;
@@ -114,9 +113,7 @@ class _AdminCampaignWorkflowState
   Future<void> _approveCampaign() async {
     final draftId = _draftIdCtrl.text.trim();
     if (draftId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Create or enter a draft id first.')),
-      );
+      AuraNotice.problem(context, 'Create a draft first, or enter an existing draft.');
       return;
     }
     if (_busy) return;
@@ -142,11 +139,7 @@ class _AdminCampaignWorkflowState
     final draftId = _draftIdCtrl.text.trim();
     final to = _toCtrl.text.trim();
     if (draftId.isEmpty || to.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Enter a draft id and recipient email first.'),
-        ),
-      );
+      AuraNotice.problem(context, 'Enter a draft and a recipient email first.');
       return;
     }
     if (_busy) return;
@@ -160,15 +153,9 @@ class _AdminCampaignWorkflowState
           .testCampaignDraft(draftId: draftId, to: to);
       if (!mounted) return;
       setState(() => _testResult = result);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            result.skipped
+      AuraNotice.done(context, result.skipped
                 ? 'Campaign test was skipped.'
-                : 'Campaign test queued.',
-          ),
-        ),
-      );
+                : 'Campaign test queued.');
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = e.toString());
