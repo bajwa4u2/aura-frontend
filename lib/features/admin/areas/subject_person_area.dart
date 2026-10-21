@@ -334,6 +334,7 @@ class _IdentityBlock extends ConsumerWidget {
 
     final chosen = await showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: AuraSurface.card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AuraRadius.xl)),
@@ -467,6 +468,7 @@ class _IdentityBlock extends ConsumerWidget {
 
     return showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: AuraSurface.card,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(

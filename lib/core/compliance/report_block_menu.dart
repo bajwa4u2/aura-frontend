@@ -29,6 +29,7 @@ Future<void> showReportBlockMenu(
   final blockId = (blockUserId ?? '').trim();
   final action = await showModalBottomSheet<String>(
     context: context,
+    useRootNavigator: true,
     backgroundColor: AuraSurface.page,
     builder: (ctx) => SafeArea(
       child: Column(

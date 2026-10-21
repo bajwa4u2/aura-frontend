@@ -116,6 +116,7 @@ Future<bool> runOperatorAction(
 ) async {
   final result = await showModalBottomSheet<bool>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => _ActionSheet(action: action),

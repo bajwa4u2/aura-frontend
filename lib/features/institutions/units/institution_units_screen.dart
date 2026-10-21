@@ -126,6 +126,7 @@ class _InstitutionUnitsScreenState
   void _openUpsertSheet({InstitutionUnit? existing}) {
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       builder: (_) => _UpsertUnitSheet(
         institutionId: widget.institutionId,

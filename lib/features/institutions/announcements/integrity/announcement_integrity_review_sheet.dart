@@ -33,6 +33,7 @@ Future<bool?> showAnnouncementIntegrityReviewSheet({
 }) {
   return showModalBottomSheet<bool>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (ctx) => _AnnouncementIntegrityReviewSheet(

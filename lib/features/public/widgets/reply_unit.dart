@@ -312,6 +312,7 @@ class ReplyUnit extends ConsumerWidget {
     final authorId = reply.author.id.trim();
     final action = await showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: AuraSurface.page,
       builder: (ctx) => SafeArea(
         child: Column(

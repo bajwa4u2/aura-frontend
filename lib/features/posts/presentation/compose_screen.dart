@@ -3314,6 +3314,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     await showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: AuraSurface.page,
       builder: (sheetContext) {
         return SafeArea(

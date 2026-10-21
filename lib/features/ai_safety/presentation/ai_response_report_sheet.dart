@@ -34,6 +34,7 @@ Future<bool?> showAiResponseReportSheet(
 }) {
   return showModalBottomSheet<bool>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     showDragHandle: true,
     backgroundColor: AuraSurface.page,

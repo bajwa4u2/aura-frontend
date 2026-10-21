@@ -72,6 +72,7 @@ class WorkspaceFilterGroup<T> {
 Future<void> showWorkspaceFilterSheet(BuildContext context, {required List<WorkspaceFilterGroup<dynamic>> groups}) {
   return showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     backgroundColor: AuraSurface.card,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AuraRadius.lg))),
     builder: (sheet) => _FilterSheet(groups: groups),

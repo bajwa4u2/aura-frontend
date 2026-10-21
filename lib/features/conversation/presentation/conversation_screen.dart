@@ -546,6 +546,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     final myUserId = ref.read(myUserIdProvider);
     final destination = await showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: AuraSurface.card,
       builder: (sheetContext) => SafeArea(
         child: Column(
@@ -799,6 +800,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   void _showAttachMenu() {
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: AuraSurface.page,
       builder: (ctx) => SafeArea(
         child: Column(

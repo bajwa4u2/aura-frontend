@@ -105,6 +105,7 @@ class ParticipationScreen extends ConsumerWidget {
   ) async {
     final created = await showModalBottomSheet<bool>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: AuraSurface.page,
       shape: const RoundedRectangleBorder(

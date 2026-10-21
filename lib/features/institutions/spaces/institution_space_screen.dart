@@ -118,6 +118,7 @@ class _InstitutionSpaceScreenState
   void _openMembers(_SpaceBundle bundle) {
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: AuraSurface.card,
       builder: (_) => _MembersSheet(

@@ -145,6 +145,7 @@ Future<bool> runGrantAuthority(
 }) async {
   final proposed = await showModalBottomSheet<_Proposed>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => _GrantAuthoritySheet(personLabel: personLabel),

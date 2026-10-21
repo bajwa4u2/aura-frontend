@@ -329,6 +329,7 @@ Future<void> showMessageActionSheet(
 
   return showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     backgroundColor: AuraSurface.card,
     shape: const RoundedRectangleBorder(
       borderRadius:

@@ -365,6 +365,7 @@ Future<FacebookPageOption?> showFacebookPagePicker(
 ) {
   return showModalBottomSheet<FacebookPageOption>(
     context: context,
+    useRootNavigator: true,
     backgroundColor: AuraSurface.card,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(AuraRadius.r14)),

@@ -130,6 +130,7 @@ class _IdentityVerificationScreenState
 
     final source = await showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: AuraSurface.card,
       shape: const RoundedRectangleBorder(
         borderRadius:

@@ -34,6 +34,7 @@ class AdminPersonVerificationSheet extends ConsumerStatefulWidget {
   }) {
     return showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: AuraSurface.card,
       shape: const RoundedRectangleBorder(

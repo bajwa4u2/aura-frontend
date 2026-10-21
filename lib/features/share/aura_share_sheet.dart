@@ -38,6 +38,7 @@ Future<void> showAuraShareSheet(
   if (!context.mounted) return;
   await showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     backgroundColor: AuraSurface.card,
     isScrollControlled: false,
     shape: const RoundedRectangleBorder(

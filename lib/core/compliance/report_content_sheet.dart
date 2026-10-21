@@ -53,6 +53,7 @@ class ReportContentSheet extends ConsumerStatefulWidget {
   }) {
     return showModalBottomSheet<bool>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: AuraSurface.page,
       shape: const RoundedRectangleBorder(

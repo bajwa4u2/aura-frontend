@@ -152,6 +152,7 @@ class OperatorsArea extends ConsumerWidget {
   Future<void> _appoint(BuildContext context, WidgetRef ref) async {
     final picked = await showModalBottomSheet<AdminUserSummary>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const _PersonPicker(),

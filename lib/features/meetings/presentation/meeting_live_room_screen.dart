@@ -660,6 +660,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     }
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: const Color(0xFF0E1116),
       builder: (sheetContext) => SafeArea(
         child: Padding(
@@ -752,6 +753,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     const emojis = ['👍', '❤️', '😂', '🎉', '👏', '😮'];
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: const Color(0xFF0E1116),
       builder: (sheetContext) => SafeArea(
         child: Padding(
@@ -1030,6 +1032,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   void _showDeviceSettings() {
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: const Color(0xFF0E1116),
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(

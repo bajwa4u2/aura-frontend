@@ -71,6 +71,7 @@ class _AuraEngagementBarState extends ConsumerState<AuraEngagementBar> {
   Future<void> _pickReaction() async {
     final chosen = await showModalBottomSheet<AuraReaction>(
       context: context,
+      useRootNavigator: true,
       showDragHandle: true,
       backgroundColor: AuraSurface.page,
       builder: (ctx) => SafeArea(

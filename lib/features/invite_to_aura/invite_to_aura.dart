@@ -169,6 +169,7 @@ Future<void> showInviteToAuraSheet(
 
   await showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     backgroundColor: AuraSurface.card,
     // A sheet, not a full-height surface: it scrolls inside its own bounds.
     isScrollControlled: false,

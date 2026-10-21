@@ -114,6 +114,7 @@ class _CommunicationTranslateActionState
 
     final selected = await showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       showDragHandle: true,
       backgroundColor: AuraSurface.page,
       builder: (ctx) {

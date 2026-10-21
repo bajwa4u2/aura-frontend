@@ -33,6 +33,7 @@ Future<bool> showJurisdictionConfirmSheet(
 }) async {
   final saved = await showModalBottomSheet<bool>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => _JurisdictionConfirmSheet(
@@ -62,6 +63,7 @@ Future<String?> showJurisdictionPicker(
 }) {
   return showModalBottomSheet<String>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     builder: (_) => _JurisdictionConfirmSheet(

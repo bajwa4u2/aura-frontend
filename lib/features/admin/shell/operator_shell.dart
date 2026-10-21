@@ -669,6 +669,7 @@ class _OperatorBar extends ConsumerWidget {
   ) {
     showModalBottomSheet<void>(
       context: context,
+      useRootNavigator: true,
       backgroundColor: AuraSurface.card,
       showDragHandle: true,
       shape: const RoundedRectangleBorder(

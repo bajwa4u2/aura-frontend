@@ -510,6 +510,7 @@ class _PostCardState extends ConsumerState<PostCard> {
   }) async {
     final selected = await showModalBottomSheet<String>(
       context: context,
+      useRootNavigator: true,
       showDragHandle: true,
       backgroundColor: AuraSurface.page,
       builder: (ctx) {
@@ -1333,6 +1334,7 @@ class _ActionRowState extends ConsumerState<_ActionRow> {
     Future<void> share() async {
       await showModalBottomSheet<void>(
         context: context,
+        useRootNavigator: true,
         showDragHandle: true,
         isScrollControlled: true,
         builder: (ctx) {

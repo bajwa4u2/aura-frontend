@@ -113,6 +113,7 @@ class _LiveRoomsBodyState extends ConsumerState<_LiveRoomsBody> {
     if (_starting) return;
     final picked = await showModalBottomSheet<_StartSessionResult>(
       context: context,
+      useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: AuraSurface.card,
       shape: const RoundedRectangleBorder(

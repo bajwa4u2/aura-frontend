@@ -20,6 +20,7 @@ Future<void> showAddPeopleSheet(
 ) {
   return showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: true,
     backgroundColor: AuraSurface.page,
     builder: (_) => _AddPeopleSheet(conversationId: conversationId),

@@ -34,6 +34,7 @@ Future<void> showInstitutionActionSheet({
 }) async {
   await showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     isScrollControlled: false,
     backgroundColor: AuraSurface.card,
     shape: const RoundedRectangleBorder(
