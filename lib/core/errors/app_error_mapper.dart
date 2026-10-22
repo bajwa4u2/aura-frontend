@@ -328,6 +328,7 @@ enum AuthOperation {
   verifyCode,
   resendCode,
   resetPassword,
+  changePassword,
 
   /// Session, device and password management: the caller's own fallback.
   account,
@@ -372,6 +373,8 @@ class _AuthMessages {
         return 'We could not resend the code right now. Please try again.';
       case AuthOperation.resetPassword:
         return 'We could not reset your password right now. Please try again.';
+      case AuthOperation.changePassword:
+        return 'Could not change your password. Please try again.';
       case AuthOperation.account:
         return 'Something went wrong. Please try again.';
     }
@@ -379,6 +382,10 @@ class _AuthMessages {
 
   static String forDio(DioException e, AuthOperation op, {String? fallback}) {
     if (op == AuthOperation.signIn) return _signIn(e);
+    if (op == AuthOperation.changePassword) {
+      final specific = _changePassword(e);
+      if (specific != null) return specific;
+    }
     final base = fallback ?? fallbackFor(op);
     final common = _commonInfra(e);
     if (common != null) return common;
@@ -399,6 +406,7 @@ class _AuthMessages {
         return _resetPassword(e, base);
       case AuthOperation.account:
       case AuthOperation.signIn:
+      case AuthOperation.changePassword:
         return base;
     }
   }
@@ -506,6 +514,11 @@ class _AuthMessages {
       return 'Too many sign-in attempts from this connection. Please try again $when.';
     }
 
+    // A failure on our side is said as ours, not as the person's.
+    if (code != null && code >= 500) {
+      return 'Something went wrong on our side. Please try again in a moment.';
+    }
+
     if (backendCode == 'EMAIL_NOT_VERIFIED') {
       return 'Please verify your email first, then try signing in again.';
     }
@@ -540,6 +553,21 @@ class _AuthMessages {
     }
 
     return _signInFallback;
+  }
+
+  static String? _changePassword(DioException e) {
+    if (e.response?.statusCode != 403) return null;
+    final server = serverMessage(e).toLowerCase();
+    if (server.contains('current password')) {
+      return 'Your current password is incorrect.';
+    }
+    if (server.contains('different')) {
+      return 'Your new password must be different from your current one.';
+    }
+    if (server.contains('too short') || server.contains('weak')) {
+      return 'Your new password must be at least 8 characters.';
+    }
+    return null;
   }
 
   static String _register(DioException e, String base) {

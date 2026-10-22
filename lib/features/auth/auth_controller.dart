@@ -5,6 +5,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:aura/features/auth/auth_repository.dart' show AuthException;
+import 'package:aura/core/errors/app_error_mapper.dart';
+import 'package:aura/core/errors/report_silently.dart';
 import 'package:aura/core/auth/auth_broadcast.dart';
 import 'package:aura/core/auth/auth_providers.dart';
 import 'package:aura/core/auth/session_bootstrap.dart';
@@ -132,149 +135,37 @@ class AuthController {
     return _readRefreshTokenFromCookies(res);
   }
 
-  String _extractServerMessage(DioException e) {
-    final data = e.response?.data;
-
-    if (data is Map) {
-      // Aura backend envelope: { ok:false, error: { code, message, details, ... } }
-      final nested = data['error'];
-      if (nested is Map) {
-        final candidates = [
-          nested['message'],
-          nested['error'],
-          nested['detail'],
-          nested['title'],
-        ];
-        for (final c in candidates) {
-          final s = c?.toString().trim() ?? '';
-          if (s.isNotEmpty) return s;
-        }
-      }
-
-      final candidates = [
-        data['message'],
-        data['error'],
-        data['detail'],
-        data['title'],
-      ];
-
-      for (final c in candidates) {
-        final s = c?.toString().trim() ?? '';
-        if (s.isNotEmpty) return s;
-      }
-    }
-
-    if (data is String && data.trim().isNotEmpty) {
-      return data.trim();
-    }
-
-    return '';
-  }
-
-  /// Reads the structured `error.code` from the Aura backend envelope.
-  String _extractServerCode(DioException e) {
-    final data = e.response?.data;
-    if (data is Map) {
-      final err = data['error'];
-      if (err is Map) {
-        final c = err['code']?.toString().trim();
-        if (c != null && c.isNotEmpty) return c;
-      }
-      final c = data['code']?.toString().trim();
-      if (c != null && c.isNotEmpty) return c;
-    }
-    return '';
-  }
-
-  String _mapLoginError(DioException e) {
-    final code = e.response?.statusCode;
-    final backendCode = _extractServerCode(e).toUpperCase();
-    final server = _extractServerMessage(e).toLowerCase();
-
-    // No answer at all: the device could not reach Aura. Saying "We could not
-    // sign you in right now" here reads as a broken account; on 21 Oct 2026 a
-    // phone with no internet showed exactly that.
-    if (e.response == null &&
-        (e.type == DioExceptionType.connectionError ||
-            e.type == DioExceptionType.connectionTimeout ||
-            e.type == DioExceptionType.sendTimeout ||
-            e.type == DioExceptionType.receiveTimeout ||
-            e.type == DioExceptionType.unknown)) {
-      return 'Aura could not be reached. Check that this device is connected to the internet, then try again.';
-    }
-
-    // Too many attempts from this connection: say so, and for how long. This
-    // used to fall through to "We could not sign you in right now", which a
-    // locked-out person reads as a broken account (founder, 2026-10-08).
-    if (code == 429 || backendCode == 'RATE_LIMITED') {
-      final data = e.response?.data;
-      final details = data is Map && data['error'] is Map ? (data['error'] as Map)['details'] : null;
-      final wait = details is Map ? int.tryParse('${details['retryAfterSeconds']}') : null;
-      final when = wait == null || wait <= 0
-          ? 'in a few minutes'
-          : wait < 90
-              ? 'in about $wait seconds'
-              : 'in about ${(wait / 60).ceil()} minutes';
-      return 'Too many sign-in attempts from this connection. Please try again $when.';
-    }
-
-    // Prefer structured backend error codes — robust against message-text drift.
-    if (backendCode == 'EMAIL_NOT_VERIFIED') {
-      return 'Please verify your email first, then try signing in again.';
-    }
-
-    if (code == 401 ||
-        backendCode == 'UNAUTHORIZED' ||
-        server.contains('invalid credentials') ||
-        server.contains('invalid login') ||
-        server.contains('wrong password') ||
-        server.contains('incorrect password') ||
-        server.contains('incorrect email') ||
-        server.contains('incorrect email or password') ||
-        server.contains('wrong email or password') ||
-        server.contains('email or password is incorrect') ||
-        server.contains('invalid email or password') ||
-        server.contains('unauthorized')) {
-      return 'The email or password does not look right.';
-    }
-
-    if (server.contains('email not verified') ||
-        server.contains('verify your email') ||
-        server.contains('email verification required') ||
-        server.contains('unverified')) {
-      return 'Please verify your email first, then try signing in again.';
-    }
-
-    if (code == 403 ||
-        server.contains('account disabled') ||
-        server.contains('account locked') ||
-        server.contains('account suspended') ||
-        server.contains('forbidden')) {
-      return 'This account is not available right now.';
-    }
-
-    return 'We could not sign you in right now. Please try again.';
-  }
-
   void _invalidateAuth() {
     try {
       ref.invalidate(tokenStoreLoadedProvider);
-    } catch (_) {}
+    } catch (e, st) {
+      reportSilently(e, st, 'auth.invalidate.tokenStoreLoadedProvider');
+    }
     try {
       ref.invalidate(isAuthedProvider);
-    } catch (_) {}
+    } catch (e, st) {
+      reportSilently(e, st, 'auth.invalidate.isAuthedProvider');
+    }
     try {
       ref.invalidate(authStatusProvider);
-    } catch (_) {}
+    } catch (e, st) {
+      reportSilently(e, st, 'auth.invalidate.authStatusProvider');
+    }
     try {
       ref.invalidate(authMeDataProvider);
-    } catch (_) {}
+    } catch (e, st) {
+      reportSilently(e, st, 'auth.invalidate.authMeDataProvider');
+    }
     try {
       ref.invalidate(emailVerifiedProvider);
-    } catch (_) {}
+    } catch (e, st) {
+      reportSilently(e, st, 'auth.invalidate.emailVerifiedProvider');
+    }
     try {
       ref.invalidate(authEventsProvider);
-    } catch (_) {}
+    } catch (e, st) {
+      reportSilently(e, st, 'auth.invalidate.authEventsProvider');
+    }
   }
 
   /// Supports BOTH:
@@ -314,7 +205,7 @@ class AuthController {
         },
       );
     } on DioException catch (err) {
-      throw Exception(_mapLoginError(err));
+      throw AuthException(authErrorMessage(err, AuthOperation.signIn));
     }
 
     final outer = _asMap(res.data);
@@ -390,29 +281,7 @@ class AuthController {
         },
       );
     } on DioException catch (err) {
-      final server = (err.response?.data is Map
-              ? (err.response!.data['message'] ?? err.response!.data['error'] ?? '')
-              : '')
-          .toString()
-          .trim();
-      final status = err.response?.statusCode ?? 0;
-
-      if (status == 401 ||
-          server.toLowerCase().contains('incorrect code') ||
-          server.toLowerCase().contains('invalid')) {
-        throw Exception('That code is incorrect. Please check and try again.');
-      }
-      if (server.toLowerCase().contains('expired')) {
-        throw Exception('That code has expired. Please request a new one.');
-      }
-      if (server.toLowerCase().contains('already used') ||
-          server.toLowerCase().contains('consumed')) {
-        throw Exception('That code has already been used. Please request a new one.');
-      }
-      if (status == 429 || server.toLowerCase().contains('too many')) {
-        throw Exception('Too many attempts. Please request a new code.');
-      }
-      throw Exception(server.isNotEmpty ? server : 'We could not verify the code. Please try again.');
+      throw AuthException(authErrorMessage(err, AuthOperation.verifyCode));
     }
 
     final outer = _asMap(res.data);
@@ -454,19 +323,7 @@ class AuthController {
         data: {'challengeId': challengeId.trim()},
       );
     } on DioException catch (err) {
-      final raw = err.response?.data;
-      String server = '';
-      if (raw is Map) {
-        final inner = raw['error'];
-        if (inner is Map) {
-          server = (inner['message'] ?? '').toString().trim();
-        }
-        if (server.isEmpty) server = (raw['message'] ?? '').toString().trim();
-      }
-      if (err.response?.statusCode == 429 || server.toLowerCase().contains('please wait')) {
-        throw Exception(server.isNotEmpty ? server : 'Please wait before requesting a new code.');
-      }
-      throw Exception(server.isNotEmpty ? server : 'We could not resend the code. Please try again.');
+      throw AuthException(authErrorMessage(err, AuthOperation.resendCode));
     }
 
     return _asMap(res.data);
@@ -497,12 +354,16 @@ class AuthController {
         unawaited(
           ref.read(correspondenceLiveServiceProvider).disconnect().catchError((_) {}),
         );
-      } catch (_) {}
+      } catch (e, st) {
+        reportSilently(e, st, 'auth.logout.correspondence.disconnect');
+      }
       try {
         unawaited(
           ref.read(realtimeControllerProvider.notifier).disconnect().catchError((_) {}),
         );
-      } catch (_) {}
+      } catch (e, st) {
+        reportSilently(e, st, 'auth.logout.realtime.disconnect');
+      }
 
       await _store().clearTokens();
       // Clear the session hint so the next cold load on this device skips
