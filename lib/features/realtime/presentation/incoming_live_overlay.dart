@@ -1156,16 +1156,18 @@ class _IncomingCallCardState extends State<_IncomingCallCard>
                 const SizedBox(width: AuraSpace.s10),
                 _GhostCallButton(label: 'Retry', onTap: onRetry, accent: true),
               ] else ...[
-                _CallCircleButton(
+                IncomingCallButton(
                   icon: Icons.call_end_rounded,
+                  label: 'Decline',
                   color: AuraSurface.coRose,
                   background: AuraSurface.coRose.withValues(alpha: 0.16),
                   size: 48,
                   onTap: onDecline,
                 ),
                 const SizedBox(width: AuraSpace.s14),
-                _CallCircleButton(
+                IncomingCallButton(
                   icon: isVideo ? Icons.videocam_rounded : Icons.call_rounded,
+                  label: isVideo ? 'Answer video call' : 'Answer voice call',
                   color: Colors.white,
                   background: isVideo
                       ? AuraSurface.accent
@@ -1186,9 +1188,15 @@ class _IncomingCallCardState extends State<_IncomingCallCard>
 
 // ── Call buttons ──────────────────────────────────────────────────────────────
 
-class _CallCircleButton extends StatelessWidget {
-  const _CallCircleButton({
+/// An icon-only call control a screen reader can name and a keyboard can
+/// reach. It was a bare GestureDetector: VoiceOver and TalkBack read nothing,
+/// and Tab could not reach Answer or Decline (2026-10-22 audit).
+class IncomingCallButton extends StatelessWidget {
+  @visibleForTesting
+  const IncomingCallButton({
+    super.key,
     required this.icon,
+    required this.label,
     required this.color,
     required this.background,
     required this.size,
@@ -1197,6 +1205,7 @@ class _CallCircleButton extends StatelessWidget {
   });
 
   final IconData icon;
+  final String label;
   final Color color;
   final Color background;
   final double size;
@@ -1205,13 +1214,32 @@ class _CallCircleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: onTap != null
-          ? SystemMouseCursors.click
-          : SystemMouseCursors.basic,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
+    return Semantics(
+      button: true,
+      enabled: onTap != null,
+      label: label,
+      excludeSemantics: true,
+      onTap: onTap,
+      child: Tooltip(
+        message: label,
+        child: Material(
+          type: MaterialType.transparency,
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: onTap,
+            customBorder: const CircleBorder(),
+            mouseCursor: onTap != null
+                ? SystemMouseCursors.click
+                : SystemMouseCursors.basic,
+            child: _face(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _face() {
+    return Container(
           width: size,
           height: size,
           alignment: Alignment.center,
@@ -1236,8 +1264,6 @@ class _CallCircleButton extends StatelessWidget {
                   ),
                 )
               : Icon(icon, size: size * 0.38, color: color),
-        ),
-      ),
     );
   }
 }

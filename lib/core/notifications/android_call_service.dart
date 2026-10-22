@@ -43,7 +43,22 @@ class AndroidCallService {
   /// sent twice.
   String? _activeSessionId;
 
+  /// Whether the running service was started for video. A start that only
+  /// repeats what is already running is not sent again: the call screen asks
+  /// on every rebuild, and every repeat used to go back through
+  /// `startForegroundService` (2026-10-22 audit).
+  bool _activeVideo = false;
+
+  /// The session the realtime controller holds the service for. While a
+  /// session holds it, the service lives exactly as long as that session is
+  /// joined, and an unnamed [stop] from a screen going away is ignored:
+  /// minimising a call to the pill disposes the call screen, and that must
+  /// not take the microphone away from a call that is still running.
+  String? _heldSessionId;
+
   String? get activeSessionId => _activeSessionId;
+
+  String? get heldSessionId => _heldSessionId;
 
   /// A call is up. Safe to call repeatedly for the same session.
   Future<bool> start(
@@ -54,22 +69,49 @@ class AndroidCallService {
     if (!isSupported) return false;
     final id = sessionId.trim();
     if (id.isEmpty) return false;
-    // A video call that started as audio must restate its type, because the
-    // camera is a separate foreground-service type and Android refuses
-    // capture under a type that was not declared.
-    if (_activeSessionId == id && !video) return true;
+    // Same call, same type: nothing to restate. A video call that started as
+    // audio does restate its type, because the camera is a separate
+    // foreground-service type and Android refuses capture under a type that
+    // was not declared.
+    if (_activeSessionId == id && _activeVideo == video) return true;
     try {
       final ok = await _channel.invokeMethod<bool>('start', <String, dynamic>{
         'sessionId': id,
         'video': video,
         'title': title,
       });
-      if (ok == true) _activeSessionId = id;
+      if (ok == true) {
+        _activeSessionId = id;
+        _activeVideo = video;
+      }
       return ok == true;
     } catch (e) {
       debugPrint('[call-service] start failed: $e');
       return false;
     }
+  }
+
+  /// The realtime controller's hold: the service follows the session's joined
+  /// state, for calls and meetings alike, rather than any screen's lifetime.
+  Future<bool> holdForSession(
+    String sessionId, {
+    required bool video,
+    String title = '',
+  }) async {
+    final id = sessionId.trim();
+    if (id.isEmpty) return false;
+    _heldSessionId = id;
+    return start(id, video: video, title: title);
+  }
+
+  /// The held session is no longer joined: the service stops.
+  Future<bool> releaseSession(String sessionId) async {
+    final id = sessionId.trim();
+    if (_heldSessionId == null) return false;
+    if (id.isNotEmpty && _heldSessionId != id) return false;
+    final held = _heldSessionId!;
+    _heldSessionId = null;
+    return stop(held);
   }
 
   /// The call is over — for any reason, from any side.
@@ -81,12 +123,19 @@ class AndroidCallService {
   Future<bool> stop([String sessionId = '']) async {
     if (!isSupported) return false;
     final id = sessionId.trim();
+    if (id.isEmpty && _heldSessionId != null) {
+      // A screen going away cannot name the call, and the session that holds
+      // the service is still joined. Its own release ends the service.
+      return false;
+    }
     if (id.isNotEmpty && _activeSessionId != null && _activeSessionId != id) {
       // A stale stop for a call that already ended must not tear down the one
       // now running.
       return false;
     }
     _activeSessionId = null;
+    _activeVideo = false;
+    if (id.isNotEmpty && _heldSessionId == id) _heldSessionId = null;
     try {
       final ok = await _channel.invokeMethod<bool>('stop', <String, dynamic>{
         'sessionId': id,
@@ -96,6 +145,13 @@ class AndroidCallService {
       debugPrint('[call-service] stop failed: $e');
       return false;
     }
+  }
+
+  @visibleForTesting
+  void debugReset() {
+    _activeSessionId = null;
+    _activeVideo = false;
+    _heldSessionId = null;
   }
 
   /// Whether the native service is running. For diagnostics and tests — never

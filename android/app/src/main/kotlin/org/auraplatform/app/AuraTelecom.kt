@@ -83,6 +83,11 @@ object AuraTelecom {
         val job: Job,
         /** Resolves once the call is inside its control scope. */
         val control: CompletableDeferred<CallControlScope> = CompletableDeferred(),
+        /** An incoming call is answered, never merely set active. */
+        val incoming: Boolean = false,
+        val callType: Int = CallAttributesCompat.CALL_TYPE_AUDIO_CALL,
+        /** Answered already — by Aura, or by the system (headset, car). */
+        @Volatile var answered: Boolean = false,
     )
 
     fun attach(channel: MethodChannel) {
@@ -111,7 +116,17 @@ object AuraTelecom {
             // what gives an entry a real duration rather than none.
             "reportConnected" -> {
                 val sessionId = call.argument<String>("sessionId").orEmpty()
-                withControl(sessionId) { it.setActive() }
+                // An INCOMING call is moved to active by answering it; that is
+                // the core-telecom contract, and `setActive` on a ringing
+                // incoming call is not an answer (2026-10-22 audit). An
+                // outgoing call, or one already answered, is set active.
+                val live = calls[sessionId]
+                if (live != null && live.incoming && !live.answered) {
+                    live.answered = true
+                    withControl(sessionId) { it.answer(live.callType) }
+                } else {
+                    withControl(sessionId) { it.setActive() }
+                }
                 result.success(null)
             }
 
@@ -208,7 +223,13 @@ object AuraTelecom {
             CallAttributesCompat.SUPPORTS_SET_INACTIVE,
         )
 
-        val live = LiveCall(job = Job())
+        val callType = if (video) {
+            CallAttributesCompat.CALL_TYPE_VIDEO_CALL
+        } else {
+            CallAttributesCompat.CALL_TYPE_AUDIO_CALL
+        }
+        val incoming = direction == CallAttributesCompat.DIRECTION_INCOMING
+        val live = LiveCall(job = Job(), incoming = incoming, callType = callType)
         val job = scope.launch {
             try {
                 manager.addCall(
@@ -218,7 +239,10 @@ object AuraTelecom {
                     // rule the notification path already keeps: never join on
                     // the recipient's behalf without the app's own lifecycle
                     // agreeing.
-                    { _ -> emit("onAnswer", sessionId) },
+                    { _ ->
+                        calls[sessionId]?.answered = true
+                        emit("onAnswer", sessionId)
+                    },
                     // THE SYSTEM DISCONNECTED. A cellular call took priority,
                     // or the person ended it from a system surface.
                     { cause -> emit("onDisconnect", sessionId, cause.code.toString()) },
@@ -237,7 +261,12 @@ object AuraTelecom {
                 calls.remove(sessionId)
             }
         }
-        calls[sessionId] = LiveCall(job = job, control = live.control)
+        calls[sessionId] = LiveCall(
+            job = job,
+            control = live.control,
+            incoming = incoming,
+            callType = callType,
+        )
         return true
     }
 

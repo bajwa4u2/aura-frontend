@@ -452,6 +452,18 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       }
     };
 
+    callKit.onMuted = (sessionId, muted) async {
+      // The system call screen's Mute acts on the call's microphone, exactly
+      // as Aura's own control does.
+      try {
+        final realtime = ref.read(realtimeControllerProvider.notifier);
+        if (ref.read(realtimeControllerProvider).sessionId != sessionId) return;
+        await realtime.setMicrophone(!muted, fromSystem: true);
+      } catch (e, st) {
+        reportSilently(e, st, 'callkit.muted session=$sessionId');
+      }
+    };
+
     callKit.onRejectedBySystem = (sessionId, reason) async {
       // The exact CXError text. This is the one fact that separates "the
       // system refused" from "the report never happened", and without it both
@@ -513,15 +525,33 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       } catch (e) {
         debugPrint('[telecom] disconnect cleanup failed: $e');
       }
+      // A JOINED call hung up from a car, a headset or the system ends here
+      // too. It used to keep running in Aura after the system said it was
+      // over (2026-10-22 audit). Leaving is the person's own act, the same
+      // one Aura's Leave performs.
+      try {
+        final realtime = ref.read(realtimeControllerProvider);
+        if (realtime.isJoined && realtime.sessionId == sessionId) {
+          await ref.read(realtimeControllerProvider.notifier).leave();
+        }
+      } catch (e, st) {
+        reportSilently(e, st, 'telecom.disconnect.leave session=$sessionId');
+      }
     };
 
-    // Held and resumed. Recorded rather than acted on: Aura has no hold
-    // semantics of its own yet, and inventing one here — muting, leaving,
-    // pausing media — would be a call behaviour nobody designed, arriving
-    // through a system callback. When Aura has a hold, this is where it is
-    // driven from.
+    // Held and resumed. A cellular call that wins puts Aura's call on hold;
+    // Aura then stops capturing until it is resumed, instead of keeping the
+    // microphone and camera live underneath the phone call (2026-10-22
+    // audit). `active` false means held.
     telecom.onHoldChanged = (sessionId, active) async {
       debugPrint('[telecom] session=$sessionId active=$active');
+      try {
+        await ref
+            .read(realtimeControllerProvider.notifier)
+            .setSystemHold(sessionId, held: !active);
+      } catch (e, st) {
+        reportSilently(e, st, 'telecom.hold session=$sessionId');
+      }
     };
 
     unawaited(telecom.start());

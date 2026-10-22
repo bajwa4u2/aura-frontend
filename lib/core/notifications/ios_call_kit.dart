@@ -50,6 +50,11 @@ class IosCallKit {
   /// decline/leave is what makes it true; CallKit has already dismissed.
   Future<void> Function(String sessionId)? onEnd;
 
+  /// The person pressed Mute (or unmute) on the system call screen. Until
+  /// 2026-10-22 this event was dropped, so the system said "muted" while the
+  /// microphone stayed live.
+  Future<void> Function(String sessionId, bool muted)? onMuted;
+
   /// iOS accepted the push but refused to present the call — Do Not Disturb, a
   /// blocked caller, or a call that had already ended. Worth surfacing so the
   /// invite is not left pending in the UI on a device that will never ring.
@@ -259,6 +264,22 @@ class IosCallKit {
     }
   }
 
+  /// Mirror a mute made inside Aura onto the system call screen. Returns
+  /// false where CallKit holds no call for [sessionId]; nothing depends on it.
+  Future<bool> setMuted(String sessionId, {required bool muted}) async {
+    if (!isSupported || sessionId.trim().isEmpty) return false;
+    try {
+      return await _channel.invokeMethod<bool>('setMuted', {
+            'sessionId': sessionId.trim(),
+            'muted': muted,
+          }) ==
+          true;
+    } catch (e) {
+      debugPrint('[callkit] setMuted failed: $e');
+      return false;
+    }
+  }
+
   Future<String?> currentVoipToken() async {
     if (!isSupported) return null;
     try {
@@ -293,6 +314,18 @@ class IosCallKit {
         break;
       case 'end':
         await onEnd?.call(sessionId);
+        break;
+      case 'muted':
+        if (sessionId.isNotEmpty) {
+          await onMuted?.call(sessionId, args['muted'] == true);
+        }
+        break;
+      case 'audioSessionActivated':
+      case 'audioSessionDeactivated':
+        // Handled natively: WebRTC's audio is started and stopped by CallKit's
+        // activation in AppDelegate. Recorded so the event is not mistaken
+        // for an unknown one.
+        debugPrint('[callkit] $event');
         break;
       case 'systemPresentationLapsed':
         if (sessionId.isNotEmpty) {

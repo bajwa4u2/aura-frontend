@@ -84,9 +84,17 @@ class AuraCallService : Service() {
                     stopSelf(startId)
                     return START_NOT_STICKY
                 }
-                activeSessionId = sessionId
                 val video = intent.getBooleanExtra(EXTRA_VIDEO, false)
                 val title = intent.getStringExtra(EXTRA_TITLE).orEmpty()
+                // ALREADY DOING EXACTLY THIS. A repeat for the same call and
+                // type re-ran startForeground every time it arrived (the call
+                // screen asked on every rebuild), and a background refusal of
+                // a repeat stopped protection that was already working
+                // (2026-10-22 audit).
+                if (sessionId == activeSessionId && video == activeVideo) {
+                    return START_NOT_STICKY
+                }
+                activeSessionId = sessionId
                 startInForeground(sessionId, title, video)
             }
 
@@ -96,6 +104,7 @@ class AuraCallService : Service() {
                 // teardown path that cannot name the call it is ending.
                 if (sessionId.isEmpty() || sessionId == activeSessionId) {
                     activeSessionId = null
+                    activeVideo = false
                     stopForegroundCompat()
                     stopSelf()
                 } else {
@@ -118,6 +127,7 @@ class AuraCallService : Service() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         activeSessionId = null
+        activeVideo = false
         stopForegroundCompat()
         stopSelf()
         super.onTaskRemoved(rootIntent)
@@ -162,13 +172,33 @@ class AuraCallService : Service() {
             } else {
                 startForeground(NOTIFICATION_ID, notification)
             }
+            activeVideo = video
             Log.i(TAG, "foreground: sessionId=$sessionId video=$video")
         } catch (t: Throwable) {
+            // THE CAMERA TYPE CAN BE REFUSED WHERE THE MICROPHONE IS NOT —
+            // camera permission denied, or a camera start from the background.
+            // That used to stop the service entirely and take the microphone's
+            // protection with it. Fall back to microphone only.
+            if (video && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                try {
+                    startForeground(
+                        NOTIFICATION_ID,
+                        notification,
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
+                    )
+                    activeVideo = false
+                    Log.w(TAG, "camera type refused, microphone kept: ${t.message}")
+                    return
+                } catch (micRefused: Throwable) {
+                    Log.w(TAG, "microphone type refused too: ${micRefused.message}")
+                }
+            }
             // A refused foreground start must not take the call with it. The
             // call continues exactly as it did before this service existed —
             // it simply loses the background protection.
             Log.w(TAG, "startForeground refused: ${t.message}")
             activeSessionId = null
+            activeVideo = false
             stopSelf()
         }
     }
@@ -197,6 +227,13 @@ class AuraCallService : Service() {
         /** The call this service is currently representing, if any. */
         @Volatile
         private var activeSessionId: String? = null
+
+        /** Whether the running foreground type includes the camera. */
+        @Volatile
+        private var activeVideo: Boolean = false
+
+        /** Whether a call is being represented right now (for the activity). */
+        fun hasActiveCall(): Boolean = activeSessionId != null
 
         /** The Dart-facing surface. Every answer is a plain boolean. */
         fun handle(context: Context, call: MethodCall, result: MethodChannel.Result) {

@@ -36,6 +36,7 @@ class RealtimeState {
     this.reconnectingUserIds = const <String>{},
     this.acceptedByPeer = false,
     this.speakerphoneEnabled = false,
+    this.liveEnded = false,
     this.connectionFailure,
     this.cameraIsFront = true,
     this.mediaRecovering = false,
@@ -136,6 +137,11 @@ class RealtimeState {
   /// fresh per call, never a persisted/global preference.
   final bool speakerphoneEnabled;
 
+  /// This device was watching a live that its host ended. Terminal: the
+  /// viewer is told "The live has ended" instead of a frozen stage or a
+  /// misleading "Call ended" (2026-10-22 audit). Cleared by the next join.
+  final bool liveEnded;
+
   factory RealtimeState.initial() {
     return const RealtimeState(
       connectionStatus: RealtimeConnectionStatus.disconnected,
@@ -167,6 +173,7 @@ class RealtimeState {
       reconnectingUserIds: <String>{},
       acceptedByPeer: false,
       speakerphoneEnabled: false,
+      liveEnded: false,
       connectionFailure: null,
       cameraIsFront: true,
       mediaRecovering: false,
@@ -215,6 +222,7 @@ class RealtimeState {
     Set<String>? reconnectingUserIds,
     bool? acceptedByPeer,
     bool? speakerphoneEnabled,
+    bool? liveEnded,
     bool? cameraIsFront,
     bool? mediaRecovering,
     CallConnectionFailure? connectionFailure,
@@ -270,6 +278,7 @@ class RealtimeState {
       reconnectingUserIds: reconnectingUserIds ?? this.reconnectingUserIds,
       acceptedByPeer: acceptedByPeer ?? this.acceptedByPeer,
       speakerphoneEnabled: speakerphoneEnabled ?? this.speakerphoneEnabled,
+      liveEnded: liveEnded ?? this.liveEnded,
       connectionFailure: clearConnectionFailure
           ? null
           : (connectionFailure ?? this.connectionFailure),

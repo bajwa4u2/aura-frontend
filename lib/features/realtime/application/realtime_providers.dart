@@ -4,6 +4,8 @@ import '../../../core/auth/auth_providers.dart';
 import '../../../core/auth/session_bootstrap.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/client_identity/client_identity_provider.dart';
+import '../../../core/media/audio_output.dart';
+import '../../../core/media/audio_output_controller.dart';
 import '../../../core/net/dio_provider.dart';
 import '../data/realtime_media_service.dart';
 import '../data/realtime_repository.dart';
@@ -64,6 +66,16 @@ final realtimeControllerProvider =
           } catch (_) {
             return '';
           }
+        },
+        hasPrivateAudioRoute: () async {
+          final authority = ref.read(audioOutputAuthorityProvider);
+          if (!authority.isSupported) return false;
+          final routes = await authority.available();
+          return routes.any(
+            (r) =>
+                r.kind == AudioOutputKind.bluetooth ||
+                r.kind == AudioOutputKind.wiredHeadset,
+          );
         },
       );
       ref.listen(tokenStoreProvider, (_, next) {
