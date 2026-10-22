@@ -477,6 +477,16 @@ class RealtimeSocketService {
       'session:conversation.deleted',
       // Materials sync — the room refetches assets when the host shares.
       'session:assets.updated',
+      // Recording is announced to everyone and needs everyone's yes
+      // (realtime audit, 22 Oct 2026).
+      'recording:updated',
+      'recording:consent.required',
+      'recording:consent.updated',
+      // Go Live needs everyone's yes (realtime audit, 22 Oct 2026).
+      'session:live.request',
+      'session:live.started',
+      'session:live.request.cancelled',
+      'session:live.ended',
     ];
 
     for (final name in names) {

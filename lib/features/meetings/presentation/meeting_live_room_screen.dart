@@ -1,6 +1,7 @@
 import '../../realtime/domain/remote_media_presentation.dart';
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,6 +12,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../../core/auth/auth_providers.dart';
+import '../../../core/ui/adaptive_dialog_action.dart';
+import '../../realtime/presentation/widgets/consent_prompts.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/platform/media_capabilities.dart';
@@ -202,6 +205,18 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   // browser loses at most the unflushed tail, never the meeting.
   final _recorder = MeetingRecordingCapture();
   bool _recording = false;
+
+  /// The ROOM's recording state, as the server announces it to everyone
+  /// (recording:updated). `_recording` is only this device's own capture;
+  /// every participant sees REC from this (founder-approved design,
+  /// 22 Oct 2026).
+  bool _roomRecording = false;
+
+  /// A consent question currently on screen, so one request asks once.
+  bool _consentPromptOpen = false;
+
+  /// Who started the recording, to name them in the question.
+  String _recordingByUserId = '';
   bool _savingRecording = false;
   String? _recordingAssetId;
   String? _recordingUploadId;
@@ -211,6 +226,68 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   Timer? _recordingFlushTimer;
   // S3 multipart minimum is 5 MiB for every part except the last.
   static const int _recordingMinPartBytes = 5 * 1024 * 1024 + 64 * 1024;
+
+  static String? _recordingRefusalCode(Object e) {
+    if (e is! DioException) return null;
+    final data = e.response?.data;
+    if (data is! Map) return null;
+    final err = data['error'];
+    final code = err is Map ? err['code'] : data['code'];
+    return code?.toString();
+  }
+
+  /// Who this device is when the server lists whom it is waiting on: the
+  /// guest-session id for a meeting guest, the user id for a member.
+  String get _consentIdentity {
+    final guest = (widget.guestUserId ?? '').trim();
+    return guest.isNotEmpty ? guest : _myUserId;
+  }
+
+  /// "Mia wants to record this meeting." Allow, or leave: recording does not
+  /// start until everyone present has said yes (founder-approved design,
+  /// 22 Oct 2026). Someone arriving while it already runs is asked "Mia is
+  /// recording this meeting."; the call engine publishes nothing of theirs
+  /// until they allow (RealtimeState.recordingConsentRequired).
+  Future<void> _askRecordingConsent(
+    String requestedByUserId, {
+    required bool arriving,
+  }) async {
+    if (_consentPromptOpen || !mounted) return;
+    _consentPromptOpen = true;
+    final state = ref.read(realtimeControllerProvider);
+    final requester = state.participants
+        .where((p) => p.userId == requestedByUserId)
+        .map((p) => (p.displayName ?? '').trim())
+        .firstWhere((n) => n.isNotEmpty, orElse: () => 'The host');
+    final allow =
+        await askRecording(context, requester, alreadyRecording: arriving);
+    _consentPromptOpen = false;
+    if (!mounted) return;
+    if (allow == null) return;
+    if (allow) {
+      try {
+        // The engine tells the server, then opens and publishes whatever it
+        // held back for this answer.
+        await ref
+            .read(realtimeControllerProvider.notifier)
+            .grantRecordingConsent();
+      } catch (_) {
+        if (mounted) {
+          AuraNotice.problem(context, 'Your answer was not saved. Try again.');
+        }
+      }
+    } else {
+      final sid = ref.read(realtimeControllerProvider).sessionId ?? '';
+      try {
+        await ref
+            .read(realtimeRepositoryProvider)
+            .respondToRecordingConsent(sid, accept: false);
+      } catch (_) {
+        // Leaving withdraws the yes anyway; the server sees the leave.
+      }
+      await _leaveMeeting();
+    }
+  }
 
   Future<void> _toggleRecording(Meeting? meeting) async {
     if (_savingRecording) return;
@@ -235,9 +312,27 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
         _recordingUploadId = begun.uploadId;
         _recordingNextPart = 1;
         _recordingPendingPart = null;
-      } catch (_) {
+      } catch (e) {
         await _recorder.stopCapture();
-        if (mounted) _showArrivalToast('Recording could not start');
+        if (!mounted) return;
+        // Recording needs everyone's yes (founder-approved design,
+        // 22 Oct 2026). The server says who still has to answer; the others
+        // have just been asked.
+        switch (_recordingRefusalCode(e)) {
+          case 'RECORDING_CONSENT_PENDING':
+            AuraNotice.info(
+              context,
+              'Everyone in the meeting has been asked to allow recording. '
+              'Tap Record again once they have.',
+            );
+          case 'GUEST_CONSENT_UNAVAILABLE':
+            AuraNotice.info(
+              context,
+              'Recording cannot start: a guest here can no longer be asked.',
+            );
+          default:
+            _showArrivalToast('Recording could not start');
+        }
         return;
       }
       if (!mounted) return;
@@ -452,6 +547,36 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
           }
           if (uid == _myUserId) _handRaised = raised;
         });
+        break;
+      case 'recording:updated':
+        final on = (e.payload['state'] ?? '').toString() == 'RECORDING';
+        final wasOn = _roomRecording;
+        final by = (e.payload['byUserId'] ?? '').toString();
+        if (by.isNotEmpty) _recordingByUserId = by;
+        setState(() => _roomRecording = on);
+        if (wasOn && !on) AuraNotice.info(context, 'Recording stopped.');
+        break;
+      case 'recording:consent.required':
+        if (shouldAskForConsent(e.payload,
+            me: _consentIdentity, requesterKey: 'requestedByUserId')) {
+          unawaited(_askRecordingConsent(
+            (e.payload['requestedByUserId'] ?? '').toString(),
+            arriving: e.payload['newcomer'] == true || _roomRecording,
+          ));
+        }
+        break;
+      case 'recording:consent.updated':
+        // The host learns who said no; recording stays off.
+        final who = e.payload['participant'];
+        if (_isHost &&
+            (e.payload['status'] ?? '').toString() == 'DECLINED' &&
+            who is Map) {
+          final name = (who['name'] ?? '').toString().trim();
+          AuraNotice.info(
+            context,
+            '${name.isEmpty ? 'Someone' : name} did not allow recording.',
+          );
+        }
         break;
       case 'session:mute-request':
         final target = (e.payload['targetUserId'] ?? '').toString().trim();
@@ -784,7 +909,9 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   void _scheduleControlBarHide() {
     _controlBarTimer?.cancel();
     _controlBarTimer = Timer(const Duration(seconds: 4), () {
-      if (mounted) setState(() => _controlsVisible = false);
+      if (!mounted) return;
+      if (!meetingControlsMayAutoHide(context)) return;
+      setState(() => _controlsVisible = false);
     });
   }
 
@@ -971,8 +1098,35 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
           ? '/meetings/${widget.meetingId}'
           : '/institution/$_exitInstitutionId/meetings/${widget.meetingId}';
 
+  /// "End for everyone" is the one exit that changes the room for every
+  /// guest, so it is asked once more (founder-approved design, 22 Oct 2026).
+  Future<bool> _confirmEndForEveryone() async {
+    final ok = await showAdaptiveDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog.adaptive(
+        title: const Text('End the meeting for everyone?'),
+        actions: [
+          adaptiveDialogAction(
+            ctx,
+            label: 'Cancel',
+            onPressed: () => Navigator.of(ctx).pop(false),
+          ),
+          adaptiveDialogAction(
+            ctx,
+            label: 'End for everyone',
+            destructive: true,
+            onPressed: () => Navigator.of(ctx).pop(true),
+          ),
+        ],
+      ),
+    );
+    return ok == true;
+  }
+
   Future<void> _endMeeting() async {
     if (_endingMeeting) return;
+    if (!await _confirmEndForEveryone()) return;
+    if (!mounted || _endingMeeting) return;
     // A recording in progress is finalized BEFORE the meeting ends — the
     // artifact belongs to the record, not to the host's memory of pressing
     // Stop at the right moment.
@@ -1094,11 +1248,8 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     if (isGuest) {
       context.pop();
     } else {
-      context.go(
-          _exitInstitutionId == null
-            ? '/home'
-            : '/institution/$_exitInstitutionId/meetings/${widget.meetingId}',
-      );
+      // The Meeting Record, as the comment above says — never /home.
+      context.go(_workspacePath);
     }
   }
 
@@ -1241,6 +1392,17 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       },
     );
 
+    // Held by the call engine until this person allows the recording (the
+    // join said so, or the server refused to publish them): ask now.
+    ref.listen(
+      realtimeControllerProvider.select((s) => s.recordingConsentRequired),
+      (prev, next) {
+        if (next && prev != true) {
+          unawaited(_askRecordingConsent(_recordingByUserId, arriving: true));
+        }
+      },
+    );
+
     // L2: participant arrival/departure toasts
     ref.listen(
       realtimeControllerProvider.select((s) => s.participants),
@@ -1289,10 +1451,8 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF030712),
-      body: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: _onUserInteraction,
-        onPanUpdate: (_) => _onUserInteraction(),
+      body: MeetingRevealZone(
+        onInteract: _onUserInteraction,
         child: Stack(
         children: [
           // E3 — THE STAGE, AND NOTHING OVER IT.
@@ -1601,7 +1761,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               joinedAt: _joinedAt,
               participantCount:
                   state.participants.isEmpty ? 1 : state.participants.length,
-              recording: _recording,
+              recording: _recording || _roomRecording,
             ),
           ),
 

@@ -37,6 +37,7 @@ class RealtimeState {
     this.acceptedByPeer = false,
     this.speakerphoneEnabled = false,
     this.liveEnded = false,
+    this.recordingConsentRequired = false,
     this.connectionFailure,
     this.cameraIsFront = true,
     this.mediaRecovering = false,
@@ -142,6 +143,11 @@ class RealtimeState {
   /// misleading "Call ended" (2026-10-22 audit). Cleared by the next join.
   final bool liveEnded;
 
+  /// This meeting is being recorded and this person has not yet allowed it.
+  /// Until they do, nothing of theirs is captured or published (realtime
+  /// audit, 22 Oct 2026); the room asks them, and Allow releases it.
+  final bool recordingConsentRequired;
+
   factory RealtimeState.initial() {
     return const RealtimeState(
       connectionStatus: RealtimeConnectionStatus.disconnected,
@@ -223,6 +229,7 @@ class RealtimeState {
     bool? acceptedByPeer,
     bool? speakerphoneEnabled,
     bool? liveEnded,
+    bool? recordingConsentRequired,
     bool? cameraIsFront,
     bool? mediaRecovering,
     CallConnectionFailure? connectionFailure,
@@ -279,6 +286,8 @@ class RealtimeState {
       acceptedByPeer: acceptedByPeer ?? this.acceptedByPeer,
       speakerphoneEnabled: speakerphoneEnabled ?? this.speakerphoneEnabled,
       liveEnded: liveEnded ?? this.liveEnded,
+      recordingConsentRequired:
+          recordingConsentRequired ?? this.recordingConsentRequired,
       connectionFailure: clearConnectionFailure
           ? null
           : (connectionFailure ?? this.connectionFailure),

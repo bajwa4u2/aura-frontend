@@ -18,6 +18,7 @@ class RealtimeParticipantList extends StatelessWidget {
     required this.remoteRenderers,
     this.currentUserId,
     this.hostUserId,
+    this.onSafety,
   });
 
   final List<RealtimeParticipant> participants;
@@ -27,6 +28,10 @@ class RealtimeParticipantList extends StatelessWidget {
   final Map<String, RTCVideoRenderer> remoteRenderers;
   final String? currentUserId;
   final String? hostUserId;
+
+  /// On a live, every other speaker carries Report and Block (store guideline
+  /// 1.2; founder-approved design, 22 Oct 2026). Null when not live.
+  final ValueChanged<RealtimeParticipant>? onSafety;
 
   String _roleLabel(RealtimeParticipant participant) {
     final explicit = participant.displayRole?.trim() ?? '';
@@ -221,6 +226,14 @@ class RealtimeParticipantList extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (onSafety != null &&
+                        participant.userId.isNotEmpty &&
+                        participant.userId != (currentUserId ?? '').trim())
+                      IconButton(
+                        tooltip: 'More',
+                        icon: const Icon(Icons.more_horiz_rounded),
+                        onPressed: () => onSafety!(participant),
+                      ),
                     if (canModerate &&
                         participant.userId.isNotEmpty &&
                         participant.userId != (currentUserId ?? '').trim())

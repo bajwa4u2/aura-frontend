@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'dart:math' as math;
@@ -69,6 +70,25 @@ class RealtimeJoinRefused implements Exception {
 
   @override
   String toString() => 'RealtimeJoinRefused: $reason';
+}
+
+/// The join ack says this meeting is recording and this person has not yet
+/// allowed it: `recording: {state: 'RECORDING', consentRequired: true}`.
+bool recordingConsentRequiredIn(Map<String, dynamic>? ack) {
+  final rec = ack?['recording'];
+  return rec is Map && rec['consentRequired'] == true;
+}
+
+/// A stage publish (HTTP) or a signalling ack refused because this person
+/// has not allowed, or declined, the recording.
+bool isRecordingConsentRefusal(Object? refusal) {
+  Object? body = refusal;
+  if (refusal is DioException) body = refusal.response?.data;
+  if (body is! Map) return false;
+  final err = body['error'];
+  final code = (err is Map ? err['code'] : null) ?? body['code'];
+  return code == 'RECORDING_CONSENT_REQUIRED' ||
+      code == 'RECORDING_CONSENT_DECLINED';
 }
 
 class RealtimeController extends StateNotifier<RealtimeState>
@@ -408,6 +428,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
     bool refreshTurnCredentials = false,
   }) async {
     if (_flushingPendingOffers || _pendingOfferTargets.isEmpty) return;
+    if (state.recordingConsentRequired) return;
 
     final sessionId = _managedSessionId;
     if (sessionId.isEmpty || !state.isJoined) return;
@@ -1211,6 +1232,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
     // and a heartbeat started for a seat that did not exist.
     final refusal = RealtimeJoinRefused.fromAck(joinAck);
     if (refusal != null) throw refusal;
+    final holdForConsent = recordingConsentRequiredIn(joinAck);
 
     // P0 FIX (guest reconnect storm): start the heartbeat the INSTANT the
     // socket join is acknowledged — BEFORE media/room readiness. Previously
@@ -1222,6 +1244,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
     state = state.copyWith(
       joinState: RealtimeJoinState.joined,
       clearIncomingCall: true,
+      recordingConsentRequired: holdForConsent,
       infoMessage: isMeetingSession
           ? 'Waiting for guest to join.'
           : 'You joined live.',
@@ -1306,6 +1329,22 @@ class RealtimeController extends StateNotifier<RealtimeState>
       if (_joiningSessionId == trimmed) {
         _joiningSessionId = null;
       }
+    }
+  }
+
+  /// This person allows the recording: the server is told, then the media
+  /// that was held back is opened and published, exactly as on join.
+  Future<void> grantRecordingConsent() async {
+    final sessionId = _managedSessionId;
+    if (sessionId.isEmpty) return;
+    await _repository.respondToRecordingConsent(sessionId, accept: true);
+    if (!state.recordingConsentRequired) return;
+    state = state.copyWith(recordingConsentRequired: false);
+    try {
+      await _ensureMediaReady(sessionId, refreshTurnCredentials: true);
+      await _reconcileRtcPeers('join', refreshTurnCredentials: true);
+    } catch (e) {
+      debugPrint('[rtc] media after recording consent failed err=$e');
     }
   }
 
@@ -2162,6 +2201,9 @@ class RealtimeController extends StateNotifier<RealtimeState>
     bool refreshTurnCredentials = false,
   }) async {
     if (state.isMediaBusy) return;
+    // Recorded meeting, not yet allowed: no microphone, no camera, nothing
+    // published, until this person says yes (grantRecordingConsent).
+    if (state.recordingConsentRequired) return;
 
     state = state.copyWith(isMediaBusy: true, clearMediaError: true);
 
@@ -3231,11 +3273,16 @@ class RealtimeController extends StateNotifier<RealtimeState>
       },
     );
 
-    await _socketService.emitAck('session:offer', <String, dynamic>{
+    final offerAck =
+        await _socketService.emitAck('session:offer', <String, dynamic>{
       'sessionId': sessionId,
       'targetSocketId': targetSocketId,
       'sdp': <String, dynamic>{'sdp': offer.sdp, 'type': offer.type},
     });
+    if (isRecordingConsentRefusal(offerAck)) {
+      state = state.copyWith(recordingConsentRequired: true);
+      return;
+    }
 
     // Negotiation watchdog: a lost ANSWER previously stalled the connection
     // forever (the offer relay is fire-and-forget). One retry after 8s if
@@ -3565,6 +3612,9 @@ class RealtimeController extends StateNotifier<RealtimeState>
         unawaited(() async {
           final sessionId = state.sessionId;
           if (sessionId == null || sessionId.isEmpty) return;
+          // Held for recording consent: answer nothing yet. After Allow this
+          // device offers to everyone itself.
+          if (state.recordingConsentRequired) return;
 
           await _ensureMediaReady(sessionId);
           final configuration = _rtcConfiguration;
@@ -4712,6 +4762,12 @@ class RealtimeController extends StateNotifier<RealtimeState>
       // Never let a transport failure take the call down silently — the
       // product should show honest state rather than a frozen screen. But
       // silent to the USER must not mean invisible to us.
+      // The server refuses to publish someone who has not allowed the
+      // recording: that is a question to ask, not a failure to report.
+      if (isRecordingConsentRefusal(e)) {
+        state = state.copyWith(recordingConsentRequired: true);
+        return;
+      }
       debugPrint('[rtc] stage connect failed reason=$reason err=$e');
       unawaited(_repository.reportStageDiagnostic(
         sessionId,
@@ -4727,6 +4783,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
     String reason, {
     bool refreshTurnCredentials = false,
   }) async {
+    if (state.recordingConsentRequired) return;
     final sessionId = _managedSessionId;
     if (sessionId.isEmpty || !state.isJoined) return;
 
