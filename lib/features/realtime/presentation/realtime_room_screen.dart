@@ -1,5 +1,4 @@
 import '../../../core/product/product_language.dart';
-import '../../../core/notifications/android_call_service.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:math' as math;
@@ -51,6 +50,8 @@ import '../../../core/navigation/canonical_destinations.dart';
 import '../../../core/diagnostics/call_teardown_diag.dart';
 import 'package:aura/core/ui/aura_notice.dart';
 import 'widgets/live_safety_menu.dart';
+import 'widgets/consent_prompts.dart';
+import '../data/realtime_event_parser.dart';
 
 class _CallRouteRedirectingFallback extends StatelessWidget {
   const _CallRouteRedirectingFallback();
@@ -148,6 +149,83 @@ class RealtimeRoomScreen extends ConsumerStatefulWidget {
 }
 
 class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
+  StreamSubscription<RealtimeParsedEvent>? _goLiveSub;
+  bool _goLivePromptOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _goLiveSub = ref
+        .read(realtimeSocketServiceProvider)
+        .events
+        .listen(_onGoLiveEvent);
+    // Held now: `ref` cannot be read once the screen is being disposed.
+    _audioOutput = ref.read(audioOutputControllerProvider.notifier);
+  }
+
+  late final AudioOutputController _audioOutput;
+
+  String _nameOf(String userId) {
+    final p = ref
+        .read(realtimeControllerProvider)
+        .participants
+        .where((p) => p.userId == userId)
+        .firstOrNull;
+    final name = (p?.displayName ?? '').trim();
+    if (name.isNotEmpty) return name;
+    final handle = (p?.handle ?? '').trim();
+    return handle.isNotEmpty ? '@$handle' : 'Someone';
+  }
+
+  /// GO LIVE NEEDS EVERYONE'S YES (founder-approved design, 22 Oct 2026).
+  /// The call stays private until everyone on the stage accepts; one decline
+  /// or leave keeps it private, and the person who asked is told who.
+  void _onGoLiveEvent(RealtimeParsedEvent e) {
+    if (!mounted) return;
+    final me = ref
+        .read(_realtimeCurrentUserProvider)
+        .maybeWhen(data: readUserIdFromAuthMe, orElse: () => '');
+    switch (e.name) {
+      case 'session:live.request':
+        if (shouldAskForConsent(e.payload,
+            me: me, requesterKey: 'requestedByUserId')) {
+          final by = (e.payload['requestedByUserId'] ?? '').toString();
+          unawaited(_askGoLive(_nameOf(by)));
+        }
+      case 'session:live.started':
+      case 'session:live.ended':
+        final sid = (e.payload['sessionId'] ?? widget.sessionId).toString();
+        unawaited(ref
+            .read(realtimeControllerProvider.notifier)
+            .hydrateSession(sid));
+      case 'session:live.request.cancelled':
+        final by = (e.payload['byUserId'] ?? '').toString();
+        if ((e.payload['reason'] ?? '').toString() == 'declined' &&
+            by.isNotEmpty &&
+            by != me) {
+          AuraNotice.info(context, '${_nameOf(by)} chose to stay private.');
+        }
+    }
+  }
+
+  Future<void> _askGoLive(String requester) async {
+    if (_goLivePromptOpen) return;
+    _goLivePromptOpen = true;
+    final accept = await askGoLive(context, requester);
+    _goLivePromptOpen = false;
+    if (!mounted) return;
+    try {
+      await ref.read(realtimeRepositoryProvider).respondToGoLive(
+            widget.sessionId,
+            accept: accept,
+          );
+    } catch (_) {
+      if (mounted) {
+        AuraNotice.problem(context, 'Your answer was not saved. Try again.');
+      }
+    }
+  }
+
   /// Session whose identity gap has already been reported, so a rebuild
   /// storm cannot turn one finding into a flood.
   String? _identityGapReported;
@@ -361,37 +439,11 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     });
   }
 
-  /// Start or stop the Android foreground call service to match the call.
-  ///
-  /// Called from the joined-state listener AND from build, because a callee
-  /// whose session is already hydrated when this screen mounts produces no
-  /// transition for the listener to see — the same gap the return-address
-  /// seeding below documents.
-  void _syncCallService(RealtimeState state) {
-    if (!AndroidCallService.instance.isSupported) return;
-    final sessionId = (state.sessionId ?? widget.sessionId).trim();
-    if (!state.isJoined || sessionId.isEmpty) return;
-    // The camera is a separate foreground-service type, so the service is
-    // told what this call is actually doing right now rather than what it
-    // was created as.
-    final video = state.isVideoMode || state.cameraEnabled;
-    unawaited(
-      AndroidCallService.instance.start(
-        sessionId,
-        video: video,
-        title: state.session?.title ?? '',
-      ),
-    );
-  }
-
   @override
   void dispose() {
+    _goLiveSub?.cancel();
     // The route watcher belongs to this surface, not to the app.
-    ref.read(audioOutputControllerProvider.notifier).stop();
-    // AND THE CALL'S FOREGROUND SERVICE GOES WITH THE CALL SURFACE. A service
-    // that outlives its call holds the microphone; every exit from this
-    // screen — leave, remote end, error, navigation — passes through here.
-    unawaited(AndroidCallService.instance.stop());
+    _audioOutput.stop();
     // WHY DID THE ROOM GO AWAY?
     //
     // Founder, 2026-08-28, during an induced outage: "call screen
@@ -789,7 +841,12 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     if (myUserId.isEmpty) return false;
     for (final p in state.participants) {
       if (p.userId == myUserId) {
-        return p.role != RealtimeParticipantRole.observer;
+        if (p.role == RealtimeParticipantRole.observer) return false;
+        // Ending a live is never blocked for someone on the stage. Proposing
+        // one is for the host or a co-host only; everyone else is asked
+        // instead (realtime audit, 22 Oct 2026).
+        if (ls == 'LIVE') return true;
+        return p.isModerator;
       }
     }
     return false;
@@ -873,12 +930,20 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     );
     if (confirmed != true || !mounted) return;
     try {
-      await ref
+      final after = await ref
           .read(realtimeRepositoryProvider)
           .goLive(conversationId: conversationId, sessionId: sessionId);
       await ref
           .read(realtimeControllerProvider.notifier)
           .hydrateSession(sessionId);
+      // With others on the stage the call stays private until they accept.
+      if (mounted && after?.isLive != true && stageCount > 1) {
+        AuraNotice.info(
+          context,
+          'Everyone in the call has been asked. The call goes live when '
+          'they all accept.',
+        );
+      }
     } catch (_) {
       if (mounted) {
         AuraNotice.problem(context, 'You did not go live. Try again.');
@@ -1042,15 +1107,12 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
         _wasJoined = true;
         _showJoinedToast();
       }
-      // KEEP THE CALL ALIVE IF AURA STOPS BEING THE APP ON SCREEN.
-      // Idempotent, and it decides nothing — see AndroidCallService.
-      _syncCallService(next);
     });
 
+    // The Android call service is held by the call engine for as long as the
+    // session is joined (realtime audit, 22 Oct 2026): this screen no longer
+    // starts or stops it, so minimising to the pill keeps the mic alive.
     final state = ref.watch(realtimeControllerProvider);
-    // A callee arriving already-joined produces no transition; see
-    // _syncCallService.  Idempotent.
-    _syncCallService(state);
 
     // SEED THE RETURN ADDRESS FROM WHAT IS TRUE NOW, NOT ONLY FROM CHANGES.
     //
@@ -1262,6 +1324,17 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     final joinRequestCount = (policy?.joinRequests ?? const []).length;
     final publiclyLive = state.session?.isLive == true;
     final liveEligible = _liveControlsEligible(state, myUserId);
+
+    // A viewer whose live ended is told so, with a way back, instead of
+    // being left on a frozen stage (founder-approved design, 22 Oct 2026).
+    if (state.liveEnded) {
+      return LiveEndedView(
+        onBack: () {
+          _hasNavigatedAway = true;
+          context.go(_safeReturnRoute(null));
+        },
+      );
+    }
 
     return PopScope(
       canPop: !state.isJoined,
@@ -5213,6 +5286,45 @@ class _CallClockState extends State<_CallClock> {
         style: AuraText.small.copyWith(
           color: AuraSurface.muted,
           fontFeatures: const [FontFeature.tabularFigures()],
+        ),
+      ),
+    );
+  }
+}
+
+/// What a viewer sees once the live they were watching has ended.
+class LiveEndedView extends StatelessWidget {
+  const LiveEndedView({super.key, required this.onBack});
+
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AuraSurface.page,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AuraSpace.s24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.live_tv_rounded,
+                    size: 40, color: AuraSurface.muted),
+                const SizedBox(height: AuraSpace.s14),
+                Semantics(
+                  liveRegion: true,
+                  child: const Text(
+                    'The live has ended.',
+                    textAlign: TextAlign.center,
+                    style: AuraText.title,
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s20),
+                AuraSecondaryButton(label: 'Back', onPressed: onBack),
+              ],
+            ),
+          ),
         ),
       ),
     );

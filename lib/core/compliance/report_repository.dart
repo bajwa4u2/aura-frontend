@@ -31,6 +31,9 @@ enum ReportTargetType {
 
   /// A public live (Go Live) as a whole; realtime audit, 22 Oct 2026.
   liveSession,
+
+  /// One speaker in a public live, by their participant row id.
+  liveParticipant,
 }
 
 extension ReportTargetTypeWire on ReportTargetType {
@@ -56,8 +59,10 @@ extension ReportTargetTypeWire on ReportTargetType {
       case ReportTargetType.announcement:
         return 'ANNOUNCEMENT';
       case ReportTargetType.liveSession:
-        // Matches the backend target added with live moderation (RB5).
+        // Matches the backend targets added with live moderation (RB5).
         return 'LIVE_SESSION';
+      case ReportTargetType.liveParticipant:
+        return 'LIVE_PARTICIPANT';
     }
   }
 }

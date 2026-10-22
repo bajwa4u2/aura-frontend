@@ -70,8 +70,10 @@ void main() {
     expect(find.text('Block Ana'), findsOneWidget);
   });
 
-  test('the live report target goes to the server as LIVE_SESSION', () {
+  test('live report targets match the server (LIVE_SESSION, LIVE_PARTICIPANT)',
+      () {
     expect(ReportTargetType.liveSession.wire, 'LIVE_SESSION');
+    expect(ReportTargetType.liveParticipant.wire, 'LIVE_PARTICIPANT');
   });
 
   testWidgets('on a live, every other speaker has a "More" for safety',

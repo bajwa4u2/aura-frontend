@@ -289,6 +289,27 @@ class RealtimeRepository {
         : null;
   }
 
+  /// Answer a go-live proposal: the call goes public only when everyone on
+  /// the stage accepts (realtime audit, 22 Oct 2026).
+  Future<void> respondToGoLive(String sessionId, {required bool accept}) async {
+    await _dio.post(
+      '/realtime/sessions/$sessionId/live/respond',
+      data: {'accept': accept},
+    );
+  }
+
+  /// Answer "may this be recorded?" — members and guests alike, each as
+  /// themselves (realtime audit, 22 Oct 2026).
+  Future<void> respondToRecordingConsent(
+    String sessionId, {
+    required bool accept,
+  }) async {
+    await _dio.post(
+      '/realtime/sessions/$sessionId/recording-consent',
+      data: {'accept': accept},
+    );
+  }
+
   /// END LIVE ≠ END CALL: closes the public boundary; the same session
   /// stays active and the private call continues.
   Future<RealtimeSession?> endLive({

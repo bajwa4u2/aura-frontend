@@ -68,10 +68,12 @@ Future<void> showLiveSafetyMenu(
       );
       return;
     case 'report-person':
+      // The speaker as they appeared in THIS live (participant row id), so
+      // a moderator sees the live the report came from.
       await ReportContentSheet.show(
         context,
-        targetType: ReportTargetType.user,
-        targetId: speaker!.userId,
+        targetType: ReportTargetType.liveParticipant,
+        targetId: speaker!.id,
         contextLabel: name,
       );
       return;
