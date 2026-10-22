@@ -1410,7 +1410,36 @@ class RealtimeMediaService {
       await detachStage(reason: 'ATTACH_UNWIND');
       rethrow;
     }
-    await ensureStageRemoteMedia(trigger: trigger);
+    // LOOK ONCE NOW; KEEP LOOKING WITHOUT HOLDING THE ATTACH.
+    //
+    // The attach used to await the whole retry loop (six looks, two seconds
+    // apart) and the controller's stage gate was held for all of it, so the
+    // server's `session:media.published` push — the moment the other side's
+    // media actually exists — joined the in-flight attach and was dropped.
+    // The caller then found the callee's tracks only at its next poll tick:
+    // 2.2 s after they were published on a measured call (2026-10-22). One
+    // immediate look, then a background fallback; the push now drives it.
+    try {
+      await refreshStageRemoteMedia(trigger: trigger);
+    } catch (e) {
+      debugPrint('[rtc] stage first remote look failed: $e');
+    }
+    if (_disposed || !identical(_stage, transport)) return;
+    if (_remoteByParticipant.isEmpty) {
+      // The look just made found nothing; the fallback starts one interval
+      // later rather than repeating it at once.
+      unawaited(Future<void>.delayed(const Duration(seconds: 1))
+          .then((_) {
+        if (_disposed || !identical(_stage, transport)) return null;
+        return ensureStageRemoteMedia(
+          trigger: trigger,
+          attempts: 10,
+          interval: const Duration(seconds: 1),
+        );
+      }).catchError((Object e) {
+        debugPrint('[rtc] stage remote media fallback ended: $e');
+      }));
+    }
   }
 
   /// Resolve remote media, retrying until it appears.

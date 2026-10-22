@@ -242,13 +242,69 @@ class ThreadCallLifecycleController
       clearErrorMessage: true,
       lastEvent: 'thread-call:accept',
     );
-    await joinThreadCallSession(
-      sessionId,
-      source: ThreadCallLifecycleSource.callee,
-    );
+    final prewarmed = _prewarmCapture(payload);
+    try {
+      await joinThreadCallSession(
+        sessionId,
+        source: ThreadCallLifecycleSource.callee,
+      );
+    } finally {
+      // A capture opened for a call that was never joined must not stay open:
+      // a live microphone with no call is the one outcome worse than a slow
+      // connect.
+      if (prewarmed) _releasePrewarmIfNotJoined();
+    }
     // ACCEPTED, not ended. removeBySession() reports the CallKit call ended,
     // which on iOS terminates the very call this method just joined.
     _ref.read(incomingCallBridgeProvider.notifier).clearAccepted(sessionId);
+  }
+
+  /// THE PERSON SAID YES; OPEN THEIR MICROPHONE (AND CAMERA) NOW.
+  ///
+  /// Capture used to begin only after the join round trips finished, and on a
+  /// phone opening the camera alone took 3 s (2026-10-22, Galaxy S24+: joined
+  /// at :52, media ready at :55). Answering IS consent to be heard and seen on
+  /// this call, so capture starts at the tap and runs through the join. Nothing
+  /// is published here: publishing still happens only once joined.
+  ///
+  /// Only when the ring said which kind of call it is. A guess could open the
+  /// camera for a voice call, or capture audio only for a video call that the
+  /// join then could not upgrade; with no answer the old order applies.
+  bool _prewarmCapture(Map<String, dynamic> payload) {
+    final video = callIsVideoFromRing(payload);
+    if (video == null) return false;
+    try {
+      final media = _ref.read(realtimeMediaServiceProvider);
+      unawaited(
+        media.ensureLocalMedia(audio: true, video: video).catchError((Object e) {
+          debugPrint('[thread-call] capture prewarm failed: $e');
+        }),
+      );
+      return true;
+    } catch (e) {
+      debugPrint('[thread-call] capture prewarm unavailable: $e');
+      return false;
+    }
+  }
+
+  void _releasePrewarmIfNotJoined() {
+    try {
+      final realtime = _ref.read(realtimeControllerProvider);
+      if (realtime.isJoined ||
+          realtime.joinState == RealtimeJoinState.joining) {
+        return;
+      }
+      unawaited(
+        _ref
+            .read(realtimeMediaServiceProvider)
+            .resetSessionMedia()
+            .catchError((Object e) {
+          debugPrint('[thread-call] prewarm release failed: $e');
+        }),
+      );
+    } catch (e) {
+      debugPrint('[thread-call] prewarm release unavailable: $e');
+    }
   }
 
   Future<void> joinThreadCallSession(
@@ -482,3 +538,25 @@ final threadCallLifecycleProvider =
       unawaited(controller.boot());
       return controller;
     });
+
+/// Which kind of call a ring announced: true for video, false for audio, and
+/// null when the ring does not say. Same fields, same order, as the ringing
+/// card reads to label the call.
+bool? callIsVideoFromRing(Map<String, dynamic> payload) {
+  final data = payload['data'] is Map
+      ? Map<String, dynamic>.from(payload['data'] as Map)
+      : const <String, dynamic>{};
+  for (final raw in [
+    data['callKind'],
+    data['mediaMode'],
+    data['mode'],
+    payload['callKind'],
+    payload['mediaMode'],
+    payload['mode'],
+  ]) {
+    final v = (raw ?? '').toString().trim().toLowerCase();
+    if (v == 'video') return true;
+    if (v == 'audio' || v == 'voice') return false;
+  }
+  return null;
+}

@@ -110,6 +110,15 @@ class SfuRealtimeTransport implements RealtimeTransport {
 
   Timer? _iceGrace;
   Timer? _liveness;
+
+  /// Samples inbound bytes every [_firstMediaInterval] until the first media
+  /// arrives, then stops. The 3 s liveness tick alone quantised "the other
+  /// side became audible" to 3 s on each device, and CONNECTED needs both
+  /// devices to say so (2026-10-22: first bytes reported 4.4 s after open on
+  /// both sides of a call whose media began well before).
+  Timer? _firstMedia;
+  static const Duration _firstMediaInterval = Duration(milliseconds: 250);
+  static const Duration _firstMediaWindow = Duration(seconds: 20);
   int _lastLivenessBytes = -1;
   int _stallTicks = 0;
 
@@ -977,6 +986,8 @@ class SfuRealtimeTransport implements RealtimeTransport {
     _iceGrace = null;
     _liveness?.cancel();
     _liveness = null;
+    _firstMedia?.cancel();
+    _firstMedia = null;
     // Stop accepting negotiation work first: anything still queued must not
     // mutate a session that is being torn down.
     _queue.close();
@@ -1109,6 +1120,7 @@ class SfuRealtimeTransport implements RealtimeTransport {
   /// being quiet. What is detected is media that WAS arriving and STOPPED,
   /// which is exactly the frozen-video condition and nothing else.
   void _armLivenessProbe(RTCPeerConnection pc) {
+    _armFirstMediaWatch(pc);
     _liveness?.cancel();
     _lastLivenessBytes = -1;
     _stallTicks = 0;
@@ -1183,17 +1195,7 @@ class SfuRealtimeTransport implements RealtimeTransport {
         // starts at -1, so the first readable tick with any inbound bytes at
         // all satisfies this — which is exactly the moment the other side
         // became audible.
-        if (!_mediaFlowingReported && bytes > 0) {
-          _mediaFlowingReported = true;
-          unawaited(_report('op=LIVE state=media_flowing bytes=$bytes '
-              'kinds=${_kindSummary(byKind)} '
-              'sinceOpenMs=${_sinceOpenMs()}'));
-          try {
-            onMediaFlowing?.call(bytes);
-          } catch (_) {
-            // Reporting evidence must never be able to disturb the call.
-          }
-        }
+        _reportMediaFlowingOnce(bytes, byKind ?? const <String, int>{});
         _lastLivenessBytes = bytes;
         _stallTicks = 0;
         return;
@@ -1369,6 +1371,54 @@ class SfuRealtimeTransport implements RealtimeTransport {
     return DateTime.now().difference(opened).inMilliseconds;
   }
 
+  /// FIRST MEDIA, SAMPLED FAST. Only until it is seen: once remote media is
+  /// arriving the liveness probe owns every later question, and this stops.
+  /// It reads the same counters and touches no stall state, so it cannot
+  /// declare anything lost; it can only report sooner that media began.
+  void _armFirstMediaWatch(RTCPeerConnection pc) {
+    _firstMedia?.cancel();
+    _firstMedia = null;
+    if (_mediaFlowingReported) return;
+    final startedAt = DateTime.now();
+    _firstMedia = Timer.periodic(_firstMediaInterval, (timer) async {
+      if (_closing ||
+          _lostReported ||
+          _mediaFlowingReported ||
+          DateTime.now().difference(startedAt) > _firstMediaWindow) {
+        timer.cancel();
+        if (identical(_firstMedia, timer)) _firstMedia = null;
+        return;
+      }
+      if (_probing) return;
+      _probing = true;
+      final Map<String, int>? byKind;
+      try {
+        byKind = await _mediaBytesByKind(pc);
+      } finally {
+        _probing = false;
+      }
+      if (byKind == null) return;
+      _noteFirstBytes(byKind);
+      final bytes = byKind.values.fold<int>(0, (a, b) => a + b);
+      _reportMediaFlowingOnce(bytes, byKind);
+    });
+  }
+
+  void _reportMediaFlowingOnce(int bytes, Map<String, int> byKind) {
+    if (_mediaFlowingReported || bytes <= 0) return;
+    _mediaFlowingReported = true;
+    _firstMedia?.cancel();
+    _firstMedia = null;
+    unawaited(_report('op=LIVE state=media_flowing bytes=$bytes '
+        'kinds=${_kindSummary(byKind)} '
+        'sinceOpenMs=${_sinceOpenMs()}'));
+    try {
+      onMediaFlowing?.call(bytes);
+    } catch (_) {
+      // Reporting evidence must never be able to disturb the call.
+    }
+  }
+
   void _noteFirstBytes(Map<String, int> byKind) {
     for (final entry in byKind.entries) {
       if (entry.value <= 0) continue;
@@ -1542,6 +1592,8 @@ class SfuRealtimeTransport implements RealtimeTransport {
     _iceGrace = null;
     _liveness?.cancel();
     _liveness = null;
+    _firstMedia?.cancel();
+    _firstMedia = null;
     if (_lostReported || _closing) return;
     _lostReported = true;
     final ice = _pc?.iceConnectionState;

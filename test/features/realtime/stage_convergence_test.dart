@@ -107,15 +107,19 @@ void main() {
     final service = RealtimeMediaService();
     final transport = _FlakyTransport(failuresBeforeSuccess: 999);
 
-    // attachStage runs convergence itself, so an unreachable room surfaces
-    // there — publication succeeded, remote media never did, and the caller
-    // is told rather than left to infer it from an empty tile grid.
-    await expectLater(
-      service.attachStage(transport, sessionId: 's1'),
-      throwsA(isA<StateError>()),
-    );
+    // attachStage no longer holds the attach for the whole retry loop (the
+    // server's media.published push drives discovery, 2026-10-22), so an
+    // unreachable room surfaces from the convergence call itself.
+    await service.attachStage(transport, sessionId: 's1');
     expect(service.usesStageTransport, isTrue,
         reason: 'publication succeeded, so the transport must survive — only '
             'remote resolution failed');
+    await expectLater(
+      service.ensureStageRemoteMedia(
+        attempts: 3,
+        interval: const Duration(milliseconds: 1),
+      ),
+      throwsA(isA<StateError>()),
+    );
   });
 }

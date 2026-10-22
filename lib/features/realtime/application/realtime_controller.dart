@@ -4607,7 +4607,16 @@ class RealtimeController extends StateNotifier<RealtimeState>
   Future<void> _ensureStageConnected(String reason) => _stageGate
       .run(
         () => _ensureStageConnectedOnce(reason),
-        onJoin: () => _report('stage.connect_joined reason=$reason'),
+        onJoin: () {
+          _report('stage.connect_joined reason=$reason');
+          // A PUBLICATION MUST NOT BE SWALLOWED BY THE GATE. Joining the
+          // in-flight attach is right for "is the stage up?", but a
+          // `media.published` that arrives during it says "there is NEW
+          // media now" — something the in-flight attempt may already have
+          // looked past. Remember it and look again the moment the gate frees
+          // (2026-10-22: the caller found the callee's tracks 2.2 s late).
+          if (_isFreshMediaReason(reason)) _stageLookAgain = true;
+        },
         // A connect that has not finished in 20 s is not going to (a healthy
         // one takes 2 to 4). Release the gate so the reattach loop's next
         // attempt starts fresh (2026-09-30, see SingleFlight.run).
@@ -4616,7 +4625,22 @@ class RealtimeController extends StateNotifier<RealtimeState>
       .catchError(
         (Object _) => _report('stage.connect_deadline reason=$reason'),
         test: (e) => e is TimeoutException,
-      );
+      )
+      .whenComplete(() {
+        if (!_stageLookAgain) return;
+        _stageLookAgain = false;
+        if (!state.isJoined) return;
+        unawaited(_ensureStageConnected('$reason+look-again'));
+      });
+
+  /// Set when new remote media was announced while a stage operation held the
+  /// gate; cleared by the single follow-up look that it triggers.
+  bool _stageLookAgain = false;
+
+  static bool _isFreshMediaReason(String reason) =>
+      reason == 'media.published' ||
+      reason == 'participant.joined' ||
+      reason == 'roster.updated';
 
   static const Duration _stageConnectDeadline = Duration(seconds: 20);
 
