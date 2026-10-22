@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../../core/auth/auth_providers.dart';
+import '../../../core/ui/adaptive_dialog_action.dart';
 import '../../../core/auth/session_providers.dart';
 import '../../../core/institutions/institution_access_provider.dart';
 import '../../../core/platform/media_capabilities.dart';
@@ -784,7 +785,9 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   void _scheduleControlBarHide() {
     _controlBarTimer?.cancel();
     _controlBarTimer = Timer(const Duration(seconds: 4), () {
-      if (mounted) setState(() => _controlsVisible = false);
+      if (!mounted) return;
+      if (!meetingControlsMayAutoHide(context)) return;
+      setState(() => _controlsVisible = false);
     });
   }
 
@@ -971,8 +974,35 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
           ? '/meetings/${widget.meetingId}'
           : '/institution/$_exitInstitutionId/meetings/${widget.meetingId}';
 
+  /// "End for everyone" is the one exit that changes the room for every
+  /// guest, so it is asked once more (founder-approved design, 22 Oct 2026).
+  Future<bool> _confirmEndForEveryone() async {
+    final ok = await showAdaptiveDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog.adaptive(
+        title: const Text('End the meeting for everyone?'),
+        actions: [
+          adaptiveDialogAction(
+            ctx,
+            label: 'Cancel',
+            onPressed: () => Navigator.of(ctx).pop(false),
+          ),
+          adaptiveDialogAction(
+            ctx,
+            label: 'End for everyone',
+            destructive: true,
+            onPressed: () => Navigator.of(ctx).pop(true),
+          ),
+        ],
+      ),
+    );
+    return ok == true;
+  }
+
   Future<void> _endMeeting() async {
     if (_endingMeeting) return;
+    if (!await _confirmEndForEveryone()) return;
+    if (!mounted || _endingMeeting) return;
     // A recording in progress is finalized BEFORE the meeting ends — the
     // artifact belongs to the record, not to the host's memory of pressing
     // Stop at the right moment.
@@ -1094,11 +1124,8 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     if (isGuest) {
       context.pop();
     } else {
-      context.go(
-          _exitInstitutionId == null
-            ? '/home'
-            : '/institution/$_exitInstitutionId/meetings/${widget.meetingId}',
-      );
+      // The Meeting Record, as the comment above says — never /home.
+      context.go(_workspacePath);
     }
   }
 
@@ -1289,10 +1316,8 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF030712),
-      body: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: _onUserInteraction,
-        onPanUpdate: (_) => _onUserInteraction(),
+      body: MeetingRevealZone(
+        onInteract: _onUserInteraction,
         child: Stack(
         children: [
           // E3 — THE STAGE, AND NOTHING OVER IT.

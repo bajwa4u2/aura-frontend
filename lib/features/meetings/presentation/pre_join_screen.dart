@@ -1,7 +1,9 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/product/product_language.dart';
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/errors/app_error_mapper.dart';
 import '../../../core/ui/aura_space.dart';
@@ -192,7 +194,16 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
       if (!mounted) return;
       context.push(target);
     } else {
-      AuraNotice.info(context, 'This meeting is not live yet. Check back later.');
+      // Not live yet: wait where waiting is designed to happen. The waiting
+      // room polls, shows early/ended/cancelled honestly, and enters the
+      // moment the host starts — a toast left the person with nothing.
+      final target = '/meetings/${result.meetingId}/waiting'
+          '?code=${Uri.encodeComponent(widget.meetingCode)}'
+          '$guestIdSuffix';
+      _logEntry(target, result);
+      await _deviceCheck.release();
+      if (!mounted) return;
+      context.push(target);
     }
   }
 
@@ -206,6 +217,17 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
       ' code=${widget.meetingCode}'
       ' outcome=${result.outcome ?? ''} reason=${result.reasonCode ?? ''}',
     );
+  }
+
+  /// A resolution failure means "not found" only when the server said so.
+  /// Anything without an answer (offline, timeout) or a server error is a
+  /// failure to reach Aura, not a missing meeting.
+  static bool _isNotFound(Object e) {
+    if (e is DioException) {
+      final code = e.response?.statusCode;
+      return code == 404 || code == 410;
+    }
+    return false;
   }
 
   void _goToLogin() {
@@ -257,18 +279,33 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
           ),
         ),
       ),
+      // "Meeting not found" only when the meeting really is not found. Being
+      // offline or a server failure is a different truth with a different
+      // remedy: try again (founder-approved correction, 22 Oct 2026).
       error: (e, _) => GuestShell(
         showBackButton: true,
-        body: _TerminalMessage(
-          icon: Icons.error_outline_rounded,
-          title: 'Meeting not found',
-          detail: 'Check the meeting code and try again.',
-          action: FilledButton.icon(
-            icon: const Icon(Icons.keyboard_rounded, size: 18),
-            label: const Text('Enter a meeting code'),
-            onPressed: () => context.go('/meetings/join'),
-          ),
-        ),
+        body: _isNotFound(e)
+            ? _TerminalMessage(
+                icon: Icons.error_outline_rounded,
+                title: 'Meeting not found',
+                detail: 'Check the meeting code and try again.',
+                action: FilledButton.icon(
+                  icon: const Icon(Icons.keyboard_rounded, size: 18),
+                  label: const Text('Enter a meeting code'),
+                  onPressed: () => context.go('/meetings/join'),
+                ),
+              )
+            : _TerminalMessage(
+                icon: Icons.wifi_off_rounded,
+                title: "Couldn't reach Aura",
+                detail: 'Check your connection, then try again.',
+                action: FilledButton.icon(
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: Text(ProductLabels.of(ProductAction.retry)),
+                  onPressed: () =>
+                      ref.invalidate(meetingEntryResolutionProvider(_entryKey)),
+                ),
+              ),
       ),
       data: (resolution) => _buildForResolution(context, theme, resolution),
     );

@@ -248,12 +248,50 @@ class MeetingControlBar extends StatelessWidget {
                 ),
               ),
               if (isHost)
-                ControlButton(
-                  icon: Icons.stop_rounded,
-                  label: endingMeeting ? 'Ending...' : 'End',
-                  active: false,
-                  danger: true,
-                  onTap: endingMeeting ? null : onEndMeeting,
+                // A host's exit is a choice, not one button: stepping out and
+                // ending the meeting for every guest are different acts, and a
+                // mis-tap on a phone must not be the second (founder-approved
+                // design, 22 Oct 2026).
+                PopupMenuButton<String>(
+                  key: const ValueKey('meeting-host-exit'),
+                  enabled: !endingMeeting,
+                  tooltip: 'End',
+                  color: const Color(0xFF0E1116),
+                  offset: const Offset(0, -8),
+                  position: PopupMenuPosition.over,
+                  onSelected: (v) {
+                    if (v == 'leave') onLeaveMeeting();
+                    if (v == 'end') onEndMeeting();
+                  },
+                  itemBuilder: (context) => [
+                    _moreItem('leave', Icons.logout_rounded, 'Leave meeting'),
+                    const PopupMenuItem<String>(
+                      value: 'end',
+                      height: 40,
+                      child: Row(
+                        children: [
+                          Icon(Icons.stop_rounded,
+                              size: 18, color: Color(0xFFE5675C)),
+                          SizedBox(width: 10),
+                          Text(
+                            'End for everyone',
+                            style: TextStyle(
+                              color: Color(0xFFE5675C),
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  child: ControlButton(
+                    icon: Icons.stop_rounded,
+                    label: endingMeeting ? 'Ending...' : 'End',
+                    active: false,
+                    danger: true,
+                    menuChild: true,
+                  ),
                 )
               else
                 ControlButton(
@@ -448,3 +486,46 @@ class ControlButton extends StatelessWidget {
 // E5 — Participant panel
 // ---------------------------------------------------------------------------
 
+
+/// Whether the meeting bar may fade after a few idle seconds. Never for a
+/// person navigating by screen reader or switch access: they reach controls
+/// by focus, not by sight, and a bar that fades is a bar they cannot find.
+bool meetingControlsMayAutoHide(BuildContext context) =>
+    !MediaQuery.accessibleNavigationOf(context);
+
+/// The meeting room's surface, reporting every way a person reaches for the
+/// controls: a tap or drag on touch, the pointer moving on desktop and web,
+/// and the keyboard (a key press, or focus moving into the room). Before
+/// 22 Oct 2026 only touch brought the bar back.
+class MeetingRevealZone extends StatelessWidget {
+  const MeetingRevealZone({
+    super.key,
+    required this.onInteract,
+    required this.child,
+  });
+
+  final VoidCallback onInteract;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onHover: (_) => onInteract(),
+      child: Focus(
+        canRequestFocus: false,
+        skipTraversal: true,
+        onFocusChange: (_) => onInteract(),
+        onKeyEvent: (_, __) {
+          onInteract();
+          return KeyEventResult.ignored;
+        },
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: onInteract,
+          onPanUpdate: (_) => onInteract(),
+          child: child,
+        ),
+      ),
+    );
+  }
+}

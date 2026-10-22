@@ -174,7 +174,8 @@ class _LiveRoomsBodyState extends ConsumerState<_LiveRoomsBody> {
         context.push('/realtime/$sessionId?$qs');
       }
     } catch (e) {
-      setState(() => _error = 'Could not start session: $e');
+      // Plain words, never exception text (founder-approved, 22 Oct 2026).
+      setState(() => _error = 'The room did not start. Try again.');
     } finally {
       if (mounted) setState(() => _starting = false);
     }
@@ -203,7 +204,7 @@ class _LiveRoomsBodyState extends ConsumerState<_LiveRoomsBody> {
         context.push('/realtime/$sessionId?$qs');
       }
     } catch (e) {
-      if (mounted) setState(() => _error = 'Could not join room: $e');
+      if (mounted) setState(() => _error = 'You could not join the room. Try again.');
     }
   }
 
@@ -404,7 +405,7 @@ class _RoomRowState extends ConsumerState<_RoomRow> {
       context: context0,
       pill: isActive
           ? const WorkspacePill(label: 'Live now', tone: WorkspaceTone.live)
-          : WorkspacePill(label: status == 'ENDED' ? 'Ended' : (status.isNotEmpty ? status : 'Unknown')),
+          : WorkspacePill(label: _statusWords(status)),
       emphasis: isActive ? WorkspaceTone.live : null,
       trailing: isActive
           ? TextButton.icon(
@@ -845,3 +846,19 @@ class _SheetChip extends StatelessWidget {
 
 /// Phase 4 — combined presence line for the live room card.
 ///
+
+/// A session status in plain words; the server's enum never reaches a person.
+String _statusWords(String status) {
+  switch (status) {
+    case 'ENDED':
+      return 'Ended';
+    case 'SCHEDULED':
+      return 'Not started';
+    case 'CANCELLED':
+      return 'Cancelled';
+    case 'FAILED':
+      return 'Did not start';
+    default:
+      return 'Not live';
+  }
+}

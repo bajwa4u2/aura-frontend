@@ -50,6 +50,7 @@ import '../../../core/identity/person_identity_model.dart';
 import '../../../core/navigation/canonical_destinations.dart';
 import '../../../core/diagnostics/call_teardown_diag.dart';
 import 'package:aura/core/ui/aura_notice.dart';
+import 'widgets/live_safety_menu.dart';
 
 class _CallRouteRedirectingFallback extends StatelessWidget {
   const _CallRouteRedirectingFallback();
@@ -189,7 +190,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
   /// promotion from observer to stage updates it and teardown does not
   /// clobber it.
   bool _lastKnownIsObserver = false;
-  Timer? _durationTimer;
 
   /// F044 — set the moment an explicit join/resume intent exists, cleared once
   /// the lifecycle has moved somewhere with its own truthful presentation.
@@ -232,7 +232,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
     });
   }
 
-  DateTime _now = DateTime.now();
   // Panel state: null = closed; only one panel open at a time
   String? _activePanel;
   // Captured at first didChangeDependencies so dispose() can emit a best-effort
@@ -314,11 +313,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
           await controller.hydrateSession(widget.sessionId);
         }
       }
-    });
-
-    _durationTimer ??= Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      setState(() => _now = DateTime.now());
     });
 
     // Pre-join session-end truth (2026-08-17 addendum §7): a user parked
@@ -438,7 +432,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 
     // Release the wake lock when leaving the room.
     WakelockPlus.disable();
-    _durationTimer?.cancel();
     _preJoinTruthTimer?.cancel();
     _dockHideTimer?.cancel();
 
@@ -1254,7 +1247,6 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
       canManageConsents: canModerate,
     );
 
-    final callDuration = _callDuration(state.session, _now);
     // "Connection lost" is only true if there was a connection to lose:
     // pre-join the status is still its boot value (disconnected), and the
     // stage UI (Connecting… / Ready to join / the join-card error box)
@@ -1303,7 +1295,9 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                       _CallTopBar(
                         title: _callTitle(state.session, state.isVideoMode),
                         contextLabel: _contextLabel(state.session),
-                        duration: callDuration,
+                        // The clock ticks inside its own small widget; this
+                        // screen no longer rebuilds every second for it.
+                        durationAt: (now) => _callDuration(state.session, now),
                         // Stage/private participants only — the watching
                         // audience is a separate truth (charter §26 O).
                         participantCount: state.participants
@@ -1364,6 +1358,13 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                             : null,
                         onMinimize: state.isJoined
                             ? () => _minimizeCall(state.session)
+                            : null,
+                        onLiveSafety: state.session?.isLive == true
+                            ? () => showLiveSafetyMenu(
+                                  context,
+                                  ref,
+                                  sessionId: widget.sessionId,
+                                )
                             : null,
                         sessionTypeChip: _buildSessionTypeChip(),
                         trustLine: _buildTrustLine(),
@@ -2488,7 +2489,7 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
 class _CallTopBar extends StatelessWidget {
   const _CallTopBar({
     required this.title,
-    required this.duration,
+    required this.durationAt,
     required this.participantCount,
     required this.isConnecting,
     required this.hasIssue,
@@ -2501,6 +2502,7 @@ class _CallTopBar extends StatelessWidget {
     this.connectionFailure,
     this.mediaRecovering = false,
     this.onMinimize,
+    this.onLiveSafety,
     this.sessionTypeChip,
     this.trustLine,
     this.isPubliclyLive = false,
@@ -2509,7 +2511,7 @@ class _CallTopBar extends StatelessWidget {
 
   final String title;
   final String? contextLabel;
-  final Duration? duration;
+  final Duration? Function(DateTime now)? durationAt;
   final int participantCount;
   final bool isConnecting;
   final bool hasIssue;
@@ -2546,6 +2548,9 @@ class _CallTopBar extends StatelessWidget {
   final bool mediaRecovering;
 
   final VoidCallback? onMinimize;
+
+  /// "…" on a public live: Report this live (store guideline 1.2).
+  final VoidCallback? onLiveSafety;
 
   /// Per-type session chip — e.g. "Public session", "Class session",
   /// "Media interaction". Renders to the left of the status indicator
@@ -2593,7 +2598,6 @@ class _CallTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final durationLabel = duration != null ? _fmt(duration!) : null;
 
     const amber = Color(0xFFFBBF24);
     const green = Color(0xFF4ADE80);
@@ -2700,16 +2704,8 @@ class _CallTopBar extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  if (durationLabel != null) ...[
-                    const SizedBox(width: AuraSpace.s8),
-                    Text(
-                      durationLabel,
-                      style: AuraText.small.copyWith(
-                        color: AuraSurface.muted,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ],
+                  if (durationAt != null)
+                    _CallClock(durationAt: durationAt!, format: _fmt),
                 ],
               ),
               if (contextLabel != null)
@@ -2808,6 +2804,19 @@ class _CallTopBar extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+          ],
+
+          if (onLiveSafety != null) ...[
+            const SizedBox(width: AuraSpace.s8),
+            IconButton(
+              tooltip: 'More',
+              onPressed: onLiveSafety,
+              icon: const Icon(
+                Icons.more_horiz_rounded,
+                size: 18,
+                color: AuraSurface.muted,
               ),
             ),
           ],
@@ -4685,6 +4694,14 @@ class _CallPanelContentState extends ConsumerState<_CallPanelContent> {
       hostUserId: state.session?.startedByUserId,
       remoteRenderers: state.remoteRenderers,
       onRemove: ctrl.removeParticipant,
+      onSafety: state.session?.isLive == true
+          ? (p) => showLiveSafetyMenu(
+                context,
+                ref,
+                sessionId: state.session!.id,
+                speaker: p,
+              )
+          : null,
     );
   }
 
@@ -5151,6 +5168,52 @@ class _BroadcastChip extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The call's running clock. It ticks once a second in its own state, so a
+/// tick redraws one line of text instead of the whole call room.
+class _CallClock extends StatefulWidget {
+  const _CallClock({required this.durationAt, required this.format});
+
+  final Duration? Function(DateTime now) durationAt;
+  final String Function(Duration d) format;
+
+  @override
+  State<_CallClock> createState() => _CallClockState();
+}
+
+class _CallClockState extends State<_CallClock> {
+  Timer? _tick;
+
+  @override
+  void initState() {
+    super.initState();
+    _tick = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final d = widget.durationAt(DateTime.now());
+    if (d == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(left: AuraSpace.s8),
+      child: Text(
+        widget.format(d),
+        style: AuraText.small.copyWith(
+          color: AuraSurface.muted,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
       ),
     );
   }

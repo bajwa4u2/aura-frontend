@@ -1673,6 +1673,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                 institutionId: institutionId,
                 sessionId: state.uri.queryParameters['sessionId'],
                 returnTo: state.uri.queryParameters['returnTo'],
+                // Same as the non-institution route: the code is what lets
+                // the waiting room re-resolve the meeting for a guest.
+                meetingCode: state.uri.queryParameters['code'],
                 guestId: state.uri.queryParameters['guestId'],
               ),
             ),
