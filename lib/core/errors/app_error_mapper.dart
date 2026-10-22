@@ -16,10 +16,7 @@ import 'app_error.dart';
 class AppErrorMapper {
   const AppErrorMapper._();
 
-  static AppError from(
-    Object error, {
-    String? feature,
-  }) {
+  static AppError from(Object error, {String? feature}) {
     if (error is AppError) return error;
 
     if (error is DioException) {
@@ -42,10 +39,7 @@ class AppErrorMapper {
     );
   }
 
-  static AppError _fromDio(
-    DioException error, {
-    String? feature,
-  }) {
+  static AppError _fromDio(DioException error, {String? feature}) {
     final status = error.response?.statusCode;
     final envelope = _decodeEnvelope(error.response?.data);
     final backendCode = _readBackendCode(envelope);
@@ -320,5 +314,366 @@ class AppErrorMapper {
     if (value is Map<String, dynamic>) return value;
     if (value is Map) return Map<String, dynamic>.from(value);
     return null;
+  }
+}
+
+/// The account operations whose failures have their own wording.
+enum AuthOperation {
+  /// Signing in from the sign-in form (the session controller's path).
+  signIn,
+  register,
+  resendVerification,
+  verifyEmail,
+  forgotPassword,
+  verifyCode,
+  resendCode,
+  resetPassword,
+
+  /// Session, device and password management: the caller's own fallback.
+  account,
+}
+
+/// The sentence to show when an account operation fails. One place for every
+/// account message (they were spread over four mappers in three files, and
+/// the defect lived between two of them). The wording is unchanged from the
+/// mappers it replaces.
+String authErrorMessage(
+  Object error,
+  AuthOperation operation, {
+  String? fallback,
+}) {
+  if (error is! DioException) {
+    return fallback ?? _AuthMessages.fallbackFor(operation);
+  }
+  return _AuthMessages.forDio(error, operation, fallback: fallback);
+}
+
+class _AuthMessages {
+  const _AuthMessages._();
+
+  static const _signInFallback =
+      'We could not sign you in right now. Please try again.';
+
+  static String fallbackFor(AuthOperation op) {
+    switch (op) {
+      case AuthOperation.signIn:
+        return _signInFallback;
+      case AuthOperation.register:
+        return 'We could not create your account right now. Please try again.';
+      case AuthOperation.resendVerification:
+        return 'We could not resend the verification email right now. Please try again.';
+      case AuthOperation.verifyEmail:
+        return 'We could not verify your email right now. Please try again.';
+      case AuthOperation.forgotPassword:
+        return 'We could not send the reset email right now. Please try again.';
+      case AuthOperation.verifyCode:
+        return 'We could not verify the code right now. Please try again.';
+      case AuthOperation.resendCode:
+        return 'We could not resend the code right now. Please try again.';
+      case AuthOperation.resetPassword:
+        return 'We could not reset your password right now. Please try again.';
+      case AuthOperation.account:
+        return 'Something went wrong. Please try again.';
+    }
+  }
+
+  static String forDio(DioException e, AuthOperation op, {String? fallback}) {
+    if (op == AuthOperation.signIn) return _signIn(e);
+    final base = fallback ?? fallbackFor(op);
+    final common = _commonInfra(e);
+    if (common != null) return common;
+    switch (op) {
+      case AuthOperation.register:
+        return _register(e, base);
+      case AuthOperation.resendVerification:
+        return _resendVerification(e, base);
+      case AuthOperation.verifyEmail:
+        return _verifyEmail(e, base);
+      case AuthOperation.forgotPassword:
+        return _forgotPassword(e, base);
+      case AuthOperation.verifyCode:
+        return _verifyCode(e, base);
+      case AuthOperation.resendCode:
+        return _resendCode(e, base);
+      case AuthOperation.resetPassword:
+        return _resetPassword(e, base);
+      case AuthOperation.account:
+      case AuthOperation.signIn:
+        return base;
+    }
+  }
+
+  static String serverMessage(DioException e) {
+    final data = e.response?.data;
+    if (data is Map) {
+      final nestedError = data['error'];
+      if (nestedError is Map) {
+        for (final c in [
+          nestedError['message'],
+          nestedError['error'],
+          nestedError['detail'],
+          nestedError['title'],
+        ]) {
+          final s = c?.toString().trim() ?? '';
+          if (s.isNotEmpty) return s;
+        }
+      }
+      for (final c in [
+        data['message'],
+        data['error'],
+        data['detail'],
+        data['title'],
+      ]) {
+        final s = c?.toString().trim() ?? '';
+        if (s.isNotEmpty) return s;
+      }
+    }
+    if (data is String && data.trim().isNotEmpty) return data.trim();
+    return '';
+  }
+
+  static String serverCode(DioException e) {
+    final data = e.response?.data;
+    if (data is Map) {
+      final err = data['error'];
+      if (err is Map) {
+        final c = err['code']?.toString().trim();
+        if (c != null && c.isNotEmpty) return c;
+      }
+      final c = data['code']?.toString().trim();
+      if (c != null && c.isNotEmpty) return c;
+    }
+    return '';
+  }
+
+  static bool _looksLikeNetwork(DioException e) {
+    final msg = (e.message ?? '').toLowerCase();
+    return e.type == DioExceptionType.connectionError ||
+        e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.sendTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        msg.contains('socketexception') ||
+        msg.contains('failed host lookup') ||
+        msg.contains('connection refused') ||
+        msg.contains('network');
+  }
+
+  /// The shared network, rate-limit and server answers, or null.
+  static String? _commonInfra(DioException e) {
+    if (_looksLikeNetwork(e)) {
+      return 'We could not reach the server. Check your connection and try again.';
+    }
+    final code = e.response?.statusCode;
+    final server = serverMessage(e).toLowerCase();
+    if (code == 429 || server.contains('too many requests')) {
+      return 'Too many attempts in a short time. Please wait a little and try again.';
+    }
+    if (code != null && code >= 500) {
+      return 'Something went wrong on our side. Please try again in a moment.';
+    }
+    return null;
+  }
+
+  static String _signIn(DioException e) {
+    final code = e.response?.statusCode;
+    final backendCode = serverCode(e).toUpperCase();
+    final server = serverMessage(e).toLowerCase();
+
+    // No answer at all: the device could not reach Aura (21 Oct 2026).
+    if (e.response == null &&
+        (e.type == DioExceptionType.connectionError ||
+            e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.sendTimeout ||
+            e.type == DioExceptionType.receiveTimeout ||
+            e.type == DioExceptionType.unknown)) {
+      return 'Aura could not be reached. Check that this device is connected to the internet, then try again.';
+    }
+
+    // Too many attempts from this connection: say so, and for how long.
+    if (code == 429 || backendCode == 'RATE_LIMITED') {
+      final data = e.response?.data;
+      final details = data is Map && data['error'] is Map
+          ? (data['error'] as Map)['details']
+          : null;
+      final wait = details is Map
+          ? int.tryParse('${details['retryAfterSeconds']}')
+          : null;
+      final when = wait == null || wait <= 0
+          ? 'in a few minutes'
+          : wait < 90
+          ? 'in about $wait seconds'
+          : 'in about ${(wait / 60).ceil()} minutes';
+      return 'Too many sign-in attempts from this connection. Please try again $when.';
+    }
+
+    if (backendCode == 'EMAIL_NOT_VERIFIED') {
+      return 'Please verify your email first, then try signing in again.';
+    }
+
+    if (code == 401 ||
+        backendCode == 'UNAUTHORIZED' ||
+        server.contains('invalid credentials') ||
+        server.contains('invalid login') ||
+        server.contains('wrong password') ||
+        server.contains('incorrect password') ||
+        server.contains('incorrect email') ||
+        server.contains('wrong email or password') ||
+        server.contains('email or password is incorrect') ||
+        server.contains('invalid email or password') ||
+        server.contains('unauthorized')) {
+      return 'The email or password does not look right.';
+    }
+
+    if (server.contains('email not verified') ||
+        server.contains('verify your email') ||
+        server.contains('email verification required') ||
+        server.contains('unverified')) {
+      return 'Please verify your email first, then try signing in again.';
+    }
+
+    if (code == 403 ||
+        server.contains('account disabled') ||
+        server.contains('account locked') ||
+        server.contains('account suspended') ||
+        server.contains('forbidden')) {
+      return 'This account is not available right now.';
+    }
+
+    return _signInFallback;
+  }
+
+  static String _register(DioException e, String base) {
+    final code = e.response?.statusCode;
+    final backendCode = serverCode(e).toUpperCase();
+    final server = serverMessage(e).toLowerCase();
+
+    // An age refusal is final and said once: the server's sentence, no retry.
+    if (backendCode == 'ACCOUNT_AGE_INELIGIBLE') {
+      final message = serverMessage(e).trim();
+      return message.isEmpty
+          ? 'You are not old enough to have an Aura account.'
+          : message;
+    }
+    if (backendCode == 'DOB_REQUIRED') {
+      return 'Enter your date of birth to create an account.';
+    }
+    if (backendCode == 'JURISDICTION_REQUIRED') {
+      return 'Select where you are to create an account.';
+    }
+    if (server.contains('email already') ||
+        server.contains('email is already') ||
+        (server.contains('already exists') && server.contains('email')) ||
+        (server.contains('duplicate') && server.contains('email')) ||
+        (server.contains('unique') && server.contains('email'))) {
+      return 'That email is already in use. Try signing in instead.';
+    }
+    if (server.contains('handle already') ||
+        server.contains('username already') ||
+        (server.contains('duplicate') && server.contains('handle')) ||
+        (server.contains('unique') && server.contains('handle')) ||
+        (server.contains('unique') && server.contains('username'))) {
+      return 'That handle is already taken. Please choose another one.';
+    }
+    if (server.contains('invalid email') ||
+        server.contains('email is invalid') ||
+        server.contains('must be a valid email')) {
+      return 'Please enter a valid email address.';
+    }
+    if (server.contains('password') && server.contains('weak')) {
+      return 'Please choose a stronger password.';
+    }
+    if (server.contains('password') && server.contains('at least 8')) {
+      return 'Password must be at least 8 characters.';
+    }
+    if (code == 400 || code == 422) {
+      return 'Some details need another look. Please review the form and try again.';
+    }
+    return base;
+  }
+
+  static String _resendVerification(DioException e, String base) {
+    final code = e.response?.statusCode;
+    final server = serverMessage(e).toLowerCase();
+    if (code == 400 || server.contains('already verified')) {
+      return 'This email is already verified.';
+    }
+    if (code == 404 || server.contains('not found')) {
+      return 'We could not find an account with that email.';
+    }
+    return base;
+  }
+
+  static String _verifyEmail(DioException e, String base) {
+    final code = e.response?.statusCode;
+    final server = serverMessage(e).toLowerCase();
+    if (code == 400 ||
+        server.contains('invalid token') ||
+        server.contains('expired token') ||
+        server.contains('token expired')) {
+      return 'That verification link is no longer valid. Please request a new one.';
+    }
+    if (server.contains('already verified')) {
+      return 'Your email is already verified. You can sign in now.';
+    }
+    return base;
+  }
+
+  static String _forgotPassword(DioException e, String base) {
+    final code = e.response?.statusCode;
+    final server = serverMessage(e).toLowerCase();
+    if (code == 404 || server.contains('not found')) {
+      return 'We could not find an account with that email.';
+    }
+    return base;
+  }
+
+  static String _verifyCode(DioException e, String base) {
+    final code = e.response?.statusCode;
+    final server = serverMessage(e).toLowerCase();
+    if (code == 401 ||
+        server.contains('incorrect code') ||
+        server.contains('invalid code')) {
+      return 'That code is incorrect. Please check and try again.';
+    }
+    if (server.contains('expired')) {
+      return 'That code has expired. Please request a new one.';
+    }
+    if (server.contains('already used') || server.contains('consumed')) {
+      return 'That code has already been used. Please request a new one.';
+    }
+    if (code == 429 || server.contains('too many')) {
+      return 'Too many attempts. Please request a new code.';
+    }
+    return base;
+  }
+
+  static String _resendCode(DioException e, String base) {
+    final server = serverMessage(e).toLowerCase();
+    if (server.contains('please wait') || e.response?.statusCode == 429) {
+      final msg = serverMessage(e);
+      return msg.isNotEmpty ? msg : 'Please wait before requesting a new code.';
+    }
+    if (server.contains('expired')) {
+      return 'This sign-in session has expired. Please start again.';
+    }
+    return base;
+  }
+
+  static String _resetPassword(DioException e, String base) {
+    final code = e.response?.statusCode;
+    final server = serverMessage(e).toLowerCase();
+    if (code == 400 ||
+        server.contains('invalid token') ||
+        server.contains('expired token') ||
+        server.contains('token expired')) {
+      return 'That reset link is no longer valid. Please request a new one.';
+    }
+    if (server.contains('password') && server.contains('at least 8')) {
+      return 'Password must be at least 8 characters.';
+    }
+    if (server.contains('password') && server.contains('weak')) {
+      return 'Please choose a stronger password.';
+    }
+    return base;
   }
 }
