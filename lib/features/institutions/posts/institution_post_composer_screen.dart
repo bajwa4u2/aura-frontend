@@ -249,7 +249,7 @@ class _InstitutionPostComposerScreenState
       _error = 'This post was not published at its scheduled time. '
           '${initial.schedule.failureReason ?? ''}'.trim();
     }
-    final decoded = InsCommunicationDecoded.parse(initial.title);
+    final decoded = initial.communication;
     _titleCtrl.text = decoded.hadMarker ? decoded.cleanTitle : initial.title;
     _communicationType = decoded.type;
     final hydrated = hydrateTextWithDisplayTags(

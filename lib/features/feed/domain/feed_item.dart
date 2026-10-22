@@ -9,6 +9,7 @@
 library;
 
 import 'feed_media.dart';
+import '../../institutions/domain/communication_type.dart';
 import '../../../core/media/trace/aura_trace.dart';
 import '../../../core/tagging/tag_entities.dart';
 import '../../../core/identity/person_identity_model.dart';
@@ -892,6 +893,7 @@ class FeedItem {
     this.replyToPostId,
     this.replyToInstitutionPostId,
     this.parentInstitutionId,
+    this.officialType,
   });
 
   final String id;
@@ -1008,6 +1010,21 @@ class FeedItem {
   final String? replyToInstitutionPostId;
   final String? parentInstitutionId;
 
+  /// The communication type an institution post was published as, decoded
+  /// from the `[OFFICIAL:TYPE]` marker the backend stores on its title. The
+  /// marker is removed from [title] where the item is read (21 Oct 2026: the
+  /// public home card showed "[OFFICIAL:UPDATE] …" raw), so no surface can
+  /// show it. Null for anything that is not a marked institution post.
+  final InsCommunicationType? officialType;
+
+  /// [title] and [officialType] in the decoder's shape, for surfaces that
+  /// read both together. Decoding a clean title again is a no-op.
+  InsCommunicationDecoded get communication => InsCommunicationDecoded(
+        type: officialType ?? InsCommunicationType.update,
+        cleanTitle: (title ?? '').trim(),
+        hadMarker: officialType != null,
+      );
+
   /// The parent's canonical detail route when this item is a reply, else null.
   String? get parentTargetRoute {
     final up = (replyToPostId ?? '').trim();
@@ -1119,12 +1136,23 @@ class FeedItem {
     spaceSlug ??= opt(['publicSpaceSlug']);
     spaceName ??= opt(['publicSpaceName']);
 
+    final rawTitle = opt(['title']);
+    final decodedTitle = InsCommunicationDecoded.parse(rawTitle);
+    final itemType = FeedItemType.fromWire(m['type']);
     return FeedItem(
       id: s(['id']),
-      type: FeedItemType.fromWire(m['type']),
+      type: itemType,
       authorType: FeedAuthorType.fromWire(m['authorType']),
       author: author,
-      title: opt(['title']),
+      // The marker never reaches a surface; only an institution post may
+      // carry an official type (a personal post titled "[OFFICIAL:…]" is
+      // not official, and its marker is dropped as well).
+      title: rawTitle == null
+          ? null
+          : (decodedTitle.cleanTitle.isEmpty ? null : decodedTitle.cleanTitle),
+      officialType: decodedTitle.hadMarker && itemType == FeedItemType.institutionPost
+          ? decodedTitle.type
+          : null,
       body: s(['body']),
       mediaUrl: opt(['mediaUrl']),
       media: FeedMedia.listFromJson(m['media']),

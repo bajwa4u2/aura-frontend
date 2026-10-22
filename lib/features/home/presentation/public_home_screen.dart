@@ -1,4 +1,5 @@
 import 'public_home_copy.dart';
+import '../../institutions/domain/communication_type.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -1579,7 +1580,16 @@ class _HeroRecord extends StatelessWidget {
                       style: AuraChamber.eyebrow,
                     ),
                   ),
-                  if ((item.intent ?? '').trim().isNotEmpty)
+                  // An institution's official type reads in the card's own
+                  // eyebrow, decoded where the item was read; the stored
+                  // "[OFFICIAL:TYPE]" marker never reaches this card
+                  // (21 Oct 2026: it showed here raw).
+                  if (item.officialType != null)
+                    Text(
+                      'OFFICIAL ${item.officialType!.label.toUpperCase()}',
+                      style: AuraChamber.eyebrow,
+                    )
+                  else if ((item.intent ?? '').trim().isNotEmpty)
                     Text(
                       item.intent!.trim().toUpperCase(),
                       style: AuraChamber.eyebrow,

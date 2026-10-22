@@ -1,3 +1,4 @@
+import '../../features/institutions/domain/communication_type.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -81,7 +82,9 @@ class InternalReferenceCard extends StatelessWidget {
     final label = _kKindLabel[kind] ?? 'Aura link';
     final icon = _kKindIcon[kind] ?? Icons.link;
 
-    final title = (ref?.title ?? '').trim();
+    // An institution post's stored title carries its [OFFICIAL:TYPE] marker;
+    // a link card shows the words only.
+    final title = InsCommunicationDecoded.parse(ref?.title).cleanTitle;
     final subtitle = (ref?.subtitle ?? '').trim();
     final imageUrl = (ref?.imageUrl ?? '').trim();
     final isReady = ref?.isReady ?? false;

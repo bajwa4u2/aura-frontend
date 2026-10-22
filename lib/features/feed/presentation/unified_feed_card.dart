@@ -129,7 +129,7 @@ class UnifiedFeedCard extends ConsumerWidget {
     // FEEL different without leaving the design system.
     final officialPost = _isOfficialInstitutionPost(item);
     final InsCommunicationDecoded? decodedTitle = officialPost
-        ? InsCommunicationDecoded.parse(item.title)
+        ? item.communication
         : null;
     final isAnnouncement =
         decodedTitle?.hadMarker == true &&
@@ -281,13 +281,13 @@ class UnifiedFeedCard extends ConsumerWidget {
               // feed it stays a two-line, tap-through preview.
               if (bodySelectable)
                 AuraTextBlock(
-                  InsCommunicationDecoded.parse(item.title).cleanTitle,
+                  item.communication.cleanTitle,
                   style: titleStyle,
                   selectable: true,
                 )
               else
                 Text(
-                  InsCommunicationDecoded.parse(item.title).cleanTitle,
+                  item.communication.cleanTitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: titleStyle,
