@@ -14,6 +14,7 @@ import 'core/diagnostics/runtime_trace.dart';
 import 'core/utils/configure_url_strategy.dart';
 import 'core/diagnostics/call_teardown_diag.dart';
 import 'core/web/hidden_tab_frames.dart';
+import 'core/errors/client_error_reporter.dart';
 
 // Top-level handler required by firebase_messaging for background/killed-app
 // message processing. Must be annotated so the Dart tree shaker keeps it.
@@ -54,7 +55,13 @@ Future<void> main(List<String> args) async {
   // in the console. We log and continue instead.
   // TRACE: always print full stack so the exact crashing line is visible in
   // browser DevTools console regardless of build mode.
+  // Crashes on someone's device used to stop at debugPrint, invisible to us.
+  // They now go to POST /v1/client/errors (release builds only).
+  final errorReporter = ClientErrorReporter.install();
+
   FlutterError.onError = (FlutterErrorDetails details) {
+    errorReporter.report(details.exception, details.stack,
+        context: 'flutter');
     // DIAGNOSTIC: print the retained diagnostic tail BESIDE the crash. The
     // ordering is the evidence -- which key was bound to what, and what
     // rebuilt, in the frames before reactivation failed. Emits only under the
@@ -179,6 +186,7 @@ Future<void> main(List<String> args) async {
   // binding that set up the framework. Returning `true` marks the error
   // as handled so it does not propagate to the platform default handler.
   WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
+    errorReporter.report(error, stack, context: 'platform');
     debugPrint('[PLATFORM_ERROR] $error');
     debugPrint('[PLATFORM_ERROR] stack:\n$stack');
     return true;

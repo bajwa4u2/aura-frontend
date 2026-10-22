@@ -3,6 +3,8 @@ import '../core/ui/aura_window.dart';
 import '../core/ui/nav_posture_preference.dart';
 import 'dart:async';
 
+import 'package:aura/core/errors/client_error_reporter.dart';
+import 'package:aura/core/errors/report_silently.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -52,6 +54,10 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
+    // A crash report names the screen it came from (path only, no query).
+    ClientErrorReporter.currentRoute = () =>
+        ref.read(routerProvider).routeInformationProvider.value.uri.path;
+
     // Cross-tab logout fan-out: when a sibling tab calls
     // AuthBroadcast.publishLogout(), every other tab on this origin runs
     // the local-clear path here. We deliberately do NOT call the backend
@@ -91,7 +97,9 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       if (ref.read(isAuthedProvider)) {
         try {
           ref.read(deviceServiceProvider).registerCurrentDevice();
-        } catch (_) {}
+        } catch (e, st) {
+          reportSilently(e, st, 'app.registerCurrentDevice');
+        }
       }
       // R3 — Boot the cross-device reconciliation controller. The
       // controller subscribes to the correspondence socket and
@@ -299,7 +307,9 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
     callKit.onVoipTokenInvalidated = () async {
       try {
         await ref.read(deviceServiceProvider).deactivateVoipDevice();
-      } catch (_) {}
+      } catch (e, st) {
+        reportSilently(e, st, 'app.deactivateVoipDevice');
+      }
     };
 
     // ANSWERING FROM A LOCK SCREEN IS A COLD START, AND AUTH LOADS ASYNC.
@@ -595,32 +605,46 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
 
       try {
         await ref.read(tokenStoreProvider).clearTokens();
-      } catch (_) {}
+      } catch (e, st) {
+        reportSilently(e, st, 'app.clearTokens');
+      }
       try {
         await setSessionHint(false);
-      } catch (_) {}
+      } catch (e, st) {
+        reportSilently(e, st, 'app.setSessionHint');
+      }
       // RC9 — release the once-per-app-load latch first. Without this the
       // invalidations below are cosmetic: the rebuilt bootstrap returns on
       // its first line because module state still says it already ran.
       try {
         resetSessionBootstrap();
-      } catch (_) {}
+      } catch (e, st) {
+        reportSilently(e, st, 'app.resetSessionBootstrap');
+      }
       // Invalidate auth-derived providers in one go so the router refresh
       // listenable picks up the unauthed state on the next frame.
       try {
         ref.invalidate(authStatusProvider);
-      } catch (_) {}
+      } catch (e, st) {
+        reportSilently(e, st, 'app.invalidate.authStatusProvider');
+      }
       try {
         ref.invalidate(emailVerifiedProvider);
-      } catch (_) {}
+      } catch (e, st) {
+        reportSilently(e, st, 'app.invalidate.emailVerifiedProvider');
+      }
       try {
         ref.invalidate(authMeDataProvider);
-      } catch (_) {}
+      } catch (e, st) {
+        reportSilently(e, st, 'app.invalidate.authMeDataProvider');
+      }
       // Stop the local device-registration link to the now-revoked record.
       // revokeCurrentDevice gates on _isAuthed and self-clears local state.
       try {
         unawaited(ref.read(deviceServiceProvider).revokeCurrentDevice());
-      } catch (_) {}
+      } catch (e, st) {
+        reportSilently(e, st, 'app.revokeCurrentDevice');
+      }
     } else if (type == AuthBroadcast.typeLogin) {
       // Sibling tab signed in. Re-evaluate session state without forcing a
       // page reload; if a refresh cookie now lives in this browser, the
@@ -632,16 +656,24 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       // login never converged here at all.
       try {
         resetSessionBootstrap();
-      } catch (_) {}
+      } catch (e, st) {
+        reportSilently(e, st, 'app.resetSessionBootstrap');
+      }
       try {
         ref.invalidate(sessionBootstrapProvider);
-      } catch (_) {}
+      } catch (e, st) {
+        reportSilently(e, st, 'app.invalidate.sessionBootstrapProvider');
+      }
       try {
         ref.invalidate(authMeDataProvider);
-      } catch (_) {}
+      } catch (e, st) {
+        reportSilently(e, st, 'app.invalidate.authMeDataProvider');
+      }
       try {
         ref.invalidate(emailVerifiedProvider);
-      } catch (_) {}
+      } catch (e, st) {
+        reportSilently(e, st, 'app.invalidate.emailVerifiedProvider');
+      }
     }
   }
 
@@ -658,7 +690,9 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       if (!ref.read(isAuthedProvider)) return;
       try {
         ref.read(deviceServiceProvider).refreshPresence();
-      } catch (_) {}
+      } catch (e, st) {
+        reportSilently(e, st, 'app.refreshPresence');
+      }
 
       // R3 — Nudge the correspondence socket back online on resume so
       // the synthetic `socket:connected` event fires through the
@@ -674,7 +708,9 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
               .ensureConnected()
               .catchError((_) {}),
         );
-      } catch (_) {}
+      } catch (e, st) {
+        reportSilently(e, st, 'app.realtime.ensureConnected');
+      }
 
       try {
         unawaited(
@@ -683,7 +719,9 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
               .onAppResumed()
               .catchError((_) {}),
         );
-      } catch (_) {}
+      } catch (e, st) {
+        reportSilently(e, st, 'app.realtime.onAppResumed');
+      }
 
       // Ringing-card reconciliation on resume.
       //
@@ -754,7 +792,9 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       if (next && !(prev ?? false)) {
         try {
           ref.read(deviceServiceProvider).registerCurrentDevice();
-        } catch (_) {}
+        } catch (e, st) {
+          reportSilently(e, st, 'app.registerCurrentDevice');
+        }
       }
       // Auth-drop teardown: any path that flips this tab from authed → unauthed
       // (Dio's clearSessionState on a forced 401, cross-tab logout, manual
@@ -770,7 +810,9 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
         // same device.
         try {
           ref.read(mediaUrlResolverProvider).clearAll();
-        } catch (_) {}
+        } catch (e, st) {
+          reportSilently(e, st, 'app.clearAll');
+        }
       }
     });
 
