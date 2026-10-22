@@ -38,7 +38,10 @@ void main() {
     sub.close();
   });
 
-  test('and it does not survive being left alone', () async {
+  // The two timing tests run on the test binding's fake clock: they used
+  // real 20-60 ms waits against 20-40 ms windows and failed under load
+  // (21 Oct 2026). tester.pump(d) advances time exactly.
+  testWidgets('and it does not survive being left alone', (tester) async {
     var reads = 0;
     final provider = FutureProvider.autoDispose<int>((ref) async {
       cacheOperatorReading(ref, lifetime: const Duration(milliseconds: 20));
@@ -55,12 +58,14 @@ void main() {
 
     // Long enough that somebody else could have changed the governed state
     // this reading describes.
-    await Future<void>.delayed(const Duration(milliseconds: 60));
+    await tester.pump(const Duration(milliseconds: 60));
 
     sub = container.listen(provider, (_, __) {});
     await container.read(provider.future);
     expect(reads, 2, reason: 'a stale reading must not outlive its window');
     sub.close();
+    // Let the last window run out so no timer outlives the test.
+    await tester.pump(const Duration(milliseconds: 60));
   });
 
   test('an operator decision discards the reading immediately', () async {
@@ -85,7 +90,8 @@ void main() {
     sub.close();
   });
 
-  test('the window is measured from the last time anybody looked', () async {
+  testWidgets('the window is measured from the last time anybody looked',
+      (tester) async {
     var reads = 0;
     final provider = FutureProvider.autoDispose<int>((ref) async {
       cacheOperatorReading(ref, lifetime: const Duration(milliseconds: 40));
@@ -100,18 +106,20 @@ void main() {
     sub.close();
 
     // Halfway through the window, somebody looks again.
-    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await tester.pump(const Duration(milliseconds: 20));
     sub = container.listen(provider, (_, __) {});
     await container.read(provider.future);
     expect(reads, 1);
     sub.close();
 
     // The clock restarted from that second look, so this is still inside it.
-    await Future<void>.delayed(const Duration(milliseconds: 20));
+    await tester.pump(const Duration(milliseconds: 20));
     sub = container.listen(provider, (_, __) {});
     await container.read(provider.future);
     expect(reads, 1);
     sub.close();
+    // Let the last window run out so no timer outlives the test.
+    await tester.pump(const Duration(milliseconds: 60));
   });
 
   test('the default window is short enough to be honest', () {
