@@ -1591,6 +1591,37 @@ class RealtimeController extends StateNotifier<RealtimeState>
   /// Flip the microphone. Intent-shaped [setMicrophone] does the work.
   Future<void> toggleMicrophone() => setMicrophone(!state.microphoneEnabled);
 
+  /// What was capturing before the system put this call on hold, so resuming
+  /// restores it rather than guessing. Null while not held.
+  ({bool mic, bool camera})? _beforeSystemHold;
+
+  /// The system held (a cellular call won) or resumed this call (Android
+  /// Telecom). Held, Aura stops capturing: it used to keep the microphone and
+  /// camera live underneath a phone call (2026-10-22 audit). Resumed, what
+  /// was on comes back on.
+  Future<void> setSystemHold(String sessionId, {required bool held}) async {
+    if (state.sessionId != sessionId || !state.isJoined) return;
+    if (held) {
+      if (_beforeSystemHold != null) return;
+      _beforeSystemHold = (
+        mic: state.microphoneEnabled,
+        camera: state.cameraEnabled,
+      );
+      if (state.microphoneEnabled) {
+        await setMicrophone(false, fromSystem: true);
+      }
+      if (state.cameraEnabled) await setCamera(false);
+      return;
+    }
+    final before = _beforeSystemHold;
+    if (before == null) return;
+    _beforeSystemHold = null;
+    if (before.mic && !state.microphoneEnabled) {
+      await setMicrophone(true, fromSystem: true);
+    }
+    if (before.camera && !state.cameraEnabled) await setCamera(true);
+  }
+
   /// Set the microphone to a STATE, not to "the other thing".
   ///
   /// THE WHOLE PATH, IN ONE PLACE (2026-09-24). Meetings called
@@ -1600,7 +1631,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
   /// Measured on a real meeting — twelve minutes of toggling produced not one
   /// `publishState: OFF` event. The media service is the hands; this is the
   /// act. Everything that must accompany the act lives here.
-  Future<void> setMicrophone(bool enabled) async {
+  Future<void> setMicrophone(bool enabled, {bool fromSystem = false}) async {
     final sessionId = state.sessionId;
     if (sessionId == null || sessionId.isEmpty) return;
     if (state.isMediaBusy) {
@@ -1629,6 +1660,11 @@ class RealtimeController extends StateNotifier<RealtimeState>
       'enabled': enabled,
     });
     _patchMyTrack(audioOn: enabled);
+    // The system call screen shows the same microphone (iOS CallKit). A mute
+    // that came FROM that screen is already shown there.
+    if (!fromSystem) {
+      unawaited(IosCallKit.instance.setMuted(sessionId, muted: !enabled));
+    }
   }
 
   /// Flip the camera. Intent-shaped [setCamera] does the work.

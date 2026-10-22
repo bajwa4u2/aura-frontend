@@ -263,11 +263,45 @@ class MainActivity : FlutterActivity() {
      */
     private fun showOverLockScreen() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            showingOverLock = true
             setShowWhenLocked(true)
             setTurnScreenOn(true)
             val keyguard = getSystemService(KeyguardManager::class.java)
             keyguard?.requestDismissKeyguard(this, null)
         }
+    }
+
+    /** Whether this activity is currently allowed above the keyguard. */
+    private var showingOverLock = false
+
+    /**
+     * THE LOCK SCREEN COMES BACK WHEN THE CALL IS OVER (2026-10-22 audit).
+     *
+     * `showOverLockScreen` was never undone, so after one lock-screen answer
+     * the whole app stayed reachable above the keyguard for the life of the
+     * activity. Once no call is being represented (the call service is the
+     * one record of a live call on this side), the activity is an ordinary
+     * one again. Checked when the activity leaves the screen, so a call being
+     * answered in front of the person is never pushed behind the keyguard.
+     */
+    private fun releaseLockScreenIfNoCall() {
+        if (!showingOverLock) return
+        if (AuraCallService.hasActiveCall()) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(false)
+            setTurnScreenOn(false)
+        }
+        showingOverLock = false
+    }
+
+    override fun onPause() {
+        releaseLockScreenIfNoCall()
+        super.onPause()
+    }
+
+    override fun onStop() {
+        releaseLockScreenIfNoCall()
+        super.onStop()
     }
 
     private fun canUseFullScreenIntent(): Boolean {

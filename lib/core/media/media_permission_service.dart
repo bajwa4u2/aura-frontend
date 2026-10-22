@@ -106,10 +106,20 @@ class MediaPermissionService {
       final requested = <ph.Permission>[
         if (microphone) ph.Permission.microphone,
         if (camera) ph.Permission.camera,
+        // BLUETOOTH AUDIO NEEDS ITS OWN GRANT on Android 12+. It was declared
+        // in the manifest and never requested, so calls could not be routed to
+        // a headset (2026-10-22 audit). Asked with the microphone, because
+        // that is when a call is being prepared; refusing it changes nothing
+        // else. Below Android 12 the plugin reports it granted.
+        if (microphone &&
+            !kIsWeb &&
+            defaultTargetPlatform == TargetPlatform.android)
+          ph.Permission.bluetoothConnect,
       ];
       if (requested.isEmpty) return result;
       final statuses = await requested.request();
       statuses.forEach((permission, status) {
+        if (permission == ph.Permission.bluetoothConnect) return;
         final kind = permission == ph.Permission.camera
             ? MediaDeviceKind.camera
             : MediaDeviceKind.microphone;

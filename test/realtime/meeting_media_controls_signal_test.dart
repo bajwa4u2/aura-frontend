@@ -58,7 +58,9 @@ void main() {
 
   group('the controller owns the whole act', () {
     test('setMicrophone signals the session', () {
-      final start = controller.indexOf('Future<void> setMicrophone(bool enabled) async {');
+      final start = controller.indexOf(
+        'Future<void> setMicrophone(bool enabled, {bool fromSystem = false}) async {',
+      );
       expect(start, greaterThan(-1), reason: 'setMicrophone is gone');
       final body = controller.substring(start, start + 2000);
       expect(body, contains("emitAck('session:audio.set'"));

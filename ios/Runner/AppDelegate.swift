@@ -5,6 +5,7 @@ import Flutter
 import PushKit
 import UIKit
 import UserNotifications
+import WebRTC
 
 /// Does one delivered notification belong to a given Aura call?
 ///
@@ -128,6 +129,38 @@ func notificationBelongsToCall(
   ///
   /// Same discipline, same reason, opposite direction.
   private var startingLocally: Set<UUID> = []
+
+  /// Mute requests Aura made itself (the person pressed Mute inside Aura), so
+  /// CallKit's own `CXSetMutedCallAction` is fulfilled without being echoed
+  /// back to Dart as if the system screen had changed it.
+  private var mutingLocally: Set<UUID> = []
+
+  /// CALLKIT OWNS THE AUDIO SESSION WHILE IT HOLDS A CALL (2026-10-22 audit).
+  ///
+  /// WebRTC used to activate the shared AVAudioSession itself, before CallKit's
+  /// `didActivate`, and was never told when CallKit did. Answering on the lock
+  /// screen could therefore leave a call with no audio, or audio one way — a
+  /// likely cause of 1.5.0 (40)'s "no audio either direction". While CallKit
+  /// holds a call, WebRTC runs in manual-audio mode and starts its audio unit
+  /// only when CallKit activates the session. Calls CallKit never sees
+  /// (meetings) keep automatic audio, exactly as before.
+  ///
+  /// [waitForActivation] holds audio off until `didActivate` — right for a call
+  /// that is still ringing. An outgoing call is already carrying audio, so it
+  /// hands over without pausing it.
+  private func callKitTakesAudio(waitForActivation: Bool) {
+    let rtc = RTCAudioSession.sharedInstance()
+    rtc.useManualAudio = true
+    rtc.isAudioEnabled = !waitForActivation
+  }
+
+  /// No call left in CallKit: WebRTC manages its own audio again.
+  private func releaseCallKitAudioIfIdle() {
+    guard sessionByUuid.isEmpty else { return }
+    let rtc = RTCAudioSession.sharedInstance()
+    rtc.useManualAudio = false
+    rtc.isAudioEnabled = true
+  }
 
   /// Which calls Aura PLACED. `reportOutgoingCall(with:connectedAt:)` is only
   /// meaningful for an outgoing call, and Dart cannot be asked to know the
@@ -318,7 +351,9 @@ func notificationBelongsToCall(
     sessionByUuid.removeAll()
     answeringLocally.removeAll()
     startingLocally.removeAll()
+    mutingLocally.removeAll()
     outgoingCalls.removeAll()
+    releaseCallKitAudioIfIdle()
   }
 
   // MARK: - CallKit call identity
@@ -343,8 +378,10 @@ func notificationBelongsToCall(
     if let uuid = uuidBySession.removeValue(forKey: sessionId) {
       sessionByUuid.removeValue(forKey: uuid)
       startingLocally.remove(uuid)
+      mutingLocally.remove(uuid)
       outgoingCalls.remove(uuid)
     }
+    releaseCallKitAudioIfIdle()
   }
 
   /// A CALL THAT IS STILL "ACTIVE" WHEN THE NEXT ONE ARRIVES IS A LEAK.
@@ -430,6 +467,32 @@ func notificationBelongsToCall(
       // Read-only. Lets Dart describe the surface truthfully rather than
       // inferring "iOS means CallKit", which stopped being true here.
       result(callCapability.rawValue)
+
+    case "setMuted":
+      // The person muted inside Aura: the system call screen must agree, or it
+      // shows a live microphone that is not (and its Mute button acts on the
+      // wrong state). Not reported to Dart again — see `mutingLocally`.
+      guard callKitAllowed, provider != nil,
+            let args = call.arguments as? [String: Any],
+            let sessionId = args["sessionId"] as? String,
+            let muted = args["muted"] as? Bool,
+            let uuid = uuidBySession[sessionId]
+      else {
+        result(false)
+        return
+      }
+      mutingLocally.insert(uuid)
+      callController.request(
+        CXTransaction(action: CXSetMutedCallAction(call: uuid, muted: muted))
+      ) { [weak self] error in
+        if let error = error {
+          self?.mutingLocally.remove(uuid)
+          NSLog("[callkit] mute request failed: \(error.localizedDescription)")
+          result(false)
+          return
+        }
+        result(true)
+      }
 
     case "endCall":
       // Aura telling CallKit the call is over: answered on another device,
@@ -543,6 +606,7 @@ func notificationBelongsToCall(
       action.contactIdentifier = calleeName
 
       startingLocally.insert(uuid)
+      callKitTakesAudio(waitForActivation: false)
       callController.request(CXTransaction(action: action)) { [weak self] error in
         guard let self = self else { return }
         if let error = error {
@@ -861,6 +925,7 @@ extension AppDelegate: PKPushRegistryDelegate {
       self?.emit("voipPushReceived", ["sessionId": reportedSession])
     }
 
+    callKitTakesAudio(waitForActivation: true)
     provider.reportNewIncomingCall(with: uuid, update: update) { [weak self] error in
       if present(false, error) {
         completion()
@@ -913,6 +978,8 @@ extension AppDelegate: CXProviderDelegate {
   func providerDidReset(_ provider: CXProvider) {
     uuidBySession.removeAll()
     sessionByUuid.removeAll()
+    mutingLocally.removeAll()
+    releaseCallKitAudioIfIdle()
     emit("providerReset", [:])
   }
 
@@ -966,6 +1033,11 @@ extension AppDelegate: CXProviderDelegate {
   }
 
   func provider(_ provider: CXProvider, perform action: CXSetMutedCallAction) {
+    // Aura asked for this itself; the microphone is already in that state.
+    if mutingLocally.remove(action.callUUID) != nil {
+      action.fulfill()
+      return
+    }
     if let sessionId = sessionByUuid[action.callUUID] {
       emit("muted", ["sessionId": sessionId, "muted": action.isMuted])
     }
@@ -973,10 +1045,16 @@ extension AppDelegate: CXProviderDelegate {
   }
 
   func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
+    let rtc = RTCAudioSession.sharedInstance()
+    rtc.audioSessionDidActivate(audioSession)
+    rtc.isAudioEnabled = true
     emit("audioSessionActivated", [:])
   }
 
   func provider(_ provider: CXProvider, didDeactivate audioSession: AVAudioSession) {
+    let rtc = RTCAudioSession.sharedInstance()
+    rtc.audioSessionDidDeactivate(audioSession)
+    rtc.isAudioEnabled = false
     emit("audioSessionDeactivated", [:])
   }
 }
