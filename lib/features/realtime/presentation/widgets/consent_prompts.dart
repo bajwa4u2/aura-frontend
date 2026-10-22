@@ -88,3 +88,19 @@ Future<bool?> askRecording(
   );
   return allow;
 }
+
+/// Why a go-live request ended without going live, in the room's words:
+/// `session:live.request.cancelled` reason 'declined' | 'expired' |
+/// 'participant_left'. Null for anything else.
+String? goLiveCancelledWords(String reason, String name) {
+  final who = name.isEmpty ? 'Someone' : name;
+  switch (reason) {
+    case 'declined':
+      return '$who chose to stay private.';
+    case 'expired':
+      return 'No one answered in time. The call stays private.';
+    case 'participant_left':
+      return '$who left, so the call stays private.';
+  }
+  return null;
+}

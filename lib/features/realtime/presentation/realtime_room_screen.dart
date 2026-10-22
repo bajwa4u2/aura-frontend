@@ -199,12 +199,15 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
             .read(realtimeControllerProvider.notifier)
             .hydrateSession(sid));
       case 'session:live.request.cancelled':
+        // Everyone in the call hears why it stays private; the person who
+        // caused it is not told about themselves.
         final by = (e.payload['byUserId'] ?? '').toString();
-        if ((e.payload['reason'] ?? '').toString() == 'declined' &&
-            by.isNotEmpty &&
-            by != me) {
-          AuraNotice.info(context, '${_nameOf(by)} chose to stay private.');
-        }
+        if (by.isNotEmpty && by == me) return;
+        final words = goLiveCancelledWords(
+          (e.payload['reason'] ?? '').toString(),
+          by.isEmpty ? '' : _nameOf(by),
+        );
+        if (words != null) AuraNotice.info(context, words);
     }
   }
 

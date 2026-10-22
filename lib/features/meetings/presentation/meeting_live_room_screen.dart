@@ -214,6 +214,9 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
 
   /// A consent question currently on screen, so one request asks once.
   bool _consentPromptOpen = false;
+
+  /// Who started the recording, to name them in the question.
+  String _recordingByUserId = '';
   bool _savingRecording = false;
   String? _recordingAssetId;
   String? _recordingUploadId;
@@ -243,21 +246,14 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   /// "Mia wants to record this meeting." Allow, or leave: recording does not
   /// start until everyone present has said yes (founder-approved design,
   /// 22 Oct 2026). Someone arriving while it already runs is asked "Mia is
-  /// recording this meeting." and is held silent and unseen until they allow.
+  /// recording this meeting."; the call engine publishes nothing of theirs
+  /// until they allow (RealtimeState.recordingConsentRequired).
   Future<void> _askRecordingConsent(
     String requestedByUserId, {
     required bool arriving,
   }) async {
     if (_consentPromptOpen || !mounted) return;
     _consentPromptOpen = true;
-    final controller = ref.read(realtimeControllerProvider.notifier);
-    final before = ref.read(realtimeControllerProvider);
-    final hadMic = before.microphoneEnabled, hadCamera = before.cameraEnabled;
-    if (arriving) {
-      if (hadMic) await controller.setMicrophone(false);
-      if (hadCamera) await controller.setCamera(false);
-      if (!mounted) return;
-    }
     final state = ref.read(realtimeControllerProvider);
     final requester = state.participants
         .where((p) => p.userId == requestedByUserId)
@@ -270,14 +266,11 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     if (allow == null) return;
     if (allow) {
       try {
-        final sid = ref.read(realtimeControllerProvider).sessionId ?? '';
+        // The engine tells the server, then opens and publishes whatever it
+        // held back for this answer.
         await ref
-            .read(realtimeRepositoryProvider)
-            .respondToRecordingConsent(sid, accept: true);
-        if (arriving) {
-          if (hadMic) await controller.setMicrophone(true);
-          if (hadCamera) await controller.setCamera(true);
-        }
+            .read(realtimeControllerProvider.notifier)
+            .grantRecordingConsent();
       } catch (_) {
         if (mounted) {
           AuraNotice.problem(context, 'Your answer was not saved. Try again.');
@@ -558,6 +551,8 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       case 'recording:updated':
         final on = (e.payload['state'] ?? '').toString() == 'RECORDING';
         final wasOn = _roomRecording;
+        final by = (e.payload['byUserId'] ?? '').toString();
+        if (by.isNotEmpty) _recordingByUserId = by;
         setState(() => _roomRecording = on);
         if (wasOn && !on) AuraNotice.info(context, 'Recording stopped.');
         break;
@@ -1393,6 +1388,17 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                   .join(widget.sessionId);
             }
           });
+        }
+      },
+    );
+
+    // Held by the call engine until this person allows the recording (the
+    // join said so, or the server refused to publish them): ask now.
+    ref.listen(
+      realtimeControllerProvider.select((s) => s.recordingConsentRequired),
+      (prev, next) {
+        if (next && prev != true) {
+          unawaited(_askRecordingConsent(_recordingByUserId, arriving: true));
         }
       },
     );
