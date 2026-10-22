@@ -3492,6 +3492,7 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           controller: _textController,
           focusNode: _textFocus,
           onTagSelected: _rememberSelectedTag,
+          attached: _selectedTagReferences,
           child: TextField(
             controller: _textController,
             focusNode: _textFocus,
