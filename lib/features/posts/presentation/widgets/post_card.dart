@@ -1,3 +1,4 @@
+import 'package:aura/core/errors/report_silently.dart';
 import 'package:aura/core/product/temporal.dart';
 import 'package:dio/dio.dart';
 import '../../../../core/media/trace/aura_trace.dart';
@@ -234,13 +235,21 @@ class _PostCardState extends ConsumerState<PostCard> {
     try {
       final media = dyn.media;
       if (media is List) rawList = media;
-    } catch (_) {}
+    } on NoSuchMethodError {
+      // This post model has no 'media'.
+    } catch (e, st) {
+      reportSilently(e, st, 'postCard.media');
+    }
 
     if (rawList.isEmpty) {
       try {
         final mediaItems = dyn.mediaItems;
         if (mediaItems is List) rawList = mediaItems;
-      } catch (_) {}
+      } on NoSuchMethodError {
+        // This post model has no 'mediaItems'.
+      } catch (e, st) {
+        reportSilently(e, st, 'postCard.mediaItems');
+      }
     }
 
     for (final item in rawList) {
@@ -310,23 +319,39 @@ class _PostCardState extends ConsumerState<PostCard> {
     try {
       mediaUrl = (dyn.mediaUrl as String?)?.trim();
       if (mediaUrl != null && mediaUrl.isEmpty) mediaUrl = null;
-    } catch (_) {}
+    } on NoSuchMethodError {
+      // This post model has no 'mediaUrl'.
+    } catch (e, st) {
+      reportSilently(e, st, 'postCard.mediaUrl');
+    }
 
     try {
       mediaThumbUrl = (dyn.mediaThumbUrl as String?)?.trim();
       if (mediaThumbUrl != null && mediaThumbUrl.isEmpty) mediaThumbUrl = null;
-    } catch (_) {}
+    } on NoSuchMethodError {
+      // This post model has no 'mediaThumbUrl'.
+    } catch (e, st) {
+      reportSilently(e, st, 'postCard.mediaThumbUrl');
+    }
 
     try {
       mediaType = (dyn.mediaType as Object?)?.toString();
-    } catch (_) {}
+    } on NoSuchMethodError {
+      // This post model has no 'mediaType'.
+    } catch (e, st) {
+      reportSilently(e, st, 'postCard.mediaType');
+    }
 
     try {
       mediaWidth = dyn.mediaWidth as int?;
     } catch (_) {
       try {
         mediaWidth = int.tryParse((dyn.mediaWidth ?? '').toString());
-      } catch (_) {}
+      } on NoSuchMethodError {
+        // This post model has no 'mediaWidth'.
+      } catch (e, st) {
+        reportSilently(e, st, 'postCard.mediaWidth');
+      }
     }
 
     try {
@@ -334,7 +359,11 @@ class _PostCardState extends ConsumerState<PostCard> {
     } catch (_) {
       try {
         mediaHeight = int.tryParse((dyn.mediaHeight ?? '').toString());
-      } catch (_) {}
+      } on NoSuchMethodError {
+        // This post model has no 'mediaHeight'.
+      } catch (e, st) {
+        reportSilently(e, st, 'postCard.mediaHeight');
+      }
     }
 
     try {
@@ -342,13 +371,21 @@ class _PostCardState extends ConsumerState<PostCard> {
     } catch (_) {
       try {
         mediaDuration = int.tryParse((dyn.mediaDuration ?? '').toString());
-      } catch (_) {}
+      } on NoSuchMethodError {
+        // This post model has no 'mediaDuration'.
+      } catch (e, st) {
+        reportSilently(e, st, 'postCard.mediaDuration');
+      }
     }
 
     try {
       caption = (dyn.caption as String?)?.trim();
       if (caption != null && caption.isEmpty) caption = null;
-    } catch (_) {}
+    } on NoSuchMethodError {
+      // This post model has no 'caption'.
+    } catch (e, st) {
+      reportSilently(e, st, 'postCard.caption');
+    }
 
     final resolvedMediaUrl = _resolveMediaUrl(ref, mediaUrl);
     final resolvedMediaThumbUrl = _resolveMediaUrl(ref, mediaThumbUrl);
@@ -385,19 +422,35 @@ class _PostCardState extends ConsumerState<PostCard> {
 
     try {
       candidates.add((author?.contextLine as String?)?.trim());
-    } catch (_) {}
+    } on NoSuchMethodError {
+      // This post model has no 'contextLine'.
+    } catch (e, st) {
+      reportSilently(e, st, 'postCard.contextLine');
+    }
 
     try {
       candidates.add((author?.headline as String?)?.trim());
-    } catch (_) {}
+    } on NoSuchMethodError {
+      // This post model has no 'headline'.
+    } catch (e, st) {
+      reportSilently(e, st, 'postCard.headline');
+    }
 
     try {
       candidates.add((author?.tagline as String?)?.trim());
-    } catch (_) {}
+    } on NoSuchMethodError {
+      // This post model has no 'tagline'.
+    } catch (e, st) {
+      reportSilently(e, st, 'postCard.tagline');
+    }
 
     try {
       candidates.add((author?.bio as String?)?.trim());
-    } catch (_) {}
+    } on NoSuchMethodError {
+      // This post model has no 'bio'.
+    } catch (e, st) {
+      reportSilently(e, st, 'postCard.bio');
+    }
 
     for (final item in candidates) {
       final s = (item ?? '').trim();
@@ -433,7 +486,11 @@ class _PostCardState extends ConsumerState<PostCard> {
           authorHandle == viewerHandle) {
         return true;
       }
-    } catch (_) {}
+    } on NoSuchMethodError {
+      // This author model has no 'handle'.
+    } catch (e, st) {
+      reportSilently(e, st, 'postCard.authorHandle');
+    }
 
     return false;
   }
@@ -725,12 +782,20 @@ class _PostCardState extends ConsumerState<PostCard> {
     String? status;
     try {
       status = (dyn.status as Object?)?.toString();
-    } catch (_) {}
+    } on NoSuchMethodError {
+      // This post model has no 'status'.
+    } catch (e, st) {
+      reportSilently(e, st, 'postCard.status');
+    }
 
     String? visibility;
     try {
       visibility = (dyn.visibility as Object?)?.toString();
-    } catch (_) {}
+    } on NoSuchMethodError {
+      // This post model has no 'visibility'.
+    } catch (e, st) {
+      reportSilently(e, st, 'postCard.visibility');
+    }
 
     String? linkUrl;
     String? linkTitle;
@@ -742,19 +807,31 @@ class _PostCardState extends ConsumerState<PostCard> {
     } catch (_) {
       try {
         linkUrl = _cleanNullableText(dyn.url);
-      } catch (_) {}
+      } on NoSuchMethodError {
+        // This post model has no 'url'.
+      } catch (e, st) {
+        reportSilently(e, st, 'postCard.url');
+      }
     }
 
     try {
       linkTitle = _cleanNullableText(dyn.linkTitle);
-    } catch (_) {}
+    } on NoSuchMethodError {
+      // This post model has no 'linkTitle'.
+    } catch (e, st) {
+      reportSilently(e, st, 'postCard.linkTitle');
+    }
 
     try {
       linkSubtitle = _cleanNullableText(dyn.linkSubtitle);
     } catch (_) {
       try {
         linkSubtitle = _cleanNullableText(dyn.linkDescription);
-      } catch (_) {}
+      } on NoSuchMethodError {
+        // This post model has no 'linkDescription'.
+      } catch (e, st) {
+        reportSilently(e, st, 'postCard.linkDescription');
+      }
     }
 
     try {
@@ -762,7 +839,11 @@ class _PostCardState extends ConsumerState<PostCard> {
     } catch (_) {
       try {
         linkThumbUrl = _cleanNullableText(dyn.linkImageUrl);
-      } catch (_) {}
+      } on NoSuchMethodError {
+        // This post model has no 'linkImageUrl'.
+      } catch (e, st) {
+        reportSilently(e, st, 'postCard.linkImageUrl');
+      }
     }
 
     final createdAt = post.createdAt;
