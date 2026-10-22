@@ -1,3 +1,4 @@
+import 'package:aura/core/errors/app_error_mapper.dart';
 import '../../../core/ui/aura_chamber.dart';
 import 'dart:async';
 
@@ -112,6 +113,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   String _humanizeLoginError(Object error) => humanizeLoginError(error);
 
+  /// The finished sentence of an AuthException, else the operation's own
+  /// wording; never raw error text.
+  String _shown(Object e, AuthOperation op) =>
+      e is AuthException ? e.message : authErrorMessage(e, op);
+
   Future<void> _login() async {
     FocusScope.of(context).unfocus();
     if (_busy) return;
@@ -211,7 +217,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       // Session set — router redirects automatically
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      setState(() => _error = _shown(e, AuthOperation.verifyCode));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -239,7 +245,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       _startResendCooldown(60);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+      setState(() => _error = _shown(e, AuthOperation.resendCode));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -907,55 +913,11 @@ class _NoticeBanner extends StatelessWidget {
 /// so the test has to hold both at once.
 @visibleForTesting
 String humanizeLoginError(Object error) {
-  final raw = error.toString().trim();
-  final msg = raw.toLowerCase();
-  if (msg.isEmpty)
-    return 'We could not sign you in right now. Please try again.';
-
-  // THE SAME PAIR DEFECT AS THE JOIN FORM. See register_screen.dart.
-  //
-  // `AuthRepository._mapLoginError` already turned the server's code into
-  // the sentence to show. What follows re-maps that SENTENCE, and two of the
-  // repository's own outputs match none of its branches, so they were being
-  // replaced with "Please try again":
-  //
-  //   403  ->  "This account is not available right now."   (contains none
-  //            of disabled / locked / suspended / forbidden)
-  //   5xx  ->  "Something went wrong on our side. ..."      (contains
-  //            neither "500" nor "server error")
-  //
-  // Both are cases where telling someone to try again is the least useful
-  // thing that could be said. An AuthException is the repository's finished
-  // answer; pass it through.
-  if (error is AuthException) return raw;
-  if (msg.contains('invalid credentials') ||
-      msg.contains('does not look right') ||
-      msg.contains('401') ||
-      msg.contains('unauthorized')) {
-    return 'The email or password does not look right.';
-  }
-  if (msg.contains('verify your email') ||
-      msg.contains('email not verified') ||
-      msg.contains('unverified')) {
-    return 'Please verify your email first, then try signing in again.';
-  }
-  if (msg.contains('account disabled') ||
-      msg.contains('account locked') ||
-      msg.contains('account suspended') ||
-      msg.contains('forbidden')) {
-    return 'This account is not available right now. Please contact support.';
-  }
-  if (msg.contains('socketexception') ||
-      msg.contains('failed host lookup') ||
-      msg.contains('connection') ||
-      msg.contains('timed out')) {
-    return 'We could not reach the server. Check your connection and try again.';
-  }
-  if (msg.contains('500') || msg.contains('server error')) {
-    return 'Something went wrong on our side. Please try again in a moment.';
-  }
-  if (msg.contains('429') || msg.contains('too many')) {
-    return 'Too many attempts in a short time. Please wait a little and try again.';
-  }
-  return 'We could not sign you in right now. Please try again.';
+  // One wording, decided where the failure is understood. The controller
+  // and repository throw AuthException with the finished sentence; this
+  // screen used to re-map that sentence by keyword, which turned approved
+  // wording (no connection, rate limit, unavailable account) into
+  // "We could not sign you in right now".
+  if (error is AuthException) return error.message;
+  return authErrorMessage(error, AuthOperation.signIn);
 }
