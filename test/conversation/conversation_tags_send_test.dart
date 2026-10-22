@@ -56,6 +56,10 @@ void main() {
     final tags = (sent['tagReferences'] as List).cast<Map>();
     expect(tags, hasLength(1));
     expect(sent['body'], contains(tags.single['sourceText']));
+    // The server resolves a mention by USER ID; a handle here was refused as
+    // "Mentioned member not found" (S24+, 21 Oct 2026).
+    expect(tags.single['entityId'], 'user-amina');
+    expect(tags.single['kind'], 'member');
   }, variant: TargetPlatformVariant.only(TargetPlatform.android));
 
   testWidgets('remove the tag with x, send: the body is the field text, no tags',

@@ -410,7 +410,11 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       out.add(
         TagSuggestion(
           kind: TagKind.member,
-          canonicalId: publicKey,
+          // The reference names the person by user id: the server resolves a
+          // mention by id, and a handle here was refused as "Mentioned member
+          // not found", so no picked person could be sent (since 22 Aug;
+          // found on a Galaxy S24+, 21 Oct 2026). The text keeps @handle.
+          canonicalId: person.userId,
           display: label,
           insertText: '@$publicKey',
           subtitle: handle.isNotEmpty ? '@$handle' : null,
