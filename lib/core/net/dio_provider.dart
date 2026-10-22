@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:aura/core/errors/report_silently.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,7 +29,9 @@ bool isHostWideRateLimit(Response<dynamic>? response) {
     if (trimmed.startsWith('{')) {
       try {
         body = jsonDecode(trimmed);
-      } catch (_) {}
+      } catch (_) {
+        // Not JSON after all: the raw text stays the body.
+      }
     }
   }
   if (body is Map) {
@@ -190,7 +193,9 @@ final dioProvider = Provider<Dio>((ref) {
         final value = firstPair.substring(eq + 1).trim();
         if (value.isNotEmpty) return value;
       }
-    } catch (_) {}
+    } catch (_) {
+      // A malformed Set-Cookie header carries no refresh token.
+    }
     return null;
   }
 
@@ -494,7 +499,10 @@ final dioProvider = Provider<Dio>((ref) {
         if (!skipAuth) {
           try {
             await store.waitUntilLoaded();
-          } catch (_) {}
+          } catch (e, st) {
+            // The request still goes; it may go without a token.
+            reportSilently(e, st, 'dio.tokenStore.waitUntilLoaded');
+          }
 
           // Wait for session bootstrap to settle so a request fired during the
           // /auth/refresh round-trip on app start does not race past it with no
@@ -526,7 +534,10 @@ final dioProvider = Provider<Dio>((ref) {
         // treats the request as a legacy client with safe defaults.
         try {
           await ref.read(clientIdentityProvider.future);
-        } catch (_) {}
+        } catch (e, st) {
+          // The headers are omitted; the backend applies legacy defaults.
+          reportSilently(e, st, 'dio.clientIdentity');
+        }
         final identity = ref.read(clientIdentitySnapshotProvider);
         if (identity != null) {
           identity.toHttpHeaders().forEach((key, value) {
