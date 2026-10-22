@@ -140,11 +140,14 @@ void main() {
     // 1.4.4 shipped until that is proven or cleared. The old assertion
     // ("fire-and-forget is what let the route change land in the same
     // second as the bind") still holds for Android and is kept below.
+    // The value is `speaker` since 2026-10-22: the video default no longer
+    // takes the call off a connected headset (`_speakerDefaultFor`). WHEN it
+    // is applied — awaited on Android, fired on iOS — is what is pinned here.
     test('the default output is AWAITED on Android, not fired into the same '
         'moment', () {
       final androidBranch = RegExp(
         r'if \(defaultTargetPlatform == TargetPlatform\.android\) \{\s*'
-        r'await _mediaService\.setSpeakerphoneEnabled\(wantsVideo\);',
+        r'await _mediaService\.setSpeakerphoneEnabled\(speaker\);',
       );
       expect(controller, matches(androidBranch),
           reason: 'fire-and-forget is what let the route change land in the '
@@ -154,7 +157,7 @@ void main() {
     test('iOS keeps 1.4.4 behaviour: fire-and-forget', () {
       final otherwise = RegExp(
         r'\} else \{\s*'
-        r'unawaited\(_mediaService\.setSpeakerphoneEnabled\(wantsVideo\)\);',
+        r'unawaited\(_mediaService\.setSpeakerphoneEnabled\(speaker\)\);',
       );
       expect(controller, matches(otherwise));
     });

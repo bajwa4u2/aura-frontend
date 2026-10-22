@@ -9,6 +9,7 @@ import '../../../core/media/device_permission.dart';
 import '../domain/remote_media_presentation.dart';
 import 'realtime_transport.dart';
 import 'sfu_realtime_transport.dart';
+import '../../../core/errors/report_silently.dart';
 
 /// What a camera request ACTUALLY achieved.
 ///
@@ -659,9 +660,11 @@ class RealtimeMediaService {
           'renderers=${_remoteRenderers.length}',
         );
         _publish();
-      } catch (error) {
+      } catch (error, stack) {
         debugPrint('[rtc] onTrack ERROR peerKey=$peerKey err=$error');
-        _error = error.toString();
+        reportSilently(error, stack, 'realtime.media.onTrack peer=$peerKey');
+        // A code, never the exception text: mediaError reaches the screens.
+        _error = 'media_unavailable';
         _publish();
       }
     };
@@ -1925,11 +1928,16 @@ class RealtimeMediaService {
   int _consecutiveLossy = 0;
   int _consecutiveClean = 0;
   static const int _minVideoBitrateCapKbps = 250;
+  static const int _stageVideoBitrateCapKbps = 1500;
 
   /// Participant-count scaling: a P2P mesh uploads one stream per peer, so
   /// the per-peer cap must shrink as the room grows.
   Future<void> applyParticipantScaling(int participantCount) async {
-    _baseVideoBitrateCapKbps = participantCount <= 2 ? 1200 : 600;
+    // The stage uploads ONE stream however many watch, so its base does not
+    // shrink with the room; a mesh uploads one per peer, so it must.
+    _baseVideoBitrateCapKbps = _stage is SfuRealtimeTransport
+        ? _stageVideoBitrateCapKbps
+        : (participantCount <= 2 ? 1200 : 600);
     final cap = _videoBitrateCapKbps;
     if (cap == null || cap > _baseVideoBitrateCapKbps) {
       await _applyVideoBitrateCap(_baseVideoBitrateCapKbps);
@@ -1938,6 +1946,10 @@ class RealtimeMediaService {
 
   Future<void> _applyVideoBitrateCap(int kbps) async {
     _videoBitrateCapKbps = kbps;
+    final stage = _stage;
+    if (stage is SfuRealtimeTransport) {
+      await stage.applyVideoSenderCap(kbps);
+    }
     for (final entry in _peers.entries) {
       try {
         final senders = await entry.value.getSenders();
@@ -1963,6 +1975,15 @@ class RealtimeMediaService {
     MediaStreamTrack track,
     String preference,
   ) async {
+    final stage = _stage;
+    if (stage is SfuRealtimeTransport) {
+      await stage.applyVideoSenderCap(
+        _videoBitrateCapKbps ?? _baseVideoBitrateCapKbps,
+        degradation: preference == 'maintain-resolution'
+            ? RTCDegradationPreference.MAINTAIN_RESOLUTION
+            : RTCDegradationPreference.MAINTAIN_FRAMERATE,
+      );
+    }
     for (final peer in _peers.values) {
       try {
         final senders = await peer.getSenders();

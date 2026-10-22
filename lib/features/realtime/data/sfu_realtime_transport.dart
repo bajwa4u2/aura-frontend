@@ -1483,6 +1483,55 @@ class SfuRealtimeTransport implements RealtimeTransport {
     };
   }
 
+  /// CAP WHAT THIS STAGE SENDS.
+  ///
+  /// The stage published uncapped 720p to the SFU, which forwards it to every
+  /// viewer: a Go Live or a large meeting sent each viewer the full stream
+  /// whatever their network (2026-10-22 audit). The same adaptation ladder
+  /// that caps mesh peers now caps the stage's video sender. Best-effort: a
+  /// platform that refuses `setParameters` keeps sending as before.
+  Future<void> applyVideoSenderCap(
+    int kbps, {
+    RTCDegradationPreference? degradation,
+  }) async {
+    final pc = _pc;
+    if (_closing || pc == null) return;
+    try {
+      for (final sender in await pc.getSenders()) {
+        final kind = _kindBySenderId[sender.senderId] ?? sender.track?.kind;
+        if (kind != 'video') continue;
+        final params = sender.parameters;
+        final encodings = params.encodings;
+        if (encodings != null) {
+          for (final encoding in encodings) {
+            encoding.maxBitrate = kbps * 1000;
+          }
+        }
+        if (degradation != null) params.degradationPreference = degradation;
+        await sender.setParameters(params);
+      }
+    } catch (error) {
+      debugPrint('[sfu] video sender cap failed err=$error');
+    }
+  }
+
+  /// WATCH AGAIN AFTER A RECOVERY THAT KEPT THIS TRANSPORT.
+  ///
+  /// Loss is reported once and latched, and the probe and ICE watch stop with
+  /// it. When the controller answers "media stopped but my path is fine" by
+  /// resubscribing instead of rebuilding, this same transport carries on — and
+  /// it used to carry on unwatched, so a later Wi-Fi to cellular switch froze
+  /// the call while the screen said "connected" (2026-10-22 audit). Returns
+  /// whether watching resumed.
+  bool rearm() {
+    final pc = _pc;
+    if (_closing || pc == null) return false;
+    _lostReported = false;
+    _armTransportWatch(pc);
+    _armLivenessProbe(pc);
+    return true;
+  }
+
   /// Report loss ONCE, and never while deliberately closing.
   ///
   /// A transport being torn down passes through the same ICE states as one

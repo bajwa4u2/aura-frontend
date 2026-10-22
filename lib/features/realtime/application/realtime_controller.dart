@@ -25,6 +25,8 @@ import '../../../core/diagnostics/call_teardown_diag.dart';
 import '../../devices/device_service.dart';
 import '../../../core/notifications/android_telecom.dart';
 import '../../../core/notifications/ios_call_kit.dart';
+import '../../../core/notifications/android_call_service.dart';
+import '../../../core/errors/report_silently.dart';
 
 /// THE BACKEND WOULD NOT SAY HOW THIS CALL MAY CONNECT.
 ///
@@ -46,6 +48,29 @@ class TransportConfigurationUnavailable implements Exception {
   String toString() => 'TransportConfigurationUnavailable: $cause';
 }
 
+/// The server refused a join or resume with `{ok: false, reason}`.
+///
+/// Typed so the join paths can say what happened instead of reading the ack
+/// as success. [reason] is the server's code (e.g. `SESSION_AT_CAPACITY`);
+/// it is never shown to a person.
+class RealtimeJoinRefused implements Exception {
+  const RealtimeJoinRefused(this.reason);
+
+  final String reason;
+
+  /// The refusal carried by [ack], or null when the ack is not a refusal.
+  /// Only an explicit `ok: false` refuses: older servers answered a join
+  /// with an empty map, and that has always meant success.
+  static RealtimeJoinRefused? fromAck(Map<String, dynamic>? ack) {
+    if (ack == null || ack['ok'] != false) return null;
+    final reason = (ack['reason'] ?? ack['code'] ?? '').toString().trim();
+    return RealtimeJoinRefused(reason.isEmpty ? 'JOIN_REFUSED' : reason);
+  }
+
+  @override
+  String toString() => 'RealtimeJoinRefused: $reason';
+}
+
 class RealtimeController extends StateNotifier<RealtimeState>
     with WidgetsBindingObserver {
   RealtimeController(
@@ -55,7 +80,9 @@ class RealtimeController extends StateNotifier<RealtimeState>
     this._tokenStore,
     this._readClientIdentity, {
     Future<String> Function()? readMyUserId,
+    Future<bool> Function()? hasPrivateAudioRoute,
   }) : _readMyUserId = readMyUserId,
+       _hasPrivateAudioRoute = hasPrivateAudioRoute,
        super(RealtimeState.initial()) {
     _subscription = _socketService.events.listen(_handleSocketEvent);
     _mediaSubscription = _mediaService.snapshots.listen(_handleMediaSnapshot);
@@ -65,6 +92,46 @@ class RealtimeController extends StateNotifier<RealtimeState>
     // transport — a laptop waking from sleep can hold a live socket over
     // dead ICE, which previously looked "connected" with frozen tiles.
     WidgetsBinding.instance.addObserver(this);
+    // THE CALL SERVICE FOLLOWS THE SESSION, NOT A SCREEN (2026-10-22 audit).
+    // Started and stopped by the call room's lifetime, it stopped when a call
+    // was minimised to the pill (the room screen is disposed) and was never
+    // started for meetings at all, so Android took the microphone away as
+    // soon as Aura left the screen. Joined state is the one truth for both.
+    _removeCallServiceListener = addListener(_syncAndroidCallService);
+  }
+
+  void Function()? _removeCallServiceListener;
+
+  /// The session (and type) the Android call service was last held for, so a
+  /// state change that alters nothing about the call sends nothing.
+  String? _callServiceSessionId;
+  bool _callServiceVideo = false;
+
+  void _syncAndroidCallService(RealtimeState next) {
+    final service = AndroidCallService.instance;
+    if (!service.isSupported) return;
+    final sessionId = (next.sessionId ?? '').trim();
+    if (next.isJoined && sessionId.isNotEmpty) {
+      final video = next.isVideoMode || next.cameraEnabled;
+      if (_callServiceSessionId == sessionId && _callServiceVideo == video) {
+        return;
+      }
+      _callServiceSessionId = sessionId;
+      _callServiceVideo = video;
+      unawaited(
+        service.holdForSession(
+          sessionId,
+          video: video,
+          title: next.session?.title ?? '',
+        ),
+      );
+      return;
+    }
+    final held = _callServiceSessionId;
+    if (held == null) return;
+    _callServiceSessionId = null;
+    _callServiceVideo = false;
+    unawaited(service.releaseSession(held));
   }
 
   final RealtimeRepository _repository;
@@ -76,6 +143,25 @@ class RealtimeController extends StateNotifier<RealtimeState>
   /// media capture can distinguish the broadcaster (publishes) from a
   /// PUBLIC_STAGE viewer (receive-only). Null in tests that don't care.
   final Future<String> Function()? _readMyUserId;
+
+  /// Whether a Bluetooth or wired headset is available to play the call.
+  /// Null in tests that don't care, and false where the platform cannot say.
+  final Future<bool> Function()? _hasPrivateAudioRoute;
+
+  /// The loudspeaker default for a video call, unless a headset is there.
+  /// Forcing the speaker on a video call took the call away from connected
+  /// earbuds (production log 2026-09-24: `bt_sco -> speaker`).
+  Future<bool> _speakerDefaultFor(bool wantsVideo) async {
+    if (!wantsVideo) return false;
+    final probe = _hasPrivateAudioRoute;
+    if (probe == null) return true;
+    try {
+      final headset = await probe().timeout(const Duration(milliseconds: 800));
+      return !headset;
+    } catch (_) {
+      return true;
+    }
+  }
   // Awaits the client identity FutureProvider so the realtime handshake
   // always carries identity headers even on a very-early reconnect (e.g.
   // immediately after sign-in before any HTTP request has run). Resolves
@@ -368,7 +454,10 @@ class RealtimeController extends StateNotifier<RealtimeState>
             );
             return;
           }
-          state = state.copyWith(errorMessage: error.toString());
+          reportSilently(error, null, 'realtime.offer session=${state.sessionId}');
+          state = state.copyWith(
+            errorMessage: _callErrorMessage(error, 'connect this call'),
+          );
         }
       }
     } finally {
@@ -442,7 +531,9 @@ class RealtimeController extends StateNotifier<RealtimeState>
       state = state.copyWith(
         connectionStatus: status,
         clearErrorMessage: reconnecting,
-        errorMessage: reconnecting ? null : error.toString(),
+        errorMessage: reconnecting
+            ? null
+            : _callErrorMessage(error, 'connect to live sessions'),
         clearInfoMessage: !reconnecting,
         infoMessage: reconnecting ? 'Reconnecting…' : null,
       );
@@ -484,7 +575,10 @@ class RealtimeController extends StateNotifier<RealtimeState>
       );
       return bundle.session.id;
     } catch (error) {
-      state = state.copyWith(isBusy: false, errorMessage: error.toString());
+      state = state.copyWith(
+        isBusy: false,
+        errorMessage: _callErrorMessage(error, 'start this call'),
+      );
       rethrow;
     }
   }
@@ -670,6 +764,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
     // truth attached.
     state = state.copyWith(
       joinState: RealtimeJoinState.joining,
+      liveEnded: false,
       sessionId: trimmed,
       clearErrorMessage: true,
       clearInfoMessage: true,
@@ -783,6 +878,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
     _clearRtcConfiguration();
     state = state.copyWith(
       joinState: RealtimeJoinState.joining,
+      liveEnded: false,
       sessionId: trimmed,
       connectionStatus: RealtimeConnectionStatus.reconnecting,
       infoMessage: 'Reconnecting…',
@@ -1109,6 +1205,13 @@ class RealtimeController extends StateNotifier<RealtimeState>
     // start a second heartbeat/media/stats cycle.
     if (epoch != _joinEpoch) return;
 
+    // A REFUSED JOIN IS NOT A JOIN. The server answers a full, closed or
+    // banned session with `{ok: false, reason}` on purpose so the client can
+    // act on it; this used to be ignored, the screen said "You joined live"
+    // and a heartbeat started for a seat that did not exist.
+    final refusal = RealtimeJoinRefused.fromAck(joinAck);
+    if (refusal != null) throw refusal;
+
     // P0 FIX (guest reconnect storm): start the heartbeat the INSTANT the
     // socket join is acknowledged — BEFORE media/room readiness. Previously
     // _startHeartbeat ran only after _ensureMediaReady + negotiation at the end
@@ -1168,15 +1271,19 @@ class RealtimeController extends StateNotifier<RealtimeState>
 
     state = state.copyWith(
       joinState: RealtimeJoinState.joining,
+      liveEnded: false,
       sessionId: trimmed,
       clearErrorMessage: true,
       clearInfoMessage: true,
     );
 
     try {
-      await _socketService.emitAck('session:resume', <String, dynamic>{
-        'sessionId': trimmed,
-      });
+      final resumeAck = await _socketService.emitAck(
+        'session:resume',
+        <String, dynamic>{'sessionId': trimmed},
+      );
+      final refusal = RealtimeJoinRefused.fromAck(resumeAck);
+      if (refusal != null) throw refusal;
 
       await hydrateSession(trimmed);
       await _ensureMediaReady(trimmed, refreshTurnCredentials: true);
@@ -1688,8 +1795,11 @@ class RealtimeController extends StateNotifier<RealtimeState>
     try {
       final policy = await _repository.getPolicy(sessionId);
       state = state.copyWith(policy: policy);
-    } catch (error) {
-      state = state.copyWith(errorMessage: error.toString());
+    } catch (error, stack) {
+      reportSilently(error, stack, 'realtime.policy session=$sessionId');
+      state = state.copyWith(
+        errorMessage: _callErrorMessage(error, 'load this call'),
+      );
     }
   }
 
@@ -1700,8 +1810,11 @@ class RealtimeController extends StateNotifier<RealtimeState>
     try {
       final artifacts = await _repository.listArtifacts(sessionId);
       state = state.copyWith(artifacts: artifacts);
-    } catch (error) {
-      state = state.copyWith(errorMessage: error.toString());
+    } catch (error, stack) {
+      reportSilently(error, stack, 'realtime.artifacts session=$sessionId');
+      state = state.copyWith(
+        errorMessage: _callErrorMessage(error, 'load this call'),
+      );
     }
   }
 
@@ -1859,7 +1972,10 @@ class RealtimeController extends StateNotifier<RealtimeState>
           return;
         } catch (_) {}
       }
-      state = state.copyWith(errorMessage: error.toString());
+      reportSilently(error, null, 'realtime.consents session=$sessionId');
+      state = state.copyWith(
+        errorMessage: _callErrorMessage(error, 'load this call'),
+      );
     }
   }
 
@@ -2169,10 +2285,11 @@ class RealtimeController extends StateNotifier<RealtimeState>
         // that is proven or cleared, iOS keeps exactly what 1.4.4 shipped:
         // fire-and-forget. The C-1 ordering this await buys was measured on
         // Android, where it stays.
+        final speaker = await _speakerDefaultFor(wantsVideo);
         if (defaultTargetPlatform == TargetPlatform.android) {
-          await _mediaService.setSpeakerphoneEnabled(wantsVideo);
+          await _mediaService.setSpeakerphoneEnabled(speaker);
         } else {
-          unawaited(_mediaService.setSpeakerphoneEnabled(wantsVideo));
+          unawaited(_mediaService.setSpeakerphoneEnabled(speaker));
         }
       }
 
@@ -2208,7 +2325,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
       }
       state = state.copyWith(
         isMediaBusy: false,
-        mediaError: error.toString(),
+        mediaError: _mediaErrorCode(error),
         infoMessage: 'You are connected, but browser media is not active yet.',
       );
     }
@@ -3306,6 +3423,20 @@ class RealtimeController extends StateNotifier<RealtimeState>
         final leavingPeerKey = _transportPeerKeyFromPayload(event.payload);
         final leftReason =
             (event.payload['reason'] ?? '').toString().trim().toLowerCase();
+        if (leftReason == 'live_ended') {
+          // THE HOST ENDED THE LIVE. The server detaches every viewer with
+          // this reason; a viewer who is told only "someone left" sat in a
+          // frozen stage (2026-10-22 audit). When the one leaving is this
+          // device, the live is over for it: say so and stop.
+          final endedSessionId = state.sessionId;
+          unawaited(() async {
+            final myId =
+                (await (_readMyUserId?.call() ?? Future.value(''))).trim();
+            if (myId.isEmpty || myId != leavingUserId) return;
+            if (state.sessionId != endedSessionId) return;
+            await _endAsLiveViewer();
+          }());
+        }
         final appliesReconnectGrace =
             MeetingRealtimeSemantics.appliesReconnectGraceOnParticipantLeft(
           surfaceType: state.session?.surfaceType,
@@ -3824,7 +3955,57 @@ class RealtimeController extends StateNotifier<RealtimeState>
     }
   }
 
+  /// A person-readable sentence for a failure in [feature]. Raw exception
+  /// text never goes into state: any surface that shows `errorMessage` would
+  /// show it (2026-10-22 audit).
+  String _callErrorMessage(Object error, String feature) =>
+      AppErrorMapper.from(error, feature: feature).message;
+
+  /// The media failure as a code, never the exception text. The meeting
+  /// adapter tells permission failures from missing devices by these words.
+  static String _mediaErrorCode(Object error) {
+    final lower = error.toString().toLowerCase();
+    if (lower.contains('notallowed') ||
+        lower.contains('permission') ||
+        lower.contains('denied')) {
+      return 'media_permission_denied';
+    }
+    if (lower.contains('notfound') ||
+        lower.contains('notreadable') ||
+        lower.contains('device')) {
+      return 'media_device_unavailable';
+    }
+    return 'media_unavailable';
+  }
+
+  /// This device was a viewer of a live its host ended.
+  Future<void> _endAsLiveViewer() async {
+    _clearPendingOfferTargets();
+    _stopHeartbeat();
+    _stopStatsTimer();
+    _cancelTurnRefresh();
+    await _mediaService.resetSessionMedia();
+    state = _copyWithDetachedMediaState(
+      joinState: RealtimeJoinState.idle,
+      clearSessionContext: true,
+      infoMessage: 'The live has ended.',
+      lastSocketEvent: 'session:participant.left',
+    ).copyWith(liveEnded: true);
+  }
+
   RealtimeJoinState _mapJoinError(Object error) {
+    if (error is RealtimeJoinRefused) {
+      switch (error.reason.toUpperCase()) {
+        case 'WAITING_FOR_APPROVAL':
+          return RealtimeJoinState.requested;
+        case 'SESSION_LOCKED':
+          return RealtimeJoinState.locked;
+        case 'BANNED':
+          return RealtimeJoinState.banned;
+        default:
+          return RealtimeJoinState.failed;
+      }
+    }
     final text = error.toString().toLowerCase();
     if (text.contains('approval') || text.contains('waiting room')) {
       return RealtimeJoinState.requested;
@@ -3851,6 +4032,33 @@ class RealtimeController extends StateNotifier<RealtimeState>
   /// trace. AppErrorMapper handles 401/403/404/5xx; we only override
   /// for the call-specific terminal codes.
   String _safeJoinErrorMessage(Object error) {
+    final isMeeting =
+        state.session?.surfaceType == RealtimeSurfaceType.meeting;
+    if (error is RealtimeJoinRefused) {
+      switch (error.reason.toUpperCase()) {
+        case 'SESSION_AT_CAPACITY':
+          return isMeeting ? 'This meeting is full.' : 'This call is full.';
+        case 'SESSION_CLOSED':
+        case 'SESSION_NOT_FOUND':
+          return isMeeting
+              ? 'This meeting is unavailable right now. Please try again.'
+              : 'This call has ended.';
+        case 'SESSION_LOCKED':
+          return isMeeting ? 'This meeting room is locked.' : 'This call is locked.';
+        case 'BANNED':
+          return isMeeting
+              ? 'You cannot join this meeting.'
+              : 'You cannot join this call.';
+        case 'WAITING_FOR_APPROVAL':
+          return isMeeting
+              ? 'Your request was sent. Waiting for the host.'
+              : 'Your join request was sent. Waiting for approval.';
+        default:
+          return isMeeting
+              ? 'You could not join this meeting.'
+              : 'You could not join this call.';
+      }
+    }
     final text = error.toString().toLowerCase();
     if (text.contains('invite_expired') ||
         text.contains('invite has expired')) {
@@ -4179,9 +4387,19 @@ class RealtimeController extends StateNotifier<RealtimeState>
         // stopped, so the call is not in trouble and the state does not say
         // it is.
         await _mediaService.refreshStageRemoteMedia(trigger: 'RECOVER');
-      } catch (error) {
+        // The transport latched its loss and stopped watching; it is being
+        // kept, so it must watch again.
+        if (lost is SfuRealtimeTransport && _mediaService.ownsStage(lost)) {
+          lost.rearm();
+        }
+      } catch (error, stack) {
         _reportRecovery(
             sessionId, 'stage_recovery_resubscribe_failed', 'err=$error');
+        reportSilently(
+          error,
+          stack,
+          'realtime.stage.resubscribe session=$sessionId',
+        );
       }
       return;
     }
@@ -4523,6 +4741,11 @@ class RealtimeController extends StateNotifier<RealtimeState>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _removeCallServiceListener?.call();
+    final heldCallService = _callServiceSessionId;
+    if (heldCallService != null) {
+      unawaited(AndroidCallService.instance.releaseSession(heldCallService));
+    }
     _stopHeartbeat();
     _stopStatsTimer();
     _cancelTurnRefresh();
