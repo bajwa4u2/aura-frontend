@@ -47,7 +47,7 @@ class ThreadHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final decoded = _isOfficial
-        ? InsCommunicationDecoded.parse(item.title)
+        ? item.communication
         : null;
     final cleanTitle = decoded?.cleanTitle ??
         (item.title ?? '').trim();

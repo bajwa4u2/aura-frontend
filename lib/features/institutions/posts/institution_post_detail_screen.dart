@@ -174,7 +174,7 @@ class _InstitutionPostDetailScreenState
           // an Official Announcement we render a small reinforcement
           // strip above the card so the visit has unambiguous context
           // before the reader sees the title.
-          final decoded = InsCommunicationDecoded.parse(item.title);
+          final decoded = item.communication;
           final isAnnouncement =
               decoded.hadMarker &&
               decoded.type == InsCommunicationType.announcement;

@@ -17,6 +17,7 @@ import '../../feed/domain/feed_media.dart';
 import '../../../core/content_policy/content_length_policy.dart';
 import '../../../core/tagging/tag_entities.dart';
 import '../scheduling/scheduled_publication.dart';
+import 'communication_type.dart';
 export '../../feed/domain/feed_media.dart' show FeedMedia;
 
 enum InstitutionPostVisibility { publicAll, memberOnly, internal }
@@ -170,6 +171,7 @@ class InstitutionPost {
     this.primaryTopic,
     this.secondaryTopics = const <String>[],
     this.tagReferences = const <TagReference>[],
+    this.officialType,
   });
 
   final String id;
@@ -246,6 +248,19 @@ class InstitutionPost {
   final List<String> secondaryTopics;
   final List<TagReference> tagReferences;
 
+  /// The communication type, decoded from the `[OFFICIAL:TYPE]` marker the
+  /// backend stores on the title; [title] holds the clean words. [toJson]
+  /// writes the marker back, so a round trip never loses the type.
+  final InsCommunicationType? officialType;
+
+  /// [title] and [officialType] in the decoder's shape (edit screens read the
+  /// type from here; decoding the clean [title] again would lose it).
+  InsCommunicationDecoded get communication => InsCommunicationDecoded(
+        type: officialType ?? InsCommunicationType.update,
+        cleanTitle: title.trim(),
+        hadMarker: officialType != null,
+      );
+
   bool get isReply =>
       replyToInstitutionPostId != null &&
       replyToInstitutionPostId!.trim().isNotEmpty;
@@ -310,11 +325,13 @@ class InstitutionPost {
         ? InstitutionPost.fromJson(Map<String, dynamic>.from(repostOfJson))
         : null;
 
+    final decodedTitle = InsCommunicationDecoded.parse(s(['title']));
     return InstitutionPost(
       id: s(['id']),
       institutionId: s(['institutionId']),
       authorUserId: s(['authorUserId', 'authorId']),
-      title: s(['title']),
+      title: decodedTitle.cleanTitle,
+      officialType: decodedTitle.hadMarker ? decodedTitle.type : null,
       body: s(['body', 'bodyMarkdown']),
       mediaUrl: opt(['mediaUrl']),
       media: FeedMedia.listFromJson(json['media']),
@@ -365,7 +382,9 @@ class InstitutionPost {
       'id': id,
       'institutionId': institutionId,
       'authorUserId': authorUserId,
-      'title': title,
+      'title': officialType == null || title.trim().isEmpty
+          ? title
+          : InsCommunicationDecoded.encode(type: officialType!, cleanTitle: title),
       'body': body,
       if (mediaUrl != null) 'mediaUrl': mediaUrl,
       'visibility': visibility.wire,

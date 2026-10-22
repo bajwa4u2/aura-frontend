@@ -1,3 +1,4 @@
+import '../../features/institutions/domain/communication_type.dart';
 import '../../features/realtime/application/incoming_call_projection.dart'
     as call_kinds;
 import '../identity/person_identity_model.dart';
@@ -82,7 +83,11 @@ String resolveNotificationTitle(Map<String, dynamic> payload) {
     _stringOf(payload['title']),
     _stringOf(data['title']),
   ]);
-  if (backendTitle.isNotEmpty) return backendTitle;
+  // A producer may pass an institution post's stored title, which carries
+  // its [OFFICIAL:TYPE] marker; show the words only.
+  if (backendTitle.isNotEmpty) {
+    return InsCommunicationDecoded.parse(backendTitle).cleanTitle;
+  }
 
   if (actorName.isNotEmpty) return actorName;
 

@@ -406,7 +406,7 @@ class _UnifiedFeedListState extends ConsumerState<_UnifiedFeedList> {
     if (item.type != FeedItemType.institutionPost) return 100;
     final hasTitle = (item.title?.trim().isNotEmpty ?? false);
     if (!hasTitle) return 100;
-    final decoded = InsCommunicationDecoded.parse(item.title);
+    final decoded = item.communication;
     if (!decoded.hadMarker) return 100;
     return decoded.type.priorityRank;
   }
@@ -416,7 +416,7 @@ class _UnifiedFeedListState extends ConsumerState<_UnifiedFeedList> {
       if (item.type != FeedItemType.institutionPost) continue;
       final hasTitle = (item.title?.trim().isNotEmpty ?? false);
       if (!hasTitle) continue;
-      final decoded = InsCommunicationDecoded.parse(item.title);
+      final decoded = item.communication;
       if (!decoded.hadMarker) continue;
       if (decoded.type == InsCommunicationType.announcement) return item;
     }
