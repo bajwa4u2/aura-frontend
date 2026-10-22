@@ -19,7 +19,8 @@ import '../institution_words.dart';
 /// Human-readable summary for activity event kinds. A kind not named here
 /// says so in plain words — the server's code never reaches the screen
 /// (phase 2, 2026-10-09).
-String _summaryForKind(InstitutionActivityEvent e) {
+@visibleForTesting
+String institutionActivitySummary(InstitutionActivityEvent e) {
   // F053/F116 — the same reader and the same fallback order as every other
   // surface. This chain already ended in 'Someone', which is what the shared
   // fallback now supplies from one place instead of being re-derived here.
@@ -28,8 +29,6 @@ String _summaryForKind(InstitutionActivityEvent e) {
   switch (e.kind.toUpperCase()) {
     case 'MEMBER_JOINED':
       return '$actorName joined the institution.';
-    case 'MEMBER_LEFT':
-      return '$actorName left the institution.';
     case 'MEMBER_REMOVED':
       return '$actorName was removed.';
     case 'ROLE_CHANGED':
@@ -58,9 +57,9 @@ String _summaryForKind(InstitutionActivityEvent e) {
     case 'JOIN_REQUEST_CREATED':
       return '$actorName requested to join.';
     case 'JOIN_REQUEST_APPROVED':
-      return 'A join request was approved.';
+      return '$actorName approved a join request.';
     case 'JOIN_REQUEST_REJECTED':
-      return 'A join request was rejected.';
+      return '$actorName declined a join request.';
     case 'POST_CREATED':
       return '$actorName drafted a new post.';
     case 'POST_PUBLISHED':
@@ -84,7 +83,10 @@ String _summaryForKind(InstitutionActivityEvent e) {
     case 'INSTITUTION_SUSPENDED':
       return 'Institution was suspended.';
     case 'INSTITUTION_UPDATED':
-      return 'Institution profile was updated.';
+      final parts = institutionProfilePartsWords(e.metadata?['changedFields']);
+      return parts == null
+          ? '$actorName updated the institution profile.'
+          : '$actorName updated $parts.';
     case 'MEETING_STARTED':
       final mTitle = e.metadata?['meetingTitle']?.toString().trim() ?? '';
       return mTitle.isNotEmpty
@@ -107,6 +109,52 @@ String _summaryForKind(InstitutionActivityEvent e) {
           ? 'Activity by $actorName.'
           : 'Activity in the workspace.';
   }
+}
+
+/// The profile parts an INSTITUTION_UPDATED event names, in plain words
+/// ("the name and description"). The server sends field names only, never
+/// values; a name not listed here reads as "the profile". Null when the
+/// event names nothing.
+@visibleForTesting
+String? institutionProfilePartsWords(Object? changedFields) {
+  if (changedFields is! List || changedFields.isEmpty) return null;
+  const words = <String, String>{
+    'name': 'name',
+    'tagline': 'tagline',
+    'description': 'description',
+    'category': 'category',
+    'location': 'location',
+    'logoUrl': 'logo',
+    'coverUrl': 'cover image',
+    'website': 'website',
+    'publicEmail': 'public email',
+    'phone': 'phone number',
+    'address': 'address',
+    'city': 'city',
+    'region': 'region',
+    'country': 'country',
+    'xUrl': 'X link',
+    'linkedinUrl': 'LinkedIn link',
+    'facebookUrl': 'Facebook link',
+    'instagramUrl': 'Instagram link',
+    'youtubeUrl': 'YouTube link',
+    'mission': 'mission',
+    'services': 'services',
+    'audience': 'audience',
+    'foundedYear': 'founding year',
+  };
+  final named = <String>[];
+  for (final f in changedFields) {
+    final w = words['$f'] ?? 'profile';
+    if (!named.contains(w)) named.add(w);
+  }
+  if (named.length > 3) {
+    final rest = named.length - 2;
+    return 'the ${named[0]}, ${named[1]} and $rest other parts';
+  }
+  if (named.length == 1) return 'the ${named.single}';
+  final last = named.removeLast();
+  return 'the ${named.join(', ')} and $last';
 }
 
 String _article(String word) =>
@@ -354,7 +402,7 @@ class _ActivityCard extends StatelessWidget {
     // as an initial while the same person rendered with a photo elsewhere.
     final actor = AuraPersonIdentity.fromJson(event.actor);
     final actorName = actor.displayName;
-    final summary = _summaryForKind(event);
+    final summary = institutionActivitySummary(event);
     final time = event.createdAt != null ? _formatTime(event.createdAt!) : '';
 
     // Backend now ships a canonical `targetRoute` on each event when it
