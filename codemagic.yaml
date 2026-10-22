@@ -63,10 +63,11 @@ workflows:
         # App Store Connect API key above (automatic managed signing).
         distribution_type: app_store
         bundle_identifier: org.auraplatform.app
-      # Pinned to the version the local suite is run with. `stable` installed a
-      # newer Flutter whose new assert failed build #62 (1.6.0) on 9 Oct 2026.
-      # Upgrade here deliberately, after the full suite passes on the new version.
-      flutter: 3.41.4
+      # iOS builds on 3.47.7: the version that built 1.6.0 (45), where plugins
+      # are wired through Swift Package Manager as well as CocoaPods. On 3.41.4
+      # the archive failed to link Flutter's symbols (#64, #65, 22 Oct 2026).
+      # The full suite passed on 3.47.7 first (3,599 tests on aura-ci).
+      flutter: 3.47.7
       xcode: latest
       cocoapods: default
       groups:
