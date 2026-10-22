@@ -1,3 +1,4 @@
+import '../../../core/product/product_language.dart';
 import '../../../core/ui/aura_chamber.dart';
 import 'dart:async';
 import '../../../core/media/aura_media_viewer.dart';
@@ -1076,10 +1077,19 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
           }
 
           if (snapshot.hasError || snapshot.data == null) {
-            return const Center(
+            // Posts and follow state are part of the profile: if either
+            // fails, the profile says so and offers Retry, rather than
+            // showing no posts or a Follow button that may be wrong.
+            return Center(
               child: AuraErrorState(
                 title: 'Could not load profile',
                 body: 'Check your connection and try again.',
+                action: AuraSecondaryButton(
+                  label: ProductLabels.of(ProductAction.retry),
+                  icon: Icons.refresh_rounded,
+                  onPressed: () =>
+                      setState(() => _bundleFuture = _load()),
+                ),
               ),
             );
           }

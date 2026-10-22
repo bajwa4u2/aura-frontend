@@ -1,3 +1,4 @@
+import 'package:aura/core/net/api_envelope.dart';
 import 'package:dio/dio.dart';
 
 import '../domain/profile.dart';
@@ -31,8 +32,8 @@ class FollowRequestInboxItem {
     final requesterMap = requesterRaw is Map<String, dynamic>
         ? requesterRaw
         : requesterRaw is Map
-            ? Map<String, dynamic>.from(requesterRaw)
-            : <String, dynamic>{};
+        ? Map<String, dynamic>.from(requesterRaw)
+        : <String, dynamic>{};
 
     final createdAtRaw = (json['createdAt'] ?? '').toString().trim();
 
@@ -60,8 +61,8 @@ class FollowRequestOutboxItem {
     final targetMap = targetRaw is Map<String, dynamic>
         ? targetRaw
         : targetRaw is Map
-            ? Map<String, dynamic>.from(targetRaw)
-            : <String, dynamic>{};
+        ? Map<String, dynamic>.from(targetRaw)
+        : <String, dynamic>{};
 
     final createdAtRaw = (json['createdAt'] ?? '').toString().trim();
 
@@ -78,65 +79,19 @@ class ProfileRepository {
 
   final Dio _dio;
 
-  Map<String, dynamic> _asMap(dynamic v) {
-    if (v is Map<String, dynamic>) return v;
-    if (v is Map) return Map<String, dynamic>.from(v);
-    return <String, dynamic>{};
-  }
+  /// The object an answer carries, through the one envelope reader: a
+  /// broken answer throws instead of becoming an empty profile.
+  Map<String, dynamic> _unwrapMap(dynamic raw) => unwrapEnvelopeMap(raw);
 
-  Map<String, dynamic> _unwrapMap(dynamic raw) {
-    final root = _asMap(raw);
-    final outerData = root['data'];
-
-    if (outerData is Map && outerData['data'] is Map) {
-      return Map<String, dynamic>.from(outerData['data'] as Map);
-    }
-    if (outerData is Map) {
-      return Map<String, dynamic>.from(outerData);
-    }
-    return root;
-  }
-
+  /// The list an answer carries (the list itself, or under `items`).
+  /// Anything else throws: an empty list must mean there is nothing.
   List<Map<String, dynamic>> _unwrapItems(dynamic raw) {
-    if (raw is List) {
-      return raw
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
-    }
-
-    final root = _asMap(raw);
-
-    if (root['items'] is List) {
-      return (root['items'] as List)
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
-    }
-
-    final data = root['data'];
-    if (data is List) {
-      return data
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
-    }
-
+    final data = unwrapEnvelope(raw);
+    if (data is List) return unwrapEnvelopeList(raw);
     if (data is Map && data['items'] is List) {
-      return (data['items'] as List)
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
+      return unwrapEnvelopeList(raw, key: 'items');
     }
-
-    if (data is Map && data['data'] is List) {
-      return (data['data'] as List)
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
-    }
-
-    return const <Map<String, dynamic>>[];
+    throw const ApiEnvelopeException('profile list: no items');
   }
 
   String _errorMessage(Object e) {
@@ -189,23 +144,19 @@ class ProfileRepository {
     int limit = 20,
     String? cursor,
   }) async {
-    try {
-      final res = await _dio.get(
-        '/users/$handle/posts',
-        queryParameters: {
-          'limit': limit,
-          if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
-        },
-      );
+    final res = await _dio.get(
+      '/users/$handle/posts',
+      queryParameters: {
+        'limit': limit,
+        if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
+      },
+    );
 
-      final items = _unwrapItems(res.data);
+    final items = _unwrapItems(res.data);
 
-      return items
-          .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
-          .toList();
-    } catch (_) {
-      return const <Post>[];
-    }
+    return items
+        .map((e) => Post.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
   }
 
   Future<String> getFollowState(String handle) async {
@@ -214,29 +165,25 @@ class ProfileRepository {
   }
 
   Future<FollowStateDetail> getFollowStateDetail(String handle) async {
-    try {
-      final res = await _dio.get('/users/$handle/follow/state');
-      final map = _unwrapMap(res.data);
+    final res = await _dio.get('/users/$handle/follow/state');
+    final map = _unwrapMap(res.data);
 
-      final state = (map['state'] ?? '').toString().trim();
-      final requestId = (map['requestId'] ?? '').toString().trim();
+    final state = (map['state'] ?? '').toString().trim();
+    final requestId = (map['requestId'] ?? '').toString().trim();
 
-      final cooldownRaw = map['cooldownDaysRemaining'];
-      int? cooldownDaysRemaining;
-      if (cooldownRaw is int) {
-        cooldownDaysRemaining = cooldownRaw;
-      } else if (cooldownRaw != null) {
-        cooldownDaysRemaining = int.tryParse(cooldownRaw.toString());
-      }
-
-      return FollowStateDetail(
-        state: state.isEmpty ? 'none' : state,
-        requestId: requestId.isEmpty ? null : requestId,
-        cooldownDaysRemaining: cooldownDaysRemaining,
-      );
-    } catch (_) {
-      return const FollowStateDetail(state: 'none');
+    final cooldownRaw = map['cooldownDaysRemaining'];
+    int? cooldownDaysRemaining;
+    if (cooldownRaw is int) {
+      cooldownDaysRemaining = cooldownRaw;
+    } else if (cooldownRaw != null) {
+      cooldownDaysRemaining = int.tryParse(cooldownRaw.toString());
     }
+
+    return FollowStateDetail(
+      state: state.isEmpty ? 'none' : state,
+      requestId: requestId.isEmpty ? null : requestId,
+      cooldownDaysRemaining: cooldownDaysRemaining,
+    );
   }
 
   Future<bool> isFollowing(String handle) async {
@@ -263,49 +210,33 @@ class ProfileRepository {
   }
 
   Future<List<ProfileListItem>> getFollowers(String handle) async {
-    try {
-      final res = await _dio.get('/users/$handle/followers');
-      final items = _unwrapItems(res.data);
-      return items.map((e) => ProfileListItem.fromJson(e)).toList();
-    } catch (_) {
-      return const <ProfileListItem>[];
-    }
+    final res = await _dio.get('/users/$handle/followers');
+    final items = _unwrapItems(res.data);
+    return items.map((e) => ProfileListItem.fromJson(e)).toList();
   }
 
   Future<List<ProfileListItem>> getFollowing(String handle) async {
-    try {
-      final res = await _dio.get('/users/$handle/following');
-      final items = _unwrapItems(res.data);
-      return items.map((e) => ProfileListItem.fromJson(e)).toList();
-    } catch (_) {
-      return const <ProfileListItem>[];
-    }
+    final res = await _dio.get('/users/$handle/following');
+    final items = _unwrapItems(res.data);
+    return items.map((e) => ProfileListItem.fromJson(e)).toList();
   }
 
   Future<List<FollowRequestInboxItem>> getFollowRequestsInbox() async {
-    try {
-      final res = await _dio.get('/users/me/follow/requests/inbox');
-      final items = _unwrapItems(res.data);
-      return items
-          .map((e) => FollowRequestInboxItem.fromJson(e))
-          .where((e) => e.id.isNotEmpty)
-          .toList();
-    } catch (_) {
-      return const <FollowRequestInboxItem>[];
-    }
+    final res = await _dio.get('/users/me/follow/requests/inbox');
+    final items = _unwrapItems(res.data);
+    return items
+        .map((e) => FollowRequestInboxItem.fromJson(e))
+        .where((e) => e.id.isNotEmpty)
+        .toList();
   }
 
   Future<List<FollowRequestOutboxItem>> getFollowRequestsOutbox() async {
-    try {
-      final res = await _dio.get('/users/me/follow/requests/outbox');
-      final items = _unwrapItems(res.data);
-      return items
-          .map((e) => FollowRequestOutboxItem.fromJson(e))
-          .where((e) => e.id.isNotEmpty)
-          .toList();
-    } catch (_) {
-      return const <FollowRequestOutboxItem>[];
-    }
+    final res = await _dio.get('/users/me/follow/requests/outbox');
+    final items = _unwrapItems(res.data);
+    return items
+        .map((e) => FollowRequestOutboxItem.fromJson(e))
+        .where((e) => e.id.isNotEmpty)
+        .toList();
   }
 
   Future<void> acceptFollowRequest(String id) async {
