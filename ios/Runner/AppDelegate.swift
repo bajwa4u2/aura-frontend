@@ -5,7 +5,6 @@ import Flutter
 import PushKit
 import UIKit
 import UserNotifications
-import WebRTC
 
 /// Does one delivered notification belong to a given Aura call?
 ///
@@ -149,17 +148,13 @@ func notificationBelongsToCall(
   /// that is still ringing. An outgoing call is already carrying audio, so it
   /// hands over without pausing it.
   private func callKitTakesAudio(waitForActivation: Bool) {
-    let rtc = RTCAudioSession.sharedInstance()
-    rtc.useManualAudio = true
-    rtc.isAudioEnabled = !waitForActivation
+    RtcAudio.set(manualAudio: true, audioEnabled: !waitForActivation)
   }
 
   /// No call left in CallKit: WebRTC manages its own audio again.
   private func releaseCallKitAudioIfIdle() {
     guard sessionByUuid.isEmpty else { return }
-    let rtc = RTCAudioSession.sharedInstance()
-    rtc.useManualAudio = false
-    rtc.isAudioEnabled = true
+    RtcAudio.set(manualAudio: false, audioEnabled: true)
   }
 
   /// Which calls Aura PLACED. `reportOutgoingCall(with:connectedAt:)` is only
@@ -1045,16 +1040,62 @@ extension AppDelegate: CXProviderDelegate {
   }
 
   func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
-    let rtc = RTCAudioSession.sharedInstance()
-    rtc.audioSessionDidActivate(audioSession)
-    rtc.isAudioEnabled = true
+    RtcAudio.didActivate(audioSession)
     emit("audioSessionActivated", [:])
   }
 
   func provider(_ provider: CXProvider, didDeactivate audioSession: AVAudioSession) {
-    let rtc = RTCAudioSession.sharedInstance()
-    rtc.audioSessionDidDeactivate(audioSession)
-    rtc.isAudioEnabled = false
+    RtcAudio.didDeactivate(audioSession)
     emit("audioSessionDeactivated", [:])
+  }
+}
+
+/// WebRTC's shared audio session, reached at run time.
+///
+/// The Runner target must not `import WebRTC`: that makes Xcode link the
+/// WebRTC framework into the app directly, which the CocoaPods set-up does not
+/// expect, and the archive then fails to link Flutter's own symbols (Codemagic
+/// #64, 22 Oct 2026). flutter_webrtc already loads WebRTC, so its
+/// `RTCAudioSession` class is found by name and driven through Objective-C
+/// messaging. If it is ever absent, every call here is a logged no-op.
+private enum RtcAudio {
+  private static var session: NSObject? {
+    guard let cls = NSClassFromString("RTCAudioSession") as? NSObject.Type else {
+      NSLog("[callkit] RTCAudioSession not found; WebRTC audio left automatic")
+      return nil
+    }
+    let shared = NSSelectorFromString("sharedInstance")
+    guard cls.responds(to: shared) else { return nil }
+    return cls.perform(shared)?.takeUnretainedValue() as? NSObject
+  }
+
+  /// Sets a BOOL property only when its setter exists: an unknown key would
+  /// raise an Objective-C exception and end the app.
+  private static func setFlag(_ rtc: NSObject, _ key: String, _ setter: String, _ value: Bool) {
+    guard rtc.responds(to: NSSelectorFromString(setter)) else {
+      NSLog("[callkit] RTCAudioSession has no \(setter)")
+      return
+    }
+    rtc.setValue(value, forKey: key)
+  }
+
+  static func set(manualAudio: Bool, audioEnabled: Bool) {
+    guard let rtc = session else { return }
+    setFlag(rtc, "useManualAudio", "setUseManualAudio:", manualAudio)
+    setFlag(rtc, "isAudioEnabled", "setIsAudioEnabled:", audioEnabled)
+  }
+
+  static func didActivate(_ audioSession: AVAudioSession) {
+    guard let rtc = session else { return }
+    let sel = NSSelectorFromString("audioSessionDidActivate:")
+    if rtc.responds(to: sel) { _ = rtc.perform(sel, with: audioSession) }
+    setFlag(rtc, "isAudioEnabled", "setIsAudioEnabled:", true)
+  }
+
+  static func didDeactivate(_ audioSession: AVAudioSession) {
+    guard let rtc = session else { return }
+    let sel = NSSelectorFromString("audioSessionDidDeactivate:")
+    if rtc.responds(to: sel) { _ = rtc.perform(sel, with: audioSession) }
+    setFlag(rtc, "isAudioEnabled", "setIsAudioEnabled:", false)
   }
 }
