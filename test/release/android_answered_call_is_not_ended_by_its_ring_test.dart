@@ -238,6 +238,36 @@ void main() {
         expect(check, contains('CAMERA'));
       });
 
+      // 2026-10-22: locked, no call, Aura's conversation open and operable.
+      test('the lock screen comes back the moment the call ends', () {
+        final service = File('${kt}AuraCallService.kt').readAsStringSync();
+        final stop = service.substring(
+          service.indexOf('ACTION_STOP ->'),
+          service.indexOf('override fun onTaskRemoved'),
+        );
+        expect(stop, contains('MainActivity.onCallEnded()'));
+        final activity = File('${kt}MainActivity.kt').readAsStringSync();
+        expect(activity, contains('activity.releaseLockScreenIfNoCall()'));
+      });
+
+      test('a call ribbon asks again while shown, and an ended call has none',
+          () {
+        final screen = code(
+          'lib/features/conversation/presentation/conversation_screen.dart',
+        );
+        final provider = screen.substring(
+          screen.indexOf('final conversationActiveLiveProvider'),
+          screen.indexOf('class ConversationScreen'),
+        );
+        expect(provider, contains('ref.invalidateSelf'));
+        expect(
+          screen,
+          contains(
+            'if (productState == CallProductState.ended) return const SizedBox.shrink();',
+          ),
+        );
+      });
+
       test('declining needs neither an unlock nor a running app', () {
         final ring = File('${kt}IncomingCallActivity.kt').readAsStringSync();
         expect(ring, contains('CallLiveness.reportDeclined('));

@@ -373,6 +373,19 @@ class MainActivity : FlutterActivity() {
          * forward. A stopped activity cannot do this for itself: it would have
          * to resume first, and the keyguard does not let it.
          */
+        /**
+         * THE LOCK SCREEN COMES BACK WHEN THE CALL ENDS — while Aura is still
+         * on screen. `releaseLockScreenIfNoCall` ran only when the activity
+         * left the screen, so a call that ended in front of the person left
+         * the whole app usable above the keyguard (Pixel 9a, 1.7.0 (47),
+         * 2026-10-22: locked, no call, Aura's conversation open and
+         * operable). Called by the call service as it stops.
+         */
+        fun onCallEnded() {
+            val activity = current?.get() ?: return
+            activity.runOnUiThread { activity.releaseLockScreenIfNoCall() }
+        }
+
         fun prepareForCall() {
             current?.get()?.showOverLockScreen(dismissKeyguard = false)
         }

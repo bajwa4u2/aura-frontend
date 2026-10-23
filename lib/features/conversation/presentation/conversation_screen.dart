@@ -84,9 +84,20 @@ final conversationActiveLiveProvider = FutureProvider.autoDispose
     .family<Map<String, dynamic>?, String>((ref, conversationId) async {
       ref.watch(realtimeControllerProvider.select((s) => s.isJoined));
       try {
-        return await ref
+        final session = await ref
             .read(conversationsRepositoryProvider)
             .activeLiveSession(conversationId);
+        // A LIVE ANSWER IS ASKED AGAIN WHILE IT IS ON SCREEN. This was
+        // re-read only on a join or a leave, so a call the server ended later
+        // kept its ribbon: Pixel 9a, 2026-10-22, "Video call in progress" ten
+        // minutes after the session had ended. While a call is shown here,
+        // the server is asked again until it says otherwise.
+        final status = (session?['status'] ?? '').toString().toUpperCase();
+        if (status == 'ACTIVE') {
+          final again = Timer(const Duration(seconds: 15), ref.invalidateSelf);
+          ref.onDispose(again.cancel);
+        }
+        return session;
       } catch (_) {
         return null; // never let a transient failure fake "no call"
       }
@@ -1908,6 +1919,9 @@ class _ConversationLiveRibbon extends ConsumerWidget {
     final call = CallState.fromJson(session['call']);
     final me = ref.watch(currentUserIdProvider);
     final productState = call?.productStateFor(me);
+    // A call that is over is not in progress, whatever the session row says
+    // while the server finishes closing it.
+    if (productState == CallProductState.ended) return const SizedBox.shrink();
 
     return Container(
       padding: const EdgeInsets.symmetric(

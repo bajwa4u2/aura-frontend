@@ -107,6 +107,9 @@ class AuraCallService : Service() {
                     activeVideo = false
                     stopForegroundCompat()
                     stopSelf()
+                    // The call is over: Aura stops being allowed above the
+                    // lock screen now, not when it next leaves the screen.
+                    MainActivity.onCallEnded()
                 } else {
                     Log.i(TAG, "stop ignored: for $sessionId, running $activeSessionId")
                 }
