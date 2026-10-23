@@ -1160,15 +1160,19 @@ class _MeScreenState extends ConsumerState<MeScreen>
           children: _buildPublicationItems(publications),
         ),
       ],
-      if (links.isNotEmpty) ...[
-        const SizedBox(height: AuraSpace.lg),
-        MeSection(title: 'Elsewhere', children: _buildLinkItems(links)),
-      ],
     ];
     final right = <Widget>[
       _buildAccountHealthPanel(),
       const SizedBox(height: AuraSpace.lg),
       _buildConnectedAccountsPanel(),
+      // ELSEWHERE BELONGS BESIDE THE ACCOUNTS IT POINTS AT. Under the
+      // published record it closed the left column, so on a wide screen a
+      // person scrolled past every book to reach their links while the right
+      // column ended half-way down (founder, 2026-10-23; approved).
+      if (links.isNotEmpty) ...[
+        const SizedBox(height: AuraSpace.lg),
+        MeSection(title: 'Elsewhere', children: _buildLinkItems(links)),
+      ],
     ];
     return _twoColumn(wide, left, right);
   }
