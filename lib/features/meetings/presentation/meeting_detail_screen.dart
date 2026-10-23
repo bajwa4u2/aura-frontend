@@ -263,9 +263,24 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
         viewerInstitutionId: _resolvedInstitutionId,
       );
 
-  void _enterRoom({String? sessionId}) {
-    final sid = sessionId ?? meeting.sessionId;
-    if (sid == null || sid.isEmpty) return;
+  /// THE SESSION IS ASKED FOR AT THE DOOR, NOT REMEMBERED FROM THE PAGE.
+  ///
+  /// 2026-10-23: the Pixel kept this record open overnight. The evening's
+  /// session ended when everyone left; the host opened a new one in the
+  /// morning, and Enter room pushed the session id the page had loaded the
+  /// night before. The room answered "Meeting room is unavailable" on every
+  /// press until the app was restarted.
+  Future<void> _enterRoom({String? sessionId}) async {
+    var sid = sessionId;
+    if (sid == null) {
+      try {
+        sid = (await ref.refresh(meetingProvider(meeting.id).future))
+            .sessionId;
+      } catch (_) {
+        sid = meeting.sessionId;
+      }
+    }
+    if (sid == null || sid.isEmpty || !mounted) return;
     context.push('$_liveBasePath?sessionId=$sid&isHost=$isHost');
   }
 
@@ -747,6 +762,19 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
     // The lifecycle authority already answers this exact question, and its own
     // doctrine says offering a summary for a cancelled meeting is offering a
     // blank page. Use it.
+    Widget recording() => Padding(
+          padding: const EdgeInsets.only(bottom: AuraSpace.s18),
+          child: MeetingAssetsSection(
+            meetingId: meeting.id,
+            title: 'Recording',
+            emptyText: 'This meeting was not recorded.',
+            filter: (a) => a.kind == MeetingAssetKind.recording,
+            canManage: isHost,
+            allowAdd: false,
+            hideWhenEmpty: true,
+          ),
+        );
+
     final aftermath = <Widget>[
       if (meeting.phase.hasAftermath) ...[
         MeetingAssetsSection(
@@ -760,18 +788,13 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
           hideWhenEmpty: true,
         ),
         const SizedBox(height: AuraSpace.s18),
-        MeetingAssetsSection(
-          meetingId: meeting.id,
-          title: 'Recording',
-          emptyText: 'This meeting was not recorded.',
-          filter: (a) => a.kind == MeetingAssetKind.recording,
-          canManage: isHost,
-          allowAdd: false,
-          hideWhenEmpty: true,
-        ),
-        const SizedBox(height: AuraSpace.s18),
+        recording(),
         MeetingWorkroom(meeting: meeting, editable: isHost),
         const SizedBox(height: AuraSpace.s18),
+      ] else if (isHost && live) ...[
+        // Founder ruling 2026-10-23: the host sees a recording as soon as it
+        // is saved, while the meeting is still live.
+        recording(),
       ],
     ];
 
