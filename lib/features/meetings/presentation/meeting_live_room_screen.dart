@@ -384,6 +384,8 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
         }
         return;
       }
+      // The hint comes before the browser asks, not after it has.
+      _showArrivalToast('Choose this tab so only the meeting is recorded');
       final ok = await _recorder.start();
       if (!ok) {
         unawaited(
@@ -393,7 +395,13 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                 uploadId: uploadId,
               ),
         );
-        if (mounted) _showArrivalToast('Recording could not start');
+        if (mounted) {
+          _showArrivalToast(
+            _recorder.refusedNotATab
+                ? 'Only this tab can be recorded. Press Record and choose the tab.'
+                : 'Recording could not start',
+          );
+        }
         return;
       }
       _recordingAssetId = assetId;
@@ -402,9 +410,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       _recordingPendingPart = null;
       if (!mounted) return;
       setState(() => _recording = true);
-      _showArrivalToast(
-        'Recording started — pick "This tab" to capture the meeting',
-      );
+      _showArrivalToast('Recording started');
       _recordingFlushTimer?.cancel();
       _recordingFlushTimer = Timer.periodic(
         const Duration(seconds: 10),

@@ -124,6 +124,9 @@ class MeetingRecordingCapture {
     return durationSeconds;
   }
 
+  /// The last [start] was refused because a window or screen was chosen.
+  bool refusedNotATab = false;
+
   Future<bool> start() async {
     if (_recorder != null) return true;
     try {
@@ -141,6 +144,25 @@ class MeetingRecordingCapture {
       final stream = await _getDisplayMedia(options).toDart;
       _stream = stream;
       _chunks.clear();
+
+      // A TAB OR NOTHING. Edge ignores `preferCurrentTab` and offers Window
+      // and Entire Screen; a Window choice on 2026-10-23 recorded the host's
+      // tabs, address bar and bookmarks. Anything that is not a browser tab
+      // is stopped before a single frame is kept.
+      refusedNotATab = false;
+      final videoTracks =
+          stream.callMethod<JSArray<JSObject>>('getVideoTracks'.toJS).toDart;
+      final surface = videoTracks.isEmpty
+          ? null
+          : videoTracks.first
+              .callMethod<JSObject>('getSettings'.toJS)
+              .getProperty<JSString?>('displaySurface'.toJS)
+              ?.toDart;
+      if (surface != null && surface != 'browser') {
+        refusedNotATab = true;
+        _cleanup();
+        return false;
+      }
 
       final recorderOptions = JSObject()
         ..setProperty('mimeType'.toJS, 'video/webm'.toJS);

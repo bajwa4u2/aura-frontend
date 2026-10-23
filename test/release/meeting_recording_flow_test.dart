@@ -64,4 +64,18 @@ void main() {
     final failure = save.substring(save.lastIndexOf('} catch (_) {'));
     expect(failure, contains('abortRecordingUpload('));
   });
+  test('a window or screen is refused before a frame is kept', () {
+    final start = capture.substring(capture.indexOf('Future<bool> start('));
+    final check = start.indexOf("surface != 'browser'");
+    expect(check, greaterThan(0));
+    expect(check, lessThan(start.indexOf('_MediaRecorder(stream')));
+    expect(room, contains('_recorder.refusedNotATab'));
+  });
+
+  test('the tab hint is shown before the browser asks', () {
+    final start = room.indexOf('Future<void> _toggleRecording(');
+    final body = room.substring(start, room.indexOf('Uint8List _combineParts('));
+    expect(body.indexOf('Choose this tab'),
+        lessThan(body.indexOf('_recorder.start()')));
+  });
 }
