@@ -289,15 +289,64 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     }
   }
 
+  /// Who the host is still waiting on, by the id each person answers with.
+  /// Filled from the server's refusal; emptied by `recording:consent.updated`.
+  /// When it empties the host is offered the start — never started for them.
+  final Set<String> _awaitingRecordingConsent = <String>{};
+
+  static Set<String> _pendingConsentIds(Object e) {
+    if (e is! DioException) return const <String>{};
+    final data = e.response?.data;
+    if (data is! Map) return const <String>{};
+    final err = data['error'] is Map ? data['error'] as Map : data;
+    final ids = <String>{};
+    for (final id in err['pendingUserIds'] as List? ?? const []) {
+      ids.add(id.toString());
+    }
+    for (final p in err['pendingParticipants'] as List? ?? const []) {
+      if (p is Map && p['id'] != null) ids.add(p['id'].toString());
+    }
+    return ids;
+  }
+
+  /// The last person said yes: offer the start, in the host's hands.
+  Future<void> _offerRecordingStart() async {
+    final start = await showAdaptiveDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog.adaptive(
+        title: const Text('Everyone agreed.'),
+        content: const Text('Start recording?'),
+        actions: [
+          adaptiveDialogAction(
+            ctx,
+            label: 'Not now',
+            onPressed: () => Navigator.of(ctx).pop(false),
+          ),
+          adaptiveDialogAction(
+            ctx,
+            label: 'Start',
+            onPressed: () => Navigator.of(ctx).pop(true),
+          ),
+        ],
+      ),
+    );
+    if (start == true && mounted && !_recording) {
+      await _toggleRecording(
+        ref.read(meetingProvider(widget.meetingId)).valueOrNull,
+      );
+    }
+  }
+
   Future<void> _toggleRecording(Meeting? meeting) async {
     if (_savingRecording) return;
     if (!_recording) {
-      final ok = await _recorder.start();
-      if (!mounted) return;
-      if (!ok) {
-        _showArrivalToast('Recording could not start');
-        return;
-      }
+      // THE SERVER FIRST, THE PICKER SECOND. The browser's capture prompt
+      // used to open before anyone asked whether recording could start, so a
+      // consent hold threw the host's choice away and Record had to be
+      // picked again (2026-10-23). Now the prompt appears only once the
+      // recording exists; if the host then cancels it, the upload is aborted.
+      String? assetId;
+      String? uploadId;
       try {
         final when = DateTime.now();
         final begun = await ref
@@ -308,22 +357,22 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
                   'Meeting recording ${when.year}-${when.month.toString().padLeft(2, '0')}-${when.day.toString().padLeft(2, '0')}.webm',
               mimeType: 'video/webm',
             );
-        _recordingAssetId = begun.assetId;
-        _recordingUploadId = begun.uploadId;
-        _recordingNextPart = 1;
-        _recordingPendingPart = null;
+        assetId = begun.assetId;
+        uploadId = begun.uploadId;
       } catch (e) {
-        await _recorder.stopCapture();
         if (!mounted) return;
         // Recording needs everyone's yes (founder-approved design,
         // 22 Oct 2026). The server says who still has to answer; the others
         // have just been asked.
         switch (_recordingRefusalCode(e)) {
           case 'RECORDING_CONSENT_PENDING':
+            _awaitingRecordingConsent
+              ..clear()
+              ..addAll(_pendingConsentIds(e));
             AuraNotice.info(
               context,
               'Everyone in the meeting has been asked to allow recording. '
-              'Tap Record again once they have.',
+              "You'll be told when they have.",
             );
           case 'GUEST_CONSENT_UNAVAILABLE':
             AuraNotice.info(
@@ -335,6 +384,22 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
         }
         return;
       }
+      final ok = await _recorder.start();
+      if (!ok) {
+        unawaited(
+          ref.read(meetingsRepositoryProvider).abortRecordingUpload(
+                widget.meetingId,
+                assetId: assetId,
+                uploadId: uploadId,
+              ),
+        );
+        if (mounted) _showArrivalToast('Recording could not start');
+        return;
+      }
+      _recordingAssetId = assetId;
+      _recordingUploadId = uploadId;
+      _recordingNextPart = 1;
+      _recordingPendingPart = null;
       if (!mounted) return;
       setState(() => _recording = true);
       _showArrivalToast(
@@ -452,6 +517,17 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
         if (mounted) _showArrivalToast('No recording captured');
       }
     } catch (_) {
+      // A save the server refused must not stay "recording" on the meeting
+      // record forever (2026-10-23: left in RECORDING after EntityTooSmall).
+      if (assetId != null && uploadId != null) {
+        unawaited(
+          ref.read(meetingsRepositoryProvider).abortRecordingUpload(
+                widget.meetingId,
+                assetId: assetId,
+                uploadId: uploadId,
+              ),
+        );
+      }
       if (mounted) _showArrivalToast('Recording upload failed');
     } finally {
       _recordingAssetId = null;
@@ -566,8 +642,19 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
         }
         break;
       case 'recording:consent.updated':
-        // The host learns who said no; recording stays off.
+        // The host learns who said no; recording stays off. And when the
+        // last person waited on says yes, the host is offered the start.
         final who = e.payload['participant'];
+        if (_isHost &&
+            !_recording &&
+            _awaitingRecordingConsent.isNotEmpty &&
+            (e.payload['status'] ?? '').toString() == 'GRANTED' &&
+            who is Map) {
+          _awaitingRecordingConsent.remove((who['id'] ?? '').toString());
+          if (_awaitingRecordingConsent.isEmpty) {
+            unawaited(_offerRecordingStart());
+          }
+        }
         if (_isHost &&
             (e.payload['status'] ?? '').toString() == 'DECLINED' &&
             who is Map) {

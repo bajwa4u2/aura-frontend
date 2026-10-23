@@ -41,6 +41,11 @@ class MeetingRecordingCapture {
   int _bufferedBytes = 0;
   DateTime? _startedAt;
 
+  /// Completes when the recorder has really stopped — after its last
+  /// `dataavailable`. Armed at start, so it is waited on however the
+  /// recording ends.
+  Completer<void>? _stopped;
+
   /// Fired when the capture ends OUTSIDE the app's own Stop control (the
   /// browser's "Stop sharing" bar). A recording that already happened must
   /// NEVER be silently discarded — the room finalizes the upload from here.
@@ -83,19 +88,19 @@ class MeetingRecordingCapture {
     final recorder = _recorder;
     if (recorder == null) return 0;
 
-    final done = Completer<void>();
-    recorder.setProperty(
-      'onstop'.toJS,
-      (() {
-        if (!done.isCompleted) done.complete();
-      }).toJS,
-    );
+    // THE LAST CHUNK ARRIVES AFTER STOP. Ended from the browser's own "Stop
+    // sharing" bar, the recorder was already stopping when this ran, and the
+    // old code did not wait: the save uploaded a first part, the late chunk
+    // became a second, and storage refused the first as smaller than 5 MB
+    // (`EntityTooSmall`, 2026-10-23 — the recording was lost). Whoever
+    // stopped it, the save now waits for the recorder's own stop.
     if (recorder.state == 'recording' || recorder.state == 'paused') {
       recorder.stop();
-    } else {
-      if (!done.isCompleted) done.complete();
     }
-    await done.future.timeout(const Duration(seconds: 10), onTimeout: () {});
+    final stopped = _stopped;
+    if (stopped != null && !stopped.isCompleted) {
+      await stopped.future.timeout(const Duration(seconds: 10), onTimeout: () {});
+    }
 
     final durationSeconds = _startedAt == null
         ? 0
@@ -114,6 +119,7 @@ class MeetingRecordingCapture {
     }
     _stream = null;
     _recorder = null;
+    _stopped = null;
     _startedAt = null;
     return durationSeconds;
   }
@@ -121,9 +127,17 @@ class MeetingRecordingCapture {
   Future<bool> start() async {
     if (_recorder != null) return true;
     try {
+      // THIS MEETING, NOT A SCREEN TO PICK. Recording used to open the same
+      // picker as screen sharing (founder, 2026-10-23: "record and sharing
+      // behave the same"). Chrome and Edge offer the current tab directly
+      // with these; other browsers ignore them and show their picker.
+      final video = JSObject()..setProperty('displaySurface'.toJS, 'browser'.toJS);
       final options = JSObject()
-        ..setProperty('video'.toJS, true.toJS)
-        ..setProperty('audio'.toJS, true.toJS);
+        ..setProperty('video'.toJS, video)
+        ..setProperty('audio'.toJS, true.toJS)
+        ..setProperty('preferCurrentTab'.toJS, true.toJS)
+        ..setProperty('selfBrowserSurface'.toJS, 'include'.toJS)
+        ..setProperty('surfaceSwitching'.toJS, 'exclude'.toJS);
       final stream = await _getDisplayMedia(options).toDart;
       _stream = stream;
       _chunks.clear();
@@ -143,6 +157,14 @@ class MeetingRecordingCapture {
         }
       }).toJS;
       recorder.setProperty('ondataavailable'.toJS, onData);
+      final stopped = Completer<void>();
+      _stopped = stopped;
+      recorder.setProperty(
+        'onstop'.toJS,
+        (() {
+          if (!stopped.isCompleted) stopped.complete();
+        }).toJS,
+      );
 
       // If the host stops sharing from the browser chrome, end cleanly.
       final tracks =
@@ -180,6 +202,7 @@ class MeetingRecordingCapture {
     }
     _stream = null;
     _recorder = null;
+    _stopped = null;
     _startedAt = null;
     _chunks.clear();
     _bufferedBytes = 0;
