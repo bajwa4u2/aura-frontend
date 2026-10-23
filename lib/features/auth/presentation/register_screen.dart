@@ -100,8 +100,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final t = (v ?? '').trim().toLowerCase();
     if (t.isEmpty) return null;
     final ok = RegExp(r'^[a-z0-9_]+$').hasMatch(t);
-    if (!ok)
+    if (!ok) {
       return 'Handle can only use lowercase letters, numbers, and underscores';
+    }
     if (t.length < 3) return 'Handle must be at least 3 characters';
     if (t.length > 24) return 'Handle must be 24 characters or fewer';
     return null;
@@ -906,8 +907,9 @@ String humanizeRegisterError(Object error) {
   final raw = error.toString().trim();
   final msg = raw.toLowerCase();
 
-  if (msg.isEmpty)
+  if (msg.isEmpty) {
     return 'We could not create your account right now. Please try again.';
+  }
 
   // AN ALREADY-MAPPED REFUSAL IS FINAL. SAY IT, DO NOT RE-DERIVE IT.
   //

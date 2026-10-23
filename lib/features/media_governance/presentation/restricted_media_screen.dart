@@ -240,11 +240,11 @@ class _RestoredCard extends StatelessWidget {
         color: AuraSurface.subtle,
         borderRadius: BorderRadius.circular(AuraRadius.md),
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('This attachment is available again', style: AuraText.title),
-          const SizedBox(height: AuraSpace.s8),
+          SizedBox(height: AuraSpace.s8),
           Text(
             'The restriction has been lifted and the file is no longer under review.',
             style: AuraText.body,
@@ -295,7 +295,7 @@ class _AppealStatusCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Review request', style: AuraText.title),
+          const Text('Review request', style: AuraText.title),
           const SizedBox(height: AuraSpace.s8),
           Text(_label, style: AuraText.body),
           if (statement.isNotEmpty) ...[
@@ -335,9 +335,9 @@ class _AppealForm extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Ask for a review', style: AuraText.title),
+        const Text('Ask for a review', style: AuraText.title),
         const SizedBox(height: AuraSpace.s8),
-        Text(
+        const Text(
           'If you think this check was wrong, tell us what this file is. '
           'A person will look at it.',
           style: AuraText.body,

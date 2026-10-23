@@ -299,9 +299,9 @@ void main() {
         institutionId: live.institutionId,
         category: live.category,
         requiresManualReview: live.requiresManualReview,
-        existence: ProofStanding<ExistenceState>(
+        existence: const ProofStanding<ExistenceState>(
           state: ExistenceState.needsInfo,
-          available: const ['SUBMITTED'],
+          available: ['SUBMITTED'],
           infoRequested: _asked,
           acceptsEvidence: true,
         ),
@@ -330,9 +330,9 @@ void main() {
         institutionId: live.institutionId,
         category: live.category,
         requiresManualReview: live.requiresManualReview,
-        existence: ProofStanding<ExistenceState>(
+        existence: const ProofStanding<ExistenceState>(
           state: ExistenceState.needsInfo,
-          available: const ['SUBMITTED'],
+          available: ['SUBMITTED'],
           infoRequested: _asked,
           acceptsEvidence: true,
         ),

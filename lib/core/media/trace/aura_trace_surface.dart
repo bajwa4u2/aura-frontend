@@ -438,7 +438,7 @@ class _HistoryRow extends StatelessWidget {
                 width: 7,
                 height: 7,
                 margin: const EdgeInsets.only(top: 5),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AuraSurface.muted,
                   shape: BoxShape.circle,
                 ),

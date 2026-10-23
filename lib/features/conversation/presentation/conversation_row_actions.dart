@@ -134,6 +134,7 @@ class ConversationActions {
       ),
     );
     if (confirmed != true) return;
+    if (!context.mounted) return;
     await _run(context, () => _repo.clearHistory(c.id));
   }
 
@@ -171,6 +172,7 @@ class ConversationActions {
       ),
     );
     if (confirmed != true) return;
+    if (!context.mounted) return;
     await _run(context, () => _repo.leave(c.id));
   }
 }

@@ -499,7 +499,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       ),
     );
     controller.dispose();
-    if (next == null || next.isEmpty || next == msg.body) return;
+    if (next == null || next.isEmpty || next == msg.body || !mounted) return;
     await MessageActions(ref, widget.conversationId).edit(context, msg, next);
     _reloadMessages();
   }
@@ -528,8 +528,8 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(AuraSpace.s16),
+            const Padding(
+              padding: EdgeInsets.all(AuraSpace.s16),
               child: Row(
                 children: [
                   Expanded(child: Text('Forward to', style: AuraText.title)),

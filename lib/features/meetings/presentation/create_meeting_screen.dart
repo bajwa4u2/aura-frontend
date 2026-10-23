@@ -380,6 +380,7 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
             '${_inviteNameCtrl.text.trim()} <${_inviteEmailCtrl.text.trim()}>',
       ),
     );
+    if (!mounted) return;
     AuraNotice.copied(context, 'Invitee copied.');
   }
 

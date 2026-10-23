@@ -232,7 +232,7 @@ void main() {
       // The negative control. If TR appeared here the mark would be decoration.
       await host(
         tester,
-        AuraMediaGroup(items: [
+        const AuraMediaGroup(items: [
           FeedMedia(
             id: 'plain',
             mediaId: 'plain',

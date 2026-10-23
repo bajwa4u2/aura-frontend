@@ -855,7 +855,7 @@ class _ViewerBottomBar extends StatelessWidget {
           // Placed in the bottom bar rather than over the media: the content
           // surface stays quiet and the doorway sits with the other controls,
           // where it cannot be hit by a stray pinch or a scrub.
-          if (!item.trace.isEmpty) ...[
+          if (item.trace.isNotEmpty) ...[
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Row(

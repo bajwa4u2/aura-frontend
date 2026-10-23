@@ -676,7 +676,7 @@ class _CanonicalInvitationsSection extends ConsumerWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Waiting on you', style: AuraText.title),
+            const Text('Waiting on you', style: AuraText.title),
             const SizedBox(height: AuraSpace.s10),
             for (final invitation in invitations)
               _CanonicalInviteCard(invitation: invitation),

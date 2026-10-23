@@ -37,7 +37,6 @@ import 'core/auth/session_bootstrap.dart';
 import 'core/product/product_state.dart';
 import 'core/product/product_state_view.dart';
 import 'core/auth/session_providers.dart';
-import 'core/auth/session_hint.dart';
 import 'core/diagnostics/runtime_trace.dart';
 import 'core/institutions/institution_access_provider.dart';
 import 'core/authority/authority_providers.dart';

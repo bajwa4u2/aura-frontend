@@ -62,6 +62,14 @@ dependencies:
   # image_picker_android defaults `useAndroidPhotoPicker` to FALSE, which
   # sends every picker call to the legacy file browser.
   image_picker_android: ^0.8.13
+  # Direct, because media_acquisition.dart imports it for the picker's
+  # platform options; a transitive import can vanish with any picker update.
+  image_picker_platform_interface: ^2.11.1
+  # Pure-Dart image library. The app's own content_normalizer.dart decodes
+  # and re-encodes with it, so it is an app dependency, not a dev-only one
+  # (it was declared dev-only while production code imported it). Also used by
+  # tool/generate_store_assets.dart to rasterize the master Aura SVG.
+  image: ^4.8.0
   file_picker: ^10.3.10
   record: ^6.2.0
   # Platform-secure credential storage, first-party per platform.
@@ -154,10 +162,6 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^4.0.0
   msix: ^3.16.8
-  # Pure-Dart image library used by tool/generate_store_assets.dart to
-  # rasterize the master Aura SVG into platform/store PNGs without any
-  # native imaging dependency.
-  image: ^4.8.0
 
 dependency_overrides:
   record_linux: ^1.3.0

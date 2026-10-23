@@ -51,8 +51,8 @@ class AudioOutputSheet extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
+            const Padding(
+              padding: EdgeInsets.fromLTRB(
                 AuraSpace.s16,
                 AuraSpace.s4,
                 AuraSpace.s16,

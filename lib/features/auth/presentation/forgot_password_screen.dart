@@ -167,7 +167,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         enabled: !_busy,
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.done,
-                        autofillHints: [AutofillHints.email],
+                        autofillHints: const [AutofillHints.email],
                         autocorrect: false,
                         inputFormatters: [
                           FilteringTextInputFormatter.deny(RegExp(r'\s')),

@@ -104,6 +104,7 @@ class MessageActions {
       destructive: true,
     );
     if (!confirmed) return;
+    if (!context.mounted) return;
     await _run(
       context,
       () => _repo.retractMessage(conversationId, message.id),
@@ -126,6 +127,7 @@ class MessageActions {
       confirm: 'Remove for me',
     );
     if (!confirmed) return;
+    if (!context.mounted) return;
     await _run(
       context,
       () => _repo.removeMessageForMe(conversationId, message.id),
