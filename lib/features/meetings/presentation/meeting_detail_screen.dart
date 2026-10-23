@@ -791,9 +791,11 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
         recording(),
         MeetingWorkroom(meeting: meeting, editable: isHost),
         const SizedBox(height: AuraSpace.s18),
-      ] else if (isHost && live) ...[
+      ] else if (isHost) ...[
         // Founder ruling 2026-10-23: the host sees a recording as soon as it
-        // is saved, while the meeting is still live.
+        // is saved, whatever the meeting's state. A session held early and
+        // left returns the meeting to SCHEDULED, and the recording made in it
+        // was hidden there too.
         recording(),
       ],
     ];

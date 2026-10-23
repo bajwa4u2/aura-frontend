@@ -28,14 +28,14 @@ void main() {
         lessThan(enter.indexOf('context.push(')));
   });
 
-  test('the host sees the recording while the meeting is live', () {
+  test('the host sees the recording in any state of the meeting', () {
     final aftermath = record.substring(
       record.indexOf('final aftermath = <Widget>['),
       record.indexOf('Widget header()'),
     );
-    expect(aftermath, contains('] else if (isHost && live) ...['));
+    expect(aftermath, contains('] else if (isHost) ...['));
     expect(
-      aftermath.substring(aftermath.indexOf('] else if (isHost && live)')),
+      aftermath.substring(aftermath.indexOf('] else if (isHost)')),
       contains('recording()'),
     );
   });
