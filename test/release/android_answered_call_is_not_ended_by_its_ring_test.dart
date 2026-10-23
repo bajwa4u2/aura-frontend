@@ -224,6 +224,20 @@ void main() {
             lessThan(accept.indexOf('startActivity(')));
       });
 
+      // 1.7.0 (47), first video call after install: the camera prompt cannot
+      // show above the keyguard, took Aura behind it, and the join timed out.
+      test('a call missing a permission asks for the unlock first', () {
+        final activity = File('${kt}MainActivity.kt').readAsStringSync();
+        expect(activity, contains('(answering && !hasCallPermissions(data))'));
+        final check = activity.substring(
+          activity.indexOf('private fun hasCallPermissions('),
+          activity.indexOf('/** Whether this activity is currently allowed'),
+        );
+        expect(check, contains('RECORD_AUDIO'));
+        expect(check, contains('IncomingCallPresenter.isVideo(data)'));
+        expect(check, contains('CAMERA'));
+      });
+
       test('declining needs neither an unlock nor a running app', () {
         final ring = File('${kt}IncomingCallActivity.kt').readAsStringSync();
         expect(ring, contains('CallLiveness.reportDeclined('));

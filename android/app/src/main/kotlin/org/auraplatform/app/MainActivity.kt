@@ -3,6 +3,7 @@ package org.auraplatform.app
 import android.app.KeyguardManager
 import android.app.NotificationManager
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -226,8 +227,19 @@ class MainActivity : FlutterActivity() {
         // unlocked"); Android's own calls are answered without unlocking.
         // Only a decline that had to come through the app still asks — it is
         // the fallback when the call carried no capability to decline with.
+        //
+        // AND THE ONE CASE A CALL MUST ASK FOR THE UNLOCK: a permission the
+        // call needs has never been granted. Android cannot draw its "Allow"
+        // prompt above the keyguard, so the prompt went behind it and took
+        // Aura with it — Pixel 9a, 1.7.0 (47), 2026-10-22, the first video
+        // call after install: answered over the lock screen, the camera
+        // request sent Aura behind the keyguard, and the call sat waiting on a
+        // prompt nobody could see until the join timed out. Asking for the
+        // unlock puts the prompt in front of the person instead.
+        val answering = action == IncomingCallPresenter.ACTION_ANSWER
         showOverLockScreen(
-            dismissKeyguard = action == IncomingCallPresenter.ACTION_DECLINE,
+            dismissKeyguard = action == IncomingCallPresenter.ACTION_DECLINE ||
+                (answering && !hasCallPermissions(data)),
         )
         if (action == IncomingCallPresenter.ACTION_ANSWER ||
             action == IncomingCallPresenter.ACTION_DECLINE
@@ -286,6 +298,19 @@ class MainActivity : FlutterActivity() {
                 keyguard?.requestDismissKeyguard(this, null)
             }
         }
+    }
+
+    /** The microphone, and the camera for a video call, already granted. */
+    private fun hasCallPermissions(data: Map<String, String>): Boolean {
+        fun granted(permission: String) =
+            checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+        if (!granted(android.Manifest.permission.RECORD_AUDIO)) return false
+        if (IncomingCallPresenter.isVideo(data) &&
+            !granted(android.Manifest.permission.CAMERA)
+        ) {
+            return false
+        }
+        return true
     }
 
     /** Whether this activity is currently allowed above the keyguard. */

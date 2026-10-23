@@ -13,6 +13,7 @@ import '../auth/session_providers.dart';
 import '../../features/realtime/application/incoming_call_projection.dart'
     as projection;
 import '../../features/realtime/application/realtime_providers.dart';
+import '../../features/realtime/domain/realtime_enums.dart';
 import '../../features/updates/incoming_call_bridge.dart';
 import '../../features/updates/providers.dart';
 import '../../router.dart';
@@ -246,6 +247,27 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge>
   ///    never join on the recipient's behalf).
   void _onNativeCallAction(NativeCallActionEvent event) {
     if (!mounted) return;
+    // THE ONGOING-CALL NOTIFICATION LEADS BACK TO THE CALL. Its tap arrives
+    // as `open` for a session this device is already in, or still joining,
+    // and it used to be bridged as if a call were ringing — founder, Pixel
+    // 9a, 2026-10-22: "control center shows call in progress but call is
+    // nowhere". A call already underway is returned to, not offered again.
+    if (event.action == NativeCallAction.open && event.sessionId.isNotEmpty) {
+      final live = ref.read(realtimeControllerProvider);
+      final current = (live.sessionId ?? live.session?.id ?? '').trim();
+      final underway = live.isJoined ||
+          live.joinState == RealtimeJoinState.joining;
+      if (underway && current == event.sessionId) {
+        try {
+          ref
+              .read(routerProvider)
+              .go(NavigationAuthority.realtimeSessionJoinRoute(event.sessionId));
+        } catch (e) {
+          debugPrint('[native-call] return to call failed: $e');
+        }
+        return;
+      }
+    }
     final payload = Map<String, dynamic>.from(event.data)
       ..['_auraLifecycleSource'] = 'nativeCall'
       ..['_auraNativeAction'] = event.action.name;

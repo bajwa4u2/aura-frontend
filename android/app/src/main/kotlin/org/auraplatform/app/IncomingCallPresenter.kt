@@ -210,7 +210,7 @@ object IncomingCallPresenter {
         }
     }
 
-    private fun isVideo(data: Map<String, String>): Boolean =
+    fun isVideo(data: Map<String, String>): Boolean =
         data.firstNonBlank("mediaMode", "sessionType", "mode", "callKind")
             .equals("video", ignoreCase = true)
 
