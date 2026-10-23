@@ -58,7 +58,11 @@ Map<String, dynamic> _normalizeParticipantJson(Map<String, dynamic> raw) {
   final socketId = _readFirstString(json, const ['socketId', 'fromSocketId']);
   final runtimeDeviceId = _readFirstString(json, const ['runtimeDeviceId']);
   final participantId = _readFirstString(json, const ['id']);
-  final userId = _readFirstString(json, const ['userId']);
+  // A meeting guest has no account: their row carries guestSessionId and a
+  // null userId, while every socket event names them by that same guest
+  // session. Without this the guest's row was a second, nameless
+  // "Participant" beside the guest (2026-10-23).
+  final userId = _readFirstString(json, const ['userId', 'guestSessionId']);
 
   if (socketId.isNotEmpty) {
     json['socketId'] = socketId;
