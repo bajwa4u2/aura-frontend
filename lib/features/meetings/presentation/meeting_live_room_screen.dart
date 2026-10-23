@@ -299,12 +299,18 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     final data = e.response?.data;
     if (data is! Map) return const <String>{};
     final err = data['error'] is Map ? data['error'] as Map : data;
+    // The server's error envelope carries extra fields in `details`; reading
+    // only the top level found nobody waited on, so "Everyone agreed" was
+    // never offered (2026-10-23).
+    final details = err['details'] is Map ? err['details'] as Map : const {};
     final ids = <String>{};
-    for (final id in err['pendingUserIds'] as List? ?? const []) {
-      ids.add(id.toString());
-    }
-    for (final p in err['pendingParticipants'] as List? ?? const []) {
-      if (p is Map && p['id'] != null) ids.add(p['id'].toString());
+    for (final source in [err, details]) {
+      for (final id in source['pendingUserIds'] as List? ?? const []) {
+        ids.add(id.toString());
+      }
+      for (final p in source['pendingParticipants'] as List? ?? const []) {
+        if (p is Map && p['id'] != null) ids.add(p['id'].toString());
+      }
     }
     return ids;
   }

@@ -78,4 +78,13 @@ void main() {
     expect(body.indexOf('Choose this tab'),
         lessThan(body.indexOf('_recorder.start()')));
   });
+
+  test('who is waited on is read from the error details', () {
+    final read = room.substring(
+      room.indexOf('static Set<String> _pendingConsentIds('),
+      room.indexOf('Future<void> _offerRecordingStart('),
+    );
+    expect(read, contains("err['details']"));
+    expect(read, contains("source['pendingParticipants']"));
+  });
 }
