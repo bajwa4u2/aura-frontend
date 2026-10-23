@@ -3174,21 +3174,27 @@ class RealtimeController extends StateNotifier<RealtimeState>
       if (sessionId.isNotEmpty) {
         _mediaReportedForSession = sessionId;
         unawaited(_reportMediaEstablished(sessionId, snapshot));
-
-        unawaited(
-          IosCallKit.instance
-              .reportOutgoingConnected(sessionId)
-              .catchError((_) {}),
-        );
-        // Track C — remote media present is the moment a placed call became a
-        // conversation on Android too. Without it the system call stays in
-        // "connecting" for its whole life and any history entry has no
-        // duration.
-        unawaited(
-          AndroidTelecom.instance.reportConnected(sessionId).catchError((_) {}),
-        );
+        _reportSystemCallConnected(sessionId);
       }
     }
+  }
+
+  /// REMOTE MEDIA IS THE MOMENT A PLACED CALL BECAME A CONVERSATION — told to
+  /// the phone's own call stack, on BOTH transports.
+  ///
+  /// Track C — without it the system call stays in "connecting" for its whole
+  /// life and any history entry has no duration. This used to live only on
+  /// the snapshot (mesh) path, so on a STAGE call the system was never told:
+  /// 2026-10-22, Pixel 9a calling an iPhone on 1.7.0 (46), Telecom held the
+  /// Pixel's call in DIALING and timed it out two minutes later
+  /// (`STATE_TIMEOUT ... state=DIALING`) while the two people were talking.
+  void _reportSystemCallConnected(String sessionId) {
+    unawaited(
+      IosCallKit.instance.reportOutgoingConnected(sessionId).catchError((_) {}),
+    );
+    unawaited(
+      AndroidTelecom.instance.reportConnected(sessionId).catchError((_) {}),
+    );
   }
 
   /// A USABLE MEDIA PATH WITH THE REMOTE PEER, ON EITHER TRANSPORT.
@@ -4742,6 +4748,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
             final id = _managedSessionId;
             if (id.isEmpty || _hasReportedMediaFor(id)) return;
             _mediaReportedForSession = id;
+            _reportSystemCallConnected(id);
             unawaited(
               _repository
                   .reportMediaEstablished(

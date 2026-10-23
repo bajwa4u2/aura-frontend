@@ -10,6 +10,7 @@ import androidx.core.view.WindowCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import java.lang.ref.WeakReference
 
 class MainActivity : FlutterActivity() {
 
@@ -45,8 +46,14 @@ class MainActivity : FlutterActivity() {
         // Before super.onCreate so the first frame already has the insets.
         WindowCompat.enableEdgeToEdge(window)
         super.onCreate(savedInstanceState)
+        current = WeakReference(this)
         captureCallIntent(intent)
         captureShareIntent(intent)
+    }
+
+    override fun onDestroy() {
+        if (current?.get() === this) current = null
+        super.onDestroy()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -213,7 +220,15 @@ class MainActivity : FlutterActivity() {
         val data = (intent?.getSerializableExtra(IncomingCallPresenter.EXTRA_CALL_DATA)
             as? HashMap<String, String>) ?: HashMap()
 
-        showOverLockScreen()
+        // A call is taken over the lock screen, not behind it. Asking to
+        // dismiss the keyguard put the unlock prompt between a locked phone
+        // and its own call (Pixel 9a, 1.7.0 (46), 2026-10-22: "needed to be
+        // unlocked"); Android's own calls are answered without unlocking.
+        // Only a decline that had to come through the app still asks — it is
+        // the fallback when the call carried no capability to decline with.
+        showOverLockScreen(
+            dismissKeyguard = action == IncomingCallPresenter.ACTION_DECLINE,
+        )
         if (action == IncomingCallPresenter.ACTION_ANSWER ||
             action == IncomingCallPresenter.ACTION_DECLINE
         ) {
@@ -261,13 +276,15 @@ class MainActivity : FlutterActivity() {
      * only when arriving through a call intent — an app that always shows over
      * the keyguard would be a security regression, not a feature.
      */
-    private fun showOverLockScreen() {
+    private fun showOverLockScreen(dismissKeyguard: Boolean) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             showingOverLock = true
             setShowWhenLocked(true)
             setTurnScreenOn(true)
-            val keyguard = getSystemService(KeyguardManager::class.java)
-            keyguard?.requestDismissKeyguard(this, null)
+            if (dismissKeyguard) {
+                val keyguard = getSystemService(KeyguardManager::class.java)
+                keyguard?.requestDismissKeyguard(this, null)
+            }
         }
     }
 
@@ -323,6 +340,36 @@ class MainActivity : FlutterActivity() {
     }
 
     companion object {
+        @Volatile
+        private var current: WeakReference<MainActivity>? = null
+
+        /**
+         * Let the app above the keyguard BEFORE the ring screen brings it
+         * forward. A stopped activity cannot do this for itself: it would have
+         * to resume first, and the keyguard does not let it.
+         */
+        fun prepareForCall() {
+            current?.get()?.showOverLockScreen(dismissKeyguard = false)
+        }
+
+        /**
+         * Hand a call action to a running Dart call layer without bringing the
+         * app forward. False when Aura is not running.
+         */
+        fun deliverCallAction(
+            action: String,
+            sessionId: String,
+            data: Map<String, String>,
+        ): Boolean {
+            val activity = current?.get() ?: return false
+            val channel = activity.channel ?: return false
+            channel.invokeMethod(
+                "onCallAction",
+                mapOf("action" to action, "sessionId" to sessionId, "data" to HashMap(data)),
+            )
+            return true
+        }
+
         private const val TAG = "AuraNotifications"
         private const val NOTIFICATIONS_CHANNEL = "org.auraplatform.app/notifications"
     }

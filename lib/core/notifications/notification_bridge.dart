@@ -21,6 +21,8 @@ import 'notification_arrival_gate.dart';
 import 'notification_presentation.dart';
 import 'sw_message_bridge.dart';
 import '../navigation/canonical_destinations.dart';
+import '../navigation/navigation_authority.dart';
+import 'android_telecom.dart';
 import '../diagnostics/call_teardown_diag.dart';
 import 'package:aura/core/ui/aura_notice.dart';
 
@@ -246,6 +248,23 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge>
       payload['sessionId'] ??= event.sessionId;
     }
     ref.read(incomingCallBridgeProvider.notifier).addIncoming(payload);
+
+    // ANSWERING IS THE DESTINATION — on Android as on iOS. Accept on the ring
+    // screen used to land on whatever Aura last showed, with a card saying
+    // "joining", and reach the call seconds later (founder, Pixel 9a,
+    // 2026-10-22: "then in conversation and call … messy flow"). The overlay
+    // still performs the one accept; this only sets where the person is, and
+    // marks the call answering before any join can race the accept event.
+    if (event.action == NativeCallAction.answer && event.sessionId.isNotEmpty) {
+      AndroidTelecom.instance.markAnswering(event.sessionId);
+      try {
+        ref
+            .read(routerProvider)
+            .go(NavigationAuthority.realtimeSessionJoinRoute(event.sessionId));
+      } catch (e) {
+        debugPrint('[native-call] early answer navigation failed: $e');
+      }
+    }
 
     final route = _routeFromPayload(payload);
     if (route.isNotEmpty) {

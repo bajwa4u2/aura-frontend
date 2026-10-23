@@ -279,6 +279,41 @@ object CallLiveness {
     }
 
     /**
+     * The person declined on the ring screen while Aura was not running.
+     *
+     * The third thing the call capability authorises. The server routes it
+     * through the same decline a foreground client takes, so there is still
+     * one way a call becomes declined. Off the main thread; best-effort — the
+     * ring on this phone is already over whatever the network does.
+     */
+    fun reportDeclined(context: Context, sessionId: String, capability: String) {
+        if (sessionId.isBlank() || capability.isBlank()) return
+        val url = "${apiBaseUrl(context)}/realtime/sessions/$sessionId/invite/declined"
+        var connection: HttpURLConnection? = null
+        try {
+            connection = (URL(url).openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                connectTimeout = CONNECT_TIMEOUT_MS
+                readTimeout = READ_TIMEOUT_MS
+                doOutput = true
+                setRequestProperty(HEADER_CAPABILITY, capability)
+                setRequestProperty("Content-Type", "application/json")
+                deviceId(context)?.let { setRequestProperty("X-Aura-Device-Id", it) }
+                setRequestProperty("X-Aura-Platform", "android")
+            }
+            connection.outputStream.use { it.write("{}".toByteArray(Charsets.UTF_8)) }
+            Log.i(TAG, "declined: sessionId=$sessionId code=${connection.responseCode}")
+        } catch (t: Throwable) {
+            Log.i(TAG, "decline failed: ${t.javaClass.simpleName}")
+        } finally {
+            try {
+                connection?.disconnect()
+            } catch (_: Throwable) {
+            }
+        }
+    }
+
+    /**
      * The API base Dart recorded, or the build's own default.
      *
      * Configuration, not a credential — an ordinary preference, deliberately

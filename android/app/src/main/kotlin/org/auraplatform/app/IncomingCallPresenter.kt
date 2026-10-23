@@ -90,6 +90,9 @@ object IncomingCallPresenter {
         val answer = actionIntent(context, ACTION_ANSWER, sessionId, data)
         val decline = actionIntent(context, ACTION_DECLINE, sessionId, data)
         val open = actionIntent(context, ACTION_OPEN, sessionId, data)
+        // The ring screen — Aura's own, above the lock screen. See
+        // IncomingCallActivity for why the full-screen intent is not the app.
+        val ring = actionIntent(context, ACTION_OPEN, sessionId, data, ringScreen = true)
 
         val builder = NotificationCompat.Builder(context, AuraApplication.CHANNEL_CALLS)
             .setSmallIcon(android.R.drawable.sym_call_incoming)
@@ -109,7 +112,7 @@ object IncomingCallPresenter {
             // lock screen; where it is not, Android degrades this to a
             // heads-up notification and the ring still behaves correctly,
             // because the ring no longer depends on how the call is drawn.
-            .setFullScreenIntent(open, true)
+            .setFullScreenIntent(ring, true)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             builder.setStyle(
@@ -150,10 +153,12 @@ object IncomingCallPresenter {
         }
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
         manager.cancel(sessionId, NOTIFICATION_ID)
+        IncomingCallActivity.close(sessionId)
         Log.i(TAG, "dismiss: sessionId=$sessionId")
     }
 
     fun dismissAll(context: Context): Int {
+        IncomingCallActivity.close(null)
         val manager = context.getSystemService(NotificationManager::class.java) ?: return 0
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             manager.cancelAll()
@@ -161,7 +166,13 @@ object IncomingCallPresenter {
         }
         var cancelled = 0
         for (entry in manager.activeNotifications) {
-            if (entry.notification.channelId == AuraApplication.CHANNEL_CALLS) {
+            // Rings only. The ongoing-call notification of AuraCallService
+            // shares this channel, and a "stop ringing" at connect was
+            // reaching it too (Pixel 9a, 2026-10-22: dismissAll cancelled=1
+            // seven seconds into an answered call).
+            if (entry.notification.channelId == AuraApplication.CHANNEL_CALLS &&
+                entry.id == NOTIFICATION_ID
+            ) {
                 manager.cancel(entry.tag, entry.id)
                 cancelled++
             }
@@ -176,6 +187,9 @@ object IncomingCallPresenter {
      * answerable. A missing or implausible value falls back to a bounded
      * default rather than ringing forever — or not at all.
      */
+    /** The ring window for a call's push data. The ring screen shares it. */
+    fun windowMsFor(data: Map<String, String>): Long = resolveWindowMs(data["expiresAt"])
+
     private fun resolveWindowMs(expiresAt: String?): Long {
         val raw = expiresAt?.trim().orEmpty()
         if (raw.isEmpty()) return DEFAULT_WINDOW_MS
@@ -205,15 +219,27 @@ object IncomingCallPresenter {
         action: String,
         sessionId: String,
         data: Map<String, String>,
+        ringScreen: Boolean = false,
     ): PendingIntent {
         // ACTIVITY intents, deliberately — not broadcasts. A broadcast
         // receiver that then called startActivity would be a background
         // activity start, which Android 10+ blocks; and the full-screen
         // intent must be an activity by definition. Every one of the three
-        // therefore lands in MainActivity, which stops the ring the moment it
+        // therefore lands in an activity that stops the ring the moment it
         // takes over and hands the action to the Dart call layer that owns
         // accept/decline.
-        val intent = Intent(context, MainActivity::class.java).apply {
+        //
+        // Answer, Decline and the full-screen ring go through
+        // IncomingCallActivity: it is declared above the lock screen, which a
+        // stopped MainActivity cannot make itself in time (2026-10-22). The
+        // notification body still opens the app, where the in-app card offers
+        // the same choice.
+        val target = if (ringScreen || action != ACTION_OPEN) {
+            IncomingCallActivity::class.java
+        } else {
+            MainActivity::class.java
+        }
+        val intent = Intent(context, target).apply {
             this.action = "org.auraplatform.app.CALL_" + action.uppercase()
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             putExtra(EXTRA_CALL_ACTION, action)
@@ -222,7 +248,7 @@ object IncomingCallPresenter {
         }
         return PendingIntent.getActivity(
             context,
-            (sessionId + action).hashCode(),
+            (sessionId + action + if (ringScreen) ":ring" else "").hashCode(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )

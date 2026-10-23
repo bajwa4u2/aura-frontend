@@ -333,6 +333,23 @@
 
         </activity>
 
+        <!--
+          The ringing call, above the lock screen from its first frame
+          (IncomingCallActivity). Not exported: only Aura's own call
+          notification opens it. Its own task, out of Recents, so a ring never
+          becomes a screen to come back to.
+        -->
+        <activity
+            android:name=".IncomingCallActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:taskAffinity="org.auraplatform.app.ring"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.Black.NoTitleBar" />
+
         <!-- Flutter engine registration -->
         <meta-data
             android:name="flutterEmbedding"

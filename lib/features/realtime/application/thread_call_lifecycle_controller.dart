@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/auth_providers.dart';
 import '../../../core/auth/session_providers.dart';
+import '../../../core/notifications/android_telecom.dart';
 import '../../updates/incoming_call_bridge.dart';
 import '../../correspondence/data/correspondence_live_service.dart';
 import '../domain/realtime_enums.dart';
@@ -232,6 +233,10 @@ class ThreadCallLifecycleController
   Future<void> acceptIncomingCall(Map<String, dynamic> payload) async {
     final sessionId = _sessionIdOf(payload);
     if (sessionId.isEmpty) return;
+    // Before the join, because the server's accept event can arrive while
+    // the join is still in flight, and it must not end the system call this
+    // phone is answering. See AndroidTelecom._answering.
+    AndroidTelecom.instance.markAnswering(sessionId);
     final userId = _readCurrentUserId();
     state = state.copyWith(
       phase: ThreadCallLifecyclePhase.joining,
@@ -248,6 +253,14 @@ class ThreadCallLifecycleController
         sessionId,
         source: ThreadCallLifecycleSource.callee,
       );
+    } catch (_) {
+      // The answer did not become a call. Marked as answering, the ring-clear
+      // no longer ends the system call, so this must — or Android keeps a
+      // ringing call for a session nobody is in.
+      unawaited(
+        AndroidTelecom.instance.reportEnded(sessionId, reason: 'failed'),
+      );
+      rethrow;
     } finally {
       // A capture opened for a call that was never joined must not stay open:
       // a live microphone with no call is the one outcome worse than a slow

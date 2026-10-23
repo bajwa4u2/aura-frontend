@@ -77,12 +77,45 @@ class AndroidTelecom {
   /// set; [reportEnded] — the call really ending — does not, and retires it.
   final Set<String> _placed = <String>{};
 
+  /// Calls this device is ANSWERING, by session id.
+  ///
+  /// THE CALLEE ENDED ITS OWN CALL THE MOMENT IT ANSWERED. The mirror of
+  /// [_placed], on the other phone. 2026-10-22, iPhone calling a Pixel 9a on
+  /// 1.7.0 (46): the Pixel accepted, the server's accept event reached the
+  /// Pixel as "stop ringing", and the terminal choke point disconnected the
+  /// system call that was about to be answered —
+  ///
+  ///   20:31:46.887  Telecom: RINGING -> DISCONNECTED, cause REJECTED
+  ///                 (overrode cause in EndCallTransaction)
+  ///
+  /// The Aura call carried on with no system call under it: no audio focus,
+  /// no relationship to a cellular call, a "rejected" entry for a call that
+  /// was answered. Once this phone has said yes, the ring is over because it
+  /// was ANSWERED, and the system call is moved to active, never ended.
+  final Set<String> _answering = <String>{};
+
+  /// Whether this device is answering [sessionId]. For tests and diagnostics.
+  @visibleForTesting
+  bool answeringHere(String sessionId) => _answering.contains(sessionId.trim());
+
   /// Whether this device placed [sessionId]. For tests and diagnostics.
   @visibleForTesting
   bool placedHere(String sessionId) => _placed.contains(sessionId.trim());
 
   @visibleForTesting
-  void resetPlacedForTest() => _placed.clear();
+  void resetPlacedForTest() {
+    _placed.clear();
+    _answering.clear();
+  }
+
+  /// The person said yes on this device. From here a ring-clear for
+  /// [sessionId] is the answer arriving back, not the call ending; only
+  /// [reportEnded] — the call really ending, or the join failing — retires it.
+  void markAnswering(String sessionId) {
+    if (isSupported && sessionId.trim().isNotEmpty) {
+      _answering.add(sessionId.trim());
+    }
+  }
 
   Future<void> start() async {
     if (!isSupported || _started) return;
@@ -190,6 +223,7 @@ class AndroidTelecom {
   Future<void> reportEnded(String sessionId, {required String reason}) async {
     if (!isSupported || sessionId.trim().isEmpty) return;
     _placed.remove(sessionId.trim());
+    _answering.remove(sessionId.trim());
     try {
       await _channel.invokeMethod<void>('reportEnded', {
         'sessionId': sessionId,
@@ -201,10 +235,16 @@ class AndroidTelecom {
   }
 
   /// A RING is over. Ends the system call only if this device was ringing for
-  /// it — never a call it placed. See [_placed].
+  /// it — never a call it placed, and never one it is answering. See
+  /// [_placed] and [_answering].
   Future<void> reportRingEnded(String sessionId, {required String reason}) async {
     if (_placed.contains(sessionId.trim())) {
       debugPrint('[telecom] ring-clear ignored for a call placed here '
+          'session=$sessionId reason=$reason');
+      return;
+    }
+    if (_answering.contains(sessionId.trim())) {
+      debugPrint('[telecom] ring-clear ignored for a call answered here '
           'session=$sessionId reason=$reason');
       return;
     }
