@@ -661,6 +661,62 @@ class RealtimeController extends StateNotifier<RealtimeState>
     return sessionId;
   }
 
+  /// THE PHONE IS RINGING; GET READY WHILE THE PERSON DECIDES.
+  ///
+  /// Measured 2026-10-22, Pixel 9a answering a web call on 1.7.0 (46): the
+  /// phone rang for 4 s, and only after Accept did the app load the session
+  /// (1.75 s — a woken radio re-opening six connections) and re-open its
+  /// realtime socket (0.8 s). Both are reads with no consequence for the
+  /// call, so they run during the ring: the session lands in the
+  /// repository's 30 s bundle cache that the join reads, and the socket is
+  /// open when the join asks for it.
+  ///
+  /// Nothing here joins, publishes, or touches call state; a failure is
+  /// silent, and the join simply does the same work itself, as before. A
+  /// socket opened for a call nobody answered is closed again once the ring
+  /// window has passed.
+  void warmForIncoming(String sessionId) {
+    final id = sessionId.trim();
+    if (id.isEmpty || state.isJoined) return;
+    if (state.joinState == RealtimeJoinState.joining) return;
+    final openedSocket = !_socketService.isConnected;
+    unawaited(
+      _repository.loadSessionBundle(id).then((_) {}).catchError((Object e) {
+        debugPrint('[rtc-warm] session preload failed: $e');
+      }),
+    );
+    if (openedSocket) {
+      unawaited(_warmSocket().catchError((Object e) {
+        debugPrint('[rtc-warm] socket preconnect failed: $e');
+      }));
+      _warmSocketTimer?.cancel();
+      _warmSocketTimer = Timer(const Duration(seconds: 95), () {
+        _warmSocketTimer = null;
+        if (state.isJoined || state.joinState != RealtimeJoinState.idle) return;
+        debugPrint('[rtc-warm] unanswered ring — closing preconnected socket');
+        unawaited(_socketService.disconnect().catchError((Object _) {}));
+      });
+    }
+    debugPrint('[rtc-warm] warming session=$id socket=$openedSocket');
+  }
+
+  Timer? _warmSocketTimer;
+
+  /// The socket half of [connect], without its call-state side effects: a
+  /// warm-up must never put "could not connect" in front of anyone.
+  Future<void> _warmSocket() async {
+    await _tokenStore.load();
+    final token = _tokenStore.accessToken?.trim() ?? '';
+    if (token.isEmpty) return;
+    ClientIdentity? identity;
+    try {
+      identity = await _readClientIdentity();
+    } catch (_) {
+      identity = null;
+    }
+    await _socketService.ensureConnected(accessToken: token, identity: identity);
+  }
+
   Future<void> disconnect() async {
     await _terminateSession(
       keepSocketConnected: false,
@@ -1128,6 +1184,12 @@ class RealtimeController extends StateNotifier<RealtimeState>
   Future<void> _performJoin(String sessionId, int epoch) async {
     // ignore: avoid_print
     print('[rtc-diag] performJoin start session=$sessionId');
+    // THE SOCKET OPENS ALONGSIDE THE REST JOIN, NOT AFTER IT. It needs nothing
+    // the session load or the REST join produce, and waiting for them cost an
+    // answered call 0.8 s (Pixel 9a, 2026-10-22). Awaited below, before the
+    // one event that needs it; a failure surfaces there exactly as before.
+    final socketReady = connect();
+    unawaited(socketReady.catchError((Object _) {}));
     await hydrateSession(sessionId);
     // ignore: avoid_print
     print('[rtc-diag] hydrated surface=${state.session?.surfaceType.name}'
@@ -1187,7 +1249,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
     // is no reason to continue past this point once superseded.
     if (epoch != _joinEpoch) return;
 
-    await connect();
+    await socketReady;
     final meSocketId = _socketService.socketId ?? '';
     debugPrint(
       '[join-seq] 1 socket connected socketId=$meSocketId'
@@ -1263,9 +1325,14 @@ class RealtimeController extends StateNotifier<RealtimeState>
     // socket join is already acked and authoritative — media is best-effort and
     // self-retries, so a media/negotiation hiccup must not un-join the user.
     try {
+      final mediaClock = Stopwatch()..start();
       await _ensureMediaReady(sessionId, refreshTurnCredentials: true);
+      debugPrint('[join-seq] 7a media ready ms=${mediaClock.elapsedMilliseconds}');
       await _reconcileRtcPeers('join', refreshTurnCredentials: true);
-      debugPrint('[join-seq] 8 media+negotiation complete sessionId=$sessionId');
+      debugPrint(
+        '[join-seq] 8 media+negotiation complete sessionId=$sessionId'
+        ' ms=${mediaClock.elapsedMilliseconds}',
+      );
     } catch (e, st) {
       debugPrint(
         '[join-seq] media/negotiation NON-FATAL error sessionId=$sessionId'
@@ -2155,19 +2222,50 @@ class RealtimeController extends StateNotifier<RealtimeState>
     }
 
     try {
-      if (sessionId.isNotEmpty && keepSocketConnected) {
-        try {
-          await _socketService.emitAck('session:leave', <String, dynamic>{
-            'sessionId': sessionId,
-          });
-        } catch (_) {}
-      }
+      // THE PERSON HAS LEFT; THE SCREEN DOES NOT WAIT FOR THE SERVER TO AGREE.
+      //
+      // Both farewells used to be awaited, one after the other, before the
+      // microphone was released or the screen could change. Measured
+      // 2026-10-22, Pixel 9a leaving a call with a web caller: the far end
+      // left its call screen 1.2 s after the tap, the person who tapped Leave
+      // only after 2.5 s — and in between, the still-running transport asked
+      // to reconnect to a call it had left ([stage:participation_revoked]).
+      // They are sent together, and media is released at once. Failures were
+      // already tolerated here; the server also ends a participant whose
+      // socket and heartbeat stop.
+      final farewells = <Future<void>>[
+        if (sessionId.isNotEmpty && keepSocketConnected)
+          _socketService
+              .emitAck('session:leave', <String, dynamic>{
+                'sessionId': sessionId,
+              })
+              .then((_) {})
+              .catchError((Object _) {}),
+        if (alsoCallRepository && sessionId.isNotEmpty)
+          _repository.leaveSession(session).catchError((Object _) {}),
+      ];
+      unawaited(Future.wait(farewells));
 
-      if (alsoCallRepository && sessionId.isNotEmpty) {
-        try {
-          await _repository.leaveSession(session);
-        } catch (_) {}
-      }
+      _clearRtcConfiguration();
+      _clearPendingOfferTargets();
+
+      // THE CALL IS OVER ON SCREEN BEFORE ITS TRANSPORT HAS FINISHED CLOSING.
+      //
+      // Publishing this only after the media reset tied the screen to the
+      // slowest part of teardown: a stage operation still in flight, or
+      // retrying against a participation the server had already revoked.
+      // Measured 2026-10-22 on the web caller: told at :42 that the other
+      // person had left, it sat on the call screen until :48 behind two
+      // `[stage:participation_revoked]` retries. The screen lets go of the
+      // call — and its tiles — first; the transport closes behind it, and
+      // `_terminating` still holds until it has.
+      state = _copyWithDetachedMediaState(
+        joinState: RealtimeJoinState.idle,
+        clearSessionContext: true,
+        clearPolicy: true,
+        clearErrorMessage: true,
+        infoMessage: infoMessage,
+      );
 
       try {
         await _mediaService.resetSessionMedia();
@@ -2179,16 +2277,6 @@ class RealtimeController extends StateNotifier<RealtimeState>
           await _socketService.disconnect();
         } catch (_) {}
       }
-      _clearRtcConfiguration();
-      _clearPendingOfferTargets();
-
-      state = _copyWithDetachedMediaState(
-        joinState: RealtimeJoinState.idle,
-        clearSessionContext: true,
-        clearPolicy: true,
-        clearErrorMessage: true,
-        infoMessage: infoMessage,
-      );
     } finally {
       _joiningSessionId = null;
       _hydratingSessionId = null;
@@ -2278,23 +2366,29 @@ class RealtimeController extends StateNotifier<RealtimeState>
         unawaited(capture.catchError((Object _) {}));
       }
 
+      final stepClock = Stopwatch()..start();
       final configuration = await _resolveRtcConfiguration(
         sessionId,
         refreshTurnCredentials: refreshTurnCredentials,
       );
+      debugPrint('[media-seq] rtc config ms=${stepClock.elapsedMilliseconds}');
 
       // These announce INTENT — what this participant will send — which is
       // already decided above and does not depend on the camera having
       // opened. Emitting them here rather than after the capture await keeps
-      // two more server round-trips inside the same overlap.
-      await _socketService.emitAck('session:audio.set', <String, dynamic>{
-        'sessionId': sessionId,
-        'enabled': wantsAudio,
-      });
-      await _socketService.emitAck('session:video.set', <String, dynamic>{
-        'sessionId': sessionId,
-        'enabled': wantsVideo,
-      });
+      // two more server round-trips inside the same overlap. And together:
+      // neither depends on the other's answer, so they cost one round trip.
+      await Future.wait(<Future<Map<String, dynamic>>>[
+        _socketService.emitAck('session:audio.set', <String, dynamic>{
+          'sessionId': sessionId,
+          'enabled': wantsAudio,
+        }),
+        _socketService.emitAck('session:video.set', <String, dynamic>{
+          'sessionId': sessionId,
+          'enabled': wantsVideo,
+        }),
+      ]);
+      debugPrint('[media-seq] intent acked ms=${stepClock.elapsedMilliseconds}');
 
       if (capture != null) {
         await capture;
@@ -2363,12 +2457,14 @@ class RealtimeController extends StateNotifier<RealtimeState>
         // that is proven or cleared, iOS keeps exactly what 1.4.4 shipped:
         // fire-and-forget. The C-1 ordering this await buys was measured on
         // Android, where it stays.
+        debugPrint('[media-seq] capture ready ms=${stepClock.elapsedMilliseconds}');
         final speaker = await _speakerDefaultFor(wantsVideo);
         if (defaultTargetPlatform == TargetPlatform.android) {
           await _mediaService.setSpeakerphoneEnabled(speaker);
         } else {
           unawaited(_mediaService.setSpeakerphoneEnabled(speaker));
         }
+        debugPrint('[media-seq] route set ms=${stepClock.elapsedMilliseconds}');
       }
 
       state = state.copyWith(
@@ -4726,7 +4822,9 @@ class RealtimeController extends StateNotifier<RealtimeState>
         // network that blocks UDP had STUN and nothing else. Best-effort: a
         // call must not fail because the relay could not be fetched, and the
         // transport treats an empty list as the behaviour it had before.
+        final stageClock = Stopwatch()..start();
         final relayServers = await _stageIceServers(sessionId);
+        debugPrint('[stage-seq] relay servers ms=${stageClock.elapsedMilliseconds}');
         late final SfuRealtimeTransport transport;
         transport = SfuRealtimeTransport(
           _repository,
@@ -4745,6 +4843,10 @@ class RealtimeController extends StateNotifier<RealtimeState>
           // these two people can hear each other, and stronger than the
           // renderer-presence check the snapshot path uses.
           onMediaFlowing: (bytes) {
+            debugPrint(
+              '[stage-seq] inbound media flowing'
+              ' ms=${stageClock.elapsedMilliseconds} bytes=$bytes',
+            );
             final id = _managedSessionId;
             if (id.isEmpty || _hasReportedMediaFor(id)) return;
             _mediaReportedForSession = id;
@@ -4772,6 +4874,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
           sessionId: sessionId,
           trigger: trigger,
         );
+        debugPrint('[stage-seq] attached ms=${stageClock.elapsedMilliseconds}');
       } else {
         await _mediaService.refreshStageRemoteMedia(trigger: trigger);
       }
@@ -4875,6 +4978,7 @@ class RealtimeController extends StateNotifier<RealtimeState>
     _cancelTurnRefresh();
     _cancelSignalingGrace();
     _connectionWindowTimer?.cancel();
+    _warmSocketTimer?.cancel();
     for (final timer in _peerGraceTimers.values) {
       timer.cancel();
     }

@@ -353,6 +353,15 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     if (id == _ringTimerNotificationId) return;
     _ringTimer?.cancel();
     _ringTimerNotificationId = id;
+    // The in-app ring gets ready during the ring too — the session loaded and
+    // the socket open before Accept (see RealtimeController.warmForIncoming).
+    // It changes no state, so it is safe from here.
+    final ringingSessionId = _resolveSessionId(item);
+    if (ringingSessionId.isNotEmpty) {
+      ref
+          .read(realtimeControllerProvider.notifier)
+          .warmForIncoming(ringingSessionId);
+    }
     _ringTimer = Timer(_ringTimeout, () {
       // context.mounted checks _lifecycleState == active, unlike State.mounted
       // which only checks _element != null and returns true during inactive.

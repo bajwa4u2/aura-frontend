@@ -12,6 +12,7 @@ import '../../features/devices/windows_push_service.dart';
 import '../auth/session_providers.dart';
 import '../../features/realtime/application/incoming_call_projection.dart'
     as projection;
+import '../../features/realtime/application/realtime_providers.dart';
 import '../../features/updates/incoming_call_bridge.dart';
 import '../../features/updates/providers.dart';
 import '../../router.dart';
@@ -202,6 +203,10 @@ class _NotificationBridgeState extends ConsumerState<NotificationBridge>
     // only covers SDK-drawn notifications. This channel carries them across.
     NativeCallActions.instance
       ..onAction = _onNativeCallAction
+      ..onRinging = (sessionId) {
+        if (!mounted) return;
+        ref.read(realtimeControllerProvider.notifier).warmForIncoming(sessionId);
+      }
       ..listen();
 
     // Foreground FCM messages — show snackbar / call overlay fallback.

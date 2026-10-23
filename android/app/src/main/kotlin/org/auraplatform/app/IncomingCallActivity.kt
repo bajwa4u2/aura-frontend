@@ -304,7 +304,7 @@ class IncomingCallActivity : Activity() {
             setImageResource(android.R.drawable.sym_action_call)
             setColorFilter(iconTint)
             // The hang-up glyph is the handset turned down, as on every phone.
-            if (hangUp) rotation = 135f
+            if (hangUp) rotation = 225f
         }
         circle.addView(
             icon,

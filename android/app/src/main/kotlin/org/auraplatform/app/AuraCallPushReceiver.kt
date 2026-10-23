@@ -51,6 +51,9 @@ class AuraCallPushReceiver : BroadcastReceiver() {
                     return
                 }
                 IncomingCallPresenter.present(context, data)
+                // Aura is alive in the background: let it get ready during the
+                // ring. A no-op when it is not running.
+                MainActivity.notifyRinging(data)
                 verifyAndRetract(context, data)
             }
 

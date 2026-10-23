@@ -370,6 +370,19 @@ class MainActivity : FlutterActivity() {
             return true
         }
 
+        /**
+         * A call is ringing natively and Aura's engine is alive behind it.
+         * Dart may load the session and open its socket during the ring; it
+         * decides nothing about the call. False when Aura is not running.
+         */
+        fun notifyRinging(data: Map<String, String>): Boolean {
+            val sessionId = (data["sessionId"] ?: data["realtimeSessionId"] ?: "").trim()
+            if (sessionId.isEmpty()) return false
+            val channel = current?.get()?.channel ?: return false
+            channel.invokeMethod("onCallRinging", mapOf("sessionId" to sessionId))
+            return true
+        }
+
         private const val TAG = "AuraNotifications"
         private const val NOTIFICATIONS_CHANNEL = "org.auraplatform.app/notifications"
     }

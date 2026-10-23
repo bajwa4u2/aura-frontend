@@ -65,6 +65,10 @@ class NativeCallActions {
 
   void Function(NativeCallActionEvent event)? onAction;
 
+  /// A call is ringing natively while the app runs in the background. Only a
+  /// chance to get ready; the person has decided nothing.
+  void Function(String sessionId)? onRinging;
+
   bool get _supported => !kIsWeb && Platform.isAndroid;
 
   bool _listening = false;
@@ -73,6 +77,13 @@ class NativeCallActions {
     if (!_supported || _listening) return;
     _listening = true;
     _channel.setMethodCallHandler((call) async {
+      if (call.method == 'onCallRinging') {
+        final args = call.arguments;
+        final sessionId =
+            args is Map ? '${args['sessionId'] ?? ''}'.trim() : '';
+        if (sessionId.isNotEmpty) onRinging?.call(sessionId);
+        return null;
+      }
       if (call.method != 'onCallAction') return null;
       final event = _parse(call.arguments);
       if (event != null) {

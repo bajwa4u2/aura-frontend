@@ -108,6 +108,79 @@ void main() {
       expect(body, contains('IosCallKit.instance.reportOutgoingConnected('));
     });
 
+    // Accept to connected, Pixel 9a, 2026-10-22: 8.6 s, of which 2.5 s was
+    // loading the session and re-opening the socket after Accept.
+    group('the ring is spent getting ready', () {
+      test('a native ring warms the session and socket', () {
+        final receiver = File(
+          'android/app/src/main/kotlin/org/auraplatform/app/AuraCallPushReceiver.kt',
+        ).readAsStringSync();
+        expect(receiver, contains('MainActivity.notifyRinging(data)'));
+        final bridge = code('lib/core/notifications/notification_bridge.dart');
+        expect(bridge, contains('.warmForIncoming(sessionId)'));
+        final controller =
+            code('lib/features/realtime/application/realtime_controller.dart');
+        final warm = controller.substring(
+          controller.indexOf('void warmForIncoming('),
+          controller.indexOf('Future<void> _warmSocket('),
+        );
+        expect(warm, contains('_repository.loadSessionBundle(id)'));
+        expect(warm, contains('_warmSocket()'));
+        expect(warm, isNot(contains('joinSession')),
+            reason: 'a ring is not an answer');
+      });
+
+      test('the in-app ring and the iPhone ring warm up too', () {
+        final overlay = code(
+          'lib/features/realtime/presentation/incoming_live_overlay.dart',
+        );
+        final ring = overlay.substring(
+          overlay.indexOf('void _ensureRingTimer('),
+          overlay.indexOf('void _cancelRingTimer('),
+        );
+        expect(ring, contains('.warmForIncoming(ringingSessionId)'));
+        final app = code('lib/app/aura_app.dart');
+        final ios = app.substring(
+          app.indexOf('callKit.onIncomingCall ='),
+          app.indexOf('callKit.onAnswer ='),
+        );
+        expect(ios, contains('.warmForIncoming(sessionId)'));
+      });
+
+      // Hang-up, 2026-10-22: the person who tapped Leave waited 2.5 s on the
+      // call screen; the web caller, told the other side had left, 6.5 s.
+      test('leaving shows the call over before the transport has closed', () {
+        final controller =
+            code('lib/features/realtime/application/realtime_controller.dart');
+        final start = controller.indexOf('Future<void> _terminateSession(');
+        final body = controller.substring(
+          start,
+          controller.indexOf('} finally {', start),
+        );
+        expect(body, contains('unawaited(Future.wait(farewells));'));
+        expect(body, isNot(contains("await _socketService.emitAck('session:leave'")));
+        expect(body, isNot(contains('await _repository.leaveSession(')));
+        expect(
+          body.indexOf('state = _copyWithDetachedMediaState('),
+          lessThan(body.indexOf('await _mediaService.resetSessionMedia()')),
+        );
+      });
+
+      test('the join opens the socket alongside its REST calls', () {
+        final controller =
+            code('lib/features/realtime/application/realtime_controller.dart');
+        final start = controller.indexOf('Future<void> _performJoin(');
+        final body = controller.substring(
+          start,
+          controller.indexOf("'session:join'", start),
+        );
+        final connect = body.indexOf('final socketReady = connect();');
+        expect(connect, greaterThan(0));
+        expect(connect, lessThan(body.indexOf('await hydrateSession(')));
+        expect(body, contains('await socketReady;'));
+      });
+    });
+
     // Founder, Pixel 9a, 2026-10-22: the ring arrived "minimized", Answer led
     // to the unlock prompt, then the conversation, then the call.
     group('a ringing call is a call over the lock screen', () {

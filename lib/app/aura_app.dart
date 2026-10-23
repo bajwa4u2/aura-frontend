@@ -258,6 +258,13 @@ class _AuraAppState extends ConsumerState<AuraApp> with WidgetsBindingObserver {
       } catch (e) {
         debugPrint('[callkit] bridging native arrival failed: $e');
       }
+      // Get ready during the ring, as Android does: the session loaded and
+      // the socket open before the person answers on the CallKit screen.
+      try {
+        ref.read(realtimeControllerProvider.notifier).warmForIncoming(sessionId);
+      } catch (e) {
+        debugPrint('[callkit] ring warm-up unavailable: $e');
+      }
 
       // WHAT CALLKIT ACTUALLY DID, WHERE I CAN SEE IT.
       //
