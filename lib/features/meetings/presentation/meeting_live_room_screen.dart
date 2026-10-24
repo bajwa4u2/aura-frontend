@@ -1069,6 +1069,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     );
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
+      _visibleRoom = this;
       ref.read(realtimeControllerProvider.notifier).setCallRoomVisible(true);
       await _ensureGuestAuthAndJoin();
       _scheduleControlBarHide();
@@ -1154,7 +1155,15 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     // `ref` throws inside dispose ("Cannot use ref after the widget was
     // disposed", seen on a guest's Leave, 2026-10-24); the controller kept
     // from initState is used instead.
-    _realtime.setCallRoomVisible(false);
+    // ONLY THE ROOM ON SCREEN SAYS THERE IS NO ROOM. The room can mount twice
+    // (a rebuild of the route), and the earlier mount is disposed after the
+    // later one has shown itself; clearing visibility then told the controller
+    // no room was open, so after the next socket drop it never rejoined and a
+    // guest sat on "Reconnecting…" (2026-10-24, S24).
+    if (identical(_visibleRoom, this)) {
+      _visibleRoom = null;
+      _realtime.setCallRoomVisible(false);
+    }
     if (_intentToLeave) {
       _realtime.leave();
     }
@@ -1422,6 +1431,9 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   late bool _isHost = widget.isHost;
   late final RealtimeController _realtime =
       ref.read(realtimeControllerProvider.notifier);
+
+  /// The meeting room currently on screen, if any; see dispose().
+  static _MeetingLiveRoomScreenState? _visibleRoom;
 
   @override
   Widget build(BuildContext context) {

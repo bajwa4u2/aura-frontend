@@ -47,4 +47,19 @@ void main() {
     final body = src.substring(start, src.indexOf('super.dispose();', start));
     expect(body, isNot(contains('ref.')));
   });
+
+  // 2026-10-24: a disposed earlier mount cleared visibility after the live
+  // mount set it, and the reconnect rejoin (gated on it) never ran.
+  test('only the room on screen clears call-room visibility', () {
+    final src = File(
+      'lib/features/meetings/presentation/meeting_live_room_screen.dart',
+    ).readAsStringSync();
+    final cls = src.indexOf('class _MeetingLiveRoomScreenState');
+    final start = src.indexOf('  void dispose() {', cls);
+    final body = src.substring(start, src.indexOf('super.dispose();', start));
+    final guard = body.indexOf('if (identical(_visibleRoom, this))');
+    expect(guard, greaterThan(0));
+    expect(body.indexOf('setCallRoomVisible(false)'), greaterThan(guard));
+    expect(src, contains('_visibleRoom = this;'));
+  });
 }
