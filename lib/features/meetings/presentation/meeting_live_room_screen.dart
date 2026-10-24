@@ -1035,6 +1035,8 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   @override
   void initState() {
     super.initState();
+    // Resolved now, while `ref` is usable; dispose() relies on it.
+    _realtime;
     // Keep the mobile device screen awake for the whole live session — a video
     // call must not let the phone dim/sleep while the user is in the room.
     WakelockPlus.enable();
@@ -1149,11 +1151,12 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     _controlBarTimer?.cancel();
     _arrivalTimer?.cancel();
     _recordingFlushTimer?.cancel();
-    ref
-        .read(realtimeControllerProvider.notifier)
-        .setCallRoomVisible(false);
+    // `ref` throws inside dispose ("Cannot use ref after the widget was
+    // disposed", seen on a guest's Leave, 2026-10-24); the controller kept
+    // from initState is used instead.
+    _realtime.setCallRoomVisible(false);
     if (_intentToLeave) {
-      ref.read(realtimeControllerProvider.notifier).leave();
+      _realtime.leave();
     }
     super.dispose();
   }
@@ -1239,11 +1242,14 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     setState(() => _endingMeeting = true);
     _intentToLeave = true;
     _clearReturnEntry();
+    // Read before the first await: the "meeting ended" broadcast can tear
+    // this room down while endMeeting is in flight, and `ref` throws after
+    // dispose — the call would then never be ended here.
+    final meetings = ref.read(meetingsRepositoryProvider);
+    final controller = ref.read(realtimeControllerProvider.notifier);
     try {
-      await ref
-          .read(meetingsRepositoryProvider)
-          .endMeeting(widget.meetingId);
-      await ref.read(realtimeControllerProvider.notifier).endCall();
+      await meetings.endMeeting(widget.meetingId);
+      await controller.endCall();
       if (!mounted) return;
       // Exit handoff: ending a meeting lands the host in the workspace —
       // conversation reference, outcome capture, and summary editing at the
@@ -1414,6 +1420,8 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   /// Host standing as currently known. Falls back to the route hint only
   /// while the meeting is still loading.
   late bool _isHost = widget.isHost;
+  late final RealtimeController _realtime =
+      ref.read(realtimeControllerProvider.notifier);
 
   @override
   Widget build(BuildContext context) {

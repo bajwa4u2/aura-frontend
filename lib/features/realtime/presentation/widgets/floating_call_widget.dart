@@ -423,14 +423,20 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
     final local = ref.read(realtimeControllerProvider);
     if (local.isEndingCall) return;
     final meetingId = (local.session?.surfaceId ?? '').trim();
+    // EVERYTHING FROM `ref` IS TAKEN BEFORE THE DIALOG. The card is rebuilt
+    // while the dialog is open and this State can be disposed by the time it
+    // closes; reading `ref` then threw, and End never reached the server — the
+    // meeting ran on until the stranded sweep ended it (2026-10-24).
     final controller = ref.read(realtimeControllerProvider.notifier);
+    final meetings = ref.read(meetingsRepositoryProvider);
+    final returnEntry = ref.read(activeMeetingReturnProvider.notifier);
+    final router = ref.read(routerProvider);
     final recordPath = _meetingRecordPath(meetingId);
     try {
       if (info.isHost) {
         // The card lives outside the router's subtree; the dialog is shown on
         // the router's own navigator. See `_goTo`.
-        final dialogContext =
-            ref.read(routerProvider).routerDelegate.navigatorKey.currentContext;
+        final dialogContext = router.routerDelegate.navigatorKey.currentContext;
         if (dialogContext == null) return;
         final ok = await showAdaptiveDialog<bool>(
           context: dialogContext,
@@ -453,14 +459,14 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
         );
         if (ok != true) return;
         if (meetingId.isNotEmpty) {
-          await ref.read(meetingsRepositoryProvider).endMeeting(meetingId);
+          await meetings.endMeeting(meetingId);
         }
         await controller.endCall();
       } else {
         await controller.leave();
       }
-      ref.read(activeMeetingReturnProvider.notifier).state = null;
-      _goTo(recordPath);
+      returnEntry.state = null;
+      router.go(recordPath);
     } catch (error) {
       debugPrint('[rtc] meeting exit from ribbon failed err=$error');
     }

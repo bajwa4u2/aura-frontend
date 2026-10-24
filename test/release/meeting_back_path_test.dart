@@ -91,7 +91,7 @@ void main() {
     expect(exit, contains("label: 'End for everyone'"));
     expect(exit, contains('.endMeeting(meetingId)'));
     expect(exit, contains('controller.leave()'));
-    expect(exit, contains('_goTo(recordPath)'));
+    expect(exit, contains('router.go(recordPath)'));
   });
 
   testWidgets('the Android bar offers Return and Leave for a participant',
