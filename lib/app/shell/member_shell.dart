@@ -36,7 +36,6 @@ import '../../core/ui/aura_text.dart';
 import '../../features/institutions/data/institution_pending_counts.dart';
 import '../../features/updates/module_attention.dart';
 import '../../features/institutions/live_rooms/global_live_banner_layer.dart';
-import '../../features/meetings/presentation/widgets/active_meeting_return_layer.dart';
 import '../../features/institutions/ui/institution_ds.dart';
 import 'rail/rail_composition.dart';
 import '../../core/identity/person_identity_model.dart';
@@ -58,11 +57,7 @@ const Color _institutionNavBg2 = Color(0xFF0E1116);
 const LinearGradient _institutionHeaderGradient = LinearGradient(
   begin: Alignment.topLeft,
   end: Alignment.bottomRight,
-  colors: [
-    Color(0xFF12161D),
-    Color(0xFF151922),
-    Color(0xFF1A1F29),
-  ],
+  colors: [Color(0xFF12161D), Color(0xFF151922), Color(0xFF1A1F29)],
 );
 
 const LinearGradient _institutionNavGradient = LinearGradient(
@@ -120,14 +115,15 @@ class MemberShell extends StatelessWidget {
   };
 
   static final List<_NavItem> _items = PrimaryDestination.values
-      .map((d) => _NavItem(
-            label: d.label,
-            icon: _icons[d]!.$1,
-            selectedIcon: _icons[d]!.$2,
-            path: d.route,
-          ))
+      .map(
+        (d) => _NavItem(
+          label: d.label,
+          icon: _icons[d]!.$1,
+          selectedIcon: _icons[d]!.$2,
+          path: d.route,
+        ),
+      )
       .toList(growable: false);
-
 
   /// Returns the index of the nav item that should be highlighted, or -1
   /// when nothing should be.
@@ -229,26 +225,24 @@ class MemberShell extends StatelessWidget {
           body: SafeArea(
             top: true,
             bottom: false,
-            // Persistent-session UX: an active meeting follows the user
-            // around the app as a return pill — never an abandoned tab.
-            child: ActiveMeetingReturnLayer(
-              child: GlobalLiveBannerLayer(
-                child: GlobalPlatformShell(
-                  contextBar: (!showLeftRail && _showMemberMobileBar(path))
-                      ? const _MemberMobileBar()
-                      : null,
-                  child: Row(
-                    children: [
-                      if (showLeftRail)
-                        _MemberSideNav(
-                          items: _items,
-                          selectedIndex: selectedIndex,
-                          currentPath: path,
-                          posture: win.navPosture,
-                        ),
-                      Expanded(child: ScrollToTopOnReselect(child: child)),
-                    ],
-                  ),
+            // An active meeting follows the user around the app as the live
+            // ribbon `FloatingCallWidget` draws for every shell.
+            child: GlobalLiveBannerLayer(
+              child: GlobalPlatformShell(
+                contextBar: (!showLeftRail && _showMemberMobileBar(path))
+                    ? const _MemberMobileBar()
+                    : null,
+                child: Row(
+                  children: [
+                    if (showLeftRail)
+                      _MemberSideNav(
+                        items: _items,
+                        selectedIndex: selectedIndex,
+                        currentPath: path,
+                        posture: win.navPosture,
+                      ),
+                    Expanded(child: ScrollToTopOnReselect(child: child)),
+                  ],
                 ),
               ),
             ),
@@ -316,7 +310,8 @@ class InstitutionShell extends ConsumerWidget {
     // The institution in the address decides the composition, not the
     // person's oldest membership (DD-42 phase 3).
     final addressedParts = path.split('/')..removeWhere((p) => p.isEmpty);
-    final composition = institutionAddressedIn(path) && addressedParts.length >= 2
+    final composition =
+        institutionAddressedIn(path) && addressedParts.length >= 2
         ? compositionForInstitution(ref, addressedParts[1])
         : compositionForKind(ref, identity?.kind);
 
@@ -324,7 +319,8 @@ class InstitutionShell extends ConsumerWidget {
     // underlying endpoints, so we only subscribe for them; everyone else sees
     // no badges (and we avoid needless 403s). Counts refresh when the provider
     // is invalidated after approve/reject/invite actions.
-    final counts = (identity != null && identity.isAdmin && identity.id.isNotEmpty)
+    final counts =
+        (identity != null && identity.isAdmin && identity.id.isNotEmpty)
         ? ref.watch(institutionPendingCountsProvider(identity.id)).valueOrNull
         : null;
     final pendingJoinRequests = counts?.joinRequests ?? 0;
@@ -379,16 +375,26 @@ class InstitutionShell extends ConsumerWidget {
 
         // The section's own screens, above its section-level pages.
         InstitutionSectionStrip? strip;
-        if (!isPreview && !isMeetingFocus && InstitutionSectionStrip.appliesTo(path)) {
-          final sections = groupInstitutionWorkspaceSections(buildInstitutionWorkspaceEntries(
-            identity,
-            pendingJoinRequests: pendingJoinRequests,
-            pendingInvites: pendingInvites,
-            composition: composition,
-          ));
-          final current = sections.where((x) => x.isSelected(path, identity)).firstOrNull;
+        if (!isPreview &&
+            !isMeetingFocus &&
+            InstitutionSectionStrip.appliesTo(path)) {
+          final sections = groupInstitutionWorkspaceSections(
+            buildInstitutionWorkspaceEntries(
+              identity,
+              pendingJoinRequests: pendingJoinRequests,
+              pendingInvites: pendingInvites,
+              composition: composition,
+            ),
+          );
+          final current = sections
+              .where((x) => x.isSelected(path, identity))
+              .firstOrNull;
           if (current != null && current.entries.length > 1) {
-            strip = InstitutionSectionStrip(section: current, currentPath: path, identity: identity);
+            strip = InstitutionSectionStrip(
+              section: current,
+              currentPath: path,
+              identity: identity,
+            );
           }
         }
 
@@ -442,7 +448,14 @@ class InstitutionShell extends ConsumerWidget {
                       Expanded(child: ScrollToTopOnReselect(child: child)),
                     ],
                   )
-                : (strip == null ? child : Column(children: [strip, Expanded(child: child)])),
+                : (strip == null
+                      ? child
+                      : Column(
+                          children: [
+                            strip,
+                            Expanded(child: child),
+                          ],
+                        )),
             contextRail: isDesktop
                 ? AuraContextRail(
                     modules: _institutionContextModules(context, identity),
@@ -486,9 +499,7 @@ class InstitutionShell extends ConsumerWidget {
           body: SafeArea(
             top: true,
             bottom: false,
-            child: ActiveMeetingReturnLayer(
-              child: GlobalLiveBannerLayer(child: body),
-            ),
+            child: GlobalLiveBannerLayer(child: body),
           ),
         );
       },
@@ -592,7 +603,9 @@ class _PublicPreviewToolbar extends StatelessWidget {
               onEdit: () => context.go(
                 address.isNotEmpty
                     ? institutionWorkspacePath(
-                        address, InstitutionSection.editProfile)
+                        address,
+                        InstitutionSection.editProfile,
+                      )
                     : '/institution/dashboard',
               ),
               onCopy: () => _copy(context, link),
@@ -602,7 +615,9 @@ class _PublicPreviewToolbar extends StatelessWidget {
               onExit: () => context.go(
                 address.isNotEmpty
                     ? institutionWorkspacePath(
-                        address, InstitutionSection.profile)
+                        address,
+                        InstitutionSection.profile,
+                      )
                     : '/institution/dashboard',
               ),
             );
@@ -832,7 +847,11 @@ class _PreviewChip extends StatelessWidget {
 // =============================================================================
 
 class _InstitutionMobileBar extends StatelessWidget {
-  const _InstitutionMobileBar({required this.identity, this.pendingTotal = 0, this.showMenu = true});
+  const _InstitutionMobileBar({
+    required this.identity,
+    this.pendingTotal = 0,
+    this.showMenu = true,
+  });
 
   final InstitutionIdentity? identity;
   final int pendingTotal;
@@ -855,26 +874,31 @@ class _InstitutionMobileBar extends StatelessWidget {
         ),
         child: Row(
           children: [
-            if (showMenu) Stack(
-              clipBehavior: Clip.none,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.menu_rounded,
-                      size: 22, color: AuraSurface.ink),
-                  tooltip: 'Workspace navigation',
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () =>
-                      _institutionScaffoldKey.currentState?.openDrawer(),
-                ),
-                if (pendingTotal > 0)
-                  Positioned(
-                    right: 4,
-                    top: 4,
-                    child: IgnorePointer(
-                        child: _NavCountBadge(count: pendingTotal)),
+            if (showMenu)
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.menu_rounded,
+                      size: 22,
+                      color: AuraSurface.ink,
+                    ),
+                    tooltip: 'Workspace navigation',
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () =>
+                        _institutionScaffoldKey.currentState?.openDrawer(),
                   ),
-              ],
-            ),
+                  if (pendingTotal > 0)
+                    Positioned(
+                      right: 4,
+                      top: 4,
+                      child: IgnorePointer(
+                        child: _NavCountBadge(count: pendingTotal),
+                      ),
+                    ),
+                ],
+              ),
             SizedBox(width: showMenu ? AuraSpace.s2 : AuraSpace.s8),
             _InstitutionAvatarSmall(name: name, logoUrl: identity?.logoUrl),
             const SizedBox(width: AuraSpace.s8),
@@ -895,6 +919,7 @@ class _InstitutionMobileBar extends StatelessWidget {
     );
   }
 }
+
 class _InstitutionAvatarSmall extends StatelessWidget {
   const _InstitutionAvatarSmall({required this.name, this.logoUrl});
 
@@ -903,8 +928,7 @@ class _InstitutionAvatarSmall extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initials =
-        name.isNotEmpty ? name.trim()[0].toUpperCase() : '';
+    final initials = name.isNotEmpty ? name.trim()[0].toUpperCase() : '';
 
     return GestureDetector(
       onTap: () => context.go(institutionWorkspaceHome(context, null)),
@@ -914,8 +938,7 @@ class _InstitutionAvatarSmall extends StatelessWidget {
         decoration: BoxDecoration(
           color: _institutionAccentSoft,
           shape: BoxShape.circle,
-          border:
-              Border.all(color: _institutionAccent.withValues(alpha: 0.4)),
+          border: Border.all(color: _institutionAccent.withValues(alpha: 0.4)),
         ),
         clipBehavior: Clip.antiAlias,
         child: logoUrl != null && logoUrl!.isNotEmpty
@@ -988,14 +1011,18 @@ class _MemberSideNav extends ConsumerWidget {
     // Conversation unread is its own authority — see conversation_unread_authority.
     final conversationUnread = ref
         .watch(conversationUnreadProvider)
-        .maybeWhen(data: (u) => u, orElse: () => const ConversationUnread.none());
+        .maybeWhen(
+          data: (u) => u,
+          orElse: () => const ConversationUnread.none(),
+        );
     final compact = !inDrawer && posture == AuraNavPosture.compact;
     final list = Padding(
       padding: EdgeInsets.fromLTRB(
-          compact ? AuraSpace.s8 : AuraSpace.s12,
-          AuraSpace.s8,
-          compact ? AuraSpace.s8 : AuraSpace.s12,
-          AuraSpace.s20),
+        compact ? AuraSpace.s8 : AuraSpace.s12,
+        AuraSpace.s8,
+        compact ? AuraSpace.s8 : AuraSpace.s12,
+        AuraSpace.s20,
+      ),
       child: Column(
         children: [
           // Member identity at the top of the rail (it is no longer repeated
@@ -1024,8 +1051,11 @@ class _MemberSideNav extends ConsumerWidget {
                 item: items[i],
                 selected: i == selectedIndex,
                 compact: compact,
-                badgeCount:
-                    _memberBadgeFor(items[i], attention, conversationUnread),
+                badgeCount: _memberBadgeFor(
+                  items[i],
+                  attention,
+                  conversationUnread,
+                ),
                 onTap: () {
                   final target = items[i].path;
                   if (target != currentPath) {
@@ -1108,8 +1138,11 @@ class _MenuButtonWithAttention extends ConsumerWidget {
       clipBehavior: Clip.none,
       children: [
         IconButton(
-          icon: const Icon(Icons.menu_rounded,
-              size: 22, color: AuraSurface.ink),
+          icon: const Icon(
+            Icons.menu_rounded,
+            size: 22,
+            color: AuraSurface.ink,
+          ),
           tooltip: unread > 0 ? 'Menu, $unread unread' : 'Menu',
           visualDensity: VisualDensity.compact,
           onPressed: onPressed,
@@ -1407,7 +1440,8 @@ class _MemberIdentityHeader extends ConsumerWidget {
                     color: AuraSurface.accentSoft,
                     shape: BoxShape.circle,
                     border: Border.all(
-                        color: AuraSurface.accent.withValues(alpha: 0.35)),
+                      color: AuraSurface.accent.withValues(alpha: 0.35),
+                    ),
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: avatarUrl.isNotEmpty
@@ -1454,72 +1488,73 @@ class _MemberIdentityHeader extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _openProfile(context),
-        borderRadius: BorderRadius.circular(AuraRadius.r14),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AuraSpace.s8,
-            vertical: AuraSpace.s8,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AuraSurface.accentSoft,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                      color: AuraSurface.accent.withValues(alpha: 0.35)),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: avatarUrl.isNotEmpty
-                    ? AuraAttachmentImage(
-                        url: avatarUrl,
-                        fit: BoxFit.cover,
-                        errorWidget: (_) => _MemberAvatarFallback(initials),
-                      )
-                    : _MemberAvatarFallback(initials),
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _openProfile(context),
+            borderRadius: BorderRadius.circular(AuraRadius.r14),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AuraSpace.s8,
+                vertical: AuraSpace.s8,
               ),
-              const SizedBox(width: AuraSpace.s10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Handle is intentionally NOT shown here — in the user's
-                    // own nav it's low-value and competes with the affiliation
-                    // line below. The @handle stays internal / on the profile
-                    // view. Identity block = name + affiliation-or-nothing.
-                    Text(
-                      name.isEmpty ? 'Your account' : name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AuraText.small.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: AuraSurface.ink,
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AuraSurface.accentSoft,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AuraSurface.accent.withValues(alpha: 0.35),
                       ),
                     ),
-                    if (title.isNotEmpty)
-                      Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AuraText.micro.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AuraSurface.muted,
+                    clipBehavior: Clip.antiAlias,
+                    child: avatarUrl.isNotEmpty
+                        ? AuraAttachmentImage(
+                            url: avatarUrl,
+                            fit: BoxFit.cover,
+                            errorWidget: (_) => _MemberAvatarFallback(initials),
+                          )
+                        : _MemberAvatarFallback(initials),
+                  ),
+                  const SizedBox(width: AuraSpace.s10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Handle is intentionally NOT shown here — in the user's
+                        // own nav it's low-value and competes with the affiliation
+                        // line below. The @handle stays internal / on the profile
+                        // view. Identity block = name + affiliation-or-nothing.
+                        Text(
+                          name.isEmpty ? 'Your account' : name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AuraText.small.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: AuraSurface.ink,
+                          ),
                         ),
-                      ),
-                  ],
-                ),
+                        if (title.isNotEmpty)
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AuraText.micro.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: AuraSurface.muted,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
-      ),
-    ),
         if (!affiliationsResolved)
           const _AffiliationLineResolving()
         else if (affiliations.isNotEmpty)
@@ -1683,7 +1718,6 @@ class _AffiliationLine extends StatelessWidget {
 
   final List<MemberAffiliation> affiliations;
 
-
   @override
   Widget build(BuildContext context) {
     if (affiliations.isEmpty) return const SizedBox.shrink();
@@ -1712,9 +1746,7 @@ class _AffiliationLine extends StatelessWidget {
           // The destination comes from the authority rather than a literal,
           // because ENTRY, REFUSAL and NO-AFFILIATION are three different
           // questions that used to share one constant.
-          onTap: () => context.go(
-            institutionEntryDestination(primary.id),
-          ),
+          onTap: () => context.go(institutionEntryDestination(primary.id)),
           borderRadius: BorderRadius.circular(AuraRadius.r10),
           child: Padding(
             padding: const EdgeInsets.symmetric(
@@ -1772,8 +1804,11 @@ class _MemberAvatarFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (initials.isEmpty) {
-      return const Icon(Icons.person_rounded,
-          size: 18, color: AuraSurface.accentText);
+      return const Icon(
+        Icons.person_rounded,
+        size: 18,
+        color: AuraSurface.accentText,
+      );
     }
     return Center(
       child: Text(
@@ -1872,7 +1907,10 @@ class _MemberBottomNav extends ConsumerWidget {
     // Conversation unread is its own authority — see conversation_unread_authority.
     final conversationUnread = ref
         .watch(conversationUnreadProvider)
-        .maybeWhen(data: (u) => u, orElse: () => const ConversationUnread.none());
+        .maybeWhen(
+          data: (u) => u,
+          orElse: () => const ConversationUnread.none(),
+        );
     return Container(
       decoration: const BoxDecoration(
         color: AuraSurface.card,
@@ -1897,7 +1935,10 @@ class _MemberBottomNav extends ConsumerWidget {
                     item: items[i],
                     selected: i == selectedIndex,
                     badgeCount: _memberBadgeFor(
-                        items[i], attention, conversationUnread),
+                      items[i],
+                      attention,
+                      conversationUnread,
+                    ),
                     onTap: () {
                       if (items[i].path != currentPath) {
                         context.go(items[i].path);
@@ -2014,7 +2055,9 @@ class _MemberSideNavTile extends StatelessWidget {
             duration: AuraMotion.fast,
             width: double.infinity,
             padding: const EdgeInsets.symmetric(
-                horizontal: AuraSpace.s12, vertical: AuraSpace.s10),
+              horizontal: AuraSpace.s12,
+              vertical: AuraSpace.s10,
+            ),
             decoration: BoxDecoration(
               color: selected ? AuraSurface.accentSoft : Colors.transparent,
               borderRadius: BorderRadius.circular(AuraRadius.r14),
@@ -2034,8 +2077,7 @@ class _MemberSideNavTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AuraText.small.copyWith(
-                      fontWeight:
-                          selected ? FontWeight.w700 : FontWeight.w500,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                       color: fgColor,
                     ),
                   ),
@@ -2122,8 +2164,9 @@ class _MemberSideNavTile extends StatelessWidget {
                       maxLines: 1,
                       textAlign: TextAlign.center,
                       style: AuraText.micro.copyWith(
-                        fontWeight:
-                            selected ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                         color: fg,
                       ),
                     ),
@@ -2159,7 +2202,9 @@ class _NavPostureToggle extends ConsumerWidget {
             borderRadius: BorderRadius.circular(AuraRadius.r14),
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                  horizontal: AuraSpace.s8, vertical: AuraSpace.s8),
+                horizontal: AuraSpace.s8,
+                vertical: AuraSpace.s8,
+              ),
               child: Row(
                 mainAxisAlignment: compact
                     ? MainAxisAlignment.center
@@ -2174,9 +2219,10 @@ class _NavPostureToggle extends ConsumerWidget {
                   ),
                   if (!compact) ...[
                     const SizedBox(width: AuraSpace.s10),
-                    Text('Collapse',
-                        style: AuraText.small.copyWith(
-                            color: AuraSurface.faint)),
+                    Text(
+                      'Collapse',
+                      style: AuraText.small.copyWith(color: AuraSurface.faint),
+                    ),
                   ],
                 ],
               ),
@@ -2277,27 +2323,27 @@ class InstWorkspaceEntry {
 
   /// A copy with no section label (used when the kind reorders a section).
   InstWorkspaceEntry withoutSectionLabel() => InstWorkspaceEntry(
-        label: label,
-        icon: icon,
-        selectedIcon: selectedIcon,
-        pathBuilder: pathBuilder,
-        pathMatcher: pathMatcher,
-        requiresAny: requiresAny,
-        badge: badge,
-      );
+    label: label,
+    icon: icon,
+    selectedIcon: selectedIcon,
+    pathBuilder: pathBuilder,
+    pathMatcher: pathMatcher,
+    requiresAny: requiresAny,
+    badge: badge,
+  );
 
   /// Returns a copy carrying [section] as its section label (used to reflow
   /// section headers onto the first visible entry after capability filtering).
   InstWorkspaceEntry withSectionLabel(String section) => InstWorkspaceEntry(
-        label: label,
-        icon: icon,
-        selectedIcon: selectedIcon,
-        sectionLabel: section,
-        pathBuilder: pathBuilder,
-        pathMatcher: pathMatcher,
-        requiresAny: requiresAny,
-        badge: badge,
-      );
+    label: label,
+    icon: icon,
+    selectedIcon: selectedIcon,
+    sectionLabel: section,
+    pathBuilder: pathBuilder,
+    pathMatcher: pathMatcher,
+    requiresAny: requiresAny,
+    badge: badge,
+  );
 
   bool isSelected(String currentPath, InstitutionIdentity? identity) {
     if (pathMatcher != null) return pathMatcher!(currentPath);
@@ -2328,9 +2374,8 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
   // queue of what waits for this person, public questions among it. Entries
   // a person lacks authority for are HIDDEN, not greyed (GOVERNANCE V1).
   // Retired: Overview and Messages (it listed the same spaces as Spaces).
-  String? at(InstitutionSection section) => address.isNotEmpty
-      ? institutionWorkspacePath(address, section)
-      : null;
+  String? at(InstitutionSection section) =>
+      address.isNotEmpty ? institutionWorkspacePath(address, section) : null;
   bool under(String p, String segment) =>
       p.startsWith('/institution/') && p.contains('/$segment');
 
@@ -2342,7 +2387,8 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       icon: Icons.inbox_outlined,
       selectedIcon: Icons.inbox_rounded,
       pathBuilder: (_) => at(InstitutionSection.desk),
-      pathMatcher: (p) => under(p, 'desk') || under(p, 'today') || p.endsWith('/dashboard'),
+      pathMatcher: (p) =>
+          under(p, 'desk') || under(p, 'today') || p.endsWith('/dashboard'),
     ),
 
     // ── PUBLIC ─────────────────────────────────────────────────────────────
@@ -2392,7 +2438,10 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       // waiting on you are counted here.
       badge: pendingJoinRequests,
       pathBuilder: (_) => at(InstitutionSection.members),
-      pathMatcher: (p) => under(p, 'members') || under(p, 'join-requests') || under(p, 'invites'),
+      pathMatcher: (p) =>
+          under(p, 'members') ||
+          under(p, 'join-requests') ||
+          under(p, 'invites'),
     ),
     InstWorkspaceEntry(
       label: 'Live',
@@ -2410,7 +2459,10 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       selectedIcon: Icons.videocam_rounded,
       pathBuilder: (_) => at(InstitutionSection.meetings),
       // DD-43: Booking pages is a Meetings tab.
-      pathMatcher: (p) => p.startsWith('/meetings/') || under(p, 'meetings') || under(p, 'availability'),
+      pathMatcher: (p) =>
+          p.startsWith('/meetings/') ||
+          under(p, 'meetings') ||
+          under(p, 'availability'),
     ),
 
     // ── SETTINGS ───────────────────────────────────────────────────────────
@@ -2421,7 +2473,9 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       selectedIcon: Icons.badge_rounded,
       pathBuilder: (_) => at(InstitutionSection.profile),
       // DD-43: Edit profile is Profile's gold action, not a rail entry.
-      pathMatcher: (p) => p.startsWith('/institution/') && (p.endsWith('/profile') || p.endsWith('/edit-profile')),
+      pathMatcher: (p) =>
+          p.startsWith('/institution/') &&
+          (p.endsWith('/profile') || p.endsWith('/edit-profile')),
     ),
     // Units: structural management only (founder ruling U5); a unit is an
     // operating context reached from Profile, not a peer destination.
@@ -2455,7 +2509,8 @@ List<InstWorkspaceEntry> buildInstitutionWorkspaceEntries(
       selectedIcon: Icons.account_balance_wallet_rounded,
       requiresAny: kInstitutionDestinationAuthority['billing']!,
       pathBuilder: (_) => at(InstitutionSection.billing),
-      pathMatcher: (p) => p.startsWith('/institution/') && p.endsWith('/billing'),
+      pathMatcher: (p) =>
+          p.startsWith('/institution/') && p.endsWith('/billing'),
     ),
     InstWorkspaceEntry(
       label: 'Activity',
@@ -2521,12 +2576,12 @@ class InstWorkspaceSection {
 
   /// The section as one rail destination: its first screen, its total badge.
   InstWorkspaceEntry get asEntry => InstWorkspaceEntry(
-        label: title,
-        icon: icon,
-        selectedIcon: selectedIcon,
-        pathBuilder: entries.first.pathBuilder,
-        badge: badge,
-      );
+    label: title,
+    icon: icon,
+    selectedIcon: selectedIcon,
+    pathBuilder: entries.first.pathBuilder,
+    badge: badge,
+  );
 }
 
 const _kSectionLooks = <String, (String, IconData, IconData)>{
@@ -2537,15 +2592,27 @@ const _kSectionLooks = <String, (String, IconData, IconData)>{
   'SETTINGS': ('Settings', Icons.settings_outlined, Icons.settings_rounded),
 };
 
-List<InstWorkspaceSection> groupInstitutionWorkspaceSections(List<InstWorkspaceEntry> visible) {
+List<InstWorkspaceSection> groupInstitutionWorkspaceSections(
+  List<InstWorkspaceEntry> visible,
+) {
   final out = <InstWorkspaceSection>[];
   String? key;
   var run = <InstWorkspaceEntry>[];
   void flush() {
     final k = key;
     if (k == null || run.isEmpty) return;
-    final look = _kSectionLooks[k] ?? (run.first.label, run.first.icon, run.first.selectedIcon);
-    out.add(InstWorkspaceSection(key: k, title: look.$1, icon: look.$2, selectedIcon: look.$3, entries: run));
+    final look =
+        _kSectionLooks[k] ??
+        (run.first.label, run.first.icon, run.first.selectedIcon);
+    out.add(
+      InstWorkspaceSection(
+        key: k,
+        title: look.$1,
+        icon: look.$2,
+        selectedIcon: look.$3,
+        entries: run,
+      ),
+    );
   }
 
   for (final e in visible) {
@@ -2583,35 +2650,43 @@ class InstitutionSectionStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, box) {
-      final gutter = box.maxWidth < 600 ? AuraSpace.s16 : (box.maxWidth < 1024 ? AuraSpace.s24 : AuraSpace.s32);
-      return Container(
-        width: double.infinity,
-        decoration: const BoxDecoration(
-          color: AuraSurface.page,
-          border: Border(bottom: BorderSide(color: AuraSurface.divider)),
-        ),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: EdgeInsets.symmetric(horizontal: gutter - AuraSpace.s8),
-          child: Row(
-            children: [
-              for (final e in section.entries)
-                _SectionStripLink(
-                  entry: e,
-                  selected: e.isSelected(currentPath, identity),
-                  path: e.resolvedPath(identity),
-                ),
-            ],
+    return LayoutBuilder(
+      builder: (context, box) {
+        final gutter = box.maxWidth < 600
+            ? AuraSpace.s16
+            : (box.maxWidth < 1024 ? AuraSpace.s24 : AuraSpace.s32);
+        return Container(
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            color: AuraSurface.page,
+            border: Border(bottom: BorderSide(color: AuraSurface.divider)),
           ),
-        ),
-      );
-    });
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.symmetric(horizontal: gutter - AuraSpace.s8),
+            child: Row(
+              children: [
+                for (final e in section.entries)
+                  _SectionStripLink(
+                    entry: e,
+                    selected: e.isSelected(currentPath, identity),
+                    path: e.resolvedPath(identity),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
 class _SectionStripLink extends StatelessWidget {
-  const _SectionStripLink({required this.entry, required this.selected, required this.path});
+  const _SectionStripLink({
+    required this.entry,
+    required this.selected,
+    required this.path,
+  });
 
   final InstWorkspaceEntry entry;
   final bool selected;
@@ -2625,11 +2700,19 @@ class _SectionStripLink extends StatelessWidget {
       child: InkWell(
         onTap: path == null || selected ? null : () => context.go(path!),
         child: Container(
-          padding: const EdgeInsets.fromLTRB(AuraSpace.s8, AuraSpace.s14, AuraSpace.s8, AuraSpace.s12),
+          padding: const EdgeInsets.fromLTRB(
+            AuraSpace.s8,
+            AuraSpace.s14,
+            AuraSpace.s8,
+            AuraSpace.s12,
+          ),
           margin: const EdgeInsets.only(right: AuraSpace.s12),
           decoration: BoxDecoration(
             border: Border(
-              bottom: BorderSide(color: selected ? AuraSurface.accent : Colors.transparent, width: 2),
+              bottom: BorderSide(
+                color: selected ? AuraSurface.accent : Colors.transparent,
+                width: 2,
+              ),
             ),
           ),
           child: Row(
@@ -2719,7 +2802,9 @@ class _InstitutionSideNav extends StatelessWidget {
             identity: identity,
             currentPath: currentPath,
             compact: compact,
-            onNavigate: inDrawer ? () => Navigator.of(context).maybePop() : null,
+            onNavigate: inDrawer
+                ? () => Navigator.of(context).maybePop()
+                : null,
           ),
       ],
     );
@@ -2866,13 +2951,13 @@ class _InstitutionSideNavTile extends StatelessWidget {
     final iconColor = selected
         ? _institutionAccentText
         : isDisabled
-            ? AuraSurface.faint.withValues(alpha: 0.45)
-            : AuraSurface.faint;
+        ? AuraSurface.faint.withValues(alpha: 0.45)
+        : AuraSurface.faint;
     final textColor = selected
         ? _institutionAccentText
         : isDisabled
-            ? AuraSurface.faint.withValues(alpha: 0.45)
-            : AuraSurface.faint;
+        ? AuraSurface.faint.withValues(alpha: 0.45)
+        : AuraSurface.faint;
 
     void onTap() {
       if (isDisabled) return;
@@ -2888,147 +2973,158 @@ class _InstitutionSideNavTile extends StatelessWidget {
         message: compact ? entry.label : '',
         waitDuration: const Duration(milliseconds: 600),
         child: MouseRegion(
-        cursor:
-            isDisabled ? SystemMouseCursors.basic : SystemMouseCursors.click,
-        child: GestureDetector(
-          onTap: isDisabled ? null : onTap,
-          child: AnimatedContainer(
-            duration: AuraMotion.fast,
-            margin: EdgeInsets.symmetric(
-              horizontal: compact ? AuraSpace.s6 : AuraSpace.s8,
-              vertical: 1,
-            ),
-            decoration: BoxDecoration(
-              color: selected ? _institutionAccentSoft : Colors.transparent,
-              borderRadius: BorderRadius.circular(AuraRadius.r10),
-              border: Border.all(
-                color: selected
-                    ? _institutionAccent.withValues(alpha: 0.25)
-                    : Colors.transparent,
+          cursor: isDisabled
+              ? SystemMouseCursors.basic
+              : SystemMouseCursors.click,
+          child: GestureDetector(
+            onTap: isDisabled ? null : onTap,
+            child: AnimatedContainer(
+              duration: AuraMotion.fast,
+              margin: EdgeInsets.symmetric(
+                horizontal: compact ? AuraSpace.s6 : AuraSpace.s8,
+                vertical: 1,
               ),
-            ),
-            child: Row(
-              children: [
-                AnimatedContainer(
-                  duration: AuraMotion.fast,
-                  width: 3,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? _institutionAccent
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+              decoration: BoxDecoration(
+                color: selected ? _institutionAccentSoft : Colors.transparent,
+                borderRadius: BorderRadius.circular(AuraRadius.r10),
+                border: Border.all(
+                  color: selected
+                      ? _institutionAccent.withValues(alpha: 0.25)
+                      : Colors.transparent,
                 ),
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: compact ? AuraSpace.s6 : AuraSpace.s12,
-                      vertical: AuraSpace.s8,
+              ),
+              child: Row(
+                children: [
+                  AnimatedContainer(
+                    duration: AuraMotion.fast,
+                    width: 3,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: selected ? _institutionAccent : Colors.transparent,
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    // COMPACT CARRIES A CAPTION (DD-42 phase 2, 2026-10-09).
-                    // Eighteen bare glyphs asked people to hover each one to
-                    // learn what it was; the member rail already captions its
-                    // icons. Two short lines fit at 92 px.
-                    child: compact
-                        ? Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  Icon(
-                                    selected ? entry.selectedIcon : entry.icon,
-                                    size: AuraIconSize.md,
-                                    color: iconColor,
-                                  ),
-                                  if (!isDisabled && entry.badge > 0)
-                                    Positioned(
-                                      right: -12,
-                                      top: -6,
-                                      child: _NavCountBadge(count: entry.badge),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: compact ? AuraSpace.s6 : AuraSpace.s12,
+                        vertical: AuraSpace.s8,
+                      ),
+                      // COMPACT CARRIES A CAPTION (DD-42 phase 2, 2026-10-09).
+                      // Eighteen bare glyphs asked people to hover each one to
+                      // learn what it was; the member rail already captions its
+                      // icons. Two short lines fit at 92 px.
+                      child: compact
+                          ? Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    Icon(
+                                      selected
+                                          ? entry.selectedIcon
+                                          : entry.icon,
+                                      size: AuraIconSize.md,
+                                      color: iconColor,
                                     ),
-                                ],
-                              ),
-                              const SizedBox(height: 3),
-                              // Two words may take two lines; one long word
-                              // ("Announcements") shrinks a little rather
-                              // than break in the middle.
-                              Builder(builder: (context) {
-                                final caption = Text(
-                                  entry.label,
-                                  maxLines: entry.label.contains(' ') ? 2 : 1,
-                                  textAlign: TextAlign.center,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AuraText.micro.copyWith(
-                                    fontSize: 10,
-                                    height: 1.15,
-                                    fontWeight: selected
-                                        ? FontWeight.w700
-                                        : FontWeight.w500,
-                                    color: textColor,
+                                    if (!isDisabled && entry.badge > 0)
+                                      Positioned(
+                                        right: -12,
+                                        top: -6,
+                                        child: _NavCountBadge(
+                                          count: entry.badge,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 3),
+                                // Two words may take two lines; one long word
+                                // ("Announcements") shrinks a little rather
+                                // than break in the middle.
+                                Builder(
+                                  builder: (context) {
+                                    final caption = Text(
+                                      entry.label,
+                                      maxLines: entry.label.contains(' ')
+                                          ? 2
+                                          : 1,
+                                      textAlign: TextAlign.center,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AuraText.micro.copyWith(
+                                        fontSize: 10,
+                                        height: 1.15,
+                                        fontWeight: selected
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
+                                        color: textColor,
+                                      ),
+                                    );
+                                    return entry.label.contains(' ')
+                                        ? caption
+                                        : FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: caption,
+                                          );
+                                  },
+                                ),
+                              ],
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  selected ? entry.selectedIcon : entry.icon,
+                                  size: AuraIconSize.md,
+                                  color: iconColor,
+                                ),
+                                if (!compact)
+                                  const SizedBox(width: AuraSpace.s10),
+                                if (!compact)
+                                  Expanded(
+                                    child: Text(
+                                      entry.label,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AuraText.small.copyWith(
+                                        fontWeight: selected
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
+                                        color: textColor,
+                                      ),
+                                    ),
                                   ),
-                                );
-                                return entry.label.contains(' ')
-                                    ? caption
-                                    : FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        child: caption,
-                                      );
-                              }),
-                            ],
-                          )
-                        : Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Icon(
-                          selected ? entry.selectedIcon : entry.icon,
-                          size: AuraIconSize.md,
-                          color: iconColor,
-                        ),
-                        if (!compact) const SizedBox(width: AuraSpace.s10),
-                        if (!compact)
-                        Expanded(
-                          child: Text(
-                            entry.label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AuraText.small.copyWith(
-                              fontWeight: selected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              color: textColor,
+                                // A count still reads at 92 px; a sentence does
+                                // not, and the tooltip already carries the name.
+                                if (!isDisabled && entry.badge > 0) ...[
+                                  if (!compact)
+                                    const SizedBox(width: AuraSpace.s6),
+                                  _NavCountBadge(count: entry.badge),
+                                ],
+                                if (!compact &&
+                                    isDisabled &&
+                                    entry.disabledReason != null) ...[
+                                  const SizedBox(width: AuraSpace.s6),
+                                  Text(
+                                    entry.disabledReason!,
+                                    style: AuraText.micro.copyWith(
+                                      color: AuraSurface.faint.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
-                          ),
-                        ),
-                        // A count still reads at 92 px; a sentence does
-                        // not, and the tooltip already carries the name.
-                        if (!isDisabled && entry.badge > 0) ...[
-                          if (!compact) const SizedBox(width: AuraSpace.s6),
-                          _NavCountBadge(count: entry.badge),
-                        ],
-                        if (!compact &&
-                            isDisabled &&
-                            entry.disabledReason != null) ...[
-                          const SizedBox(width: AuraSpace.s6),
-                          Text(
-                            entry.disabledReason!,
-                            style: AuraText.micro.copyWith(
-                              color: AuraSurface.faint.withValues(alpha: 0.5),
-                              fontSize: 9,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ],
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -3107,7 +3203,9 @@ String institutionWorkspaceHome(BuildContext context, String? fallbackId) {
     // Outside a route (tests, overlays): the identity below decides.
   }
   final id = (addressed ?? fallbackId ?? '').trim();
-  return id.isEmpty ? kInstitutionStandingRoute : institutionEntryDestination(id);
+  return id.isEmpty
+      ? kInstitutionStandingRoute
+      : institutionEntryDestination(id);
 }
 
 /// THE PHONE'S BOTTOM BAR (DD-42 phase 2, 2026-10-09).
@@ -3138,12 +3236,37 @@ class _InstitutionBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final address = _address;
-    final items = <(String, IconData, IconData, InstitutionSection, List<String>)>[
-      ('Desk', Icons.inbox_outlined, Icons.inbox_rounded, InstitutionSection.desk, ['desk', 'today', 'dashboard']),
-      ('Public', Icons.public_outlined, Icons.public_rounded, InstitutionSection.publicEngagement, ['public-engagement', 'explore', 'announcements', 'posts']),
-      ('Community', Icons.groups_outlined, Icons.groups_rounded, InstitutionSection.members, ['spaces', 'members', 'live-rooms', 'join-requests', 'invites']),
-      ('Meetings', Icons.videocam_outlined, Icons.videocam_rounded, InstitutionSection.meetings, ['meetings', 'availability']),
-    ];
+    final items =
+        <(String, IconData, IconData, InstitutionSection, List<String>)>[
+          (
+            'Desk',
+            Icons.inbox_outlined,
+            Icons.inbox_rounded,
+            InstitutionSection.desk,
+            ['desk', 'today', 'dashboard'],
+          ),
+          (
+            'Public',
+            Icons.public_outlined,
+            Icons.public_rounded,
+            InstitutionSection.publicEngagement,
+            ['public-engagement', 'explore', 'announcements', 'posts'],
+          ),
+          (
+            'Community',
+            Icons.groups_outlined,
+            Icons.groups_rounded,
+            InstitutionSection.members,
+            ['spaces', 'members', 'live-rooms', 'join-requests', 'invites'],
+          ),
+          (
+            'Meetings',
+            Icons.videocam_outlined,
+            Icons.videocam_rounded,
+            InstitutionSection.meetings,
+            ['meetings', 'availability'],
+          ),
+        ];
     final parts = currentPath.split('/')..removeWhere((p) => p.isEmpty);
     final section = parts.length >= 3 ? parts[2] : '';
     final anySelected = items.any((i) => i.$5.contains(section));
@@ -3172,12 +3295,18 @@ class _InstitutionBottomBar extends StatelessWidget {
                   Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      Icon(selected ? selectedIcon : icon, size: 22, color: color),
+                      Icon(
+                        selected ? selectedIcon : icon,
+                        size: 22,
+                        color: color,
+                      ),
                       if (badge > 0)
                         Positioned(
                           right: -8,
                           top: -4,
-                          child: IgnorePointer(child: _NavCountBadge(count: badge)),
+                          child: IgnorePointer(
+                            child: _NavCountBadge(count: badge),
+                          ),
                         ),
                     ],
                   ),
@@ -3258,7 +3387,10 @@ String? _toolOf(InstWorkspaceEntry e) {
 }
 
 /// Reorders entries within each section by the kind's lead/recede lists.
-List<InstWorkspaceEntry> _orderByKind(List<InstWorkspaceEntry> entries, KindComposition c) {
+List<InstWorkspaceEntry> _orderByKind(
+  List<InstWorkspaceEntry> entries,
+  KindComposition c,
+) {
   if (c.lead.isEmpty && c.recede.isEmpty) return List.of(entries);
   int rank(InstWorkspaceEntry e) {
     final tool = _toolOf(e);
@@ -3288,7 +3420,9 @@ List<InstWorkspaceEntry> _orderByKind(List<InstWorkspaceEntry> entries, KindComp
     for (var k = 0; k < indexed.length; k++) {
       final e = indexed[k].$2;
       final bare = e.sectionLabel == null ? e : e.withoutSectionLabel();
-      out.add(k == 0 && section != null ? bare.withSectionLabel(section) : bare);
+      out.add(
+        k == 0 && section != null ? bare.withSectionLabel(section) : bare,
+      );
     }
     i = j;
   }
