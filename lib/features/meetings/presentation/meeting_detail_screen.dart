@@ -439,7 +439,11 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
                   onPressed: saving
                       ? null
                       : () async {
-                          if (scheduledAt == null) {
+                          // A meeting already under way (an instant one has no
+                          // booked time) is edited as it is; only a meeting yet
+                          // to happen needs a time (2026-10-23: the host could
+                          // not turn guests on in a live instant meeting).
+                          if (scheduledAt == null && meeting.sessionId == null) {
                             AuraNotice.problem(context, 'Pick a date and time first.');
                             return;
                           }
@@ -453,9 +457,8 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
                                   description: descCtrl.text.trim().isEmpty
                                       ? null
                                       : descCtrl.text.trim(),
-                                  scheduledAt: scheduledAt!
-                                      .toUtc()
-                                      .toIso8601String(),
+                                  scheduledAt:
+                                      scheduledAt?.toUtc().toIso8601String(),
                                   durationMinutes: durationMinutes,
                                   timezone: meeting.timezone,
                                   waitingRoomEnabled: waitingRoomEnabled,

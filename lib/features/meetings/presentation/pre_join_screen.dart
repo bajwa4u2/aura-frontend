@@ -114,8 +114,14 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
       setState(() => _otpSentTo = result.sentTo ?? 'your invited email');
     } catch (e) {
       if (!mounted) return;
-      final message = AppErrorMapper.from(e).message;
-      AuraNotice.problem(context, 'The code was not sent. $message');
+      final error = AppErrorMapper.from(e);
+      // A code sent moments ago is not a failure: show where to type it.
+      if (error.code == 'CODE_RECENTLY_SENT') {
+        setState(() => _otpSentTo = 'your invited email');
+        AuraNotice.info(context, error.message);
+        return;
+      }
+      AuraNotice.problem(context, 'The code was not sent. ${error.message}');
     } finally {
       if (mounted) setState(() => _otpSending = false);
     }
