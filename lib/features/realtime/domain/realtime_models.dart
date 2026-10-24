@@ -74,6 +74,14 @@ Map<String, dynamic> _normalizeParticipantJson(Map<String, dynamic> raw) {
   if (participantId.isNotEmpty) {
     json['id'] = participantId;
   }
+  // A guest's name lives on their guest session, not a user (2026-10-24: a
+  // room rebuilt after a server restart named the guest "Participant").
+  final guestSession = json['guestSession'];
+  if (_readFirstString(json, const ['displayName']).isEmpty &&
+      guestSession is Map &&
+      (guestSession['guestName'] ?? '').toString().trim().isNotEmpty) {
+    json['displayName'] = guestSession['guestName'].toString().trim();
+  }
   if (userId.isNotEmpty) {
     json['userId'] = userId;
   }

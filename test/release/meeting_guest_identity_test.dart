@@ -27,4 +27,15 @@ void main() {
     });
     expect(p.userId, 'user-1');
   });
+
+  test('a guest keeps their name when the room is rebuilt from the session', () {
+    final p = RealtimeParticipant.fromJson(const {
+      'id': 'row-1',
+      'userId': null,
+      'guestSessionId': 'guest-1',
+      'guestSession': {'guestName': 'Phone Guest'},
+      'user': null,
+    });
+    expect(p.displayName, 'Phone Guest');
+  });
 }
