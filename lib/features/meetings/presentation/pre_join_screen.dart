@@ -155,6 +155,9 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
   /// Shared post-admission continuation: guest-token exchange (never for a
   /// signed-in member) and navigation into waiting/live.
   Future<void> _completeAdmission(JoinMeetingResult result) async {
+    // The code field's keyboard must not follow the guest into the room
+    // (2026-10-24: it stayed open over the live tiles).
+    FocusManager.instance.primaryFocus?.unfocus();
     final repo = ref.read(meetingsRepositoryProvider);
 
     // Never downgrade a logged-in MEMBER to a guest token. Only a true

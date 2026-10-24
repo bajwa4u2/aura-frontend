@@ -65,7 +65,11 @@ class PublicShell extends StatelessWidget {
                   children: [
                     if (!isMeetingFocus)
                       _PublicHeader(isDesktop: isDesktop, isTablet: isTablet),
+                    // The app offer is not worth the content: on a short
+                    // viewport (a phone in landscape, or with the keyboard
+                    // up) it left the page itself no room (2026-10-24).
                     if (!isMeetingFocus &&
+                        constraints.maxHeight >= 520 &&
                         shouldShowAuraPublicAppAcquisition(
                           GoRouterState.of(context).uri.path,
                         ))
