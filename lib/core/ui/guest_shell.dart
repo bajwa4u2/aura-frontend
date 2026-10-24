@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../navigation/return_path_frame.dart';
 import 'aura_space.dart';
 import 'aura_surface.dart';
 import 'aura_text.dart';
@@ -31,7 +32,19 @@ class GuestShell extends StatelessWidget {
     // this bar earns its place only when it carries something (institution
     // identity or a back affordance). Otherwise it is duplicated chrome.
     final hasInstitution = institutionName?.trim().isNotEmpty == true;
-    final showBar = hasInstitution || showBackButton;
+    // One way back: when the governed return bar is already drawn above this
+    // page, this shell does not draw a second arrow under it.
+    final drawBack =
+        showBackButton && !ReturnBarPresence.isPresent(context);
+    final showBar = hasInstitution || drawBack;
+    // A PINNED FOOTER MUST NOT EAT A SHORT VIEWPORT. On a phone in landscape,
+    // or with the keyboard open, the public header, the app banner and these
+    // bars took the whole height: the invitation and its button had 0px, and
+    // with the keyboard up the footer sat over "Verify and join" (2026-10-24,
+    // Galaxy S24). Below this height the footer steps aside for the content.
+    final media = MediaQuery.of(context);
+    final showFooter =
+        media.viewInsets.bottom == 0 && media.size.height >= 600;
     return Scaffold(
       backgroundColor: AuraSurface.page,
       body: Column(
@@ -40,10 +53,10 @@ class GuestShell extends StatelessWidget {
             _GuestTopBar(
               institutionName: institutionName,
               institutionLogoUrl: institutionLogoUrl,
-              showBackButton: showBackButton,
+              showBackButton: drawBack,
             ),
           Expanded(child: body),
-          const _GuestFooter(),
+          if (showFooter) const _GuestFooter(),
         ],
       ),
     );

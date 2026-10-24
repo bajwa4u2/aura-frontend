@@ -59,6 +59,21 @@ class ReturnAffordanceScope extends InheritedWidget {
       old.suppressed != suppressed;
 }
 
+/// Tells a framed screen that the governed return bar is already drawn above
+/// it, so a screen-level back control does not draw a second one.
+///
+/// Observed 2026-10-24 on a phone: the guest invitation page showed "← Back"
+/// from this frame and a bare "←" from the guest shell, one under the other.
+class ReturnBarPresence extends InheritedWidget {
+  const ReturnBarPresence({super.key, required super.child});
+
+  static bool isPresent(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<ReturnBarPresence>() != null;
+
+  @override
+  bool updateShouldNotify(ReturnBarPresence old) => false;
+}
+
 /// Frames a routed surface with the governed return affordance.
 class ReturnPathFrame extends ConsumerStatefulWidget {
   const ReturnPathFrame({
@@ -173,7 +188,7 @@ class _ReturnPathFrameState extends ConsumerState<ReturnPathFrame> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _ReturnBar(action: action, isAuthed: isAuthed),
-        Expanded(child: widget.child),
+        Expanded(child: ReturnBarPresence(child: widget.child)),
       ],
     );
   }
