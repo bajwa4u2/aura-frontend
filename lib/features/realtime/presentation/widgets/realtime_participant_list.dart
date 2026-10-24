@@ -179,6 +179,7 @@ class RealtimeParticipantList extends StatelessWidget {
                             // sliver of video in a mostly black box.
                             child: RTCVideoView(
                               renderer,
+                              key: ObjectKey(renderer),
                               objectFit: RTCVideoViewObjectFit
                                   .RTCVideoViewObjectFitCover,
                             ),

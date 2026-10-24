@@ -3722,6 +3722,7 @@ class _VideoTileState extends State<_VideoTile> {
           // differently shaped pictures in a grid meant to read as equal seats.
           RTCVideoView(
             widget.renderer!,
+            key: ObjectKey(widget.renderer),
             mirror: widget.mirror,
             objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
           )

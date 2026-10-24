@@ -216,6 +216,7 @@ class _PresentationComposition extends StatelessWidget {
           Positioned.fill(
             child: RTCVideoView(
               presentation,
+              key: ObjectKey(presentation),
               objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain,
             ),
           ),
@@ -377,6 +378,12 @@ class _TileState extends State<_Tile> {
           if (tile.hasPicture)
             RTCVideoView(
               tile.renderer!,
+              // A NEW RENDERER IS A NEW VIEW. flutter_webrtc 1.4.1's web view
+              // finds its <video> once, in initState, and never again: handed
+              // a new renderer it kept painting the old, removed element, so a
+              // tile went black after the other side republished while their
+              // new video played unseen (2026-10-24, S24 guest).
+              key: ObjectKey(tile.renderer),
               mirror: tile.mirror,
               // Always Cover for a person — see `participantTilesAlwaysCover`.
               objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,

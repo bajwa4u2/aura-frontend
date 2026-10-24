@@ -293,6 +293,7 @@ class _MeetingDeviceCheckState extends ConsumerState<MeetingDeviceCheck> {
                   if (_renderer != null && _cameraOn && !_cameraUnavailable)
                     RTCVideoView(
                       _renderer!,
+                      key: ObjectKey(_renderer),
                       mirror: true,
                       objectFit:
                           RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,

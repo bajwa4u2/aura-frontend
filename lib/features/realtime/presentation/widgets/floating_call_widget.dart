@@ -673,6 +673,7 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
             ? null
             : RTCVideoView(
                 info.remoteRenderer!,
+                key: ObjectKey(info.remoteRenderer),
                 objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
               ),
       ),
