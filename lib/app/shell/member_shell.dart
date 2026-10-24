@@ -36,7 +36,6 @@ import '../../core/ui/aura_text.dart';
 import '../../features/institutions/data/institution_pending_counts.dart';
 import '../../features/updates/module_attention.dart';
 import '../../features/institutions/live_rooms/global_live_banner_layer.dart';
-import '../../features/meetings/presentation/widgets/active_meeting_return_layer.dart';
 import '../../features/institutions/ui/institution_ds.dart';
 import 'rail/rail_composition.dart';
 import '../../core/identity/person_identity_model.dart';
@@ -229,10 +228,9 @@ class MemberShell extends StatelessWidget {
           body: SafeArea(
             top: true,
             bottom: false,
-            // Persistent-session UX: an active meeting follows the user
-            // around the app as a return pill — never an abandoned tab.
-            child: ActiveMeetingReturnLayer(
-              child: GlobalLiveBannerLayer(
+            // An active meeting follows the user around the app as the live
+            // ribbon `FloatingCallWidget` draws for every shell.
+            child: GlobalLiveBannerLayer(
                 child: GlobalPlatformShell(
                   contextBar: (!showLeftRail && _showMemberMobileBar(path))
                       ? const _MemberMobileBar()
@@ -251,7 +249,6 @@ class MemberShell extends StatelessWidget {
                   ),
                 ),
               ),
-            ),
           ),
         );
       },
@@ -486,9 +483,7 @@ class InstitutionShell extends ConsumerWidget {
           body: SafeArea(
             top: true,
             bottom: false,
-            child: ActiveMeetingReturnLayer(
-              child: GlobalLiveBannerLayer(child: body),
-            ),
+            child: GlobalLiveBannerLayer(child: body),
           ),
         );
       },

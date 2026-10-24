@@ -1357,6 +1357,31 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     }
   }
 
+  /// OUT OF THE ROOM, STILL IN THE MEETING (founder-approved design,
+  /// 23 Oct 2026).
+  ///
+  /// The browser's Back was the only way out, and native apps had none.
+  /// Stepping out does not leave: `dispose` leaves only on `_intentToLeave`,
+  /// so the call, camera and microphone keep running and the app-wide live
+  /// ribbon (`FloatingCallWidget`) carries the way back in.
+  ///
+  /// A browser recording is made from this screen, so the host stops it
+  /// first rather than losing it on the way out.
+  void _stepOut() {
+    if (_recording || _savingRecording) {
+      AuraNotice.info(
+        context,
+        'Stop the recording first. It is made from this screen.',
+      );
+      return;
+    }
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(_workspacePath);
+    }
+  }
+
   void _clearReturnEntry() {
     ref.read(activeMeetingReturnProvider.notifier).state = null;
   }
@@ -1866,6 +1891,10 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
               participantCount:
                   state.participants.isEmpty ? 1 : state.participants.length,
               recording: _recording || _roomRecording,
+              // A guest has no Aura to step back into: they leave by Leave.
+              onBack: (widget.guestUserId ?? '').trim().isNotEmpty
+                  ? null
+                  : _stepOut,
             ),
           ),
 
@@ -2205,11 +2234,15 @@ class _MeetingLiveHeader extends StatelessWidget {
   final int participantCount;
   final bool recording;
 
+  /// "Back to Aura": out of the room, still in the meeting. Null hides it.
+  final VoidCallback? onBack;
+
   const _MeetingLiveHeader({
     required this.meeting,
     required this.joinedAt,
     required this.participantCount,
     required this.recording,
+    this.onBack,
   });
 
   @override
@@ -2240,6 +2273,15 @@ class _MeetingLiveHeader extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          if (onBack != null) ...[
+            IconButton(
+              tooltip: 'Back to Aura',
+              icon: const Icon(Icons.arrow_back_rounded,
+                  color: Color(0xFFE8E4DA)),
+              onPressed: onBack,
+            ),
+            const SizedBox(width: AuraSpace.s4),
+          ],
           // Institutional presence: the room always says who owns the
           // meeting — the institution when there is one, the host otherwise.
           if (institution != null) ...[

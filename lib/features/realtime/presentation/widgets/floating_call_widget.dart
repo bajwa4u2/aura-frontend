@@ -1,10 +1,15 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 import '../../../../core/services/call_presence_bridge.dart';
+import '../../../../core/ui/adaptive_dialog_action.dart';
+import '../../../meetings/application/meetings_provider.dart';
+import '../../../meetings/presentation/widgets/active_meeting_return_layer.dart';
+import '../../../meetings/presentation/widgets/meeting_live_ribbon.dart';
 import '../../application/realtime_providers.dart';
 import '../../domain/realtime_enums.dart';
 import '../../domain/realtime_models.dart';
@@ -351,6 +356,13 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
     final liveState = ref.read(realtimeControllerProvider);
     final liveSession = liveState.session;
     if (liveSession?.surfaceType == RealtimeSurfaceType.meeting) {
+      // The room recorded the exact address it was opened at — institution
+      // scope and host hint included — so return goes back to THAT room.
+      final entry = ref.read(activeMeetingReturnProvider);
+      if (entry != null && entry.path.contains('sessionId=${info.sessionId}')) {
+        _goTo(entry.path);
+        return;
+      }
       final meetingId = (liveSession!.surfaceId ?? '').trim();
       if (meetingId.isNotEmpty) {
         _goTo('/meetings/$meetingId/live?sessionId=${info.sessionId}');
@@ -391,6 +403,66 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
       ref.read(routerProvider).go(location);
     } catch (error) {
       debugPrint('[rtc] pip navigation failed to=$location err=$error');
+    }
+  }
+
+  /// The meeting's record, where Leave and End land — the same page the room's
+  /// own Leave and End go to, never wherever browser history points.
+  String _meetingRecordPath(String meetingId) {
+    final entry = ref.read(activeMeetingReturnProvider);
+    final path = entry?.path.split('?').first ?? '';
+    if (path.endsWith('/live')) {
+      return path.substring(0, path.length - '/live'.length);
+    }
+    return '/meetings/$meetingId';
+  }
+
+  /// LEAVE OR END A MEETING FROM OUTSIDE ITS ROOM, exactly as the room does:
+  /// the host is asked once more and ends it for everyone; anyone else leaves.
+  Future<void> _endOrLeaveMeeting(_CallInfo info) async {
+    final local = ref.read(realtimeControllerProvider);
+    if (local.isEndingCall) return;
+    final meetingId = (local.session?.surfaceId ?? '').trim();
+    final controller = ref.read(realtimeControllerProvider.notifier);
+    final recordPath = _meetingRecordPath(meetingId);
+    try {
+      if (info.isHost) {
+        // The card lives outside the router's subtree; the dialog is shown on
+        // the router's own navigator. See `_goTo`.
+        final dialogContext =
+            ref.read(routerProvider).routerDelegate.navigatorKey.currentContext;
+        if (dialogContext == null) return;
+        final ok = await showAdaptiveDialog<bool>(
+          context: dialogContext,
+          builder: (ctx) => AlertDialog.adaptive(
+            title: const Text('End the meeting for everyone?'),
+            actions: [
+              adaptiveDialogAction(
+                ctx,
+                label: 'Cancel',
+                onPressed: () => Navigator.of(ctx).pop(false),
+              ),
+              adaptiveDialogAction(
+                ctx,
+                label: 'End for everyone',
+                destructive: true,
+                onPressed: () => Navigator.of(ctx).pop(true),
+              ),
+            ],
+          ),
+        );
+        if (ok != true) return;
+        if (meetingId.isNotEmpty) {
+          await ref.read(meetingsRepositoryProvider).endMeeting(meetingId);
+        }
+        await controller.endCall();
+      } else {
+        await controller.leave();
+      }
+      ref.read(activeMeetingReturnProvider.notifier).state = null;
+      _goTo(recordPath);
+    } catch (error) {
+      debugPrint('[rtc] meeting exit from ribbon failed err=$error');
     }
   }
 
@@ -489,6 +561,33 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
       return const SizedBox.shrink();
     }
 
+    // A MEETING YOU STEPPED OUT OF, IN EACH PLATFORM'S OWN PLACE
+    // (founder-approved design, 23 Oct 2026): a top ribbon on iPhone and
+    // narrow web, a bottom bar on Android, and on desktop and wide web the
+    // corner card below. Calls keep the card everywhere, as they always have.
+    final isMeeting =
+        liveState.session?.surfaceType == RealtimeSurfaceType.meeting;
+    // This tab holds the media: only it may leave or end from here.
+    final holdsMedia = info.isOwner;
+    if (isMeeting && holdsMedia) {
+      final placement = meetingRibbonPlacement(
+        platform: defaultTargetPlatform,
+        isWeb: kIsWeb,
+        width: MediaQuery.sizeOf(context).width,
+      );
+      if (placement != MeetingRibbonPlacement.corner) {
+        return MeetingLiveRibbon(
+          placement: placement,
+          startedAt: info.startedAt,
+          inRoom: info.participants.isEmpty ? 1 : info.participants.length,
+          mayEndForEveryone: info.isHost,
+          isEnding: liveState.isEndingCall,
+          onReturn: () => _returnToCall(info),
+          onEnd: () => unawaited(_endOrLeaveMeeting(info)),
+        );
+      }
+    }
+
     if (_offset == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && !_positionInitialized) _initPosition();
@@ -561,7 +660,11 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
         // AND OWNING THE MEDIA IS NOT AUTHORITY OVER THE CALL. A callee whose
         // tab holds the media was being offered End, and pressing it asked the
         // server to end the HOST's session. The card now says which act it is.
-        onEnd: info.isOwner ? _endCallFromPip : null,
+        onEnd: !holdsMedia
+            ? null
+            : isMeeting
+                ? () => unawaited(_endOrLeaveMeeting(info))
+                : _endCallFromPip,
         mayEndForEveryone: info.isHost,
         isEnding: liveState.isEndingCall,
         // The card lays out a picture; only this file knows the picture is a
@@ -645,6 +748,10 @@ bool mayEndForEveryone({
 bool callSurfaceOwnsTheScreen(Uri location) {
   final path = location.path;
   if (path.startsWith('/realtime/')) return true;
-  if (path.startsWith('/meetings/') && path.endsWith('/live')) return true;
+  // Both addresses of a meeting room: personal `/meetings/:id/live` and the
+  // institution's `/institution/:id/meetings/:id/live`. Matching only the
+  // first meant an institution room was never recorded as shown, so stepping
+  // out of one produced no way back at all (2026-10-23).
+  if (path.contains('/meetings/') && path.endsWith('/live')) return true;
   return false;
 }
