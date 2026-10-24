@@ -221,11 +221,15 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
   String? _recordingAssetId;
   String? _recordingUploadId;
   int _recordingNextPart = 1;
+  /// Captured bytes not yet uploaded, oldest first.
   Uint8List? _recordingPendingPart;
   bool _recordingUploadBusy = false;
   Timer? _recordingFlushTimer;
-  // S3 multipart minimum is 5 MiB for every part except the last.
-  static const int _recordingMinPartBytes = 5 * 1024 * 1024 + 64 * 1024;
+  // EVERY PART BUT THE LAST IS EXACTLY THIS LONG. S3 wants at least 5 MiB;
+  // R2 also refuses parts of unequal length ("All non-trailing parts must
+  // have the same length"), which lost every recording longer than one part
+  // (2026-10-23).
+  static const int _recordingPartBytes = 5 * 1024 * 1024 + 64 * 1024;
 
   static String? _recordingRefusalCode(Object e) {
     if (e is! DioException) return null;
@@ -436,43 +440,44 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     return combined;
   }
 
-  /// Streams one part to storage. Sequential by construction (single
-  /// uploader, monotonically increasing part numbers); a failed part is
-  /// retained and retried with the SAME part number, so ordering holds.
+  /// Streams captured bytes to storage in parts of exactly
+  /// [_recordingPartBytes]; only the final flush ([force]) sends a shorter
+  /// last part. Sequential by construction (single uploader, monotonically
+  /// increasing part numbers); a failed part stays at the front of the
+  /// pending bytes and is retried with the SAME part number, so ordering holds.
   Future<void> _flushRecordingPart({required bool force}) async {
     if (_recordingUploadBusy) return;
     final assetId = _recordingAssetId;
     final uploadId = _recordingUploadId;
     if (assetId == null || uploadId == null) return;
 
-    Uint8List? bytes;
-    if (force) {
-      final fresh = await _recorder.takeBufferedBytes();
-      final combined = _combineParts(_recordingPendingPart, fresh);
-      _recordingPendingPart = null;
-      bytes = combined.isEmpty ? null : combined;
-    } else if (_recordingPendingPart != null) {
-      bytes = _recordingPendingPart;
-      _recordingPendingPart = null;
-    } else if (_recorder.bufferedByteLength >= _recordingMinPartBytes) {
-      bytes = await _recorder.takeBufferedBytes();
-    }
-    if (bytes == null || bytes.isEmpty) return;
-
     _recordingUploadBusy = true;
     try {
-      await ref.read(meetingsRepositoryProvider).uploadRecordingPart(
-            widget.meetingId,
-            assetId: assetId,
-            uploadId: uploadId,
-            partNumber: _recordingNextPart,
-            bytes: bytes,
-          );
-      _recordingNextPart += 1;
+      final fresh = await _recorder.takeBufferedBytes();
+      final pending = _combineParts(_recordingPendingPart, fresh);
+      _recordingPendingPart = pending.isEmpty ? null : pending;
+
+      while (_recordingPendingPart != null) {
+        final buffered = _recordingPendingPart!;
+        if (!force && buffered.length < _recordingPartBytes) break;
+        final take = buffered.length < _recordingPartBytes
+            ? buffered.length
+            : _recordingPartBytes;
+        await ref.read(meetingsRepositoryProvider).uploadRecordingPart(
+              widget.meetingId,
+              assetId: assetId,
+              uploadId: uploadId,
+              partNumber: _recordingNextPart,
+              bytes: Uint8List.sublistView(buffered, 0, take),
+            );
+        _recordingNextPart += 1;
+        _recordingPendingPart = take == buffered.length
+            ? null
+            : Uint8List.fromList(buffered.sublist(take));
+      }
     } catch (_) {
-      // Keep the bytes; the next tick (or the final flush) retries with the
-      // same part number.
-      _recordingPendingPart = _combineParts(bytes, _recordingPendingPart);
+      // The unsent bytes stay pending; the next tick (or the final flush)
+      // retries with the same part number.
     } finally {
       _recordingUploadBusy = false;
     }

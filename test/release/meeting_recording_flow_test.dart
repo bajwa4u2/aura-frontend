@@ -87,4 +87,17 @@ void main() {
     expect(read, contains("err['details']"));
     expect(read, contains("source['pendingParticipants']"));
   });
+
+  // 2026-10-23: R2 refused the save with "All non-trailing parts must have
+  // the same length"; every recording longer than one part was lost.
+  test('every part but the last is the same length', () {
+    final flush = room.substring(
+      room.indexOf('Future<void> _flushRecordingPart('),
+      room.indexOf('Future<void> _stopAndSaveRecording('),
+    );
+    expect(flush,
+        contains('if (!force && buffered.length < _recordingPartBytes) break;'));
+    expect(flush, contains('Uint8List.sublistView(buffered, 0, take)'));
+    expect(room, isNot(contains('_recordingMinPartBytes')));
+  });
 }
