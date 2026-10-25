@@ -878,65 +878,11 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         _probeProvider(dio, '/integrations/linkedin/account'),
         _probeProvider(dio, '/integrations/facebook/account'),
       ]);
-      final facebookAccount = _asFacebookAccount(probes[2].data);
-
-      final tiktokAccount = _unwrapTikTokAccount(probes[0].data);
-      final linkedinAccount = _unwrapLinkedInAccount(probes[1].data);
-
       if (!mounted) return;
 
       setState(() {
-        _tiktok = _resolveDestination(
-          id: 'tiktok',
-          label: 'TikTok',
-          probe: probes[0],
-          connected: _readTikTokConnected(tiktokAccount),
-          accountLabel: _readTikTokAccountLabel(tiktokAccount),
-          // TikTok publishes video. A composition without one cannot go there,
-          // and saying so beats offering an action that will fail.
-          contentSupported: _hasTikTokVideo,
-          unsupportedDetail: 'TikTok needs a video in this post',
-        );
-        _linkedin = _resolveDestination(
-          id: 'linkedin',
-          label: 'LinkedIn',
-          probe: probes[1],
-          connected: _readLinkedInConnected(linkedinAccount),
-          accountLabel: _readLinkedInAccountLabel(linkedinAccount),
-        );
-        // Connected means a Page has been chosen: a Facebook account with no
-        // Page has nowhere to post.
-        _facebook = _resolveDestination(
-          id: 'facebook',
-          label: 'Facebook Page',
-          probe: probes[2],
-          connected: facebookAccount.connected && !facebookAccount.needsPage,
-          accountLabel: facebookAccount.pageName,
-          // Facebook takes only what is public on Aura; the server refuses the rest.
-          contentSupported: _visibility == PostVisibility.public,
-          unsupportedDetail: 'Facebook takes public posts only',
-        );
-        // Instagram comes with the chosen Page and needs a photo or video.
-        _instagram = _resolveDestination(
-          id: 'instagram',
-          label: 'Instagram',
-          probe: probes[2],
-          connected: facebookAccount.instagram.isNotEmpty,
-          accountLabel: facebookAccount.instagram.isEmpty
-              ? ''
-              : '@${facebookAccount.instagram}',
-          contentSupported:
-              _visibility == PostVisibility.public && _hasInstagramMedia,
-          unsupportedDetail: 'Instagram needs a photo or video in a public post',
-        );
-        // Not yet open to this member (Meta's review of Aura): neither place
-        // is offered, rather than a Connect that Facebook would refuse.
-        if (probes[2].data != null && !facebookAccount.available) {
-          _facebook = _facebook.copyWith(state: DestinationState.notOffered);
-          _instagram = _instagram.copyWith(state: DestinationState.notOffered);
-          _publishToFacebook = false;
-          _publishToInstagram = false;
-        }
+        _destinationProbes = probes;
+        _applyDestinations(probes);
       });
     } catch (_) {
       // WE COULD NOT ASK. That is a state, not an error message -- and
@@ -965,6 +911,72 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
         });
       }
     }
+  }
+
+  /// The provider answers from the last time the composer asked; reused to
+  /// re-decide what each destination can take as the composition changes.
+  List<_ProviderProbe>? _destinationProbes;
+
+  /// WHAT EACH DESTINATION CAN TAKE IS DECIDED BY THE COMPOSITION AS IT IS
+  /// NOW (2026-10-25). This ran once, when the composer opened: a photo
+  /// attached afterwards never made Instagram (or a video TikTok) available,
+  /// so sharing to Instagram worked only from a reopened draft. It now reruns
+  /// from the same provider answers whenever the composition changes.
+  void _applyDestinations(List<_ProviderProbe> probes) {
+    final facebookAccount = _asFacebookAccount(probes[2].data);
+    final tiktokAccount = _unwrapTikTokAccount(probes[0].data);
+    final linkedinAccount = _unwrapLinkedInAccount(probes[1].data);
+      _tiktok = _resolveDestination(
+        id: 'tiktok',
+        label: 'TikTok',
+        probe: probes[0],
+        connected: _readTikTokConnected(tiktokAccount),
+        accountLabel: _readTikTokAccountLabel(tiktokAccount),
+        // TikTok publishes video. A composition without one cannot go there,
+        // and saying so beats offering an action that will fail.
+        contentSupported: _hasTikTokVideo,
+        unsupportedDetail: 'TikTok needs a video in this post',
+      );
+      _linkedin = _resolveDestination(
+        id: 'linkedin',
+        label: 'LinkedIn',
+        probe: probes[1],
+        connected: _readLinkedInConnected(linkedinAccount),
+        accountLabel: _readLinkedInAccountLabel(linkedinAccount),
+      );
+      // Connected means a Page has been chosen: a Facebook account with no
+      // Page has nowhere to post.
+      _facebook = _resolveDestination(
+        id: 'facebook',
+        label: 'Facebook Page',
+        probe: probes[2],
+        connected: facebookAccount.connected && !facebookAccount.needsPage,
+        accountLabel: facebookAccount.pageName,
+        // Facebook takes only what is public on Aura; the server refuses the rest.
+        contentSupported: _visibility == PostVisibility.public,
+        unsupportedDetail: 'Facebook takes public posts only',
+      );
+      // Instagram comes with the chosen Page and needs a photo or video.
+      _instagram = _resolveDestination(
+        id: 'instagram',
+        label: 'Instagram',
+        probe: probes[2],
+        connected: facebookAccount.instagram.isNotEmpty,
+        accountLabel: facebookAccount.instagram.isEmpty
+            ? ''
+            : '@${facebookAccount.instagram}',
+        contentSupported:
+            _visibility == PostVisibility.public && _hasInstagramMedia,
+        unsupportedDetail: 'Instagram needs a photo or video in a public post',
+      );
+      // Not yet open to this member (Meta's review of Aura): neither place
+      // is offered, rather than a Connect that Facebook would refuse.
+      if (probes[2].data != null && !facebookAccount.available) {
+        _facebook = _facebook.copyWith(state: DestinationState.notOffered);
+        _instagram = _instagram.copyWith(state: DestinationState.notOffered);
+        _publishToFacebook = false;
+        _publishToInstagram = false;
+      }
   }
 
   /// One provider read, with the FAILURE KEPT rather than discarded.
@@ -1156,6 +1168,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   /// composition, and a destination that is merely unreachable keeps the
   /// person's intent while the switch itself stays disabled.
   void _syncExternalPublishingToggles() {
+    final probes = _destinationProbes;
+    if (probes != null) _applyDestinations(probes);
     _syncTikTokToggle();
 
     if (!_tiktok.isPublishable && _publishToTikTok) {
@@ -1455,6 +1469,8 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
 
     setState(() {
       _visibility = next;
+      // Facebook and Instagram take public posts only.
+      _syncExternalPublishingToggles();
     });
 
     _scheduleAutosave();
