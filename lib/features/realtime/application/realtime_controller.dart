@@ -3480,6 +3480,24 @@ class RealtimeController extends StateNotifier<RealtimeState>
             clearErrorMessage: true,
             lastSocketEvent: event.name,
           );
+          // A CUT FROM THE SERVER IS NEVER RETRIED BY SOCKET.IO. Its client
+          // reconnects by itself after a transport loss, but not after
+          // "io server disconnect": a guest sat on "Reconnecting…" until the
+          // server's 30 s grace marked them gone (2026-10-24, two-tab
+          // certification). Ask for the connection again; 'socket:connected'
+          // then runs the rejoin armed above. A replaced or removed
+          // participant never reaches this branch.
+          if (event.payload['reason']?.toString() == 'io server disconnect') {
+            unawaited(Future<void>.delayed(const Duration(seconds: 1), () async {
+              if (!_awaitingReconnectRejoin ||
+                  _terminating ||
+                  !state.isCallRoomVisible ||
+                  _socketService.isConnected) {
+                return;
+              }
+              await connect();
+            }).catchError((Object _) {}));
+          }
         } else {
           _clearPendingOfferTargets();
           unawaited(_mediaService.resetSessionMedia());
