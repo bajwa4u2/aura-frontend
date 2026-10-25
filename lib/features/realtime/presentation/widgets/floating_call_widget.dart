@@ -431,6 +431,7 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
     final meetings = ref.read(meetingsRepositoryProvider);
     final returnEntry = ref.read(activeMeetingReturnProvider.notifier);
     final router = ref.read(routerProvider);
+    final container = ProviderScope.containerOf(context, listen: false);
     final recordPath = _meetingRecordPath(meetingId);
     try {
       if (info.isHost) {
@@ -466,6 +467,13 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
         await controller.leave();
       }
       returnEntry.state = null;
+      // The record may be the page already on screen: going to the address
+      // it already has did not reload it, and it went on saying "This meeting
+      // is live" after the meeting had ended (2026-10-25).
+      if (meetingId.isNotEmpty) container.invalidate(meetingProvider(meetingId));
+      container
+        ..invalidate(upcomingMeetingsProvider)
+        ..invalidate(pastMeetingsProvider);
       router.go(recordPath);
     } catch (error) {
       debugPrint('[rtc] meeting exit from ribbon failed err=$error');

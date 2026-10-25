@@ -1259,6 +1259,8 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     // dispose — the call would then never be ended here.
     final meetings = ref.read(meetingsRepositoryProvider);
     final controller = ref.read(realtimeControllerProvider.notifier);
+    if (!mounted) return;
+    final container = ProviderScope.containerOf(context, listen: false);
     try {
       await meetings.endMeeting(widget.meetingId);
       await controller.endCall();
@@ -1266,6 +1268,9 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       // Exit handoff: ending a meeting lands the host in the workspace —
       // conversation reference, outcome capture, and summary editing at the
       // moment of maximum recall — not on a passive summary page.
+      // The record underneath was loaded while the meeting was live; without
+      // a reload it went on saying so (2026-10-25).
+      container.invalidate(meetingProvider(widget.meetingId));
       context.go(_workspacePath);
     } catch (e) {
       _intentToLeave = false;
@@ -1362,6 +1367,8 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     if (_recording) await _stopAndSaveRecording();
     _intentToLeave = true;
     _clearReturnEntry();
+    if (!mounted) return;
+    final container = ProviderScope.containerOf(context, listen: false);
     await ref.read(realtimeControllerProvider.notifier).leave();
     if (!mounted) return;
     // Transition continuity: a member leaving lands back on the Meeting
@@ -1371,6 +1378,7 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       context.pop();
     } else {
       // The Meeting Record, as the comment above says — never /home.
+      container.invalidate(meetingProvider(widget.meetingId));
       context.go(_workspacePath);
     }
   }
