@@ -66,6 +66,10 @@
     <!-- Camera is optional: app works on camera-less devices -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+    <!-- The ring screen is portrait, which Play would otherwise read as a
+         REQUIRED portrait screen and hide Aura from landscape-only cars and
+         tablets. Portrait where the device has it; Aura installs everywhere. -->
+    <uses-feature android:name="android.hardware.screen.portrait" android:required="false" />
 
     <application
         android:label="Aura"
