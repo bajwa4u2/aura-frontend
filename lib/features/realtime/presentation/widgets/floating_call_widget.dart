@@ -525,6 +525,16 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
   /// empty set suppressed the card for a room that had been on screen.
   static final Set<String> _surfaceShown = <String>{};
 
+  /// Why the card is or is not on screen, said once per change. Stepping
+  /// out of a meeting on wide web showed no card and nothing said why
+  /// (2026-10-24).
+  String? _lastPipReason;
+  void _pipReason(String reason) {
+    if (reason == _lastPipReason) return;
+    _lastPipReason = reason;
+    debugPrint('[pip] $reason');
+  }
+
   Widget _buildPip(
     BuildContext context,
     RealtimeState liveState,
@@ -541,11 +551,16 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
       // would silently suppress the meetings PiP forever.
       final shown = _resolve();
       if (shown != null) _surfaceShown.add(shown.sessionId);
+      _pipReason('room on screen shown=${shown?.sessionId}');
       return const SizedBox.shrink();
     }
 
     final info = _resolve();
-    if (info == null) return const SizedBox.shrink();
+    if (info == null) {
+      _pipReason('hidden: nothing to show joined=${liveState.isJoined}'
+          ' session=${liveState.session?.id} status=${liveState.session?.status}');
+      return const SizedBox.shrink();
+    }
 
     // A PiP MUST NOT PRECEDE THE ROOM IT REPRESENTS.
     //
@@ -568,8 +583,10 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
     // Leaving is unaffected: by then the surface has been shown, so minimising
     // still produces a PiP immediately.
     if (!_surfaceShown.contains(info.sessionId)) {
+      _pipReason('hidden: room never shown session=${info.sessionId}');
       return const SizedBox.shrink();
     }
+    _pipReason('shown session=${info.sessionId} owner=${info.isOwner}');
 
     // A MEETING YOU STEPPED OUT OF, IN EACH PLATFORM'S OWN PLACE
     // (founder-approved design, 23 Oct 2026): a top ribbon on iPhone and
