@@ -22,13 +22,17 @@ void main() {
         children: const [SizedBox(height: 40, child: Text('Invited as Guest'))],
       ),
     );
+    // As in production: the public shell's Scaffold sits above the guest
+    // shell, absorbs the keyboard and hands down zero insets.
     return MaterialApp(
       home: MediaQuery(
         data: MediaQueryData(
           size: size,
           viewInsets: EdgeInsets.only(bottom: keyboard),
         ),
-        child: underReturnBar ? ReturnBarPresence(child: shell) : shell,
+        child: Scaffold(
+          body: underReturnBar ? ReturnBarPresence(child: shell) : shell,
+        ),
       ),
     );
   }
@@ -69,7 +73,7 @@ void main() {
   testWidgets('an open keyboard does not leave the footer over the button',
       (tester) async {
     await sized(tester, const Size(412, 900));
-    await tester.pumpWidget(page(size: const Size(412, 900), keyboard: 300));
+    await tester.pumpWidget(page(size: const Size(412, 900), keyboard: 340));
     expect(find.text('Powered by '), findsNothing);
   });
 
@@ -86,5 +90,13 @@ void main() {
     );
     expect(admit.indexOf('FocusManager.instance.primaryFocus?.unfocus();'),
         lessThan(admit.indexOf('context.push(')));
+  });
+  test('the room clears any focus it inherits', () {
+    final src =
+        File('lib/features/meetings/presentation/meeting_live_room_screen.dart')
+            .readAsStringSync();
+    final init = src.substring(src.indexOf('_visibleRoom = this;') - 400,
+        src.indexOf('_visibleRoom = this;'));
+    expect(init, contains('FocusManager.instance.primaryFocus?.unfocus();'));
   });
 }

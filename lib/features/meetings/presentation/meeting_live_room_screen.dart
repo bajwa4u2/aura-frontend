@@ -1069,6 +1069,9 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
     );
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
+      // No field outlives the walk into the room: the code entry's keyboard
+      // stayed open over the tiles on the S24 (2026-10-24).
+      FocusManager.instance.primaryFocus?.unfocus();
       _visibleRoom = this;
       ref.read(realtimeControllerProvider.notifier).setCallRoomVisible(true);
       await _ensureGuestAuthAndJoin();
