@@ -3054,10 +3054,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               'Published to Aura and shared to ${queuedTargets.join(' and ')}.';
         } else if (queuedTargets.isNotEmpty && failedTargets.isNotEmpty) {
           externalMessage =
-              'Published to Aura and shared to ${queuedTargets.join(' and ')}. It was not shared to ${failedTargets.join(', ')}. Try again from the post.';
+              'Published to Aura and shared to ${queuedTargets.join(' and ')}. It was not shared to ${failedTargets.join(', ')}. Your post is on Aura; copy its link from Share to post it there yourself.';
         } else if (failedTargets.isNotEmpty) {
           externalMessage =
-              'Published to Aura. It was not shared to ${failedTargets.join(', ')}. Try again from the post.';
+              'Published to Aura. It was not shared to ${failedTargets.join(', ')}. Your post is on Aura; copy its link from Share to post it there yourself.';
         } else {
           externalMessage = 'Published to Aura.';
         }
