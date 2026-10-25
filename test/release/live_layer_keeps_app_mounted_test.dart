@@ -31,6 +31,14 @@ void main() {
     expect(branch, isNot(contains('return app;')));
   });
 
+  test('a room that was shown and is no longer visible is not on screen', () {
+    final src = File('lib/features/realtime/presentation/widgets/floating_call_widget.dart')
+        .readAsStringSync();
+    expect(src, contains('callSurfaceOwnsTheScreen(location) && !roomLeft'));
+    expect(src, contains('!liveState.isCallRoomVisible'));
+    expect(src, contains('setState(_initPosition)'));
+  });
+
   test('the shown-room record outlives one PiP widget', () {
     final src = File('lib/features/realtime/presentation/widgets/floating_call_widget.dart')
         .readAsStringSync();

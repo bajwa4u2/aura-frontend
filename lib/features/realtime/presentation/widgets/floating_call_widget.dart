@@ -540,7 +540,17 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
     RealtimeState liveState,
     Uri location,
   ) {
-    if (callSurfaceOwnsTheScreen(location)) {
+    // A POPPED ROOM DOES NOT CHANGE THE ADDRESS. go_router reports a push
+    // but not the pop that "Back to Aura" makes, so the address still named
+    // the room after the host had left it and the card stayed hidden
+    // (2026-10-25). A room that has been shown and has since said it is no
+    // longer visible is not on screen, whatever the address says; a room still
+    // arriving has not been shown, so the entry window stays covered.
+    final resolved = _resolve();
+    final roomLeft = resolved != null &&
+        _surfaceShown.contains(resolved.sessionId) &&
+        !liveState.isCallRoomVisible;
+    if (callSurfaceOwnsTheScreen(location) && !roomLeft) {
       // Remember that the room for THIS session has been on screen. Recorded
       // during build rather than in the room's initState because that is
       // precisely the lifecycle window the 2026-08-22 repair had to escape.
@@ -617,7 +627,9 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
 
     if (_offset == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && !_positionInitialized) _initPosition();
+        // Placed, then drawn: without the rebuild the card waited for an
+        // unrelated one to appear.
+        if (mounted && !_positionInitialized) setState(_initPosition);
       });
       return const SizedBox.shrink();
     }
