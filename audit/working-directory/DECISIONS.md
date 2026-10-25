@@ -1,5 +1,12 @@
 # Decisions — aura_final
 
+## Calls and meetings for 1.7.0 — founder, 2026-10-23 and 2026-10-24
+
+- Android incoming call: "Full-screen ring" over the lock screen; Accept goes straight to the call (DD-58).
+- Elsewhere moves under Connected accounts on Me (DD-59).
+- Recording: "All three fixes now" (consent before any picker, this tab only, "Everyone agreed. Start recording?"); then "Grid, share takes stage" for server-side recording and "Ship 1.7.0 first" (DD-60).
+- Stepping out of a meeting: "Build as shown" (DD-61).
+
 ## A detail page highlights the tab it was opened from — founder, 2026-10-21 (supersedes the 2026-08-16 "truthful no-selection" rule)
 
 - Asked what best practice is, the founder chose: "yes highlight the origin tab, everywhere". On iOS a tab bar always shows the tab whose stack you are in; Material bottom navigation always has one active destination; a desktop rail keeps its section marked through its depth.

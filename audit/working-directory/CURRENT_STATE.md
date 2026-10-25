@@ -1,5 +1,9 @@
 # Current State — aura_final
 
+## Release 1.7.0 (48) — certified 2026-10-25
+
+Release commit `8adcbfed` on `rc/1.7.0`; web live at `676c4e9f`. Since 1.6.0: scheduled publishing, invites, Share to Facebook (Facebook Page and Instagram for early access while Meta reviews), one platform-native notice, the 30-day account restore, the Android lock-screen ring screen and faster call connect, and meetings with email-invited guests, recording consent and a way to step out ("Back to Aura"). Certified on Pixel 9a ↔ iPhone (calls, 23 Oct) and on two Chrome tabs (meetings and guests, 24–25 Oct), including a guest declining recording (nothing recorded). Full record: `aura/release-notes/v1.7.0.md`.
+
 ## Share to Facebook — live on the web 2026-10-20
 
 Web `c3cde6c2` (deployed by hand through Railway on founder approval; pushing `main` alone does not deploy). "Share to Facebook" sits after "Share to LinkedIn" in the post ⋯ menu, the share sheet and the post share panel; it opens facebook.com/sharer with the canonical `/p/<id>` link. Post menu and share sheet now scroll on short screens (at 360×640 Report and Block had been unreachable). Server `FACEBOOK_APP_ID=1125593793159790` set and redeployed on its unchanged commit `11c5dfd6`, so share pages carry fb:app_id. Full suite 3505 passed. Verified live, signed in as the founder: the four share choices show; Facebook's card reads the post title. Native apps carry it with their next release. Design record DD-48.

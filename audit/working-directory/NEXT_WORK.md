@@ -1,5 +1,12 @@
 # Next Work - aura_final
 
+## After release 1.7.0 (48) certification (2026-10-25)
+
+1. Store builds: Codemagic `ios-testflight` on `rc/1.7.0` (founder starts); Play AAB `aura-1.7.0+48-8adcbfed.aab` to internal, then production (founder); Windows MSIX 1.7.0.0. Then fast-forward app `main` to `rc/1.7.0` (web shows 48).
+2. 1.7.1: server-side recording (headless recorder joining as a receive-only participant, grid with screen share on stage, MP4 through media-worker; every platform can Record; browser recorder removed). Founder approved 23 Oct.
+3. Meeting gaps found in certification: guest 401s on `/realtime/sessions/:id/media-established` and `/recordings`; the host's view of a guest's mic after the host reloads; the control bar's first tap only reveals it; REC shows while the share picker is open; bare `/meetings` says "Route not found"; S24 keyboard, footer and landscape re-check; an unexplained server cut of a guest socket at 2026-10-25 03:10:51 UTC (logs now name the rule).
+4. After-release list: B7–B11, A7–A12, Leave institution, meetings paging beyond 50.
+
 ## After Share to Facebook (2026-10-20)
 
 1. "Invite to Aura" under Me → Connections, within the frozen invitation canon (founder chose option 1, 20 Oct): a personal link, no per-member credit or rewards, arrivals counted per channel only. Design to the founder for approval before building.

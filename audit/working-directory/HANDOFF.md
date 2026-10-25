@@ -1,5 +1,11 @@
 # Handoff - aura_final
 
+## 2026-10-25 — RELEASE 1.7.0 (48) CERTIFIED; STORE BUILDS NEXT
+
+`rc/1.7.0` = `8adcbfed` (1.7.0+48, msix 1.7.0.0). Web runs the same code at `676c4e9f` (main), live. Backend `52e692a` live on aura-backend and media-worker. Full suite 3,663 passed, analyze clean. Release notes and store text: `aura/release-notes/v1.7.0.md`, `artifacts/whats-new-1.7.0.txt`. Design records DD-47 to DD-61 in `company/docs/design/DESIGN_DECISIONS.md`.
+Start Codemagic builds on `rc/1.7.0`, not `main` (pushing app `main` redeploys the web). The founder starts Codemagic and presses every store submit himself. iOS TestFlight builds on Flutter 3.47.7; web and certification lanes stay on 3.41.4.
+Two-tab meeting harness: host on auraplatform.org; guest signed out through a local proxy of auraplatform.org on `http://localhost:8787` (CORS allows localhost). Guest codes go to support@, which the founder reads.
+
 ## 2026-10-20 — SHARE TO FACEBOOK LIVE ON THE WEB
 
 Branch `share-to-facebook` = `main` = `c3cde6c2`. The web service does not deploy on push: start it with Railway `serviceInstanceDeployV2(commitSha)` after the founder's explicit yes. Meta app "Aura" (App ID 1125593793159790) exists under the founder's developer account, development mode, no business portfolio; App Secret not yet stored (founder's step). Next: NEXT_WORK item 1.
