@@ -1401,6 +1401,9 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
       );
       return;
     }
+    // The record under the room was loaded before the host joined and said
+    // "Not joined yet" beside the card that said they were in (2026-10-25).
+    ref.invalidate(meetingProvider(widget.meetingId));
     if (context.canPop()) {
       context.pop();
     } else {

@@ -25,4 +25,12 @@ void main() {
           reason: fn);
     }
   });
+
+  test('stepping out reloads the record underneath', () {
+    final src = File('lib/features/meetings/presentation/meeting_live_room_screen.dart')
+        .readAsStringSync();
+    final body = src.substring(src.indexOf('void _stepOut()'));
+    expect(body.substring(0, body.indexOf('context.pop();')),
+        contains('ref.invalidate(meetingProvider(widget.meetingId));'));
+  });
 }
