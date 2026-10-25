@@ -53,6 +53,29 @@ enum ProfileMediaFailure {
   uploadFailed,
 }
 
+/// Images uploaded in this session, by the address they were given.
+final Map<String, Uint8List> _freshUploads = <String, Uint8List>{};
+
+/// AN IMAGE SOMEONE JUST UPLOADED IS SHOWN FROM THEIR OWN BYTES (2026-10-25).
+///
+/// Until the profile is saved, a new avatar or cover is attached to nothing
+/// public and may still be in processing, so Aura's image door refuses it to
+/// the browser's image request, which carries no sign-in: the preview went
+/// EMPTY after every avatar upload and appeared only after a save and a reload
+/// (founder). The person is looking at their own picture, so an address this
+/// session uploaded is drawn from the bytes it uploaded; any other address,
+/// and any variant of it, still comes from the network.
+void rememberFreshUpload(String url, Uint8List bytes) {
+  _freshUploads[url.split('?').first.trim()] = bytes;
+}
+
+/// [rememberFreshUpload]'s bytes for [url], else the network image.
+ImageProvider freshOrNetworkImage(String url) {
+  final bytes = _freshUploads[url.split('?').first.trim()];
+  if (bytes != null) return MemoryImage(bytes);
+  return NetworkImage(url);
+}
+
 /// Outcome of one pipeline run. Exactly one of [url] / [failure] is set.
 class ProfileMediaResult {
   const ProfileMediaResult.success(this.url)
@@ -191,11 +214,17 @@ class ProfileMediaPipeline {
       );
     }
 
-    final cropped = await ProfileMediaEditor.openFromUrl(
-      context,
-      imageUrl: url,
-      config: config,
-    );
+    // An image uploaded this session is edited from its own bytes: the door
+    // refuses it to an unsigned request until the profile is saved.
+    final fresh = _freshUploads[url.split('?').first];
+    final Future<Uint8List?> opening = fresh != null
+        ? ProfileMediaEditor.open(context, imageBytes: fresh, config: config)
+        : ProfileMediaEditor.openFromUrl(
+            context,
+            imageUrl: url,
+            config: config,
+          );
+    final cropped = await opening;
     if (cropped == null) {
       return const ProfileMediaResult.failed(
         ProfileMediaFailure.cancelled,
@@ -244,6 +273,7 @@ class ProfileMediaPipeline {
           'Uploaded image URL missing.',
         );
       }
+      rememberFreshUpload(url, bytes);
       return ProfileMediaResult.success(url);
     } catch (_) {
       return const ProfileMediaResult.failed(

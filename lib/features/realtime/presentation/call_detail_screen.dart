@@ -12,6 +12,7 @@ import '../application/realtime_providers.dart';
 import '../domain/call_occurrence.dart';
 import '../domain/realtime_enums.dart';
 import '../domain/realtime_models.dart';
+import '../../../../core/net/reload_after_edits.dart';
 
 /// THE CALL THAT HAPPENED.
 ///
@@ -36,12 +37,17 @@ class CallDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<CallDetailScreen> createState() => _CallDetailScreenState();
 }
 
-class _CallDetailScreenState extends ConsumerState<CallDetailScreen> {
+class _CallDetailScreenState extends ConsumerState<CallDetailScreen>
+    with ReloadAfterEdits<CallDetailScreen> {
   late Future<RealtimeSessionSnapshot?> _future;
+
+  @override
+  void reloadAfterEdits() => setState(() => _future = _load());
 
   @override
   void initState() {
     super.initState();
+    listenForEdits();
     _future = _load();
   }
 

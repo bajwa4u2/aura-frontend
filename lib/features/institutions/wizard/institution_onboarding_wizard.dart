@@ -17,6 +17,7 @@ import '../../../core/trust/trust_marks.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../../core/institutions/institution_route_authority.dart';
 import 'institution_kinds.dart';
+import '../../../../core/net/reload_after_edits.dart';
 
 // ─── Wizard entry point ───────────────────────────────────────────────────────
 
@@ -1914,7 +1915,8 @@ class _MyRequestsSection extends ConsumerStatefulWidget {
   ConsumerState<_MyRequestsSection> createState() => _MyRequestsSectionState();
 }
 
-class _MyRequestsSectionState extends ConsumerState<_MyRequestsSection> {
+class _MyRequestsSectionState extends ConsumerState<_MyRequestsSection>
+    with ReloadAfterEdits<_MyRequestsSection> {
   List<Map<String, dynamic>> _rows = const [];
   bool _loaded = false;
   final Map<String, TextEditingController> _answers = {};
@@ -1922,8 +1924,12 @@ class _MyRequestsSectionState extends ConsumerState<_MyRequestsSection> {
   String? _error;
 
   @override
+  void reloadAfterEdits() => _load();
+
+  @override
   void initState() {
     super.initState();
+    listenForEdits();
     _load();
   }
 

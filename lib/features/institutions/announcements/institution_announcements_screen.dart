@@ -22,6 +22,7 @@ import '../workspace/workspace_row_menu.dart';
 import '../scheduling/scheduled_publication.dart';
 import '../../../core/utils/local_timezone.dart';
 import 'integrity/announcement_integrity_review_sheet.dart';
+import '../../../../core/net/reload_after_edits.dart';
 
 class InstitutionAnnouncementsScreen extends ConsumerStatefulWidget {
   const InstitutionAnnouncementsScreen({
@@ -36,8 +37,8 @@ class InstitutionAnnouncementsScreen extends ConsumerStatefulWidget {
       _InstitutionAnnouncementsScreenState();
 }
 
-class _InstitutionAnnouncementsScreenState
-    extends ConsumerState<InstitutionAnnouncementsScreen> {
+class _InstitutionAnnouncementsScreenState extends ConsumerState<InstitutionAnnouncementsScreen>
+    with ReloadAfterEdits<InstitutionAnnouncementsScreen> {
   String _tab = 'published';
 
   bool _loading = true;
@@ -79,8 +80,12 @@ class _InstitutionAnnouncementsScreenState
           ControlPresentation.available;
 
   @override
+  void reloadAfterEdits() => _load();
+
+  @override
   void initState() {
     super.initState();
+    listenForEdits();
     _load();
   }
 

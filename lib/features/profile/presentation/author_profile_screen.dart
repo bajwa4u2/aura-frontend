@@ -36,6 +36,7 @@ import '../domain/profile.dart';
 import '../providers.dart';
 import '../../../core/identity/person_identity_model.dart';
 import 'package:aura/core/ui/aura_notice.dart';
+import '../../../../core/net/reload_after_edits.dart';
 
 class AuthorProfileScreen extends ConsumerStatefulWidget {
   const AuthorProfileScreen({super.key, required this.handle});
@@ -47,8 +48,9 @@ class AuthorProfileScreen extends ConsumerStatefulWidget {
       _AuthorProfileScreenState();
 }
 
-class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
-    with SingleTickerProviderStateMixin {
+class _AuthorProfileScreenState
+    extends ConsumerState<AuthorProfileScreen>
+    with SingleTickerProviderStateMixin, ReloadAfterEdits<AuthorProfileScreen> {
   late Future<_ProfileBundle> _bundleFuture;
   late final TabController _tabController;
 
@@ -59,8 +61,12 @@ class _AuthorProfileScreenState extends ConsumerState<AuthorProfileScreen>
   String? _optimisticFollowState;
 
   @override
+  void reloadAfterEdits() => setState(() => _bundleFuture = _load());
+
+  @override
   void initState() {
     super.initState();
+    listenForEdits();
     _bundleFuture = _load();
     _tabController = TabController(length: 2, vsync: this)
       ..addListener(() {

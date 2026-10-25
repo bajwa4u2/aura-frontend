@@ -16,6 +16,7 @@ import '../../../core/ui/aura_text.dart';
 import '../../conversation/presentation/conversation_screen.dart';
 import '../data/institutions_repository.dart';
 import 'institution_space_context.dart';
+import '../../../../core/net/reload_after_edits.dart';
 
 /// THE RECONSTRUCTED INSTITUTION SPACE — RC-C7, founder rulings D1–D4
 /// (2026-08-20).
@@ -68,13 +69,17 @@ class InstitutionSpaceScreen extends ConsumerStatefulWidget {
       _InstitutionSpaceScreenState();
 }
 
-class _InstitutionSpaceScreenState
-    extends ConsumerState<InstitutionSpaceScreen> {
+class _InstitutionSpaceScreenState extends ConsumerState<InstitutionSpaceScreen>
+    with ReloadAfterEdits<InstitutionSpaceScreen> {
   Future<_SpaceBundle>? _future;
+
+  @override
+  void reloadAfterEdits() => setState(() => _future = _load());
 
   @override
   void initState() {
     super.initState();
+    listenForEdits();
     _future = _load();
   }
 

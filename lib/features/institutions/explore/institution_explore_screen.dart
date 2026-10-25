@@ -27,6 +27,7 @@ import '../posts/integrity/institution_post_integrity_review_sheet.dart';
 import '../scheduling/scheduled_publication.dart';
 import '../../../core/utils/local_timezone.dart';
 import '../workspace/workspace_page.dart';
+import '../../../../core/net/reload_after_edits.dart';
 
 /// Institution Explore — three distinct surfaces, all served by the unified
 /// feed contract:
@@ -608,7 +609,8 @@ class _ScheduledPostsList extends ConsumerStatefulWidget {
   ConsumerState<_ScheduledPostsList> createState() => _ScheduledPostsListState();
 }
 
-class _ScheduledPostsListState extends ConsumerState<_ScheduledPostsList> {
+class _ScheduledPostsListState extends ConsumerState<_ScheduledPostsList>
+    with ReloadAfterEdits<_ScheduledPostsList> {
   List<InstitutionPost>? _posts;
   String? _error;
   String? _actingOn;
@@ -616,8 +618,12 @@ class _ScheduledPostsListState extends ConsumerState<_ScheduledPostsList> {
   InstitutionsRepository get _repo => ref.read(institutionsRepositoryProvider);
 
   @override
+  void reloadAfterEdits() => _load();
+
+  @override
   void initState() {
     super.initState();
+    listenForEdits();
     _load();
   }
 

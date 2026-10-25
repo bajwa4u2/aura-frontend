@@ -18,6 +18,7 @@ import 'institution_domains_repository.dart';
 import '../institution_words.dart';
 import '../../../core/product/temporal.dart';
 import 'package:aura/core/ui/aura_notice.dart';
+import '../../../../core/net/reload_after_edits.dart';
 
 class InstitutionDomainsScreen extends ConsumerStatefulWidget {
   const InstitutionDomainsScreen({super.key, this.institutionId});
@@ -31,8 +32,8 @@ class InstitutionDomainsScreen extends ConsumerStatefulWidget {
       _InstitutionDomainsScreenState();
 }
 
-class _InstitutionDomainsScreenState
-    extends ConsumerState<InstitutionDomainsScreen> {
+class _InstitutionDomainsScreenState extends ConsumerState<InstitutionDomainsScreen>
+    with ReloadAfterEdits<InstitutionDomainsScreen> {
   bool loading = true;
   bool _submitting = false;
 
@@ -469,8 +470,12 @@ class _InstitutionDomainsScreenState
   }
 
   @override
+  void reloadAfterEdits() => loadDomains(silent: true);
+
+  @override
   void initState() {
     super.initState();
+    listenForEdits();
     loadDomains();
   }
 

@@ -16,6 +16,7 @@ import '../data/institutions_repository.dart';
 import '../workspace/workspace_page.dart';
 import 'institution_members_screen.dart';
 import '../../../core/identity/person_identity_model.dart';
+import '../../../../core/net/reload_after_edits.dart';
 
 /// JOIN REQUESTS (DD-43, 2026-10-09).
 ///
@@ -56,7 +57,8 @@ class InstitutionJoinRequestsPanel extends ConsumerStatefulWidget {
   ConsumerState<InstitutionJoinRequestsPanel> createState() => _JoinRequestsPanelState();
 }
 
-class _JoinRequestsPanelState extends ConsumerState<InstitutionJoinRequestsPanel> {
+class _JoinRequestsPanelState extends ConsumerState<InstitutionJoinRequestsPanel>
+    with ReloadAfterEdits<InstitutionJoinRequestsPanel> {
   bool _loading = true;
   String? _error;
   List<Map<String, dynamic>> _requests = const [];
@@ -66,8 +68,12 @@ class _JoinRequestsPanelState extends ConsumerState<InstitutionJoinRequestsPanel
   InstitutionsRepository get _repo => ref.read(institutionsRepositoryProvider);
 
   @override
+  void reloadAfterEdits() => _load();
+
+  @override
   void initState() {
     super.initState();
+    listenForEdits();
     _load();
   }
 

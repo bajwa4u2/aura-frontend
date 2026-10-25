@@ -12,6 +12,7 @@ import '../auth/session_bootstrap.dart';
 import '../auth/session_providers.dart';
 import '../client_identity/client_identity_provider.dart';
 import '../errors/app_error_mapper.dart';
+import 'data_changes.dart';
 import 'platform_http_adapter.dart';
 
 /// Whether a refused response means the HOST is rate limiting this client.
@@ -557,6 +558,15 @@ final dioProvider = Provider<Dio>((ref) {
         }
 
         handler.next(options);
+      },
+      onResponse: (response, handler) {
+        final status = response.statusCode ?? 0;
+        final req = response.requestOptions;
+        if (status >= 200 && status < 300 && isEditWrite(req.method, req.path)) {
+          // Every screen showing data re-reads it (see data_changes.dart).
+          ref.read(dataEditEpochProvider.notifier).state++;
+        }
+        handler.next(response);
       },
       onError: (err, handler) async {
         final status = err.response?.statusCode;

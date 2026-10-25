@@ -20,6 +20,7 @@ import '../domain/institution.dart';
 import '../institution_words.dart';
 import '../workspace/workspace_page.dart';
 import 'package:aura/core/ui/aura_notice.dart';
+import '../../../../core/net/reload_after_edits.dart';
 
 class InstitutionUnitsScreen extends ConsumerStatefulWidget {
   const InstitutionUnitsScreen({super.key, required this.institutionId});
@@ -44,8 +45,8 @@ bool _canAdministerUnits(WidgetRef ref) =>
         ) ==
     ControlPresentation.available;
 
-class _InstitutionUnitsScreenState
-    extends ConsumerState<InstitutionUnitsScreen> {
+class _InstitutionUnitsScreenState extends ConsumerState<InstitutionUnitsScreen>
+    with ReloadAfterEdits<InstitutionUnitsScreen> {
   bool _loading = true;
   String? _error;
   List<InstitutionUnit> _units = [];
@@ -53,8 +54,12 @@ class _InstitutionUnitsScreenState
   Dio get _dio => ref.read(dioProvider);
 
   @override
+  void reloadAfterEdits() => _load(silent: true);
+
+  @override
   void initState() {
     super.initState();
+    listenForEdits();
     _load();
   }
 

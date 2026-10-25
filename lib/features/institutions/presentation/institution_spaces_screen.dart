@@ -17,6 +17,7 @@ import '../../../core/ui/aura_text.dart';
 import '../data/institutions_repository.dart';
 import '../workspace/workspace_page.dart';
 import '../workspace/workspace_row_menu.dart';
+import '../../../../core/net/reload_after_edits.dart';
 
 class InstitutionSpacesScreen extends ConsumerStatefulWidget {
   const InstitutionSpacesScreen({
@@ -31,7 +32,8 @@ class InstitutionSpacesScreen extends ConsumerStatefulWidget {
       _InstitutionSpacesScreenState();
 }
 
-class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScreen> {
+class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScreen>
+    with ReloadAfterEdits<InstitutionSpacesScreen> {
   bool _loading = true;
   String? _error;
 
@@ -74,8 +76,12 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
       ControlPresentation.available;
 
   @override
+  void reloadAfterEdits() => _load();
+
+  @override
   void initState() {
     super.initState();
+    listenForEdits();
     _load();
     _loadCurrentUserId();
   }

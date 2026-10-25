@@ -19,6 +19,7 @@ import '../../monetization/providers/monetization_providers.dart';
 import '../ui/institution_ds.dart';
 import '../workspace/workspace_page.dart';
 import 'package:aura/core/ui/aura_notice.dart';
+import '../../../../core/net/reload_after_edits.dart';
 
 /// Phase 6.6c — Institution Profile / Workspace Identity hub.
 ///
@@ -799,13 +800,18 @@ class _UnitsSection extends ConsumerStatefulWidget {
   ConsumerState<_UnitsSection> createState() => _UnitsSectionState();
 }
 
-class _UnitsSectionState extends ConsumerState<_UnitsSection> {
+class _UnitsSectionState extends ConsumerState<_UnitsSection>
+    with ReloadAfterEdits<_UnitsSection> {
   bool _loading = true;
   List<Map<String, dynamic>> _units = const [];
 
   @override
+  void reloadAfterEdits() => _load();
+
+  @override
   void initState() {
     super.initState();
+    listenForEdits();
     _load();
   }
 

@@ -15,6 +15,7 @@ import '../data/institutions_repository.dart';
 import '../workspace/workspace_page.dart';
 import 'institution_members_screen.dart';
 import '../../../core/identity/person_identity_model.dart';
+import '../../../../core/net/reload_after_edits.dart';
 
 /// INVITES (DD-43, 2026-10-09): this route is the Members page on its
 /// Invites tab.
@@ -50,7 +51,8 @@ class InstitutionInvitesPanel extends ConsumerStatefulWidget {
   ConsumerState<InstitutionInvitesPanel> createState() => _InvitesPanelState();
 }
 
-class _InvitesPanelState extends ConsumerState<InstitutionInvitesPanel> {
+class _InvitesPanelState extends ConsumerState<InstitutionInvitesPanel>
+    with ReloadAfterEdits<InstitutionInvitesPanel> {
   bool _loading = true;
   String? _error;
 
@@ -77,8 +79,12 @@ class _InvitesPanelState extends ConsumerState<InstitutionInvitesPanel> {
   InstitutionsRepository get _repo => ref.read(institutionsRepositoryProvider);
 
   @override
+  void reloadAfterEdits() => _load();
+
+  @override
   void initState() {
     super.initState();
+    listenForEdits();
     _load();
   }
 

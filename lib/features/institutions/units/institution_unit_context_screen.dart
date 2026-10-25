@@ -10,6 +10,7 @@ import '../../../core/ui/aura_scaffold.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
+import '../../../../core/net/reload_after_edits.dart';
 
 /// UNIT CONTEXT — an operating context INSIDE the institution.
 ///
@@ -41,8 +42,8 @@ class InstitutionUnitContextScreen extends ConsumerStatefulWidget {
       _InstitutionUnitContextScreenState();
 }
 
-class _InstitutionUnitContextScreenState
-    extends ConsumerState<InstitutionUnitContextScreen> {
+class _InstitutionUnitContextScreenState extends ConsumerState<InstitutionUnitContextScreen>
+    with ReloadAfterEdits<InstitutionUnitContextScreen> {
   bool _loading = true;
   String? _error;
   Map<String, dynamic>? _unit;
@@ -50,8 +51,12 @@ class _InstitutionUnitContextScreenState
   Map<String, dynamic>? _work;
 
   @override
+  void reloadAfterEdits() => _load();
+
+  @override
   void initState() {
     super.initState();
+    listenForEdits();
     _load();
   }
 

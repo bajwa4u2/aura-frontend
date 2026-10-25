@@ -648,7 +648,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final url =
         (governedImageVariant(value, GovernedImageVariant.display) ?? '').trim();
     if (url.isEmpty) return null;
-    return NetworkImage(url);
+    return freshOrNetworkImage(url);
   }
 
   @override

@@ -34,6 +34,7 @@ import 'widgets/connect_return_watcher.dart';
 import 'widgets/me_connected_accounts_panel.dart';
 import '../../../core/identity/person_identity_model.dart';
 import 'package:aura/core/ui/aura_notice.dart';
+import '../../../../core/net/reload_after_edits.dart';
 
 class MeScreen extends ConsumerStatefulWidget {
   const MeScreen({super.key});
@@ -42,8 +43,9 @@ class MeScreen extends ConsumerStatefulWidget {
   ConsumerState<MeScreen> createState() => _MeScreenState();
 }
 
-class _MeScreenState extends ConsumerState<MeScreen>
-    with SingleTickerProviderStateMixin {
+class _MeScreenState
+    extends ConsumerState<MeScreen>
+    with SingleTickerProviderStateMixin, ReloadAfterEdits<MeScreen> {
   Map<String, dynamic>? _user;
   bool _loading = true;
   String? _error;
@@ -82,8 +84,12 @@ class _MeScreenState extends ConsumerState<MeScreen>
   late final TabController _tabController;
 
   @override
+  void reloadAfterEdits() => unawaited(_load());
+
+  @override
   void initState() {
     super.initState();
+    listenForEdits();
     _tabController = TabController(length: _tabs.length, vsync: this);
     unawaited(_load());
     WidgetsBinding.instance.addPostFrameCallback((_) {

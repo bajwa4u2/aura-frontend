@@ -18,6 +18,7 @@ import '../workspace/workspace_page.dart';
 import 'institution_invites_screen.dart';
 import 'institution_join_requests_screen.dart';
 import '../../../core/identity/person_identity_model.dart';
+import '../../../../core/net/reload_after_edits.dart';
 
 /// MEMBERS (DD-43, 2026-10-09): one Collection page with three tabs.
 ///
@@ -38,7 +39,8 @@ class InstitutionMembersScreen extends ConsumerStatefulWidget {
   ConsumerState<InstitutionMembersScreen> createState() => _InstitutionMembersScreenState();
 }
 
-class _InstitutionMembersScreenState extends ConsumerState<InstitutionMembersScreen> {
+class _InstitutionMembersScreenState extends ConsumerState<InstitutionMembersScreen>
+    with ReloadAfterEdits<InstitutionMembersScreen> {
   bool _loading = true;
   String? _error;
 
@@ -117,8 +119,12 @@ class _InstitutionMembersScreenState extends ConsumerState<InstitutionMembersScr
   bool get _canGovernRoles => _platformAdminBypass || _may(ConsequentialAct.appointAdmin);
 
   @override
+  void reloadAfterEdits() => _load();
+
+  @override
   void initState() {
     super.initState();
+    listenForEdits();
     _load();
   }
 

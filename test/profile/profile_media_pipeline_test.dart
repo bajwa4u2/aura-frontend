@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:aura/shared/media/profile_media_editor.dart';
 import 'package:aura/shared/media/profile_media_pipeline.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// C2 §9 — the shared profile media primitive.
@@ -39,6 +42,20 @@ void main() {
       );
       expect(tooLarge.isCancelled, isFalse);
       expect(tooLarge.message, contains('2 MB'));
+    });
+
+    test('a just-uploaded image previews from its own bytes', () {
+      // 2026-10-25: the door refuses an unsaved upload to an unsigned image
+      // request, so the avatar preview went empty until a save and reload.
+      const url = 'https://api.auraplatform.org/v1/media/m1/raw';
+      expect(freshOrNetworkImage('$url?v=display'), isA<NetworkImage>());
+      rememberFreshUpload(url, Uint8List.fromList([1, 2, 3]));
+      expect(freshOrNetworkImage('$url?v=display'), isA<MemoryImage>());
+      expect(freshOrNetworkImage(url), isA<MemoryImage>());
+      expect(
+        freshOrNetworkImage('https://api.auraplatform.org/v1/media/m2/raw'),
+        isA<NetworkImage>(),
+      );
     });
 
     test('success carries the URL and no failure', () {

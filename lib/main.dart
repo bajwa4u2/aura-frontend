@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app/aura_app.dart';
+import 'app/edit_refresh_setup.dart';
 import 'core/auth/auth_providers.dart';
 import 'core/diagnostics/runtime_trace.dart';
 import 'core/utils/configure_url_strategy.dart';
@@ -194,6 +195,7 @@ Future<void> main(List<String> args) async {
 
   runApp(
     ProviderScope(
+      observers: [editRefreshObserver],
       overrides: [
         tokenStoreProvider.overrideWith((ref) => store),
       ],

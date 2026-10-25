@@ -16,6 +16,7 @@ import '../../../core/ui/aura_surface.dart';
 import '../../../core/ui/aura_text.dart';
 import '../../feed/domain/feed_item.dart' show FeedRouting;
 import '../updates_repository.dart';
+import '../../../../core/net/reload_after_edits.dart';
 
 class UpdatesScreen extends ConsumerStatefulWidget {
   const UpdatesScreen({super.key});
@@ -24,7 +25,8 @@ class UpdatesScreen extends ConsumerStatefulWidget {
   ConsumerState<UpdatesScreen> createState() => _UpdatesScreenState();
 }
 
-class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
+class _UpdatesScreenState extends ConsumerState<UpdatesScreen>
+    with ReloadAfterEdits<UpdatesScreen> {
   bool _loading = true;
   String? _error;
   List<Map<String, dynamic>> _items = const [];
@@ -32,14 +34,13 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen> {
   UpdatesRepository get _repo => UpdatesRepository(ref.read(dioProvider));
 
   @override
-  void initState() {
-    super.initState();
-    _load();
-  }
+  void reloadAfterEdits() => _load();
 
   @override
-  void dispose() {
-    super.dispose();
+  void initState() {
+    super.initState();
+    listenForEdits();
+    _load();
   }
 
   Future<void> _load() async {
