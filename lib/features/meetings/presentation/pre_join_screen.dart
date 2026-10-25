@@ -131,6 +131,9 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
     final token = _clean(widget.invitationToken);
     final code = _otpCtrl.text.trim();
     if (token == null || code.isEmpty) return;
+    // Put the keyboard away the moment the code is sent, not after the
+    // server answers.
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() => _joining = true);
     try {
       final repo = ref.read(meetingsRepositoryProvider);

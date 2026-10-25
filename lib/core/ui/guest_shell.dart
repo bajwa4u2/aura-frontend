@@ -42,23 +42,30 @@ class GuestShell extends StatelessWidget {
     // bars took the whole height: the invitation and its button had 0px, and
     // with the keyboard up the footer sat over "Verify and join" (2026-10-24,
     // Galaxy S24). Below this height the footer steps aside for the content.
-    final media = MediaQuery.of(context);
-    final showFooter =
-        media.viewInsets.bottom == 0 && media.size.height >= 600;
-    return Scaffold(
-      backgroundColor: AuraSurface.page,
-      body: Column(
-        children: [
-          if (showBar)
-            _GuestTopBar(
-              institutionName: institutionName,
-              institutionLogoUrl: institutionLogoUrl,
-              showBackButton: drawBack,
-            ),
-          Expanded(child: body),
-          if (showFooter) const _GuestFooter(),
-        ],
-      ),
+    // The height is the one this shell is GIVEN: the public Scaffold above
+    // already lifts the page over the keyboard and hands down zero insets and
+    // the full screen size, so MediaQuery never saw the keyboard.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final showFooter =
+            MediaQuery.viewInsetsOf(context).bottom == 0 &&
+                constraints.maxHeight >= 600;
+        return Scaffold(
+          backgroundColor: AuraSurface.page,
+          body: Column(
+            children: [
+              if (showBar)
+                _GuestTopBar(
+                  institutionName: institutionName,
+                  institutionLogoUrl: institutionLogoUrl,
+                  showBackButton: drawBack,
+                ),
+              Expanded(child: body),
+              if (showFooter) const _GuestFooter(),
+            ],
+          ),
+        );
+      },
     );
   }
 }
