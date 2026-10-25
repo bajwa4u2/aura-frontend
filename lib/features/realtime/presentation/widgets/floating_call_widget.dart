@@ -586,7 +586,7 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
       _pipReason('hidden: room never shown session=${info.sessionId}');
       return const SizedBox.shrink();
     }
-    _pipReason('shown session=${info.sessionId} owner=${info.isOwner}');
+    _pipReason('shown session=${info.sessionId}');
 
     // A MEETING YOU STEPPED OUT OF, IN EACH PLATFORM'S OWN PLACE
     // (founder-approved design, 23 Oct 2026): a top ribbon on iPhone and

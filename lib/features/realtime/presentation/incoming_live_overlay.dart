@@ -771,7 +771,16 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
 
     if (liveState.session?.surfaceType == RealtimeSurfaceType.meeting) {
       _cancelRingTimer();
-      return app;
+      // A meeting never rings, but one you stepped out of still needs its way
+      // back: this returned the app bare, so the ribbon and corner card the
+      // back path draws (founder-approved 23 Oct) never appeared, and the
+      // camera ran with nothing on screen saying so (2026-10-25).
+      return Stack(
+        children: [
+          app,
+          if (liveState.isJoined && !_kBypassPiP) const FloatingCallWidget(),
+        ],
+      );
     }
 
     // C3: cross-source dedup. Bridge (correspondence socket) takes priority

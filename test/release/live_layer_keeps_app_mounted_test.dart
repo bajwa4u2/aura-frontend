@@ -20,6 +20,17 @@ void main() {
     expect(body.replaceFirst('child: widget.child', ''), isNot(contains('widget.child')));
   });
 
+  test('a joined meeting gets the way back the back path draws', () {
+    final src = File('lib/features/realtime/presentation/incoming_live_overlay.dart')
+        .readAsStringSync();
+    final meeting = src.substring(
+      src.indexOf('liveState.session?.surfaceType == RealtimeSurfaceType.meeting) {'),
+    );
+    final branch = meeting.substring(0, meeting.indexOf('_currentIncoming('));
+    expect(branch, contains('const FloatingCallWidget()'));
+    expect(branch, isNot(contains('return app;')));
+  });
+
   test('the shown-room record outlives one PiP widget', () {
     final src = File('lib/features/realtime/presentation/widgets/floating_call_widget.dart')
         .readAsStringSync();
