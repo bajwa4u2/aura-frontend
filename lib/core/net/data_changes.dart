@@ -152,12 +152,19 @@ class EditRefreshObserver extends ProviderObserver {
     _pending = Timer(const Duration(milliseconds: 250), refreshAll);
   }
 
-  /// Invalidate every live reader now.
+  /// Fetch every live reader again now.
+  ///
+  /// REFRESH, NOT INVALIDATE. An invalidated reader that nothing listens to
+  /// rebuilds only when next read, so a caller already awaiting its `.future`
+  /// waited forever: the post composer awaits the home feeds after a save,
+  /// this observer invalidated them mid-await, and "Saving…" never ended
+  /// (found live on d7bf615, 2026-10-25). Refreshing rebuilds at once, so
+  /// every pending `.future` completes with the new answer.
   void refreshAll() {
     _pending = null;
     for (final entry in _live.entries.toList()) {
       try {
-        entry.value.invalidate(entry.key);
+        entry.value.refresh(entry.key);
       } catch (_) {
         // A container that was disposed between the write and now.
         _live.remove(entry.key);

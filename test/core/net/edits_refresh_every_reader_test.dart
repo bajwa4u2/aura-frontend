@@ -93,6 +93,23 @@ void main() {
       expect(container.read(profileProvider).value, isNot('name 1'));
     });
 
+    test('a caller awaiting an unwatched reader is never stranded', () async {
+      // The composer awaits the home feeds after a save; nothing watches
+      // them, and an invalidate mid-await left "Saving…" forever.
+      final slowFeed = FutureProvider<int>((ref) async {
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+        return ++profileReads;
+      });
+      final container =
+          ProviderContainer(observers: [EditRefreshObserver()]);
+      addTearDown(container.dispose);
+
+      final pending = container.read(slowFeed.future);
+      container.read(dataEditEpochProvider.notifier).state++;
+      final value = await pending.timeout(const Duration(seconds: 3));
+      expect(value, greaterThan(0));
+    });
+
     test('a burst of writes is one refresh', () async {
       final container =
           ProviderContainer(observers: [EditRefreshObserver()]);
