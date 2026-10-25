@@ -121,6 +121,14 @@ class AuraIncomingLiveLayer extends ConsumerStatefulWidget {
 class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     with SingleTickerProviderStateMixin {
   static const _resolver = CommunicationResolver();
+
+  // THE APP UNDER THIS LAYER MUST NOT REMOUNT WHEN A CALL STARTS OR ENDS.
+  // Build returns the app bare when idle and inside a Stack when joined; a
+  // new parent type rebuilt every screen under it from scratch. The meeting
+  // room mounted twice on every join (S24 and web, 2026-10-24) and the PiP
+  // lost the record that its room had been shown, so stepping out of a
+  // meeting left no way back. A global key moves the subtree instead.
+  final GlobalKey _appKey = GlobalKey(debugLabel: 'live-layer-app');
   // C1: Auto-dismiss aligned with the backend invite TTL (RING_TTL_SECONDS = 90s
   // in realtime-session.service.ts). Previously 50s, which dismissed the card
   // while the server-side invite was still valid for another ~40s — so taps
@@ -679,8 +687,9 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
 
   @override
   Widget build(BuildContext context) {
+    final app = KeyedSubtree(key: _appKey, child: widget.child);
     if (_kBypassOverlay) {
-      return widget.child;
+      return app;
     }
     // C4: when the bridge drops a session (because a terminal/removed event
     // arrived on either the correspondence or realtime socket), dismiss any
@@ -762,7 +771,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
 
     if (liveState.session?.surfaceType == RealtimeSurfaceType.meeting) {
       _cancelRingTimer();
-      return widget.child;
+      return app;
     }
 
     // C3: cross-source dedup. Bridge (correspondence socket) takes priority
@@ -791,13 +800,13 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     if (item == null) {
       _cancelRingTimer();
       if (!liveState.isJoined) {
-        return widget.child;
+        return app;
       }
       // Active local call — keep PiP overlay mounted so the card persists
       // when the user navigates away from the /realtime screen.
       return Stack(
         children: [
-          widget.child,
+          app,
           if (liveState.isJoined && !_kBypassPiP) const FloatingCallWidget(),
         ],
       );
@@ -877,7 +886,7 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
     // that the user mistakes for the call surface and misses the Accept card.
     return Stack(
       children: [
-        widget.child,
+        app,
         Positioned(
           right: MediaQuery.of(context).size.width >= 700
               ? AuraSpace.s20

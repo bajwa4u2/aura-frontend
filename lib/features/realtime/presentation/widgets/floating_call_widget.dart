@@ -519,7 +519,11 @@ class _FloatingCallWidgetState extends ConsumerState<FloatingCallWidget> {
   /// Sessions whose full call surface this client has actually shown.
   ///
   /// See the rule in [_buildPip].
-  final Set<String> _surfaceShown = <String>{};
+  ///
+  /// Kept for the app's lifetime, not this widget's: the widget is rebuilt
+  /// whenever the call's joined state flickers (a reconnect), and a fresh
+  /// empty set suppressed the card for a room that had been on screen.
+  static final Set<String> _surfaceShown = <String>{};
 
   Widget _buildPip(
     BuildContext context,

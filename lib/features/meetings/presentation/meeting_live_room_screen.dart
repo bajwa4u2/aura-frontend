@@ -1648,7 +1648,11 @@ class _MeetingLiveRoomScreenState extends ConsumerState<MeetingLiveRoomScreen> {
           // Ready state: a host alone should see "the meeting is ready",
           // not an empty transport room. Transient by design: animates in,
           // can be dismissed, yields to drawers, and leaves when anyone joins.
-          if (state.isJoined &&
+          // The host's card only: a guest left alone after the host dropped was
+          // told they were "the first one here" and offered Invite
+          // (2026-10-24).
+          if (_isHost &&
+              state.isJoined &&
               state.participants.length <= 1 &&
               !_meetingEnded &&
               !_readyPanelDismissed &&
