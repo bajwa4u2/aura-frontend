@@ -1,5 +1,12 @@
 # Next Work - aura_final
 
+## After 2026-10-26
+
+1. Not-found screen: founder approves the screenshots (390x844, 1440x900), then commit and deploy. Open question to the founder: a signed-out visitor on an unknown path is sent to sign-in (`route_classification.dart` fails closed); proposal is to show the not-found screen instead.
+2. 1.7.1: `ExploreFeedItem.fromJson` (`lib/features/institutions/domain/explore_feed_item.dart`) treats every non-INSTITUTION_POST row as a person's post; it must accept or skip ANNOUNCEMENT and ARTICLE before the backend's `/posts/public` mixes them in.
+3. 1.7.1 phone release: carries the web fixes (edit refresh, keep place on refresh, preview images) and the corrected store What's new.
+4. Meta App Review (submitted 2026-10-25) pending; on approval the backend sets `FACEBOOK_PUBLIC_ACCESS=true`.
+
 ## After release 1.7.0 (48) certification (2026-10-25)
 
 1. Store builds: Codemagic `ios-testflight` on `rc/1.7.0` (founder starts); Play AAB `aura-1.7.0+48-8adcbfed.aab` to internal, then production (founder); Windows MSIX 1.7.0.0. Then fast-forward app `main` to `rc/1.7.0` (web shows 48).

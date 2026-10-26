@@ -1,5 +1,11 @@
 # Decisions — aura_final
 
+## Discovery, not-found and goldens — founder, 2026-10-26
+
+- AI and search discovery: fix in-house (no GEO vendor). Public pages carry their own text for readers that run no script; `llms.txt` on every public site; unknown addresses answer 404.
+- Not-found screen: "yes" to designing one; the built screen awaits approval.
+- Operator screenshots: "keep only if necessary otherwise remove it" — the pixel references were not necessary (stale on the approved DD-63/64 logo alone) and are removed; the render harness is the only coverage for ten operator screens and stays.
+
 ## Calls and meetings for 1.7.0 — founder, 2026-10-23 and 2026-10-24
 
 - Android incoming call: "Full-screen ring" over the lock screen; Accept goes straight to the call (DD-58).

@@ -1,5 +1,9 @@
 # Handoff - aura_final
 
+## 2026-10-26 — DISCOVERY, 404 MAP, OPERATOR HARNESS; NOT-FOUND SCREEN AWAITS APPROVAL
+
+`main` = `34e7126b`, web live (a push to `main` deploys the web on Railway). Commits today: `555313bd` (llms.txt, file 404s, page-text block id), `20bd9a01` (route 404 map + sitemap canonicals), `34e7126b` (operator harness without pixel references). Verified live: `/zzz` and `/zzz/abc` 404 with the shell; real routes, `/p/`, backend shell routes, files, `.well-known`, robots, sitemap and llms.txt 200. Do not commit the not-found files until the founder approves the screen.
+
 ## 2026-10-25 — RELEASE 1.7.0 (48) CERTIFIED; STORE BUILDS NEXT
 
 `rc/1.7.0` = `8adcbfed` (1.7.0+48, msix 1.7.0.0). Web runs the same code at `676c4e9f` (main), live. Backend `52e692a` live on aura-backend and media-worker. Full suite 3,663 passed, analyze clean. Release notes and store text: `aura/release-notes/v1.7.0.md`, `artifacts/whats-new-1.7.0.txt`. Design records DD-47 to DD-61 in `company/docs/design/DESIGN_DECISIONS.md`.

@@ -1,5 +1,12 @@
 # Current State — aura_final
 
+## Live 2026-10-26 — web `34e7126b`
+
+- Discovery: `555313bd` adds `web/llms.txt`; nginx answers 404 for unknown files with a file extension (`/ads.txt`, `/wp-login.php`); the root crawler block carries `id="aura-page-text"` so the backend replaces it with each public page's own text. `20bd9a01`: a known-first-segment map (`$aura_route_known`) answers an unknown first path segment with 404 while still serving the app shell; `test/web/route_truth_test.dart` fails if `lib/router.dart` and the map disagree. `/announcements`, `/discover`, `/spaces` have generated variants with their own canonical.
+- Operator render harness (`34e7126b`): the 117 golden PNGs are removed; the harness stays (only render coverage for ten operator screens), checks no exception/overflow at six widths, runs in the normal suite and CI. `OPERATOR_SHOTS=<dir>` writes review pictures.
+- Full suite before each push: 3,704 then 3,826 passed (`--exclude-tags golden`).
+- Uncommitted in this worktree, awaiting founder approval: the designed not-found screen (`lib/app/not_found_screen.dart`, `lib/router.dart` errorBuilder, `test/app/not_found_screen_test.dart`).
+
 ## Release 1.7.0 (48) — certified 2026-10-25
 
 Release commit `8adcbfed` on `rc/1.7.0`; web live at `676c4e9f`. Since 1.6.0: scheduled publishing, invites, Share to Facebook (Facebook Page and Instagram for early access while Meta reviews), one platform-native notice, the 30-day account restore, the Android lock-screen ring screen and faster call connect, and meetings with email-invited guests, recording consent and a way to step out ("Back to Aura"). Certified on Pixel 9a ↔ iPhone (calls, 23 Oct) and on two Chrome tabs (meetings and guests, 24–25 Oct), including a guest declining recording (nothing recorded). Full record: `aura/release-notes/v1.7.0.md`.
