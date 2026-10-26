@@ -253,8 +253,16 @@ class _PostCardState extends ConsumerState<PostCard> {
     }
 
     for (final item in rawList) {
-      if (item is! Map) continue;
-      final m = Map<String, dynamic>.from(item);
+      // A typed post (a post's own page) carries PostMediaItem, not maps. It
+      // was skipped here and fell to the legacy branch, which has no Trace.
+      final Map<String, dynamic> m;
+      if (item is Map) {
+        m = Map<String, dynamic>.from(item);
+      } else if (item is PostMediaItem) {
+        m = item.toJson();
+      } else {
+        continue;
+      }
 
       final id = (m['id'] ?? '').toString().trim();
       final type = (m['type'] ?? m['kind'] ?? m['mediaType'] ?? 'IMAGE')

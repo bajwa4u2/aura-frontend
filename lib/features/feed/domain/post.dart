@@ -56,6 +56,7 @@ class PostMediaItem {
     this.mimeType,
     this.fileName,
     this.fileSizeBytes,
+    this.trace,
   });
 
   final String id;
@@ -84,6 +85,10 @@ class PostMediaItem {
   final String? mimeType;
   final String? fileName;
   final int? fileSizeBytes;
+
+  /// The server's Trace account for this media, kept as it came. A typed post
+  /// dropped it, so a post's own page showed no TR (2026-10-26).
+  final Map<String, dynamic>? trace;
 
   bool get isVideo => type.toUpperCase().contains('VIDEO');
   bool get isImage => type.toUpperCase().contains('IMAGE');
@@ -128,6 +133,7 @@ class PostMediaItem {
       mimeType: _readString(j['mimeType']),
       fileName: _readString(j['fileName']),
       fileSizeBytes: _readInt(j['fileSizeBytes']),
+      trace: j['trace'] is Map ? Map<String, dynamic>.from(j['trace'] as Map) : null,
     );
   }
 
@@ -153,6 +159,7 @@ class PostMediaItem {
     'mimeType': mimeType,
     'fileName': fileName,
     'fileSizeBytes': fileSizeBytes,
+    if (trace != null) 'trace': trace,
   };
 }
 
