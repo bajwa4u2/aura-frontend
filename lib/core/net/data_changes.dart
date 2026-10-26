@@ -40,7 +40,10 @@ const _quietWritePrefixes = <String>[
   '/link-preview',
   '/link-intelligence',
   '/translation',
-  '/devices/register',
+  // Every launch updates this device's record (a PATCH), which would refresh
+  // the whole app twice at start-up. The devices screen refreshes its own
+  // list after a rename or removal.
+  '/devices',
 ];
 
 /// A POST that changes something that already exists, named by its last

@@ -33,6 +33,7 @@ void main() {
       expect(isEditWrite('PATCH', '/media/m1'), isFalse);
       expect(isEditWrite('POST', '/auth/refresh'), isFalse);
       expect(isEditWrite('PATCH', '/notifications/read'), isFalse);
+      expect(isEditWrite('PATCH', '/devices/d1'), isFalse);
     });
   });
 
