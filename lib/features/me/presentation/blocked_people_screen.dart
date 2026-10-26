@@ -121,7 +121,7 @@ class _BlockedPeopleScreenState extends ConsumerState<BlockedPeopleScreen> {
       body: RefreshIndicator(
         color: AuraSurface.accent,
         onRefresh: () async => ref.invalidate(blockedPeopleProvider),
-        child: blocked.when(
+        child: blocked.when(skipLoadingOnReload: true, 
           // THROUGH THE STATE AUTHORITY, not a bare spinner. Loading, empty
           // and error are product states with settled meaning and wording;
           // deciding them locally is how the same condition came to look like

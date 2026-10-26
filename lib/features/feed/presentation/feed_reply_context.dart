@@ -95,7 +95,7 @@ class FeedReplyContext extends ConsumerWidget {
     // cards, found by the same audit — and missed by the navigation chapter's
     // migration because that pass classified LITERAL call sites and these
     // navigate through a variable.
-    return parentAsync.when(
+    return parentAsync.when(skipLoadingOnReload: true, 
       // While loading (or on error) still show the linked banner so the reply
       // is never visually detached — the original is always one tap away.
       loading: () => _frame(

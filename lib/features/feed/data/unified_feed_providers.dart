@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/institutions/institution_access_provider.dart';
+import '../../../core/net/data_changes.dart';
 import '../domain/feed_item.dart';
 import 'unified_feed_repository.dart';
 
@@ -174,13 +175,15 @@ class FeedPagedState {
 /// accepts a fetch closure that takes a `cursor`, and surfaces an
 /// `AsyncValue<FeedPagedState>` so consumers can render loading / error /
 /// data states uniformly.
-class FeedPagedNotifier extends StateNotifier<AsyncValue<FeedPagedState>> {
+class FeedPagedNotifier extends StateNotifier<AsyncValue<FeedPagedState>>
+    implements RefreshesInPlace {
   FeedPagedNotifier(this._fetch) : super(const AsyncValue.loading()) {
     refresh();
   }
 
   final Future<FeedPage> Function({String? cursor}) _fetch;
 
+  @override
   Future<void> refresh() async {
     // Content-flash contract: a refresh MUST NOT blank a feed the user is
     // already reading. Only the very first load (no items yet) shows the
@@ -203,9 +206,29 @@ class FeedPagedNotifier extends StateNotifier<AsyncValue<FeedPagedState>> {
     try {
       final page = await _fetch(cursor: null);
       if (!mounted) return;
+      // THE READER KEEPS THEIR PLACE (2026-10-25). The first page is swapped
+      // in, and every item the reader had already scrolled past it is kept
+      // after it with the cursor that loads beyond them. Replacing the list
+      // with one page cut it short under someone reading page three, and
+      // the list jumped.
+      final fresh = <String>{
+        for (final it in page.items) '${it.type.wire}:${it.id}',
+      };
+      // The tail starts after the last item the fresh page also holds, so a
+      // post published above (which pushes one off the page) is not lost,
+      // and one deleted within the page does not survive.
+      var lastShared = -1;
+      final held = previous?.items ?? const <FeedItem>[];
+      for (var i = 0; i < held.length; i++) {
+        if (fresh.contains('${held[i].type.wire}:${held[i].id}')) lastShared = i;
+      }
+      final tail = [
+        for (final it in held.skip(lastShared + 1))
+          if (!fresh.contains('${it.type.wire}:${it.id}')) it,
+      ];
       state = AsyncValue.data(FeedPagedState(
-        items: page.items,
-        nextCursor: page.nextCursor,
+        items: [...page.items, ...tail],
+        nextCursor: tail.isEmpty ? page.nextCursor : previous!.nextCursor,
         loadingMore: false,
       ));
     } catch (e, st) {

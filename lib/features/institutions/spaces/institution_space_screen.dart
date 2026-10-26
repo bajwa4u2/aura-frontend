@@ -140,7 +140,8 @@ class _InstitutionSpaceScreenState extends ConsumerState<InstitutionSpaceScreen>
     return FutureBuilder<_SpaceBundle>(
       future: _future,
       builder: (context, snap) {
-        if (snap.connectionState != ConnectionState.done) {
+        // A reload keeps the space on screen; only the first load waits.
+        if (snap.connectionState != ConnectionState.done && !snap.hasData) {
           return AuraScaffold(
             body: const AuraProductState(
               state: ProductState.loading,

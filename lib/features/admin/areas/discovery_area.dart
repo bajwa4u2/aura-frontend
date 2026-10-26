@@ -129,7 +129,7 @@ class _Coverage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final report = ref.watch(discoveryReportProvider);
 
-    return report.when(
+    return report.when(skipLoadingOnReload: true, 
       loading: () => const OperatorSection(
         title: 'Reach',
         child: OperatorLoading(lines: 3),
@@ -522,7 +522,7 @@ class _Objects extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final objects = ref.watch(discoveryObjectsProvider);
 
-    return objects.when(
+    return objects.when(skipLoadingOnReload: true, 
       loading: () => const OperatorSection(
         title: 'Objects',
         child: OperatorLoading(lines: 3),
@@ -660,7 +660,7 @@ class _Queries extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final queries = ref.watch(discoveryQueriesProvider);
 
-    return queries.when(
+    return queries.when(skipLoadingOnReload: true, 
       loading: () => const OperatorSection(
         title: 'What people searched for',
         child: OperatorLoading(lines: 2),

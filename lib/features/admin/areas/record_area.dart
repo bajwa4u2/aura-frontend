@@ -66,7 +66,7 @@ class RecordArea extends ConsumerWidget {
               child: _RecordFilter(),
             ),
             Expanded(
-              child: logs.when(
+              child: logs.when(skipLoadingOnReload: true, 
                 loading: () => const Padding(
                   padding: EdgeInsets.symmetric(horizontal: AuraSpace.s16),
                   child: OperatorLoading(lines: 6),

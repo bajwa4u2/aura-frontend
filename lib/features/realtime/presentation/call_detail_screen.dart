@@ -68,7 +68,7 @@ class _CallDetailScreenState extends ConsumerState<CallDetailScreen>
       body: FutureBuilder<RealtimeSessionSnapshot?>(
         future: _future,
         builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
+          if (snap.connectionState != ConnectionState.done && !snap.hasData) {
             // Through the state authority, not a bare spinner: a whole
             // surface waiting is a product state with copy of its own, and
             // deciding that locally is how one condition ends up looking

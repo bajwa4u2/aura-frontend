@@ -487,7 +487,7 @@ class _AnnouncementDetailScreenState
       maxWidth: kWorkspaceWidth,
       body: AuraDiscourseSurface(
         railModules: discourseDetailRailModules(),
-        reading: async.when(
+        reading: async.when(skipLoadingOnReload: true, 
           loading: () =>
               const Center(child: AuraLoadingState(message: 'Loading…')),
           error: (e, _) => Center(

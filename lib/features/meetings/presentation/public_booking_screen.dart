@@ -16,7 +16,7 @@ class PublicBookingScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(publicProfileProvider(slug));
-    return profileAsync.when(
+    return profileAsync.when(skipLoadingOnReload: true, 
       loading: () => const GuestShell(
         body: Center(child: CircularProgressIndicator()),
       ),
@@ -39,7 +39,7 @@ class InstitutionPublicBookingScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final key = InstitutionBookingKey(institutionSlug, bookingSlug);
     final profileAsync = ref.watch(institutionPublicProfileProvider(key));
-    return profileAsync.when(
+    return profileAsync.when(skipLoadingOnReload: true, 
       loading: () => const GuestShell(
         body: Center(child: CircularProgressIndicator()),
       ),

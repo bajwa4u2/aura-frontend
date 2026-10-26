@@ -198,7 +198,7 @@ class _IdentityBlock extends ConsumerWidget {
 
     final verification = ref.watch(personVerificationProvider(userId));
 
-    return verification.when(
+    return verification.when(skipLoadingOnReload: true, 
       loading: () => const OperatorSection(
         title: 'Identity',
         child: OperatorLoading(lines: 2),
@@ -579,7 +579,7 @@ class _RelatedWork extends ConsumerWidget {
     // dangerous possible reading of a failed dependency.
     return OperatorSection(
       title: 'Waiting on this subject',
-      child: work.when(
+      child: work.when(skipLoadingOnReload: true, 
         loading: () => const OperatorLoading(lines: 1),
         error: (_, __) => OperatorFailure(
           title: 'Open work could not be read',
@@ -665,7 +665,7 @@ class _PersonHistory extends ConsumerWidget {
 
     final verification = ref.watch(personVerificationProvider(userId));
 
-    return verification.when(
+    return verification.when(skipLoadingOnReload: true, 
       loading: () => const OperatorSection(
         title: 'History',
         child: OperatorLoading(lines: 2),
@@ -778,7 +778,7 @@ class _SubjectHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final detail = ref.watch(personDetailProvider(userId));
 
-    return detail.when(
+    return detail.when(skipLoadingOnReload: true, 
       loading: () => const OperatorPanel(child: OperatorLoading(lines: 1)),
       // Deliberately quiet: the sections below each report their own failure,
       // and three copies of the same message is not three pieces of news.
@@ -843,7 +843,7 @@ class _StandingBlock extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final detail = ref.watch(personDetailProvider(userId));
 
-    return detail.when(
+    return detail.when(skipLoadingOnReload: true, 
       loading: () => const OperatorSection(
         title: 'Standing',
         child: OperatorLoading(lines: 2),
@@ -1050,7 +1050,7 @@ class _OperatorAuthorityBlock extends ConsumerWidget {
 
     final detail = ref.watch(personDetailProvider(userId));
 
-    return detail.when(
+    return detail.when(skipLoadingOnReload: true, 
       loading: () => const OperatorSection(
         title: 'Operator authority',
         child: OperatorLoading(lines: 2),

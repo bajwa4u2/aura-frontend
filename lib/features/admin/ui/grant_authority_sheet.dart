@@ -287,7 +287,7 @@ class _GrantAuthoritySheetState extends ConsumerState<_GrantAuthoritySheet> {
               ),
               const SizedBox(height: AuraSpace.s8),
               Flexible(
-                child: catalogue.when(
+                child: catalogue.when(skipLoadingOnReload: true, 
                   loading: () => const OperatorLoading(lines: 4),
                   error: (_, __) => const OperatorFailure(
                     title: 'The permission catalogue could not be read',

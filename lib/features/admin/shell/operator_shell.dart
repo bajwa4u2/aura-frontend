@@ -146,7 +146,7 @@ class _OperatorShellState extends ConsumerState<OperatorShell> {
   Widget build(BuildContext context) {
     final authorityAsync = ref.watch(operatorAuthorityProvider);
 
-    return authorityAsync.when(
+    return authorityAsync.when(skipLoadingOnReload: true, 
       loading: () => const _OperatorFrame(child: OperatorAuthorityLoading()),
       error: (_, __) => const _OperatorFrame(child: OperatorAuthorityError()),
       data: (authority) {

@@ -593,7 +593,7 @@ class _OwnBookingPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(myAvailabilityProfilesProvider);
-    return async.when(
+    return async.when(skipLoadingOnReload: true, 
       loading: () => const WorkspaceLoading(type: WorkspacePageType.settings, rows: 1),
       error: (e, _) => WorkspaceEmpty(
         icon: Icons.error_outline_rounded,

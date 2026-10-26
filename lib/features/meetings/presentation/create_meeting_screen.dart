@@ -911,7 +911,7 @@ class _CreationForm extends StatelessWidget {
                     // The members now lay out inline and the page scrolls as
                     // one surface. The search field above is what narrows a
                     // long list; the count says when there is more to narrow.
-                    membersAsync!.when(
+                    membersAsync!.when(skipLoadingOnReload: true, 
                       loading: () => const MeetingSkeletonList(count: 2),
                       error: (e, _) => const MeetingError(
                         what: 'the member list',

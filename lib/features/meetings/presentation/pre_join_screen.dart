@@ -259,7 +259,7 @@ class _PreJoinScreenState extends ConsumerState<PreJoinScreen> {
     final resolutionAsync = ref.watch(meetingEntryResolutionProvider(_entryKey));
     final theme = Theme.of(context);
 
-    return resolutionAsync.when(
+    return resolutionAsync.when(skipLoadingOnReload: true, 
       // Section 19: a person arriving from an emailed link met a spinner in an
       // empty page while the meeting resolved. They are told what is happening
       // and to what, which is all that is honestly known at this point.

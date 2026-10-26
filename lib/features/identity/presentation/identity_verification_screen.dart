@@ -323,7 +323,7 @@ class _IdentityVerificationScreenState
             ),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: kFormWidth),
-              child: status.when(
+              child: status.when(skipLoadingOnReload: true, 
                 loading: () => const Padding(
                   padding: EdgeInsets.all(AuraSpace.s24),
                   child: CircularProgressIndicator(strokeWidth: 2),
@@ -495,7 +495,7 @@ class _VerifiedClassesCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(personVerificationClassesProvider);
 
-    return async.when(
+    return async.when(skipLoadingOnReload: true, 
       // Silent while unknown and silent on failure. This card reports what
       // Aura has verified; an error here means Aura does not currently know,
       // and guessing in either direction would be worse than saying nothing.

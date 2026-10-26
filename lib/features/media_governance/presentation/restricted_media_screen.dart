@@ -111,7 +111,7 @@ class _RestrictedMediaScreenState extends ConsumerState<RestrictedMediaScreen> {
 
     return AuraScaffold(
       title: 'Attachment under review',
-      body: async.when(
+      body: async.when(skipLoadingOnReload: true, 
         loading: () => const AuraProductState(state: ProductState.loading),
         error: (_, __) => const _Unavailable(),
         data: (r) {

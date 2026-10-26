@@ -52,6 +52,7 @@ class InstitutionDetailScreen extends ConsumerWidget {
     return AuraScaffold(
       showHeader: false,
       body: institutionAsync.when(
+        skipLoadingOnReload: true,
         loading: () => const Center(
           child: AuraLoadingState(message: 'Loading institution…'),
         ),
@@ -489,7 +490,7 @@ class _PublicPostsSection extends ConsumerWidget {
           // Topic + Resources controls — same doctrine as Works/Explore.
           const FeedFilterBar(),
           const SizedBox(height: AuraSpace.s14),
-          postsAsync.when(
+          postsAsync.when(skipLoadingOnReload: true, 
             loading: () => const Padding(
               padding: EdgeInsets.symmetric(vertical: AuraSpace.s16),
               child: Center(

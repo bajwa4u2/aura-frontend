@@ -94,7 +94,8 @@ class _InstitutionSpacesScreenState extends ConsumerState<InstitutionSpacesScree
   }
 
   Future<void> _load() async {
-    setState(() { _loading = true; _error = null; });
+    // A reload keeps what is on screen; only an empty list shows loading.
+    setState(() { _loading = _spaces.isEmpty; _error = null; });
     try {
       final spaces = await _repo.listInstitutionSpaces(
         widget.institutionId,

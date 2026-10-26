@@ -665,7 +665,7 @@ class _TimesPanel extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AuraSpace.s14),
-                    slotsAsync.when(
+                    slotsAsync.when(skipLoadingOnReload: true, 
                       loading: () => const _LoadingTimes(),
                       error: (e, _) => _EmptyTimesMessage(
                         icon: Icons.error_outline_rounded,

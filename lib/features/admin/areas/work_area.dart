@@ -69,7 +69,7 @@ class WorkArea extends ConsumerWidget {
               ),
             ),
             Expanded(
-              child: list.when(
+              child: list.when(skipLoadingOnReload: true, 
                 loading: () => Padding(
                   padding: EdgeInsets.all(pad),
                   child: const OperatorLoading(lines: 5),

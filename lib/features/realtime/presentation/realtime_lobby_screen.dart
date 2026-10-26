@@ -64,7 +64,7 @@ class RealtimeLobbyScreen extends ConsumerWidget {
                     style: AuraText.body.copyWith(color: AuraSurface.muted),
                   )
                 else
-                  broadcasts.when(
+                  broadcasts.when(skipLoadingOnReload: true, 
                     loading: () => const Padding(
                       padding: EdgeInsets.symmetric(vertical: AuraSpace.s32),
                       child: AuraProductState(

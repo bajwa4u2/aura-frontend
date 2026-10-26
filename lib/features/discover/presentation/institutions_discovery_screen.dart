@@ -80,7 +80,7 @@ class InstitutionsDiscoveryScreen extends ConsumerWidget {
             const SizedBox(height: AuraSpace.s20),
             const _SectorFilter(),
             const SizedBox(height: AuraSpace.s16),
-            page.when(
+            page.when(skipLoadingOnReload: true, 
               loading: () =>
                   const AuraProductState(state: ProductState.loading),
               error: (_, __) => AuraProductState(

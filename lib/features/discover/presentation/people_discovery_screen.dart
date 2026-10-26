@@ -62,7 +62,7 @@ class PeopleDiscoveryScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: AuraSpace.s20),
-            page.when(
+            page.when(skipLoadingOnReload: true, 
               loading: () => const AuraProductState(
                   state: ProductState.loading, subject: ProductNoun.person),
               error: (e, _) => AuraProductState(

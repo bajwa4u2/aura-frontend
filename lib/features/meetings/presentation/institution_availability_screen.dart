@@ -53,7 +53,7 @@ class InstitutionBookingPages extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profilesAsync = ref.watch(institutionProfilesProvider(institutionId));
 
-    return profilesAsync.when(
+    return profilesAsync.when(skipLoadingOnReload: true, 
       loading: () => const WorkspaceLoading(type: WorkspacePageType.settings, rows: 2),
       error: (e, _) => WorkspaceEmpty(
         icon: Icons.error_outline_rounded,
@@ -1108,7 +1108,7 @@ class _BookingInboxDialog extends ConsumerWidget {
         width: double.maxFinite,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 480),
-          child: async.when(
+          child: async.when(skipLoadingOnReload: true, 
             loading: () => const Padding(
               padding: EdgeInsets.all(32),
               child: Center(child: CircularProgressIndicator()),

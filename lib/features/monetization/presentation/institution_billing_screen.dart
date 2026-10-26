@@ -230,7 +230,7 @@ class _InstitutionBillingScreenState
     );
     final grantAsync = ref.watch(institutionGrantProvider(institutionId));
 
-    return configAsync.when(
+    return configAsync.when(skipLoadingOnReload: true, 
         loading: () => const WorkspacePage(
           type: WorkspacePageType.settings,
           title: 'Plan & Billing',
@@ -242,7 +242,7 @@ class _InstitutionBillingScreenState
             return _frame(const [_DisabledState()]);
           }
 
-          return entitlementsAsync.when(
+          return entitlementsAsync.when(skipLoadingOnReload: true, 
             loading: () => const WorkspacePage(
           type: WorkspacePageType.settings,
           title: 'Plan & Billing',

@@ -237,7 +237,7 @@ class _PersonalDetailsScreenState
     return AuraScaffold(
       title: 'Personal details',
       maxWidth: 640,
-      body: async.when(
+      body: async.when(skipLoadingOnReload: true, 
         // Through the state authority, so a whole surface waiting or failing
         // looks the way it does everywhere else in Aura.
         loading: () => const AuraProductState(state: ProductState.loading),

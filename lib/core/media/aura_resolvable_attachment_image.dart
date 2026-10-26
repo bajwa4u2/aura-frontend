@@ -101,7 +101,7 @@ class _AuraResolvableAttachmentImageState
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(mediaUrlProvider(widget.mediaId));
-    return async.when(
+    return async.when(skipLoadingOnReload: true, 
       data: (result) => AuraAttachmentImage(
         url: result.url,
         attachmentId: widget.mediaId,

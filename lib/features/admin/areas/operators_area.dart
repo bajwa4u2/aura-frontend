@@ -118,7 +118,7 @@ class OperatorsArea extends ConsumerWidget {
             OperatorSection(
               title: 'Operator grants',
               subtitle: 'Every grant in the estate, revoked ones included',
-              child: grants.when(
+              child: grants.when(skipLoadingOnReload: true, 
                 loading: () => const OperatorLoading(lines: 5),
                 error: (_, __) => const OperatorFailure(
                   title: 'The grant list could not be read',
@@ -246,7 +246,7 @@ class _PersonPickerState extends ConsumerState<_PersonPicker> {
               ),
               const SizedBox(height: AuraSpace.s12),
               Flexible(
-                child: results.when(
+                child: results.when(skipLoadingOnReload: true, 
                   loading: () => const OperatorLoading(lines: 3),
                   error: (_, __) => const OperatorFailure(
                     title: 'People could not be searched',

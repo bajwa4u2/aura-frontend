@@ -48,7 +48,7 @@ class AnnouncementsScreen extends ConsumerWidget {
       );
     }
 
-    return institutionAsync.when(
+    return institutionAsync.when(skipLoadingOnReload: true, 
           loading: () => AuraScaffold(
             showHeader: false,
             body: const Center(
@@ -419,7 +419,7 @@ class _PinnedSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return asyncValue.when(
+    return asyncValue.when(skipLoadingOnReload: true, 
       loading: () => const AuraLoadingState(message: 'Loading pinned…'),
       error: (e, _) => AuraErrorState(
         title: 'Could not load pinned notices',
@@ -491,7 +491,7 @@ class _AllSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return asyncValue.when(
+    return asyncValue.when(skipLoadingOnReload: true, 
       loading: () => const AuraLoadingState(message: 'Loading announcements…'),
       error: (e, _) => AuraErrorState(
         title: 'Could not load announcements',

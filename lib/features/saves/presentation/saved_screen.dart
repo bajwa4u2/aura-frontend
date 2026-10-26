@@ -69,7 +69,7 @@ class SavedScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AuraSpace.s14),
-          savedAsync.when(
+          savedAsync.when(skipLoadingOnReload: true, 
             data: (raw) {
               final posts = _coercePosts(raw);
 

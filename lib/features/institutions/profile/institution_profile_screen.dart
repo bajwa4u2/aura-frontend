@@ -58,7 +58,7 @@ class InstitutionProfileScreen extends ConsumerWidget {
         ? ref.watch(institutionWorkspaceIdentityProvider(routeId))
         : ambient;
 
-    return accessAsync.when(
+    return accessAsync.when(skipLoadingOnReload: true, 
       loading: () => const WorkspacePage(
         type: WorkspacePageType.record,
         title: 'Profile',
@@ -749,7 +749,7 @@ class _PublicPostsPreview extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(institutionProfileFeedProvider(institutionId));
-    return async.when(
+    return async.when(skipLoadingOnReload: true, 
       loading: () => const WorkspaceLoading(rows: 2),
       error: (e, _) => Text(
         'Could not load posts: $e',

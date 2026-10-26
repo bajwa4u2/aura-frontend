@@ -59,7 +59,7 @@ class ArticlesDiscoveryScreen extends ConsumerWidget {
                   AuraText.body.copyWith(color: chamberTone(context, AuraSurface.muted), height: 1.5),
             ),
             const SizedBox(height: AuraSpace.s20),
-            page.when(
+            page.when(skipLoadingOnReload: true, 
               loading: () =>
                   const AuraProductState(state: ProductState.loading),
               error: (_, __) => AuraProductState(

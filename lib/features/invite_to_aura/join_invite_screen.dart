@@ -60,7 +60,7 @@ class JoinInviteScreen extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
           AuraCard(
-            child: inviter.when(
+            child: inviter.when(skipLoadingOnReload: true, 
               loading: () => const AuraProductState(
                 state: ProductState.loading,
                 headline: 'Opening the invitation',

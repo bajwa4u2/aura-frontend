@@ -66,7 +66,7 @@ class SpaceDetailScreen extends ConsumerWidget {
     final summaryAsync = ref.watch(publicSpaceSummaryProvider(slug));
     final fallbackSpace = ref.watch(publicSpaceBySlugProvider(slug));
 
-    return feedAsync.when(
+    return feedAsync.when(skipLoadingOnReload: true, 
       loading: () => AuraScaffold(
         showHeader: false,
         body: InsScreen(
@@ -212,7 +212,7 @@ class _SpaceIdentityPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return summary.when(
+    return summary.when(skipLoadingOnReload: true, 
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
       data: (s) {

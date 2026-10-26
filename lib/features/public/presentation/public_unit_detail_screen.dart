@@ -58,7 +58,7 @@ class PublicUnitDetailScreen extends ConsumerWidget {
     final async = ref.watch(publicUnitDetailProvider(args));
     return AuraScaffold(
       showHeader: false,
-      body: async.when(
+      body: async.when(skipLoadingOnReload: true, 
         loading: () => const Center(
           child: AuraLoadingState(message: 'Loading unit…'),
         ),

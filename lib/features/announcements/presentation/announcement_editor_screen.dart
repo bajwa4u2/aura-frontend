@@ -1882,7 +1882,7 @@ class _AnnouncementEditorScreenState
                     if (!_isPlatformMode) ...[
                       const SizedBox(height: 8),
                       Text(
-                        institutionAccess.when(
+                        institutionAccess.when(skipLoadingOnReload: true, 
                           data: (value) =>
                               'Institution state: ${value.toString().split('.').last}',
                           loading: () => 'Checking institution access…',

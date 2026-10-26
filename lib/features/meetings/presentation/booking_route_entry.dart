@@ -97,7 +97,7 @@ class BookingRouteEntry extends ConsumerWidget {
             InstitutionBookingKey(instSlug, slug),
           ));
 
-    return profileAsync.when(
+    return profileAsync.when(skipLoadingOnReload: true, 
       loading: () => const GuestShell(
         body: AuraProductState(state: ProductState.loading),
       ),
@@ -147,7 +147,7 @@ class RescheduleRouteEntry extends ConsumerWidget {
 
     final contextAsync = ref.watch(rescheduleContextProvider(token));
 
-    return contextAsync.when(
+    return contextAsync.when(skipLoadingOnReload: true, 
       loading: () => const GuestShell(
         body: AuraProductState(state: ProductState.loading),
       ),
@@ -179,7 +179,7 @@ class RescheduleRouteEntry extends ConsumerWidget {
                 InstitutionBookingKey(instSlug, profileSlug),
               ));
 
-        return profileAsync.when(
+        return profileAsync.when(skipLoadingOnReload: true, 
           loading: () => const GuestShell(
             body: AuraProductState(state: ProductState.loading),
           ),

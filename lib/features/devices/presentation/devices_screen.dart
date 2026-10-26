@@ -139,7 +139,7 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
       // sessions (where you are signed in). Nothing in the product told them
       // apart, so each is now named for what it does.
       title: 'Your devices',
-      body: devicesAsync.when(
+      body: devicesAsync.when(skipLoadingOnReload: true, 
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, __) => Center(
           child: Padding(

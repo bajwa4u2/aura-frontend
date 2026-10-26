@@ -91,7 +91,8 @@ class _InstitutionAnnouncementsScreenState extends ConsumerState<InstitutionAnno
 
   Future<void> _load() async {
     setState(() {
-      _loading = true;
+      // A reload keeps what is on screen; only empty lists show loading.
+      _loading = _published.isEmpty && _drafts.isEmpty;
       _error = null;
     });
     try {

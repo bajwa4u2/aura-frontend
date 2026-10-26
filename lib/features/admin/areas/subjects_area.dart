@@ -323,7 +323,7 @@ class _PeopleList extends ConsumerWidget {
     final people = ref.watch(subjectPeopleProvider);
     final query = ref.watch(subjectQueryProvider);
 
-    return people.when(
+    return people.when(skipLoadingOnReload: true, 
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(horizontal: AuraSpace.s16),
         child: OperatorLoading(lines: 6),
@@ -378,7 +378,7 @@ class _InstitutionsList extends ConsumerWidget {
     final institutions = ref.watch(subjectInstitutionsProvider);
     final query = ref.watch(subjectQueryProvider).toLowerCase();
 
-    return institutions.when(
+    return institutions.when(skipLoadingOnReload: true, 
       loading: () => const Padding(
         padding: EdgeInsets.symmetric(horizontal: AuraSpace.s16),
         child: OperatorLoading(lines: 5),

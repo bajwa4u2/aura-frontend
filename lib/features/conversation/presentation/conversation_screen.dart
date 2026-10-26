@@ -1301,7 +1301,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       });
     });
 
-    return conversationAsync.when(
+    return conversationAsync.when(skipLoadingOnReload: true, 
       loading: () => AuraScaffold(
         body: const AuraProductState(
           state: ProductState.loading,
@@ -1462,7 +1462,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               ConversationIncomingCall(conversationId: widget.conversationId),
               _ConversationLiveRibbon(conversationId: widget.conversationId),
               Expanded(
-                child: messagesAsync.when(
+                child: messagesAsync.when(skipLoadingOnReload: true, 
                   loading: () => const AuraProductState(
                     state: ProductState.loading,
                     subject: ProductNoun.message,
@@ -2451,7 +2451,7 @@ class _ConversationAttachment extends ConsumerWidget {
 
   Widget _buildAttachment(BuildContext context, WidgetRef ref) {
     final urlAsync = ref.watch(_deliveryUrlProvider(media.mediaId));
-    return urlAsync.when(
+    return urlAsync.when(skipLoadingOnReload: true, 
       loading: () => Container(
         width: 220,
         height: media.isAudio ? 44 : 140,

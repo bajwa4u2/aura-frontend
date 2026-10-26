@@ -201,7 +201,7 @@ class _PublicInstitutionsDirectoryScreenState
                               ),
                             ],
                             const SizedBox(height: AuraSpace.s16),
-                            listAsync.when(
+                            listAsync.when(skipLoadingOnReload: true, 
                               loading: () => const Padding(
                                 padding: EdgeInsets.all(AuraSpace.s32),
                                 child: Center(
@@ -840,7 +840,7 @@ class _BrowseBySectorSection extends ConsumerWidget {
       ],
     );
 
-    return ontology.when(
+    return ontology.when(skipLoadingOnReload: true, 
       loading: () =>
           framed(const AuraProductState(state: ProductState.loading)),
       error: (_, __) => framed(

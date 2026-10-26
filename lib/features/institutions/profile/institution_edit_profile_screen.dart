@@ -554,7 +554,7 @@ class _InstitutionEditProfileScreenState
         : '/institution/dashboard';
     final back = WorkspaceBack(label: 'Profile', path: profilePath);
 
-    return accessAsync.when(
+    return accessAsync.when(skipLoadingOnReload: true, 
       loading: () => WorkspacePage(
         type: WorkspacePageType.settings,
         title: 'Edit profile',

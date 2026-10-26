@@ -371,7 +371,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                 },
               ),
               Expanded(
-                child: detailAsync.when(
+                child: detailAsync.when(skipLoadingOnReload: true, 
                   loading: () => const Center(
                     child: AuraLoadingState(message: 'Loading thread…'),
                   ),
@@ -441,7 +441,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                           onChange: (v) => setState(() => _filter = v),
                         ),
                         const SizedBox(height: AuraSpace.s10),
-                        repliesAsync.when(
+                        repliesAsync.when(skipLoadingOnReload: true, 
                           loading: () => const Padding(
                             padding: EdgeInsets.all(AuraSpace.s16),
                             child: AuraLoadingState(

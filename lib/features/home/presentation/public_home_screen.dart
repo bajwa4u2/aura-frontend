@@ -795,7 +795,7 @@ class _DiscussionPreviewSection extends ConsumerWidget {
   }
 
   Widget _buildDiscussions(BuildContext context, WidgetRef ref) {
-    return feedAsync.when(
+    return feedAsync.when(skipLoadingOnReload: true, 
       data: (page) {
         if (page.items.isEmpty) {
           return const AuraProductState(
@@ -1202,7 +1202,7 @@ class _SpacesSection extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: AuraSpace.s16),
-              spacesAsync.when(
+              spacesAsync.when(skipLoadingOnReload: true, 
                 data: (spaces) {
                   if (spaces.isEmpty) return const SizedBox.shrink();
                   final featured = spaces.take(3).toList(growable: false);
@@ -1301,7 +1301,7 @@ class _SpaceTile extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AuraSpace.s10),
-          summaryAsync.when(
+          summaryAsync.when(skipLoadingOnReload: true, 
             data: (s) => Text(
               '${s.activeDiscussionCount} active · ${s.institutionCount} institutions',
               style: AuraText.micro.copyWith(

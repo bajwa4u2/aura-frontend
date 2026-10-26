@@ -223,7 +223,7 @@ class _InviteListBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return asyncValue.when(
+    return asyncValue.when(skipLoadingOnReload: true, 
       loading: () => const AuraCard(child: _LoadingBlock(label: 'Loading...')),
       error: (error, _) => AuraCard(
         child: Column(

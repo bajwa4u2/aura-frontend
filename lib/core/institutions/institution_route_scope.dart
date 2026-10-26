@@ -63,7 +63,7 @@ class InstitutionRouteScope extends ConsumerWidget {
       remoteInstitutionAddressProvider((address ?? '').trim()),
     );
 
-    return remote.when(
+    return remote.when(skipLoadingOnReload: true, 
       loading: () => const _WorkspaceOutline(),
       // An error is resolved-but-unknown, never an eternal spinner (F068).
       error: (_, __) => const AuraProductState(

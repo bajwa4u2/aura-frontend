@@ -44,7 +44,7 @@ class ArticleScreen extends ConsumerWidget {
     final articleAsync = ref.watch(articleBySlugProvider(slug));
     return AuraScaffold(
       showHeader: false,
-      body: articleAsync.when(
+      body: articleAsync.when(skipLoadingOnReload: true, 
         loading: () =>
             const AuraProductState(state: ProductState.loading),
         error: (e, _) => const AuraProductState(

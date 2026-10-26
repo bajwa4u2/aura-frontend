@@ -135,7 +135,8 @@ class _InstitutionMembersScreenState extends ConsumerState<InstitutionMembersScr
 
   Future<void> _load() async {
     setState(() {
-      _loading = true;
+      // A reload keeps what is on screen; only an empty list shows loading.
+      _loading = _members.isEmpty;
       _error = null;
     });
 

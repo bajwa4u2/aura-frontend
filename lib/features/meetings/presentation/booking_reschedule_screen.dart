@@ -205,7 +205,7 @@ class _BookingRescheduleScreenState
                       ),
                     ),
                     const SizedBox(height: AuraSpace.s8),
-                    slotsAsync.when(
+                    slotsAsync.when(skipLoadingOnReload: true, 
                       loading: () => const Center(
                         child: Padding(
                           padding: EdgeInsets.all(AuraSpace.s16),

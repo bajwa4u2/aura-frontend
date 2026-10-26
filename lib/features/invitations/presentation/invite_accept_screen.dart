@@ -94,7 +94,7 @@ class InviteAcceptScreen extends ConsumerWidget {
                 final inspectAsync = ref.watch(
                   _inviteInspectProvider(trimmedToken),
                 );
-                return inspectAsync.when(
+                return inspectAsync.when(skipLoadingOnReload: true, 
                   loading: () => const AuraCard(
                     child: _LoadingBlock(label: 'Reading invitation...'),
                   ),

@@ -107,7 +107,7 @@ class MyQuestionsScreen extends ConsumerWidget {
     final async = ref.watch(myPublicRecordsProvider);
     return AuraScaffold(
       title: 'My questions and issues',
-      body: async.when(
+      body: async.when(skipLoadingOnReload: true, 
         loading: () => const AuraProductState(state: ProductState.loading),
         error: (e, _) => AuraProductState(
           state: ProductState.retryableError,

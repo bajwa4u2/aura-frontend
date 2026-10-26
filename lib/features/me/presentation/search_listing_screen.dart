@@ -67,7 +67,7 @@ class _SearchListingScreenState extends ConsumerState<SearchListingScreen> {
     return AuraScaffold(
       title: 'Search engines',
       maxWidth: 720,
-      body: listing.when(
+      body: listing.when(skipLoadingOnReload: true, 
         // Its own words: the generic loading copy for `person` reads
         // "Getting people ready", which says nothing about this screen.
         loading: () => const AuraProductState(

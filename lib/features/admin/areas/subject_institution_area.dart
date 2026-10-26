@@ -58,7 +58,7 @@ class SubjectInstitutionArea extends ConsumerWidget {
     // slice of a list happens to be loaded beside it.
     final institution$ = ref.watch(institutionSubjectProvider(institutionId));
 
-    return institution$.when(
+    return institution$.when(skipLoadingOnReload: true, 
       loading: () => const Padding(
         padding: EdgeInsets.all(AuraSpace.s20),
         child: OperatorLoading(lines: 4),
@@ -292,7 +292,7 @@ class _Domains extends ConsumerWidget {
 
     final domains = ref.watch(institutionDomainsProvider(institutionId));
 
-    return domains.when(
+    return domains.when(skipLoadingOnReload: true, 
       loading: () => const OperatorSection(
         title: 'Domain proof',
         child: OperatorLoading(lines: 1),
@@ -455,7 +455,7 @@ class _RelatedWork extends ConsumerWidget {
     // dangerous possible reading of a failed dependency.
     return OperatorSection(
       title: 'Waiting on this subject',
-      child: work.when(
+      child: work.when(skipLoadingOnReload: true, 
         loading: () => const OperatorLoading(lines: 1),
         error: (_, __) => OperatorFailure(
           title: 'Open work could not be read',
@@ -562,7 +562,7 @@ class _Members extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final members = ref.watch(institutionMembersProvider(institutionId));
 
-    return members.when(
+    return members.when(skipLoadingOnReload: true, 
       loading: () => const OperatorSection(
         title: 'Membership',
         child: OperatorLoading(lines: 3),

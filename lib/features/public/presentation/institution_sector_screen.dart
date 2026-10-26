@@ -92,7 +92,7 @@ class _InstitutionSectorScreenState
                     ),
                   ],
                   const SizedBox(height: AuraSpace.s20),
-                  listAsync.when(
+                  listAsync.when(skipLoadingOnReload: true, 
                     loading: () => const Padding(
                       padding: EdgeInsets.all(AuraSpace.s24),
                       child: Center(

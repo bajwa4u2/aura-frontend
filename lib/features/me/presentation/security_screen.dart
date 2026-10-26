@@ -201,7 +201,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
       );
     }
 
-    final emailStatusText = emailVerifiedAsync.when(
+    final emailStatusText = emailVerifiedAsync.when(skipLoadingOnReload: true, 
       data: (verified) => (verified ?? false) ? 'Verified' : 'Not verified',
       loading: () => 'Checking…',
       error: (_, __) => 'Unavailable',
@@ -250,7 +250,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
         ),
 
         // ── 1. Current session — strongest visual priority ────────────────
-        sessionsAsync.when(
+        sessionsAsync.when(skipLoadingOnReload: true, 
           loading: () => const _SectionedPanel(
             title: 'This device',
             subtitle: 'Checking where you are signed in…',
@@ -282,7 +282,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
           // section is now named for what it actually controls.
           title: 'Where else you are signed in',
           items: [
-            ...sessionsAsync.when(
+            ...sessionsAsync.when(skipLoadingOnReload: true, 
               loading: () => <Widget>[const _LoadingRow()],
               error: (_, __) => <Widget>[const _ErrorRow()],
               data: (_) {
@@ -330,7 +330,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
           title: 'Devices that skip verification',
           subtitle:
               'Skip the email code on devices you\'ve approved long-term.',
-          items: devicesAsync.when(
+          items: devicesAsync.when(skipLoadingOnReload: true, 
             loading: () => <Widget>[const _LoadingRow()],
             error: (_, __) => <Widget>[const _ErrorRow()],
             data: (devices) {
@@ -746,7 +746,7 @@ class _SessionHistoryPanel extends StatelessWidget {
                 onTap: onToggle,
               ),
               if (expanded)
-                ...activityAsync.when(
+                ...activityAsync.when(skipLoadingOnReload: true, 
                   loading: () => <Widget>[const _LoadingRow()],
                   error: (_, __) => <Widget>[const _ErrorRow()],
                   data: (events) {

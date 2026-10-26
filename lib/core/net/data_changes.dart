@@ -76,6 +76,16 @@ const _editVerbs = <String>{
   'rename',
 };
 
+/// A notifier that can fetch again without dropping what it holds.
+///
+/// [EditRefreshObserver] asks these to [refresh] rather than rebuilding them:
+/// rebuilding a paged feed threw away every loaded page and the reader's
+/// place in it (founder, 2026-10-25: "it should keep its place wherever
+/// refresh or edit action happened").
+abstract interface class RefreshesInPlace {
+  Future<void> refresh();
+}
+
 /// Whether a successful request with [method] to [path] edited data.
 bool isEditWrite(String method, String path) {
   final m = method.toUpperCase();
@@ -167,7 +177,18 @@ class EditRefreshObserver extends ProviderObserver {
     _pending = null;
     for (final entry in _live.entries.toList()) {
       try {
-        entry.value.refresh(entry.key);
+        final provider = entry.key;
+        if (provider is StateNotifierProvider) {
+          final notifier = entry.value.read(
+            (provider as StateNotifierProvider<StateNotifier<Object?>, Object?>)
+                .notifier,
+          );
+          if (notifier is RefreshesInPlace) {
+            (notifier as RefreshesInPlace).refresh();
+            continue;
+          }
+        }
+        entry.value.refresh(provider);
       } catch (_) {
         // A container that was disposed between the write and now.
         _live.remove(entry.key);

@@ -334,7 +334,7 @@ class _DestinationChoice extends ConsumerWidget {
       children: [
         const Text('Where does this go?', style: AuraText.subtitle),
         const SizedBox(height: AuraSpace.s12),
-        destinations.when(
+        destinations.when(skipLoadingOnReload: true, 
           loading: () => const AuraProductState(
             state: ProductState.loading,
             headline: 'Finding where this can go',

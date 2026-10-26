@@ -131,7 +131,7 @@ class IntegrityArea extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: AuraSpace.s20),
-            summary.when(
+            summary.when(skipLoadingOnReload: true, 
               loading: () => const OperatorLoading(lines: 4),
               error: (_, __) => OperatorFailure(
                 title: 'Integrity queues could not be read',

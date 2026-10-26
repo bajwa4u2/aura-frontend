@@ -45,7 +45,8 @@ class _UpdatesScreenState extends ConsumerState<UpdatesScreen>
 
   Future<void> _load() async {
     setState(() {
-      _loading = true;
+      // A reload keeps what is on screen; only an empty list shows loading.
+      _loading = _items.isEmpty;
       _error = null;
     });
 

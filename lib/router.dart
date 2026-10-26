@@ -756,7 +756,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthAction = isAuthActionPath(path);
 
       // null = unknown (empty /auth/me, error, or still loading) → stay/wait
-      final bool? isVerified = emailVerifiedAsync.when(
+      final bool? isVerified = emailVerifiedAsync.when(skipLoadingOnReload: true, 
         data: (value) => value,
         error: (_, __) => null,
         loading: () => null,
@@ -772,7 +772,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Identity Foundation — same null-means-wait discipline as isVerified
       // above, independent gate.
-      final IdentityState? identityState = identityStateAsync.when(
+      final IdentityState? identityState = identityStateAsync.when(skipLoadingOnReload: true, 
         data: (value) => value,
         error: (_, __) => null,
         loading: () => null,

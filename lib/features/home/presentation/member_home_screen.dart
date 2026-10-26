@@ -296,7 +296,7 @@ class _MemberHomeScreenState extends ConsumerState<MemberHomeScreen> {
                   // ── Held-draft hint (only renders when a draft is in
                   // play); single tap routes back into the compose flow
                   // with the held id pre-loaded.
-                  heldAsync.when(
+                  heldAsync.when(skipLoadingOnReload: true, 
                     data: (held) {
                       final heldMap = _asMap(held);
                       if (heldMap.isEmpty) return const SizedBox.shrink();
@@ -391,7 +391,7 @@ class _PinnedAnnouncementBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(pinnedAnnouncementProvider);
 
-    return async.when(
+    return async.when(skipLoadingOnReload: true, 
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
       data: (a) {
@@ -498,7 +498,7 @@ class _DiscourseStream extends ConsumerWidget {
     // the public home feed. Hidden silently when none.
     final liveAsync = ref.watch(globalDiscoverableLiveProvider);
 
-    return feedAsync.when(
+    return feedAsync.when(skipLoadingOnReload: true, 
       loading: () => const Column(
         children: [
           AuraCardSkeleton(),

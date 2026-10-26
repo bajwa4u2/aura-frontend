@@ -151,7 +151,7 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen> {
               ],
               orElse: () => const <Widget>[],
             ),
-            conversationsAsync.when(
+            conversationsAsync.when(skipLoadingOnReload: true, 
               loading: () => const AuraProductState(
                 state: ProductState.loading,
                 subject: ProductNoun.conversation,

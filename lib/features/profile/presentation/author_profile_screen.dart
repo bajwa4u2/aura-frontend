@@ -1076,7 +1076,10 @@ class _AuthorProfileScreenState
       body: FutureBuilder<_ProfileBundle>(
         future: _bundleFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
+          // A reload keeps the profile on screen (and its scroll); only the
+          // first load waits.
+          if (snapshot.connectionState != ConnectionState.done &&
+              !snapshot.hasData) {
             return const Center(
               child: AuraLoadingState(message: 'Loading profile…'),
             );

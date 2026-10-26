@@ -33,7 +33,7 @@ class FollowingScreen extends ConsumerWidget {
 
     return AuraScaffold(
       title: '@$handle following',
-      child: followingAsync.when(
+      child: followingAsync.when(skipLoadingOnReload: true, 
         // C2 — canonical Follow surfaces speak through the C0 state authority.
         loading: () => const AuraProductState(
           state: ProductState.loading,

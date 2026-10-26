@@ -71,7 +71,7 @@ class IdentityReviewDetail extends ConsumerWidget {
         final wide = constraints.maxWidth >= 980;
         final pad = wide ? AuraSpace.s20 : AuraSpace.s12;
 
-        return submission.when(
+        return submission.when(skipLoadingOnReload: true, 
           loading: () => Padding(
             padding: EdgeInsets.all(pad),
             child: const OperatorLoading(lines: 5),

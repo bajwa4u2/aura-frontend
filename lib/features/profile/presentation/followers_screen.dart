@@ -66,7 +66,7 @@ class _FollowersScreenState extends ConsumerState<FollowersScreen> {
 
     return AuraScaffold(
       title: '@$handle followers',
-      child: followersAsync.when(
+      child: followersAsync.when(skipLoadingOnReload: true, 
         // C2 — canonical Follow surfaces speak through the C0 state authority.
         loading: () => const AuraProductState(
           state: ProductState.loading,

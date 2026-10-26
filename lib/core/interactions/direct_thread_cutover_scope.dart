@@ -104,7 +104,7 @@ class _DirectThreadCutoverScopeState
     final resolved =
         ref.watch(legacyDirectThreadConversationProvider(id));
 
-    return resolved.when(
+    return resolved.when(skipLoadingOnReload: true, 
       loading: () => const AuraProductState(
         state: ProductState.loading,
         subject: ProductNoun.conversation,

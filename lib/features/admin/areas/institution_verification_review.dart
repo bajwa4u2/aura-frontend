@@ -46,7 +46,7 @@ class InstitutionVerificationReviewArea extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final queue = ref.watch(institutionVerificationQueueProvider);
 
-    return queue.when(
+    return queue.when(skipLoadingOnReload: true, 
       loading: () => const AuraProductState(state: ProductState.loading),
       // C0 — say what is TRUE and let the state authority decide how that
       // looks and whether retry is an honest offer.
@@ -352,7 +352,7 @@ class _AuthorityCaseCardState extends ConsumerState<_AuthorityCaseCard> {
             if (item.evidenceKind != null)
               Text('Relying on: ${item.evidenceKind!.label}', style: AuraText.small),
             const SizedBox(height: AuraSpace.md),
-            detailAsync.when(
+            detailAsync.when(skipLoadingOnReload: true, 
               loading: () => const LinearProgressIndicator(minHeight: 2),
               error: (e, _) => Text(
                 e is InstitutionVerificationException

@@ -150,7 +150,7 @@ class _InstitutionPostDetailScreenState
         ],
       ],
       children: [
-        detailAsync.when(
+        detailAsync.when(skipLoadingOnReload: true, 
         loading: () => const WorkspaceLoading(type: WorkspacePageType.record, rows: 2),
         error: (e, _) => AuraErrorState(
           title: 'Could not load post',
@@ -261,7 +261,7 @@ class _InstitutionPostDetailScreenState
                 style: AuraText.subtitle.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: AuraSpace.s10),
-              repliesAsync.when(
+              repliesAsync.when(skipLoadingOnReload: true, 
                 loading: () =>
                     const AuraLoadingState(message: 'Loading replies…'),
                 error: (e, _) => AuraErrorState(

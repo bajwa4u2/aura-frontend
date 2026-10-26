@@ -70,7 +70,7 @@ class ExternalArea extends ConsumerWidget {
       builder: (context, constraints) {
         final pad = constraints.maxWidth >= 900 ? AuraSpace.s20 : AuraSpace.s12;
 
-        return consumers.when(
+        return consumers.when(skipLoadingOnReload: true, 
           loading: () => Padding(
             padding: EdgeInsets.all(pad),
             child: const OperatorLoading(lines: 4),
@@ -326,7 +326,7 @@ class _TenantList extends ConsumerWidget {
     final tenants = ref.watch(operatorExternalTenantsProvider(consumerId));
     final theme = Theme.of(context);
 
-    return tenants.when(
+    return tenants.when(skipLoadingOnReload: true, 
       loading: () => const OperatorLoading(lines: 1),
       // A tenant read failing must not blank the consumer card: everything
       // above it is still true and still worth showing.

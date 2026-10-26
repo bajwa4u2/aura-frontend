@@ -62,7 +62,7 @@ class _ActivityHistoryViewState extends ConsumerState<ActivityHistoryView> {
   Widget build(BuildContext context) {
     final first = ref.watch(activityHistoryFirstPageProvider);
 
-    return first.when(
+    return first.when(skipLoadingOnReload: true, 
       loading: () => const AuraProductState(state: ProductState.loading),
       // C0 — say what is TRUE and let the product-state authority decide how
       // that looks and whether retry is an honest offer.

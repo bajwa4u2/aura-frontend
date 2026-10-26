@@ -389,7 +389,7 @@ class _AssetVideoPreview extends ConsumerWidget {
     final resolved = ref.watch(
       meetingAssetUrlProvider((meetingId: meetingId, assetId: asset.id)),
     );
-    return resolved.when(
+    return resolved.when(skipLoadingOnReload: true, 
       data: (url) {
         if (url == null || url.trim().isEmpty) return const SizedBox.shrink();
         return _withTrace(

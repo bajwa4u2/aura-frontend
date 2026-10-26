@@ -277,7 +277,7 @@ class _InstitutionActivityScreenState
           children: children,
         );
 
-    return firstPage.when(
+    return firstPage.when(skipLoadingOnReload: true, 
       loading: () => page(const [], loading: true),
       error: (e, _) => page([
         WorkspaceEmpty(

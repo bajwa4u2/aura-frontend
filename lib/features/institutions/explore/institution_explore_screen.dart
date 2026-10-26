@@ -292,7 +292,7 @@ class _UnifiedFeedListState extends ConsumerState<_UnifiedFeedList> {
     );
     final feed = ref.watch(institutionExploreFeedPagedProvider(args));
 
-    return feed.when(
+    return feed.when(skipLoadingOnReload: true, 
       loading: () => const WorkspaceLoading(),
       error: (e, _) => WorkspaceEmpty(
         icon: Icons.error_outline_rounded,

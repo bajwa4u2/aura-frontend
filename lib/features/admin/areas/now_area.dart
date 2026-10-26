@@ -74,7 +74,7 @@ class _Attention extends ConsumerWidget {
     final signal = ref.watch(operatorWorkSummaryProvider);
 
     return _AttentionFrame(
-      child: signal.when(
+      child: signal.when(skipLoadingOnReload: true, 
         loading: () => const OperatorLoading(lines: 3),
         // The provider turns transport failures into signals, so reaching here
         // means something unforeseen. Still a read failure, still not a queue.
@@ -368,7 +368,7 @@ class _Health extends ConsumerWidget {
         onPressed: () => context.go(OperatorArea.platform.path),
         child: const Text('Open'),
       ),
-      child: health.when(
+      child: health.when(skipLoadingOnReload: true, 
         loading: () => const OperatorPanel(child: OperatorLoading(lines: 1)),
         error: (_, __) => OperatorFailure(
           title: 'Platform health could not be read',
@@ -549,7 +549,7 @@ class _Changed extends ConsumerWidget {
         onPressed: () => context.go(OperatorArea.record.path),
         child: const Text('Record'),
       ),
-      child: entries.when(
+      child: entries.when(skipLoadingOnReload: true, 
         loading: () => const OperatorPanel(child: OperatorLoading(lines: 2)),
         error: (_, __) => OperatorFailure(
           title: 'Recent decisions could not be read',

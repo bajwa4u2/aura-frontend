@@ -207,7 +207,7 @@ class _GuestWaitingRoomScreenState
         ? ref.watch(meetingByCodeProvider(widget.meetingCode!.trim()))
         : ref.watch(meetingProvider(widget.meetingId));
 
-    return meetingAsync.when(
+    return meetingAsync.when(skipLoadingOnReload: true, 
       loading: () => const GuestShell(
         body: Center(child: CircularProgressIndicator()),
       ),

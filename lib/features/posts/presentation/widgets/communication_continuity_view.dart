@@ -50,7 +50,7 @@ class CommunicationContinuityView extends ConsumerWidget {
 
     final continuityAsync = ref.watch(continuityProvider(postId));
 
-    return continuityAsync.when(
+    return continuityAsync.when(skipLoadingOnReload: true, 
       loading: () => const _ContinuitySkeleton(),
       error: (e, _) => const SizedBox.shrink(),
       data: (result) {

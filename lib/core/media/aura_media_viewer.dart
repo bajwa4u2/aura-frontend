@@ -631,7 +631,7 @@ class _ViewerPage extends ConsumerWidget {
       return const _ViewerMessage('This image is unavailable.');
     }
     final resolved = ref.watch(mediaUrlProvider(id));
-    return resolved.when(
+    return resolved.when(skipLoadingOnReload: true, 
       data: (result) {
         final url = result.url.trim();
         if (url.isEmpty) {
@@ -1081,7 +1081,7 @@ class _ViewerVideo extends ConsumerWidget {
     final id = (item.mediaId ?? '').trim();
     if (id.isEmpty) return const _ViewerMessage('This video is unavailable.');
     final resolved = ref.watch(mediaUrlProvider(id));
-    return resolved.when(
+    return resolved.when(skipLoadingOnReload: true, 
       data: (result) {
         final url = result.url.trim();
         if (url.isEmpty) {

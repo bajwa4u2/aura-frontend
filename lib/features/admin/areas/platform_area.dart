@@ -101,7 +101,7 @@ class _Health extends ConsumerWidget {
 
     final health = ref.watch(platformHealthProvider);
 
-    return health.when(
+    return health.when(skipLoadingOnReload: true, 
       loading: () => const OperatorSection(
         title: 'Is Aura well?',
         child: OperatorLoading(lines: 2),
@@ -184,7 +184,7 @@ class _Fleet extends ConsumerWidget {
 
     final fleet = ref.watch(clientFleetProvider);
 
-    return fleet.when(
+    return fleet.when(skipLoadingOnReload: true, 
       loading: () => const OperatorSection(
         title: 'What is running out there',
         child: OperatorLoading(lines: 3),
@@ -416,7 +416,7 @@ class _Behaviour extends ConsumerWidget {
 
     final flags = ref.watch(adminFeatureFlagsProvider);
 
-    return flags.when(
+    return flags.when(skipLoadingOnReload: true, 
       loading: () => const OperatorSection(
         title: 'What behaviour is switched on',
         child: OperatorLoading(lines: 2),
@@ -687,7 +687,7 @@ class _Retention extends ConsumerWidget {
 
     final status = ref.watch(mediaRetentionProvider);
 
-    return status.when(
+    return status.when(skipLoadingOnReload: true, 
       loading: () => const OperatorSection(
         title: 'What Aura is collecting',
         child: OperatorLoading(lines: 2),

@@ -189,7 +189,7 @@ class _QuestionRecordState extends ConsumerState<QuestionRecord> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(engagementDetailProvider(_key));
-    return async.when(
+    return async.when(skipLoadingOnReload: true, 
       loading: () => _frame(
         header: WorkspaceHeader(title: 'Question', back: widget.back),
         children: const [WorkspaceLoading(type: WorkspacePageType.record, rows: 2)],
@@ -650,7 +650,7 @@ class _MemorySection extends ConsumerWidget {
     return WorkspaceSection(
       title: 'Memory',
       description: 'What the institution has said and promised before, so answers stay consistent.',
-      child: async.when(
+      child: async.when(skipLoadingOnReload: true, 
         loading: () => const WorkspaceLoading(rows: 2),
         error: (e, _) => const Text('Memory could not be loaded just now.', style: AuraText.small),
         data: (m) => _MemoryBody(memory: m, askerName: askerName),

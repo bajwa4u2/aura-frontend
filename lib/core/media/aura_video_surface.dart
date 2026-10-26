@@ -867,7 +867,7 @@ class AuraVideoMedia extends ConsumerWidget {
 
     return ref
         .watch(mediaUrlProvider(id))
-        .when(
+        .when(skipLoadingOnReload: true, 
           data: (result) {
             final url = result.url.trim();
             if (url.isEmpty) {

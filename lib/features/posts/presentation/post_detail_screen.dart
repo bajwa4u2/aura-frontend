@@ -199,7 +199,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
 
                 const SizedBox(height: AuraSpace.s14),
 
-                postAsync.when(
+                postAsync.when(skipLoadingOnReload: true, 
                   data: (post) {
                     // `Post.visibility` is a non-nullable String on
                     // the domain model. Defensive trim() + uppercase
@@ -288,7 +288,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                 Row(
                   children: [
                     const Expanded(child: _SectionLabel(title: 'Responses')),
-                    repliesAsync.when(
+                    repliesAsync.when(skipLoadingOnReload: true, 
                       data: (items) => _CountPill(count: items.length),
                       loading: () => const SizedBox.shrink(),
                       error: (_, __) => const SizedBox.shrink(),
@@ -305,7 +305,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
 
                 const SizedBox(height: AuraSpace.s14),
 
-                repliesAsync.when(
+                repliesAsync.when(skipLoadingOnReload: true, 
                   data: (items) {
                     if (items.isEmpty) {
                       return AuraCard(
@@ -430,7 +430,7 @@ class _InReplyToCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final parentAsync = ref.watch(postProvider(parentId));
-    return parentAsync.when(
+    return parentAsync.when(skipLoadingOnReload: true, 
       loading: () => _frame(
         context,
         child: Row(

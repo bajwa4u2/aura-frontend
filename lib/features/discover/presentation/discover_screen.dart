@@ -235,7 +235,7 @@ class _PeopleSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final page = ref.watch(peopleDiscoveryProvider);
 
-    return page.when(
+    return page.when(skipLoadingOnReload: true, 
       loading: () => const _DomainSection(child: _Skeleton(height: 216)),
       // The domain door in the header still works, so a failed section is
       // absent rather than an error the reader cannot act on.
@@ -282,7 +282,7 @@ class _SpacesSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final page = ref.watch(discoverSpacesPreviewProvider);
 
-    return page.when(
+    return page.when(skipLoadingOnReload: true, 
       loading: () =>
           const _DomainSection(child: _Skeleton(height: 132, count: 2)),
       error: (_, __) => const SizedBox.shrink(),
@@ -317,7 +317,7 @@ class _InstitutionsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final page = ref.watch(discoverInstitutionsPreviewProvider);
 
-    return page.when(
+    return page.when(skipLoadingOnReload: true, 
       loading: () =>
           const _DomainSection(child: _Skeleton(height: 140, count: 2)),
       error: (_, __) => const SizedBox.shrink(),
@@ -353,7 +353,7 @@ class _ArticlesSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final page = ref.watch(discoverArticlesPreviewProvider);
 
-    return page.when(
+    return page.when(skipLoadingOnReload: true, 
       loading: () =>
           const _DomainSection(child: _Skeleton(height: 96, count: 3)),
       error: (_, __) => const SizedBox.shrink(),
@@ -392,7 +392,7 @@ class _SearchResults extends ConsumerWidget {
     final result = ref.watch(discoverSearchResultProvider);
     final narrowed = ref.watch(discoverNarrowedDomainProvider);
 
-    return result.when(
+    return result.when(skipLoadingOnReload: true, 
       // Results stay on screen while the next request is in flight, so typing
       // does not flash the surface back to a spinner on every keystroke.
       loading: () => const _Skeleton(height: 84, count: 4),

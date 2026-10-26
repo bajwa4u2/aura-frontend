@@ -196,7 +196,7 @@ class _InstitutionSpaceRouteScopeState
       ),
     );
 
-    return resolved.when(
+    return resolved.when(skipLoadingOnReload: true, 
       loading: () => const AuraProductState(
         state: ProductState.loading,
         subject: ProductNoun.space,

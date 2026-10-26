@@ -65,7 +65,7 @@ class GrantRequestsArea extends ConsumerWidget {
               style: TextStyle(color: AuraSurface.faint, fontSize: 12.5),
             ),
           ),
-          child: requests.when(
+          child: requests.when(skipLoadingOnReload: true, 
             loading: () => const OperatorLoading(lines: 4),
             error: (_, __) => OperatorFailure(
               title: 'The grant requests could not be loaded',

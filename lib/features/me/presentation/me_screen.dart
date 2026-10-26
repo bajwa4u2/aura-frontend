@@ -149,7 +149,9 @@ class _MeScreenState
   Future<void> _load() async {
     if (mounted) {
       setState(() {
-        _loading = true;
+        // A reload keeps the page on screen (and where it is scrolled to);
+        // only the first load shows the loading state.
+        _loading = _user == null;
         _error = null;
       });
     }

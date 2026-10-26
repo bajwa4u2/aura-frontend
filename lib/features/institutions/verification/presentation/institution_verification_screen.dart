@@ -109,7 +109,7 @@ class _InstitutionVerificationScreenState
       institutionVerificationStandingProvider(widget.institutionId),
     );
 
-    return standing.when(
+    return standing.when(skipLoadingOnReload: true, 
       loading: () => const WorkspacePage(
         type: WorkspacePageType.settings,
         title: 'Verification',

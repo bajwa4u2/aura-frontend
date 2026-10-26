@@ -26,7 +26,7 @@ class MyFeedbackScreen extends ConsumerWidget {
 
     return AuraScaffold(
       title: 'Your feedback',
-      body: async.when(
+      body: async.when(skipLoadingOnReload: true, 
         loading: () => const AuraProductState(
           state: ProductState.loading,
           subject: ProductNoun.feedback,

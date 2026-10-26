@@ -161,7 +161,7 @@ class ModerationReportDetail extends ConsumerWidget {
 
     final report = ref.watch(moderationReportProvider(reportId));
 
-    return report.when(
+    return report.when(skipLoadingOnReload: true, 
       loading: () => const Padding(
         padding: EdgeInsets.all(AuraSpace.s20),
         child: OperatorLoading(lines: 4),
@@ -482,7 +482,7 @@ class MediaAppealDetail extends ConsumerWidget {
 
     final appeal = ref.watch(mediaAppealProvider(appealId));
 
-    return appeal.when(
+    return appeal.when(skipLoadingOnReload: true, 
       loading: () => const Padding(
         padding: EdgeInsets.all(AuraSpace.s20),
         child: OperatorLoading(lines: 4),
@@ -698,7 +698,7 @@ class FeedbackDetail extends ConsumerWidget {
 
     final feedback = ref.watch(operatorFeedbackProvider(feedbackId));
 
-    return feedback.when(
+    return feedback.when(skipLoadingOnReload: true, 
       loading: () => const Padding(
         padding: EdgeInsets.all(AuraSpace.s20),
         child: OperatorLoading(lines: 4),
@@ -1085,7 +1085,7 @@ class SupportCaseDetail extends ConsumerWidget {
 
     final supportCase = ref.watch(operatorSupportCaseProvider(caseId));
 
-    return supportCase.when(
+    return supportCase.when(skipLoadingOnReload: true, 
       loading: () => const Padding(
         padding: EdgeInsets.all(AuraSpace.s20),
         child: OperatorLoading(lines: 4),

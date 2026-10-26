@@ -96,7 +96,8 @@ class _InvitesPanelState extends ConsumerState<InstitutionInvitesPanel>
 
   Future<void> _load() async {
     setState(() {
-      _loading = true;
+      // A reload keeps what is on screen; only an empty list shows loading.
+      _loading = _invites.isEmpty;
       _error = null;
     });
 

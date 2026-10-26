@@ -73,7 +73,8 @@ class _InstitutionUnitContextScreenState extends ConsumerState<InstitutionUnitCo
 
   Future<void> _load() async {
     setState(() {
-      _loading = true;
+      // A reload keeps what is on screen; only the first load shows loading.
+      _loading = _unit == null;
       _error = null;
     });
     try {
