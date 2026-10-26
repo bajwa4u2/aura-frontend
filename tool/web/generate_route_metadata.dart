@@ -473,11 +473,15 @@ $contactBlock
 /// words, read from the same constants the page renders (F3, founder
 /// 2026-09-29). It used to be written separately here and drifted to a
 /// different headline plus investor links the page never showed.
+///
+/// The `id="aura-page-text"` is a contract with the backend's public shell
+/// (aura-backend `withPageText`, 2026-10-26): on a post, article or institution
+/// page it replaces this block with that page's own heading and text.
 String _buildRootCrawlerVisibleBlock() {
   String link(String href, String label) =>
       '<a href="https://auraplatform.org${_attrEscape(href)}" style="color:#c9a55c;text-decoration:underline;">${_htmlEscape(label)}</a>';
   return '''
-  <noscript>
+  <noscript id="aura-page-text">
     <main style="background:#0d1520;color:#e2ecf5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;min-height:100vh;padding:48px 24px;">
       <article style="max-width:720px;margin:0 auto;">
         <p style="margin:0 0 8px 0;color:#c9a55c;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;font-weight:700;">Aura</p>

@@ -1,0 +1,32 @@
+# Aura
+
+> Aura is public conversation that keeps its context. Raise what matters in the open, with people who answer under their real name. Conversations keep their history, so what was said and what was promised are still there later.
+
+Aura is a public-first social platform. People share their day, follow their people, message and call, in every language and script. The institutions in their lives (libraries, schools, councils, organisations) are on Aura too, under their real, verified name: a person can ask a question or raise an issue in public, and the institution answers officially, in its own name, on the record. Aura is free for people, on the web, iPhone, Android and Windows. It is made by Aura Platform LLC of Michigan, USA.
+
+What makes it different from a general social network: verified institutions answer officially, identity and institutional authority are kept separate and shown, and the history of a conversation is kept rather than lost in a feed. What makes it different from a government engagement tool: it is a public social platform people use every day, not a survey or consultation product an agency buys.
+
+## Start here
+
+- [Home](https://auraplatform.org/)
+- [Explore discussions](https://auraplatform.org/discover)
+- [Institutions on Aura](https://auraplatform.org/institutions)
+- [Join Aura](https://auraplatform.org/register)
+
+## About
+
+- [Mission](https://auraplatform.org/mission)
+- [White paper](https://auraplatform.org/white-paper)
+- [Founder](https://auraplatform.org/founder)
+- [Company: Aura Platform LLC](https://company.auraplatform.org/)
+- [Contact](https://auraplatform.org/contact)
+
+## Policies
+
+- [Privacy](https://auraplatform.org/privacy)
+- [Terms](https://auraplatform.org/terms)
+- [Child safety](https://auraplatform.org/child-safety)
+
+## Published content
+
+- [Sitemap of public articles, announcements, institutions and institution posts](https://auraplatform.org/sitemap.xml)

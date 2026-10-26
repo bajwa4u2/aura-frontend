@@ -382,6 +382,14 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '    try_files /sitemap.xml =404;' \
 '  }' \
 '' \
+'  # A FILE THAT IS NOT HERE IS NOT FOUND (2026-10-26). Without this,' \
+'  # /llms.txt, /ads.txt, /wp-login.php and every other made-up file answered' \
+'  # 200 with the app shell, so crawlers recorded a page at each. App routes' \
+'  # have no extension and still reach the app below; real files are served.' \
+'  location ~* \.(?:txt|xml|json|php|aspx?|jsp|cgi|env|ya?ml|ini|bak|sql|zip|gz|tar|rar|md|csv|pdf|map)$ {' \
+'    try_files $uri =404;' \
+'  }' \
+'' \
 '  # Static discovery endpoints must not fall through to the Flutter shell.' \
 '  location = /indexnow-key.txt {' \
 '    default_type text/plain;' \
