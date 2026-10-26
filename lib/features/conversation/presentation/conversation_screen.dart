@@ -73,6 +73,7 @@ import '../../public/widgets/mention_text.dart'
     show openTagReference, resolvedTagRanges;
 import '../../../core/ui/aura_bounded_editor.dart';
 import 'package:aura/core/ui/aura_notice.dart';
+import '../../../core/media/trace/media_corner_mark.dart';
 
 /// Durable ringing/active-call truth for a conversation (founder charter
 /// 2026-08-17). A call must never be reachable ONLY through an ephemeral
@@ -2432,6 +2433,20 @@ class _ConversationAttachment extends ConsumerWidget {
   /// Founder observation, 2026-09-05.
   Widget _withTrace(BuildContext context, Widget child) {
     if (media.trace.isEmpty) return child;
+    // A picture or video takes the mark on its own corner, over the media
+    // with the mark's scrim (media_corner_mark.dart): bottom-start on an
+    // image, bottom-end on a video. A voice note or file has no picture to
+    // sit on, so it keeps the mark beside it on the bubble's surface.
+    if (media.isImage || media.isVideo) {
+      return MediaCornerMark(
+        mark: AuraTraceMark(
+          trace: media.trace,
+          compact: true,
+          onOpen: () => showAuraTrace(context, trace: media.trace),
+        ),
+        child: child,
+      );
+    }
     return Stack(
       children: [
         child,

@@ -72,6 +72,7 @@ import 'local_video_source_stub.dart'
     if (dart.library.html) 'local_video_source_web.dart';
 import 'media_initialization.dart';
 import 'media_url_resolver.dart';
+import 'trace/media_corner_mark.dart';
 
 /// Whether the running platform can decode video in-process.
 ///
@@ -563,15 +564,26 @@ class _AuraVideoSurfaceState extends State<AuraVideoSurface>
 
     final durationLabel = formatVideoDuration(widget.durationMs);
 
+    final cornerMark = MediaCornerMark.of(context);
     final stack = Stack(
       fit: StackFit.expand,
       children: [
-        surface,
+        MediaCornerMark.clear(child: surface),
         if (!_playing) _playAffordance(),
         if (widget.showDuration && durationLabel.isNotEmpty)
           Positioned(top: 12, right: 12, child: _durationChip(durationLabel)),
         if (_autoplayScope != null && _autoplaying && _controller != null)
           Positioned(left: 4, bottom: 4, child: _muteControl()),
+        // TR on the video's own corner (see media_corner_mark.dart). ALWAYS
+        // bottom-end on video, whether or not the mute control is showing:
+        // the bottom-start corner belongs to mute, and a mark that moves with
+        // playback state is not deterministic (founder, 2026-10-26).
+        if (cornerMark != null)
+          PositionedDirectional(
+            end: MediaCornerMark.inset,
+            bottom: MediaCornerMark.inset,
+            child: cornerMark,
+          ),
       ],
     );
 

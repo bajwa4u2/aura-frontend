@@ -5,6 +5,7 @@ import '../ui/aura_surface.dart';
 import 'aura_attachment_image.dart';
 import 'aura_resolvable_attachment_image.dart';
 import 'media_save_button.dart';
+import 'trace/media_corner_mark.dart';
 
 /// Canonical Aura media frame.
 ///
@@ -234,19 +235,37 @@ class AuraMediaFrame extends StatelessWidget {
       );
     }
 
+    // TR on the picture's own corner (see media_corner_mark.dart): this box
+    // is the media, not the slot it is centred in.
+    final cornerMark = MediaCornerMark.of(context);
+    if (cornerMark != null) {
+      framed = Stack(
+        children: [
+          framed,
+          PositionedDirectional(
+            start: MediaCornerMark.inset,
+            bottom: MediaCornerMark.inset,
+            child: cornerMark,
+          ),
+        ],
+      );
+    }
+
     // ── Apply width + height bounds, centred ────────────────────────
     //
     // Centred by default (2026-09-30): on desktop a capped picture is
     // narrower than its card, and start-aligned it hugged the left edge
     // of every feed. A message passes its bubble's side explicitly.
-    return Align(
-      alignment: alignment,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: maxWidth,
-          maxHeight: maxHeight,
+    return MediaCornerMark.clear(
+      child: Align(
+        alignment: alignment,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: maxWidth,
+            maxHeight: maxHeight,
+          ),
+          child: framed,
         ),
-        child: framed,
       ),
     );
   }

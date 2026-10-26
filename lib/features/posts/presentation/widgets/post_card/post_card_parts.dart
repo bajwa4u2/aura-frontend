@@ -13,6 +13,7 @@ import '../../../../../core/ui/aura_space.dart';
 import '../../../../../core/ui/aura_surface.dart';
 import '../../../../../core/ui/aura_text.dart';
 import 'post_card_models.dart';
+import '../../../../../core/media/trace/media_corner_mark.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VISIBILITY META
@@ -295,24 +296,20 @@ class PostCardSingleMediaCard extends StatelessWidget {
     final touch =
         MediaInteractionProfile.resolve(canDecodeVideo: true).pointer ==
             PointerModel.touch;
+    final mark = AuraTraceMark(
+      trace: item.trace,
+      compact: mode == AuraMediaFrameMode.feed,
+      touch: touch,
+      onOpen: () => showAuraTrace(context, trace: item.trace),
+    );
+    // Handed down to the renderer, which puts it on the media's own corner
+    // (media_corner_mark.dart). Stacking it here put it on the slot: beside
+    // a centred picture, or under a video's caption.
+    if (!item.isSvg) return MediaCornerMark(mark: mark, child: child);
     return Stack(
       children: [
         child,
-        // Bound to the media's leading edge, for the reason recorded on
-        // `CanonicalMediaThumb._withTraceMark`: the frame's box is the card's
-        // width and the picture is start-aligned inside it, so a trailing
-        // anchor leaves the mark floating in open space beside the media
-        // rather than on it.
-        PositionedDirectional(
-          start: 6,
-          bottom: 6,
-          child: AuraTraceMark(
-            trace: item.trace,
-            compact: mode == AuraMediaFrameMode.feed,
-            touch: touch,
-            onOpen: () => showAuraTrace(context, trace: item.trace),
-          ),
-        ),
+        PositionedDirectional(start: 6, bottom: 6, child: mark),
       ],
     );
   }

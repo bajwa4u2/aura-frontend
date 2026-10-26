@@ -9,6 +9,7 @@ import 'media_interaction_profile.dart';
 import 'trace/aura_trace_mark.dart';
 import 'trace/aura_trace_surface.dart';
 import 'stored_media.dart';
+import 'trace/media_corner_mark.dart';
 
 /// Renders a single canonical [FeedMedia] entry inside the canonical
 /// [AuraMediaFrame].
@@ -87,35 +88,25 @@ class CanonicalMediaThumb extends StatelessWidget {
             .pointer ==
         PointerModel.touch;
 
+    final mark = AuraTraceMark(
+      trace: media.trace,
+      compact: mode == AuraMediaFrameMode.thumbnail,
+      touch: touch,
+      onOpen: () => showAuraTrace(context, trace: media.trace),
+    );
+
+    // ON THE MEDIA'S OWN CORNER (2026-10-26). This Stack measured the slot,
+    // and since 2026-09-30 the frame CENTRES the picture inside it, so a
+    // bottom-start mark floated in the empty space beside it. Images and
+    // video now receive the mark and place it on their own box
+    // (media_corner_mark.dart); anything else keeps it on the slot.
+    if (media.isImage || media.isVideo) {
+      return MediaCornerMark(mark: mark, child: child);
+    }
     return Stack(
       children: [
         child,
-        // BOUND TO THE MEDIA, NOT TO THE SPACE AROUND IT.
-        //
-        // This was `right: 4`, and on a wide surface that put the mark
-        // hundreds of pixels away from the thing it discloses. The reason is
-        // `AuraMediaFrame`: it ends in an `Align` that EXPANDS to the full
-        // available width and start-aligns a width-bounded image inside it.
-        // So the box this Stack measures is the card, while the picture is a
-        // narrow shape at its leading edge, and a right-anchored mark floats
-        // alone in empty space reading as a stamp on the page.
-        //
-        // The leading edge is where the image reliably is, in exactly the
-        // same box, at every width. Directional so it follows the frame's own
-        // `centerStart` alignment under RTL rather than fighting it. Bottom
-        // keeps it clear of the save control the frame puts top-trailing, and
-        // the leading edge keeps it clear of the play affordance a video
-        // centres.
-        PositionedDirectional(
-          start: 4,
-          bottom: 4,
-          child: AuraTraceMark(
-            trace: media.trace,
-            compact: mode == AuraMediaFrameMode.thumbnail,
-            touch: touch,
-            onOpen: () => showAuraTrace(context, trace: media.trace),
-          ),
-        ),
+        PositionedDirectional(start: 4, bottom: 4, child: mark),
       ],
     );
   }

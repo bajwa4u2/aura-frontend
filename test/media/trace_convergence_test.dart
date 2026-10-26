@@ -60,7 +60,12 @@ const knownExclusions = <String, String>{
           'Mounting here too would double the mark on the collage path.',
   'lib/core/media/aura_media_frame.dart':
       'A layout primitive. It is handed a URL and a shape and knows nothing '
-          'about a media identity, so it has no evidence to disclose.',
+          'about a media identity, so it has no evidence to disclose. It only '
+          'PLACES a mark its caller handed down (MediaCornerMark), on the '
+          'picture\'s own corner.',
+  'lib/core/media/trace/media_corner_mark.dart':
+      'The hand-down channel, not a consumer: it carries a caller\'s mark to '
+          'the renderer that knows where the media is painted (2026-10-26).',
   'lib/core/media/aura_stored_media.dart':
       'The presentation authority for one stored object — poster, play '
           'affordance, failure states. Its callers own the media identity and '

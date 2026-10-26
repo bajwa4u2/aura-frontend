@@ -14,6 +14,7 @@ import '../../application/meetings_provider.dart';
 import '../../domain/meeting_asset.dart';
 import 'meeting_section.dart';
 import 'package:aura/core/ui/aura_notice.dart';
+import '../../../../core/media/trace/media_corner_mark.dart';
 
 /// One asset surface for the whole lifecycle. The same widget renders
 /// "Materials" (preparation briefing pack), "Shared in meeting" files, and
@@ -435,6 +436,20 @@ Widget _withTrace(BuildContext context, MeetingAsset asset, Widget child) {
   final touch =
       MediaInteractionProfile.resolve(canDecodeVideo: true).pointer ==
           PointerModel.touch;
+  // A picture or recording takes the mark on its own corner
+  // (media_corner_mark.dart); a file or link keeps it on the preview's slot.
+  final mime = (asset.mimeType ?? '').toLowerCase();
+  if (mime.startsWith('image/') || mime.startsWith('video/')) {
+    return MediaCornerMark(
+      mark: AuraTraceMark(
+        trace: asset.trace,
+        compact: true,
+        touch: touch,
+        onOpen: () => showAuraTrace(context, trace: asset.trace),
+      ),
+      child: child,
+    );
+  }
   return Stack(
     children: [
       child,
