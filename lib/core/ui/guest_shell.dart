@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../navigation/return_path_frame.dart';
+import 'aura_mark_on_dark.dart';
 import 'aura_space.dart';
 import 'aura_surface.dart';
 import 'aura_text.dart';
@@ -211,6 +212,7 @@ class _GuestFooter extends StatelessWidget {
             'assets/brand/AURA_logo_master.svg',
             height: 11,
             fit: BoxFit.contain,
+            colorMapper: const AuraMarkOnDark(),
           ),
         ],
       ),

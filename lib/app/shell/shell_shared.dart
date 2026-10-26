@@ -1,4 +1,5 @@
 import '../../core/ui/aura_chamber.dart';
+import '../../core/ui/aura_mark_on_dark.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -20,7 +21,9 @@ class AuraShellWordmark extends StatelessWidget {
   final VoidCallback onTap;
 
   static const String _logoAsset = 'assets/brand/AURA_logo_master.svg';
-  static const double _logoHeight = 40;
+  /// 44 inside the 48 px bar (was 40 with 4 px of padding): at 40 the ring
+  /// drew 1.6 px and each tick 1.2 px, too fine to read as the mark.
+  static const double _logoHeight = 44;
 
   @override
   Widget build(BuildContext context) {
@@ -33,12 +36,13 @@ class AuraShellWordmark extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AuraSpace.s4,
-            vertical: AuraSpace.s4,
+            vertical: 2,
           ),
           child: SvgPicture.asset(
             _logoAsset,
             height: _logoHeight,
             fit: BoxFit.contain,
+            colorMapper: const AuraMarkOnDark(),
           ),
         ),
       ),
