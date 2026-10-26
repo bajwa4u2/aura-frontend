@@ -72,11 +72,14 @@ def read_master() -> tuple[str, dict]:
 def wordmark_polygons(body: str) -> list[list[tuple[float, float]]]:
     """The outlined glyphs, as polygons in master coordinates."""
     polys = []
+    # One path per letter; each `M ... Z` subpath is one contour (a counter
+    # is a further subpath of its letter, cut by even-odd containment below).
     for d in re.findall(r'<path d="([^"]+)"', body):
-        pts = [tuple(float(v) for v in m.split())
-               for m in re.findall(r'[ML]([-\d.]+ [-\d.]+)', d)]
-        if len(pts) >= 3:
-            polys.append(pts)
+        for sub in re.findall(r'M[^MZ]*Z?', d):
+            pts = [tuple(float(v) for v in m.split())
+                   for m in re.findall(r'[ML]([-\d.]+ [-\d.]+)', sub)]
+            if len(pts) >= 3:
+                polys.append(pts)
     if not polys:
         raise SystemExit('wordmark group contains no paths')
     return polys
