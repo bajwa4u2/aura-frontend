@@ -18,9 +18,11 @@ NOTHING HERE INVENTS IDENTITY
     fallback face on any machine without it, and is not reproducible off
     Windows at all.
 
-Only the tagline still needs an installed face. That is marketing copy rather
-than identity, so a fallback chain is acceptable -- but it fails loudly rather
-than silently substituting something else.
+  * the tagline is the public home page's own headline, read from
+    lib/features/home/presentation/public_home_copy.dart (2026-10-25: the old
+    line, "A space for thoughtful writing and responsible discourse", described
+    a writing space, not Aura), set in Aura's text face Public Sans from
+    assets/fonts -- no installed system font is needed any more.
 """
 from __future__ import annotations
 
@@ -35,14 +37,16 @@ MARK = ROOT / 'assets/store/android/adaptive_foreground.png'
 OUT = ROOT / 'assets/store/android/feature_graphic_1024x500.png'
 
 WIDTH, HEIGHT = 1024, 500
-TAGLINE = 'A space for thoughtful writing and responsible discourse'
+HOME_COPY = ROOT / 'lib/features/home/presentation/public_home_copy.dart'
+TAGLINE_FONT = ROOT / 'assets/fonts/PublicSans-500.ttf'
 
-SERIF_CANDIDATES = [
-    'C:/Windows/Fonts/times.ttf',
-    '/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf',
-    '/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf',
-    '/System/Library/Fonts/Supplemental/Times New Roman.ttf',
-]
+
+def tagline() -> str:
+    m = re.search(r"publicHomeHeadline\s*=\s*'([^']+)'",
+                  HOME_COPY.read_text(encoding='utf-8'))
+    if not m:
+        raise SystemExit('publicHomeHeadline not found in public_home_copy.dart')
+    return m.group(1)
 
 MARK_HEIGHT = 178
 WORDMARK_HEIGHT = 96
@@ -138,13 +142,8 @@ def mark_image(target_height: int) -> Image.Image:
     return mark.resize((round(mark.width * scale), target_height), Image.LANCZOS)
 
 
-def serif(size: int) -> ImageFont.FreeTypeFont:
-    for path in SERIF_CANDIDATES:
-        if pathlib.Path(path).exists():
-            return ImageFont.truetype(path, size)
-    raise SystemExit(
-        'no serif face found for the tagline; add one to SERIF_CANDIDATES '
-        'rather than letting the poster fall back to a different face')
+def tagline_font(size: int) -> ImageFont.FreeTypeFont:
+    return ImageFont.truetype(str(TAGLINE_FONT), size)
 
 
 def main() -> None:
@@ -156,7 +155,8 @@ def main() -> None:
 
     mark = mark_image(MARK_HEIGHT)
     word = render_wordmark(polys, WORDMARK_HEIGHT, tokens['wordmark'])
-    tag_font = serif(TAG_SIZE)
+    tag_font = tagline_font(TAG_SIZE)
+    TAGLINE = tagline()
 
     g_box = draw.textbbox((0, 0), TAGLINE, font=tag_font)
     g_w, g_h = g_box[2] - g_box[0], g_box[3] - g_box[1]
