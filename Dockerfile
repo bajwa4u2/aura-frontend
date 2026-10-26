@@ -179,6 +179,14 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '  location = /main.dart.js { add_header Cache-Control "no-cache"; }' \
 '  location ~* \.part\.js$ { try_files $uri =404; add_header Cache-Control "no-cache"; }' \
 '' \
+'  # Flutter assets and icons keep their names across builds, so they are' \
+'  # NOT content-addressed and must revalidate too. Under the immutable rule' \
+'  # the new wordmark (DD-64, 2026-10-25) stayed invisible to returning' \
+'  # browsers for up to 30 days. ^~ wins over the regex below; etag 304s' \
+'  # keep an unchanged file cheap.' \
+'  location ^~ /assets/ { try_files $uri =404; add_header Cache-Control "no-cache"; }' \
+'  location ^~ /icons/ { try_files $uri =404; add_header Cache-Control "no-cache"; }' \
+'' \
 '  # Cache truly content-addressed assets aggressively (hashed names).' \
 '  location ~* \.(?:js|css|png|jpg|jpeg|gif|svg|webp|ico|woff2?)$ {' \
 '    try_files $uri =404;' \
