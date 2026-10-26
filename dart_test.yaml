@@ -10,8 +10,8 @@ tags:
     description: "Golden image tests — platform-sensitive rendering; excluded from CI."
   visual:
     description: >-
-      The operator render harness. It WRITES pictures for a person to look at;
-      the comparison is incidental and is sensitive to the host's font
-      rasterization, so a 0.04% antialiasing difference must not fail the
-      suite. Run it deliberately:
-        flutter test test/admin/operator_render_harness_test.dart --update-goldens
+      The operator render harness: every operator area at six widths through
+      its real repository, failing on any exception or overflow. It keeps no
+      reference images (founder, 2026-10-26) and runs with the ordinary suite.
+      To look at the pictures:
+        OPERATOR_SHOTS=build/operator_shots flutter test test/admin/operator_render_harness_test.dart

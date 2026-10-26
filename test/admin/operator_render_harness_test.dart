@@ -1,4 +1,4 @@
-@Tags(['visual', 'golden'])
+@Tags(['visual'])
 library;
 
 import 'dart:convert';
@@ -27,6 +27,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:ui' as ui;
+import 'package:flutter/rendering.dart';
 
 /// A RENDER HARNESS, NOT AN ASSERTION.
 ///
@@ -51,10 +53,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// is available; the harness degrades rather than failing on a machine that
 /// has none.
 ///
-/// Run: flutter test test/admin/operator_render_harness_test.dart --update-goldens
-/// Output: goldens/operator/*.png
+/// NO REFERENCE IMAGES (founder, 2026-10-26: "keep only if necessary").
+/// The 117 committed PNGs were compared pixel for pixel, so the approved
+/// logo change (DD-63/64) failed every one of them while nothing about the
+/// console was wrong. What this harness is needed for is the rest: every
+/// operator area, at every width, through its real repository and parser,
+/// must render without an exception or an overflow, and the `inspect`
+/// checks below must hold. That now runs with the ordinary suite.
+///
+/// To LOOK at the pictures, write them out:
+///   OPERATOR_SHOTS=build/operator_shots flutter test test/admin/operator_render_harness_test.dart
 void main() {
-  const outDir = 'goldens/operator';
+  final outDir = Platform.environment['OPERATOR_SHOTS'] ?? '';
 
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
@@ -64,7 +74,7 @@ void main() {
     // is the honest starting state rather than a workaround.
     SharedPreferences.setMockInitialValues(const {});
     await _loadRealFont();
-    Directory(outDir).createSync(recursive: true);
+    if (outDir.isNotEmpty) Directory(outDir).createSync(recursive: true);
   });
 
   /// THE SIX WIDTHS THE FOUNDER NAMED, and one of them is why this list is
@@ -616,7 +626,22 @@ Future<void> _render(
     await tester.pump(const Duration(milliseconds: 16));
   }
 
-  await expectLater(find.byKey(captureKey), matchesGoldenFile(outPath));
+  // Rendered, whole, and without an exception or overflow. A picture is
+  // written only when someone asked to look (OPERATOR_SHOTS).
+  expect(tester.takeException(), isNull, reason: '$path at $size');
+  // With no operator the shell refuses the area, which is the point of that case.
+  if (adminMe != null) {
+    expect(find.byWidget(area), findsOneWidget, reason: '$path at $size');
+  }
+  if (!outPath.startsWith('/')) {
+    final boundary =
+        tester.renderObject(find.byKey(captureKey)) as RenderRepaintBoundary;
+    final png = await tester.binding.runAsync(() async {
+      final image = await boundary.toImage(pixelRatio: 1.0);
+      return image.toByteData(format: ui.ImageByteFormat.png);
+    });
+    File(outPath).writeAsBytesSync(png!.buffer.asUint8List());
+  }
 
   await inspect?.call(tester);
 
