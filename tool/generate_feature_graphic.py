@@ -30,7 +30,7 @@ import re
 from PIL import Image, ImageDraw, ImageFont
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-MASTER = ROOT / 'assets/brand/AURA_logo_master.svg'
+MASTER = ROOT / 'assets/brand/AURA_logo_master_v2.svg'
 MARK = ROOT / 'assets/store/android/adaptive_foreground.png'
 OUT = ROOT / 'assets/store/android/feature_graphic_1024x500.png'
 

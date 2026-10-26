@@ -2,7 +2,7 @@
 //
 // Aura — store/platform asset generator.
 //
-// SOURCE OF TRUTH: assets/brand/AURA_logo_master.svg
+// SOURCE OF TRUTH: assets/brand/AURA_logo_master_v2.svg
 //
 // The master SVG is intentionally minimal (gold ring + 8 ticks + AURA
 // wordmark in the same line). This generator rasterizes the *mark*
@@ -148,10 +148,10 @@ const _storeRoot = 'assets/store';
 
 Future<void> main(List<String> args) async {
   print('Aura — store asset generator');
-  print('Source: assets/brand/AURA_logo_master.svg');
+  print('Source: assets/brand/AURA_logo_master_v2.svg');
 
   // The master is parsed, not mirrored: these values ARE the identity.
-  final master = File('$_projectRoot/assets/brand/AURA_logo_master.svg');
+  final master = File('$_projectRoot/assets/brand/AURA_logo_master_v2.svg');
   if (!master.existsSync()) {
     stderr.writeln('FATAL: master SVG not found at ${master.path}');
     exit(2);
@@ -181,7 +181,7 @@ Future<void> main(List<String> args) async {
 
   // Copy the master SVG into the source slot so the asset pack ships
   // with its own provenance.
-  master.copySync('$_projectRoot/$_storeRoot/source/AURA_logo_master.svg');
+  master.copySync('$_projectRoot/$_storeRoot/source/AURA_logo_master_v2.svg');
 
   // Generated outputs are tracked here so the validator at the end can
   // confirm every file landed at the right dimensions.

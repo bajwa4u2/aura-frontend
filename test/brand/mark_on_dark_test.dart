@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// The mark's tick colours come from the master file, not from this code.
 void main() {
-  final svg = File('assets/brand/AURA_logo_master.svg').readAsStringSync();
+  final svg = File('assets/brand/AURA_logo_master_v2.svg').readAsStringSync();
   final ticks = RegExp(r'<g id="ticks"[^>]*>').firstMatch(svg)!.group(0)!;
 
   String hex(Color c) =>

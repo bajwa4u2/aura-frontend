@@ -173,7 +173,7 @@ void main() {
 
   group('the master is the only place the identity is defined', () {
     final tool = File('tool/generate_store_assets.dart');
-    final masterFile = File('assets/brand/AURA_logo_master.svg');
+    final masterFile = File('assets/brand/AURA_logo_master_v2.svg');
 
     test('the generator PARSES the master rather than restating it', () {
       // Orchestrate's mark drifted because its generator drew a logo in code.
@@ -187,7 +187,7 @@ void main() {
 
       expect(source, contains('_parseMaster'),
           reason: 'the generator must parse the master');
-      expect(source, contains('AURA_logo_master.svg'));
+      expect(source, contains('AURA_logo_master_v2.svg'));
 
       for (final restated in const [
         'const _ringRadiusRef',

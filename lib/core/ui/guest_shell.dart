@@ -209,7 +209,7 @@ class _GuestFooter extends StatelessWidget {
             style: AuraText.micro.copyWith(color: AuraSurface.faint),
           ),
           SvgPicture.asset(
-            'assets/brand/AURA_logo_master.svg',
+            'assets/brand/AURA_logo_master_v2.svg',
             height: 11,
             fit: BoxFit.contain,
             colorMapper: const AuraMarkOnDark(),

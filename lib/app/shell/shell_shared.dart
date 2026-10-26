@@ -20,7 +20,10 @@ class AuraShellWordmark extends StatelessWidget {
 
   final VoidCallback onTap;
 
-  static const String _logoAsset = 'assets/brand/AURA_logo_master.svg';
+  /// Renamed with the new wordmark (DD-64): the old name was cached
+  /// "immutable" for 30 days in every browser that had visited, so only a new
+  /// address could show the new lettering at once. /assets/ now revalidates.
+  static const String _logoAsset = 'assets/brand/AURA_logo_master_v2.svg';
   /// 44 inside the 48 px bar (was 40 with 4 px of padding): at 40 the ring
   /// drew 1.6 px and each tick 1.2 px, too fine to read as the mark.
   static const double _logoHeight = 44;
