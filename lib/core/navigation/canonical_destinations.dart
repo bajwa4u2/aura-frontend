@@ -5,9 +5,9 @@
 /// the app sends a member when it has an event, a notification or an
 /// invitation in hand.
 ///
-/// Phase 5 retired the `/me/correspondence/...` family. The router declares no
-/// `errorBuilder`, so anything still pointing there lands on GoRouter's default
-/// not-found page. The rule is the same on both sides of the wire: a
+/// Phase 5 retired the `/me/correspondence/...` family. Anything still
+/// pointing there lands on the router's `errorBuilder` not-found page
+/// (`lib/router.dart`). The rule is the same on both sides of the wire: a
 /// destination is minted only from an identifier that names a surviving
 /// product object.
 ///

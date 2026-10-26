@@ -335,6 +335,31 @@ const _routes = <_RouteMeta>[
     ],
     crawlerVisibleContactEmail: 'privacy@auraplatform.org',
   ),
+  // PUBLIC READING SURFACES THE SITEMAP ADVERTISES (2026-10-26).
+  //
+  // Without a variant each of these was served the root shell, whose canonical
+  // names the home page, so the sitemap listed three addresses that each
+  // declared themselves to be the home page and none could be indexed. Wording
+  // is the screens' own (announcements_screen.dart, discover_screen.dart,
+  // spaces_discovery_screen.dart).
+  _RouteMeta(
+    path: '/announcements',
+    title: 'Announcements — Aura Platform',
+    description: 'Official platform notices and public communications.',
+  ),
+  _RouteMeta(
+    path: '/discover',
+    title: 'Discover — Aura Platform',
+    description:
+        'People, spaces, institutions and writing beyond what you already follow.',
+  ),
+  _RouteMeta(
+    path: '/spaces',
+    title: 'Spaces — Aura Platform',
+    description:
+        'Public contexts for continuing conversation. Follow one to keep up '
+        'with it, or open it to take part.',
+  ),
 ];
 
 /// Adds [_socialAssetVersion] to every `/social/` image URL in [html].

@@ -80,6 +80,28 @@ COPY --from=build /app/build/web /usr/share/nginx/html
 RUN rm -f /etc/nginx/conf.d/default.conf \
  && mkdir -p /etc/nginx/templates \
  && printf '%s\n' \
+'# WHICH TOP-LEVEL ADDRESSES THE APP ACTUALLY HAS (2026-10-26).' \
+'#' \
+'# The SPA fallback answered every path with the app shell at 200, so' \
+'# /zzz and /privacy were indistinguishable from outside and every typo or' \
+'# stale link was a soft 404 to a search engine. A first path segment the' \
+'# router declares is known; anything else still gets the app (which shows' \
+'# its own not-found page) but with status 404. lib/router.dart stays the' \
+'# authority on routes: test/web/route_truth_test.dart fails if a segment it' \
+'# declares is missing here. Same pattern as bajwawrites.com.' \
+'map $uri $aura_route_known {' \
+'  "~^/$" 1;' \
+'  "~^/(_boot|account-deletion|activity|admin|ai|announcements|articles|aura|auth|author)(/|$)" 1;' \
+'  "~^/(calls|change-password|child-safety|complete-identity|compose|contact|conversations|create)(/|$)" 1;' \
+'  "~^/(deck|demo|devices|direct|direct-intent|discover|enter-institution|feedback|forgot-password)(/|$)" 1;' \
+'  "~^/(founder|home|i|institution|institutions|investors|invite|join|login|me|media|meet|meetings)(/|$)" 1;' \
+'  "~^/(messages|mission|notifications|p|patrons|personal-details|posts|privacy|public|realtime)(/|$)" 1;' \
+'  "~^/(register|reset-password|restore-account|safety|saved|search|security|settings|share|spaces)(/|$)" 1;' \
+'  "~^/(support|supporters|terms|thread|trust-safety|u|updates|verify-email|verify-identity)(/|$)" 1;' \
+'  "~^/(verify-pending|white-paper)(/|$)" 1;' \
+'  default 0;' \
+'}' \
+'' \
 '# Canonical application origin. auraplatform.org is the ONE canonical' \
 '# browser origin. app.auraplatform.org stays reachable as a legacy entry' \
 '# point but is not a second supported origin: two equal origins mean two' \
@@ -437,7 +459,20 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '  # Microsoft cert bots into a broken http://host:8080/privacy/ URL.' \
 '  # Order matters: file → directory-index file → directory → SPA root.' \
 '  location / {' \
-'    try_files $uri $uri/index.html $uri/ /index.html;' \
+'    try_files $uri $uri/index.html $uri/ @spa;' \
+'  }' \
+'' \
+'  # A real address renders the app shell at 200; a wrong one renders the' \
+'  # same shell at 404, and the app shows its own not-found page. error_page' \
+'  # WITHOUT "=" keeps the 404 while serving the shell as the body; adding' \
+'  # "=" would reset it to 200 and put us back where we started.' \
+'  location @spa {' \
+'    add_header Cache-Control "no-cache";' \
+'    error_page 404 /index.html;' \
+'    if ($aura_route_known = 0) {' \
+'      return 404;' \
+'    }' \
+'    try_files /index.html =404;' \
 '  }' \
 '}' \
 > /etc/nginx/templates/default.conf.template
