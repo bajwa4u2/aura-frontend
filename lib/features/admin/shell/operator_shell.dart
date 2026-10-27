@@ -751,7 +751,11 @@ class _FinanceSheetEntry extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return ListTile(
+    return Material(
+      // See-through, so the tap ripple shows on the coloured side panel
+      // (Flutter 3.47 asserts otherwise; Codemagic #70, 27 Oct 2026).
+      type: MaterialType.transparency,
+      child: ListTile(
       leading: Icon(
         FinanceDestination.icon,
         color: selected ? AuraSurface.accent : AuraSurface.muted,
@@ -764,6 +768,7 @@ class _FinanceSheetEntry extends ConsumerWidget {
         ),
       ),
       onTap: onTap,
+    ),
     );
   }
 }

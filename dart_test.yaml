@@ -12,6 +12,7 @@ tags:
     description: >-
       The operator render harness: every operator area at six widths through
       its real repository, failing on any exception or overflow. It keeps no
-      reference images (founder, 2026-10-26) and runs with the ordinary suite.
+      reference images (founder, 2026-10-26) and runs with the ordinary suite;
+      Codemagic's iOS TestFlight lane skips it (text metrics differ there).
       To look at the pictures:
         OPERATOR_SHOTS=build/operator_shots flutter test test/admin/operator_render_harness_test.dart

@@ -241,7 +241,12 @@ class OperatorPanel extends StatelessWidget {
               : tone!.ink.withValues(alpha: 0.45),
         ),
       ),
-      child: child,
+      // A see-through Material between the coloured panel and its rows, so a
+      // ListTile's tap ripple is drawn on the panel rather than hidden behind
+      // it. Flutter 3.47 asserts on exactly this ("ListTile background color
+      // or ink splashes may be invisible"), which failed the iOS build's
+      // render checks (Codemagic #70, 27 Oct 2026).
+      child: Material(type: MaterialType.transparency, child: child),
     );
 
     if (tone == null) return panel;
