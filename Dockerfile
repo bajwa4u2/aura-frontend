@@ -112,6 +112,12 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '  listen       ${PORT};' \
 '  listen  [::]:${PORT};' \
 '  server_name  app.auraplatform.org www.auraplatform.org;' \
+'  # HSTS for a year (SOC 2, 2026-10-26). No includeSubDomains: not every' \
+'  # subdomain of the apex is verified HTTPS. nginx does not inherit' \
+'  # add_header into a location that sets its own, so every such location' \
+'  # repeats it; the API copy of the header is hidden on proxied routes.' \
+'  add_header Strict-Transport-Security "max-age=31536000" always;' \
+'  proxy_hide_header Strict-Transport-Security;' \
 '' \
 '  # ANDROID APP LINKS ARE VERIFIED AGAINST THE HOST THAT WAS TAPPED.' \
 '  #' \
@@ -154,6 +160,12 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '  listen       ${PORT} default_server;' \
 '  listen  [::]:${PORT} default_server;' \
 '  server_name  _;' \
+'  # HSTS for a year (SOC 2, 2026-10-26). No includeSubDomains: not every' \
+'  # subdomain of the apex is verified HTTPS. nginx does not inherit' \
+'  # add_header into a location that sets its own, so every such location' \
+'  # repeats it; the API copy of the header is hidden on proxied routes.' \
+'  add_header Strict-Transport-Security "max-age=31536000" always;' \
+'  proxy_hide_header Strict-Transport-Security;' \
 '  root   /usr/share/nginx/html;' \
 '  index  index.html;' \
 '' \
@@ -194,26 +206,27 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '  # users on the old build for up to 30 days — the root cause of the' \
 '  # "stale frontend after deploy" problem. no-cache still allows etag 304s.' \
 '  # Exact (=) and the .part.js regex are matched before the immutable rule.' \
-'  location = /index.html { add_header Cache-Control "no-cache"; }' \
-'  location = /flutter_service_worker.js { add_header Cache-Control "no-cache"; }' \
-'  location = /flutter_bootstrap.js { add_header Cache-Control "no-cache"; }' \
-'  location = /version.json { add_header Cache-Control "no-cache"; }' \
-'  location = /main.dart.js { add_header Cache-Control "no-cache"; }' \
-'  location ~* \.part\.js$ { try_files $uri =404; add_header Cache-Control "no-cache"; }' \
+'  location = /index.html { add_header Cache-Control "no-cache"; add_header Strict-Transport-Security "max-age=31536000" always; }' \
+'  location = /flutter_service_worker.js { add_header Cache-Control "no-cache"; add_header Strict-Transport-Security "max-age=31536000" always; }' \
+'  location = /flutter_bootstrap.js { add_header Cache-Control "no-cache"; add_header Strict-Transport-Security "max-age=31536000" always; }' \
+'  location = /version.json { add_header Cache-Control "no-cache"; add_header Strict-Transport-Security "max-age=31536000" always; }' \
+'  location = /main.dart.js { add_header Cache-Control "no-cache"; add_header Strict-Transport-Security "max-age=31536000" always; }' \
+'  location ~* \.part\.js$ { try_files $uri =404; add_header Cache-Control "no-cache"; add_header Strict-Transport-Security "max-age=31536000" always; }' \
 '' \
 '  # Flutter assets and icons keep their names across builds, so they are' \
 '  # NOT content-addressed and must revalidate too. Under the immutable rule' \
 '  # the new wordmark (DD-64, 2026-10-25) stayed invisible to returning' \
 '  # browsers for up to 30 days. ^~ wins over the regex below; etag 304s' \
 '  # keep an unchanged file cheap.' \
-'  location ^~ /assets/ { try_files $uri =404; add_header Cache-Control "no-cache"; }' \
-'  location ^~ /icons/ { try_files $uri =404; add_header Cache-Control "no-cache"; }' \
+'  location ^~ /assets/ { try_files $uri =404; add_header Cache-Control "no-cache"; add_header Strict-Transport-Security "max-age=31536000" always; }' \
+'  location ^~ /icons/ { try_files $uri =404; add_header Cache-Control "no-cache"; add_header Strict-Transport-Security "max-age=31536000" always; }' \
 '' \
 '  # Cache truly content-addressed assets aggressively (hashed names).' \
 '  location ~* \.(?:js|css|png|jpg|jpeg|gif|svg|webp|ico|woff2?)$ {' \
 '    try_files $uri =404;' \
 '    expires 30d;' \
 '    add_header Cache-Control "public, max-age=2592000, immutable";' \
+'    add_header Strict-Transport-Security "max-age=31536000" always;' \
 '  }' \
 '' \
 '  # Dynamic share pages. Proxied to the NestJS share controller so' \
@@ -309,6 +322,7 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '  location @static_shell {' \
 '    try_files /index.html =404;' \
 '    add_header Cache-Control "no-cache";' \
+'    add_header Strict-Transport-Security "max-age=31536000" always;' \
 '  }' \
 '' \
 '  # Governed media door (same-origin first hop). THIS BLOCK EXISTS FOR' \
@@ -401,6 +415,7 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '  location @static_sitemap {' \
 '    default_type application/xml;' \
 '    add_header Cache-Control "public, max-age=600";' \
+'    add_header Strict-Transport-Security "max-age=31536000" always;' \
 '    try_files /sitemap.xml =404;' \
 '  }' \
 '' \
@@ -416,6 +431,7 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '  location = /indexnow-key.txt {' \
 '    default_type text/plain;' \
 '    add_header Cache-Control "public, max-age=3600";' \
+'    add_header Strict-Transport-Security "max-age=31536000" always;' \
 '    try_files $uri =404;' \
 '  }' \
 '' \
@@ -442,6 +458,7 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '  location = / {' \
 '    try_files /index.html =404;' \
 '    add_header Cache-Control "no-cache";' \
+'    add_header Strict-Transport-Security "max-age=31536000" always;' \
 '  }' \
 '' \
 '  # Overview and Demo pages are plain HTML with stable names. Without a' \
@@ -450,6 +467,7 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '  location ~ ^/(?:deck|demo)(?:/|/index\.html)?$ {' \
 '    try_files $uri/index.html $uri =404;' \
 '    add_header Cache-Control "no-cache";' \
+'    add_header Strict-Transport-Security "max-age=31536000" always;' \
 '  }' \
 '' \
 '  # Flutter SPA fallback. The `$uri/index.html` clause lets a request' \
@@ -468,6 +486,7 @@ RUN rm -f /etc/nginx/conf.d/default.conf \
 '  # "=" would reset it to 200 and put us back where we started.' \
 '  location @spa {' \
 '    add_header Cache-Control "no-cache";' \
+'    add_header Strict-Transport-Security "max-age=31536000" always;' \
 '    error_page 404 /index.html;' \
 '    if ($aura_route_known = 0) {' \
 '      return 404;' \
