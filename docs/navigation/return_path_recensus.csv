@@ -112,6 +112,7 @@ route,sample,renders,protected,deeplink_semantic,deeplink_destination,in_app_sem
 /me/preferences,/me/preferences,true,false,parentReturn,/me,stackReturn,true,COMPLIANT
 /me/blocked,/me/blocked,true,false,parentReturn,/me,stackReturn,true,COMPLIANT
 /me/search-listing,/me/search-listing,true,false,parentReturn,/me,stackReturn,true,COMPLIANT
+/me/download-data,/me/download-data,true,false,parentReturn,/me,stackReturn,true,COMPLIANT
 /me/settings/communications,/me/settings/communications,true,false,parentReturn,/me,stackReturn,true,COMPLIANT
 /me/follow-requests,/me/follow-requests,true,false,parentReturn,/me,stackReturn,true,COMPLIANT
 /me/invitations,/me/invitations,true,false,parentReturn,/me,stackReturn,true,COMPLIANT

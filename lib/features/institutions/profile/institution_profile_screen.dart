@@ -20,6 +20,8 @@ import '../ui/institution_ds.dart';
 import '../workspace/workspace_page.dart';
 import 'package:aura/core/ui/aura_notice.dart';
 import '../../../../core/net/reload_after_edits.dart';
+import '../../me/data/data_export_repository.dart';
+import '../../me/presentation/widgets/data_export_panel.dart';
 
 /// Phase 6.6c — Institution Profile / Workspace Identity hub.
 ///
@@ -478,6 +480,15 @@ class _ProfileBody extends ConsumerWidget {
         if (identity?.id != null && identity!.id.isNotEmpty)
           _UnitsSection(institutionId: identity!.id),
 
+        // THE INSTITUTION'S OWN DATA, for its administrators (2026-10-27).
+        // Gated on governance standing, the canonical owner-or-admin rule;
+        // the server refuses anyone else regardless (POST
+        // /v1/institutions/:id/export, ADMIN and above, once a day).
+        if (identity != null &&
+            identity!.id.isNotEmpty &&
+            identity!.governsInstitution)
+          InstitutionDataExportSection(institutionId: identity!.id),
+
         if (slug.isNotEmpty &&
             identity?.id != null &&
             identity!.id.isNotEmpty)
@@ -498,6 +509,52 @@ Future<void> _copyLink(BuildContext context, String publicLink) async {
   await Clipboard.setData(ClipboardData(text: publicLink));
   if (!context.mounted) return;
   AuraNotice.copied(context, 'Public link copied.');
+}
+
+/// "Your institution's data" — a copy of the institution's own posts,
+/// announcements and member list, for its administrators.
+class InstitutionDataExportSection extends ConsumerWidget {
+  const InstitutionDataExportSection({
+    super.key,
+    required this.institutionId,
+    this.panel,
+  });
+
+  final String institutionId;
+
+  /// For tests and review screenshots only.
+  final Widget? panel;
+
+  static const intro =
+      'Download a copy of this institution\'s posts, its announcements and '
+      'its member list (each member\'s handle, name and role). Administrators '
+      'can do this once a day.';
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return WorkspaceSection(
+      title: 'Your institution\'s data',
+      description: 'A copy for administrators',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            intro,
+            style: AuraText.small.copyWith(color: AuraSurface.muted, height: 1.45),
+          ),
+          const SizedBox(height: AuraSpace.s14),
+          panel ??
+              DataExportPanel(
+                buttonLabel: 'Download this institution\'s data',
+                dialogTitle: 'Save the institution\'s data',
+                fetch: () => ref
+                    .read(dataExportRepositoryProvider)
+                    .exportInstitution(institutionId),
+              ),
+        ],
+      ),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

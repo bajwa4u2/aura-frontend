@@ -250,6 +250,7 @@ class NavigationAuthority {
   static const String preferencesRoute = '/me/preferences';
   static const String blockedPeopleRoute = '/me/blocked';
   static const String searchListingRoute = '/me/search-listing';
+  static const String dataExportRoute = '/me/download-data';
   static const String communicationPreferencesRoute =
       '/me/settings/communications';
   /// Where a person asks to have their identity verified.

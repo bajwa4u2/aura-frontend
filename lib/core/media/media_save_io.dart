@@ -18,12 +18,13 @@ Future<MediaSaveResult> persistMediaBytes({
   required Uint8List bytes,
   required String filename,
   required String mimeType,
+  String dialogTitle = 'Save media',
 }) async {
   final isMobile = Platform.isAndroid || Platform.isIOS;
 
   try {
     final outputPath = await FilePicker.platform.saveFile(
-      dialogTitle: 'Save media',
+      dialogTitle: dialogTitle,
       fileName: filename,
       // On Android/iOS file_picker writes [bytes] itself. On desktop the
       // platform only returns a destination path — passing bytes there

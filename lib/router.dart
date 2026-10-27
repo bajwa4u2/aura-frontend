@@ -178,6 +178,7 @@ import 'features/institutions/desk/desk_models.dart';
 import 'features/institutions/desk/desk_screen.dart';
 import 'features/me/presentation/my_questions_screen.dart';
 import 'app/not_found_screen.dart';
+import 'features/me/presentation/data_export_screen.dart';
 
 const String kInstitutionDashboardRoute = '/institution/dashboard';
 const String kInstitutionCreateRoute = '/institution/create';
@@ -198,6 +199,7 @@ const String kMeCommunicationsRoute = '/me/settings/communications';
 const String kMePreferencesRoute = '/me/preferences';
 const String kMeBlockedRoute = '/me/blocked';
 const String kMeSearchListingRoute = '/me/search-listing';
+const String kMeDataExportRoute = '/me/download-data';
 const String kRouterBootRoute = '/_boot';
 
 const String kMessagesRoute = '/messages';
@@ -1943,6 +1945,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             // (founder ruling 2026-09-26: only with their opt-in).
             path: kMeSearchListingRoute,
             builder: (_, __) => const SearchListingScreen(),
+          ),
+          GoRoute(
+            // A copy of the person's own data, once a day (SOC 2 privacy,
+            // 2026-10-27; backend POST /v1/me/export).
+            path: kMeDataExportRoute,
+            builder: (_, __) => const DataExportScreen(),
           ),
           GoRoute(
             path: kMeCommunicationsRoute,

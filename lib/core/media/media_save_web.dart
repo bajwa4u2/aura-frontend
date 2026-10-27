@@ -15,6 +15,7 @@ Future<MediaSaveResult> persistMediaBytes({
   required Uint8List bytes,
   required String filename,
   required String mimeType,
+  String dialogTitle = 'Save media',
 }) async {
   try {
     final blob = web.Blob(

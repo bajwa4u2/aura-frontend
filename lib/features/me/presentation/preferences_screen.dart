@@ -212,6 +212,12 @@ class PreferencesScreen extends ConsumerWidget {
         title: 'Data and account',
         children: [
           MeSectionRow(
+            leading: Icons.download_rounded,
+            title: 'Download my data',
+            subtitle: 'A copy of what you have put into Aura, once a day',
+            onTap: () => context.push(NavigationAuthority.dataExportRoute),
+          ),
+          MeSectionRow(
             leading: Icons.delete_outline_rounded,
             title: 'Delete your account',
             // Consequence named on the row itself, before anyone taps. The

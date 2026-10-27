@@ -1243,6 +1243,17 @@
   "verdict": "COMPLIANT"
  },
  {
+  "route": "/me/download-data",
+  "sample": "/me/download-data",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "parentReturn",
+  "deepLinkDestination": "/me",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
   "route": "/me/settings/communications",
   "sample": "/me/settings/communications",
   "renders": true,

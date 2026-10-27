@@ -302,6 +302,9 @@ bool isMemberShellPath(String path) {
       path == '/me/preferences' ||
       path == '/me/blocked' ||
       path == '/me/search-listing' ||
+      // A copy of this account's own data (2026-10-27). MEMBER: it exports
+      // what the signed-in person put into Aura and nothing else.
+      path == '/me/download-data' ||
       path == '/settings/communications' ||
       path == '/security' ||
       // The private canonical identity: legal name, date of birth, declared
