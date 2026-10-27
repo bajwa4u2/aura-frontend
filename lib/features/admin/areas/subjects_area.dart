@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/product/temporal.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
 import '../../../core/ui/aura_surface.dart';
@@ -355,6 +356,7 @@ class _PeopleList extends ConsumerWidget {
                     ? person.email
                     : person.person.displayName,
                 subtitle: person.email,
+                detail: subjectSeenLine(person.createdAt, person.lastActiveAt),
                 state: person.status,
                 // OPERATOR AUTHORITY, or nothing. Almost nobody holds one,
                 // and the directory says nothing rather than inventing a rank
@@ -454,6 +456,20 @@ String _standingWord(String standing) => switch (standing) {
       _ => standing.toLowerCase(),
     };
 
+/// When a person joined and was last seen, for the directory row.
+///
+/// The directory is newest-first and carried no dates, so six accounts from
+/// 2 to 22 Oct 2026 read to the founder as daily sign-ups. Calendar-aware
+/// ("Today, 7:42 PM" / "Yesterday, 9:16 AM" / a date), from the one temporal
+/// authority, never `toLocal()`.
+String subjectSeenLine(DateTime joined, DateTime? lastSeen) {
+  // Full date and time, always with the year (founder rule: dates always
+  // carry their time), so an old account never reads as a recent one.
+  String when(DateTime t) => AuraTemporal.fullShort(t);
+  final seen = lastSeen == null ? 'Never signed in' : 'Last seen ${when(lastSeen)}';
+  return 'Joined ${when(joined)} · $seen';
+}
+
 class _SubjectRow extends StatelessWidget {
   const _SubjectRow({
     required this.title,
@@ -461,10 +477,14 @@ class _SubjectRow extends StatelessWidget {
     required this.state,
     required this.onTap,
     this.trailing,
+    this.detail,
   });
 
   final String title;
   final String subtitle;
+
+  /// A quiet third line (joined / last seen), people only.
+  final String? detail;
   final String state;
   final String? trailing;
   final VoidCallback onTap;
@@ -510,6 +530,18 @@ class _SubjectRow extends StatelessWidget {
                       style: const TextStyle(
                           fontSize: 12, color: AuraSurface.muted),
                     ),
+                    if (detail != null && detail!.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        detail!,
+                        // Two lines, so a narrow row keeps "Last seen"
+                        // whole rather than cutting it to "Yes…".
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 11.5, color: AuraSurface.faint),
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -285,7 +285,10 @@ class AdminUserSummary {
           ? 'ACTIVE'
           : _str(json['status']).toUpperCase(),
       createdAt: _parseDate(json['createdAt']) ?? DateTime.now(),
-      lastActiveAt: _parseDate(json['lastActiveAt'] ?? json['lastActive']),
+      // `lastSeenAt` is the server's name since 2026-10-27 (latest session
+      // use); the older names are kept so an older server still parses.
+      lastActiveAt: _parseDate(
+          json['lastSeenAt'] ?? json['lastActiveAt'] ?? json['lastActive']),
     );
   }
 
