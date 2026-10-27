@@ -30,11 +30,11 @@ dependencies:
   firebase_messaging: ^15.2.10
 
   # Networking
-  dio: ^5.7.0
-  socket_io_client: ^3.0.2
+  dio: ^5.11.1
+  socket_io_client: ^3.1.6
 
   # Local persistence
-  shared_preferences: ^2.2.3
+  shared_preferences: ^2.5.6
 
   # Runtime app/build version + platform metadata for canonical client identity
   # (Phase 2 of cross-platform release governance). Sent on every HTTP request
@@ -43,12 +43,12 @@ dependencies:
   package_info_plus: ^8.0.0
 
   # Date formatting (direct dependency — used by CreateMeetingScreen)
-  intl: ^0.20.0
+  intl: ^0.20.3
 
   # External links
-  url_launcher: ^6.3.0
+  url_launcher: ^6.3.3
   # Reads the App Store country only (US storefront may link to web billing).
-  in_app_purchase_storekit: 0.4.11+2
+  in_app_purchase_storekit: 0.4.15
   # Platform-owned store review. Android uses Google Play In-App Review and
   # iOS uses SKStoreReviewController -- the OS decides whether a prompt is
   # actually shown, and it deliberately gives no result back. That is the
@@ -57,19 +57,19 @@ dependencies:
   in_app_review: ^2.0.9
 
   # Media + file picking
-  image_picker: ^1.1.2
+  image_picker: ^1.2.4
   # Direct, so the Android Photo Picker can be switched on explicitly --
   # image_picker_android defaults `useAndroidPhotoPicker` to FALSE, which
   # sends every picker call to the legacy file browser.
   image_picker_android: ^0.8.13
   # Direct, because media_acquisition.dart imports it for the picker's
   # platform options; a transitive import can vanish with any picker update.
-  image_picker_platform_interface: ^2.11.1
+  image_picker_platform_interface: ^2.11.2
   # Pure-Dart image library. The app's own content_normalizer.dart decodes
   # and re-encodes with it, so it is an app dependency, not a dev-only one
   # (it was declared dev-only while production code imported it). Also used by
   # tool/generate_store_assets.dart to rasterize the master Aura SVG.
-  image: ^4.8.0
+  image: ^4.12.0
   file_picker: ^10.3.10
   record: ^6.2.0
   # Platform-secure credential storage, first-party per platform.
@@ -80,7 +80,7 @@ dependencies:
   win32: ^5.5.3
   ffi: ^2.1.0
   cached_network_image: ^3.3.1
-  video_player: ^2.11.1
+  video_player: ^2.14.1
   flutter_webrtc: ^1.4.1
   # Native permission STATUS and settings recovery. flutter_webrtc can only
   # trigger the OS prompt as a side effect of getUserMedia; it cannot ask what
@@ -92,7 +92,7 @@ dependencies:
   wakelock_plus: ^1.2.8
 
   # SVG support (for Aura logo)
-  flutter_svg: ^2.0.10
+  flutter_svg: ^2.3.0
 
   # Render white paper markdown in-app
   flutter_markdown: ^0.7.3
@@ -105,16 +105,16 @@ dependencies:
 
   flutter_web_plugins:
     sdk: flutter
-  html: ^0.15.6
+  html: ^0.15.7
   http: ^1.6.0
-  web: ^1.1.1
+  web: ^1.1.2
   # Grapheme-cluster counting. Already transitive through Flutter; declared
   # directly because CompositionAuthority measures length the same way
   # TextField(maxLength:) does, and that agreement is behaviour, not detail.
   characters: ^1.4.0
-  desktop_drop: ^0.7.1
-  pasteboard: ^0.5.0
-  video_player_win: ^3.3.0
+  desktop_drop: ^0.8.4
+  pasteboard: ^0.6.0
+  video_player_win: ^3.3.1
   qr_flutter: ^4.1.0
   share_plus: ^12.0.2
   # Android 13+ confirms every copy itself; Aura reads the API level once
@@ -144,7 +144,7 @@ dev_dependencies:
   # it is guarding is worse than no gate, so this reads it properly. It is
   # already in the lock file as a transitive dependency; naming it here makes
   # it importable by tooling without adding anything to the app.
-  archive: ^4.0.0
+  archive: ^4.5.2
   # NATIVE CERTIFICATION HARNESS.
   #
   # Calls, Live, Meetings, Notifications and Interactions are cross-platform
@@ -161,7 +161,7 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   flutter_lints: ^4.0.0
-  msix: ^3.16.8
+  msix: ^3.18.0
 
 dependency_overrides:
   record_linux: ^1.3.0
