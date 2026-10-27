@@ -177,6 +177,7 @@ import 'features/feedback/presentation/my_feedback_screen.dart';
 import 'features/institutions/desk/desk_models.dart';
 import 'features/institutions/desk/desk_screen.dart';
 import 'features/me/presentation/my_questions_screen.dart';
+import 'app/not_found_screen.dart';
 
 const String kInstitutionDashboardRoute = '/institution/dashboard';
 const String kInstitutionCreateRoute = '/institution/create';
@@ -663,26 +664,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     // everywhere else, which leaves go_router's own default untouched.
     initialLocation: kWindowsActivationPath,
     refreshListenable: refresh,
-    errorBuilder: (context, state) => Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-            const SizedBox(height: 16),
-            SelectableText(
-              'Route not found: ${state.uri.path}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => GoRouter.of(context).go('/'),
-              child: const Text('Go home'),
-            ),
-          ],
-        ),
-      ),
-    ),
+    // An address the app does not have (founder-approved design, 2026-10-26).
+    errorBuilder: (context, state) => NotFoundScreen(address: state.uri.path),
     redirect: (context, state) {
       final path = state.uri.path;
       final currentLocation = state.uri.toString();
