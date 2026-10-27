@@ -655,7 +655,7 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-/// Spaces strip section — heading + horizontal scroll of curated
+/// Spaces strip section — one drifting row of curated
 /// public-discourse spaces. Backend doesn't yet expose a public spaces
 /// endpoint; until it does, the strip ships with calibrated topical
 /// seeds (civic / climate / tech / education / health / local) routed
@@ -665,14 +665,8 @@ class _SpacesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Spaces', style: AuraText.subtitle),
-        SizedBox(height: AuraSpace.s10),
-        PublicSpacesStrip(),
-      ],
-    );
+    // One drifting row with its own header (2026-10-26); see PublicSpacesStrip.
+    return const PublicSpacesStrip();
   }
 }
 
