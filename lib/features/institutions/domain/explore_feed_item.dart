@@ -24,7 +24,14 @@ sealed class ExploreFeedItem {
     if (kind == 'INSTITUTION_POST') {
       return ExploreInstitutionPost.fromJson(json);
     }
-    return ExploreUserPost.fromJson(json);
+    // Only a person's post is read as one. Any other kind (an announcement or
+    // an article, which the public feed now carries) is skipped rather than
+    // drawn as a broken person post, so the server can add them here later
+    // without breaking this build (2026-10-27).
+    if (kind == 'POST' || kind == 'USER_POST') {
+      return ExploreUserPost.fromJson(json);
+    }
+    return null;
   }
 }
 
