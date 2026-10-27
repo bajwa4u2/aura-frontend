@@ -1,0 +1,22 @@
+# Dependency updates (SOC 2 vulnerability management, founder 2026-10-26).
+# Weekly, minor and patch grouped into one pull request per ecosystem, a small
+# open-PR limit so nothing piles up. Security updates are separate and arrive
+# as soon as GitHub has an advisory, once Dependabot security updates are
+# enabled in the repository's Settings > Code security.
+version: 2
+updates:
+  - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 3
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    labels:
+      - "dependencies"
