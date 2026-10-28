@@ -168,6 +168,32 @@
       }
     ],
     "pushDeliveryAttempts": [],
-    "otherOwnerHolders": 1
+    "otherOwnerHolders": 1,
+    "accountHistory": [
+      {
+        "event": "restored",
+        "at": "2026-07-03T00:00:00.000Z",
+        "method": "self_serve_email_code",
+        "reason": null,
+        "by": {
+          "id": "cmfixture0pr00pi01rm3fyglq",
+          "handle": "rowan",
+          "displayName": "Rowan Ellis",
+          "avatarUrl": null
+        }
+      },
+      {
+        "event": "closed",
+        "at": "2026-07-02T00:00:00.000Z",
+        "method": "operator",
+        "reason": "Duplicate sign-up.",
+        "by": {
+          "id": "cmfixture0pr01pi01rm3fyglq",
+          "handle": "sam",
+          "displayName": "Sam Iyer",
+          "avatarUrl": null
+        }
+      }
+    ]
   }
 }

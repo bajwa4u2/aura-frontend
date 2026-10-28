@@ -66,4 +66,52 @@ void main() {
     expect(p.accountEnded, isFalse);
     expect(p.recoverableUntil, isNull);
   });
+
+  // HISTORY (2026-10-28): a closed account said "No decisions recorded".
+  test('closures and restorations read newest first, with who and why', () {
+    final p = AdminPersonDetail.fromJson({
+      'id': 'u-1',
+      'handle': 'p',
+      'displayName': 'P',
+      'email': 'p@example.test',
+      'status': 'ACTIVE',
+      'createdAt': '2026-10-28T00:34:19.000Z',
+      'accountHistory': [
+        {
+          'event': 'restored',
+          'at': '2026-10-29T01:00:00.000Z',
+          'method': 'self_serve_email_code',
+          'reason': null,
+          'by': {'id': 'u-1', 'handle': 'p', 'displayName': 'P'},
+        },
+        {
+          'event': 'closed',
+          'at': '2026-10-28T03:49:00.000Z',
+          'method': 'operator',
+          'reason': 'Duplicate sign-up',
+          'by': {'id': 'op-1', 'handle': 'ops', 'displayName': 'Operator'},
+        },
+        // An event this build does not know is left out, not misnamed.
+        {'event': 'merged', 'at': '2026-10-27T00:00:00.000Z'},
+      ],
+    });
+    expect(p.accountHistory, hasLength(2));
+    expect(p.accountHistory.first.closed, isFalse);
+    final closure = p.accountHistory.last;
+    expect(closure.closed, isTrue);
+    expect(closure.byOperator, isTrue);
+    expect(closure.reason, 'Duplicate sign-up');
+    expect(closure.by?.userId, 'op-1');
+  });
+
+  test('a person record without account history has none', () {
+    final p = AdminPersonDetail.fromJson({
+      'id': 'u-2',
+      'handle': 'p',
+      'displayName': 'P',
+      'email': 'p@example.test',
+      'createdAt': '2026-10-28T00:34:19.000Z',
+    });
+    expect(p.accountHistory, isEmpty);
+  });
 }

@@ -1825,6 +1825,51 @@ class AdminConvergenceReport {
 /// response. Nothing in the client called it: the old console understood a
 /// person only as a row in `/admin/users`, so account standing, operator
 /// authority and delivery trouble were three screens that never met.
+/// One closure or restoration of a person's account, from the audit log.
+class AdminAccountEvent {
+  const AdminAccountEvent({
+    required this.closed,
+    required this.at,
+    this.method,
+    this.reason,
+    this.by,
+  });
+
+  /// True for a closure, false for a restoration.
+  final bool closed;
+  final DateTime at;
+
+  /// `operator`, `self_serve` or `self_serve_email_code`.
+  final String? method;
+  final String? reason;
+  final AuraPersonIdentity? by;
+
+  bool get byOperator => method == 'operator';
+
+  /// Null for an event this build does not know, so it is left out rather
+  /// than shown as something it is not.
+  static AdminAccountEvent? fromJson(Map<String, dynamic> json) {
+    final event = (json['event'] ?? '').toString();
+    final at = DateTime.tryParse((json['at'] ?? '').toString());
+    if (at == null || (event != 'closed' && event != 'restored')) return null;
+    String? text(dynamic v) {
+      final s = (v ?? '').toString().trim();
+      return s.isEmpty ? null : s;
+    }
+
+    return AdminAccountEvent(
+      closed: event == 'closed',
+      at: at,
+      method: text(json['method']),
+      reason: text(json['reason']),
+      by: json['by'] is Map
+          ? AuraPersonIdentity.fromJson(
+              Map<String, dynamic>.from(json['by'] as Map))
+          : null,
+    );
+  }
+}
+
 class AdminPersonDetail {
   const AdminPersonDetail({
     required this.person,
@@ -1844,10 +1889,14 @@ class AdminPersonDetail {
     this.country,
     this.accountEnded = false,
     this.recoverableUntil,
+    this.accountHistory = const <AdminAccountEvent>[],
   });
 
   final AuraPersonIdentity person;
   final String email;
+
+  /// Closures and restorations of the account, newest first.
+  final List<AdminAccountEvent> accountHistory;
 
   /// The account has ended: deleted by the person, or closed by an operator.
   /// Not the same as disabled: it cannot be restored from the console, only by
@@ -1935,6 +1984,14 @@ class AdminPersonDetail {
       country: _s(body['country']).isEmpty ? null : _s(body['country']),
       accountEnded: body['accountEnded'] == true,
       recoverableUntil: _date(body['recoverableUntil']),
+      accountHistory: body['accountHistory'] is List
+          ? (body['accountHistory'] as List)
+              .whereType<Map>()
+              .map((e) =>
+                  AdminAccountEvent.fromJson(Map<String, dynamic>.from(e)))
+              .whereType<AdminAccountEvent>()
+              .toList(growable: false)
+          : const <AdminAccountEvent>[],
       grants: admin['grants'] is List
           ? (admin['grants'] as List)
               .whereType<Map>()

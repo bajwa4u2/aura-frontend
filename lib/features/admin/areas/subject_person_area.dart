@@ -666,15 +666,20 @@ class _PersonHistory extends ConsumerWidget {
     }
 
     final verification = ref.watch(personVerificationProvider(userId));
+    // Closures and restorations come with the person record, not the
+    // verification record, so the panel reads both.
+    final detail = ref.watch(personDetailProvider(userId)).valueOrNull;
+    final accountEvents =
+        detail?.accountHistory ?? const <AdminAccountEvent>[];
 
-    return verification.when(skipLoadingOnReload: true, 
+    return verification.when(skipLoadingOnReload: true,
       loading: () => const OperatorSection(
         title: 'History',
         child: OperatorLoading(lines: 2),
       ),
       error: (_, __) => const SizedBox.shrink(),
       data: (v) {
-        if (v.history.isEmpty) {
+        if (v.history.isEmpty && accountEvents.isEmpty) {
           return const OperatorSection(
             title: 'History',
             child: OperatorPanel(
@@ -692,6 +697,11 @@ class _PersonHistory extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                for (final event in accountEvents)
+                  _AccountEventRow(
+                    event: event,
+                    subjectId: detail?.id ?? userId,
+                  ),
                 for (final record in v.history)
                   Padding(
                     padding: const EdgeInsets.only(bottom: AuraSpace.s12),
@@ -761,6 +771,81 @@ class _PersonHistory extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// One closure or restoration in the History timeline: what happened, who
+/// did it, when, and the reason the operator gave.
+class _AccountEventRow extends StatelessWidget {
+  const _AccountEventRow({required this.event, required this.subjectId});
+
+  final AdminAccountEvent event;
+  final String subjectId;
+
+  @override
+  Widget build(BuildContext context) {
+    final by = event.by;
+    final String who;
+    if (by == null) {
+      who = event.byOperator ? 'an operator' : 'unknown';
+    } else if (by.userId == subjectId) {
+      who = 'the person';
+    } else {
+      who = by.displayName.isEmpty ? '@${by.handle}' : by.displayName;
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AuraSpace.s12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            margin: const EdgeInsets.only(top: 6),
+            decoration: const BoxDecoration(
+              color: AuraSurface.accent,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: AuraSpace.s12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  event.closed ? 'Account closed' : 'Account restored',
+                  style: const TextStyle(
+                    color: AuraSurface.ink,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'By $who · ${AuraTemporal.fullShort(event.at)}',
+                  style: const TextStyle(
+                    color: AuraSurface.muted,
+                    fontSize: 12,
+                    height: 1.35,
+                  ),
+                ),
+                if (event.reason != null) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    event.reason!,
+                    style: const TextStyle(
+                      color: AuraSurface.muted,
+                      fontSize: 12,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
