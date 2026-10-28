@@ -1842,10 +1842,18 @@ class AdminPersonDetail {
     this.disabledAt,
     this.city,
     this.country,
+    this.accountEnded = false,
+    this.recoverableUntil,
   });
 
   final AuraPersonIdentity person;
   final String email;
+
+  /// The account has ended: deleted by the person, or closed by an operator.
+  /// Not the same as disabled: it cannot be restored from the console, only by
+  /// the person from the sign-in screen until [recoverableUntil].
+  final bool accountEnded;
+  final DateTime? recoverableUntil;
 
   /// The server's own word: ACTIVE or DISABLED. Never recomputed here — a
   /// second opinion about whether an account is disabled is a second answer.
@@ -1925,6 +1933,8 @@ class AdminPersonDetail {
       disabledAt: _date(body['disabledAt']),
       city: _s(body['city']).isEmpty ? null : _s(body['city']),
       country: _s(body['country']).isEmpty ? null : _s(body['country']),
+      accountEnded: body['accountEnded'] == true,
+      recoverableUntil: _date(body['recoverableUntil']),
       grants: admin['grants'] is List
           ? (admin['grants'] as List)
               .whereType<Map>()

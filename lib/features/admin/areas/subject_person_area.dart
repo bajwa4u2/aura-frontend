@@ -16,6 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../ui/operator_states.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/product/temporal.dart';
 import '../../../core/trust/verification.dart';
 import '../../../core/ui/aura_radius.dart';
 import '../../../core/ui/aura_space.dart';
@@ -29,6 +30,7 @@ import '../domain/operator_routes.dart';
 import '../ui/operator_action.dart';
 import '../ui/operator_kit.dart';
 import 'record_area.dart' show readableReason;
+import 'subjects_area.dart' show subjectPeopleProvider;
 import 'package:aura/core/ui/aura_notice.dart';
 
 final personVerificationProvider = FutureProvider.autoDispose
@@ -860,9 +862,11 @@ class _StandingBlock extends ConsumerWidget {
         final canWrite = authority.can(OperatorCapability.usersWrite);
         return OperatorSection(
           title: 'Standing',
-          subtitle: p.isDisabled
-              ? 'This account cannot be used'
-              : 'This account is in good standing',
+          subtitle: p.accountEnded
+              ? 'This account has been closed'
+              : p.isDisabled
+                  ? 'This account cannot be used'
+                  : 'This account is in good standing',
           child: OperatorPanel(
             tone: p.isDisabled ? OperatorTone.danger : null,
             child: Column(
@@ -890,7 +894,22 @@ class _StandingBlock extends ConsumerWidget {
                   value: '${p.devices.where((d) => d.isActive).length} active '
                       'of ${p.devices.length}',
                 ),
-                if (canWrite) ...[
+                if (p.accountEnded) ...[
+                  // AN ENDED ACCOUNT IS NOT A DISABLED ONE. The console cannot
+                  // restore it; only the person can, from the sign-in screen,
+                  // while the recovery window is open (27 Oct 2026).
+                  const SizedBox(height: AuraSpace.s12),
+                  Text(
+                    p.recoverableUntil == null
+                        ? 'Closed. Only the person can restore it, from the '
+                            'sign-in screen.'
+                        : 'Closed. Only the person can restore it, from the '
+                            'sign-in screen, until '
+                            '${AuraTemporal.fullShort(p.recoverableUntil!)}.',
+                    style: const TextStyle(
+                        color: AuraSurface.muted, fontSize: 12, height: 1.4),
+                  ),
+                ] else if (canWrite) ...[
                   const SizedBox(height: AuraSpace.s16),
                   Align(
                     alignment: Alignment.centerLeft,
@@ -909,6 +928,17 @@ class _StandingBlock extends ConsumerWidget {
                             onPressed: () =>
                                 _setStanding(context, ref, p, false),
                           ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      icon: const Icon(Icons.person_remove_outlined, size: 16),
+                      label: const Text('Close this account'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AuraSurface.dangerInk,
+                      ),
+                      onPressed: () => _close(context, ref, p),
+                    ),
                   ),
                 ] else ...[
                   const SizedBox(height: AuraSpace.s12),
@@ -981,6 +1011,61 @@ class _StandingBlock extends ConsumerWidget {
       ),
     );
     if (done) ref.invalidate(personDetailProvider(userId));
+  }
+
+  /// Closing is account deletion, decided by an operator: the same ending the
+  /// person gets from their own settings. Disabling stops sign-in and keeps
+  /// everything; closing removes their details (27 Oct 2026).
+  Future<void> _close(
+    BuildContext context,
+    WidgetRef ref,
+    AdminPersonDetail person,
+  ) async {
+    final done = await runOperatorAction(
+      context,
+      OperatorAction(
+        title: 'Close this account',
+        subject: person.person.displayName.isEmpty
+            ? person.email
+            : '${person.person.displayName} · ${person.email}',
+        detail: 'The same as the person deleting their account themselves. '
+            'Use it for an account that should not exist, such as a '
+            'duplicate or abandoned sign-up.',
+        confirmLabel: 'Close account',
+        destructive: true,
+        requiresReason: true,
+        reasonLabel: 'Why',
+        consequences: [
+          const OperatorConsequence(
+            text: 'Their name, email and profile details are removed.',
+            tone: OperatorTone.danger,
+            icon: Icons.person_remove_outlined,
+          ),
+          const OperatorConsequence(
+            text: 'They are signed out everywhere and cannot sign in.',
+            tone: OperatorTone.warn,
+            icon: Icons.devices_rounded,
+          ),
+          const OperatorConsequence(
+            text: 'They can restore it themselves from the sign-in screen '
+                'for 30 days. The console cannot restore it.',
+            tone: OperatorTone.warn,
+            icon: Icons.history_rounded,
+          ),
+          OperatorConsequence.recorded('This decision and your reason'),
+        ],
+        perform: (reason) async {
+          await ref
+              .read(adminRepositoryProvider)
+              .closeAccount(person.id, reason: (reason ?? '').trim());
+          return 'The account is closed. The decision is recorded.';
+        },
+      ),
+    );
+    if (done) {
+      ref.invalidate(personDetailProvider(userId));
+      ref.invalidate(subjectPeopleProvider);
+    }
   }
 }
 

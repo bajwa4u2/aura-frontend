@@ -193,6 +193,16 @@ class AdminRepository {
     });
   }
 
+  /// Close someone's account. USERS_WRITE.
+  ///
+  /// The same ending as the person deleting it themselves: details removed,
+  /// every session ended, restorable by them from the sign-in screen for the
+  /// recovery window. The server refuses the operator's own account and
+  /// anyone holding operator authority.
+  Future<void> closeAccount(String userId, {required String reason}) async {
+    await _dio.post('/v1/admin/users/$userId/close', data: {'reason': reason});
+  }
+
   /// Grant a verified identity class. IDENTITY_VERIFICATION_WRITE.
   ///
   /// The authority requires a reason and refuses a second active record for
