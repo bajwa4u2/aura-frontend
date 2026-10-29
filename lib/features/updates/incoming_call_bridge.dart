@@ -338,7 +338,10 @@ class IncomingCallBridgeNotifier
     state = state.where((item) => _str(item['id']) != id).toList();
   }
 
-  void remove(String id) {
+  ///
+  /// [reason] is what Android's call stack is told: `declined` when the
+  /// person said no here, `expired` when the ring simply ran out.
+  void remove(String id, {String reason = 'declined'}) {
     if (id.isEmpty) return;
     // Local-timeout/accept/decline/dismiss removal — tombstone the
     // associated session too (Part G), so this presentation-side decision
@@ -351,6 +354,13 @@ class IncomingCallBridgeNotifier
         _guard.recordClear(sid);
         // Local decision — the person dismissed or declined on this device.
         IosCallKit.instance.reportEnded(sid, reason: 'declined');
+        // AND ANDROID'S COPY OF THE SAME RING. Only iOS was told, so a call
+        // declined here stayed RINGING in Telecom until Android's own
+        // two-minute timeout, and the next call in that window was refused
+        // (S24, 2026-10-28: declined 12:07:09, still ringing to 12:09:05,
+        // 12:07:45 call "addCall failed"). A ring, never a call placed or
+        // answered here: reportRingEnded keeps those.
+        AndroidTelecom.instance.reportRingEnded(sid, reason: reason);
       }
       break;
     }
@@ -409,6 +419,7 @@ class IncomingCallBridgeNotifier
         if (sid.isNotEmpty) {
           _guard.recordClear(sid);
           IosCallKit.instance.reportEnded(sid, reason: 'expired');
+          AndroidTelecom.instance.reportRingEnded(sid, reason: 'expired');
         }
       }
       return stillValid;

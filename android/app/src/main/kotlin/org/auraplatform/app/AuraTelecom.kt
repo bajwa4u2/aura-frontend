@@ -256,7 +256,7 @@ object AuraTelecom {
             } catch (t: Throwable) {
                 // Telecom refused, or the call ended abnormally. The Aura call
                 // is untouched; only its system representation is missing.
-                Log.w(TAG, "addCall failed for $sessionId: ${t.message}")
+                Log.w(TAG, "addCall failed for $sessionId: ${t.javaClass.simpleName}: ${t.message}")
             } finally {
                 calls.remove(sessionId)
             }

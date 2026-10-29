@@ -1,15 +1,18 @@
 package org.auraplatform.app
 
+import android.Manifest
 import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 
@@ -247,6 +250,18 @@ class AuraCallService : Service() {
                         result.success(false)
                         return
                     }
+                    // NO MICROPHONE, NO SERVICE — AND SAY SO. A first call
+                    // asks for the microphone while it joins, and a start sent
+                    // while that prompt was open was refused inside the
+                    // service after this had already answered true. Dart then
+                    // believed the call protected and never asked again (S24,
+                    // 2026-10-28 12:05:33). Answering false lets it retry once
+                    // the grant lands.
+                    if (!granted(context, Manifest.permission.RECORD_AUDIO)) {
+                        Log.i(TAG, "start deferred: microphone not granted")
+                        result.success(false)
+                        return
+                    }
                     val intent = Intent(context, AuraCallService::class.java).apply {
                         action = ACTION_START
                         putExtra(EXTRA_SESSION_ID, sessionId)
@@ -276,6 +291,10 @@ class AuraCallService : Service() {
                 else -> result.notImplemented()
             }
         }
+
+        private fun granted(context: Context, permission: String): Boolean =
+            ContextCompat.checkSelfPermission(context, permission) ==
+                PackageManager.PERMISSION_GRANTED
 
         private fun startCompat(context: Context, intent: Intent): Boolean = try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

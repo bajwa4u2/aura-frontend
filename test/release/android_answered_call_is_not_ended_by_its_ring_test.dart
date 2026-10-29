@@ -79,6 +79,39 @@ void main() {
         })
         .join('\n');
 
+    // S24, 2026-10-28: declined at 12:07:09, left RINGING in Telecom until
+    // Android timed it out at 12:09:05, and the 12:07:45 call was refused.
+    test('a ring declined or run out here ends the Android copy too', () {
+      final bridge = code('lib/features/updates/incoming_call_bridge.dart');
+      String body(String start, String end) {
+        final a = bridge.indexOf(start);
+        expect(a, greaterThan(0), reason: start);
+        final b = bridge.indexOf(end, a);
+        expect(b, greaterThan(a), reason: end);
+        return bridge.substring(a, b);
+      }
+
+      expect(
+        body('void remove(String id', 'void removeBySession(')
+            .replaceAll(RegExp(r'\s+'), ' '),
+        contains('AndroidTelecom.instance.reportRingEnded(sid, reason: reason)'),
+      );
+      expect(
+        body('void evictExpired()', 'void clear()'),
+        contains('AndroidTelecom.instance.reportRingEnded('),
+      );
+      final overlay =
+          code('lib/features/realtime/presentation/incoming_live_overlay.dart');
+      final timer = overlay.indexOf('_ringTimer = Timer(_ringTimeout');
+      expect(timer, greaterThan(0));
+      expect(
+        overlay
+            .substring(timer, overlay.indexOf('markRead(id)', timer))
+            .replaceAll(RegExp(r'\s+'), ''),
+        contains(".remove(id,reason:'expired')"),
+      );
+    });
+
     test('accepting marks the call answering before the join starts', () {
       final lifecycle = code(
         'lib/features/realtime/application/thread_call_lifecycle_controller.dart',

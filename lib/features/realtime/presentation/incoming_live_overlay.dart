@@ -377,7 +377,9 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
       final sessionId = _resolveSessionId(item);
       if (id.isNotEmpty) _dismissedIds.add(id);
       if (sessionId.isNotEmpty) _dismissedSessionIds.add(sessionId);
-      ref.read(incomingCallBridgeProvider.notifier).remove(id);
+      ref
+          .read(incomingCallBridgeProvider.notifier)
+          .remove(id, reason: 'expired');
       if (id.isNotEmpty) {
         unawaited(
           ref.read(notificationsControllerProvider.notifier).markRead(id),
@@ -525,7 +527,9 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
           msg.contains('invite has expired');
       if (isExpired) {
         // Invite is no longer valid — dismiss the overlay silently.
-        ref.read(incomingCallBridgeProvider.notifier).remove(id);
+        ref
+            .read(incomingCallBridgeProvider.notifier)
+            .remove(id, reason: 'expired');
         if (context.mounted) {
           setState(() {
             _joinError = 'This call is no longer available.';

@@ -144,6 +144,19 @@ class NativeCallActions {
     }
   }
 
+  /// Opens the page where the person can turn full-screen alerts back on.
+  /// False where there is no such page, so no button is offered for nothing.
+  Future<bool> openFullScreenSettings() async {
+    if (!_supported) return false;
+    try {
+      return await _channel.invokeMethod<bool>('openFullScreenIntentSettings') ??
+          false;
+    } catch (error) {
+      debugPrint('[native-call] openFullScreenIntentSettings failed: $error');
+      return false;
+    }
+  }
+
   NativeCallActionEvent? _parse(dynamic raw) {
     if (raw is! Map) return null;
     final action = switch ((raw['action'] ?? '').toString().trim()) {

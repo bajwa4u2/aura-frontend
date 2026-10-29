@@ -13,6 +13,7 @@ import '../device_model.dart';
 import '../physical_device.dart';
 import '../device_providers.dart';
 import 'package:aura/core/ui/aura_notice.dart';
+import 'call_ring_access.dart';
 
 /// Advanced Device Preference / Transfer — item 12.
 ///
@@ -180,6 +181,7 @@ class _DevicesScreenState extends ConsumerState<DevicesScreen> {
           return ListView(
             padding: const EdgeInsets.all(AuraSpace.s16),
             children: [
+              const CallRingCard(),
               const Padding(
                 padding: EdgeInsets.only(bottom: AuraSpace.s12),
                 child: Text(

@@ -62,12 +62,17 @@ Dio _offlineDio() => Dio()
     ),
   );
 
-RealtimeState _joined(String sessionId, {bool video = false}) =>
+RealtimeState _joined(
+  String sessionId, {
+  bool video = false,
+  bool mediaReady = true,
+}) =>
     RealtimeState.initial().copyWith(
       joinState: RealtimeJoinState.joined,
       sessionId: sessionId,
       callMode: video ? 'video' : 'audio',
       cameraEnabled: video,
+      isMediaReady: mediaReady,
     );
 
 void main() {
@@ -96,16 +101,59 @@ void main() {
   group('the Android call service follows the session', () {
     const channel = MethodChannel('org.auraplatform.app/call_service');
     final calls = <MethodCall>[];
+    var startAnswer = true;
 
     setUp(() {
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
       AndroidCallService.instance.debugReset();
       calls.clear();
+      startAnswer = true;
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (call) async {
         calls.add(call);
-        return true;
+        return call.method == 'start' ? startAnswer : true;
       });
+    });
+
+    // S24, 2026-10-28 12:05:33: joined while the camera and microphone prompt
+    // was still open, the service was refused, and it was never asked again.
+    test('waits for the microphone before it starts', () async {
+      final c = _Probe(_FakeSocket());
+      c.push(_joined('s1', video: true, mediaReady: false));
+      await pumpEventQueue();
+      expect(calls.where((m) => m.method == 'start'), isEmpty);
+
+      c.push(_joined('s1', video: true));
+      await pumpEventQueue();
+      expect(calls.where((m) => m.method == 'start'), hasLength(1));
+      c.dispose();
+    });
+
+    test('a refused start is asked again on the next change', () async {
+      final c = _Probe(_FakeSocket());
+      startAnswer = false;
+      c.push(_joined('s1'));
+      await pumpEventQueue();
+      expect(calls.where((m) => m.method == 'start'), hasLength(1));
+      expect(AndroidCallService.instance.activeSessionId, isNull);
+
+      startAnswer = true;
+      c.push(_joined('s1').copyWith(microphoneEnabled: true));
+      await pumpEventQueue();
+      expect(calls.where((m) => m.method == 'start'), hasLength(2));
+      expect(AndroidCallService.instance.activeSessionId, 's1');
+      c.dispose();
+    });
+
+    test('a media rebuild after it started does not stop it', () async {
+      final c = _Probe(_FakeSocket());
+      c.push(_joined('s1'));
+      await pumpEventQueue();
+      c.push(_joined('s1', mediaReady: false));
+      await pumpEventQueue();
+      expect(calls.where((m) => m.method == 'stop'), isEmpty);
+      expect(calls.where((m) => m.method == 'start'), hasLength(1));
+      c.dispose();
     });
 
     tearDown(() {

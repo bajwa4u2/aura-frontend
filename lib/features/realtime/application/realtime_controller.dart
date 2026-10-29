@@ -132,6 +132,12 @@ class RealtimeController extends StateNotifier<RealtimeState>
     if (!service.isSupported) return;
     final sessionId = (next.sessionId ?? '').trim();
     if (next.isJoined && sessionId.isNotEmpty) {
+      // NOT BEFORE THE MICROPHONE IS OURS. A first call asks for the camera
+      // and microphone while it joins; a start sent while that prompt was open
+      // was refused, and nothing asked again (S24, 2026-10-28 12:05:33). Media
+      // ready is the moment the grant has landed. Once held, a later media
+      // rebuild does not release it: only leaving the session does.
+      if (!next.isMediaReady && _callServiceSessionId != sessionId) return;
       final video = next.isVideoMode || next.cameraEnabled;
       if (_callServiceSessionId == sessionId && _callServiceVideo == video) {
         return;
@@ -139,11 +145,20 @@ class RealtimeController extends StateNotifier<RealtimeState>
       _callServiceSessionId = sessionId;
       _callServiceVideo = video;
       unawaited(
-        service.holdForSession(
+        service
+            .holdForSession(
           sessionId,
           video: video,
           title: next.session?.title ?? '',
-        ),
+        )
+            .then((started) {
+          // Refused: forget it, so the next change to this call asks again
+          // instead of believing the call is protected.
+          if (!started && _callServiceSessionId == sessionId) {
+            _callServiceSessionId = null;
+            _callServiceVideo = false;
+          }
+        }),
       );
       return;
     }

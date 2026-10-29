@@ -2,10 +2,13 @@ package org.auraplatform.app
 
 import android.app.KeyguardManager
 import android.app.NotificationManager
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import androidx.core.view.WindowCompat
 import io.flutter.embedding.android.FlutterActivity
@@ -182,6 +185,11 @@ class MainActivity : FlutterActivity() {
                 // full-screen" and "Android degraded it to a heads-up".
                 "canUseFullScreenIntent" -> result.success(canUseFullScreenIntent())
 
+                // The one place a person can give it back. Play installs on
+                // Android 14+ arrive with it denied (S24, 1.7.0 (49),
+                // 2026-10-28), and only the person can turn it on.
+                "openFullScreenIntentSettings" -> result.success(openFullScreenIntentSettings())
+
                 else -> result.notImplemented()
             }
         }
@@ -350,6 +358,29 @@ class MainActivity : FlutterActivity() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return true
         val manager = getSystemService(NotificationManager::class.java) ?: return false
         return manager.canUseFullScreenIntent()
+    }
+
+    /**
+     * Opens Aura's own "Full screen alerts" page, or the app's details page
+     * where a device has no such page. False only when neither exists, so the
+     * caller never offers a button that does nothing.
+     */
+    private fun openFullScreenIntentSettings(): Boolean {
+        val pkg = Uri.parse("package:$packageName")
+        val candidates = buildList {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                add(Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, pkg))
+            }
+            add(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, pkg))
+        }
+        for (intent in candidates) {
+            try {
+                startActivity(intent)
+                return true
+            } catch (_: ActivityNotFoundException) {
+            }
+        }
+        return false
     }
 
     // 2026-08-14 — the aura_calls channel uses USAGE_NOTIFICATION_RINGTONE
