@@ -217,10 +217,15 @@ class _PostCardState extends ConsumerState<PostCard> {
     required TextStyle style,
     required double maxWidth,
     required int maxLines,
+    required TextScaler textScaler,
   }) {
+    // Measured at the text size it is DRAWN at (2026-11-02). Measured at 1.0,
+    // a post that fit in seven lines there was cut at line seven on Windows
+    // at Text size 175%, with no "Open" to read the rest.
     final tp = TextPainter(
       text: TextSpan(text: text, style: style),
       textDirection: TextDirection.ltr,
+      textScaler: textScaler,
       maxLines: maxLines,
       ellipsis: '…',
     )..layout(maxWidth: maxWidth);
@@ -943,6 +948,7 @@ class _PostCardState extends ConsumerState<PostCard> {
                           style: bodyTextStyle,
                           maxWidth: c.maxWidth,
                           maxLines: collapsedLines,
+                          textScaler: MediaQuery.textScalerOf(context),
                         );
 
                   final maxLines = (widget.detail || _expanded)

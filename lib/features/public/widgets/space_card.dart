@@ -136,6 +136,37 @@ class PublicSpacesStrip extends ConsumerStatefulWidget {
   static const double cardHeight = 76;
   static const double gap = AuraSpace.s10;
 
+  /// THE ROW FOLLOWS THE READER'S TEXT SIZE (2026-11-02).
+  ///
+  /// A fixed 76 px row cut the description in half on Windows at Text size
+  /// 175%: the text grew, the row did not. The height is measured from the
+  /// two lines the card actually draws, at the text size in force, and never
+  /// goes below the designed 76. Width grows with the text too, up to half
+  /// again, so a name and a few words of description still fit.
+  static double heightFor(TextScaler scaler) {
+    double line(TextStyle style) {
+      final painter = TextPainter(
+        text: TextSpan(text: 'Ag', style: style),
+        textScaler: scaler,
+        maxLines: 1,
+        textDirection: TextDirection.ltr,
+      )..layout();
+      return painter.height;
+    }
+
+    final text = line(_CompactSpaceCard.titleStyle) + 2 +
+        line(_CompactSpaceCard.descriptionStyle);
+    final content = text > 28 ? text : 28.0;
+    final measured = content + 2 * AuraSpace.s10 + 2; // padding + border
+    return measured > cardHeight ? measured.ceilToDouble() : cardHeight;
+  }
+
+  static double widthFor(TextScaler scaler, {required bool wide}) {
+    final base = wide ? cardWidthWide : cardWidth;
+    final scale = (scaler.scale(16) / 16).clamp(1.0, 1.5);
+    return (base * scale).roundToDouble();
+  }
+
   @override
   ConsumerState<PublicSpacesStrip> createState() => _PublicSpacesStripState();
 }
@@ -256,9 +287,10 @@ class _PublicSpacesStripState extends ConsumerState<PublicSpacesStrip>
   Widget build(BuildContext context) {
     final spaces = ref.watch(publicSpacesProvider);
     final wide = MediaQuery.sizeOf(context).width >= 700;
+    final scaler = MediaQuery.textScalerOf(context);
     _ensureController(
       spaces.length,
-      (wide ? PublicSpacesStrip.cardWidthWide : PublicSpacesStrip.cardWidth) + PublicSpacesStrip.gap,
+      PublicSpacesStrip.widthFor(scaler, wide: wide) + PublicSpacesStrip.gap,
     );
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncTicker());
     final still = _still;
@@ -309,7 +341,7 @@ class _PublicSpacesStripState extends ConsumerState<PublicSpacesStrip>
         ),
         const SizedBox(height: AuraSpace.s8),
         SizedBox(
-          height: PublicSpacesStrip.cardHeight,
+          height: PublicSpacesStrip.heightFor(scaler),
           child: LayoutBuilder(
             builder: (context, box) {
               final fade = (24 / box.maxWidth).clamp(0.0, 0.2);
@@ -430,6 +462,14 @@ class _CompactSpaceCard extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
+  /// Shared with [PublicSpacesStrip.heightFor], which measures these lines.
+  static final TextStyle titleStyle = AuraText.body.copyWith(
+    fontWeight: FontWeight.w800,
+    color: AuraSurface.ink,
+  );
+  static final TextStyle descriptionStyle =
+      AuraText.small.copyWith(color: AuraSurface.muted);
+
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -466,17 +506,14 @@ class _CompactSpaceCard extends StatelessWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AuraText.body.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: AuraSurface.ink,
-                      ),
+                      style: titleStyle,
                     ),
                     const SizedBox(height: 2),
                     Text(
                       description,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AuraText.small.copyWith(color: AuraSurface.muted),
+                      style: descriptionStyle,
                     ),
                   ],
                 ),

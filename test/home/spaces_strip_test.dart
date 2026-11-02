@@ -14,6 +14,7 @@ void main() {
     WidgetTester tester, {
     bool reduceMotion = false,
     Size size = const Size(1440, 900),
+    double textScale = 1.0,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
@@ -32,7 +33,10 @@ void main() {
       child: MaterialApp.router(
         routerConfig: router,
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(disableAnimations: reduceMotion),
+          data: MediaQuery.of(context).copyWith(
+            disableAnimations: reduceMotion,
+            textScaler: TextScaler.linear(textScale),
+          ),
           child: child!,
         ),
       ),
@@ -137,5 +141,31 @@ void main() {
     await tester.tap(find.text('Technology').first);
     await tester.pumpAndSettle();
     expect(find.text('SPACE technology'), findsOneWidget);
+  });
+
+  // 2026-11-02, Windows at Text size 175%: the fixed 76 px row cut every
+  // description in half.
+  for (final scale in [1.0, 1.3, 1.75, 2.0]) {
+    testWidgets('at text size ${scale}x every card shows both lines whole',
+        (tester) async {
+      await pumpStrip(tester, textScale: scale, reduceMotion: true);
+      expect(tester.takeException(), isNull, reason: 'no overflow');
+      final row = tester.getRect(find.byKey(const ValueKey('spaces-row')));
+      final first = ProviderContainer().read(publicSpacesProvider).first;
+      final title = tester.getRect(find.text(first.name).first);
+      final description = tester.getRect(find.text(first.description).first);
+      expect(title.top, greaterThanOrEqualTo(row.top));
+      expect(description.bottom, lessThanOrEqualTo(row.bottom),
+          reason: 'the description line is inside the row, not cut');
+    });
+  }
+
+  test('the row grows with the text and never shrinks below the design', () {
+    final base = PublicSpacesStrip.heightFor(TextScaler.noScaling);
+    expect(base, PublicSpacesStrip.cardHeight);
+    expect(PublicSpacesStrip.heightFor(const TextScaler.linear(1.75)),
+        greaterThan(base));
+    expect(PublicSpacesStrip.widthFor(const TextScaler.linear(1.75), wide: true),
+        PublicSpacesStrip.cardWidthWide * 1.5);
   });
 }
