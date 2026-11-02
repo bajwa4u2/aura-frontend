@@ -721,10 +721,14 @@ class RealtimeRepository {
   Future<void> closeStageTransport(
     String sessionId, {
     required String reason,
+    String? transportId,
   }) async {
     await _dio.post(
       '/realtime/sessions/$sessionId/stage/transport/close',
-      data: <String, dynamic>{'reason': reason},
+      data: <String, dynamic>{
+        'reason': reason,
+        if (transportId != null) 'transportId': transportId,
+      },
     );
   }
 

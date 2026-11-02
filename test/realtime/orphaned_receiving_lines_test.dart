@@ -89,9 +89,20 @@ void main() {
               'off the wire — the one mistake this must not make');
     });
 
-    test('retirement stops the freed lines and says how many', () {
+    test('retirement says how many lines it stopped', () {
       expect(source, contains('_stopReceiversFor(pc, stale)'));
       expect(source, contains('stoppedLines=\$stopped'));
+    });
+
+    test('retired lines are not stopped without negotiation (S24 crash)', () {
+      // 2026-11-02, session cmvytrmz1: an un-negotiated stop() then the
+      // provider's next offer aborted libwebrtc on the network thread.
+      expect(source, contains('static const bool stopRetiredReceivers = false;'));
+      final start = source.indexOf('Future<int> _stopReceiversFor(');
+      final guard = source.indexOf('if (!stopRetiredReceivers) return 0;', start);
+      final stop = source.indexOf('await t.stop()', start);
+      expect(guard, greaterThan(start));
+      expect(guard, lessThan(stop));
     });
 
     test('stopping is attempted, and a platform without it still runs', () {

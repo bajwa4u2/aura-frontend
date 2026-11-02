@@ -144,12 +144,23 @@ func notificationBelongsToCall(
   /// only when CallKit activates the session. Calls CallKit never sees
   /// (meetings) keep automatic audio, exactly as before.
   ///
-  /// [waitForActivation] holds audio off until `didActivate` — right for a call
-  /// that is still ringing. An outgoing call is already carrying audio, so it
-  /// hands over without pausing it.
+  /// [waitForActivation] holds audio off until `didActivate`.
+  ///
+  /// 2026-11-02 — OUTGOING CALLS WAIT TOO. An outgoing call used to hand over
+  /// with audio already enabled, on the belief that it was already carrying
+  /// audio. It is not: Aura reports the call straight after `startLive`,
+  /// before the room has opened the microphone. WebRTC then started its audio
+  /// unit while CallKit was activating the same session, and the caller's
+  /// microphone and camera took 24 s to open (session cmvytrmz1, iPhone
+  /// caller): the far side waited 24 s for a picture and a voice. Apple's
+  /// rule for both directions is the same — the app starts call audio only
+  /// once the system has activated the session.
   private func callKitTakesAudio(waitForActivation: Bool) {
     RtcAudio.set(manualAudio: true, audioEnabled: !waitForActivation)
   }
+
+  /// Whether CallKit currently has the audio session active.
+  private var callKitAudioActive = false
 
   /// No call left in CallKit: WebRTC manages its own audio again.
   private func releaseCallKitAudioIfIdle() {
@@ -601,7 +612,15 @@ func notificationBelongsToCall(
       action.contactIdentifier = calleeName
 
       startingLocally.insert(uuid)
-      callKitTakesAudio(waitForActivation: false)
+      callKitTakesAudio(waitForActivation: true)
+      // Activation normally follows the start within a second. If it never
+      // comes, a call with late audio is better than a silent one.
+      DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
+        guard let self = self, !self.callKitAudioActive,
+              self.uuidBySession[sessionId] == uuid else { return }
+        NSLog("[callkit] outgoing audio not activated after 3s; enabling")
+        RtcAudio.set(manualAudio: true, audioEnabled: true)
+      }
       callController.request(CXTransaction(action: action)) { [weak self] error in
         guard let self = self else { return }
         if let error = error {
@@ -1040,11 +1059,13 @@ extension AppDelegate: CXProviderDelegate {
   }
 
   func provider(_ provider: CXProvider, didActivate audioSession: AVAudioSession) {
+    callKitAudioActive = true
     RtcAudio.didActivate(audioSession)
     emit("audioSessionActivated", [:])
   }
 
   func provider(_ provider: CXProvider, didDeactivate audioSession: AVAudioSession) {
+    callKitAudioActive = false
     RtcAudio.didDeactivate(audioSession)
     emit("audioSessionDeactivated", [:])
   }

@@ -46,6 +46,24 @@ void main() {
               'did not; without this it cannot.');
     });
 
+    test('outgoing audio waits for CallKit to activate the session', () {
+      // 2026-11-02, session cmvytrmz1: audio enabled before activation, and
+      // the caller's microphone and camera took 24 s to open.
+      final start = appDelegate.substring(
+        appDelegate.indexOf('case "startOutgoingCall":'),
+        appDelegate.indexOf('case "callOutgoingConnected":'),
+      );
+      expect(start.contains('callKitTakesAudio(waitForActivation: true)'),
+          isTrue,
+          reason: 'Apple: the app starts call audio only after didActivate.');
+      expect(start.contains('callKitTakesAudio(waitForActivation: false)'),
+          isFalse);
+      expect(start.contains('!self.callKitAudioActive'), isTrue,
+          reason: 'If activation never comes, late audio beats silence.');
+      expect(appDelegate.contains('callKitAudioActive = true'), isTrue);
+      expect(appDelegate.contains('callKitAudioActive = false'), isTrue);
+    });
+
     test('the jurisdiction gate wraps it, and refusal is not failure', () {
       final start = appDelegate.substring(
         appDelegate.indexOf('case "startOutgoingCall":'),

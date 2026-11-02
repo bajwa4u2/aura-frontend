@@ -91,6 +91,16 @@ bool isRecordingConsentRefusal(Object? refusal) {
       code == 'RECORDING_CONSENT_DECLINED';
 }
 
+/// A stage request refused because the session is no longer ACTIVE.
+bool isStageSessionNotActive(Object? refusal) =>
+    refusal.toString().contains('[stage:session_not_active]');
+
+/// A session status from which no call comes back.
+bool isEndedSessionStatus(String status) {
+  final s = status.trim().toUpperCase();
+  return s == 'ENDED' || s == 'CANCELLED' || s == 'FAILED';
+}
+
 class RealtimeController extends StateNotifier<RealtimeState>
     with WidgetsBindingObserver {
   RealtimeController(
@@ -1018,7 +1028,12 @@ class RealtimeController extends StateNotifier<RealtimeState>
       // whether it needs anything. Only a transport that is NOT healthy is
       // detached here; a healthy one keeps its generation, and a dead one is
       // replaced by the recovery path that exists for exactly that.
-      if (!_mediaService.stageMediaHealthy) {
+      if (_mediaService.stageMediaConnecting) {
+        // Still making its first connection: neither healthy nor dead. Its
+        // own ICE wait decides, and a failure there unwinds it properly.
+        _reportRecovery(
+            trimmed, 'rejoin_media_connecting', 'detaching=false generation=kept');
+      } else if (!_mediaService.stageMediaHealthy) {
         _reportRecovery(
             trimmed, 'rejoin_media_unhealthy', 'detaching=true');
         await _mediaService.detachStage(reason: 'MEDIA_UNHEALTHY');
@@ -2369,6 +2384,8 @@ class RealtimeController extends StateNotifier<RealtimeState>
       // else asking for media during the overlap joins this same acquisition
       // rather than starting a competing getUserMedia.
       Future<void>? capture;
+      final captureClock = Stopwatch()..start();
+      var captureMs = 0;
       if (!state.isMediaReady && !receiveOnly) {
         capture = _mediaService.ensureLocalMedia(
           audio: wantsAudio,
@@ -2386,7 +2403,8 @@ class RealtimeController extends StateNotifier<RealtimeState>
         sessionId,
         refreshTurnCredentials: refreshTurnCredentials,
       );
-      debugPrint('[media-seq] rtc config ms=${stepClock.elapsedMilliseconds}');
+      final rtcMs = stepClock.elapsedMilliseconds;
+      debugPrint('[media-seq] rtc config ms=$rtcMs');
 
       // These announce INTENT — what this participant will send — which is
       // already decided above and does not depend on the camera having
@@ -2403,10 +2421,12 @@ class RealtimeController extends StateNotifier<RealtimeState>
           'enabled': wantsVideo,
         }),
       ]);
-      debugPrint('[media-seq] intent acked ms=${stepClock.elapsedMilliseconds}');
+      final intentMs = stepClock.elapsedMilliseconds;
+      debugPrint('[media-seq] intent acked ms=$intentMs');
 
       if (capture != null) {
         await capture;
+        captureMs = captureClock.elapsedMilliseconds;
         // 2026-08-14 — default output routing, applied once when media
         // first becomes ready (not on every reconnect/renegotiation, so a
         // manual toggle mid-call is never silently overridden). Video
@@ -2480,6 +2500,21 @@ class RealtimeController extends StateNotifier<RealtimeState>
           unawaited(_mediaService.setSpeakerphoneEnabled(speaker));
         }
         debugPrint('[media-seq] route set ms=${stepClock.elapsedMilliseconds}');
+        // THE SAME CLOCK, TO THE SERVER. These lines lived only in the device
+        // console, so a caller whose camera took 25 s to open (session
+        // cmvytrmz1, 2026-11-02, iPhone) left the server knowing only that
+        // there was no local media, never which step held it.
+        unawaited(_repository
+            .reportStageDiagnostic(
+              sessionId,
+              phase: 'trace',
+              code: 'media_seq',
+              message: 'rtcMs=$rtcMs intentMs=$intentMs captureMs=$captureMs '
+                  'readyMs=${stepClock.elapsedMilliseconds} '
+                  'audio=$wantsAudio video=$wantsVideo',
+              platform: _clientPlatform,
+            )
+            .catchError((_) {}));
       }
 
       state = state.copyWith(
@@ -4925,6 +4960,13 @@ class RealtimeController extends StateNotifier<RealtimeState>
             'transport=${adopted.transportId}',
         platform: _clientPlatform,
       ));
+    } on StageTransportSuperseded {
+      // Another attempt connected the stage while this one waited; it keeps
+      // it. Looking for remote media is all that is left to do.
+      _report('stage.attach_superseded reason=$reason');
+      try {
+        await _mediaService.refreshStageRemoteMedia(trigger: _stageTrigger(reason));
+      } catch (_) {}
     } catch (e) {
       // Never let a transport failure take the call down silently — the
       // product should show honest state rather than a frozen screen. But
@@ -4943,7 +4985,32 @@ class RealtimeController extends StateNotifier<RealtimeState>
         message: 'reason=$reason err=$e',
         platform: _clientPlatform,
       ));
+      if (isStageSessionNotActive(e)) {
+        unawaited(_endIfSessionOver(sessionId));
+      }
     }
+  }
+
+  /// THE SERVER SAYS THE CALL IS OVER; BELIEVE IT.
+  ///
+  /// 2026-11-02, session cmvzgmxur: the call ended on the server while the
+  /// caller's socket missed the news, and the browser kept re-opening the
+  /// stage every 10 s for 51 s, refused each time with
+  /// `stage:session_not_active`. The refusal is not proof on its own — so the
+  /// session is read again, and only an ended one ends the call here.
+  Future<void> _endIfSessionOver(String sessionId) async {
+    try {
+      final bundle =
+          await _repository.loadSessionBundle(sessionId, forceRefresh: true);
+      if (_managedSessionId != sessionId || !state.isJoined) return;
+      if (!isEndedSessionStatus(bundle.session.status)) return;
+      _report('stage.session_over status=${bundle.session.status}');
+      await _terminateSession(
+        keepSocketConnected: true,
+        infoMessage: 'Call ended.',
+        alsoCallRepository: false,
+      );
+    } catch (_) {}
   }
 
   Future<void> _reconcileRtcPeers(

@@ -1358,6 +1358,14 @@ class RealtimeMediaService {
     return false;
   }
 
+  /// The stage is still making its first connection: not healthy yet, not
+  /// dead. A signalling rejoin keeps it instead of starting over.
+  bool get stageMediaConnecting {
+    final stage = _stage;
+    if (stage is SfuRealtimeTransport) return stage.isMediaConnecting;
+    return false;
+  }
+
   /// Which transport is carrying media, for observability (§2).
   String get transportId => _stage?.id ?? 'mesh';
 
@@ -1387,12 +1395,32 @@ class RealtimeMediaService {
     // room, and refusing here would make a permission denial the difference
     // between a degraded call and no call.
     final local = _localStream;
+    // ONE STAGE. An attempt that reaches here after another already holds the
+    // stage stands down: taking `_stage` from it orphaned the working
+    // connection, and this attempt's later unwind then closed it (session
+    // cmvytrmz1, 2026-11-02: an attach delayed 29 s behind a dead socket did
+    // exactly that, and the rebuild crashed the Android peer).
+    final incumbent = _stage;
+    if (incumbent != null && !identical(incumbent, transport)) {
+      throw StageTransportSuperseded();
+    }
     _stage = transport;
     try {
       await transport.open(
           sessionId: sessionId, local: local, trigger: trigger);
       await transport.publishLocal(trigger: trigger);
     } catch (e) {
+      // AN ATTEMPT UNWINDS ONLY WHAT IT OWNS. If the stage is no longer this
+      // transport, someone else's working media is there now: close this one
+      // alone and leave the stage untouched.
+      if (!identical(_stage, transport)) {
+        try {
+          await transport.close(reason: 'ATTACH_UNWIND');
+        } catch (closeError) {
+          debugPrint('[rtc] superseded attach close failed: $closeError');
+        }
+        rethrow;
+      }
       // A HALF-ATTACHED STAGE IS WORSE THAN NONE.
       //
       // Measured on a live call: open() succeeded and publishLocal() failed,

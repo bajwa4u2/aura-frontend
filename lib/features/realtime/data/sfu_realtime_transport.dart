@@ -67,6 +67,12 @@ class SfuRealtimeTransport implements RealtimeTransport {
   bool _adopted = false;
   bool get adopted => _adopted;
 
+  /// The server transport THIS attempt opened. Null until the server answers
+  /// with one of its own, and never the incumbent's id when adopted: a close
+  /// names it, so a lost attempt cannot close its successor (session
+  /// cmvytrmz1, 2026-11-02).
+  String? _serverTransportId;
+
   final RealtimeRepository _repository;
 
   /// Called ONCE when this transport is judged unrecoverable in place.
@@ -181,6 +187,23 @@ class SfuRealtimeTransport implements RealtimeTransport {
         ice: _iceState,
       );
 
+  /// Still opening: waiting for ICE for the first time, not closing, not
+  /// lost. Not healthy yet and not dead either, so a signalling rejoin keeps
+  /// it (session cmvytrmz1, 2026-11-02: a transport opened 0.8 s earlier was
+  /// discarded as unhealthy and the call waited 20 s for the next).
+  bool get isMediaConnecting {
+    final wait = _iceWait;
+    return !_closing &&
+        !_lostReported &&
+        _pc != null &&
+        wait != null &&
+        !wait.isCompleted;
+  }
+
+  /// The first-connect wait, so a close can end it at once rather than leave
+  /// the attach holding the stage gate until its deadline.
+  Completer<void>? _iceWait;
+
   /// ASK THE CONNECTION, DO NOT REMEMBER WHAT IT ONCE SAID.
   ///
   /// `_lastIceState` is written only from `onIceConnectionState` events, and
@@ -244,6 +267,10 @@ class SfuRealtimeTransport implements RealtimeTransport {
   /// 2026-08-28 climbing to `receiving=12 bound=2`, and again 2026-09-24 as a
   /// `bind_partial` see-saw between two people refreshing in turn.
   final Map<String, String> _midByTrackId = <String, String>{};
+
+  /// Whether retired receive lines are stopped locally. Off: an un-negotiated
+  /// stop crashed Android on the next re-subscribe (see `_stopReceiversFor`).
+  static const bool stopRetiredReceivers = false;
 
   /// How many times each track has been asked for without binding.
   ///
@@ -534,6 +561,8 @@ class SfuRealtimeTransport implements RealtimeTransport {
       );
     }
     generation = (opened['generation'] as num?)?.toInt();
+    final openedId = (opened['transportId'] ?? '').toString().trim();
+    _serverTransportId = openedId.isEmpty ? null : openedId;
     final negotiation = (opened['negotiation'] as Map?)?.cast<String, dynamic>();
     final answer = negotiation?['sdp'];
     if (answer is! String || answer.isEmpty) {
@@ -635,6 +664,15 @@ class SfuRealtimeTransport implements RealtimeTransport {
       _midByTrackId.remove(id);
     }
     if (mids.isEmpty) return 0;
+
+    // NOT STOPPED HERE ANY MORE (2026-11-02). `stop()` ends the line at once,
+    // with no negotiation, and the provider's next offer still carries it.
+    // Answering that offer aborted libwebrtc on the network thread ("optional
+    // operator-> called on a disengaged value"): session cmvytrmz1 on the S24,
+    // 18 ms after the re-subscribe, the first time the far side republished.
+    // A dead line is cosmetic (`bind_partial` in the trace); a dead process is
+    // the call. The provider's own close already stops the media.
+    if (!stopRetiredReceivers) return 0;
 
     var stopped = 0;
     try {
@@ -988,13 +1026,27 @@ class SfuRealtimeTransport implements RealtimeTransport {
     _liveness = null;
     _firstMedia?.cancel();
     _firstMedia = null;
+    final iceWait = _iceWait;
+    if (iceWait != null && !iceWait.isCompleted) {
+      iceWait.completeError(
+          StateError('stage transport closed while connecting [sfu:closed]'));
+    }
     // Stop accepting negotiation work first: anything still queued must not
     // mutate a session that is being torn down.
     _queue.close();
     final sessionId = _sessionId;
-    if (sessionId != null) {
+    final serverTransportId = _serverTransportId;
+    _serverTransportId = null;
+    // Only a transport this attempt opened is closed on the server. An
+    // adopted attempt, or one that never got an answer, holds nothing there:
+    // closing "mine" would close whatever is current, which is the incumbent.
+    if (sessionId != null && serverTransportId != null) {
       try {
-        await _repository.closeStageTransport(sessionId, reason: reason);
+        await _repository.closeStageTransport(
+          sessionId,
+          reason: reason,
+          transportId: serverTransportId,
+        );
       } catch (e) {
         // A failed server-side cleanup must never strand someone in a call
         // they are trying to leave. Aura reaps the transport regardless.
@@ -1061,6 +1113,7 @@ class SfuRealtimeTransport implements RealtimeTransport {
   Future<void> _waitForIce(RTCPeerConnection pc) async {
     final startedAt = DateTime.now();
     final done = Completer<void>();
+    _iceWait = done;
     void check(RTCIceConnectionState s) {
       if ((s == RTCIceConnectionState.RTCIceConnectionStateConnected ||
               s == RTCIceConnectionState.RTCIceConnectionStateCompleted) &&
@@ -1090,8 +1143,11 @@ class SfuRealtimeTransport implements RealtimeTransport {
       // RE-ARM, ALWAYS. The connect wait replaced this handler with a closure
       // whose completer is already finished, so leaving it in place is the
       // same as having no monitor at all -- which is precisely what shipped.
-      _armTransportWatch(pc);
-      _armLivenessProbe(pc);
+      // Unless the wait ended because the transport was closed under it.
+      if (!_closing) {
+        _armTransportWatch(pc);
+        _armLivenessProbe(pc);
+      }
     }
   }
 
@@ -1616,7 +1672,14 @@ class StageTransportAdopted implements Exception {
   final int generation;
   @override
   String toString() =>
-      'stage transport adopted by generation \$generation';
+      'stage transport adopted by generation $generation';
+}
+
+/// Raised when an attach arrives after another attempt already holds the
+/// stage. Like adoption, the incumbent is kept and this attempt stands down.
+class StageTransportSuperseded implements Exception {
+  @override
+  String toString() => 'stage already held by another transport';
 }
 
 /// THE PREDICATE ITSELF, SO A TEST CAN USE THE PRODUCT'S OWN UNIT.
