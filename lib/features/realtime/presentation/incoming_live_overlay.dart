@@ -905,9 +905,11 @@ class _AuraIncomingLiveLayerState extends ConsumerState<AuraIncomingLiveLayer>
               ? AuraSpace.s20
               : AuraSpace.s12,
           left: MediaQuery.of(context).size.width >= 700 ? null : AuraSpace.s12,
-          bottom: MediaQuery.of(context).size.width >= 700
-              ? AuraSpace.s20
-              : AuraSpace.s12,
+          // Above the keyboard if one is still on its way down, never under.
+          bottom: (MediaQuery.of(context).size.width >= 700
+                  ? AuraSpace.s20
+                  : AuraSpace.s12) +
+              MediaQuery.viewInsetsOf(context).bottom,
           child: SafeArea(
             child: _IncomingCallCard(
               // Identifies the presentation, so a NEW call remounts the card's
@@ -981,6 +983,10 @@ class _IncomingCallCardState extends State<_IncomingCallCard>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // A RINGING CALL TAKES THE SCREEN FROM THE KEYBOARD (2026-11-02). With
+    // the keyboard up, it covered Accept and Decline on the S24. A phone
+    // closes the keyboard when a call rings; so does this.
+    FocusManager.instance.primaryFocus?.unfocus();
     // THE PRESENTATION BOUNDARY.
     //
     // `initState` means "this card has been inserted into the tree"; the
