@@ -213,6 +213,20 @@ class AndroidTelecom {
     }
   }
 
+  /// Speaker or earpiece, asked of Telecom, which owns the route while it
+  /// holds a call. Returns false when no system call is live, so the caller
+  /// sets the route itself.
+  Future<bool> setSpeaker(bool on) async {
+    if (!isSupported) return false;
+    try {
+      return await _channel.invokeMethod<bool>('setSpeaker', {'on': on}) ??
+          false;
+    } catch (e) {
+      debugPrint('[telecom] setSpeaker failed: $e');
+      return false;
+    }
+  }
+
   /// The call is over, with a truthful reason.
   ///
   /// The reason is carried because system call history is user-visible: a call

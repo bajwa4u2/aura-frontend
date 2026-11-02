@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+import '../../../core/notifications/android_telecom.dart';
 import '../../../core/media/device_permission.dart';
 import '../domain/remote_media_presentation.dart';
 import 'realtime_transport.dart';
@@ -2505,6 +2506,15 @@ class RealtimeMediaService {
   Future<void> setSpeakerphoneEnabled(bool enabled) async {
     if (_disposed || kIsWeb) return;
     try {
+      // TWO THINGS ROUTE CALL AUDIO ON ANDROID, AND BOTH ARE TOLD (2026-11-02).
+      // Telecom owns the route while it holds the call; WebRTC's own audio
+      // switch picks the speaker by itself when the microphone starts, behind
+      // Telecom's back. Told only one, they disagreed on the S24: sound on
+      // the speaker, Telecom recording the earpiece, and the button showing
+      // Earpiece. Telecom first, then WebRTC's switch, so both end the same.
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        await AndroidTelecom.instance.setSpeaker(enabled);
+      }
       await Helper.setSpeakerphoneOn(enabled);
       _speakerphoneEnabled = enabled;
       _publish();

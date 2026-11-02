@@ -7,6 +7,7 @@ import android.telecom.DisconnectCause
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.telecom.CallAttributesCompat
+import androidx.core.telecom.CallEndpointCompat
 import androidx.core.telecom.CallControlScope
 import androidx.core.telecom.CallsManager
 import io.flutter.plugin.common.MethodCall
@@ -16,6 +17,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 
@@ -128,6 +130,24 @@ object AuraTelecom {
                     withControl(sessionId) { it.setActive() }
                 }
                 result.success(null)
+            }
+
+            // SPEAKER OR EARPIECE, ASKED OF THE SYSTEM THAT OWNS THE ROUTE
+            // (2026-11-02). While Telecom holds the call it decides the audio
+            // route, and AudioManager requests from the app are overridden:
+            // every S24 video call today played through the earpiece. Returns
+            // whether a system call took the request; false means there is
+            // none and the caller sets the route itself.
+            "setSpeaker" -> {
+                val on = call.argument<Boolean>("on") ?: false
+                if (calls.isEmpty()) {
+                    result.success(false)
+                } else {
+                    for (sessionId in calls.keys) {
+                        withControl(sessionId) { control -> requestRoute(control, on) }
+                    }
+                    result.success(true)
+                }
             }
 
             "reportEnded" -> {
@@ -289,6 +309,26 @@ object AuraTelecom {
             else -> DisconnectCause.LOCAL
         }
         withControl(sessionId) { it.disconnect(DisconnectCause(cause)) }
+    }
+
+    private suspend fun requestRoute(control: CallControlScope, speaker: Boolean) {
+        val wanted = if (speaker) {
+            CallEndpointCompat.TYPE_SPEAKER
+        } else {
+            CallEndpointCompat.TYPE_EARPIECE
+        }
+        val current = control.currentCallEndpoint.first()
+        if (current.type == wanted) return
+        // Turning the speaker off with a headset connected means the headset,
+        // not the earpiece: never pull audio off a device the person chose.
+        if (!speaker && current.type != CallEndpointCompat.TYPE_SPEAKER) return
+        val endpoint = control.availableEndpoints.first().firstOrNull { it.type == wanted }
+        if (endpoint == null) {
+            Log.w(TAG, "no ${if (speaker) "speaker" else "earpiece"} endpoint")
+            return
+        }
+        val outcome = control.requestEndpointChange(endpoint)
+        Log.i(TAG, "route ${if (speaker) "speaker" else "earpiece"}: $outcome")
     }
 
     /**

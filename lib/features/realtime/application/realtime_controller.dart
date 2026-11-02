@@ -2314,6 +2314,9 @@ class RealtimeController extends StateNotifier<RealtimeState>
     }
   }
 
+  /// The call whose default output (speaker or earpiece) has been applied.
+  String? _routeDefaultSessionId;
+
   Future<void> _ensureMediaReady(
     String sessionId, {
     bool refreshTurnCredentials = false,
@@ -2493,13 +2496,6 @@ class RealtimeController extends StateNotifier<RealtimeState>
         // fire-and-forget. The C-1 ordering this await buys was measured on
         // Android, where it stays.
         debugPrint('[media-seq] capture ready ms=${stepClock.elapsedMilliseconds}');
-        final speaker = await _speakerDefaultFor(wantsVideo);
-        if (defaultTargetPlatform == TargetPlatform.android) {
-          await _mediaService.setSpeakerphoneEnabled(speaker);
-        } else {
-          unawaited(_mediaService.setSpeakerphoneEnabled(speaker));
-        }
-        debugPrint('[media-seq] route set ms=${stepClock.elapsedMilliseconds}');
         // THE SAME CLOCK, TO THE SERVER. These lines lived only in the device
         // console, so a caller whose camera took 25 s to open (session
         // cmvytrmz1, 2026-11-02, iPhone) left the server knowing only that
@@ -2515,6 +2511,22 @@ class RealtimeController extends StateNotifier<RealtimeState>
               platform: _clientPlatform,
             )
             .catchError((_) {}));
+      }
+
+      // ONCE PER CALL, HOWEVER THE MEDIA BECAME READY (2026-11-02). The
+      // default output was applied only when this method opened the devices
+      // itself; when they were already open — an answered call on the S24 —
+      // it never ran, and every video call played through the earpiece.
+      if (_routeDefaultSessionId != sessionId && !receiveOnly) {
+        _routeDefaultSessionId = sessionId;
+        final speaker = await _speakerDefaultFor(wantsVideo);
+        if (defaultTargetPlatform == TargetPlatform.android) {
+          await _mediaService.setSpeakerphoneEnabled(speaker);
+        } else {
+          unawaited(_mediaService.setSpeakerphoneEnabled(speaker));
+        }
+        debugPrint('[media-seq] route set speaker=$speaker '
+            'ms=${stepClock.elapsedMilliseconds}');
       }
 
       state = state.copyWith(
