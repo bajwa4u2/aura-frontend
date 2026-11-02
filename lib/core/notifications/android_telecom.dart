@@ -213,6 +213,18 @@ class AndroidTelecom {
     }
   }
 
+  /// Whether Telecom holds a live call on this phone, and so owns its audio
+  /// route.
+  Future<bool> holdsCall() async {
+    if (!isSupported) return false;
+    try {
+      return await _channel.invokeMethod<bool>('holdsCall') ?? false;
+    } catch (e) {
+      debugPrint('[telecom] holdsCall failed: $e');
+      return false;
+    }
+  }
+
   /// Speaker or earpiece, asked of Telecom, which owns the route while it
   /// holds a call. Returns false when no system call is live, so the caller
   /// sets the route itself.
@@ -223,6 +235,19 @@ class AndroidTelecom {
           false;
     } catch (e) {
       debugPrint('[telecom] setSpeaker failed: $e');
+      return false;
+    }
+  }
+
+  /// A route picked in the call's output picker ('speaker', 'earpiece',
+  /// 'bluetooth', 'wired-headset'), asked of Telecom like [setSpeaker].
+  Future<bool> setRoute(String route) async {
+    if (!isSupported) return false;
+    try {
+      return await _channel.invokeMethod<bool>('setRoute', {'route': route}) ??
+          false;
+    } catch (e) {
+      debugPrint('[telecom] setRoute failed: $e');
       return false;
     }
   }

@@ -2389,6 +2389,17 @@ class RealtimeController extends StateNotifier<RealtimeState>
       Future<void>? capture;
       final captureClock = Stopwatch()..start();
       var captureMs = 0;
+      // The call's starting output, decided once and before the microphone
+      // starts, by the one authority that owns this call's route (see
+      // RealtimeMediaService.configureCallAudio). Video starts on the
+      // speaker, voice on the earpiece.
+      if (_routeDefaultSessionId != sessionId && !receiveOnly &&
+          defaultTargetPlatform == TargetPlatform.android) {
+        _routeDefaultSessionId = sessionId;
+        await _mediaService.configureCallAudio(
+          speaker: await _speakerDefaultFor(wantsVideo),
+        );
+      }
       if (!state.isMediaReady && !receiveOnly) {
         capture = _mediaService.ensureLocalMedia(
           audio: wantsAudio,

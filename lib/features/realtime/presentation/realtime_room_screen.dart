@@ -1643,7 +1643,19 @@ class _RealtimeRoomScreenState extends ConsumerState<RealtimeRoomScreen> {
                                                 audioOut.current,
                                               ),
                                               onChooseAudioOutput:
-                                                  audioOut.hasChoice
+                                                  audioOut.toggleTarget != null
+                                                  ? () => unawaited(
+                                                      ref
+                                                          .read(
+                                                            audioOutputControllerProvider
+                                                                .notifier,
+                                                          )
+                                                          .select(
+                                                            audioOut
+                                                                .toggleTarget!,
+                                                          ),
+                                                    )
+                                                  : audioOut.hasChoice
                                                   ? () => unawaited(
                                                       AudioOutputSheet.show(
                                                         context,

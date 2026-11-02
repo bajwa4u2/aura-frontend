@@ -195,6 +195,24 @@ class AudioOutputState {
   /// choice, and offering it as one would be theatre.
   bool get hasChoice => isSupported && routes.length > 1;
 
+  /// THE PHONE'S OWN TWO PLACES: ONE TAP, NO MENU (founder, 2026-11-02).
+  /// When the only routes are the earpiece and the speaker, the button flips
+  /// between them, as every phone's call screen does. A menu stays only when
+  /// a headset makes it three or more, which one tap cannot choose between.
+  /// Null when there is no such pair.
+  AudioOutputRoute? get toggleTarget {
+    if (!isSupported || routes.length != 2) return null;
+    final kinds = routes.map((r) => r.kind).toSet();
+    if (!kinds.containsAll(
+        const {AudioOutputKind.earpiece, AudioOutputKind.speaker})) {
+      return null;
+    }
+    final onSpeaker = current?.kind == AudioOutputKind.speaker;
+    return routes.firstWhere((r) =>
+        r.kind ==
+        (onSpeaker ? AudioOutputKind.earpiece : AudioOutputKind.speaker));
+  }
+
   AudioOutputState copyWith({
     List<AudioOutputRoute>? routes,
     AudioOutputRoute? current,

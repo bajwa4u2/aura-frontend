@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 
+import '../notifications/android_telecom.dart';
 import 'audio_output.dart';
 
 /// AUDIO OUTPUT ON A PHONE.
@@ -107,14 +108,36 @@ class NativeAudioOutputAuthority extends AudioOutputAuthority {
   Future<AudioOutputRoute?> select(AudioOutputRoute route) async {
     if (!isSupported) return null;
     try {
-      await Helper.selectAudioOutput(route.id);
+      // Telecom owns the route while it holds the call and the OS reports
+      // its choice back, so picking Speaker without telling it changed
+      // nothing on the S24 (2026-11-02). Telecom first, then WebRTC's switch.
+      // One owner: Telecom when it holds the call (WebRTC's switch has been
+      // told to keep out of routing), WebRTC's switch otherwise.
+      final viaTelecom = defaultTargetPlatform == TargetPlatform.android &&
+          await AndroidTelecom.instance.setRoute(route.id);
+      if (!viaTelecom) {
+        if (route.kind == AudioOutputKind.speaker ||
+            route.kind == AudioOutputKind.earpiece) {
+          await Helper.setSpeakerphoneOn(
+              route.kind == AudioOutputKind.speaker);
+        } else {
+          await Helper.selectAudioOutput(route.id);
+        }
+      }
+      debugPrint('[audio-route] select ${route.id} telecom=$viaTelecom');
     } catch (_) {
       // The request failed outright. Fall through and report what the platform
       // is actually on, which is the only honest answer either way.
     }
     // Deliberately re-read rather than returning `route`. Reporting the request
     // as though it were the result is exactly the optimism this control must
-    // not have.
+    // not have. Telecom applies a change a moment after accepting it, so the
+    // read waits briefly for the route to land before settling for what is.
+    for (var i = 0; i < 6; i++) {
+      final now = await current();
+      if (now?.id == route.id) return now;
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+    }
     return current();
   }
 

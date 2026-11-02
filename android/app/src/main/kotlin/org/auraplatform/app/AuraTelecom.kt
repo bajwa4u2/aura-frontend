@@ -17,7 +17,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 
@@ -78,6 +77,30 @@ object AuraTelecom {
 
     /** Live calls, keyed by Aura's own session id. */
     private val calls = ConcurrentHashMap<String, LiveCall>()
+
+    /**
+     * THE ROUTES TELECOM REPORTS, KEPT AS THEY CHANGE (2026-11-02).
+     *
+     * `availableEndpoints` and `currentCallEndpoint` emit when something
+     * changes, not on request: awaiting `.first()` at tap time waited for the
+     * next change, so the fourth tap on the S24 hung and every tap after it
+     * queued behind. Each call's endpoints are collected for its whole life
+     * and read from here.
+     */
+    private val endpointsBySession = ConcurrentHashMap<String, List<CallEndpointCompat>>()
+    private val currentBySession = ConcurrentHashMap<String, CallEndpointCompat>()
+
+    /**
+     * The two endpoint watchers of each call. They never finish on their own,
+     * and a call's scope is not over while they run — left alone, an ended
+     * call stayed in [calls] and every later route request went to it too.
+     * Stopped the moment the call disconnects, from either side.
+     */
+    private val watchersBySession = ConcurrentHashMap<String, List<Job>>()
+
+    private fun stopWatching(sessionId: String) {
+        watchersBySession.remove(sessionId)?.forEach { it.cancel() }
+    }
 
     private var channel: MethodChannel? = null
 
@@ -144,7 +167,26 @@ object AuraTelecom {
                     result.success(false)
                 } else {
                     for (sessionId in calls.keys) {
-                        withControl(sessionId) { control -> requestRoute(control, on) }
+                        withControl(sessionId) { control -> requestRoute(sessionId, control, on) }
+                    }
+                    result.success(true)
+                }
+            }
+
+            // A route chosen in the in-call picker, by the same ids the
+            // picker uses. Same contract as "setSpeaker".
+            // Whether a system call is live, so the app knows Telecom owns
+            // the audio route for it.
+            "holdsCall" -> result.success(calls.isNotEmpty())
+
+            "setRoute" -> {
+                val type = endpointTypeFor(call.argument<String>("route").orEmpty())
+                if (type == null || calls.isEmpty()) {
+                    Log.i(TAG, "setRoute not sent: type=$type calls=${calls.size}")
+                    result.success(false)
+                } else {
+                    for (sessionId in calls.keys) {
+                        withControl(sessionId) { control -> requestEndpoint(sessionId, control, type) }
                     }
                     result.success(true)
                 }
@@ -265,12 +307,19 @@ object AuraTelecom {
                     },
                     // THE SYSTEM DISCONNECTED. A cellular call took priority,
                     // or the person ended it from a system surface.
-                    { cause -> emit("onDisconnect", sessionId, cause.code.toString()) },
+                    { cause ->
+                        stopWatching(sessionId)
+                        emit("onDisconnect", sessionId, cause.code.toString())
+                    },
                     { emit("onSetActive", sessionId) },
                     // Held. The Aura call must go quiet rather than carry on
                     // into a conversation the person is no longer in.
                     { emit("onSetInactive", sessionId) },
                 ) {
+                    watchersBySession[sessionId] = listOf(
+                        launch { availableEndpoints.collect { endpointsBySession[sessionId] = it } },
+                        launch { currentCallEndpoint.collect { currentBySession[sessionId] = it } },
+                    )
                     live.control.complete(this)
                 }
             } catch (t: Throwable) {
@@ -279,6 +328,9 @@ object AuraTelecom {
                 Log.w(TAG, "addCall failed for $sessionId: ${t.javaClass.simpleName}: ${t.message}")
             } finally {
                 calls.remove(sessionId)
+                stopWatching(sessionId)
+                endpointsBySession.remove(sessionId)
+                currentBySession.remove(sessionId)
             }
         }
         calls[sessionId] = LiveCall(
@@ -308,27 +360,45 @@ object AuraTelecom {
             "answered_elsewhere" -> DisconnectCause.OTHER
             else -> DisconnectCause.LOCAL
         }
-        withControl(sessionId) { it.disconnect(DisconnectCause(cause)) }
+        withControl(sessionId) {
+            try {
+                it.disconnect(DisconnectCause(cause))
+            } finally {
+                stopWatching(sessionId)
+            }
+        }
     }
 
-    private suspend fun requestRoute(control: CallControlScope, speaker: Boolean) {
-        val wanted = if (speaker) {
-            CallEndpointCompat.TYPE_SPEAKER
-        } else {
-            CallEndpointCompat.TYPE_EARPIECE
-        }
-        val current = control.currentCallEndpoint.first()
-        if (current.type == wanted) return
-        // Turning the speaker off with a headset connected means the headset,
-        // not the earpiece: never pull audio off a device the person chose.
-        if (!speaker && current.type != CallEndpointCompat.TYPE_SPEAKER) return
-        val endpoint = control.availableEndpoints.first().firstOrNull { it.type == wanted }
+    private fun endpointTypeFor(route: String): Int? = when (route) {
+        "speaker" -> CallEndpointCompat.TYPE_SPEAKER
+        "earpiece" -> CallEndpointCompat.TYPE_EARPIECE
+        "bluetooth" -> CallEndpointCompat.TYPE_BLUETOOTH
+        "wired-headset" -> CallEndpointCompat.TYPE_WIRED_HEADSET
+        else -> null
+    }
+
+    private suspend fun requestEndpoint(sessionId: String, control: CallControlScope, type: Int) {
+        // Always asked, never skipped as "already there": a change just made
+        // may not be reported yet, and asking for the route in use is harmless.
+        Log.i(TAG, "route request type=$type")
+        val endpoint = endpointsBySession[sessionId]?.firstOrNull { it.type == type }
         if (endpoint == null) {
-            Log.w(TAG, "no ${if (speaker) "speaker" else "earpiece"} endpoint")
+            Log.w(TAG, "no endpoint of type $type")
             return
         }
-        val outcome = control.requestEndpointChange(endpoint)
-        Log.i(TAG, "route ${if (speaker) "speaker" else "earpiece"}: $outcome")
+        Log.i(TAG, "route type=$type: ${control.requestEndpointChange(endpoint)}")
+    }
+
+    private suspend fun requestRoute(sessionId: String, control: CallControlScope, speaker: Boolean) {
+        // Turning the speaker off with a headset connected means the headset,
+        // not the earpiece: never pull audio off a device the person chose.
+        val current = currentBySession[sessionId]
+        if (!speaker && current != null && current.type != CallEndpointCompat.TYPE_SPEAKER) return
+        requestEndpoint(
+            sessionId,
+            control,
+            if (speaker) CallEndpointCompat.TYPE_SPEAKER else CallEndpointCompat.TYPE_EARPIECE,
+        )
     }
 
     /**

@@ -400,6 +400,7 @@ class RealtimeMediaService {
     required bool audio,
     required bool video,
   }) async {
+    if (audio) await _claimAudioRoute();
     await _resetLocalMediaOnly();
     _cameraUnavailable = false;
 
@@ -2506,20 +2507,81 @@ class RealtimeMediaService {
   Future<void> setSpeakerphoneEnabled(bool enabled) async {
     if (_disposed || kIsWeb) return;
     try {
-      // TWO THINGS ROUTE CALL AUDIO ON ANDROID, AND BOTH ARE TOLD (2026-11-02).
-      // Telecom owns the route while it holds the call; WebRTC's own audio
-      // switch picks the speaker by itself when the microphone starts, behind
-      // Telecom's back. Told only one, they disagreed on the S24: sound on
-      // the speaker, Telecom recording the earpiece, and the button showing
-      // Earpiece. Telecom first, then WebRTC's switch, so both end the same.
-      if (defaultTargetPlatform == TargetPlatform.android) {
-        await AndroidTelecom.instance.setSpeaker(enabled);
-      }
-      await Helper.setSpeakerphoneOn(enabled);
+      // The owner decides (see [configureCallAudio]): Telecom when it holds
+      // the call, WebRTC's switch otherwise — never both.
+      final viaTelecom = defaultTargetPlatform == TargetPlatform.android &&
+          await AndroidTelecom.instance.setSpeaker(enabled);
+      if (!viaTelecom) await Helper.setSpeakerphoneOn(enabled);
       _speakerphoneEnabled = enabled;
       _publish();
     } catch (error) {
       debugPrint('[rtc-media] setSpeakerphoneEnabled failed err=$error');
+    }
+  }
+
+  /// ONE AUTHORITY FOR WHERE A CALL IS HEARD (2026-11-02).
+  ///
+  /// Android has two things that move call audio: Telecom, which owns the
+  /// route of any call it holds, and WebRTC's own audio switch, which picks
+  /// an output by itself when the microphone starts and again on every audio
+  /// focus change. Left both running, they fought on the S24: calls opened on
+  /// the speaker then dropped to the earpiece, and the switch moved a call
+  /// back on its own after the person had chosen.
+  ///
+  /// So before the microphone starts, exactly one is put in charge. When
+  /// Telecom holds the call, WebRTC's switch is told to leave focus, mode and
+  /// routing alone (no focus management, normal mode, no forced routing —
+  /// its routing runs only in a call mode), and the starting output is asked
+  /// of Telecom. With no system call (meetings, phones without Telecom), the
+  /// switch keeps the communication configuration and is told the starting
+  /// output itself. Returns whether Telecom owns the route.
+  Future<bool> configureCallAudio({required bool speaker}) async {
+    if (_disposed || kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+      return false;
+    }
+    try {
+      final telecomOwns = await _claimAudioRoute();
+      if (telecomOwns) {
+        await AndroidTelecom.instance.setSpeaker(speaker);
+      } else {
+        await Helper.setSpeakerphoneOn(speaker);
+      }
+      _speakerphoneEnabled = speaker;
+      debugPrint('[audio-route] configured telecom=$telecomOwns speaker=$speaker');
+      return telecomOwns;
+    } catch (error) {
+      debugPrint('[rtc-media] configureCallAudio failed err=$error');
+      return false;
+    }
+  }
+
+  /// Puts the one owner in charge (see [configureCallAudio]). Runs before
+  /// EVERY microphone start, because the answer warm-up opens the microphone
+  /// before the call's own media step: claimed only there, WebRTC's switch
+  /// had already sent the S24 to the speaker (2026-11-02, 13:12:22). When
+  /// Telecom owns the route, whatever device the switch set earlier is
+  /// cleared too, so its leftover request cannot outrank Telecom.
+  Future<bool> _claimAudioRoute() async {
+    if (_disposed || kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
+      return false;
+    }
+    try {
+      final telecomOwns = await AndroidTelecom.instance.holdsCall();
+      await Helper.setAndroidAudioConfiguration(
+        telecomOwns
+            ? AndroidAudioConfiguration(
+                manageAudioFocus: false,
+                androidAudioMode: AndroidAudioMode.normal,
+                forceHandleAudioRouting: false,
+              )
+            : AndroidAudioConfiguration.communication,
+      );
+      if (telecomOwns) await Helper.clearAndroidCommunicationDevice();
+      debugPrint('[audio-route] claimed telecom=$telecomOwns');
+      return telecomOwns;
+    } catch (error) {
+      debugPrint('[rtc-media] claimAudioRoute failed err=$error');
+      return false;
     }
   }
 

@@ -197,4 +197,41 @@ void main() {
       controller.dispose();
     });
   });
+
+  // Founder, 2026-11-02: the picker for two places was "old school"; the
+  // button flips earpiece and speaker on one tap. A menu only for three+.
+  group('earpiece and speaker flip on one tap', () {
+    test('on the earpiece, the tap goes to the speaker', () {
+      const state = AudioOutputState(
+        routes: [_earpiece, _speaker],
+        current: _earpiece,
+        isSupported: true,
+      );
+      expect(state.toggleTarget, _speaker);
+    });
+
+    test('on the speaker, the tap goes back to the earpiece', () {
+      const state = AudioOutputState(
+        routes: [_earpiece, _speaker],
+        current: _speaker,
+        isSupported: true,
+      );
+      expect(state.toggleTarget, _earpiece);
+    });
+
+    test('a headset makes it a choice, not a flip', () {
+      const state = AudioOutputState(
+        routes: [_bt, _earpiece, _speaker],
+        current: _bt,
+        isSupported: true,
+      );
+      expect(state.toggleTarget, isNull);
+      expect(state.hasChoice, isTrue);
+    });
+
+    test('a platform that cannot route offers no flip', () {
+      const state = AudioOutputState(routes: [_earpiece, _speaker]);
+      expect(state.toggleTarget, isNull);
+    });
+  });
 }
