@@ -413,9 +413,8 @@ func notificationBelongsToCall(
   /// populated, while `callObserver.calls` can still show a call left behind
   /// by an earlier launch that the map no longer knows about.
   private func endStaleCalls(keeping current: UUID) {
-    // Jurisdiction gate. Unreachable while prohibited — the only caller is the
-    // VoIP push handler, which is itself gated and cannot run without a
-    // registration this jurisdiction never made. Present because
+    // Jurisdiction gate. Its callers (the VoIP push handler, answering, and
+    // placing a call) are gated already. Present because
     // `callObserver` and `reportCall` are CallKit, and no CallKit path in this
     // file is left ungated on the assumption that its caller was.
     guard callKitAllowed, let provider = provider else { return }
@@ -611,6 +610,9 @@ func notificationBelongsToCall(
       action.isVideo = isVideo
       action.contactIdentifier = calleeName
 
+      // Placing a call is choosing it: a call CallKit still holds from before
+      // is over (Aura is one call or none) and must not keep the audio session.
+      endStaleCalls(keeping: uuid)
       startingLocally.insert(uuid)
       callKitTakesAudio(waitForActivation: true)
       // Activation normally follows the start within a second. If it never
@@ -1007,12 +1009,42 @@ extension AppDelegate: CXProviderDelegate {
     // goes away, but do not tell Dart to join a call it is already joining.
     if answeringLocally.remove(action.callUUID) != nil {
       action.fulfill()
+      audioAfterAnswer(action.callUUID, sessionId: sessionId)
       return
     }
     // Fulfilled here, joined in Dart. If the join fails, Dart calls endCall
     // with reason "failed" — the sheet never hangs waiting on the network.
     emit("answer", ["sessionId": sessionId])
     action.fulfill()
+    audioAfterAnswer(action.callUUID, sessionId: sessionId)
+  }
+
+  /// AN ANSWERED CALL MUST GET ITS AUDIO (2026-11-04).
+  ///
+  /// An incoming call holds WebRTC's audio off until CallKit's `didActivate`.
+  /// Founder-observed 2026-11-03 · 1:32 PM ET (session cmw10ypcz…, answered on
+  /// the lock screen): the activation never came, and for 90 s the iPhone sent
+  /// nothing and played nothing while the S24's voice arrived, until the
+  /// server gave the call up. The call before it was still held by CallKit
+  /// (the far side had hung up and this phone was never told), so the audio
+  /// session was never handed back and there was nothing to activate again.
+  ///
+  /// Answering is the person choosing THIS call, and Aura is one call or none,
+  /// so any call still held here ends now. If CallKit already has the audio
+  /// active, audio starts at once; if activation has not come within 3 s,
+  /// audio starts anyway, as outgoing calls already do: late audio is better
+  /// than a silent call.
+  private func audioAfterAnswer(_ uuid: UUID, sessionId: String) {
+    endStaleCalls(keeping: uuid)
+    if callKitAudioActive {
+      RtcAudio.set(manualAudio: true, audioEnabled: true)
+    }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
+      guard let self = self, !self.callKitAudioActive,
+            self.uuidBySession[sessionId] == uuid else { return }
+      NSLog("[callkit] answered audio not activated after 3s; enabling")
+      RtcAudio.set(manualAudio: true, audioEnabled: true)
+    }
   }
 
   func provider(_ provider: CXProvider, perform action: CXStartCallAction) {

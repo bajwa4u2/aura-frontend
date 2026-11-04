@@ -140,7 +140,16 @@ void main() {
     // recovery from refusal, not a precondition for the attempt: a stale call
     // still cannot block a new one, it is just cleared at the moment it
     // actually blocks something.
-    final swift = _code(_read('ios/Runner/AppDelegate.swift'));
+    //
+    // Scoped to the VoIP push handler, where the obligation lives. Answering
+    // and placing a call also clear held calls (2026-11-04: a call CallKit
+    // still held kept the audio session, and the next answered call was
+    // silent); those run on a person's action, never in front of a report.
+    final swift = _between(
+      _read('ios/Runner/AppDelegate.swift'),
+      'didReceiveIncomingPushWith',
+      '// MARK: - System presentation lapse',
+    );
     final report = swift.indexOf('reportNewIncomingCall(');
     final sweep = swift.indexOf('endStaleCalls(keeping:');
     expect(report, greaterThanOrEqualTo(0));
@@ -158,6 +167,39 @@ void main() {
       greaterThan(sweep),
       reason: 'after freeing the slot the call must actually be re-reported, '
           'or the recovery clears state and rings nobody.',
+    );
+  });
+
+  test('an answered call gets its audio, and a held call cannot keep it', () {
+    // 2026-11-03 · 1:32 PM ET, iPhone answering on the lock screen: CallKit
+    // never activated the audio session (the previous call still held it),
+    // and for 90 s the phone sent and played nothing. An answer now clears
+    // any held call, starts audio at once when CallKit already has it active,
+    // and starts it after 3 s at the latest, as an outgoing call does.
+    final source = _read('ios/Runner/AppDelegate.swift');
+    final answer = _between(
+      source,
+      'perform action: CXAnswerCallAction',
+      'AN ANSWERED CALL MUST GET ITS AUDIO',
+    );
+    expect(
+      'audioAfterAnswer('.allMatches(answer).length,
+      2,
+      reason: 'both answer paths (system screen and in-app) need audio.',
+    );
+    final helper = _between(
+      source,
+      'private func audioAfterAnswer(',
+      'perform action: CXStartCallAction',
+    );
+    expect(helper, contains('endStaleCalls(keeping: uuid)'));
+    expect(helper, contains('if callKitAudioActive'));
+    expect(helper, contains('.now() + 3.0'));
+    final outgoing = _between(source, 'case "startOutgoingCall":', 'case "callOutgoingConnected":');
+    expect(
+      outgoing.indexOf('endStaleCalls(keeping: uuid)'),
+      lessThan(outgoing.indexOf('callKitTakesAudio(waitForActivation: true)')),
+      reason: 'placing a call clears a held one before taking the audio.',
     );
   });
 
