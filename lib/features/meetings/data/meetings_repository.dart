@@ -719,17 +719,43 @@ class MeetingsRepository {
   // a host who wanted to add someone afterwards had only the address to give
   // away — which the participants panel actively recommended. That was the
   // whole of the gap.
+  //
+  // An Aura MEMBER is invited by `userId` (6 Nov 2026): the server makes them
+  // a participant awaiting their answer, tells them in-app and emails them.
+  // Exactly one of [email] or [userId] is expected.
   Future<void> inviteToMeeting(
     String meetingId, {
-    required String email,
+    String? email,
     String? name,
+    String? userId,
   }) async {
     await _dio.post<void>(
       '/meetings/$meetingId/invite',
       data: {
-        'email': email,
+        if (email != null && email.trim().isNotEmpty) 'email': email.trim(),
+        if (userId != null && userId.trim().isNotEmpty)
+          'userId': userId.trim(),
         if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
       },
+    );
+  }
+
+  /// A participant's own answer to a meeting they were added to:
+  /// `POST /meetings/:id/rsvp` with `status` ACCEPTED or DECLINED. The server
+  /// refuses hosts and co-hosts, who manage the meeting rather than answer it.
+  Future<void> respondToMeeting(String meetingId, {required bool accept}) async {
+    await _dio.post<void>(
+      '/meetings/$meetingId/rsvp',
+      data: {'status': accept ? 'ACCEPTED' : 'DECLINED'},
+    );
+  }
+
+  /// The decline link in an invitation email. The token IS the invitation, so
+  /// no sign-in is involved: `POST /public/meetings/invitations/:token/decline`.
+  Future<void> declineInvitationByToken(String token) async {
+    await _dio.post<void>(
+      '/public/meetings/invitations/${Uri.encodeComponent(token)}/decline',
+      options: Options(extra: const {'__skip_auth': true}),
     );
   }
 }

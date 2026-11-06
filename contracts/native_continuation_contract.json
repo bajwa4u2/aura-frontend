@@ -108,6 +108,14 @@
         "why": "Guest-reachable meeting entry. A meeting is never at bare /join/: that was once a path no router declared, which failed closed to MEMBER and put a login wall in front of invited guests."
       },
       {
+        "prefix": "/meet/",
+        "why": "Personal booking pages (/meet/:slug, /meet/:slug/book) and the cancel and reschedule links their emails carry (/meet/cancel/:token, /meet/reschedule/:token). Guest-reachable. Added 6 Nov 2026: they opened the browser."
+      },
+      {
+        "prefix": "/meetings/invitation/",
+        "why": "The decline link in a meeting invitation email (/meetings/invitation/:token/decline). Guest-reachable: the token is the invitation. Added 6 Nov 2026."
+      },
+      {
         "prefix": "/join/",
         "why": "A member's personal Invite to Aura link, /join/:handle (canon amendment 2026-10-20). Declared PUBLIC in the client router."
       },
@@ -166,8 +174,12 @@
         "why": "Private correspondence."
       },
       {
-        "pattern": "/me*",
-        "why": "Private self surfaces."
+        "pattern": "/me",
+        "why": "Private self surface. Was /me*, which also swallowed /meet/* and /meetings/* on Windows (6 Nov 2026)."
+      },
+      {
+        "pattern": "/me/*",
+        "why": "Private self surfaces (/me/edit, /me/invitations, /me/follow-requests)."
       },
       {
         "pattern": "/admin*",

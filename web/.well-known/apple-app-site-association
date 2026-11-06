@@ -64,6 +64,14 @@
             "comment": "Guest-reachable meeting entry."
           },
           {
+            "/": "/meet/*",
+            "comment": "Personal booking pages and their emailed cancel and reschedule links (6 Nov 2026)."
+          },
+          {
+            "/": "/meetings/invitation/*",
+            "comment": "The decline link in a meeting invitation email (6 Nov 2026)."
+          },
+          {
             "/": "/join/*",
             "comment": "A member's personal Invite to Aura link (/join/:handle)."
           },

@@ -15,6 +15,7 @@ import '../domain/availability_profile.dart';
 import '../../../core/identity/person_identity_model.dart';
 import '../../../core/ui/aura_bounded_editor.dart';
 import 'meetings_home_screen.dart';
+import 'meeting_schedule_rules.dart';
 import '../../../core/product/product_language.dart';
 import 'package:aura/core/ui/aura_notice.dart';
 
@@ -303,6 +304,7 @@ class _ProfileCard extends ConsumerWidget {
           const Divider(height: AuraSpace.s16, color: AuraSurface.divider),
           // Window management
           _WindowManager(profile: profile, institutionId: institutionId),
+          _DaysOffManager(profile: profile, institutionId: institutionId),
         ],
       ),
     );
@@ -839,6 +841,10 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
   late final TextEditingController _minNoticeCtrl;
   late final TextEditingController _maxBookingsCtrl;
   late bool _requireApproval;
+  late final TextEditingController _timezoneCtrl;
+  late Set<int> _durations;
+  late int _defaultDuration;
+  String? _timezoneProblem;
   List<Map<String, dynamic>> _members = [];
   String? _selectedHostId;
   bool _saving = false;
@@ -847,6 +853,9 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
   void initState() {
     super.initState();
     final p = widget.profile;
+    _timezoneCtrl = TextEditingController(text: p.timezone);
+    _durations = {...p.durationOptions};
+    _defaultDuration = p.defaultDuration;
     _titleCtrl = TextEditingController(text: p.meetingTitle);
     _descCtrl = TextEditingController(text: p.meetingDescription ?? '');
     _bufferBeforeCtrl =
@@ -870,6 +879,7 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
     _bufferAfterCtrl.dispose();
     _minNoticeCtrl.dispose();
     _maxBookingsCtrl.dispose();
+    _timezoneCtrl.dispose();
     super.dispose();
   }
 
@@ -898,8 +908,26 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
   String _memberName(Map<String, dynamic> m) =>
       AuraPersonIdentity.fromJson(m['user']).proseName;
 
+  void _toggleDuration(int minutes, bool on) {
+    setState(() {
+      if (on) {
+        _durations.add(minutes);
+      } else if (_durations.length > 1) {
+        // A booking page offers at least one length.
+        _durations.remove(minutes);
+      }
+      if (!_durations.contains(_defaultDuration)) {
+        _defaultDuration = (_durations.toList()..sort()).first;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final durationChoices =
+        ({...kStandardMeetingDurations, ..._durations}.toList()..sort());
+    final chosen = _durations.toList()..sort();
+    final deviceZone = cachedLocalTimezone;
     return AlertDialog(
       title: const Text('Edit booking page'),
       content: SingleChildScrollView(
@@ -958,6 +986,72 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
                   ],
                   onChanged: (v) => setState(() => _selectedHostId = v),
                 ),
+              ),
+            ],
+            // BOOKING LENGTHS AND THE PAGE'S TIMEZONE (6 Nov 2026). Both
+            // were fixed at creation (30 and 60 minutes, the creator's
+            // zone) with nothing anywhere to change them.
+            const SizedBox(height: 20),
+            const Text(
+              'Meeting lengths guests can book',
+              style: TextStyle(fontSize: 12, color: Color(0xFFA9AEB9)),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final m in durationChoices)
+                  FilterChip(
+                    label: Text(_durationChipLabel(m)),
+                    selected: _durations.contains(m),
+                    onSelected: (on) => _toggleDuration(m, on),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<int>(
+              key: ValueKey('default-$chosen'),
+              initialValue: _defaultDuration,
+              decoration: const InputDecoration(
+                labelText: 'Length selected first',
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                for (final m in chosen)
+                  DropdownMenuItem(value: m, child: Text(_durationChipLabel(m))),
+              ],
+              onChanged: (v) {
+                if (v != null) setState(() => _defaultDuration = v);
+              },
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _timezoneCtrl,
+              decoration: InputDecoration(
+                labelText: 'Timezone of this page',
+                hintText: 'For example America/Detroit',
+                helperText:
+                    'Your weekly hours are read in this timezone.',
+                helperMaxLines: 2,
+                errorText: _timezoneProblem,
+                border: const OutlineInputBorder(),
+              ),
+              onChanged: (_) {
+                if (_timezoneProblem != null) {
+                  setState(() => _timezoneProblem = null);
+                }
+              },
+            ),
+            if (deviceZone != null &&
+                deviceZone != _timezoneCtrl.text.trim()) ...[
+              const SizedBox(height: 4),
+              TextButton(
+                onPressed: () => setState(() {
+                  _timezoneCtrl.text = deviceZone;
+                  _timezoneProblem = null;
+                }),
+                child: Text('Use this device\'s timezone ($deviceZone)'),
               ),
             ],
             // J3: Booking behavior settings.
@@ -1053,6 +1147,12 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
   }
 
   Future<void> _save() async {
+    final zone = _timezoneCtrl.text.trim();
+    if (!isIanaZoneId(zone)) {
+      setState(() => _timezoneProblem =
+          'Use a timezone name like America/Detroit or Europe/London.');
+      return;
+    }
     setState(() => _saving = true);
     try {
       final prevHostId = widget.profile.assignedHost?.id;
@@ -1074,6 +1174,9 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
             maxBookingsPerDay:
                 int.tryParse(_maxBookingsCtrl.text.trim()),
             requireApproval: _requireApproval,
+            durationOptions: _durations.toList()..sort(),
+            defaultDuration: _defaultDuration,
+            timezone: zone == widget.profile.timezone ? null : zone,
           );
       await _refreshInstitutionProfiles(ref, widget.institutionId);
       if (!mounted) return;
@@ -1297,6 +1400,182 @@ class _StatusChip extends StatelessWidget {
           fontWeight: FontWeight.w600,
         ),
       ),
+    );
+  }
+}
+
+
+String _durationChipLabel(int m) {
+  if (m < 60) return '$m min';
+  final h = m ~/ 60;
+  final rem = m % 60;
+  return rem == 0 ? '${h}h' : '${h}h ${rem}min';
+}
+
+/// The days a booking page's override marks as blocked, upcoming only, by the
+/// calendar day the server reads them as. Overrides are stored as an instant;
+/// [AvailabilityRepository.addInstitutionDayOff] writes noon UTC, which is the
+/// same calendar day everywhere from UTC-11 to UTC+11.
+List<({String id, DateTime day})> upcomingDaysOff(
+  AvailabilityProfile profile, {
+  DateTime? now,
+}) {
+  final n = now ?? DateTime.now();
+  final today = DateTime(n.year, n.month, n.day);
+  final days = <({String id, DateTime day})>[];
+  for (final o in profile.overrides) {
+    if (!o.isBlocked) continue;
+    final u = o.date.toUtc();
+    final day = DateTime(u.year, u.month, u.day);
+    if (!day.isBefore(today)) days.add((id: o.id, day: day));
+  }
+  return days..sort((a, b) => a.day.compareTo(b.day));
+}
+
+/// DAYS OFF (6 Nov 2026). The server has always had date overrides, and
+/// slot generation skips a blocked day, but nothing in the app could create
+/// one: a host going on holiday kept taking bookings.
+///
+/// A day off can be removed again (`DELETE :profileId/overrides/:id`).
+class _DaysOffManager extends ConsumerStatefulWidget {
+  final AvailabilityProfile profile;
+  final String institutionId;
+  const _DaysOffManager({required this.profile, required this.institutionId});
+
+  @override
+  ConsumerState<_DaysOffManager> createState() => _DaysOffManagerState();
+}
+
+class _DaysOffManagerState extends ConsumerState<_DaysOffManager> {
+  bool _expanded = false;
+  bool _saving = false;
+
+  Future<void> _addDayOff() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = await showDatePicker(
+      context: context,
+      initialDate: today,
+      firstDate: today,
+      lastDate: today.add(const Duration(days: 365)),
+      helpText: 'Day off',
+    );
+    if (day == null || !mounted) return;
+    setState(() => _saving = true);
+    try {
+      await ref.read(availabilityRepositoryProvider).addInstitutionDayOff(
+            widget.institutionId,
+            widget.profile.id,
+            day: day,
+          );
+      await _refreshInstitutionProfiles(ref, widget.institutionId);
+      if (!mounted) return;
+      AuraNotice.done(context, 'Day off added. No one can book that day.');
+    } catch (_) {
+      if (!mounted) return;
+      AuraNotice.problem(context, 'That day off was not saved. Try again.');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _removeDayOff(String overrideId) async {
+    setState(() => _saving = true);
+    try {
+      await ref.read(availabilityRepositoryProvider).removeInstitutionDayOff(
+            widget.institutionId,
+            widget.profile.id,
+            overrideId,
+          );
+      await _refreshInstitutionProfiles(ref, widget.institutionId);
+      if (!mounted) return;
+      AuraNotice.done(context, 'Day off removed. That day can be booked again.');
+    } catch (_) {
+      if (!mounted) return;
+      AuraNotice.problem(context, 'That day off was not removed. Try again.');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final days = upcomingDaysOff(widget.profile);
+    final loc = MaterialLocalizations.of(context);
+    return Column(
+      children: [
+        InkWell(
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AuraSpace.s8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    days.isEmpty ? 'Days off' : 'Days off (${days.length})',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AuraSurface.muted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Icon(
+                  _expanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                  color: const Color(0xFFA9AEB9),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_expanded) ...[
+          const Divider(height: 1, color: Color(0xFF1A1F29)),
+          if (days.isEmpty)
+            const ListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              title: Text(
+                'No days off coming up.',
+                style: TextStyle(fontSize: 13, color: AuraSurface.muted),
+              ),
+            ),
+          for (final d in days)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+              title: Text(
+                loc.formatFullDate(d.day),
+                style: const TextStyle(fontSize: 13),
+              ),
+              trailing: IconButton(
+                tooltip: 'Remove this day off',
+                icon: const Icon(
+                  Icons.remove_circle_outline_rounded,
+                  size: 18,
+                  color: Color(0xFFA9AEB9),
+                ),
+                onPressed: _saving ? null : () => _removeDayOff(d.id),
+              ),
+            ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+            leading: const Icon(
+              Icons.add_rounded,
+              size: 18,
+              color: Color(0xFFD2AC62),
+            ),
+            title: const Text(
+              'Add a day off',
+              style: TextStyle(fontSize: 13, color: Color(0xFFD2AC62)),
+            ),
+            enabled: !_saving,
+            onTap: _addDayOff,
+          ),
+        ],
+      ],
     );
   }
 }

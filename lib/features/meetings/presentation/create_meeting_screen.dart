@@ -17,6 +17,7 @@ import '../domain/availability_profile.dart';
 import '../domain/meeting_identity.dart';
 import '../../../core/identity/person_identity_model.dart';
 import 'widgets/meeting_surfaces.dart';
+import 'meeting_schedule_rules.dart';
 import 'package:aura/core/ui/aura_notice.dart';
 
 final _institutionDetailProvider = FutureProvider.family<Institution, String>((
@@ -94,11 +95,15 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
   bool _hostOnly = false;
   bool _includeAllMembers = false;
   int _durationMinutes = 60;
+
+  /// Sent as `recordingEnabled`. On by default: recording is possible on
+  /// every meeting today, and this keeps that until someone turns it off.
+  bool _recordingEnabled = true;
   DateTime? _scheduledAt;
   final Set<String> _selectedMemberIds = <String>{};
   final List<_DraftInvitee> _invitees = <_DraftInvitee>[];
 
-  static const _durations = [15, 30, 45, 60, 90, 120];
+  static const _durations = kStandardMeetingDurations;
 
   bool get _isInstitutionMode =>
       widget.institutionId != null && widget.institutionId!.isNotEmpty;
@@ -155,15 +160,20 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
     );
     if (time == null || !mounted) return;
 
-    setState(() {
-      _scheduledAt = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        time.hour,
-        time.minute,
-      );
-    });
+    final picked = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+    // The date picker starts at today, but the time picker let any earlier
+    // hour of today through.
+    if (isPastMeetingTime(picked)) {
+      _snack(kPastMeetingTimeMessage);
+      return;
+    }
+    setState(() => _scheduledAt = picked);
   }
 
   void _toggleMember(String userId) {
@@ -279,6 +289,13 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
       return;
     }
 
+    // The default time is an hour from when the form opened; a form left
+    // open long enough can drift into the past.
+    if (!_startNow && isPastMeetingTime(_scheduledAt!)) {
+      _snack(kPastMeetingTimeMessage);
+      return;
+    }
+
     if (!_hostOnly &&
         !_includeAllMembers &&
         _selectedMemberIds.isEmpty &&
@@ -311,6 +328,7 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
         durationMinutes: _durationMinutes,
         timezone: cachedLocalTimezone,
         waitingRoomEnabled: !_startNow,
+        recordingEnabled: _recordingEnabled,
         allowGuests: false,
         guestApprovalRequired: false,
         organizationId: widget.institutionId,
@@ -480,6 +498,9 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
           onPickDateTime: _pickDateTime,
           onDurationChanged: (value) =>
               setState(() => _durationMinutes = value),
+          recordingEnabled: _recordingEnabled,
+          onRecordingChanged: (value) =>
+              setState(() => _recordingEnabled = value),
           onStartNowChanged: (value) => setState(() => _startNow = value),
           onHostOnlyChanged: (value) => setState(() => _hostOnly = value),
           onAllMembersChanged: (value) =>
@@ -686,6 +707,8 @@ class _CreationForm extends StatelessWidget {
   final String scheduledLabel;
   final VoidCallback onPickDateTime;
   final ValueChanged<int> onDurationChanged;
+  final bool recordingEnabled;
+  final ValueChanged<bool> onRecordingChanged;
   final ValueChanged<bool> onStartNowChanged;
   final ValueChanged<bool> onHostOnlyChanged;
   final ValueChanged<bool> onAllMembersChanged;
@@ -717,6 +740,8 @@ class _CreationForm extends StatelessWidget {
     required this.scheduledLabel,
     required this.onPickDateTime,
     required this.onDurationChanged,
+    required this.recordingEnabled,
+    required this.onRecordingChanged,
     required this.onStartNowChanged,
     required this.onHostOnlyChanged,
     required this.onAllMembersChanged,
@@ -850,6 +875,15 @@ class _CreationForm extends StatelessWidget {
                   onChanged: (value) {
                     if (value != null) onDurationChanged(value);
                   },
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: recordingEnabled,
+                  title: const Text('Recording allowed'),
+                  subtitle: const Text(
+                    'Whether this meeting may be recorded.',
+                  ),
+                  onChanged: onRecordingChanged,
                 ),
               ],
             ),

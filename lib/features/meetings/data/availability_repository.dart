@@ -183,10 +183,16 @@ class AvailabilityRepository {
     int? bufferAfter,
     int? minimumNotice,
     int? maxBookingsPerDay,
+    List<int>? durationOptions,
+    int? defaultDuration,
+    String? timezone,
   }) async {
     final res = await _dio.patch<Map<String, dynamic>>(
       '/institution/$institutionId/availability/$profileId',
       data: {
+        if (durationOptions != null) 'durationOptions': durationOptions,
+        if (defaultDuration != null) 'defaultDuration': defaultDuration,
+        if (timezone != null) 'timezone': timezone,
         if (name != null) 'name': name,
         if (meetingTitle != null) 'meetingTitle': meetingTitle,
         if (meetingDescription != null) 'meetingDescription': meetingDescription,
@@ -235,6 +241,40 @@ class AvailabilityRepository {
         'startTime': startTime,
         'endTime': endTime,
       },
+    );
+  }
+
+  /// A day off on a booking page: `POST :profileId/overrides` with
+  /// `isBlocked: true`. [removeInstitutionDayOff] takes it away again.
+  ///
+  /// The date is sent as NOON UTC of the chosen calendar day. The server
+  /// matches an override by reading its instant in the page's timezone; a
+  /// bare `YYYY-MM-DD` is stored as midnight UTC, which in every zone west of
+  /// UTC is still the PREVIOUS day, so the wrong day would be blocked.
+  Future<void> addInstitutionDayOff(
+    String institutionId,
+    String profileId, {
+    required DateTime day,
+    String? reason,
+  }) async {
+    final noonUtc = DateTime.utc(day.year, day.month, day.day, 12);
+    await _dio.post<void>(
+      '/institution/$institutionId/availability/$profileId/overrides',
+      data: {
+        'date': noonUtc.toIso8601String(),
+        'isBlocked': true,
+        if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+      },
+    );
+  }
+
+  Future<void> removeInstitutionDayOff(
+    String institutionId,
+    String profileId,
+    String overrideId,
+  ) async {
+    await _dio.delete<void>(
+      '/institution/$institutionId/availability/$profileId/overrides/$overrideId',
     );
   }
 

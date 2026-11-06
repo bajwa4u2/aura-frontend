@@ -25,6 +25,8 @@ const List<String> kEligiblePrefixes = [
   '/institutions/',
   '/spaces/',
   '/meetings/join/',
+  '/meet/',
+  '/meetings/invitation/',
   '/join/',
   '/i/',
   '/invite/',

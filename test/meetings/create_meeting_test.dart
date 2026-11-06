@@ -339,4 +339,21 @@ void main() {
       );
     });
   });
+
+  group('recording is decided when the meeting is made (6 Nov 2026)', () {
+    testWidgets('a Recording allowed switch is offered, on by default', (
+      tester,
+    ) async {
+      // The server has `recordingEnabled` and nothing ever set it, so every
+      // meeting was stored as "no recording" while recording worked anyway.
+      await open(tester);
+      final tile = find.widgetWithText(SwitchListTile, 'Recording allowed');
+      expect(tile, findsOneWidget);
+      expect(tester.widget<SwitchListTile>(tile).value, isTrue);
+      await tester.ensureVisible(tile);
+      await tester.tap(tile);
+      await tester.pump();
+      expect(tester.widget<SwitchListTile>(tile).value, isFalse);
+    });
+  });
 }

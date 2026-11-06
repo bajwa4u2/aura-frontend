@@ -19,6 +19,12 @@ import '../domain/meeting.dart';
 import '../domain/meeting_asset.dart';
 import '../domain/meeting_institution_routing.dart' as routing;
 import 'meeting_lifecycle_presenter.dart';
+import '../../../core/product/temporal.dart';
+import 'meeting_load_problem.dart';
+import 'meeting_schedule_rules.dart';
+import 'widgets/add_meeting_members_dialog.dart';
+import 'widgets/meeting_live_refresh.dart';
+import 'widgets/meeting_rsvp_panel.dart';
 import 'meeting_status_chip.dart';
 import 'widgets/meeting_assets_section.dart';
 import 'meeting_semantics.dart';
@@ -85,7 +91,12 @@ class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
           orElse: () => '',
         );
 
-    return meetingAsync.when(skipLoadingOnReload: true, 
+    final signedIn =
+        ref.watch(isAuthedProvider) && !ref.watch(isGuestSessionProvider);
+
+    return MeetingLiveRefresh(
+      meetingId: meetingId,
+      child: meetingAsync.when(skipLoadingOnReload: true, 
       // Section 19: a full-surface spinner under the generic word "Meeting"
       // told a person nothing except that something was happening somewhere.
       // The skeleton has the shape of the record that is coming, and the
@@ -105,24 +116,15 @@ class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
           ),
         ),
       ),
+      // HONEST ERROR STATES (6 Nov 2026). Every failure used to say "This
+      // meeting is available to its members." with Sign in, including to a
+      // signed-in member who was offline or hit a server fault.
       error: (e, _) => AuraScaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.lock_outline_rounded,
-                  size: 40, color: AuraSurface.faint),
-              const SizedBox(height: AuraSpace.s12),
-              const Text('This meeting is available to its members.'),
-              const SizedBox(height: AuraSpace.s16),
-              FilledButton.icon(
-                icon: const Icon(Icons.login_rounded),
-                label: const Text('Sign in'),
-                onPressed: () => context.go(
-                  '/login?redirect=${Uri.encodeComponent('/meetings/$meetingId')}',
-                ),
-              ),
-            ],
+        body: MeetingLoadProblemView(
+          problem: classifyMeetingLoadError(e, signedIn: signedIn),
+          onRetry: () => ref.invalidate(meetingProvider(meetingId)),
+          onSignIn: () => context.go(
+            '/login?redirect=${Uri.encodeComponent('/meetings/$meetingId')}',
           ),
         ),
       ),
@@ -183,6 +185,7 @@ class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
           institutionId: institutionId,
           isHost: isHost,
           canGovern: canGovern,
+          myId: myId,
           lifecycle: MeetingLifecyclePresenter.present(
             meeting,
             room: meeting.room,
@@ -190,6 +193,7 @@ class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
           ),
         );
       },
+      ),
     );
   }
 }
@@ -202,6 +206,9 @@ class _MeetingRecordBody extends ConsumerStatefulWidget {
   /// Viewer is an admin of the owning institution: governance actions
   /// (cancel) are available even when someone else hosts.
   final bool canGovern;
+
+  /// The signed-in viewer's user id ('' when unknown).
+  final String myId;
   final MeetingLifecycleViewModel lifecycle;
 
   const _MeetingRecordBody({
@@ -209,6 +216,7 @@ class _MeetingRecordBody extends ConsumerStatefulWidget {
     this.institutionId,
     required this.isHost,
     this.canGovern = false,
+    this.myId = '',
     required this.lifecycle,
   });
 
@@ -221,6 +229,13 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
 
   Meeting get meeting => widget.meeting;
   bool get isHost => widget.isHost;
+
+  /// Host, or a meeting manager of the owning institution. Runs the meeting
+  /// (start, edit, reschedule, invite, agenda, materials, record) the way the
+  /// server's assertHostAccess allows. NOT passed to the live room, whose
+  /// `isHost` stays the person's real role.
+  bool get canManage =>
+      canManageMeeting(isHost: widget.isHost, canGovern: widget.canGovern);
   /// THE INSTITUTION THIS VIEWER MAY BE ROUTED INTO — not the meeting's
   /// owner.
   ///
@@ -304,7 +319,9 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
     }
   }
 
-  Future<void> _editMeeting() async {
+  /// Edit the meeting. With [reschedule], the same dialog shows only the
+  /// date, time and length: "Reschedule" is its own clearly named action.
+  Future<void> _editMeeting({bool reschedule = false}) async {
     final titleCtrl = TextEditingController(text: meeting.title);
     final descCtrl = TextEditingController(text: meeting.description ?? '');
     final messenger = AuraNotice.of(context);
@@ -313,6 +330,8 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
     var durationMinutes = meeting.durationMinutes;
     var waitingRoomEnabled = meeting.waitingRoomEnabled;
     var allowGuests = meeting.allowGuests;
+    var recordingEnabled = meeting.recordingEnabled;
+    final originalScheduledAt = meeting.scheduledAt;
     var saving = false;
 
     Future<void> pickDateTime(
@@ -320,11 +339,18 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
       StateSetter setDialogState,
     ) async {
       final now = DateTime.now();
-      final base = scheduledAt ?? now.add(const Duration(hours: 1));
+      final today = DateTime(now.year, now.month, now.day);
+      var base = ProductTime(
+        scheduledAt ?? now.add(const Duration(hours: 1)),
+        TimeEvent.scheduled,
+      ).local;
+      // A meeting whose time has passed opens the picker on today: the
+      // picker cannot start before its own first date.
+      if (base.isBefore(today)) base = now.add(const Duration(hours: 1));
       final date = await showDatePicker(
         context: pickerContext,
         initialDate: base,
-        firstDate: now.subtract(const Duration(days: 1)),
+        firstDate: today,
         lastDate: now.add(const Duration(days: 365)),
       );
       if (date == null || !pickerContext.mounted) return;
@@ -333,15 +359,18 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
         initialTime: TimeOfDay.fromDateTime(base),
       );
       if (time == null || !pickerContext.mounted) return;
-      setDialogState(() {
-        scheduledAt = DateTime(
-          date.year,
-          date.month,
-          date.day,
-          time.hour,
-          time.minute,
-        );
-      });
+      final picked = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+      if (isPastMeetingTime(picked)) {
+        AuraNotice.problem(pickerContext, kPastMeetingTimeMessage);
+        return;
+      }
+      setDialogState(() => scheduledAt = picked);
     }
 
     await showDialog<void>(
@@ -353,7 +382,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
                 ? 'Pick date and time'
                 : '${MaterialLocalizations.of(dialogContext).formatFullDate(scheduledAt!.toLocal())} at ${MaterialLocalizations.of(dialogContext).formatTimeOfDay(TimeOfDay.fromDateTime(scheduledAt!.toLocal()))}';
             return AlertDialog(
-              title: const Text('Edit meeting'),
+              title: Text(reschedule ? 'Reschedule meeting' : 'Edit meeting'),
               content: SizedBox(
                 width: 520,
                 child: SingleChildScrollView(
@@ -361,6 +390,17 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (reschedule) ...[
+                        Text(
+                          'Everyone in the meeting is told the new time.',
+                          style: Theme.of(dialogContext)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(color: AuraSurface.muted),
+                        ),
+                        const SizedBox(height: AuraSpace.s12),
+                      ],
+                      if (!reschedule) ...[
                       TextField(
                         controller: titleCtrl,
                         decoration: const InputDecoration(
@@ -386,6 +426,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
                             ),
                       ),
                       const SizedBox(height: AuraSpace.s12),
+                      ],
                       OutlinedButton.icon(
                         icon: const Icon(Icons.calendar_today_rounded),
                         label: Text(scheduledLabel),
@@ -399,7 +440,9 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
                           labelText: 'Duration',
                           border: OutlineInputBorder(),
                         ),
-                        items: const [15, 30, 45, 60, 90, 120]
+                        // The meeting's own length is always offered, even
+                        // when a booking page made it 20 or 75 minutes.
+                        items: meetingDurationChoices(meeting.durationMinutes)
                             .map(
                               (minutes) => DropdownMenuItem(
                                 value: minutes,
@@ -412,6 +455,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
                           setDialogState(() => durationMinutes = value);
                         },
                       ),
+                      if (!reschedule) ...[
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
                         title: const Text('Waiting room'),
@@ -426,6 +470,17 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
                         onChanged: (value) =>
                             setDialogState(() => allowGuests = value),
                       ),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Recording allowed'),
+                        subtitle: const Text(
+                          'Whether this meeting may be recorded.',
+                        ),
+                        value: recordingEnabled,
+                        onChanged: (value) =>
+                            setDialogState(() => recordingEnabled = value),
+                      ),
+                      ],
                     ],
                   ),
                 ),
@@ -447,6 +502,16 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
                             AuraNotice.problem(context, 'Pick a date and time first.');
                             return;
                           }
+                          // A new time must be in the future. An unchanged
+                          // time is left alone, so a meeting that is running
+                          // late can still have its title fixed.
+                          final timeChanged = scheduledAt != null &&
+                              scheduledAt != originalScheduledAt;
+                          if (timeChanged && isPastMeetingTime(scheduledAt!)) {
+                            AuraNotice.problem(
+                                dialogContext, kPastMeetingTimeMessage);
+                            return;
+                          }
                           setDialogState(() => saving = true);
                           try {
                             await ref
@@ -454,21 +519,26 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
                                 .updateMeeting(
                                   meeting.id,
                                   title: titleCtrl.text.trim(),
-                                  description: descCtrl.text.trim().isEmpty
-                                      ? null
-                                      : descCtrl.text.trim(),
+                                  // Sent even when empty: emptying the field
+                                  // clears the description. It used to send
+                                  // nothing, so a description could never be
+                                  // removed.
+                                  description: descCtrl.text.trim(),
                                   scheduledAt:
                                       scheduledAt?.toUtc().toIso8601String(),
                                   durationMinutes: durationMinutes,
                                   timezone: meeting.timezone,
                                   waitingRoomEnabled: waitingRoomEnabled,
                                   allowGuests: allowGuests,
+                                  recordingEnabled: recordingEnabled,
                                 );
                             ref.invalidate(meetingProvider(meeting.id));
                             _invalidateLists();
                             if (!mounted) return;
                             navigator.pop();
-                            messenger.done('Meeting updated.');
+                            messenger.done(reschedule
+                                ? 'Meeting moved. Everyone in it is told.'
+                                : 'Meeting updated.');
                           } catch (e) {
                             if (!mounted) return;
                             messenger.problem('The meeting was not updated. Try again.');
@@ -484,7 +554,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Save changes'),
+                      : Text(reschedule ? 'Save new time' : 'Save changes'),
                 ),
               ],
             );
@@ -661,6 +731,59 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
     }
   }
 
+  /// Add Aura members of the owning institution after the meeting exists.
+  Future<void> _addMembers() async {
+    final institution = meeting.owningInstitutionId;
+    if (institution == null || institution.isEmpty) return;
+    final alreadyIn = <String>{
+      if ((meeting.host?.id ?? '').isNotEmpty) meeting.host!.id,
+      for (final p in meeting.participants)
+        if ((p.userId ?? '').isNotEmpty) p.userId!,
+    };
+    final chosen = await showAddMeetingMembersDialog(
+      context,
+      institutionId: institution,
+      alreadyIn: alreadyIn,
+    );
+    if (chosen == null || chosen.isEmpty || !mounted) return;
+
+    setState(() => _actioning = true);
+    final messenger = AuraNotice.of(context);
+    var added = 0;
+    try {
+      final repo = ref.read(meetingsRepositoryProvider);
+      for (final userId in chosen) {
+        try {
+          await repo.inviteToMeeting(meeting.id, userId: userId);
+          added++;
+        } catch (_) {}
+      }
+      ref.invalidate(meetingProvider(meeting.id));
+      _invalidateLists();
+      if (!mounted) return;
+      if (added == chosen.length) {
+        messenger.done(added == 1
+            ? 'Member added. They are asked to accept or decline.'
+            : '$added members added. Each is asked to accept or decline.');
+      } else if (added == 0) {
+        messenger.problem('No one was added. Try again.');
+      } else {
+        messenger.problem(
+            '$added of ${chosen.length} members were added. Try the rest again.');
+      }
+    } finally {
+      if (mounted) setState(() => _actioning = false);
+    }
+  }
+
+  Future<void> _answer(bool accept) async {
+    await ref
+        .read(meetingsRepositoryProvider)
+        .respondToMeeting(meeting.id, accept: accept);
+    ref.invalidate(meetingProvider(meeting.id));
+    _invalidateLists();
+  }
+
   Future<void> _addToCalendar() async {
     final url = Uri.parse(
       '${AppConfig.apiBaseUrl}/public/meetings/${meeting.meetingCode}/calendar.ics',
@@ -709,7 +832,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
     // now: what the meeting IS on the left, who and what surrounds it on the
     // right, and one column on anything narrower.
     final agenda = <Widget>[
-      if (!ended && isHost) ...[
+      if (!ended && canManage) ...[
         MeetingSection(
           title: 'Agenda',
           child: _PreparationNotesSection(meeting: meeting),
@@ -772,7 +895,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
             title: 'Recording',
             emptyText: 'This meeting was not recorded.',
             filter: (a) => a.kind == MeetingAssetKind.recording,
-            canManage: isHost,
+            canManage: canManage,
             allowAdd: false,
             hideWhenEmpty: true,
           ),
@@ -786,15 +909,15 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
           emptyText: 'No files were shared during this meeting.',
           filter: (a) =>
               a.stage == 'MEETING' && a.kind != MeetingAssetKind.recording,
-          canManage: isHost,
+          canManage: canManage,
           addStage: 'MEETING',
           hideWhenEmpty: true,
         ),
         const SizedBox(height: AuraSpace.s18),
         recording(),
-        MeetingWorkroom(meeting: meeting, editable: isHost),
+        MeetingWorkroom(meeting: meeting, editable: canManage),
         const SizedBox(height: AuraSpace.s18),
-      ] else if (isHost) ...[
+      ] else if (canManage) ...[
         // Founder ruling 2026-10-23: the host sees a recording as soon as it
         // is saved, whatever the meeting's state. A session held early and
         // left returns the meeting to SCHEDULED, and the recording made in it
@@ -807,15 +930,32 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
           meeting: meeting,
           lifecycle: lifecycle,
           isHost: isHost,
+          canManage: canManage,
           actioning: _actioning,
           onStart: _startMeeting,
           onEnter: () => _enterRoom(),
-          onEdit: _editMeeting,
+          onEdit: () => _editMeeting(),
+          onReschedule: () => _editMeeting(reschedule: true),
           onCopy: _copyLink,
-          onInvite: (isHost && !ended) ? _inviteByEmail : null,
+          onInvite: (canManage && !ended) ? _inviteByEmail : null,
           onCalendar: _addToCalendar,
           onCancel: _cancelMeeting,
         );
+
+    final mine = answeringParticipant(meeting, widget.myId);
+    final cancelled = meeting.state.toUpperCase() == 'CANCELLED';
+    Widget rsvp() => (mine != null && !ended && !cancelled)
+        ? Padding(
+            padding: const EdgeInsets.only(bottom: AuraSpace.s18),
+            child: MeetingRsvpPanel(
+              rsvpStatus: mine.rsvpStatus,
+              onAnswer: _answer,
+            ),
+          )
+        : const SizedBox.shrink();
+    final canAddMembers = canManage &&
+        !ended &&
+        (meeting.owningInstitutionId ?? '').isNotEmpty;
 
     Widget liveBanner() => (live && !ended)
         ? Padding(
@@ -836,7 +976,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
                   'before joining.',
           filter: (a) =>
               a.stage == 'PREPARATION' && a.kind != MeetingAssetKind.recording,
-          canManage: isHost && !ended,
+          canManage: canManage && !ended,
           addStage: 'PREPARATION',
           hideWhenEmpty: ended,
         );
@@ -872,6 +1012,7 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
           final mainColumn = <Widget>[
             header(),
             const SizedBox(height: AuraSpace.s18),
+            rsvp(),
             liveBanner(),
             ...agenda,
             materials(),
@@ -883,7 +1024,8 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
             _ParticipantsSection(
               meeting: meeting,
               ended: ended,
-              onInvite: (isHost && !ended) ? _inviteByEmail : null,
+              onInvite: (canManage && !ended) ? _inviteByEmail : null,
+              onAddMembers: canAddMembers ? _addMembers : null,
             ),
             const SizedBox(height: AuraSpace.s18),
             if (!meeting.isDraft) ...[
@@ -940,10 +1082,14 @@ class _RecordHeader extends StatelessWidget {
   final Meeting meeting;
   final MeetingLifecycleViewModel lifecycle;
   final bool isHost;
+
+  /// Host or institution meeting manager: may start, edit and reschedule.
+  final bool canManage;
   final bool actioning;
   final VoidCallback onStart;
   final VoidCallback onEnter;
   final VoidCallback onEdit;
+  final VoidCallback onReschedule;
   final VoidCallback onCopy;
 
   /// Issues a real invitation. Host of a live-or-future meeting only; null
@@ -956,10 +1102,12 @@ class _RecordHeader extends StatelessWidget {
     required this.meeting,
     required this.lifecycle,
     required this.isHost,
+    this.canManage = false,
     required this.actioning,
     required this.onStart,
     required this.onEnter,
     required this.onEdit,
+    required this.onReschedule,
     required this.onCopy,
     this.onInvite,
     required this.onCalendar,
@@ -1040,7 +1188,7 @@ class _RecordHeader extends StatelessWidget {
             spacing: AuraSpace.s10,
             runSpacing: AuraSpace.s10,
             children: [
-              if (!ended && isHost && !live)
+              if (!ended && canManage && !live)
                 FilledButton.icon(
                   icon: const Icon(Icons.video_call_rounded),
                   label: const Text('Start meeting'),
@@ -1078,7 +1226,16 @@ class _RecordHeader extends StatelessWidget {
                   label: const Text('Add to calendar'),
                   onPressed: onCalendar,
                 ),
-              if (!ended && isHost)
+              // RESCHEDULE IS NAMED (6 Nov 2026). Moving a meeting was
+              // reachable only inside "Edit", and nothing on the page said
+              // the time could be changed at all.
+              if (scheduled && canManage)
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.event_repeat_rounded),
+                  label: const Text('Reschedule'),
+                  onPressed: actioning ? null : onReschedule,
+                ),
+              if (!ended && canManage)
                 OutlinedButton.icon(
                   icon: const Icon(Icons.edit_rounded),
                   label: const Text('Edit'),
@@ -1153,10 +1310,15 @@ class _ParticipantsSection extends StatelessWidget {
   /// else, which is also how the empty line knows what to say.
   final Future<void> Function()? onInvite;
 
+  /// Present only when the viewer runs an institution meeting that has not
+  /// ended: adds Aura members of that institution.
+  final Future<void> Function()? onAddMembers;
+
   const _ParticipantsSection({
     required this.meeting,
     required this.ended,
     this.onInvite,
+    this.onAddMembers,
   });
 
   @override
@@ -1166,6 +1328,7 @@ class _ParticipantsSection extends StatelessWidget {
         .where((p) => p.displayName.trim().isNotEmpty)
         .toList();
 
+    final roster = _roster(context, theme, participants);
     return MeetingSection(
       title: ended ? 'Attendance' : 'Participants',
       trailing: (participants.isEmpty && onInvite == null)
@@ -1189,7 +1352,31 @@ class _ParticipantsSection extends StatelessWidget {
                 ],
               ],
             ),
-      child: participants.isEmpty
+      // "Add members" sits under the roster, not beside "Invite by email" in
+      // the heading: two buttons there overflow the side column.
+      child: onAddMembers == null
+          ? roster
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                roster,
+                const SizedBox(height: AuraSpace.s6),
+                TextButton.icon(
+                  onPressed: onAddMembers,
+                  icon: const Icon(Icons.group_add_rounded, size: 18),
+                  label: const Text('Add members'),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _roster(
+    BuildContext context,
+    ThemeData theme,
+    List<MeetingParticipant> participants,
+  ) {
+    return participants.isEmpty
           ? MeetingSection.emptyLine(
               context,
               onInvite == null
@@ -1246,8 +1433,7 @@ class _ParticipantsSection extends StatelessWidget {
                     ),
                   ),
               ],
-            ),
-    );
+            );
   }
 
   String _attendanceLabel(MeetingParticipant p) {

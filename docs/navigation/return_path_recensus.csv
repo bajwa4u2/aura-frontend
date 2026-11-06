@@ -58,6 +58,7 @@ route,sample,renders,protected,deeplink_semantic,deeplink_destination,in_app_sem
 /institution/:institutionId/meetings,/institution/x-institutionid/meetings,true,false,contextReturn,/institution/x-institutionid/explore,stackReturn,true,COMPLIANT
 /institution/:institutionId/meetings/new,/institution/x-institutionid/meetings/new,true,false,flowCancel,/institution/x-institutionid/explore,flowCancel,true,COMPLIANT
 /meetings/join,/meetings/join,true,false,deepLinkFallback,/me,stackReturn,true,COMPLIANT
+/meetings/invitation/:token/decline,/meetings/invitation/x-token/decline,true,false,parentReturn,/meetings/invitation,stackReturn,true,COMPLIANT
 /meetings/keep,/meetings/keep,true,false,deepLinkFallback,/me,stackReturn,true,COMPLIANT
 /meetings/join-error,/meetings/join-error,true,false,deepLinkFallback,/me,stackReturn,true,COMPLIANT
 /meetings/join/:code,/meetings/join/x-code,true,false,parentReturn,/meetings/join,stackReturn,true,COMPLIANT

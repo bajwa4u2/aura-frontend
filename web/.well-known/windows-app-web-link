@@ -10,6 +10,8 @@
     "/institutions/*",
     "/spaces/*",
     "/meetings/join/*",
+    "/meet/*",
+    "/meetings/invitation/*",
     "/join/*",
     "/i/*",
     "/invite/*",
@@ -26,7 +28,8 @@
     "/institutions/get-started",
     "/home*",
     "/messages*",
-    "/me*",
+    "/me",
+    "/me/*",
     "/admin*",
     "/settings*"
   ]

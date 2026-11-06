@@ -163,6 +163,16 @@
                 <!-- Guest-reachable meeting entry. -->
                 <data android:pathPrefix="/meetings/join/" />
 
+                <!--
+                  Personal booking pages and the links their emails carry
+                  (/meet/:slug, /meet/:slug/book, /meet/cancel/:token,
+                  /meet/reschedule/:token), and the decline link in a meeting
+                  invitation email (/meetings/invitation/:token/decline).
+                  6 Nov 2026: both opened the browser on Android and iOS.
+                -->
+                <data android:pathPrefix="/meet/" />
+                <data android:pathPrefix="/meetings/invitation/" />
+
                 <!-- A member's personal Invite to Aura link (/join/<handle>). -->
                 <data android:pathPrefix="/join/" />
 

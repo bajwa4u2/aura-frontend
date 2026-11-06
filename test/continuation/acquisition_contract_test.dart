@@ -75,7 +75,8 @@ void main() {
       '/institutions/get-started': '/institutions/get-started',
       '/home*': '/home',
       '/messages*': '/messages',
-      '/me*': '/me',
+      '/me': '/me',
+      '/me/*': '/me/edit',
       '/admin*': '/admin',
       '/settings*': '/settings',
     };

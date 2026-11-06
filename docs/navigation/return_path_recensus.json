@@ -649,6 +649,17 @@
   "verdict": "COMPLIANT"
  },
  {
+  "route": "/meetings/invitation/:token/decline",
+  "sample": "/meetings/invitation/x-token/decline",
+  "renders": true,
+  "protected": false,
+  "deepLinkSemantic": "parentReturn",
+  "deepLinkDestination": "/meetings/invitation",
+  "inAppSemantic": "stackReturn",
+  "affordance": true,
+  "verdict": "COMPLIANT"
+ },
+ {
   "route": "/meetings/keep",
   "sample": "/meetings/keep",
   "renders": true,

@@ -141,6 +141,7 @@ import 'features/realtime/presentation/call_detail_screen.dart';
 import 'features/realtime/presentation/realtime_lobby_screen.dart';
 import 'features/realtime/presentation/realtime_room_screen.dart';
 import 'features/meetings/presentation/booking_cancel_screen.dart';
+import 'features/meetings/presentation/invitation_decline_screen.dart';
 import 'features/meetings/presentation/create_meeting_screen.dart';
 import 'features/meetings/presentation/guest_waiting_room_screen.dart';
 import 'features/meetings/presentation/institution_availability_screen.dart';
@@ -1538,6 +1539,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/meetings/join',
             builder: (context, state) => const MeetingJoinFallbackScreen(),
+          ),
+          // The decline link in an invitation email (6 Nov 2026). Guest-
+          // reachable: the token is the invitation, no sign-in involved.
+          GoRoute(
+            path: '/meetings/invitation/:token/decline',
+            builder: (context, state) => InvitationDeclineScreen(
+              token: state.pathParameters['token'] ?? '',
+            ),
           ),
           // Participant continuity — after sign-in/registration the booking
           // reference (`bt`) attaches the booked meeting to the member's

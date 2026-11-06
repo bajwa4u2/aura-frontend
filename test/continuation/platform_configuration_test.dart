@@ -160,6 +160,34 @@ void main() {
           reason: 'not a valid package family hash: $hash');
     });
 
+    test('no exclusion swallows an included path', () {
+      // 6 Nov 2026: `/me*` (meant for /me and /me/...) also matched /meet/*
+      // and /meetings/*, so booking and meeting links stayed in the browser.
+      final excludes = (webLink['excludePaths'] as List).cast<String>();
+      RegExp glob(String p) =>
+          RegExp('^${p.split('*').map(RegExp.escape).join('.*')}\$');
+      const samples = [
+        '/meet/sample',
+        '/meet/cancel/token',
+        '/meetings/join/ABC',
+        '/meetings/invitation/token/decline',
+      ];
+      final probes = [
+        for (final prefix in prefixes) '${prefix}sample',
+        ...exactPaths,
+        ...samples,
+      ];
+      for (final probe in probes) {
+        for (final ex in excludes) {
+          expect(glob(ex).hasMatch(probe), isFalse,
+              reason: '$ex excludes $probe, which should open the app');
+        }
+      }
+      // The private self surfaces are still excluded.
+      expect(excludes.any((e) => glob(e).hasMatch('/me')), isTrue);
+      expect(excludes.any((e) => glob(e).hasMatch('/me/edit')), isTrue);
+    });
+
     test('its paths are the contract paths', () {
       final paths = (webLink['paths'] as List).cast<String>().toSet();
       for (final prefix in prefixes) {

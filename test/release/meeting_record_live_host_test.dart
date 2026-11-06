@@ -33,9 +33,11 @@ void main() {
       record.indexOf('final aftermath = <Widget>['),
       record.indexOf('Widget header()'),
     );
-    expect(aftermath, contains('] else if (isHost) ...['));
+    // 6 Nov 2026: `canManage` is the host OR an institution meeting manager
+    // (the server's assertHostAccess); the host is still included.
+    expect(aftermath, contains('] else if (canManage) ...['));
     expect(
-      aftermath.substring(aftermath.indexOf('] else if (isHost)')),
+      aftermath.substring(aftermath.indexOf('] else if (canManage)')),
       contains('recording()'),
     );
   });

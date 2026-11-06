@@ -81,6 +81,11 @@ bool isGuestReachablePath(String path) {
   if (path == '/meetings/join-error') return true;
   if (path.startsWith('/meetings/join/')) return true;
 
+  // The decline link in an invitation email: the token is the invitation.
+  if (RegExp(r'^/meetings/invitation/[^/]+/decline$').hasMatch(path)) {
+    return true;
+  }
+
   // The meeting room itself: lobby, waiting, live, summary.
   if (RegExp(
     r'^/meetings/[^/]+/(room|waiting|live|summary|post-meeting)$',

@@ -157,6 +157,10 @@ String? _payloadRefinedTitle(
         return '$who moved your meeting';
       case 'MEETING_CANCELLED':
         return '$who cancelled your meeting';
+      case 'MEETING_RSVP_ACCEPTED':
+        return '$who accepted your meeting invitation';
+      case 'MEETING_RSVP_DECLINED':
+        return '$who declined your meeting invitation';
     }
   }
 
