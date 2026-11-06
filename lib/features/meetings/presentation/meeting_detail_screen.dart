@@ -23,6 +23,8 @@ import '../../../core/product/temporal.dart';
 import 'meeting_load_problem.dart';
 import 'meeting_schedule_rules.dart';
 import 'widgets/add_meeting_members_dialog.dart';
+import 'widgets/follow_up_dialog.dart';
+import 'widgets/meeting_agenda_items.dart';
 import 'widgets/meeting_live_refresh.dart';
 import 'widgets/meeting_rsvp_panel.dart';
 import 'meeting_status_chip.dart';
@@ -234,8 +236,20 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
   /// (start, edit, reschedule, invite, agenda, materials, record) the way the
   /// server's assertHostAccess allows. NOT passed to the live room, whose
   /// `isHost` stays the person's real role.
-  bool get canManage =>
-      canManageMeeting(isHost: widget.isHost, canGovern: widget.canGovern);
+  bool get canManage => canManageMeeting(
+        isHost: widget.isHost,
+        canGovern: widget.canGovern,
+        isCoHost: viewerIsCoHost(meeting, widget.myId),
+      );
+
+  /// Cancel, cancel the rest of a series, and choose co-hosts: the host or a
+  /// meeting manager. A co-host runs the meeting but cannot do these.
+  bool get canAppoint =>
+      canAppointCoHosts(isHost: widget.isHost, canGovern: widget.canGovern);
+
+  String _detailPathFor(String id) => _resolvedInstitutionId == null
+      ? '/meetings/$id'
+      : '/institution/$_resolvedInstitutionId/meetings/$id';
   /// THE INSTITUTION THIS VIEWER MAY BE ROUTED INTO — not the meeting's
   /// owner.
   ///
@@ -776,6 +790,99 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
     }
   }
 
+  Future<void> _scheduleFollowUp() async {
+    final choice = await showFollowUpDialog(
+      context,
+      meetingTitle: meeting.title,
+      scheduledAt: meeting.scheduledAt,
+      durationMinutes: meeting.durationMinutes,
+    );
+    if (choice == null || !mounted) return;
+    setState(() => _actioning = true);
+    final messenger = AuraNotice.of(context);
+    final router = GoRouter.of(context);
+    try {
+      final created = await ref.read(meetingsRepositoryProvider).scheduleFollowUp(
+            meeting.id,
+            scheduledAt: choice.at,
+            durationMinutes: choice.durationMinutes,
+            title: choice.title,
+          );
+      _invalidateLists();
+      if (!mounted) return;
+      messenger.done('Follow-up scheduled. Everyone is invited.');
+      router.push(_detailPathFor(created.id));
+    } catch (_) {
+      messenger.problem('The follow-up was not scheduled. Try again.');
+    } finally {
+      if (mounted) setState(() => _actioning = false);
+    }
+  }
+
+  Future<void> _cancelSeriesFromHere() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Cancel this and later meetings?'),
+        content: const Text(
+          'This meeting and every later meeting in the series are cancelled. '
+          'Everyone invited is told. Earlier meetings are not changed.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Keep them'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Cancel meetings'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+    setState(() => _actioning = true);
+    final messenger = AuraNotice.of(context);
+    try {
+      final n = await ref
+          .read(meetingsRepositoryProvider)
+          .cancelSeriesFrom(meeting.id);
+      ref.invalidate(meetingProvider(meeting.id));
+      _invalidateLists();
+      if (!mounted) return;
+      messenger.done(n == 1 ? '1 meeting cancelled.' : '$n meetings cancelled.');
+    } catch (_) {
+      messenger.problem('The meetings were not cancelled. Try again.');
+    } finally {
+      if (mounted) setState(() => _actioning = false);
+    }
+  }
+
+  Future<void> _setCoHost(MeetingParticipant p, bool coHost) async {
+    final userId = p.userId ?? p.user?.id ?? '';
+    if (userId.isEmpty) return;
+    setState(() => _actioning = true);
+    final messenger = AuraNotice.of(context);
+    try {
+      final repo = ref.read(meetingsRepositoryProvider);
+      if (coHost) {
+        await repo.addCoHost(meeting.id, userId);
+      } else {
+        await repo.removeCoHost(meeting.id, userId);
+      }
+      ref.invalidate(meetingProvider(meeting.id));
+      if (!mounted) return;
+      messenger.done(coHost
+          ? '${p.displayName} is now a co-host.'
+          : '${p.displayName} is no longer a co-host.');
+    } catch (_) {
+      messenger.problem('That change was not saved. Try again.');
+    } finally {
+      if (mounted) setState(() => _actioning = false);
+    }
+  }
+
   Future<void> _answer(bool accept) async {
     await ref
         .read(meetingsRepositoryProvider)
@@ -831,45 +938,66 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
     // meeting's conversation sat a scroll below the fold. It is a workspace
     // now: what the meeting IS on the left, who and what surrounds it on the
     // right, and one column on anything narrower.
+    // AGENDA POINTS (6 Nov 2026) sit above the free-text notes, which keep
+    // working exactly as before.
+    final agendaItems =
+        ref.watch(meetingAgendaProvider(meeting.id)).valueOrNull ?? const [];
+    final happened = meeting.phase.hasAftermath;
+    final showAgenda =
+        (!ended && canManage) || hasAgenda || agendaItems.isNotEmpty;
     final agenda = <Widget>[
-      if (!ended && canManage) ...[
-        MeetingSection(
-          title: 'Agenda',
-          child: _PreparationNotesSection(meeting: meeting),
-        ),
-        const SizedBox(height: AuraSpace.s18),
-      ] else if (hasAgenda) ...[
+      if (showAgenda) ...[
         MeetingSection(
           title: 'Agenda',
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              for (final line in meeting.preparationNotes!
-                  .trim()
-                  .split('\n')
-                  .map((l) => l.trim())
-                  .where((l) => l.isNotEmpty))
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '·  ',
-                        style: TextStyle(
-                          color: AuraSurface.accent,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          line,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ),
-                    ],
-                  ),
+              MeetingAgendaItems(
+                meetingId: meeting.id,
+                editable: !ended && canManage,
+                canMakeOutcomes: happened && canManage,
+              ),
+              if (!ended && canManage) ...[
+                const SizedBox(height: AuraSpace.s12),
+                Text(
+                  'Notes',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: AuraSurface.muted),
                 ),
+                const SizedBox(height: AuraSpace.s6),
+                _PreparationNotesSection(meeting: meeting),
+              ] else if (hasAgenda) ...[
+                if (agendaItems.isNotEmpty)
+                  const SizedBox(height: AuraSpace.s12),
+                  for (final line in meeting.preparationNotes!
+                      .trim()
+                      .split('\n')
+                      .map((l) => l.trim())
+                      .where((l) => l.isNotEmpty))
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '·  ',
+                            style: TextStyle(
+                              color: AuraSurface.accent,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              line,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+              ],
             ],
           ),
         ),
@@ -940,6 +1068,12 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
           onInvite: (canManage && !ended) ? _inviteByEmail : null,
           onCalendar: _addToCalendar,
           onCancel: _cancelMeeting,
+          onFollowUp: (canManage &&
+                  meeting.state.toUpperCase() != 'CANCELLED' &&
+                  !meeting.isDraft)
+              ? _scheduleFollowUp
+              : null,
+          seriesLabel: meetingSeriesLabel(meeting),
         );
 
     final mine = answeringParticipant(meeting, widget.myId);
@@ -981,21 +1115,36 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
           hideWhenEmpty: ended,
         );
 
-    Widget danger() => (!ended && (isHost || widget.canGovern))
-        ? Align(
-            alignment: Alignment.centerLeft,
-            child: MeetingAction(
-              label: 'Cancel this meeting',
-              hint: 'Everyone invited is told it will not happen',
-              child: TextButton.icon(
-                icon: const Icon(Icons.cancel_outlined, size: 18),
-                label: const Text('Cancel meeting'),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.red.shade400,
+    Widget danger() => (!ended && canAppoint)
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              MeetingAction(
+                label: 'Cancel this meeting',
+                hint: 'Everyone invited is told it will not happen',
+                child: TextButton.icon(
+                  icon: const Icon(Icons.cancel_outlined, size: 18),
+                  label: const Text('Cancel meeting'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.red.shade400,
+                  ),
+                  onPressed: _actioning ? null : _cancelMeeting,
                 ),
-                onPressed: _actioning ? null : _cancelMeeting,
               ),
-            ),
+              if ((meeting.seriesId ?? '').isNotEmpty)
+                MeetingAction(
+                  label: 'Cancel this and later meetings',
+                  hint: 'Every later meeting in the series is cancelled too',
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.event_busy_rounded, size: 18),
+                    label: const Text('Cancel this and later meetings'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.red.shade400,
+                    ),
+                    onPressed: _actioning ? null : _cancelSeriesFromHere,
+                  ),
+                ),
+            ],
           )
         : const SizedBox.shrink();
 
@@ -1026,6 +1175,8 @@ class _MeetingRecordBodyState extends ConsumerState<_MeetingRecordBody> {
               ended: ended,
               onInvite: (canManage && !ended) ? _inviteByEmail : null,
               onAddMembers: canAddMembers ? _addMembers : null,
+              showAnswers: canManage,
+              onSetCoHost: (canAppoint && !ended) ? _setCoHost : null,
             ),
             const SizedBox(height: AuraSpace.s18),
             if (!meeting.isDraft) ...[
@@ -1098,6 +1249,12 @@ class _RecordHeader extends StatelessWidget {
   final VoidCallback onCalendar;
   final VoidCallback onCancel;
 
+  /// Host, co-host or manager, on a meeting that was not cancelled.
+  final VoidCallback? onFollowUp;
+
+  /// "Repeats weekly · 8 meetings in the series", or null.
+  final String? seriesLabel;
+
   const _RecordHeader({
     required this.meeting,
     required this.lifecycle,
@@ -1112,6 +1269,8 @@ class _RecordHeader extends StatelessWidget {
     this.onInvite,
     required this.onCalendar,
     required this.onCancel,
+    this.onFollowUp,
+    this.seriesLabel,
   });
 
   String _whenLabel(BuildContext context) {
@@ -1153,6 +1312,8 @@ class _RecordHeader extends StatelessWidget {
                   icon: Icons.calendar_today_rounded,
                   label: institution?.name ?? 'Guest booking',
                 ),
+              if (seriesLabel != null)
+                _SmallChip(icon: Icons.repeat_rounded, label: seriesLabel!),
             ],
           ),
           const SizedBox(height: AuraSpace.s12),
@@ -1241,6 +1402,12 @@ class _RecordHeader extends StatelessWidget {
                   label: const Text('Edit'),
                   onPressed: actioning ? null : onEdit,
                 ),
+              if (onFollowUp != null)
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.event_note_rounded),
+                  label: const Text('Schedule a follow-up'),
+                  onPressed: actioning ? null : onFollowUp,
+                ),
               if (ended)
                 OutlinedButton.icon(
                   icon: const Icon(Icons.content_copy_rounded),
@@ -1314,11 +1481,20 @@ class _ParticipantsSection extends StatelessWidget {
   /// ended: adds Aura members of that institution.
   final Future<void> Function()? onAddMembers;
 
+  /// The viewer runs the meeting: show each person's answer (founder
+  /// decision, DD-74 review, 6 Nov 2026).
+  final bool showAnswers;
+
+  /// Host or manager: make a participant a co-host, or stop.
+  final Future<void> Function(MeetingParticipant p, bool coHost)? onSetCoHost;
+
   const _ParticipantsSection({
     required this.meeting,
     required this.ended,
     this.onInvite,
     this.onAddMembers,
+    this.showAnswers = false,
+    this.onSetCoHost,
   });
 
   @override
@@ -1415,6 +1591,11 @@ class _ParticipantsSection extends StatelessWidget {
                             icon: Icons.star_rounded,
                             label: 'Host',
                           )
+                        else if (p.isCoHost)
+                          const _SmallChip(
+                            icon: Icons.star_half_rounded,
+                            label: 'Co-host',
+                          )
                         else if (p.isGuest)
                           const _SmallChip(
                             icon: Icons.person_outline_rounded,
@@ -1422,18 +1603,56 @@ class _ParticipantsSection extends StatelessWidget {
                           ),
                         const SizedBox(width: AuraSpace.s10),
                         Text(
-                          _attendanceLabel(p),
+                          _statusLabel(p),
                           style: theme.textTheme.bodySmall?.copyWith(
-                            color: p.attended
-                                ? AuraSurface.goodInk
-                                : AuraSurface.muted,
+                            color: _statusColor(p),
                           ),
                         ),
+                        if (onSetCoHost != null &&
+                            !p.isHost &&
+                            !p.isGuest &&
+                            (p.userId ?? p.user?.id ?? '').isNotEmpty)
+                          PopupMenuButton<bool>(
+                            tooltip: 'Options for ${p.displayName}',
+                            icon: const Icon(Icons.more_horiz_rounded,
+                                size: 18, color: AuraSurface.muted),
+                            onSelected: (coHost) => onSetCoHost!(p, coHost),
+                            itemBuilder: (_) => [
+                              p.isCoHost
+                                  ? const PopupMenuItem(
+                                      value: false,
+                                      child: Text('Remove as co-host'),
+                                    )
+                                  : const PopupMenuItem(
+                                      value: true,
+                                      child: Text('Make co-host'),
+                                    ),
+                            ],
+                          ),
                       ],
                     ),
                   ),
               ],
             );
+  }
+
+  /// Before the meeting, the people who run it see each person's answer;
+  /// once someone is in the room, or afterwards, attendance is what counts.
+  bool _showsAnswer(MeetingParticipant p) =>
+      showAnswers && !ended && !p.isHost && !p.attended;
+
+  String _statusLabel(MeetingParticipant p) =>
+      _showsAnswer(p) ? rsvpLabel(p.rsvpStatus) : _attendanceLabel(p);
+
+  Color _statusColor(MeetingParticipant p) {
+    if (_showsAnswer(p)) {
+      return switch (p.rsvpStatus.toUpperCase()) {
+        'ACCEPTED' => AuraSurface.goodInk,
+        'DECLINED' => AuraSurface.dangerInk,
+        _ => AuraSurface.muted,
+      };
+    }
+    return p.attended ? AuraSurface.goodInk : AuraSurface.muted;
   }
 
   String _attendanceLabel(MeetingParticipant p) {

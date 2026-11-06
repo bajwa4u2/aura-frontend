@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import '../domain/meeting.dart';
+import '../domain/meeting_agenda_item.dart';
 import '../domain/meeting_asset.dart';
 import '../domain/meeting_conversation_message.dart';
 import '../domain/meeting_entry_resolution.dart';
@@ -34,10 +35,13 @@ class MeetingsRepository {
     bool? includeAllMembers,
     bool? hostOnly,
     List<Map<String, dynamic>>? externalInvitees,
+    // A recurring meeting (6 Nov 2026): `frequency` is DAILY, WEEKLY,
+    // BIWEEKLY or MONTHLY; `count` 2–12, the first included. The same body
+    // goes to `POST /meetings/series` and the FIRST occurrence is returned.
+    String? repeatFrequency,
+    int? repeatCount,
   }) async {
-    final res = await _dio.post<Map<String, dynamic>>(
-      '/meetings',
-      data: {
+    final body = <String, dynamic>{
         'title': title,
         if (description != null) 'description': description,
         if (intent != null) 'intent': intent,
@@ -62,10 +66,115 @@ class MeetingsRepository {
         if (hostOnly != null) 'hostOnly': hostOnly,
         if (externalInvitees != null && externalInvitees.isNotEmpty)
           'externalInvitees': externalInvitees,
-      },
-    );
+    };
+    if (repeatFrequency != null && repeatCount != null) {
+      final res = await _dio.post<Map<String, dynamic>>(
+        '/meetings/series',
+        data: {
+          'meeting': body,
+          'recurrence': {'frequency': repeatFrequency, 'count': repeatCount},
+        },
+      );
+      final data = res.data!['data'] as Map<String, dynamic>;
+      final ids = (data['meetingIds'] as List? ?? const []).cast<String>();
+      if (ids.isEmpty) throw StateError('The series was not created.');
+      return getMeeting(ids.first);
+    }
+    final res = await _dio.post<Map<String, dynamic>>('/meetings', data: body);
     final data = res.data!['data'] as Map<String, dynamic>;
     return Meeting.fromJson(data);
+  }
+
+  /// Schedule the next meeting with the same people:
+  /// `POST /meetings/:id/follow-up`. Returns the new meeting.
+  Future<Meeting> scheduleFollowUp(
+    String meetingId, {
+    required DateTime scheduledAt,
+    int? durationMinutes,
+    String? title,
+  }) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/meetings/$meetingId/follow-up',
+      data: {
+        'scheduledAt': scheduledAt.toUtc().toIso8601String(),
+        if (durationMinutes != null) 'durationMinutes': durationMinutes,
+        if (title != null && title.trim().isNotEmpty) 'title': title.trim(),
+      },
+    );
+    return Meeting.fromJson(res.data!['data'] as Map<String, dynamic>);
+  }
+
+  /// Cancel this occurrence and every later one in its series. Returns how
+  /// many were cancelled.
+  Future<int> cancelSeriesFrom(String meetingId) async {
+    final res = await _dio.post<Map<String, dynamic>>(
+      '/meetings/$meetingId/series/cancel',
+    );
+    final data = res.data?['data'];
+    return data is Map ? (data['cancelled'] as num?)?.toInt() ?? 0 : 0;
+  }
+
+  // ── Agenda items ─────────────────────────────────────────────────────
+  Future<List<MeetingAgendaItem>> listAgenda(String meetingId) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/meetings/$meetingId/agenda',
+    );
+    final data = res.data?['data'];
+    if (data is! List) return const [];
+    return data
+        .whereType<Map>()
+        .map((m) => MeetingAgendaItem.fromJson(Map<String, dynamic>.from(m)))
+        .toList();
+  }
+
+  Future<void> addAgendaItem(String meetingId, String text) async {
+    await _dio.post<void>(
+      '/meetings/$meetingId/agenda',
+      data: {'text': text.trim()},
+    );
+  }
+
+  Future<void> updateAgendaItem(
+    String meetingId,
+    String itemId, {
+    String? text,
+    bool? covered,
+  }) async {
+    await _dio.patch<void>(
+      '/meetings/$meetingId/agenda/$itemId',
+      data: {
+        if (text != null) 'text': text.trim(),
+        if (covered != null) 'covered': covered,
+      },
+    );
+  }
+
+  Future<void> removeAgendaItem(String meetingId, String itemId) async {
+    await _dio.delete<void>('/meetings/$meetingId/agenda/$itemId');
+  }
+
+  /// `type`: DECISION, COMMITMENT, ACTION, ISSUE or FOLLOW_UP.
+  Future<void> agendaItemToOutcome(
+    String meetingId,
+    String itemId, {
+    required String type,
+  }) async {
+    await _dio.post<void>(
+      '/meetings/$meetingId/agenda/$itemId/outcome',
+      data: {'type': type},
+    );
+  }
+
+  // ── Co-hosts ─────────────────────────────────────────────────────────
+  Future<void> addCoHost(String meetingId, String userId) async {
+    await _dio.post<void>(
+      '/meetings/$meetingId/co-hosts',
+      data: {'userId': userId},
+    );
+  }
+
+  Future<void> removeCoHost(String meetingId, String userId) async {
+    await _dio.delete<void>('/meetings/$meetingId/co-hosts/$userId');
   }
 
   Future<List<Meeting>> listMeetings({

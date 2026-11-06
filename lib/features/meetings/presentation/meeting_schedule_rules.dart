@@ -32,8 +32,67 @@ const String kPastMeetingTimeMessage =
 ///
 /// Mirrors the server's `assertHostAccess`: the host, or a holder of
 /// MANAGE_MEETINGS on the owning institution ([canGovern]).
-bool canManageMeeting({required bool isHost, required bool canGovern}) =>
+///
+/// A co-host ([isCoHost]) runs it too (6 Nov 2026), but may not cancel it or
+/// appoint co-hosts: see [canAppointCoHosts].
+bool canManageMeeting({
+  required bool isHost,
+  required bool canGovern,
+  bool isCoHost = false,
+}) =>
+    isHost || canGovern || isCoHost;
+
+/// Cancel the meeting (or the rest of its series) and appoint or remove
+/// co-hosts: the host or an institution meeting manager, never a co-host.
+/// Mirrors the server's assertCancelAccess / assertAppointAccess.
+bool canAppointCoHosts({required bool isHost, required bool canGovern}) =>
     isHost || canGovern;
+
+/// True when [myUserId] is a co-host of [meeting].
+bool viewerIsCoHost(Meeting meeting, String myUserId) {
+  final me = myUserId.trim();
+  if (me.isEmpty) return false;
+  return meeting.participants
+      .any((p) => p.isCoHost && (p.userId ?? p.user?.id ?? '') == me);
+}
+
+/// What a participant answered, for the people who run the meeting.
+String rsvpLabel(String rsvpStatus) => switch (rsvpStatus.toUpperCase()) {
+      'ACCEPTED' => 'Accepted',
+      'DECLINED' => 'Declined',
+      _ => 'No answer yet',
+    };
+
+/// "Repeats weekly · 8 meetings in the series", from the occurrence's rule
+/// (`FREQ=WEEKLY;INTERVAL=2;COUNT=8`). Null when the meeting is not in a
+/// series. The server does not say WHICH occurrence this is, so no "3 of 8".
+String? meetingSeriesLabel(Meeting meeting) {
+  if ((meeting.seriesId ?? '').isEmpty) return null;
+  final parts = <String, String>{};
+  for (final part in (meeting.recurringRule ?? '').split(';')) {
+    final i = part.indexOf('=');
+    if (i > 0) parts[part.substring(0, i).toUpperCase()] = part.substring(i + 1);
+  }
+  final interval = int.tryParse(parts['INTERVAL'] ?? '') ?? 1;
+  final count = int.tryParse(parts['COUNT'] ?? '');
+  final kind = switch ((parts['FREQ'] ?? '').toUpperCase()) {
+    'DAILY' => 'daily',
+    'WEEKLY' => interval == 2 ? 'every 2 weeks' : 'weekly',
+    'MONTHLY' => 'monthly',
+    _ => null,
+  };
+  if (kind == null || count == null) return 'Part of a series';
+  return 'Repeats $kind · $count meetings in the series';
+}
+
+/// The "Repeat" choices on the create form: label and server frequency.
+const List<(String, String?)> kRepeatChoices = [
+  ('Does not repeat', null),
+  ('Daily', 'DAILY'),
+  ('Weekly', 'WEEKLY'),
+  ('Every 2 weeks', 'BIWEEKLY'),
+  ('Monthly', 'MONTHLY'),
+];
 
 /// The viewer's own participant row, when they are an invited participant who
 /// answers the meeting rather than runs it. Hosts and co-hosts are excluded:

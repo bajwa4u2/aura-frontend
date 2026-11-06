@@ -16,6 +16,7 @@ import 'package:aura/features/meetings/data/availability_repository.dart';
 import 'package:aura/features/meetings/data/meetings_repository.dart';
 import 'package:aura/features/meetings/domain/availability_profile.dart';
 import 'package:aura/features/meetings/domain/meeting.dart';
+import 'package:aura/features/meetings/domain/meeting_agenda_item.dart';
 import 'package:aura/features/meetings/presentation/institution_availability_screen.dart';
 import 'package:aura/features/meetings/presentation/invitation_decline_screen.dart';
 import 'package:aura/features/meetings/presentation/meeting_detail_screen.dart';
@@ -129,6 +130,10 @@ class _FakeMeetings extends MeetingsRepository {
     if (e != null) throw e;
     return Meeting.fromJson(json);
   }
+
+  @override
+  Future<List<MeetingAgendaItem>> listAgenda(String meetingId) async =>
+      const [];
 
   @override
   Future<void> respondToMeeting(String meetingId, {required bool accept}) async {

@@ -17,6 +17,7 @@ import 'package:aura/features/meetings/application/meetings_provider.dart';
 import 'package:aura/features/meetings/data/meetings_repository.dart';
 import 'package:aura/features/meetings/domain/availability_profile.dart';
 import 'package:aura/features/meetings/domain/meeting.dart';
+import 'package:aura/features/meetings/domain/meeting_agenda_item.dart';
 import 'package:aura/features/meetings/presentation/create_meeting_screen.dart';
 import 'package:aura/features/meetings/presentation/institution_availability_screen.dart';
 import 'package:aura/features/meetings/presentation/invitation_decline_screen.dart';
@@ -325,6 +326,10 @@ class _Meetings extends MeetingsRepository {
     if (e != null) throw e;
     return Meeting.fromJson(json);
   }
+
+  @override
+  Future<List<MeetingAgendaItem>> listAgenda(String meetingId) async =>
+      const [];
 
   @override
   Future<void> declineInvitationByToken(String token) async {}

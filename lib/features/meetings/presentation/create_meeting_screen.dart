@@ -99,6 +99,11 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
   /// Sent as `recordingEnabled`. On by default: recording is possible on
   /// every meeting today, and this keeps that until someone turns it off.
   bool _recordingEnabled = true;
+
+  /// Recurring (6 Nov 2026): null = does not repeat; else DAILY, WEEKLY,
+  /// BIWEEKLY or MONTHLY, for [_repeatCount] meetings (2–12, first included).
+  String? _repeatFrequency;
+  int _repeatCount = 4;
   DateTime? _scheduledAt;
   final Set<String> _selectedMemberIds = <String>{};
   final List<_DraftInvitee> _invitees = <_DraftInvitee>[];
@@ -329,6 +334,10 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
         timezone: cachedLocalTimezone,
         waitingRoomEnabled: !_startNow,
         recordingEnabled: _recordingEnabled,
+        repeatFrequency: _startNow ? null : _repeatFrequency,
+        repeatCount: (_startNow || _repeatFrequency == null)
+            ? null
+            : _repeatCount,
         allowGuests: false,
         guestApprovalRequired: false,
         organizationId: widget.institutionId,
@@ -501,6 +510,12 @@ class _CreateMeetingScreenState extends ConsumerState<CreateMeetingScreen> {
           recordingEnabled: _recordingEnabled,
           onRecordingChanged: (value) =>
               setState(() => _recordingEnabled = value),
+          repeatFrequency: _repeatFrequency,
+          repeatCount: _repeatCount,
+          onRepeatChanged: (value) =>
+              setState(() => _repeatFrequency = value),
+          onRepeatCountChanged: (value) =>
+              setState(() => _repeatCount = value),
           onStartNowChanged: (value) => setState(() => _startNow = value),
           onHostOnlyChanged: (value) => setState(() => _hostOnly = value),
           onAllMembersChanged: (value) =>
@@ -709,6 +724,10 @@ class _CreationForm extends StatelessWidget {
   final ValueChanged<int> onDurationChanged;
   final bool recordingEnabled;
   final ValueChanged<bool> onRecordingChanged;
+  final String? repeatFrequency;
+  final int repeatCount;
+  final ValueChanged<String?> onRepeatChanged;
+  final ValueChanged<int> onRepeatCountChanged;
   final ValueChanged<bool> onStartNowChanged;
   final ValueChanged<bool> onHostOnlyChanged;
   final ValueChanged<bool> onAllMembersChanged;
@@ -742,6 +761,10 @@ class _CreationForm extends StatelessWidget {
     required this.onDurationChanged,
     required this.recordingEnabled,
     required this.onRecordingChanged,
+    required this.repeatFrequency,
+    required this.repeatCount,
+    required this.onRepeatChanged,
+    required this.onRepeatCountChanged,
     required this.onStartNowChanged,
     required this.onHostOnlyChanged,
     required this.onAllMembersChanged,
@@ -876,6 +899,45 @@ class _CreationForm extends StatelessWidget {
                     if (value != null) onDurationChanged(value);
                   },
                 ),
+                if (!startNow) ...[
+                  const SizedBox(height: AuraSpace.s12),
+                  DropdownButtonFormField<String?>(
+                    initialValue: repeatFrequency,
+                    decoration: const InputDecoration(
+                      labelText: 'Repeat',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: [
+                      for (final (label, value) in kRepeatChoices)
+                        DropdownMenuItem<String?>(
+                          value: value,
+                          child: Text(label),
+                        ),
+                    ],
+                    onChanged: onRepeatChanged,
+                  ),
+                  if (repeatFrequency != null) ...[
+                    const SizedBox(height: AuraSpace.s12),
+                    DropdownButtonFormField<int>(
+                      initialValue: repeatCount,
+                      decoration: const InputDecoration(
+                        labelText: 'How many times',
+                        helperText:
+                            'Including the first. Each one can be moved or '
+                            'cancelled on its own.',
+                        helperMaxLines: 2,
+                        border: OutlineInputBorder(),
+                      ),
+                      items: [
+                        for (var n = 2; n <= 12; n++)
+                          DropdownMenuItem(value: n, child: Text('$n meetings')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) onRepeatCountChanged(value);
+                      },
+                    ),
+                  ],
+                ],
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   value: recordingEnabled,

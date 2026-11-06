@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../domain/availability_profile.dart';
+import '../domain/meeting_agenda_item.dart';
 
 class AvailabilityRepository {
   AvailabilityRepository(this._dio);
@@ -275,6 +276,19 @@ class AvailabilityRepository {
   ) async {
     await _dio.delete<void>(
       '/institution/$institutionId/availability/$profileId/overrides/$overrideId',
+    );
+  }
+
+  /// Last-90-days numbers for one booking page (needs MANAGE_BOOKINGS).
+  Future<BookingPageStats> getInstitutionProfileStats(
+    String institutionId,
+    String profileId,
+  ) async {
+    final res = await _dio.get<Map<String, dynamic>>(
+      '/institution/$institutionId/availability/$profileId/stats',
+    );
+    return BookingPageStats.fromJson(
+      Map<String, dynamic>.from(res.data!['data'] as Map),
     );
   }
 

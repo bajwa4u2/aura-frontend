@@ -112,6 +112,7 @@ class MeetingParticipant {
 
   bool get isHost => role == 'HOST';
   bool get isGuest => role == 'GUEST';
+  bool get isCoHost => role == 'CO_HOST';
 
   int? get durationMinutes {
     if (joinedAt == null || leftAt == null) return null;
@@ -345,6 +346,15 @@ class Meeting {
   /// READY recordings attached to this meeting (inventory projection only —
   /// the recordings themselves stay meeting-owned and load with the record).
   final int recordingCount;
+
+  /// Recurring series (6 Nov 2026): every occurrence carries the series id
+  /// (the first occurrence's id) and the rule, e.g. `FREQ=WEEKLY;COUNT=8`.
+  /// The server does not return an occurrence's position in the series.
+  final String? seriesId;
+  final String? recurringRule;
+
+  /// The meeting this one follows up, when it was scheduled as a follow-up.
+  final String? followUpOfMeetingId;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -379,6 +389,9 @@ class Meeting {
     this.institution,
     this.conversationId,
     this.recordingCount = 0,
+    this.seriesId,
+    this.recurringRule,
+    this.followUpOfMeetingId,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -441,6 +454,9 @@ class Meeting {
         ? null
         : (j['conversationId'] as String).trim(),
     recordingCount: (j['recordingCount'] as num?)?.toInt() ?? 0,
+    seriesId: _blankToNull((j['seriesId'] ?? '').toString()),
+    recurringRule: _blankToNull((j['recurringRule'] ?? '').toString()),
+    followUpOfMeetingId: _blankToNull((j['followUpOfMeetingId'] ?? '').toString()),
     createdAt:
         DateTime.tryParse(j['createdAt'] as String? ?? '') ?? DateTime.now(),
     updatedAt:

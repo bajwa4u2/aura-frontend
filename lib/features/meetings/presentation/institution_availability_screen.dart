@@ -272,6 +272,10 @@ class _ProfileCard extends ConsumerWidget {
             ),
           ],
 
+          _BookingPageNumbers(
+            institutionId: institutionId,
+            profileId: profile.id,
+          ),
           const SizedBox(height: AuraSpace.s12),
 
           // Public link
@@ -1576,6 +1580,40 @@ class _DaysOffManagerState extends ConsumerState<_DaysOffManager> {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// THE PAGE'S LAST 90 DAYS (6 Nov 2026): booked, upcoming, held, no-shows,
+/// cancelled. Managers could see each booking but never the totals. Reading
+/// them needs MANAGE_BOOKINGS; without it (or offline) the line is absent
+/// rather than wrong.
+class _BookingPageNumbers extends ConsumerWidget {
+  const _BookingPageNumbers({
+    required this.institutionId,
+    required this.profileId,
+  });
+
+  final String institutionId;
+  final String profileId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final stats = ref
+        .watch(bookingPageStatsProvider(
+            (institutionId: institutionId, profileId: profileId)))
+        .valueOrNull;
+    if (stats == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: AuraSpace.s8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.insights_rounded, size: 14, color: AuraSurface.muted),
+          const SizedBox(width: AuraSpace.s6),
+          Expanded(child: Text(stats.line, style: AuraText.small)),
+        ],
+      ),
     );
   }
 }

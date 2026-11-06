@@ -7,6 +7,7 @@ import '../data/availability_repository.dart';
 import '../domain/meeting.dart';
 import '../domain/availability_profile.dart';
 import '../domain/meeting_asset.dart';
+import '../domain/meeting_agenda_item.dart';
 import '../domain/meeting_conversation_message.dart';
 import '../domain/meeting_entry_resolution.dart';
 import '../domain/meeting_identity.dart';
@@ -74,6 +75,20 @@ final institutionPastMeetingsProvider =
 final meetingProvider = FutureProvider.family<Meeting, String>((ref, id) async {
   final repo = ref.watch(meetingsRepositoryProvider);
   return repo.getMeeting(id);
+});
+
+/// A meeting's ordered agenda items (6 Nov 2026).
+final meetingAgendaProvider =
+    FutureProvider.family<List<MeetingAgendaItem>, String>((ref, id) async {
+  final repo = ref.watch(meetingsRepositoryProvider);
+  return repo.listAgenda(id);
+});
+
+/// A booking page's last-90-days numbers, keyed by (institutionId, profileId).
+final bookingPageStatsProvider = FutureProvider.family<BookingPageStats,
+    ({String institutionId, String profileId})>((ref, key) async {
+  final repo = ref.watch(availabilityRepositoryProvider);
+  return repo.getInstitutionProfileStats(key.institutionId, key.profileId);
 });
 
 final meetingSummaryProvider = FutureProvider.family<MeetingSummary?, String>((
