@@ -138,6 +138,28 @@ String? _payloadRefinedTitle(
   String field(String key) =>
       _stringOf(payload[key]).isNotEmpty ? _stringOf(payload[key]) : _stringOf(data[key]);
 
+  // HOST-facing meeting notices (6 Nov 2026) name the other person, not the
+  // meeting's owner: the host IS the owner's side. Same sentences as the
+  // server's notificationTitle, so the push and the list agree. Before this,
+  // a host was never told of a booking at all and missed two meetings.
+  if (field('audience') == 'host') {
+    final who = field('counterpartName').isNotEmpty
+        ? field('counterpartName')
+        : 'Someone';
+    switch (kind) {
+      case 'MEETING_BOOKED':
+        return '$who booked a meeting with you';
+      case 'MEETING_REMINDER':
+        return 'Upcoming: your meeting with $who';
+      case 'MEETING_WAITING_ROOM_ARRIVAL':
+        return '$who is waiting for you in your meeting';
+      case 'MEETING_RESCHEDULED':
+        return '$who moved your meeting';
+      case 'MEETING_CANCELLED':
+        return '$who cancelled your meeting';
+    }
+  }
+
   switch (kind) {
     // Not actor-voiced, deliberately. No person acted on these: an examiner
     // produced a verdict. Rendering them in someone's voice would tell a member
