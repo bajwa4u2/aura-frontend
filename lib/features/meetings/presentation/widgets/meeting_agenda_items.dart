@@ -60,10 +60,12 @@ class _MeetingAgendaItemsState extends ConsumerState<MeetingAgendaItems> {
     final notice = AuraNotice.of(context);
     try {
       await action();
+      // The page may have closed while the request was out (QC 6 Nov 2026).
+      if (!mounted) return;
       ref.invalidate(meetingAgendaProvider(widget.meetingId));
       if (done != null) notice.done(done);
     } catch (_) {
-      notice.problem(failure);
+      if (mounted) notice.problem(failure);
     } finally {
       if (mounted) setState(() => _busy = false);
     }

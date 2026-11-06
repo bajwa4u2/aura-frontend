@@ -98,7 +98,7 @@ class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
 
     return MeetingLiveRefresh(
       meetingId: meetingId,
-      child: meetingAsync.when(skipLoadingOnReload: true, 
+      child: meetingAsync.when(skipLoadingOnReload: true, skipError: true, 
       // Section 19: a full-surface spinner under the generic word "Meeting"
       // told a person nothing except that something was happening somewhere.
       // The skeleton has the shape of the record that is coming, and the

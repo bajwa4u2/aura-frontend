@@ -109,7 +109,13 @@ void main() {
     test('every contract prefix and exact path is claimed', () {
       final claimed =
           components.map((c) => (c as Map)['/'] as String).toSet();
+      // The AASA file is served by the WEB deploy, so it reaches iPhones
+      // still on the previous store build. 1.7.2 has no invitation-decline
+      // page, so that path is claimed only once the build that has it is
+      // live on the App Store (6 Nov 2026); until then the link opens Safari.
+      const notYetOnIos = {'/meetings/invitation/'};
       for (final prefix in prefixes) {
+        if (notYetOnIos.contains(prefix)) continue;
         expect(claimed, contains('$prefix*'),
             reason: '$prefix is eligible but not claimed on iOS');
       }
@@ -160,22 +166,23 @@ void main() {
           reason: 'not a valid package family hash: $hash');
     });
 
-    test('no exclusion swallows an included path', () {
-      // 6 Nov 2026: `/me*` (meant for /me and /me/...) also matched /meet/*
-      // and /meetings/*, so booking and meeting links stayed in the browser.
+    // ON WINDOWS, MEETING AND BOOKING LINKS STAY IN THE BROWSER (6 Nov 2026).
+    // `/me*` has always excluded /meetings/* and /meet/* too. Narrowing it
+    // would send every Windows guest's join link into the installed app's
+    // call room — a new call entry path while calls are frozen behind the
+    // 30-test list. Kept exactly as at 1.7.2 until calls are certified.
+    const windowsBrowserOnly = ['/meetings/', '/meet/'];
+    bool browserOnly(String path) =>
+        windowsBrowserOnly.any((p) => path.startsWith(p));
+
+    test('no exclusion swallows an included path (meeting links excepted)', () {
       final excludes = (webLink['excludePaths'] as List).cast<String>();
       RegExp glob(String p) =>
           RegExp('^${p.split('*').map(RegExp.escape).join('.*')}\$');
-      const samples = [
-        '/meet/sample',
-        '/meet/cancel/token',
-        '/meetings/join/ABC',
-        '/meetings/invitation/token/decline',
-      ];
       final probes = [
-        for (final prefix in prefixes) '${prefix}sample',
-        ...exactPaths,
-        ...samples,
+        for (final prefix in prefixes)
+          if (!browserOnly(prefix)) '${prefix}sample',
+        ...exactPaths.where((p) => !browserOnly(p)),
       ];
       for (final probe in probes) {
         for (final ex in excludes) {
@@ -188,9 +195,25 @@ void main() {
       expect(excludes.any((e) => glob(e).hasMatch('/me/edit')), isTrue);
     });
 
+    test('meeting and booking links still open the browser on Windows', () {
+      final excludes = (webLink['excludePaths'] as List).cast<String>();
+      RegExp glob(String p) =>
+          RegExp('^${p.split('*').map(RegExp.escape).join('.*')}\$');
+      for (final probe in const [
+        '/meetings/join/ABC',
+        '/meetings/invitation/token/decline',
+        '/meet/sample',
+        '/meet/cancel/token',
+      ]) {
+        expect(excludes.any((e) => glob(e).hasMatch(probe)), isTrue,
+            reason: '$probe must stay in the browser on Windows while calls are frozen');
+      }
+    });
+
     test('its paths are the contract paths', () {
       final paths = (webLink['paths'] as List).cast<String>().toSet();
       for (final prefix in prefixes) {
+        if (browserOnly(prefix) && prefix != '/meetings/join/') continue;
         expect(paths, contains('$prefix*'), reason: prefix);
       }
       for (final path in exactPaths) {
