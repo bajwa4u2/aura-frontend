@@ -19,7 +19,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^2.0.0
 
   # Navigation + state
   go_router: ^14.2.0
