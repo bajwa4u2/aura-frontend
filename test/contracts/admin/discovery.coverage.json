@@ -4,23 +4,27 @@
     "estate": "AURA",
     "published": 148,
     "advertisedFromInventory": 0,
+    "privateByChoice": 20,
     "observed": 12,
     "indexed": 9,
     "families": [
       {
         "family": "ARTICLE",
         "published": 96,
-        "advertised": 0
+        "advertised": 0,
+        "privateByChoice": 0
       },
       {
         "family": "INSTITUTION",
         "published": 31,
-        "advertised": 0
+        "advertised": 0,
+        "privateByChoice": 0
       },
       {
         "family": "PERSON",
         "published": 21,
-        "advertised": 0
+        "advertised": 0,
+        "privateByChoice": 20
       }
     ]
   },

@@ -1,0 +1,58 @@
+{
+  "ok": true,
+  "days": 28,
+  "ownName": {
+    "impressions": 835,
+    "clicks": 40
+  },
+  "other": {
+    "impressions": 110,
+    "clicks": 1
+  },
+  "items": [
+    {
+      "query": "aura platform",
+      "impressions": 835,
+      "clicks": 40,
+      "position": 2.1,
+      "page": "https://auraplatform.org/",
+      "ownName": true
+    },
+    {
+      "query": "aura dispatch platform",
+      "impressions": 88,
+      "clicks": 0,
+      "position": 9.4,
+      "page": "https://auraplatform.org/",
+      "ownName": false
+    },
+    {
+      "query": "when capability outruns authority",
+      "impressions": 12,
+      "clicks": 1,
+      "position": 6,
+      "page": "https://auraplatform.org/p/art/when-capability-outruns-authority",
+      "ownName": false
+    },
+    {
+      "query": "a person name",
+      "impressions": 8,
+      "clicks": 0,
+      "position": 3,
+      "page": "https://auraplatform.org/p/u/someone",
+      "ownName": false
+    }
+  ],
+  "topics": [
+    {
+      "query": "when capability outruns authority",
+      "impressions": 12,
+      "clicks": 1,
+      "position": 6,
+      "page": "https://auraplatform.org/p/art/when-capability-outruns-authority",
+      "ownName": false
+    }
+  ],
+  "withheld": 1,
+  "withheldBelowImpressions": 5
+}

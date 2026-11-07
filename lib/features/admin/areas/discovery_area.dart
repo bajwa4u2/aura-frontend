@@ -31,7 +31,8 @@ class DiscoveryArea extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authority = ref.watch(operatorAuthorityProvider).valueOrNull ??
+    final authority =
+        ref.watch(operatorAuthorityProvider).valueOrNull ??
         const OperatorAuthority.none();
 
     if (!authority.can(OperatorCapability.discoveryRead)) {
@@ -49,6 +50,10 @@ class DiscoveryArea extends ConsumerWidget {
           children: [
             const _EstatePicker(),
             const SizedBox(height: AuraSpace.s20),
+            // THE ANSWER FIRST (7 Nov 2026): did search bring anybody this
+            // week? Everything below it is how the answer was reached.
+            const _Week(),
+            const SizedBox(height: AuraSpace.s24),
             _Coverage(authority: authority),
             const SizedBox(height: AuraSpace.s24),
             const _Objects(),
@@ -58,7 +63,7 @@ class DiscoveryArea extends ConsumerWidget {
             // author it. DISCOVERY_READ runs Discovery; reading what people
             // typed is a separate grant.
             if (authority.can(OperatorCapability.discoveryEvidenceRead))
-              const _Queries()
+              const _Searches()
             else
               const OperatorSection(
                 title: 'What people searched for',
@@ -129,7 +134,8 @@ class _Coverage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final report = ref.watch(discoveryReportProvider);
 
-    return report.when(skipLoadingOnReload: true, 
+    return report.when(
+      skipLoadingOnReload: true,
       loading: () => const OperatorSection(
         title: 'Reach',
         child: OperatorLoading(lines: 3),
@@ -155,10 +161,8 @@ class _Coverage extends ConsumerWidget {
           //
           // So the source panel stays. Zero with every source reporting is a
           // finding; zero with sources unavailable is not a finding at all.
-          final reporting =
-              report.sources.length - report.unavailable.length;
-          final nothingCanLook =
-              report.sources.isNotEmpty && reporting == 0;
+          final reporting = report.sources.length - report.unavailable.length;
+          final nothingCanLook = report.sources.isNotEmpty && reporting == 0;
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -175,14 +179,14 @@ class _Coverage extends ConsumerWidget {
                         : 'Nothing is on record for this estate',
                     detail: nothingCanLook
                         ? 'This is not a finding about the estate. Every '
-                            'source below is unavailable, so Discovery has '
-                            'not been able to observe anything either way.'
+                              'source below is unavailable, so Discovery has '
+                              'not been able to observe anything either way.'
                         : coverage.estate == DiscoveryEstate.aura ||
-                                coverage.estate == DiscoveryEstate.auraPlatform
-                            ? 'Every source below reported, and found nothing. '
-                                'Collect evidence to build the inventory.'
-                            : 'This estate lives outside this database. Aura '
-                                'observes it only through the providers below.',
+                              coverage.estate == DiscoveryEstate.auraPlatform
+                        ? 'Every source below reported, and found nothing. '
+                              'Collect evidence to build the inventory.'
+                        : 'This estate lives outside this database. Aura '
+                              'observes it only through the providers below.',
                     icon: nothingCanLook
                         ? Icons.cloud_off_rounded
                         : Icons.travel_explore_rounded,
@@ -242,10 +246,17 @@ class _Coverage extends ConsumerWidget {
                 title: 'Reach',
                 subtitle: coverage.estate.label,
                 trailing: _CollectButton(authority: authority),
-                child: const OperatorPanel(
+                child: OperatorPanel(
                   child: OperatorClear(
-                    title: 'Everything published is advertised',
-                    detail: 'The sitemap and the published corpus agree.',
+                    title: coverage.privateByChoice > 0
+                        ? 'Everything that should be listed is listed'
+                        : 'Everything published is advertised',
+                    detail: coverage.privateByChoice > 0
+                        ? '${coverage.privateByChoice} '
+                              '${coverage.privateByChoice == 1 ? 'person' : 'people'} '
+                              'chose not to be listed by search engines. Their '
+                              'profiles stay out of the sitemap until they opt in.'
+                        : 'The sitemap and the published corpus agree.',
                   ),
                 ),
               ),
@@ -278,7 +289,7 @@ class _Coverage extends ConsumerWidget {
                             children: [
                               Expanded(
                                 child: Text(
-                                  family.family,
+                                  family.label,
                                   style: const TextStyle(
                                     color: AuraSurface.ink,
                                     fontSize: 12.5,
@@ -286,10 +297,11 @@ class _Coverage extends ConsumerWidget {
                                 ),
                               ),
                               Text(
-                                '${family.advertised} advertised of '
-                                '${family.published}',
+                                '${family.advertised} listed of '
+                                '${family.published}'
+                                '${family.privateByChoice > 0 ? ' · ${family.privateByChoice} private by choice' : ''}',
                                 style: TextStyle(
-                                  color: family.advertised < family.published
+                                  color: family.gap > 0
                                       ? AuraSurface.dangerInk
                                       : AuraSurface.muted,
                                   fontSize: 12,
@@ -476,7 +488,8 @@ class _CollectButton extends ConsumerWidget {
       OperatorAction(
         title: 'Collect evidence',
         subject: estate.label,
-        detail: 'Aura reads its own published corpus, fetches its own sitemap, '
+        detail:
+            'Aura reads its own published corpus, fetches its own sitemap, '
             'and probes its own canonical URLs the way a crawler would. '
             'Nothing is submitted anywhere and nothing outside Aura changes.',
         confirmLabel: 'Collect',
@@ -486,7 +499,8 @@ class _CollectButton extends ConsumerWidget {
             icon: Icons.storage_rounded,
           ),
           const OperatorConsequence(
-            text: 'Raw evidence older than 90 days is deleted in the same '
+            text:
+                'Raw evidence older than 90 days is deleted in the same '
                 'pass.',
             icon: Icons.auto_delete_rounded,
           ),
@@ -497,9 +511,7 @@ class _CollectButton extends ConsumerWidget {
           ),
         ],
         perform: (_) async {
-          await ref
-              .read(operatorDiscoveryRepositoryProvider)
-              .collect(estate);
+          await ref.read(operatorDiscoveryRepositoryProvider).collect(estate);
           return 'Collected. Coverage is rebuilt from what came back.';
         },
       ),
@@ -522,7 +534,8 @@ class _Objects extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final objects = ref.watch(discoveryObjectsProvider);
 
-    return objects.when(skipLoadingOnReload: true, 
+    return objects.when(
+      skipLoadingOnReload: true,
       loading: () => const OperatorSection(
         title: 'Objects',
         child: OperatorLoading(lines: 3),
@@ -555,8 +568,7 @@ class _Objects extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(vertical: AuraSpace.s4),
             child: Column(
               children: [
-                for (final object in all.take(60))
-                  _ObjectRow(object: object),
+                for (final object in all.take(60)) _ObjectRow(object: object),
                 if (all.length > 60)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(
@@ -591,11 +603,11 @@ class _ObjectRow extends StatelessWidget {
   final DiscoveryObject object;
 
   OperatorTone get _tone => switch (object.visibility) {
-        DiscoveryVisibility.unobserved => OperatorTone.danger,
-        DiscoveryVisibility.unreachable => OperatorTone.danger,
-        DiscoveryVisibility.unknown => OperatorTone.warn,
-        DiscoveryVisibility.reachable => OperatorTone.good,
-      };
+    DiscoveryVisibility.unobserved => OperatorTone.danger,
+    DiscoveryVisibility.unreachable => OperatorTone.danger,
+    DiscoveryVisibility.unknown => OperatorTone.warn,
+    DiscoveryVisibility.reachable => OperatorTone.good,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -653,88 +665,475 @@ class _ObjectRow extends StatelessWidget {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _Queries extends ConsumerWidget {
-  const _Queries();
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// THE WEEK IN ONE LINE (7 Nov 2026).
+///
+/// Discovery could say whether pages were reachable and not whether search
+/// brought anybody. This is that answer: how often search showed the estate,
+/// how often somebody chose it, how many visits came from a search engine, and
+/// how many people joined — against the week before.
+///
+/// THE STEPS ARE COUNTED APART. "Joined" is every new member that week from
+/// anywhere: Discovery never links a search or a visit to a person, and the
+/// panel says so rather than letting the line read as a funnel.
+class _Week extends ConsumerWidget {
+  const _Week();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final queries = ref.watch(discoveryQueriesProvider);
+    final week = ref.watch(discoveryWeekProvider);
+    final estate = ref.watch(discoveryEstateProvider);
 
-    return queries.when(skipLoadingOnReload: true, 
+    return week.when(
+      skipLoadingOnReload: true,
+      loading: () => const OperatorSection(
+        title: 'This week',
+        child: OperatorLoading(lines: 2),
+      ),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (w) {
+        final now = w.week;
+        if (!w.available || now == null) {
+          return OperatorSection(
+            title: 'This week',
+            child: OperatorPanel(
+              child: OperatorClear(
+                title: 'No search numbers yet',
+                detail:
+                    w.reason ??
+                    'No search engine has reported on this estate yet.',
+                icon: Icons.query_stats_rounded,
+              ),
+            ),
+          );
+        }
+        final before = w.previous;
+        final name = estate.label;
+        final steps = <String>[
+          'Search showed $name ${_times(now.shown)}',
+          'chosen ${_times(now.chosen)}',
+          '${now.arrivalsFromSearch} '
+              '${now.arrivalsFromSearch == 1 ? 'visit' : 'visits'} came from search',
+          if (now.joined != null)
+            '${now.joined} ${now.joined == 1 ? 'person' : 'people'} joined',
+        ];
+
+        return OperatorSection(
+          title: 'This week',
+          subtitle:
+              '${_day(now.from)} – ${_day(now.to)} · search engines '
+              'report about three days late, so the week ends there',
+          child: OperatorPanel(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  steps.join(' · '),
+                  style: const TextStyle(
+                    color: AuraSurface.ink,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: AuraSpace.s16),
+                Wrap(
+                  spacing: AuraSpace.s24,
+                  runSpacing: AuraSpace.s12,
+                  children: [
+                    _WeekFigure(
+                      label: 'Shown in search',
+                      value: now.shown,
+                      before: before?.shown,
+                    ),
+                    _WeekFigure(
+                      label: 'Chosen',
+                      value: now.chosen,
+                      before: before?.chosen,
+                      note: now.shown > 0
+                          ? '${_percent(now.chosen, now.shown)} of showings'
+                          : null,
+                    ),
+                    _WeekFigure(
+                      label: 'Visits from search',
+                      value: now.arrivalsFromSearch,
+                      before: before?.arrivalsFromSearch,
+                      note: '${now.arrivalsAll} visits in all',
+                    ),
+                    if (now.joined != null)
+                      _WeekFigure(
+                        label: 'Joined',
+                        value: now.joined!,
+                        before: before?.joined,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: AuraSpace.s12),
+                Text(
+                  [
+                    if (now.position != null)
+                      'Average place in results: ${now.position!.toStringAsFixed(1)}'
+                          '${before?.position != null ? ' (week before: ${before!.position!.toStringAsFixed(1)})' : ''}.',
+                    if (now.joined != null)
+                      'Joined counts everyone who joined that week, from '
+                          'anywhere. Discovery never links a search to a person.',
+                  ].join(' '),
+                  style: const TextStyle(
+                    color: AuraSurface.faint,
+                    fontSize: 11.5,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _WeekFigure extends StatelessWidget {
+  const _WeekFigure({
+    required this.label,
+    required this.value,
+    this.before,
+    this.note,
+  });
+
+  final String label;
+  final int value;
+  final int? before;
+  final String? note;
+
+  @override
+  Widget build(BuildContext context) {
+    final change = _change(value, before);
+    return SizedBox(
+      width: 150,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$value',
+            style: const TextStyle(
+              color: AuraSurface.ink,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              fontFeatures: [FontFeature.tabularFigures()],
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(color: AuraSurface.muted, fontSize: 11.5),
+          ),
+          if (change != null)
+            Text(
+              change,
+              style: const TextStyle(color: AuraSurface.faint, fontSize: 11),
+            ),
+          if (note != null)
+            Text(
+              note!,
+              style: const TextStyle(color: AuraSurface.faint, fontSize: 11),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+String _times(int n) => n == 1 ? 'once' : '$n times';
+
+String _percent(int part, int whole) {
+  if (whole <= 0) return '0%';
+  final p = part * 100 / whole;
+  return p >= 10 || p == 0 ? '${p.round()}%' : '${p.toStringAsFixed(1)}%';
+}
+
+/// "up 60% on the week before", in words, or null when there is nothing to
+/// compare with.
+String? _change(int now, int? before) {
+  if (before == null) return null;
+  if (before == 0) {
+    return now == 0 ? 'none the week before either' : 'none the week before';
+  }
+  if (now == before) return 'same as the week before';
+  final pct = ((now - before).abs() * 100 / before).round();
+  return '${now > before ? 'up' : 'down'} $pct% on the week before';
+}
+
+const _months = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+String _day(DateTime d) => '${d.day} ${_months[d.month - 1]}';
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// WHAT PEOPLE SEARCHED FOR, SPLIT (7 Nov 2026).
+///
+/// One list mixed searches for Aura by name with searches for other products
+/// that share the word ("aura dispatch platform", "auraportal"), so the
+/// biggest numbers on the page were partly somebody else's. Now:
+///   * searches for us by name, with where we ranked — if people search for
+///     us and do not choose us, the title and description shown need work;
+///   * what our pages are found FOR — searches that led to an article or a
+///     post, which is what to write more of;
+///   * everything else, set apart.
+class _Searches extends ConsumerWidget {
+  const _Searches();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final searches = ref.watch(discoverySearchesProvider);
+    final estate = ref.watch(discoveryEstateProvider);
+
+    return searches.when(
+      skipLoadingOnReload: true,
       loading: () => const OperatorSection(
         title: 'What people searched for',
         child: OperatorLoading(lines: 2),
       ),
       error: (_, __) => const SizedBox.shrink(),
-      data: (page) {
-        if (page.items.isEmpty) {
+      data: (s) {
+        if (s.items.isEmpty) {
           return OperatorSection(
             title: 'What people searched for',
             child: OperatorPanel(
               child: OperatorClear(
-                title: page.withheld > 0
-                    ? 'Every query is below the display floor'
-                    : 'No query evidence',
-                detail: page.withheld > 0
-                    ? '${page.withheld} withheld. A query seen fewer than '
-                        '${page.floor} times can identify the person who '
-                        'typed it.'
+                title: s.withheld > 0
+                    ? 'Every search is below the display floor'
+                    : 'No search evidence',
+                detail: s.withheld > 0
+                    ? '${s.withheld} withheld. A search seen fewer than '
+                          '${s.floor} times can identify the person who typed it.'
                     : 'No provider that reports search text is configured.',
                 icon: Icons.search_off_rounded,
               ),
             ),
           );
         }
+        final own = s.items.where((q) => q.ownName).toList();
+        final other = s.items.where((q) => !q.ownName).toList();
 
         return OperatorSection(
           title: 'What people searched for',
-          subtitle: 'Aggregated and redacted. Never joined to an Aura member.',
-          child: OperatorPanel(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final query in page.items)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: AuraSpace.s8),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            query.query,
-                            style: const TextStyle(
-                              color: AuraSurface.ink,
-                              fontSize: 12.5,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          '${query.impressions}',
-                          style: const TextStyle(
-                            color: AuraSurface.muted,
-                            fontSize: 12,
-                            fontFeatures: [FontFeature.tabularFigures()],
-                          ),
-                        ),
-                      ],
+          subtitle:
+              'Last ${s.days} days. Aggregated and redacted. Never '
+              'joined to an Aura member.',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              OperatorPanel(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SplitLine(
+                      label: 'For ${estate.label} by name',
+                      totals: s.ownName,
                     ),
-                  ),
-                if (page.withheld > 0) ...[
-                  const SizedBox(height: AuraSpace.s8),
-                  Text(
-                    '${page.withheld} withheld for being seen fewer than '
-                    '${page.floor} times.',
-                    style: const TextStyle(
-                      color: AuraSurface.faint,
-                      fontSize: 11.5,
-                      height: 1.35,
+                    const SizedBox(height: AuraSpace.s8),
+                    _SplitLine(
+                      label: 'Everything else',
+                      totals: s.other,
+                      muted: true,
                     ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AuraSpace.s12),
+              _SearchList(
+                title: 'Searches for ${estate.label}',
+                hint: 'Where you ranked, and how often people chose you.',
+                items: own,
+                empty:
+                    'Nobody searched for ${estate.label} by name often '
+                    'enough to show.',
+              ),
+              const SizedBox(height: AuraSpace.s12),
+              _SearchList(
+                title: 'What your pages are found for',
+                hint:
+                    'Searches that led to an article or a post — the '
+                    'subjects people come to ${estate.label} for.',
+                items: s.topics,
+                showPage: true,
+                empty:
+                    'No article or post has been found by a search often '
+                    'enough to show yet.',
+              ),
+              const SizedBox(height: AuraSpace.s12),
+              _SearchList(
+                title: 'Other searches',
+                hint: 'Mostly other products and words that share the name.',
+                items: other.take(10).toList(),
+                muted: true,
+                empty: 'None.',
+              ),
+              if (s.withheld > 0) ...[
+                const SizedBox(height: AuraSpace.s8),
+                Text(
+                  '${s.withheld} withheld for being seen fewer than '
+                  '${s.floor} times.',
+                  style: const TextStyle(
+                    color: AuraSurface.faint,
+                    fontSize: 11.5,
+                    height: 1.35,
                   ),
-                ],
+                ),
               ],
-            ),
+            ],
           ),
         );
       },
+    );
+  }
+}
+
+class _SplitLine extends StatelessWidget {
+  const _SplitLine({
+    required this.label,
+    required this.totals,
+    this.muted = false,
+  });
+
+  final String label;
+  final DiscoverySearchTotals totals;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: muted ? AuraSurface.muted : AuraSurface.ink,
+              fontSize: 13,
+              fontWeight: muted ? FontWeight.w400 : FontWeight.w600,
+            ),
+          ),
+        ),
+        Text(
+          '${totals.impressions} shown · ${totals.clicks} chosen'
+          '${totals.impressions > 0 ? ' (${_percent(totals.clicks, totals.impressions)})' : ''}',
+          style: TextStyle(
+            color: muted ? AuraSurface.faint : AuraSurface.muted,
+            fontSize: 12,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SearchList extends StatelessWidget {
+  const _SearchList({
+    required this.title,
+    required this.hint,
+    required this.items,
+    required this.empty,
+    this.showPage = false,
+    this.muted = false,
+  });
+
+  final String title;
+  final String hint;
+  final List<DiscoverySearch> items;
+  final String empty;
+  final bool showPage;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    return OperatorPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: AuraSurface.ink,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            hint,
+            style: const TextStyle(color: AuraSurface.faint, fontSize: 11.5),
+          ),
+          const SizedBox(height: AuraSpace.s12),
+          if (items.isEmpty)
+            Text(
+              empty,
+              style: const TextStyle(color: AuraSurface.muted, fontSize: 12.5),
+            ),
+          for (final q in items)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AuraSpace.s8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          q.query,
+                          style: TextStyle(
+                            color: muted ? AuraSurface.muted : AuraSurface.ink,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                        if (showPage && q.pagePath != null)
+                          Text(
+                            q.pagePath!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AuraSurface.faint,
+                              fontSize: 11,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AuraSpace.s12),
+                  Text(
+                    [
+                      '${q.impressions} shown',
+                      '${q.clicks} chosen',
+                      if (q.position != null)
+                        'place ${q.position!.toStringAsFixed(1)}',
+                    ].join(' · '),
+                    style: TextStyle(
+                      color: muted ? AuraSurface.faint : AuraSurface.muted,
+                      fontSize: 12,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

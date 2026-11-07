@@ -85,14 +85,14 @@ class DiscoverySource {
 
   /// Human name for an adapter. The wire value is an enum shout.
   String get label => switch (source.toUpperCase()) {
-        'GOOGLE_SEARCH_CONSOLE' => 'Google Search Console',
-        'BING_WEBMASTER' => 'Bing Webmaster',
-        'INDEXNOW' => 'IndexNow',
-        'SITEMAP' => 'Our own sitemap',
-        'CRAWLER_FETCH' => 'Crawler reachability probe',
-        'AURA_REFERRAL' => 'Aura referral telemetry',
-        _ => source,
-      };
+    'GOOGLE_SEARCH_CONSOLE' => 'Google Search Console',
+    'BING_WEBMASTER' => 'Bing Webmaster',
+    'INDEXNOW' => 'IndexNow',
+    'SITEMAP' => 'Our own sitemap',
+    'CRAWLER_FETCH' => 'Crawler reachability probe',
+    'AURA_REFERRAL' => 'Aura referral telemetry',
+    _ => source,
+  };
 
   factory DiscoverySource.fromJson(Map<String, dynamic> json) {
     String s(dynamic v) => (v ?? '').toString().trim();
@@ -115,6 +115,7 @@ class DiscoveryCoverage {
     required this.observed,
     required this.indexed,
     required this.families,
+    this.privateByChoice = 0,
   });
 
   final DiscoveryEstate estate;
@@ -135,7 +136,17 @@ class DiscoveryCoverage {
   final List<DiscoveryFamily> families;
 
   /// Published objects the sitemap never mentions.
-  int get unadvertised => (published - advertisedFromInventory).clamp(0, published);
+  /// Published people who did not opt in to search listing (7 Nov 2026).
+  /// Missing from the sitemap by THEIR choice, so never counted as a gap.
+  final int privateByChoice;
+
+  /// What should be listed and is not. People who chose privacy are the rule
+  /// working, not a gap; the console showed them in red until 7 Nov 2026.
+  int get unadvertised =>
+      (published - advertisedFromInventory - privateByChoice).clamp(
+        0,
+        published,
+      );
 
   bool get hasSitemapGap => unadvertised > 0;
 
@@ -149,11 +160,14 @@ class DiscoveryCoverage {
       advertisedFromInventory: i('advertisedFromInventory'),
       observed: i('observed'),
       indexed: i('indexed'),
+      privateByChoice: i('privateByChoice'),
       families: raw is List
           ? raw
-              .whereType<Map>()
-              .map((e) => DiscoveryFamily.fromJson(Map<String, dynamic>.from(e)))
-              .toList(growable: false)
+                .whereType<Map>()
+                .map(
+                  (e) => DiscoveryFamily.fromJson(Map<String, dynamic>.from(e)),
+                )
+                .toList(growable: false)
           : const <DiscoveryFamily>[],
     );
   }
@@ -165,12 +179,29 @@ class DiscoveryFamily {
     required this.published,
     required this.advertised,
     required this.observed,
+    this.privateByChoice = 0,
   });
 
   final String family;
   final int published;
   final int advertised;
   final int observed;
+  final int privateByChoice;
+
+  /// What should be listed and is not.
+  int get gap => (published - advertised - privateByChoice).clamp(0, published);
+
+  /// How a person reads the kind, rather than the wire name.
+  String get label => switch (family) {
+    'ARTICLE' => 'Articles',
+    'INSTITUTION' => 'Institutions',
+    'INSTITUTION_POST' => 'Institution posts',
+    'ANNOUNCEMENT' => 'Announcements',
+    'PERSON' => 'People',
+    'PAGE' => 'Pages',
+    'FILM' => 'Films',
+    _ => family,
+  };
 
   factory DiscoveryFamily.fromJson(Map<String, dynamic> json) {
     int i(String k) => (json[k] as num?)?.toInt() ?? 0;
@@ -179,6 +210,7 @@ class DiscoveryFamily {
       published: i('published'),
       advertised: i('advertised'),
       observed: i('observed'),
+      privateByChoice: i('privateByChoice'),
     );
   }
 }
@@ -268,10 +300,184 @@ class DiscoveryQueryPage {
     return DiscoveryQueryPage(
       items: raw is List
           ? raw
-              .whereType<Map>()
-              .map((e) => DiscoveryQuery.fromJson(Map<String, dynamic>.from(e)))
-              .toList(growable: false)
+                .whereType<Map>()
+                .map(
+                  (e) => DiscoveryQuery.fromJson(Map<String, dynamic>.from(e)),
+                )
+                .toList(growable: false)
           : const <DiscoveryQuery>[],
+      withheld: (json['withheld'] as num?)?.toInt() ?? 0,
+      floor: (json['withheldBelowImpressions'] as num?)?.toInt() ?? 5,
+    );
+  }
+}
+
+/// One week of search, counted step by step (7 Nov 2026). The steps are
+/// counted independently: [joined] is every new member that week, from
+/// anywhere, because Discovery never links a search or a visit to a person.
+class DiscoveryWeekNumbers {
+  const DiscoveryWeekNumbers({
+    required this.from,
+    required this.to,
+    required this.shown,
+    required this.chosen,
+    required this.arrivalsFromSearch,
+    required this.arrivalsAll,
+    this.position,
+    this.joined,
+  });
+
+  final DateTime from;
+  final DateTime to;
+  final int shown;
+  final int chosen;
+  final double? position;
+  final int arrivalsFromSearch;
+  final int arrivalsAll;
+
+  /// Null where Aura holds no accounts (every estate but Aura's own).
+  final int? joined;
+
+  factory DiscoveryWeekNumbers.fromJson(Map<String, dynamic> json) {
+    int i(String k) => (json[k] as num?)?.toInt() ?? 0;
+    DateTime d(String k) =>
+        DateTime.tryParse((json[k] ?? '').toString()) ?? DateTime(1970);
+    return DiscoveryWeekNumbers(
+      from: d('from'),
+      to: d('to'),
+      shown: i('shown'),
+      chosen: i('chosen'),
+      position: (json['position'] as num?)?.toDouble(),
+      arrivalsFromSearch: i('arrivalsFromSearch'),
+      arrivalsAll: i('arrivalsAll'),
+      joined: (json['joined'] as num?)?.toInt(),
+    );
+  }
+}
+
+class DiscoveryWeek {
+  const DiscoveryWeek({
+    required this.available,
+    this.week,
+    this.previous,
+    this.reason,
+  });
+
+  final bool available;
+  final DiscoveryWeekNumbers? week;
+  final DiscoveryWeekNumbers? previous;
+  final String? reason;
+
+  factory DiscoveryWeek.fromJson(Map<String, dynamic> json) {
+    Map<String, dynamic>? m(dynamic v) =>
+        v is Map ? Map<String, dynamic>.from(v) : null;
+    final week = m(json['week']);
+    final previous = m(json['previous']);
+    return DiscoveryWeek(
+      available: json['available'] == true && week != null,
+      week: week == null ? null : DiscoveryWeekNumbers.fromJson(week),
+      previous: previous == null
+          ? null
+          : DiscoveryWeekNumbers.fromJson(previous),
+      reason: json['reason']?.toString(),
+    );
+  }
+}
+
+/// A search, with where it ranked and the page it led to.
+class DiscoverySearch {
+  const DiscoverySearch({
+    required this.query,
+    required this.impressions,
+    required this.clicks,
+    required this.ownName,
+    this.position,
+    this.page,
+  });
+
+  final String query;
+  final int impressions;
+  final int clicks;
+  final double? position;
+  final String? page;
+
+  /// A search FOR this estate by name ("aura platform"), as opposed to the
+  /// word it shares with other products ("aura dispatch platform").
+  final bool ownName;
+
+  /// The landing page as a path, which is what an operator recognises.
+  String? get pagePath {
+    final p = page;
+    if (p == null) return null;
+    final uri = Uri.tryParse(p);
+    if (uri == null) return p;
+    return uri.path.isEmpty ? '/' : uri.path;
+  }
+
+  factory DiscoverySearch.fromJson(Map<String, dynamic> json) {
+    return DiscoverySearch(
+      query: (json['query'] ?? '').toString(),
+      impressions: (json['impressions'] as num?)?.toInt() ?? 0,
+      clicks: (json['clicks'] as num?)?.toInt() ?? 0,
+      position: (json['position'] as num?)?.toDouble(),
+      page: json['page']?.toString(),
+      ownName: json['ownName'] == true,
+    );
+  }
+}
+
+class DiscoverySearchTotals {
+  const DiscoverySearchTotals({
+    required this.impressions,
+    required this.clicks,
+  });
+
+  final int impressions;
+  final int clicks;
+
+  factory DiscoverySearchTotals.fromJson(dynamic raw) {
+    final json = raw is Map ? raw : const {};
+    return DiscoverySearchTotals(
+      impressions: (json['impressions'] as num?)?.toInt() ?? 0,
+      clicks: (json['clicks'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+class DiscoverySearches {
+  const DiscoverySearches({
+    required this.days,
+    required this.ownName,
+    required this.other,
+    required this.items,
+    required this.topics,
+    required this.withheld,
+    required this.floor,
+  });
+
+  final int days;
+  final DiscoverySearchTotals ownName;
+  final DiscoverySearchTotals other;
+  final List<DiscoverySearch> items;
+  final List<DiscoverySearch> topics;
+  final int withheld;
+  final int floor;
+
+  factory DiscoverySearches.fromJson(Map<String, dynamic> json) {
+    List<DiscoverySearch> list(dynamic raw) => raw is List
+        ? raw
+              .whereType<Map>()
+              .map(
+                (e) => DiscoverySearch.fromJson(Map<String, dynamic>.from(e)),
+              )
+              .toList(growable: false)
+        : const <DiscoverySearch>[];
+    return DiscoverySearches(
+      days: (json['days'] as num?)?.toInt() ?? 28,
+      ownName: DiscoverySearchTotals.fromJson(json['ownName']),
+      other: DiscoverySearchTotals.fromJson(json['other']),
+      items: list(json['items']),
+      topics: list(json['topics']),
       withheld: (json['withheld'] as num?)?.toInt() ?? 0,
       floor: (json['withheldBelowImpressions'] as num?)?.toInt() ?? 5,
     );
@@ -300,8 +506,9 @@ class DiscoveryRetention {
       observations: i('observations', 0),
       rawRetentionDays: i('rawRetentionDays', 90),
       observationRetentionMonths: i('observationRetentionMonths', 24),
-      oldestRawFetchedAt:
-          DateTime.tryParse((json['oldestRawFetchedAt'] ?? '').toString()),
+      oldestRawFetchedAt: DateTime.tryParse(
+        (json['oldestRawFetchedAt'] ?? '').toString(),
+      ),
     );
   }
 }
@@ -340,9 +547,11 @@ class OperatorDiscoveryRepository {
       coverage: DiscoveryCoverage.fromJson(_map(inner['coverage'])),
       sources: inner['sources'] is List
           ? (inner['sources'] as List)
-              .whereType<Map>()
-              .map((e) => DiscoverySource.fromJson(Map<String, dynamic>.from(e)))
-              .toList(growable: false)
+                .whereType<Map>()
+                .map(
+                  (e) => DiscoverySource.fromJson(Map<String, dynamic>.from(e)),
+                )
+                .toList(growable: false)
           : const <DiscoverySource>[],
     );
   }
@@ -379,6 +588,28 @@ class OperatorDiscoveryRepository {
     );
   }
 
+  Future<DiscoveryWeek> week(DiscoveryEstate estate) async {
+    final res = await _dio.get(
+      '/v1/admin/discovery/week',
+      queryParameters: {'estate': estate.wire},
+    );
+    final body = _map(res.data);
+    return DiscoveryWeek.fromJson(
+      body['data'] is Map ? _map(body['data']) : body,
+    );
+  }
+
+  Future<DiscoverySearches> searches(DiscoveryEstate estate) async {
+    final res = await _dio.get(
+      '/v1/admin/discovery/searches',
+      queryParameters: {'estate': estate.wire},
+    );
+    final body = _map(res.data);
+    return DiscoverySearches.fromJson(
+      body['data'] is Map ? _map(body['data']) : body,
+    );
+  }
+
   Future<DiscoveryRetention> retention() async {
     final res = await _dio.get('/v1/admin/discovery/retention');
     final body = _map(res.data);
@@ -397,34 +628,51 @@ class OperatorDiscoveryRepository {
 
 final operatorDiscoveryRepositoryProvider =
     Provider<OperatorDiscoveryRepository>((ref) {
-  return OperatorDiscoveryRepository(ref.watch(dioProvider));
-});
+      return OperatorDiscoveryRepository(ref.watch(dioProvider));
+    });
 
 /// Which estate is being observed. AURA by default — the estate this database
 /// actually holds, and the only one whose published corpus can be counted from
 /// the inside.
-final discoveryEstateProvider =
-    StateProvider<DiscoveryEstate>((_) => DiscoveryEstate.aura);
+final discoveryEstateProvider = StateProvider<DiscoveryEstate>(
+  (_) => DiscoveryEstate.aura,
+);
 
-final discoveryReportProvider =
-    FutureProvider.autoDispose<DiscoveryReport>((ref) async {
+final discoveryReportProvider = FutureProvider.autoDispose<DiscoveryReport>((
+  ref,
+) async {
   final estate = ref.watch(discoveryEstateProvider);
   return ref.watch(operatorDiscoveryRepositoryProvider).report(estate);
 });
 
 final discoveryObjectsProvider =
     FutureProvider.autoDispose<List<DiscoveryObject>>((ref) async {
+      final estate = ref.watch(discoveryEstateProvider);
+      return ref.watch(operatorDiscoveryRepositoryProvider).objects(estate);
+    });
+
+final discoveryQueriesProvider = FutureProvider.autoDispose<DiscoveryQueryPage>(
+  (ref) async {
+    final estate = ref.watch(discoveryEstateProvider);
+    return ref.watch(operatorDiscoveryRepositoryProvider).queries(estate);
+  },
+);
+
+final discoveryWeekProvider = FutureProvider.autoDispose<DiscoveryWeek>((
+  ref,
+) async {
   final estate = ref.watch(discoveryEstateProvider);
-  return ref.watch(operatorDiscoveryRepositoryProvider).objects(estate);
+  return ref.watch(operatorDiscoveryRepositoryProvider).week(estate);
 });
 
-final discoveryQueriesProvider =
-    FutureProvider.autoDispose<DiscoveryQueryPage>((ref) async {
-  final estate = ref.watch(discoveryEstateProvider);
-  return ref.watch(operatorDiscoveryRepositoryProvider).queries(estate);
-});
+final discoverySearchesProvider = FutureProvider.autoDispose<DiscoverySearches>(
+  (ref) async {
+    final estate = ref.watch(discoveryEstateProvider);
+    return ref.watch(operatorDiscoveryRepositoryProvider).searches(estate);
+  },
+);
 
 final discoveryRetentionProvider =
     FutureProvider.autoDispose<DiscoveryRetention>((ref) async {
-  return ref.watch(operatorDiscoveryRepositoryProvider).retention();
-});
+      return ref.watch(operatorDiscoveryRepositoryProvider).retention();
+    });

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:aura/features/admin/data/admin_models.dart';
+import 'package:aura/features/admin/data/operator_discovery.dart';
 import 'package:aura/features/admin/data/operator_identity.dart';
 import 'package:aura/features/admin/data/operator_work.dart';
 import 'package:aura/features/admin/domain/operator_signal.dart';
@@ -51,12 +52,13 @@ void main() {
 
   group('the contract corpus exists and is the server\'s', () {
     test('every captured surface is present', () {
-      final names = dir
-          .listSync()
-          .whereType<File>()
-          .map((f) => f.uri.pathSegments.last.replaceAll('.json', ''))
-          .toList()
-        ..sort();
+      final names =
+          dir
+              .listSync()
+              .whereType<File>()
+              .map((f) => f.uri.pathSegments.last.replaceAll('.json', ''))
+              .toList()
+            ..sort();
       expect(names, [
         'audit.list',
         'clients.overview',
@@ -64,6 +66,8 @@ void main() {
         'discovery.objects',
         'discovery.queries',
         'discovery.retention',
+        'discovery.searches',
+        'discovery.week',
         'feature-flags.list',
         'feedback.detail',
         'feedback.queue',
@@ -114,6 +118,47 @@ void main() {
     });
   });
 
+  group('Discovery reads what the server actually sends (7 Nov 2026)', () {
+    test('people who chose privacy are not a sitemap gap', () {
+      final coverage = DiscoveryCoverage.fromJson(
+        contract('discovery.coverage')['coverage'],
+      );
+      expect(coverage.privateByChoice, 20);
+      final person = coverage.families.firstWhere((f) => f.family == 'PERSON');
+      expect(person.privateByChoice, 20);
+      expect(person.gap, 1);
+      expect(coverage.unadvertised, 128);
+    });
+
+    test('the week reads as one line against the week before', () {
+      final week = DiscoveryWeek.fromJson(contract('discovery.week'));
+      expect(week.available, isTrue);
+      expect(week.week!.shown, 400);
+      expect(week.week!.chosen, 14);
+      expect(week.week!.arrivalsFromSearch, 10);
+      expect(week.week!.joined, 4);
+      expect(week.week!.position, 5);
+      expect(week.previous!.shown, 250);
+      expect(week.week!.to, DateTime.parse('2026-11-04'));
+    });
+
+    test('searches arrive split by our own name, with rank and page', () {
+      final s = DiscoverySearches.fromJson(contract('discovery.searches'));
+      expect(s.ownName.impressions, 835);
+      expect(s.items.first.ownName, isTrue);
+      expect(s.items.first.position, 2.1);
+      expect(
+        s.items.firstWhere((q) => q.query == 'aura dispatch platform').ownName,
+        isFalse,
+      );
+      expect(
+        s.topics.single.pagePath,
+        '/p/art/when-capability-outruns-authority',
+      );
+      expect(s.withheld, 1);
+    });
+  });
+
   group('PlatformHealth reads what the server actually sends', () {
     test('a healthy platform reports healthy, and says so in one sentence', () {
       final health = PlatformHealth.fromJson(contract('health.healthy'));
@@ -148,8 +193,9 @@ void main() {
     });
 
     test('unconfigured providers are DEGRADED, and only those two', () {
-      final health =
-          PlatformHealth.fromJson(contract('health.providers-missing'));
+      final health = PlatformHealth.fromJson(
+        contract('health.providers-missing'),
+      );
 
       expect(health.adverse.map((c) => c.key).toSet(), {'email', 'push'});
       expect(health.summary, '2 services degraded');
@@ -162,8 +208,9 @@ void main() {
     });
 
     test('the message is the source\'s own sentence, carried verbatim', () {
-      final health =
-          PlatformHealth.fromJson(contract('health.providers-missing'));
+      final health = PlatformHealth.fromJson(
+        contract('health.providers-missing'),
+      );
       final email = health.checks.firstWhere((c) => c.key == 'email');
       expect(email.message, 'Email provider not configured');
     });
@@ -182,25 +229,33 @@ void main() {
 
       final push = health.checks.firstWhere((c) => c.key == 'push');
       expect(push.condition, OperatorCondition.unknown);
-      expect(health.adverse, isEmpty,
-          reason: 'silence is not evidence of degradation');
+      expect(
+        health.adverse,
+        isEmpty,
+        reason: 'silence is not evidence of degradation',
+      );
       expect(health.condition, OperatorCondition.attention);
-      expect(health.summary, 'Everything reporting is healthy · 1 not reporting');
+      expect(
+        health.summary,
+        'Everything reporting is healthy · 1 not reporting',
+      );
     });
 
-    test('a status word this build has never seen is unknown, not a verdict',
-        () {
-      // A server one version ahead must not be able to make the console
-      // invent a judgement.
-      expect(
-        PlatformHealth.conditionFromStatus('QUARANTINED'),
-        OperatorCondition.unknown,
-      );
-      expect(
-        PlatformHealth.conditionFromStatus(null),
-        OperatorCondition.unknown,
-      );
-    });
+    test(
+      'a status word this build has never seen is unknown, not a verdict',
+      () {
+        // A server one version ahead must not be able to make the console
+        // invent a judgement.
+        expect(
+          PlatformHealth.conditionFromStatus('QUARANTINED'),
+          OperatorCondition.unknown,
+        );
+        expect(
+          PlatformHealth.conditionFromStatus(null),
+          OperatorCondition.unknown,
+        );
+      },
+    );
 
     test('nothing reporting says exactly that', () {
       final health = PlatformHealth.fromJson(const {});
@@ -217,8 +272,11 @@ void main() {
       );
       expect(grant.derivedStatus, isNot(AdminGrantStatus.revoked));
       expect(grant.active, isTrue);
-      expect(grant.grantedBy, 'Rowan Ellis',
-          reason: 'grantedBy is an object; stringifying it printed a map');
+      expect(
+        grant.grantedBy,
+        'Rowan Ellis',
+        reason: 'grantedBy is an object; stringifying it printed a map',
+      );
     });
 
     test('an audit row names its actor from actorUserId + actor', () {
@@ -244,8 +302,11 @@ void main() {
         ),
       );
       expect(domain.institutionId, isNotEmpty);
-      expect(domain.institutionId, isNot(domain.id),
-          reason: 'comparing these was why no institution showed its proof');
+      expect(
+        domain.institutionId,
+        isNot(domain.id),
+        reason: 'comparing these was why no institution showed its proof',
+      );
     });
   });
 
@@ -289,7 +350,10 @@ void main() {
       // captured one layer below the wire and the client's default for a
       // missing `totalOpen` was zero.
       final partial = summary('work.summary.one-source-down');
-      expect(partial.totalOpen, worklist('work.list.one-source-down').items.length);
+      expect(
+        partial.totalOpen,
+        worklist('work.list.one-source-down').items.length,
+      );
       expect(partial.totalOpen, greaterThan(0));
     });
 
@@ -308,8 +372,10 @@ void main() {
       );
       expect(label, 'Moderation');
       // Even with no summary at hand it must not print the raw key.
-      expect(OperatorWorklist.labelFor('INSTITUTION_DOMAIN'),
-          'Institution domain');
+      expect(
+        OperatorWorklist.labelFor('INSTITUTION_DOMAIN'),
+        'Institution domain',
+      );
     });
 
     test('everything clear is every source reporting zero', () {
@@ -424,18 +490,22 @@ void main() {
             .where((s) => s != IdentitySubmissionState.unknown)
             .map((s) => s.wire)
             .toSet(),
-        {'PENDING_REVIEW', 'NEEDS_MORE_INFO', 'REJECTED', 'APPROVED',
-          'WITHDRAWN'},
+        {
+          'PENDING_REVIEW',
+          'NEEDS_MORE_INFO',
+          'REJECTED',
+          'APPROVED',
+          'WITHDRAWN',
+        },
       );
     });
   });
 
   group('the people directory shows operator authority truthfully', () {
-    List<AdminUserSummary> people() =>
-        (contract('users.list')['items'] as List)
-            .cast<Map<String, dynamic>>()
-            .map(AdminUserSummary.fromJson)
-            .toList();
+    List<AdminUserSummary> people() => (contract('users.list')['items'] as List)
+        .cast<Map<String, dynamic>>()
+        .map(AdminUserSummary.fromJson)
+        .toList();
 
     test('an operator role is read from where the server puts it', () {
       // Parsed from a top-level `role` key the server has never sent. The
@@ -521,8 +591,9 @@ void main() {
   });
 
   group('a moderation report shows the thing being judged', () {
-    ModerationReport report(String name) =>
-        ModerationReport.fromJson(contract(name)['report'] as Map<String, dynamic>);
+    ModerationReport report(String name) => ModerationReport.fromJson(
+      contract(name)['report'] as Map<String, dynamic>,
+    );
 
     test('the reported words reach the operator', () {
       final subject = report('moderation.report').subject;
@@ -570,11 +641,12 @@ void main() {
             .map(AdminInstitutionMember.fromJson)
             .toList();
 
-    List<AdminInstitutionSummary> directory([String name = 'institutions.directory']) =>
-        (contract(name)['items'] as List)
-            .cast<Map<String, dynamic>>()
-            .map(AdminInstitutionSummary.fromJson)
-            .toList();
+    List<AdminInstitutionSummary> directory([
+      String name = 'institutions.directory',
+    ]) => (contract(name)['items'] as List)
+        .cast<Map<String, dynamic>>()
+        .map(AdminInstitutionSummary.fromJson)
+        .toList();
 
     AdminInstitutionSummary rostered() =>
         directory().firstWhere((i) => i.memberCount > 0);
@@ -594,12 +666,10 @@ void main() {
       // subject an operator is most likely sent to review — was absent from
       // the console's only institution list, invisibly.
       final standings = directory().map((i) => i.status).toSet();
-      expect(standings, containsAll(<String>{
-        'VERIFIED',
-        'PENDING',
-        'SUSPENDED',
-        'REJECTED',
-      }));
+      expect(
+        standings,
+        containsAll(<String>{'VERIFIED', 'PENDING', 'SUSPENDED', 'REJECTED'}),
+      );
       // The envelope says which slice this is. `null` means "everything".
       expect(contract('institutions.directory')['status'], isNull);
     });
@@ -639,11 +709,13 @@ void main() {
       expect(disabled.single.role, 'MEMBER');
     });
 
-    test('the directory row carries the domain that proves the institution',
-        () {
-      expect(rostered().domain, isNotNull);
-      expect(rostered().status, 'VERIFIED');
-    });
+    test(
+      'the directory row carries the domain that proves the institution',
+      () {
+        expect(rostered().domain, isNotNull);
+        expect(rostered().status, 'VERIFIED');
+      },
+    );
   });
 
   group('OperatorSignal keeps the distinctions the console lost', () {

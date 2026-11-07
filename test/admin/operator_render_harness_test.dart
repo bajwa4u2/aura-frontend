@@ -359,8 +359,9 @@ void main() {
   // moved for reasons that had nothing to do with the layout. This runs where
   // that cannot happen.
   for (final area in const ['discovery', 'platform']) {
-    testWidgets('$area · the last section is reachable at 1440x765',
-        (tester) async {
+    testWidgets('$area · the last section is reachable at 1440x765', (
+      tester,
+    ) async {
       final surface = area == 'discovery'
           ? (path: '/admin/discovery', widget: const DiscoveryArea())
           : (path: '/admin/platform', widget: const PlatformArea());
@@ -530,6 +531,7 @@ Future<void> _render(
   Widget area,
   String outPath, {
   Map<String, dynamic>? adminMe = _ownerMe,
+
   /// Which captured contracts to answer with. Named rather than passed as
   /// payloads: the harness must exercise the REAL parser against the server's
   /// own statement of shape, not a map written here.
@@ -544,10 +546,12 @@ Future<void> _render(
   String workListContract = 'work.list',
   String userDetailContract = 'user.detail',
   String identityContract = 'identity.detail',
+
   /// Provider overrides a specific picture needs. Used ONLY for surface state
   /// the operator sets themselves — a selected tab, a chosen filter — never
   /// for data, which always arrives through the transport.
   List<Override> extraOverrides = const [],
+
   /// Run against the LIVE tree, after the picture is taken and before the
   /// unmount below. Anything asserted after `_render` returns would be
   /// asserted against an empty tree, which reads as a product defect and is
@@ -573,26 +577,31 @@ Future<void> _render(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        dioProvider.overrideWithValue(_consoleDio(
-          adminMe,
-          healthContract: healthContract,
-          workSummaryContract: workSummaryContract,
-          workListContract: workListContract,
-          userDetailContract: userDetailContract,
-          identityContract: identityContract,
-        )),
-        appAdminAccessProvider.overrideWith((ref) async => AppAdminAccess(
-              state: adminMe == null ? AppAdminState.none : AppAdminState.admin,
-              me: adminMe,
-            )),
+        dioProvider.overrideWithValue(
+          _consoleDio(
+            adminMe,
+            healthContract: healthContract,
+            workSummaryContract: workSummaryContract,
+            workListContract: workListContract,
+            userDetailContract: userDetailContract,
+            identityContract: identityContract,
+          ),
+        ),
+        appAdminAccessProvider.overrideWith(
+          (ref) async => AppAdminAccess(
+            state: adminMe == null ? AppAdminState.none : AppAdminState.admin,
+            me: adminMe,
+          ),
+        ),
         // `adminMeProvider` awaits session bootstrap and an authed status
         // before it will read anything, and every gated provider behind it —
         // health, metrics, settings, flags, policies, audit — returns null
         // when it does not resolve. Without this the console rendered as an
         // operator who can see nothing, which reads as a product defect and
         // was the harness's own missing session.
-        adminMeProvider.overrideWith((ref) async =>
-            adminMe == null ? null : AdminAccess.fromJson(adminMe)),
+        adminMeProvider.overrideWith(
+          (ref) async => adminMe == null ? null : AdminAccess.fromJson(adminMe),
+        ),
         ...extraOverrides,
       ],
       child: RepaintBoundary(
@@ -601,9 +610,9 @@ Future<void> _render(
           routerConfig: router,
           debugShowCheckedModeBanner: false,
           theme: ThemeData(brightness: Brightness.dark).copyWith(
-            textTheme: ThemeData(brightness: Brightness.dark)
-                .textTheme
-                .apply(fontFamily: 'OperatorHarness'),
+            textTheme: ThemeData(
+              brightness: Brightness.dark,
+            ).textTheme.apply(fontFamily: 'OperatorHarness'),
           ),
         ),
       ),
@@ -680,7 +689,6 @@ Future<void> _render(
 
 final _contractCache = <String, dynamic>{};
 
-
 /// RECORD's day heading is relative, so its golden cannot be.
 ///
 /// `RecordArea._dayLabel` answers TODAY, YESTERDAY, or an absolute date by
@@ -752,7 +760,6 @@ dynamic _auditAnchoredToToday() {
 
   return anchor(source);
 }
-
 
 /// A FIXED AGE, NOT A FIXED INSTANT.
 ///
@@ -908,7 +915,10 @@ Dio _consoleDio(
         } else if (p.contains('/admin/support/cases/')) {
           body = _supportCase;
         } else if (p.contains('/admin/support/cases')) {
-          body = {'cases': [_supportCase], 'total': 1};
+          body = {
+            'cases': [_supportCase],
+            'total': 1,
+          };
         } else if (p.contains('/admin/discovery/coverage')) {
           body = {'coverage': _coverage, 'sources': _sourcesAtFixedAge()};
         } else if (p.contains('/admin/discovery/objects')) {
@@ -919,6 +929,10 @@ Dio _consoleDio(
             'withheld': 41,
             'withheldBelowImpressions': 5,
           };
+        } else if (p.contains('/admin/discovery/week')) {
+          body = _week;
+        } else if (p.contains('/admin/discovery/searches')) {
+          body = _searches;
         } else if (p.contains('/admin/discovery/retention')) {
           body = _retention;
         } else if (p.contains('/admin/media-cleanup/status')) {
@@ -979,7 +993,11 @@ const _analystMe = <String, dynamic>{
   'userId': 'op-3',
   'roles': ['ANALYST'],
   'isOwner': false,
-  'effectivePermissions': ['ANALYTICS_READ', 'AUDIT_READ', 'SYSTEM_HEALTH_READ'],
+  'effectivePermissions': [
+    'ANALYTICS_READ',
+    'AUDIT_READ',
+    'SYSTEM_HEALTH_READ',
+  ],
 };
 
 /// Holds Discovery but NOT the evidence grant — the split the area exists to
@@ -1127,7 +1145,8 @@ const _supportCase = {
   'subject': 'Cannot sign in after changing my email',
   'requesterName': 'Sam Iyer',
   'requesterEmail': 'sam@example.test',
-  'aiSummary': 'Sign-in fails after an email change; likely an unverified '
+  'aiSummary':
+      'Sign-in fails after an email change; likely an unverified '
       'address on the new record.',
   'createdAt': '2026-08-28T09:00:00.000Z',
   'messages': [
@@ -1152,19 +1171,134 @@ const _supportCase = {
   ],
 };
 
+// The shape production is in after 7 Nov 2026: every article, institution
+// and post listed, and every person out of the sitemap by their own choice.
 const _coverage = {
   'estate': 'AURA',
-  'published': 4102,
-  'advertisedTotal': 19,
-  'advertisedFromInventory': 0,
-  'observed': 38,
-  'indexed': 12,
+  'published': 81,
+  'advertisedTotal': 48,
+  'advertisedFromInventory': 29,
+  'privateByChoice': 52,
+  'observed': 81,
+  'indexed': 81,
   'families': [
-    {'family': 'ARTICLE', 'published': 61, 'advertised': 0, 'observed': 9},
-    {'family': 'INSTITUTION', 'published': 38, 'advertised': 0, 'observed': 6},
-    {'family': 'PERSON', 'published': 3990, 'advertised': 0, 'observed': 21},
-    {'family': 'ANNOUNCEMENT', 'published': 13, 'advertised': 0, 'observed': 2},
+    {
+      'family': 'ARTICLE',
+      'published': 6,
+      'advertised': 6,
+      'observed': 6,
+      'privateByChoice': 0,
+    },
+    {
+      'family': 'INSTITUTION',
+      'published': 1,
+      'advertised': 1,
+      'observed': 1,
+      'privateByChoice': 0,
+    },
+    {
+      'family': 'INSTITUTION_POST',
+      'published': 22,
+      'advertised': 22,
+      'observed': 22,
+      'privateByChoice': 0,
+    },
+    {
+      'family': 'PERSON',
+      'published': 52,
+      'advertised': 0,
+      'observed': 52,
+      'privateByChoice': 52,
+    },
   ],
+};
+
+// SAMPLE NUMBERS for the design draft: the shape of a real week, not a real
+// week. The live console reads them from the server.
+const _week = {
+  'available': true,
+  'week': {
+    'from': '2026-10-29',
+    'to': '2026-11-04',
+    'shown': 412,
+    'chosen': 17,
+    'position': 6.3,
+    'arrivalsFromSearch': 11,
+    'arrivalsAll': 64,
+    'joined': 3,
+  },
+  'previous': {
+    'from': '2026-10-22',
+    'to': '2026-10-28',
+    'shown': 288,
+    'chosen': 12,
+    'position': 7.1,
+    'arrivalsFromSearch': 8,
+    'arrivalsAll': 51,
+    'joined': 5,
+  },
+};
+
+Map<String, Object?> _search(
+  String query,
+  int shown,
+  int chosen,
+  double position,
+  String page, {
+  bool own = false,
+}) => {
+  'query': query,
+  'impressions': shown,
+  'clicks': chosen,
+  'position': position,
+  'page': 'https://auraplatform.org$page',
+  'ownName': own,
+};
+
+final _searches = {
+  'days': 28,
+  'ownName': {'impressions': 1118, 'clicks': 46},
+  'other': {'impressions': 247, 'clicks': 3},
+  'items': [
+    _search('aura platform', 835, 38, 2.4, '/', own: true),
+    _search('org aura', 275, 8, 3.1, '/', own: true),
+    _search('aura dispatch platform', 88, 0, 9.4, '/'),
+    _search('aura online', 43, 1, 11.2, '/'),
+    _search('auraportal', 42, 0, 14.8, '/'),
+    _search('aura org', 8, 0, 4.0, '/', own: true),
+    _search(
+      'when capability outruns authority',
+      7,
+      2,
+      5.2,
+      '/p/art/when-capability-outruns-authority',
+    ),
+    _search(
+      'quiet work that holds people together',
+      6,
+      1,
+      8.5,
+      '/p/art/the-quiet-work-that-holds-people-together',
+    ),
+  ],
+  'topics': [
+    _search(
+      'when capability outruns authority',
+      7,
+      2,
+      5.2,
+      '/p/art/when-capability-outruns-authority',
+    ),
+    _search(
+      'quiet work that holds people together',
+      6,
+      1,
+      8.5,
+      '/p/art/the-quiet-work-that-holds-people-together',
+    ),
+  ],
+  'withheld': 3,
+  'withheldBelowImpressions': 5,
 };
 
 const _sources = [
