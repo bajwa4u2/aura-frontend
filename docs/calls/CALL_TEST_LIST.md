@@ -116,6 +116,12 @@ background, locked and fully closed. Voice calls.
 
 ## Runs
 
+**6 Nov 2026 · ~7:30 PM ET — founder decision for 1.7.3 (53):** "release 100% across stores, we will
+experience and see what need fixes when happens". 1.7.3 carries the iPhone answered-call audio change
+(b0b2ac27; Android and Windows call code unchanged since 1.7.2) and shipped WITHOUT a full pre-release
+run. The tests below are ticked from real calls as they happen on the store builds; any failure is fixed
+in the next release.
+
 | Date (ET) | Builds | Passed | Failed tests |
 |---|---|---|---|
 | | | | |
