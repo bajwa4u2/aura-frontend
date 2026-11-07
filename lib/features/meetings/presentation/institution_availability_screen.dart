@@ -54,8 +54,10 @@ class InstitutionBookingPages extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profilesAsync = ref.watch(institutionProfilesProvider(institutionId));
 
-    return profilesAsync.when(skipLoadingOnReload: true, 
-      loading: () => const WorkspaceLoading(type: WorkspacePageType.settings, rows: 2),
+    return profilesAsync.when(
+      skipLoadingOnReload: true,
+      loading: () =>
+          const WorkspaceLoading(type: WorkspacePageType.settings, rows: 2),
       error: (e, _) => WorkspaceEmpty(
         icon: Icons.error_outline_rounded,
         title: 'Booking pages could not be loaded',
@@ -63,7 +65,8 @@ class InstitutionBookingPages extends ConsumerWidget {
         action: WorkspaceAction(
           label: ProductLabels.of(ProductAction.retry),
           icon: Icons.refresh_rounded,
-          onPressed: () => ref.invalidate(institutionProfilesProvider(institutionId)),
+          onPressed: () =>
+              ref.invalidate(institutionProfilesProvider(institutionId)),
         ),
       ),
       data: (profiles) {
@@ -71,7 +74,8 @@ class InstitutionBookingPages extends ConsumerWidget {
           return WorkspaceEmpty(
             icon: Icons.calendar_today_rounded,
             title: 'No booking pages',
-            body: 'Create a booking page so visitors can schedule meetings with your workspace.',
+            body:
+                'Create a booking page so visitors can schedule meetings with your workspace.',
             action: WorkspaceAction(
               label: 'New booking page',
               icon: Icons.add_rounded,
@@ -94,7 +98,10 @@ class InstitutionBookingPages extends ConsumerWidget {
               for (final profile in profiles)
                 Padding(
                   padding: const EdgeInsets.only(bottom: AuraSpace.s12),
-                  child: _ProfileCard(profile: profile, institutionId: institutionId),
+                  child: _ProfileCard(
+                    profile: profile,
+                    institutionId: institutionId,
+                  ),
                 ),
             ],
           ),
@@ -127,14 +134,20 @@ class _ProfileCard extends ConsumerWidget {
     final host = profile.effectiveHost;
 
     Widget quiet(String text) => Container(
-          padding: const EdgeInsets.symmetric(horizontal: AuraSpace.s8, vertical: 3),
-          decoration: BoxDecoration(
-            color: AuraSurface.subtle,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: AuraSurface.divider),
-          ),
-          child: Text(text, style: AuraText.small.copyWith(fontSize: 12, color: AuraSurface.muted)),
-        );
+      padding: const EdgeInsets.symmetric(
+        horizontal: AuraSpace.s8,
+        vertical: 3,
+      ),
+      decoration: BoxDecoration(
+        color: AuraSurface.subtle,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AuraSurface.divider),
+      ),
+      child: Text(
+        text,
+        style: AuraText.small.copyWith(fontSize: 12, color: AuraSurface.muted),
+      ),
+    );
 
     return Container(
       padding: const EdgeInsets.all(AuraSpace.s18),
@@ -154,7 +167,9 @@ class _ProfileCard extends ConsumerWidget {
               ),
               WorkspacePill(
                 label: profile.isActive ? 'Active' : 'Disabled',
-                tone: profile.isActive ? WorkspaceTone.done : WorkspaceTone.neutral,
+                tone: profile.isActive
+                    ? WorkspaceTone.done
+                    : WorkspaceTone.neutral,
               ),
               const SizedBox(width: AuraSpace.s4),
               PopupMenuButton<String>(
@@ -162,8 +177,15 @@ class _ProfileCard extends ConsumerWidget {
                 color: AuraSurface.overlay,
                 padding: EdgeInsets.zero,
                 child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: AuraSpace.s6, vertical: 2),
-                  child: Icon(Icons.more_horiz_rounded, size: 20, color: AuraSurface.muted),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AuraSpace.s6,
+                    vertical: 2,
+                  ),
+                  child: Icon(
+                    Icons.more_horiz_rounded,
+                    size: 20,
+                    color: AuraSurface.muted,
+                  ),
                 ),
                 onSelected: (v) async {
                   if (v == 'copy') {
@@ -183,7 +205,10 @@ class _ProfileCard extends ConsumerWidget {
                       await _refreshInstitutionProfiles(ref, institutionId);
                     } catch (e) {
                       if (!context.mounted) return;
-                      AuraNotice.problem(context, 'The booking page was not updated. Try again.');
+                      AuraNotice.problem(
+                        context,
+                        'The booking page was not updated. Try again.',
+                      );
                     }
                   } else if (v == 'bookings') {
                     await _afterPopupClosed(
@@ -245,7 +270,11 @@ class _ProfileCard extends ConsumerWidget {
             const SizedBox(height: AuraSpace.s8),
             Row(
               children: [
-                const Icon(Icons.person_outline_rounded, size: 14, color: AuraSurface.muted),
+                const Icon(
+                  Icons.person_outline_rounded,
+                  size: 14,
+                  color: AuraSurface.muted,
+                ),
                 const SizedBox(width: AuraSpace.s4),
                 Text('Host: ${host.name}', style: AuraText.small),
               ],
@@ -267,7 +296,8 @@ class _ProfileCard extends ConsumerWidget {
               spacing: AuraSpace.s6,
               runSpacing: AuraSpace.s6,
               children: [
-                for (final w in profile.windows) quiet('${_dayAbbr(w.dayOfWeek)} ${w.label}'),
+                for (final w in profile.windows)
+                  quiet('${_dayAbbr(w.dayOfWeek)} ${w.label}'),
               ],
             ),
           ],
@@ -281,7 +311,11 @@ class _ProfileCard extends ConsumerWidget {
           // Public link
           Row(
             children: [
-              const Icon(Icons.link_rounded, size: 16, color: AuraSurface.faint),
+              const Icon(
+                Icons.link_rounded,
+                size: 16,
+                color: AuraSurface.faint,
+              ),
               const SizedBox(width: AuraSpace.s6),
               Expanded(
                 child: Text(
@@ -317,10 +351,8 @@ class _ProfileCard extends ConsumerWidget {
   Future<void> _showEditDialog(BuildContext context, WidgetRef ref) async {
     await showDialog<void>(
       context: context,
-      builder: (_) => _EditProfileDialog(
-        profile: profile,
-        institutionId: institutionId,
-      ),
+      builder: (_) =>
+          _EditProfileDialog(profile: profile, institutionId: institutionId),
     );
   }
 
@@ -353,7 +385,10 @@ class _ProfileCard extends ConsumerWidget {
       await _refreshInstitutionProfiles(ref, institutionId);
     } catch (e) {
       if (!context.mounted) return;
-      AuraNotice.problem(context, 'The booking page was not deleted. Try again.');
+      AuraNotice.problem(
+        context,
+        'The booking page was not deleted. Try again.',
+      );
     }
   }
 
@@ -404,7 +439,11 @@ class _WindowManagerState extends ConsumerState<_WindowManager> {
                 const Expanded(
                   child: Text(
                     'Manage availability windows',
-                    style: TextStyle(fontSize: 13, color: AuraSurface.muted, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AuraSurface.muted,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 Icon(
@@ -446,7 +485,10 @@ class _WindowManagerState extends ConsumerState<_WindowManager> {
                     await _refreshInstitutionProfiles(ref, institutionId);
                   } catch (e) {
                     if (!context.mounted) return;
-                    AuraNotice.problem(context, 'That time was not removed. Try again.');
+                    AuraNotice.problem(
+                      context,
+                      'That time was not removed. Try again.',
+                    );
                   }
                 },
               ),
@@ -731,8 +773,10 @@ class _CreateProfileDialogState extends ConsumerState<_CreateProfileDialog> {
                 decoration: const InputDecoration(
                   labelText: 'Assigned host (optional)',
                   border: OutlineInputBorder(),
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                 ),
                 child: DropdownButton<String?>(
                   value: _selectedHostId,
@@ -746,7 +790,9 @@ class _CreateProfileDialogState extends ConsumerState<_CreateProfileDialog> {
                     ),
                     ..._members.map(
                       (m) => DropdownMenuItem<String?>(
-                        value: (m['userId'] ?? m['user']?['id'] ?? m['id']) as String?,
+                        value:
+                            (m['userId'] ?? m['user']?['id'] ?? m['id'])
+                                as String?,
                         child: Text(_memberName(m)),
                       ),
                     ),
@@ -830,8 +876,10 @@ class _CreateProfileDialogState extends ConsumerState<_CreateProfileDialog> {
 class _EditProfileDialog extends ConsumerStatefulWidget {
   final AvailabilityProfile profile;
   final String institutionId;
-  const _EditProfileDialog(
-      {required this.profile, required this.institutionId});
+  const _EditProfileDialog({
+    required this.profile,
+    required this.institutionId,
+  });
 
   @override
   ConsumerState<_EditProfileDialog> createState() => _EditProfileDialogState();
@@ -862,14 +910,12 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
     _defaultDuration = p.defaultDuration;
     _titleCtrl = TextEditingController(text: p.meetingTitle);
     _descCtrl = TextEditingController(text: p.meetingDescription ?? '');
-    _bufferBeforeCtrl =
-        TextEditingController(text: p.bufferBefore.toString());
-    _bufferAfterCtrl =
-        TextEditingController(text: p.bufferAfter.toString());
-    _minNoticeCtrl =
-        TextEditingController(text: p.minimumNotice.toString());
-    _maxBookingsCtrl =
-        TextEditingController(text: p.maxBookingsPerDay?.toString() ?? '');
+    _bufferBeforeCtrl = TextEditingController(text: p.bufferBefore.toString());
+    _bufferAfterCtrl = TextEditingController(text: p.bufferAfter.toString());
+    _minNoticeCtrl = TextEditingController(text: p.minimumNotice.toString());
+    _maxBookingsCtrl = TextEditingController(
+      text: p.maxBookingsPerDay?.toString() ?? '',
+    );
     _requireApproval = p.requireApproval;
     _selectedHostId = p.assignedHost?.id;
     _loadMembers();
@@ -928,8 +974,10 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final durationChoices =
-        ({...kStandardMeetingDurations, ..._durations}.toList()..sort());
+    final durationChoices = ({
+      ...kStandardMeetingDurations,
+      ..._durations,
+    }.toList()..sort());
     final chosen = _durations.toList()..sort();
     final deviceZone = cachedLocalTimezone;
     return AlertDialog(
@@ -968,8 +1016,10 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
                 decoration: const InputDecoration(
                   labelText: 'Assigned host',
                   border: OutlineInputBorder(),
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                 ),
                 child: DropdownButton<String?>(
                   value: _selectedHostId,
@@ -983,7 +1033,9 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
                     ),
                     ..._members.map(
                       (m) => DropdownMenuItem<String?>(
-                        value: (m['userId'] ?? m['user']?['id'] ?? m['id']) as String?,
+                        value:
+                            (m['userId'] ?? m['user']?['id'] ?? m['id'])
+                                as String?,
                         child: Text(_memberName(m)),
                       ),
                     ),
@@ -1023,7 +1075,10 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
               ),
               items: [
                 for (final m in chosen)
-                  DropdownMenuItem(value: m, child: Text(_durationChipLabel(m))),
+                  DropdownMenuItem(
+                    value: m,
+                    child: Text(_durationChipLabel(m)),
+                  ),
               ],
               onChanged: (v) {
                 if (v != null) setState(() => _defaultDuration = v);
@@ -1035,8 +1090,7 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
               decoration: InputDecoration(
                 labelText: 'Timezone of this page',
                 hintText: 'For example America/Detroit',
-                helperText:
-                    'Your weekly hours are read in this timezone.',
+                helperText: 'Your weekly hours are read in this timezone.',
                 helperMaxLines: 2,
                 errorText: _timezoneProblem,
                 border: const OutlineInputBorder(),
@@ -1142,7 +1196,9 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
                 )
               : const Text('Save'),
         ),
@@ -1153,8 +1209,10 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
   Future<void> _save() async {
     final zone = _timezoneCtrl.text.trim();
     if (!isIanaZoneId(zone)) {
-      setState(() => _timezoneProblem =
-          'Use a timezone name like America/Detroit or Europe/London.');
+      setState(
+        () => _timezoneProblem =
+            'Use a timezone name like America/Detroit or Europe/London.',
+      );
       return;
     }
     setState(() => _saving = true);
@@ -1169,14 +1227,14 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
             widget.profile.id,
             meetingTitle: _titleCtrl.text.trim(),
             meetingDescription: desc.isEmpty ? null : desc,
-            assignedHostId:
-                (hostChanged && _selectedHostId != null) ? _selectedHostId : null,
+            assignedHostId: (hostChanged && _selectedHostId != null)
+                ? _selectedHostId
+                : null,
             clearAssignedHost: hostChanged && _selectedHostId == null,
             bufferBefore: int.tryParse(_bufferBeforeCtrl.text.trim()),
             bufferAfter: int.tryParse(_bufferAfterCtrl.text.trim()),
             minimumNotice: int.tryParse(_minNoticeCtrl.text.trim()),
-            maxBookingsPerDay:
-                int.tryParse(_maxBookingsCtrl.text.trim()),
+            maxBookingsPerDay: int.tryParse(_maxBookingsCtrl.text.trim()),
             requireApproval: _requireApproval,
             durationOptions: _durations.toList()..sort(),
             defaultDuration: _defaultDuration,
@@ -1199,13 +1257,14 @@ class _EditProfileDialogState extends ConsumerState<_EditProfileDialog> {
 class _BookingInboxDialog extends ConsumerWidget {
   final AvailabilityProfile profile;
   final String institutionId;
-  const _BookingInboxDialog(
-      {required this.profile, required this.institutionId});
+  const _BookingInboxDialog({
+    required this.profile,
+    required this.institutionId,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final key =
-        InstitutionProfileBookingsKey(institutionId, profile.id);
+    final key = InstitutionProfileBookingsKey(institutionId, profile.id);
     final async = ref.watch(institutionProfileBookingsProvider(key));
 
     return AlertDialog(
@@ -1215,7 +1274,8 @@ class _BookingInboxDialog extends ConsumerWidget {
         width: double.maxFinite,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 480),
-          child: async.when(skipLoadingOnReload: true, 
+          child: async.when(
+            skipLoadingOnReload: true,
             loading: () => const Padding(
               padding: EdgeInsets.all(32),
               child: Center(child: CircularProgressIndicator()),
@@ -1231,8 +1291,11 @@ class _BookingInboxDialog extends ConsumerWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.calendar_today_outlined,
-                          size: 40, color: Color(0xFFA9AEB9)),
+                      Icon(
+                        Icons.calendar_today_outlined,
+                        size: 40,
+                        color: Color(0xFFA9AEB9),
+                      ),
                       SizedBox(height: 12),
                       Text(
                         'No upcoming bookings',
@@ -1283,8 +1346,7 @@ class _BookingRow extends StatelessWidget {
     final bookerName = booking['bookerName'] as String? ?? '';
     final bookerEmail = booking['bookerEmail'] as String? ?? '';
     final scheduledAt = booking['scheduledAt'] as String? ?? '';
-    final durationMinutes =
-        (booking['durationMinutes'] as num?)?.toInt() ?? 30;
+    final durationMinutes = (booking['durationMinutes'] as num?)?.toInt() ?? 30;
     final status = booking['status'] as String? ?? 'CONFIRMED';
     final notes = booking['bookerNotes'] as String?;
     final meetingId = booking['meetingId'] as String?;
@@ -1300,7 +1362,9 @@ class _BookingRow extends StatelessWidget {
                 child: Text(
                   bookerName,
                   style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
                 ),
               ),
               _StatusChip(status: status),
@@ -1314,22 +1378,26 @@ class _BookingRow extends StatelessWidget {
           const SizedBox(height: 6),
           Row(
             children: [
-              const Icon(Icons.schedule_rounded,
-                  size: 13, color: Color(0xFF8C919C)),
+              const Icon(
+                Icons.schedule_rounded,
+                size: 13,
+                color: Color(0xFF8C919C),
+              ),
               const SizedBox(width: 4),
               Text(
                 _formatTime(scheduledAt),
-                style: const TextStyle(
-                    fontSize: 12, color: Color(0xFF8C919C)),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF8C919C)),
               ),
               const SizedBox(width: 12),
-              const Icon(Icons.timelapse_rounded,
-                  size: 13, color: Color(0xFF8C919C)),
+              const Icon(
+                Icons.timelapse_rounded,
+                size: 13,
+                color: Color(0xFF8C919C),
+              ),
               const SizedBox(width: 4),
               Text(
                 '$durationMinutes min',
-                style: const TextStyle(
-                    fontSize: 12, color: Color(0xFF8C919C)),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF8C919C)),
               ),
             ],
           ),
@@ -1337,8 +1405,7 @@ class _BookingRow extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               'Note: $notes',
-              style: const TextStyle(
-                  fontSize: 11, color: Color(0xFFA9AEB9)),
+              style: const TextStyle(fontSize: 11, color: Color(0xFFA9AEB9)),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1348,8 +1415,7 @@ class _BookingRow extends StatelessWidget {
             GestureDetector(
               onTap: () {
                 onNavigate();
-                context.go(
-                    '/institution/$institutionId/meetings/$meetingId');
+                context.go('/institution/$institutionId/meetings/$meetingId');
               },
               child: const Text(
                 'View meeting',
@@ -1372,8 +1438,18 @@ class _BookingRow extends StatelessWidget {
     if (dt == null) return iso;
     final local = dt.toLocal();
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final h = local.hour.toString().padLeft(2, '0');
     final m = local.minute.toString().padLeft(2, '0');
@@ -1388,8 +1464,9 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isConfirmed = status == 'CONFIRMED';
-    final color =
-        isConfirmed ? const Color(0xFF10B981) : const Color(0xFFF59E0B);
+    final color = isConfirmed
+        ? const Color(0xFF10B981)
+        : const Color(0xFFF59E0B);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
@@ -1407,7 +1484,6 @@ class _StatusChip extends StatelessWidget {
     );
   }
 }
-
 
 String _durationChipLabel(int m) {
   if (m < 60) return '$m min';
@@ -1467,7 +1543,9 @@ class _DaysOffManagerState extends ConsumerState<_DaysOffManager> {
     if (day == null || !mounted) return;
     setState(() => _saving = true);
     try {
-      await ref.read(availabilityRepositoryProvider).addInstitutionDayOff(
+      await ref
+          .read(availabilityRepositoryProvider)
+          .addInstitutionDayOff(
             widget.institutionId,
             widget.profile.id,
             day: day,
@@ -1486,14 +1564,19 @@ class _DaysOffManagerState extends ConsumerState<_DaysOffManager> {
   Future<void> _removeDayOff(String overrideId) async {
     setState(() => _saving = true);
     try {
-      await ref.read(availabilityRepositoryProvider).removeInstitutionDayOff(
+      await ref
+          .read(availabilityRepositoryProvider)
+          .removeInstitutionDayOff(
             widget.institutionId,
             widget.profile.id,
             overrideId,
           );
       await _refreshInstitutionProfiles(ref, widget.institutionId);
       if (!mounted) return;
-      AuraNotice.done(context, 'Day off removed. That day can be booked again.');
+      AuraNotice.done(
+        context,
+        'Day off removed. That day can be booked again.',
+      );
     } catch (_) {
       if (!mounted) return;
       AuraNotice.problem(context, 'That day off was not removed. Try again.');
@@ -1506,80 +1589,85 @@ class _DaysOffManagerState extends ConsumerState<_DaysOffManager> {
   Widget build(BuildContext context) {
     final days = upcomingDaysOff(widget.profile);
     final loc = MaterialLocalizations.of(context);
-    return Column(
-      children: [
-        InkWell(
-          onTap: () => setState(() => _expanded = !_expanded),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: AuraSpace.s8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    days.isEmpty ? 'Days off' : 'Days off (${days.length})',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AuraSurface.muted,
-                      fontWeight: FontWeight.w600,
+    // Its own transparent Material: the card behind is a coloured box, which
+    // would hide the rows' tap ripple (Flutter 3.47 asserts on it).
+    return Material(
+      type: MaterialType.transparency,
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: AuraSpace.s8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      days.isEmpty ? 'Days off' : 'Days off (${days.length})',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: AuraSurface.muted,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-                Icon(
-                  _expanded
-                      ? Icons.keyboard_arrow_up_rounded
-                      : Icons.keyboard_arrow_down_rounded,
-                  color: const Color(0xFFA9AEB9),
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (_expanded) ...[
-          const Divider(height: 1, color: Color(0xFF1A1F29)),
-          if (days.isEmpty)
-            const ListTile(
-              contentPadding: EdgeInsets.zero,
-              dense: true,
-              title: Text(
-                'No days off coming up.',
-                style: TextStyle(fontSize: 13, color: AuraSurface.muted),
+                  Icon(
+                    _expanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: const Color(0xFFA9AEB9),
+                  ),
+                ],
               ),
             ),
-          for (final d in days)
+          ),
+          if (_expanded) ...[
+            const Divider(height: 1, color: Color(0xFF1A1F29)),
+            if (days.isEmpty)
+              const ListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                title: Text(
+                  'No days off coming up.',
+                  style: TextStyle(fontSize: 13, color: AuraSurface.muted),
+                ),
+              ),
+            for (final d in days)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                title: Text(
+                  loc.formatFullDate(d.day),
+                  style: const TextStyle(fontSize: 13),
+                ),
+                trailing: IconButton(
+                  tooltip: 'Remove this day off',
+                  icon: const Icon(
+                    Icons.remove_circle_outline_rounded,
+                    size: 18,
+                    color: Color(0xFFA9AEB9),
+                  ),
+                  onPressed: _saving ? null : () => _removeDayOff(d.id),
+                ),
+              ),
             ListTile(
               contentPadding: EdgeInsets.zero,
               dense: true,
-              title: Text(
-                loc.formatFullDate(d.day),
-                style: const TextStyle(fontSize: 13),
+              leading: const Icon(
+                Icons.add_rounded,
+                size: 18,
+                color: Color(0xFFD2AC62),
               ),
-              trailing: IconButton(
-                tooltip: 'Remove this day off',
-                icon: const Icon(
-                  Icons.remove_circle_outline_rounded,
-                  size: 18,
-                  color: Color(0xFFA9AEB9),
-                ),
-                onPressed: _saving ? null : () => _removeDayOff(d.id),
+              title: const Text(
+                'Add a day off',
+                style: TextStyle(fontSize: 13, color: Color(0xFFD2AC62)),
               ),
+              enabled: !_saving,
+              onTap: _addDayOff,
             ),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            dense: true,
-            leading: const Icon(
-              Icons.add_rounded,
-              size: 18,
-              color: Color(0xFFD2AC62),
-            ),
-            title: const Text(
-              'Add a day off',
-              style: TextStyle(fontSize: 13, color: Color(0xFFD2AC62)),
-            ),
-            enabled: !_saving,
-            onTap: _addDayOff,
-          ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
@@ -1600,8 +1688,12 @@ class _BookingPageNumbers extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final stats = ref
-        .watch(bookingPageStatsProvider(
-            (institutionId: institutionId, profileId: profileId)))
+        .watch(
+          bookingPageStatsProvider((
+            institutionId: institutionId,
+            profileId: profileId,
+          )),
+        )
         .valueOrNull;
     if (stats == null) return const SizedBox.shrink();
     return Padding(
@@ -1609,7 +1701,11 @@ class _BookingPageNumbers extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.insights_rounded, size: 14, color: AuraSurface.muted),
+          const Icon(
+            Icons.insights_rounded,
+            size: 14,
+            color: AuraSurface.muted,
+          ),
           const SizedBox(width: AuraSpace.s6),
           Expanded(child: Text(stats.line, style: AuraText.small)),
         ],
