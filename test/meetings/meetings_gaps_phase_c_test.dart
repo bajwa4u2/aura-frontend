@@ -710,10 +710,18 @@ void main() {
     testWidgets('days off are listed, added and removed', (tester) async {
       final cap = await openPages(tester);
       expect(find.text('Days off (1)'), findsOneWidget);
+      // Scroll each control into view first: on Codemagic's macOS runner the
+      // remove button sat outside the test surface and the tap missed (6 Nov
+      // 2026), so no DELETE was sent.
+      await tester.ensureVisible(find.text('Days off (1)'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Days off (1)'));
       await tester.pumpAndSettle();
       expect(find.text('Add a day off'), findsOneWidget);
-      await tester.tap(find.byTooltip('Remove this day off'));
+      final remove = find.byTooltip('Remove this day off');
+      await tester.ensureVisible(remove);
+      await tester.pumpAndSettle();
+      await tester.tap(remove);
       await tester.pumpAndSettle();
       final del = cap.requests.firstWhere((r) => r.method == 'DELETE');
       expect(del.path, '/institution/org1/availability/p1/overrides/o');
